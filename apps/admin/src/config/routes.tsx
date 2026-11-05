@@ -17,6 +17,8 @@ export const routes: RouteObject[] = [
   { path: "/landing", lazy: page(() => import("@/app/landing/page")) },
   // PocketHost read-only status (all original upstream routes remain untouched)
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
+  // PocketHost-owned test site; opt-in DEV-only actions (no external service controls)
+  { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
   // Dashboard Routes
   { path: "/dashboard", lazy: page(() => import("@/app/dashboard/page")) },
   { path: "/dashboard-2", lazy: page(() => import("@/app/dashboard-2/page")) },

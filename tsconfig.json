@@ -12,7 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "allowJs": true,
-    "checkJs": false
+    "checkJs": false,
+    "allowImportingTsExtensions": true
   },
   "include": ["scripts/**/*.mjs", "tests/**/*.mjs", "src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["node_modules", "dist", "build", "coverage"]
