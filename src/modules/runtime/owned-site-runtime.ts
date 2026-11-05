@@ -2,7 +2,7 @@ import {
   OWNED_DEMO_ID,
   type OwnedSitePort,
   type OwnedSiteSnapshot,
-} from "../../shared/owned-site.js";
+} from "../../shared/owned-site.ts";
 
 export class SiteOwnershipError extends Error {
   constructor() {

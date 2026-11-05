@@ -1,4 +1,4 @@
-import { OWNED_DEMO_ID, type DemoVersion } from "../../shared/owned-site.js";
+import { OWNED_DEMO_ID, type DemoVersion } from "../../shared/owned-site.ts";
 
 /** Never adopt or alias an externally discovered service as this owned demo. */
 export function assertOwnedDemoId(value: unknown): typeof OWNED_DEMO_ID {
