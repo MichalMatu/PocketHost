@@ -1,7 +1,7 @@
 ---
 status: in-progress
 owner: core
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-06
 purpose: Track exact P3 MVP candidate integration, real Termux QA and release blockers
 ---
 
@@ -44,3 +44,17 @@ The new exact-source isolated test request is `pockethost-p3-mvp-integration-nat
 ## Safe release boundary
 
 Do not restart or replace the accepted port-8787 preview to satisfy tests prematurely. Never modify IleStoi.pl, Local Agent, sshd, Cloudflared, Mosquitto or other observed Termux services. Keep the feature flag off by default and never publish the DEV control plane to WAN.
+
+## Przerwanie i wznowienie — 2026-11-06
+
+**Nowy stan zastępuje wcześniejsze oznaczenie bramki integracyjnej jako niewykonanej.**
+
+- Kod i pliki zależności opublikowano w commicie `a76958a8a04af6c50e0746ba3bb6abd0f1992761` na `sprint/p3-mvp-integration-20261105`. `main` nadal wskazywał `8378663725f10beacf9c527f194e7f568170284d` podczas sprawdzenia 2026-11-06.
+- Zadanie `pockethost-p3-mvp-release-quality-native-20261106-v1` na fizycznym Termuxie zakończyło się `done`, exit 0, `all_pass: true`, źródło dokładnie `a76958a`; wynik został opublikowany w prywatnej gałęzi `local-agent:agent-control`.
+- Czysty odizolowany worktree: `npm ci` root i admin PASS; pełny `npm run check` PASS (42/42 testy, Markdownlint 55 plików / zero błędów, Prettier, ESLint, TypeScript); admin ESLint i Vite build PASS; Vitest interakcji wyglądu 6/6 PASS; testy lifecycle P3 9/9 PASS; końcowy Git status czysty.
+- Pozostaje **HOLD tylko dla wydania MVP na telefonie**, ponieważ nie wykonano akceptacji stałego własnego serwera i renderowania w rzeczywistym Chrome. Nie mylić testów serwera na izolowanych losowych portach z akceptacją fizycznej witryny na porcie 18787.
+- Podczas sprintu nie zmieniano aktywnego podglądu na porcie 8787, nie włączano domyślnie wyłączonego API P3 i nie scalano do `main`.
+
+### Jedna następna czynność
+
+Po wznowieniu sprawdź świeży HEAD i stan czystego worktree oraz portów 8787/18787. Następnie przez **wyłącznie GitHub Connector + właściwy Termux Local Agent** wykonaj osobny, ograniczony test sprzętowy P3: utworzenie własnej witryny, uruchomienie na `127.0.0.1:18787`, GET/HEAD, Chrome, publikacja wersji 2, rollback do wersji 1, logi, kontrolowany stop oraz porównanie wyłącznie dozwolonych stanów usług obcych. Nie restartuj panelu na 8787 i nie dotykaj innych usług. Jeżeli test lub bezpieczeństwo odmówią, pozostaw `main` nietknięty i oznacz wynik HOLD. Dopiero po akceptacji zaktualizuj dokumentację i scal do `main`.
