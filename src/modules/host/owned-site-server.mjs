@@ -1,5 +1,5 @@
 import http from "node:http";
-import { readFile, open } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 const [portArg, instanceArg] = process.argv.slice(2);
