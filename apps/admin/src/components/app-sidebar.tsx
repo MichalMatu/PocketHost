@@ -15,6 +15,7 @@ import {
   CreditCard,
   LayoutTemplate,
   Users,
+  ServerCog,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -39,6 +40,12 @@ const data = {
     avatar: "",
   },
   navGroups: [
+    {
+      label: "PocketHost",
+      items: [
+        { title: "Host overview", url: "/host", icon: ServerCog },
+      ],
+    },
     {
       label: "Dashboards",
       items: [

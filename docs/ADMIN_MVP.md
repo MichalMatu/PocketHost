@@ -44,6 +44,10 @@ Do **not** assume these commands passed or the panel is running until actual Loc
 5. Running IleStoi.pl and Local Agent processes are not modified or restarted.
 6. Record actual test commands, exit codes, source/import SHA and running process ownership in a checkpoint.
 
+## Continued P1 host status route
+
+`feat/host-overview-v1` adds a separate PocketHost **Host overview** entry to the existing template: live read-only Termux services and runtime memory data. The original 32 upstream route entries remain untouched; no demo view was deleted or repurposed. This is a **development-only**, loopback-only status middleware and must not be treated as production-ready authentication or service control.
+
 ## Current status
 
 Pinned importer and documentation are staged on the UI feature branch. **Native import, package installation, full compilation, browser screenshot and live server status are not yet verified** until returned by Local Agent.

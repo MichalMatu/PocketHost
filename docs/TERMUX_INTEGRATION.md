@@ -30,6 +30,12 @@ Existing services' configurations remain external and read-only. PocketHost conf
 
 When a CLI launcher is implemented: bind the administrative UI to `127.0.0.1`, detect port conflicts and fail safely; show explicit status and stop only its own process. Avoid selecting an active IleStoi.pl or Local Agent port.
 
+## Read-only host overview prototype
+
+The `feat/host-overview-v1` source adds a development-only Vite route `/host` and a single `GET /api/v1/host/snapshot` endpoint. It uses the host-module fixed runit allowlist without accepting dynamic command arguments, shows only sanitized states and runtime memory/uplink metadata, and deliberately has **no service-control API**. Requests stay on 127.0.0.1:8787 and reject browser cross-origin access. This is not a hardened remote administration surface and must not be exposed to WAN.
+
+The demo's existing `/dashboard` and all 32 upstream routes are retained. Qualification requires on-device Gate 0, app lint/build, exact HTTP read checks, write-method denial, negative cross-origin test, and a new real-phone visual check before this feature is called accepted.
+
 ## Evidence required before claims of compatibility
 
 Record device architecture, Termux version, Node version, actual detection results with secrets redacted, port conflict tests and resource impact without stopping any external service. Unverified findings stay labeled unverified.

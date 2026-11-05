@@ -13,9 +13,9 @@ purpose: Define staged delivery with phase gates
 
 Create docs index, ADRs, owner module instructions, manifest-controlled layout, guardrail tests, formatting/lint/type configurations and first checkpoint. No application code and no host modifications. **Exit:** Gate 0 passes and Gate 1 tooling is configured; lockfile/dependency verification tracked if registry unavailable.
 
-## P1 — real Termux inventory (read-only)
+## P1 — real Termux inventory (read-only; implementation in progress)
 
-Using Local Agent after permission and preflight, record sanitized existing service/network configuration. Build a host adapter behind a testable interface. **Exit:** discovery accurately reports IleStoi.pl without changing it, with failure-case tests and evidence.
+Build and test the typed fixed-allowlist Termux host snapshot with `runit` service states for IleStoi.pl and surrounding external services. Integrate the new `/host` route into the existing full admin template while preserving all 32 upstream screens. The first endpoint is **GET-only and DEV-only** on loopback, with no external service control. **Exit:** real on-phone API checks, negative method/origin tests and GUI evidence confirm accurate read-only service states; no mutations to IleStoi.pl.
 
 ## P2 — local GUI
 
