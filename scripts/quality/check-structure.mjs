@@ -53,56 +53,16 @@ export function validateStructure(root = repositoryRoot) {
         walk(path.join(dir, entry.name), rel);
       } else if (entry.isFile()) {
         if (rel.startsWith('src/') && !/\.(ts|tsx)$/.test(rel) && !rel.endsWith('/AGENTS.md')) errors.push(`Unsupported source artifact: ${rel}`);
-        if (/^src\/.+\.(ts|tsx)$/.test(rel) && !/^src\/(ui|shared)\/.+\.(ts|tsx)$/.test(rel) &&
-          !new RegExp(`^src/modules/(${modules.join('|')})/[^/]+\\.(ts|tsx)import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-
-export function validateStructure(root = repositoryRoot) {
-  const errors = [];
-  const manifestPath = path.join(root, 'project.structure.json');
-  if (!existsSync(manifestPath)) return ['Missing project.structure.json'];
-  let manifest;
-  try {
-    manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
-  } catch (error) {
-    return [`Invalid project.structure.json: ${error.message}`];
-  }
-  const { modules, rootDirectories, requiredFiles, documentationDirectories } = manifest;
-  if (![modules, rootDirectories, requiredFiles, documentationDirectories].every(Array.isArray)) {
-    return ['Incomplete structure manifest'];
-  }
-  if (new Set(modules).size !== modules.length || modules.some((m) => !/^[a-z][a-z0-9-]*$/.test(m))) {
-    errors.push('Module names must be unique lowercase kebab-case');
-  }
-  const required = [...requiredFiles, ...modules.flatMap((m) => [`src/modules/${m}/AGENTS.md`, `docs/modules/${m}.md`])];
-  for (const rel of required) {
-    if (!existsSync(path.join(root, rel))) errors.push(`Missing required file: ${rel}`);
-  }
-  const approvedRootFiles = new Set([...requiredFiles.filter((p) => !p.includes('/')), 'package-lock.json']);
-  const approvedRootDirs = new Set(rootDirectories);
-  const excludedDirs = new Set(manifest.excludedDirectories || []);
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (excludedDirs.has(entry.name)) continue;
-    if (entry.isDirectory() && !approvedRootDirs.has(entry.name)) errors.push(`Unexpected root directory: ${entry.name}`);
-    else if (entry.isFile() && !approvedRootFiles.has(entry.name)) errors.push(`Unexpected root file: ${entry.name}`);
-  }
-  const moduleRoot = path.join(root, 'src/modules');
-  if (existsSync(moduleRoot)) {
-    for (const entry of readdirSync(moduleRoot, { withFileTypes: true })) {
-      if (!entry.isDirectory() || !modules.includes(entry.name)) errors.push(`Unexpected module: ${entry.name}`);
-    }
-  }
-  const docsRoots = new Set(documentationDirectories);
-  function walk(dir, base) {
-    if (!existsSync(dir)) return;
-    for (const entry of readdirSync(dir, { withFileTypes: true })) {
-      if (excludedDirs.has(entry.name)) continue;
-      const rel = path.posix.join(base, entry.name);
-      if (entry.isSymbolicLink()) { errors.push(`Symlink not allowed: ${rel}`); continue; }
-      if (entry.isDirectory()) {
+        if (/^src\/.+\.(ts|tsx)$/.test(rel)) {
+          const inSharedOrUi = /^src\/(ui|shared)\/.+\.(ts|tsx)$/.test(rel);
+          const inRegisteredModule = modules.some((module) => {
+            const prefix = 'src/modules/' + module + '/';
+            if (!rel.startsWith(prefix)) return false;
+            const remainder = rel.slice(prefix.length);
+            return !remainder.includes('/') && /\.(ts|tsx)$/.test(remainder);
+          });
+          if (!inSharedOrUi && !inRegisteredModule) errors.push(`Unexpected source location: ${rel}`);
+        }
         if (rel.startsWith('docs/') && !docsRoots.has(rel)) errors.push(`Unexpected documentation directory: ${rel}`);
         if (rel.startsWith('src/') && !['src/ui', 'src/shared', 'src/modules'].includes(rel) &&
           !/^src\/modules\/[a-z][a-z0-9-]*$/.test(rel)) errors.push(`Unexpected source directory: ${rel}`);
