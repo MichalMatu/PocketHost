@@ -7,6 +7,10 @@ purpose: Specify safe Termux preflight and manual launch
 
 # Termux Integration
 
+## Execution ownership
+
+All PocketHost source execution, package resolution, checks, tests and builds must be dispatched to and evidenced by the exact Termux Local Agent installation. The GitHub Connector handles repository edits and the private Git task/result transport. The Termux pilot currently supports bounded **host command tasks**, not an assumed automatic project runner. Keep the PocketHost checkout independent from IleStoi.pl, existing services, the Local Agent installation and its transport. See [fast-start and recovery runbook](LOCAL_AGENT_TERMUX.md).
+
 ## Development environment
 
 - Existing official Termux installation on the same Android phone as IleStoi.pl and Local Agent.

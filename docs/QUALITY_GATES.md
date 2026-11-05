@@ -32,8 +32,8 @@ purpose: Define mandatory foundation and future app quality checks
 
 ## Workflow
 
-Run gates locally in a recreated Linux sandbox before each merge. Use Local Agent only for permitted on-device operations. GitHub Actions are not part of the workflow. Update docs and gates together with interface/module changes.
+Run **all** PocketHost gates, tests, installs and builds on the selected Termux phone **through Local Agent**, using an isolated project checkout. GitHub Connector may edit documentation and publish tasks, but it is not a runtime or proof of validation. A historical Linux sandbox result is background evidence only, not a current Termux pass. Record exact source commit, command, exit code, tool versions and the published host-task result. No substitution with Mac, ChatGPT Linux sandbox, GitHub Actions, Codex or ChatGPT Work. Update docs and gates together with interface/module changes. See [Termux Local Agent runbook](LOCAL_AGENT_TERMUX.md).
 
 ## Known bootstrap limitation
 
-The initial environment may not allow npm registry access. Gate 0 is still executable without dependencies; Gate 1 is configured but cannot be claimed passing before dependencies are installed and checked. Do not lower gate strictness to hide unavailable tooling.
+An installation may not have registry access or a committed `package-lock.json`. Gate 0 is executable without development dependencies; Gate 1 is configured but cannot be claimed passing until dependencies are resolved and checked **on the actual Termux target**. Do not lower gate strictness to hide unavailable tooling.

@@ -10,4 +10,4 @@ No unreviewed assumptions presented as measurements. Do not invent live Termux s
 
 ## Gate
 
-Documents (except `docs/README.md` and `docs/AGENTS.md`) need YAML frontmatter fields `status`, `owner`, `last_reviewed`, `purpose`. New modules require a matching specification, `AGENTS.md` and manifest entry. ADRs record major changes. Every relative Markdown link must resolve. Run `npm run check:docs` and `npm run markdownlint` when installed.
+Documents (except `docs/README.md` and `docs/AGENTS.md`) need YAML frontmatter fields `status`, `owner`, `last_reviewed`, `purpose`. New modules require a matching specification, `AGENTS.md` and manifest entry. ADRs record major changes. Every relative Markdown link must resolve. Run `npm run check:docs` and `npm run markdownlint` **on Termux through Local Agent** when tools are available. See `LOCAL_AGENT_TERMUX.md`; GitHub-side edits without an on-device task result are documentation publication, not a verified gate pass.

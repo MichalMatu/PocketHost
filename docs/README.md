@@ -5,6 +5,7 @@
 - [Product and MVP boundary](PRODUCT.md)
 - [System architecture](ARCHITECTURE.md)
 - [Module dependency contracts](MODULES.md)
+- [Termux Local Agent execution and fast start](LOCAL_AGENT_TERMUX.md)
 - [Termux integration and host discovery](TERMUX_INTEGRATION.md)
 - [Security model](SECURITY_MODEL.md)
 - [Quality gates](QUALITY_GATES.md)
@@ -25,4 +26,6 @@
 
 - [ADR-0001: Foundation and no-autostart](adr/0001-foundation.md)
 - [ADR-0002: Keep Termux upstream](adr/0002-upstream-termux.md)
+- [ADR-0003: Termux Local Agent only](adr/0003-termux-local-agent-execution.md)
 - [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
+- [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
