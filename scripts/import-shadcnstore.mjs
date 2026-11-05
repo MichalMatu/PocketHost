@@ -73,7 +73,7 @@ try {
       'All demo screens, assets, routes, and components have been retained.',
       'Run only on Termux through the verified Local Agent; Vite is loopback-only in DEV.',
       '',
-    ].join('\\n'),
+    ].join('\n'),
     'utf8',
   );
   renameSync(staging, destination);
