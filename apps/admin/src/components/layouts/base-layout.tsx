@@ -4,10 +4,10 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
-import {
-  ThemeCustomizer,
-  ThemeCustomizerTrigger,
-} from "@/components/theme-customizer"
+import { ThemeCustomizer } from "@/components/theme-customizer"
+import { useTheme } from "@/hooks/use-theme"
+import { useThemeManager } from "@/hooks/use-theme-manager"
+import type { AppearanceTab } from "@/components/mode-toggle"
 import { useSidebarConfig } from "@/hooks/use-sidebar-config"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
@@ -19,7 +19,31 @@ interface BaseLayoutProps {
 
 export function BaseLayout({ children, title, description }: BaseLayoutProps) {
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
-  const { config } = useSidebarConfig()
+  const [customizerTab, setCustomizerTab] = React.useState<AppearanceTab>("theme")
+  const [customizerVersion, setCustomizerVersion] = React.useState(0)
+  const { config, updateConfig } = useSidebarConfig()
+  const { setTheme } = useTheme()
+  const { resetTheme, applyRadius, setBrandColorsValues } = useThemeManager()
+
+  const openCustomizer = (tab: AppearanceTab) => {
+    setCustomizerTab(tab)
+    setThemeCustomizerOpen(true)
+  }
+
+  const resetAppearance = () => {
+    setTheme("system")
+    resetTheme()
+    applyRadius("0.5rem")
+    setBrandColorsValues({})
+    updateConfig({
+      variant: "inset",
+      collapsible: "offcanvas",
+      side: "left",
+    })
+    setCustomizerTab("theme")
+    setThemeCustomizerOpen(false)
+    setCustomizerVersion((previous) => previous + 1)
+  }
 
   return (
     <SidebarProvider
@@ -40,7 +64,10 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
             side={config.side}
           />
           <SidebarInset>
-            <SiteHeader />
+            <SiteHeader
+              onCustomize={openCustomizer}
+              onResetAppearance={resetAppearance}
+            />
             <div className="flex flex-1 flex-col">
               <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -66,7 +93,10 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
       ) : (
         <>
           <SidebarInset>
-            <SiteHeader />
+            <SiteHeader
+              onCustomize={openCustomizer}
+              onResetAppearance={resetAppearance}
+            />
             <div className="flex flex-1 flex-col">
               <div className="@container/main flex flex-1 flex-col gap-2">
                 <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -96,11 +126,13 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
         </>
       )}
 
-      {/* Theme Customizer */}
-      <ThemeCustomizerTrigger onClick={() => setThemeCustomizerOpen(true)} />
       <ThemeCustomizer
+        key={customizerVersion}
         open={themeCustomizerOpen}
         onOpenChange={setThemeCustomizerOpen}
+        activeTab={customizerTab}
+        onTabChange={setCustomizerTab}
+        onResetAppearance={resetAppearance}
       />
     </SidebarProvider>
   )

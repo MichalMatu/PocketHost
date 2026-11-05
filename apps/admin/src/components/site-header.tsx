@@ -5,10 +5,18 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
-import { ModeToggle } from "@/components/mode-toggle"
+import { ModeToggle, type AppearanceTab } from "@/components/mode-toggle"
 import { getAppUrl } from "@/lib/utils"
 
-export function SiteHeader() {
+interface SiteHeaderProps {
+  onCustomize: (tab: AppearanceTab) => void
+  onResetAppearance: () => void
+}
+
+export function SiteHeader({
+  onCustomize,
+  onResetAppearance,
+}: SiteHeaderProps) {
   const [searchOpen, setSearchOpen] = React.useState(false)
 
   React.useEffect(() => {
@@ -51,7 +59,10 @@ export function SiteHeader() {
             >
               Landing Page
             </Button>
-            <ModeToggle />
+            <ModeToggle
+              onCustomize={onCustomize}
+              onResetAppearance={onResetAppearance}
+            />
           </div>
         </div>
       </header>

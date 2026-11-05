@@ -1,5 +1,5 @@
 // Main theme customizer exports
-export { ThemeCustomizer, ThemeCustomizerTrigger } from "./index"
+export { ThemeCustomizer } from "./index"
 
 // Individual component exports for flexibility
 export { ThemeTab } from "./theme-tab"

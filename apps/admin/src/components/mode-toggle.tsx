@@ -1,64 +1,85 @@
 "use client"
 
-import * as React from "react"
-import { Moon, Sun } from "lucide-react"
+import { Check, Layout, Monitor, Moon, Palette, RotateCcw, Sun } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/hooks/use-theme"
-import { useCircularTransition } from "@/hooks/use-circular-transition"
-import "./theme-customizer/circular-transition.css"
+
+export type AppearanceTab = "theme" | "layout"
 
 interface ModeToggleProps {
-  variant?: "outline" | "ghost" | "default"
+  onCustomize: (tab: AppearanceTab) => void
+  onResetAppearance: () => void
 }
 
-export function ModeToggle({ variant = "outline" }: ModeToggleProps) {
-  const { theme } = useTheme()
-  const { toggleTheme } = useCircularTransition()
-
-  // Simple, reliable dark mode detection with re-sync
-  const [isDarkMode, setIsDarkMode] = React.useState(false)
-
-  React.useEffect(() => {
-    const updateMode = () => {
-      if (theme === "dark") {
-        setIsDarkMode(true)
-      } else if (theme === "light") {
-        setIsDarkMode(false)
-      } else {
-        setIsDarkMode(window.matchMedia("(prefers-color-scheme: dark)").matches)
-      }
-    }
-
-    updateMode()
-
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
-    mediaQuery.addEventListener("change", updateMode)
-
-    return () => mediaQuery.removeEventListener("change", updateMode)
-  }, [theme])
-
-  const handleToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
-    toggleTheme(event)
-  }
+/** One header entry for theme mode, presets, layout and reset. */
+export function ModeToggle({
+  onCustomize,
+  onResetAppearance,
+}: ModeToggleProps) {
+  const { theme, setTheme } = useTheme()
 
   return (
-    <Button
-      variant={variant}
-      size="icon"
-      onClick={handleToggle}
-      className="cursor-pointer mode-toggle-button relative overflow-hidden"
-    >
-      {/* Show the icon for the mode you can switch TO */}
-      {isDarkMode ? (
-        <Sun className="size-[1.2rem] transition-transform duration-300 rotate-0 scale-100" />
-      ) : (
-        <Moon className="size-[1.2rem] transition-transform duration-300 rotate-0 scale-100" />
-      )}
-      <span className="sr-only">
-        Switch to {isDarkMode ? "light" : "dark"} mode
-      </span>
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button
+            variant="outline"
+            size="icon"
+            className="cursor-pointer"
+            aria-label="Appearance settings"
+            title="Appearance settings"
+          />
+        }
+      >
+        {theme === "dark" ? (
+          <Moon className="size-[1.2rem]" />
+        ) : theme === "light" ? (
+          <Sun className="size-[1.2rem]" />
+        ) : (
+          <Monitor className="size-[1.2rem]" />
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-52">
+        <DropdownMenuLabel>Appearance</DropdownMenuLabel>
+        <DropdownMenuItem onClick={() => setTheme("light")}>
+          <Sun />
+          Light
+          {theme === "light" && <Check className="ml-auto" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("dark")}>
+          <Moon />
+          Dark
+          {theme === "dark" && <Check className="ml-auto" />}
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => setTheme("system")}>
+          <Monitor />
+          System
+          {theme === "system" && <Check className="ml-auto" />}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => onCustomize("theme")}>
+          <Palette />
+          Colors & themes
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => onCustomize("layout")}>
+          <Layout />
+          Panel layout
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={onResetAppearance}>
+          <RotateCcw />
+          Reset appearance
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

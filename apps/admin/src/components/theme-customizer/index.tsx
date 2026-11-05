@@ -17,58 +17,37 @@ import { tweakcnThemes } from "@/config/theme-data"
 import { ThemeTab } from "./theme-tab"
 import { LayoutTab } from "./layout-tab"
 import { ImportModal } from "./import-modal"
-import { cn } from "@/lib/utils"
 import type { ImportedTheme } from "@/types/theme-customizer"
+import type { AppearanceTab } from "@/components/mode-toggle"
 
 interface ThemeCustomizerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  activeTab: AppearanceTab
+  onTabChange: (tab: AppearanceTab) => void
+  onResetAppearance: () => void
 }
 
-export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
+export function ThemeCustomizer({
+  open,
+  onOpenChange,
+  activeTab,
+  onTabChange,
+  onResetAppearance,
+}: ThemeCustomizerProps) {
   const {
     applyImportedTheme,
     isDarkMode,
-    resetTheme,
-    applyRadius,
-    setBrandColorsValues,
     applyTheme,
     applyTweakcnTheme,
   } = useThemeManager()
-  const { config: sidebarConfig, updateConfig: updateSidebarConfig } =
-    useSidebarConfig()
-
-  const [activeTab, setActiveTab] = React.useState("theme")
+  const { config: sidebarConfig } = useSidebarConfig()
   const [selectedTheme, setSelectedTheme] = React.useState("default")
   const [selectedTweakcnTheme, setSelectedTweakcnTheme] = React.useState("")
   const [selectedRadius, setSelectedRadius] = React.useState("0.5rem")
   const [importModalOpen, setImportModalOpen] = React.useState(false)
   const [importedTheme, setImportedTheme] =
     React.useState<ImportedTheme | null>(null)
-
-  const handleReset = () => {
-    // Complete reset to application defaults
-
-    // 1. Reset all state variables to initial values
-    setSelectedTheme("") // Clear theme selection after reset
-    setSelectedTweakcnTheme("")
-    setSelectedRadius("0.5rem")
-    setImportedTheme(null) // Clear imported theme
-    setBrandColorsValues({}) // Clear brand colors state
-
-    // 2. Completely remove all custom CSS variables
-    resetTheme()
-
-    // 3. Reset the radius to default
-    applyRadius("0.5rem")
-
-    // 4. Reset sidebar to defaults
-    updateSidebarConfig({
-      variant: "inset",
-      collapsible: "offcanvas",
-      side: "left",
-    })
-  }
 
   const handleImport = (themeData: ImportedTheme) => {
     setImportedTheme(themeData)
@@ -143,7 +122,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
                 <Button
                   variant="outline"
                   size="icon"
-                  onClick={handleReset}
+                  onClick={onResetAppearance}
                   className="cursor-pointer size-8"
                 >
                   <RotateCcw />
@@ -166,7 +145,7 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
           <div className="flex-1 overflow-y-auto">
             <Tabs
               value={activeTab}
-              onValueChange={setActiveTab}
+              onValueChange={(tab) => onTabChange(tab as AppearanceTab)}
               className="h-full flex flex-col"
             >
               <div className="py-2">
@@ -207,23 +186,5 @@ export function ThemeCustomizer({ open, onOpenChange }: ThemeCustomizerProps) {
         onImport={handleImport}
       />
     </>
-  )
-}
-
-// Floating trigger button - positioned dynamically based on sidebar side
-export function ThemeCustomizerTrigger({ onClick }: { onClick: () => void }) {
-  const { config: sidebarConfig } = useSidebarConfig()
-
-  return (
-    <Button
-      onClick={onClick}
-      size="icon"
-      className={cn(
-        "fixed top-1/2 -mt-6 size-12 rounded-full shadow-lg z-50 active:not-aria-[haspopup]:translate-y-0 bg-primary hover:bg-primary/90 text-primary-foreground cursor-pointer",
-        sidebarConfig.side === "left" ? "right-4" : "left-4"
-      )}
-    >
-      <Settings className="size-5" />
-    </Button>
   )
 }

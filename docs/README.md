@@ -39,3 +39,4 @@
 - [Read-only host overview P1 acceptance checkpoint](checkpoints/2026-11-05-host-overview-work-start.md)
 - [Host health P1.1 native acceptance checkpoint](checkpoints/2026-11-05-host-health-work-start.md)
 - [Commercial MIT template and UI cleanup](checkpoints/2026-11-05-commercial-template-cleanup.md)
+- [Header appearance menu integration](checkpoints/2026-11-05-appearance-header-menu.md)

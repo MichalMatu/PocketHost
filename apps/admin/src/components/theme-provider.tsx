@@ -23,20 +23,24 @@ export function ThemeProvider({
 
   React.useEffect(() => {
     const root = window.document.documentElement
+    const systemPreference = window.matchMedia("(prefers-color-scheme: dark)")
 
-    root.classList.remove("light", "dark")
-
-    if (theme === "system") {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-
-      root.classList.add(systemTheme)
-      return
+    const applySelectedMode = () => {
+      root.classList.remove("light", "dark")
+      root.classList.add(
+        theme === "system"
+          ? systemPreference.matches
+            ? "dark"
+            : "light"
+          : theme
+      )
     }
 
-    root.classList.add(theme)
+    applySelectedMode()
+    if (theme === "system") {
+      systemPreference.addEventListener("change", applySelectedMode)
+      return () => systemPreference.removeEventListener("change", applySelectedMode)
+    }
   }, [theme])
 
   const value = {
