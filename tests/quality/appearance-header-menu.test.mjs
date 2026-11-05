@@ -40,3 +40,10 @@ test('responsive viewport remains untouched and pinch zoom is enabled', () => {
   assert.match(html, /width=device-width/);
   assert.doesNotMatch(html, /user-scalable=no|maximum-scale=1/i);
 });
+
+test('Base UI appearance label is inside a menu group', () => {
+  const menu = file('mode-toggle.tsx');
+  assert.match(menu, /<DropdownMenuGroup>\s*<DropdownMenuLabel>Appearance<\/DropdownMenuLabel>/);
+  assert.match(menu, /<\/DropdownMenuGroup>\s*<DropdownMenuSeparator\s*\/>/);
+  assert.equal((menu.match(/<DropdownMenuLabel>/g) ?? []).length, (menu.match(/<DropdownMenuGroup>/g) ?? []).length);
+});
