@@ -19,14 +19,11 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
-import { SidebarNotification } from "@/components/sidebar-notification"
 
 import { NavMain } from "@/components/nav-main"
-import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
   SidebarContent,
-  SidebarFooter,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
@@ -34,11 +31,6 @@ import {
 } from "@/components/ui/sidebar"
 
 const data = {
-  user: {
-    name: "ShadcnStore",
-    email: "store@example.com",
-    avatar: "",
-  },
   navGroups: [
     {
       label: "PocketHost",
@@ -227,8 +219,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <Logo size={24} className="text-current" />
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">ShadcnStore</span>
-                <span className="truncate text-xs">Admin Dashboard</span>
+                <span className="truncate font-medium">PocketHost</span>
+                <span className="truncate text-xs">Local admin panel</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -239,10 +231,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <NavMain key={group.label} label={group.label} items={group.items} />
         ))}
       </SidebarContent>
-      <SidebarFooter>
-        <SidebarNotification />
-        <NavUser user={data.user} />
-      </SidebarFooter>
     </Sidebar>
   )
 }

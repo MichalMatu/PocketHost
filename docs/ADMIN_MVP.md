@@ -47,6 +47,14 @@ Do **not** assume these commands passed or the panel is running until actual Loc
 
 `feat/host-overview-v1` adds a separate PocketHost **Host overview** entry to the existing template: live read-only Termux services and runtime memory data. The original 32 upstream route entries remain untouched; no demo view was deleted or repurposed. This is a **development-only**, loopback-only status middleware and must not be treated as production-ready authentication or service control.
 
+## Commercial use and no upstream account
+
+The imported full Vite version is the free [ShadcnStore dashboard template](https://github.com/shadcnstore/shadcn-dashboard-landing-template), pinned at `866423741fa4b62d5e9427603cb2174aedf00f80`. Its preserved `apps/admin/LICENSE.upstream.md` grants MIT rights, including commercial end products, redistribution and modification **provided copyright and license notices are retained**. This statement applies to the imported MIT source; do not infer permission to use separate premium ShadcnStore materials.
+
+**PocketHost is self-hosted and requires no ShadcnStore account, subscription, token or license activation.** The provider's floating `Upgrade to Pro` button, sidebar advertisement, shop links and example customer profile are removed from the rendered app shell. Upstream auth/signup, billing, landing and pricing demo route source is retained for later reuse; demo screens are **not** connected to ShadcnStore identity, billing or authentication. Until PocketHost implements its own security controls, keep the development panel bound to loopback only and never expose it to the internet.
+
+The existing responsive CSS and Android pinch zoom settings remain unchanged. The only `index.html` changes are local PocketHost metadata and removal of upstream social/marketing metadata.
+
 ## Current status
 
 **Native demo and read-only host status are verified on physical Termux:** all 32 template screens retained, read-only `/host` added, P1.1 21/21 tests plus admin lint/build PASS and live GET/POST/Origin/Host checks PASS. The working local DEV preview remains `http://127.0.0.1:8787/host`. See [accepted P1 checkpoint](checkpoints/2026-11-05-host-overview-work-start.md) and [accepted P1.1 checkpoint](checkpoints/2026-11-05-host-health-work-start.md). **Full browser screenshot, pinch/zoom/a11y automation and root Gate 1 are still pending.**

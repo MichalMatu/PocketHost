@@ -8,7 +8,6 @@ import {
   ThemeCustomizer,
   ThemeCustomizerTrigger,
 } from "@/components/theme-customizer"
-import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 import { useSidebarConfig } from "@/hooks/use-sidebar-config"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
@@ -103,7 +102,6 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
         open={themeCustomizerOpen}
         onOpenChange={setThemeCustomizerOpen}
       />
-      <UpgradeToProButton />
     </SidebarProvider>
   )
 }

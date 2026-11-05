@@ -43,21 +43,6 @@ export function SiteHeader() {
               nativeButton={false}
               render={
                 <a
-                  href="https://shadcnstore.com/blocks"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                />
-              }
-            >
-              Blocks
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:flex"
-              nativeButton={false}
-              render={
-                <a
                   href={getAppUrl("/landing")}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -65,21 +50,6 @@ export function SiteHeader() {
               }
             >
               Landing Page
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:flex"
-              nativeButton={false}
-              render={
-                <a
-                  href="https://github.com/shadcnstore/shadcn-dashboard-landing-template"
-                  rel="noopener noreferrer"
-                  target="_blank"
-                />
-              }
-            >
-              GitHub
             </Button>
             <ModeToggle />
           </div>
