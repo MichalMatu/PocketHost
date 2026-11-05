@@ -7,7 +7,7 @@ purpose: Define staged delivery with phase gates
 
 # Development Plan
 
-## P0 — repository foundation (current)
+## P0 — repository foundation (Gate 0 passed on Termux)
 
 **Execution contract:** All PocketHost coding-command execution, dependency installation, compilation and validation run on Termux through the installed Local Agent (the existing host-command lane; no project binding required). The [fast-start runbook](LOCAL_AGENT_TERMUX.md) is the source for dispatch and evidence; no Mac/sandbox fallbacks.
 
@@ -19,7 +19,7 @@ Using Local Agent after permission and preflight, record sanitized existing serv
 
 ## P2 — local GUI
 
-Launch a desktop-first dashboard manually by CLI, ideally using a Termux-qualified subset of the ShadcnStore Vite React admin template, retaining browser-native pinch zoom on Android. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
+The **full** ShadcnStore Vite admin template (32 routes) has been imported and compiled on real Termux, and its demo UI was started manually on `127.0.0.1:8787`. Keep **all** screens and a desktop-first single React GUI with native browser pinch zoom enabled. This is a **P2 visual/demo milestone, not integrated host administration**. Complete P1 read-only inventory and a loopback-only typed API, then connect the existing screens to live but non-destructive data. **Exit:** user can inspect actual server data and no external service can be stopped or modified.
 
 ## P3 — PocketHost-owned server
 
@@ -35,4 +35,4 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 
 ## Blockers
 
-Before P1, obtain actual read-only Local Agent session capability and a verified host baseline. Do not infer host state from GitHub sources.
+Termux Local Agent host-command capability and a native UI compilation are verified. The full vendor source is committed locally on the phone but GitHub push remains blocked by lack of write credentials; transfer/publish via approved Git transport without sharing credentials or running code builds on Mac. Root Gate 1, true browser gesture/a11y acceptance, Android-agent boot endurance, and authenticated read-only host API are not yet accepted.

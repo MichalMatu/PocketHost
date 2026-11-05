@@ -23,6 +23,10 @@ purpose: Define mandatory foundation and future app quality checks
 
 `npm run check` adds `markdownlint-cli2`, Prettier, ESLint and TypeScript to Gate 0. `npm install` is needed to fetch dev dependencies; commit and validate a lockfile before application development. Ruff is deliberately absent because no Python application language is selected.
 
+## Admin template native evidence (2026-11-05)
+
+**Termux Local Agent receipt** `pockethost-ui-vendor-qa-build-preview-20261105-v5`: complete pinned upstream Vite source copied, 32 route entries retained, 14/14 foundation tests PASS, npm installed 435 packages, `npm run build` PASS, `npm run lint` PASS, and loopback Vite returned HTTP 200 on `/dashboard`. Owner confirmed the GUI works on the phone. This validates the upstream demo app only, **not** host-data integration or automated browser zoom, route clicks or screenshot tests. Root Gate 1 remains untested. Exact detailed evidence and Git publication status: [2026-11-05 admin checkpoint](checkpoints/2026-11-05-admin-shell-termux-checkpoint.md).
+
 ## Gate 2: feature code (future)
 
 - Tests for each module's contract, input validation, failures and security boundaries.
@@ -32,7 +36,7 @@ purpose: Define mandatory foundation and future app quality checks
 
 ## Planned UI and agentic coding quality gates
 
-After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with locked `maia` preset, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
+After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui from the **pinned ShadcnStore Base UI / `base-nova` source**, and `@shadcn/lint`. Do **not** mix the superseded `maia`/Radix preset with the adopted Base UI family. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
 
 UI gate requirements: forbid raw palette colors, arbitrary values, unapproved component restyling, inline style attributes and unreadable dynamic classes; enforce shared tokens, variants and component ownership. Supplement JSX lint with CSS checks, accessibility tests, responsive interactions and deterministic screenshot comparisons of a real supported phone browser/WebView. Confirm negative fixtures **fail the gate** before trusting it. Lint PASS alone is not visual PASS; Android screenshot automation requires separate device qualification.
 

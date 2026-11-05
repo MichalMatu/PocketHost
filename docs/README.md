@@ -35,3 +35,4 @@
 - [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
 - [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
 - [Tooling research checkpoint](checkpoints/2026-11-05-ui-tooling-research.md)
+- [Full admin shell: real Termux build and preview checkpoint](checkpoints/2026-11-05-admin-shell-termux-checkpoint.md)
