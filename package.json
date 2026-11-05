@@ -16,7 +16,7 @@
     "format:write": "prettier --write .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
+    "markdownlint": "markdownlint-cli2 \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/**/*.md\" \"src/**/AGENTS.md\" \"scripts/**/AGENTS.md\" \"tests/**/AGENTS.md\" \"apps/AGENTS.md\"",
     "test": "node --test tests/quality/*.test.mjs",
     "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck",
     "admin:import": "node scripts/import-shadcnstore.mjs",

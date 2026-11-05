@@ -19,6 +19,10 @@ purpose: Define mandatory foundation and future app quality checks
 - Valid local Markdown links and required `AGENTS.md` sections.
 - Intentional negative tests for missing, illegal and malformed structural artifacts.
 
+## Upstream preservation and scoped Markdown
+
+The root Markdown gate checks **PocketHost-owned** documentation and agent contracts only. It must not lint nested dependency trees or vendored `apps/admin` Markdown; the upstream MIT license and original template remain unchanged. The admin route-preservation tests enforce all 32 original paths plus the separate `/host` route, lazy module existence and an Android viewport without pinch-zoom suppression. These are static contracts, not substitutes for real Android browser interactions.
+
 ## Gate 1: formatting, lint, types and Markdown (tooling configured)
 
 `npm run check` adds `markdownlint-cli2`, Prettier, ESLint and TypeScript to Gate 0. `npm install` is needed to fetch dev dependencies; commit and validate a lockfile before application development. Ruff is deliberately absent because no Python application language is selected.
