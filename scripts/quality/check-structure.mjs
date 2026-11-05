@@ -63,12 +63,6 @@ export function validateStructure(root = repositoryRoot) {
           });
           if (!inSharedOrUi && !inRegisteredModule) errors.push(`Unexpected source location: ${rel}`);
         }
-        if (rel.startsWith('docs/') && !docsRoots.has(rel)) errors.push(`Unexpected documentation directory: ${rel}`);
-        if (rel.startsWith('src/') && !['src/ui', 'src/shared', 'src/modules'].includes(rel) &&
-          !/^src\/modules\/[a-z][a-z0-9-]*$/.test(rel)) errors.push(`Unexpected source directory: ${rel}`);
-        walk(path.join(dir, entry.name), rel);
-      } else if (entry.isFile()) {
-        ).test(rel)) errors.push(`Unexpected source location: ${rel}`);
         if (rel.startsWith('docs/') && !rel.endsWith('.md')) errors.push(`Unexpected documentation artifact: ${rel}`);
         if (rel.startsWith('scripts/') && !rel.endsWith('.mjs') && rel !== 'scripts/AGENTS.md') errors.push(`Unexpected script artifact: ${rel}`);
         if (rel.startsWith('tests/') && !/\.test\.mjs$/.test(rel) && rel !== 'tests/AGENTS.md') errors.push(`Unexpected test artifact: ${rel}`);
