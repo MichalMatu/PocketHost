@@ -27,11 +27,11 @@ Launch a desktop-first dashboard manually by CLI, ideally using the **entire** p
 
 **P2 appearance acceptance:** Header theme selector consolidates Light/Dark/System, colors, layout and reset. Removed floating cog. Initial Base UI menu-group runtime error was repaired in `0645ee2` and the owner confirmed the panel works. 31/31 latest native tests, app ESLint, build and guarded HTTP restart PASS. The latest independent Android UI interaction CDP test is pending because ADB was disconnected. See [full P0–P2 checkpoint](checkpoints/2026-11-05-pocket-host-full-checkpoint.md).
 
-**P3 prerequisite result:** native root Gate 1 and reproducible root lockfile PASS at exact \`93cba36b\` (receipt \`pockethost-root-gate1-published-native-20261105-v1\`). Actual Base UI interactions PASS in Termux jsdom at \`3563512\`. Both are integrated into a P3 candidate and require a fresh all-in-one gate on that candidate; Android Chrome acceptance is separate.
+**P3 prerequisite result:** native root Gate 1 and reproducible root lockfile PASS at exact `93cba36b` (receipt `pockethost-root-gate1-published-native-20261105-v1`). Actual Base UI interactions PASS in Termux jsdom at `3563512`. Both are integrated into a P3 candidate and require a fresh all-in-one gate on that candidate; Android Chrome acceptance is separate.
 
 ## P3 — PocketHost-owned server
 
-A single isolated owned demo server and controls are implemented in the candidate branch \`sprint/p3-mvp-integration-20261105\`, with mutations disabled by default and loopback port 18787. The candidate includes start/stop, logs, sample publish and rollback with negative ownership tests. **Exit remains pending:** exact integrated native gates and physical-browser controlled test without touching existing production applications. See [P3 integration candidate checkpoint](checkpoints/2026-11-05-p3-mvp-integration-candidate.md).
+A single isolated owned demo server and controls are implemented in the candidate branch `sprint/p3-mvp-integration-20261105`, with mutations disabled by default and loopback port 18787. The candidate includes start/stop, logs, sample publish and rollback with negative ownership tests. **Exit remains pending:** exact integrated native gates and physical-browser controlled test without touching existing production applications. See [P3 integration candidate checkpoint](checkpoints/2026-11-05-p3-mvp-integration-candidate.md).
 
 ## P4 — package catalog and assisted configuration
 

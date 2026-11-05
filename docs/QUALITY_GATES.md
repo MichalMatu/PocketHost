@@ -29,7 +29,7 @@ The root Markdown gate checks **PocketHost-owned** documentation and agent contr
 
 ## Admin app gate (once full template is imported)
 
-The pinned imported source belongs to `apps/admin` and preserves its original configuration. The root Prettier/ESLint gate excludes this vendored baseline, but the **mandatory additional native gate** runs `npm run admin:lint` and `npm run admin:build` from the PocketHost root (or the exact package-manager equivalent). All imported routes must remain present; no bypass by removing demo screens. Later edits to the app must be checked by its own linter, TypeScript build, token/style gates and browser acceptance. Full vendor import, native app build/lint, P1 read-only HTTP and P1.1 host-health app build/lint are proven on real Termux; root Gate 1 is now verified separately at \`93cba36b\`; the integrated P3 candidate needs a fresh run.
+The pinned imported source belongs to `apps/admin` and preserves its original configuration. The root Prettier/ESLint gate excludes this vendored baseline, but the **mandatory additional native gate** runs `npm run admin:lint` and `npm run admin:build` from the PocketHost root (or the exact package-manager equivalent). All imported routes must remain present; no bypass by removing demo screens. Later edits to the app must be checked by its own linter, TypeScript build, token/style gates and browser acceptance. Full vendor import, native app build/lint, P1 read-only HTTP and P1.1 host-health app build/lint are proven on real Termux; root Gate 1 is now verified separately at `93cba36b`; the integrated P3 candidate needs a fresh run.
 
 ## P1 host snapshot feature gate
 
@@ -43,7 +43,7 @@ The new development-only read-only host snapshot must pass native Termux unit te
 
 The `sprint/p1-closeout-20261105` cleanup has native Termux **26/26 tests, app lint and build PASS**, guarded live DEV preview HTTP security checks PASS and six real Android Chrome browser checks PASS. See [commercial UI checkpoint](checkpoints/2026-11-05-commercial-template-cleanup.md). The preserved source is explicitly MIT licensed. No Pro upsells, external provider account/profile or vendor shop links are rendered in the PocketHost shell.
 
-The separate full root Gate 1 was exercised on Termux. Its initial failure was caused by an overly broad Markdown glob scanning dependencies/vendor files. A narrowed owner-document glob passes **49 files, zero errors**. Root ESLint passes, but Prettier still identifies historical formatting drift, and the initial TypeScript run exposed missing Node declarations (addressed in the working branch but pending complete root Gate 1 retest and committed root lockfile). **This was the historical Gate 1 HOLD, subsequently resolved by the exact \`93cba36b\` native receipt.**
+The separate full root Gate 1 was exercised on Termux. Its initial failure was caused by an overly broad Markdown glob scanning dependencies/vendor files. A narrowed owner-document glob passes **49 files, zero errors**. Root ESLint passes, but Prettier still identifies historical formatting drift, and the initial TypeScript run exposed missing Node declarations (addressed in the working branch but pending complete root Gate 1 retest and committed root lockfile). **This was the historical Gate 1 HOLD, subsequently resolved by the exact `93cba36b` native receipt.**
 
 ## Latest P2 appearance regression and gate status
 

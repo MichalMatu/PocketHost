@@ -4,18 +4,19 @@ import {
   createOwnedSiteRuntime,
   SiteOwnershipError,
 } from '../../src/modules/runtime/owned-site-runtime.ts';
-import {
-  OWNED_DEMO_ID,
-} from '../../src/shared/owned-site.ts';
-import {
-  demoDocument,
-  assertOwnedDemoId,
-} from '../../src/modules/sites/owned-demo-spec.ts';
+import { OWNED_DEMO_ID } from '../../src/shared/owned-site.ts';
+import { demoDocument, assertOwnedDemoId } from '../../src/modules/sites/owned-demo-spec.ts';
 
 const absent = () => ({
-  version: 1, id: OWNED_DEMO_ID, ownership: 'none', state: 'absent',
-  port: 18787, url: 'http://127.0.0.1:18787/', contentVersion: null,
-  previousVersion: null, canRollback: false,
+  version: 1,
+  id: OWNED_DEMO_ID,
+  ownership: 'none',
+  state: 'absent',
+  port: 18787,
+  url: 'http://127.0.0.1:18787/',
+  contentVersion: null,
+  previousVersion: null,
+  canRollback: false,
 });
 
 function fixture() {
@@ -50,7 +51,13 @@ function fixture() {
     },
     readLogs: () => ['demo started', 'demo stopped'],
   };
-  return { runtime: createOwnedSiteRuntime(port), events, set: (s) => { state = s; } };
+  return {
+    runtime: createOwnedSiteRuntime(port),
+    events,
+    set: (s) => {
+      state = s;
+    },
+  };
 }
 
 test('external or nonexistent services cannot be started, stopped or published', async () => {

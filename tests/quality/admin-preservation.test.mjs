@@ -9,15 +9,38 @@ const routes = readFileSync(path.join(root, 'apps/admin/src/config/routes.tsx'),
 const html = readFileSync(path.join(root, 'apps/admin/index.html'), 'utf8');
 
 const originalPaths = [
-  '/', '/landing', '/dashboard', '/dashboard-2', '/mail', '/tasks', '/chat',
-  '/calendar', '/users', '/faqs', '/pricing',
-  '/auth/sign-in', '/auth/sign-in-2', '/auth/sign-in-3',
-  '/auth/sign-up', '/auth/sign-up-2', '/auth/sign-up-3',
-  '/auth/forgot-password', '/auth/forgot-password-2', '/auth/forgot-password-3',
-  '/errors/unauthorized', '/errors/forbidden', '/errors/not-found',
-  '/errors/internal-server-error', '/errors/under-maintenance',
-  '/settings/user', '/settings/account', '/settings/billing',
-  '/settings/appearance', '/settings/notifications', '/settings/connections', '*',
+  '/',
+  '/landing',
+  '/dashboard',
+  '/dashboard-2',
+  '/mail',
+  '/tasks',
+  '/chat',
+  '/calendar',
+  '/users',
+  '/faqs',
+  '/pricing',
+  '/auth/sign-in',
+  '/auth/sign-in-2',
+  '/auth/sign-in-3',
+  '/auth/sign-up',
+  '/auth/sign-up-2',
+  '/auth/sign-up-3',
+  '/auth/forgot-password',
+  '/auth/forgot-password-2',
+  '/auth/forgot-password-3',
+  '/errors/unauthorized',
+  '/errors/forbidden',
+  '/errors/not-found',
+  '/errors/internal-server-error',
+  '/errors/under-maintenance',
+  '/settings/user',
+  '/settings/account',
+  '/settings/billing',
+  '/settings/appearance',
+  '/settings/notifications',
+  '/settings/connections',
+  '*',
 ];
 
 test('full 32-route upstream admin shell remains available beside PocketHost host route', () => {
@@ -32,7 +55,10 @@ test('full 32-route upstream admin shell remains available beside PocketHost hos
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
   assert.equal(chunks.length, originalPaths.length + 1);
   for (const page of chunks) {
-    assert.ok(existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')), 'missing lazy page: ' + page);
+    assert.ok(
+      existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
+      'missing lazy page: ' + page,
+    );
   }
   assert.ok(existsSync(path.join(root, 'apps/admin/LICENSE.upstream.md')));
 });

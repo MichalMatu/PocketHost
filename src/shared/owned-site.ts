@@ -1,13 +1,13 @@
 /** P3: one narrowly scoped, explicitly created PocketHost instance. */
-export const OWNED_DEMO_ID = "pockethost-demo" as const;
+export const OWNED_DEMO_ID = 'pockethost-demo' as const;
 export type OwnedDemoId = typeof OWNED_DEMO_ID;
 export type DemoVersion = 1 | 2;
-export type DemoState = "absent" | "stopped" | "running" | "unknown";
+export type DemoState = 'absent' | 'stopped' | 'running' | 'unknown';
 
 export interface OwnedSiteSnapshot {
   version: 1;
   id: OwnedDemoId;
-  ownership: "none" | "pockethost";
+  ownership: 'none' | 'pockethost';
   state: DemoState;
   port: number;
   url: string;

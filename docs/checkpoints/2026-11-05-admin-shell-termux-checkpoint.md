@@ -11,7 +11,7 @@ purpose: Record the complete ShadcnStore admin UI native Termux MVP and exact ou
 
 - **Target:** Samsung Android Termux host `android-termux-10520`, installation `6be16f1d-194b-4f07-b377-3d4bb218fcd7`; project checkout separate at `~/Projects/PocketHost`. PocketHost has **no autostart**.
 - **UI:** complete upstream `shadcnstore/shadcn-dashboard-landing-template` **Vite** directory, upstream commit `866423741fa4b62d5e9427603cb2174aedf00f80`, MIT license retained. All **32 route entries** remain, including unused demo views; desktop-first React/Vite/shadcn Base UI with native browser pinch left enabled.
-- **User acceptance:** user confirmed the local dashboard GUI works. This is confirmation of the *visible demo*, not proof of working hosting controls.
+- **User acceptance:** user confirmed the local dashboard GUI works. This is confirmation of the _visible demo_, not proof of working hosting controls.
 
 ## On-device execution receipts
 
@@ -40,7 +40,7 @@ The Android Local Agent had stopped: private `runsvdir` absent even though the r
 - Admin authentication and network exposure: **not approved**; Vite preview restricted to `127.0.0.1:8787`.
 - Full root `npm run check` Gate 1: **not proven**. Browser-automation, zoom/pan, keyboard/mouse/accessibility screenshots: **not proven**, despite user's successful manual viewing.
 - Future APK/Capacitor, package operations, service management and AI hosting: **not implemented**.
-- No measured claim of IleStoi.pl health *after* this build, beyond its processes being excluded from PocketHost changes.
+- No measured claim of IleStoi.pl health _after_ this build, beyond its processes being excluded from PocketHost changes.
 
 ## Publication follow-up (same day)
 

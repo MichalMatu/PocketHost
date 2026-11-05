@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync, symlinkSync, appendFileSync } from 'node:fs';
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+  symlinkSync,
+  appendFileSync,
+} from 'node:fs';
 import { createServer } from 'node:net';
 import { OwnedDemoHost } from '../../src/modules/host/owned-site-host.ts';
 
@@ -36,7 +44,7 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     let response = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /First local site/);
-    assert.equal((await fetch(`http://127.0.0.1:${port}/etc\/passwd`)).status, 404);
+    assert.equal((await fetch(`http://127.0.0.1:${port}/etc/passwd`)).status, 404);
     assert.equal((await fetch(`http://127.0.0.1:${port}/`, { method: 'POST' })).status, 405);
     assert.equal(site.publish().contentVersion, 2);
     response = await fetch(`http://127.0.0.1:${port}/`);
@@ -60,7 +68,7 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
 
 test('occupied port is rejected without starting/stopping unrelated server', async () => {
   const { directory, root } = fixture();
-  const server = createServer((_request) => {});
+  const server = createServer();
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   const port = server.address().port;
   try {
@@ -84,7 +92,10 @@ test('forged or recycled PID is never terminated; mismatched instance fails clos
     const filename = path.join(root, 'pockethost-demo', '.pockethost-owner.json');
     const marker = JSON.parse(readFileSync(filename, 'utf8'));
     const stat = readFileSync(`/proc/${process.pid}/stat`, 'utf8');
-    const fields = stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/);
+    const fields = stat
+      .slice(stat.lastIndexOf(')') + 2)
+      .trim()
+      .split(/\s+/);
     marker.process = { pid: process.pid, startTicks: fields[19] };
     writeFileSync(filename, JSON.stringify(marker));
     assert.equal(site.inspect().state, 'unknown');

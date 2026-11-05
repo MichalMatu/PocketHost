@@ -1,16 +1,29 @@
-import { spawn } from "node:child_process";
+import { spawn } from 'node:child_process';
 import {
-  closeSync, copyFileSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync,
-  readFileSync, readSync, readlinkSync, realpathSync, renameSync, writeFileSync,
-} from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { randomUUID } from "node:crypto";
-import { createServer } from "node:net";
+  closeSync,
+  copyFileSync,
+  existsSync,
+  fstatSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readlinkSync,
+  realpathSync,
+  renameSync,
+  writeFileSync,
+} from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { createServer } from 'node:net';
 import {
   OWNED_DEMO_ID,
-  type DemoVersion, type OwnedSitePort, type OwnedSiteSnapshot,
-} from "../../shared/owned-site.ts";
+  type DemoVersion,
+  type OwnedSitePort,
+  type OwnedSiteSnapshot,
+} from '../../shared/owned-site.ts';
 
 /**
  * Fixed, private, developer-only single-site adapter.
@@ -18,14 +31,14 @@ import {
  * port, PID or shell command from an HTTP request.
  */
 const PORT = 18787;
-const SERVER_SCRIPT = path.resolve(import.meta.dirname, "owned-site-server.mjs");
-const MARKER_FILE = ".pockethost-owner.json";
+const SERVER_SCRIPT = path.resolve(import.meta.dirname, 'owned-site-server.mjs');
+const MARKER_FILE = '.pockethost-owner.json';
 const MAX_LOG_BYTES = 8192;
 
 interface Marker {
   schema: 1;
   id: typeof OWNED_DEMO_ID;
-  ownership: "pockethost";
+  ownership: 'pockethost';
   instance: string;
   port: number;
   contentVersion: DemoVersion;
@@ -36,21 +49,24 @@ interface Marker {
 function verifyPlainDirectory(folder: string): void {
   const stat = lstatSync(folder);
   if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(folder) !== folder) {
-    throw new Error("Refusing a noncanonical or linked PocketHost directory");
+    throw new Error('Refusing a noncanonical or linked PocketHost directory');
   }
 }
 
 function writeAtomic(folder: string, name: string, contents: string): void {
   const temp = path.join(folder, `.${randomUUID()}.tmp`);
-  writeFileSync(temp, contents, { mode: 0o600, flag: "wx" });
+  writeFileSync(temp, contents, { mode: 0o600, flag: 'wx' });
   renameSync(temp, path.join(folder, name));
 }
 
 function startTicks(pid: number): string | null {
   if (!Number.isSafeInteger(pid) || pid < 2) return null;
   try {
-    const raw = readFileSync(`/proc/${pid}/stat`, "utf8");
-    const fields = raw.slice(raw.lastIndexOf(")") + 2).trim().split(/\s+/);
+    const raw = readFileSync(`/proc/${pid}/stat`, 'utf8');
+    const fields = raw
+      .slice(raw.lastIndexOf(')') + 2)
+      .trim()
+      .split(/\s+/);
     const ticks = fields[19];
     return ticks && /^\d+$/.test(ticks) ? ticks : null;
   } catch {
@@ -67,11 +83,13 @@ function processIsOwned(marker: Marker, site: string): boolean {
   if (!p || startTicks(p.pid) !== p.startTicks) return false;
   try {
     const cwd = readlinkSync(`/proc/${p.pid}/cwd`);
-    const argv = readFileSync(`/proc/${p.pid}/cmdline`, "utf8");
-    return cwd === site &&
+    const argv = readFileSync(`/proc/${p.pid}/cmdline`, 'utf8');
+    return (
+      cwd === site &&
       argv.includes(SERVER_SCRIPT) &&
       argv.includes(marker.instance) &&
-      argv.includes(String(marker.port));
+      argv.includes(String(marker.port))
+    );
   } catch {
     return false;
   }
@@ -80,21 +98,21 @@ function processIsOwned(marker: Marker, site: string): boolean {
 async function availablePort(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const socket = createServer();
-    socket.once("error", () => resolve(false));
-    socket.listen(port, "127.0.0.1", () => socket.close(() => resolve(true)));
+    socket.once('error', () => resolve(false));
+    socket.listen(port, '127.0.0.1', () => socket.close(() => resolve(true)));
   });
 }
 
 function staticDocument(version: DemoVersion): string {
-  const label = version === 1 ? "First local site" : "Updated local site";
+  const label = version === 1 ? 'First local site' : 'Updated local site';
   return [
-    "<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\">",
+    '<!doctype html><html lang="en"><head><meta charset="UTF-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    "<title>PocketHost test site</title></head><body>",
+    '<title>PocketHost test site</title></head><body>',
     '<main style="font-family:system-ui;max-width:55ch;margin:15vh auto;padding:1rem">',
     `<h1>${label}</h1><p>PocketHost managed demo · v${version} · loopback only.</p></main>`,
-    "</body></html>",
-  ].join("\n");
+    '</body></html>',
+  ].join('\n');
 }
 
 export class OwnedDemoHost implements OwnedSitePort {
@@ -105,21 +123,22 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   constructor(root?: string, port = PORT) {
     const home = realpathSync(os.homedir());
-    const parent = path.join(home, "Projects");
+    const parent = path.join(home, 'Projects');
     // Runtime may set a fixture directory only through code, never through HTTP.
-    this.root = root ?? path.join(parent, "PocketHost-OwnedSites");
+    this.root = root ?? path.join(parent, 'PocketHost-OwnedSites');
     this.site = path.join(this.root, OWNED_DEMO_ID);
     if (!Number.isSafeInteger(port) || port < 1024 || port > 65535) {
-      throw new RangeError("Invalid dedicated demo port");
+      throw new RangeError('Invalid dedicated demo port');
     }
     this.port = port;
   }
 
-  private enqueueLifecycle(
-    action: () => Promise<OwnedSiteSnapshot>,
-  ): Promise<OwnedSiteSnapshot> {
+  private enqueueLifecycle(action: () => Promise<OwnedSiteSnapshot>): Promise<OwnedSiteSnapshot> {
     const result = this.lifecycleQueue.then(action, action);
-    this.lifecycleQueue = result.then(() => undefined, () => undefined);
+    this.lifecycleQueue = result.then(
+      () => undefined,
+      () => undefined,
+    );
     return result;
   }
 
@@ -132,43 +151,46 @@ export class OwnedDemoHost implements OwnedSitePort {
     verifyPlainDirectory(this.root);
     verifyPlainDirectory(this.site);
     const file = this.markerPath();
-    if (!existsSync(file)) throw new Error("Existing directory is not PocketHost-owned");
+    if (!existsSync(file)) throw new Error('Existing directory is not PocketHost-owned');
     const stat = lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Invalid ownership marker");
-    const data: unknown = JSON.parse(readFileSync(file, "utf8"));
-    if (!data || typeof data !== "object") throw new Error("Invalid ownership record");
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Invalid ownership marker');
+    const data: unknown = JSON.parse(readFileSync(file, 'utf8'));
+    if (!data || typeof data !== 'object') throw new Error('Invalid ownership record');
     const item = data as Marker;
-    if (item.schema !== 1 || item.id !== OWNED_DEMO_ID ||
-      item.ownership !== "pockethost" || item.port !== this.port ||
+    if (
+      item.schema !== 1 ||
+      item.id !== OWNED_DEMO_ID ||
+      item.ownership !== 'pockethost' ||
+      item.port !== this.port ||
       !/^[0-9a-f-]{36}$/.test(item.instance) ||
       (item.contentVersion !== 1 && item.contentVersion !== 2) ||
       (item.previousVersion !== null && item.previousVersion !== 1 && item.previousVersion !== 2) ||
-      (item.process !== null && (
-        !item.process ||
-        !Number.isSafeInteger(item.process.pid) ||
-        item.process.pid < 2 ||
-        typeof item.process.startTicks !== "string" ||
-        !/^\d+$/.test(item.process.startTicks)
-      ))) {
-      throw new Error("Ownership record failed validation");
+      (item.process !== null &&
+        (!item.process ||
+          !Number.isSafeInteger(item.process.pid) ||
+          item.process.pid < 2 ||
+          typeof item.process.startTicks !== 'string' ||
+          !/^\d+$/.test(item.process.startTicks)))
+    ) {
+      throw new Error('Ownership record failed validation');
     }
     return item;
   }
 
   private mustRead(): Marker {
     const item = this.read();
-    if (!item) throw new Error("Create a PocketHost-owned test site first");
+    if (!item) throw new Error('Create a PocketHost-owned test site first');
     return item;
   }
 
   private save(item: Marker): void {
-    writeAtomic(this.site, MARKER_FILE, JSON.stringify(item) + "\n");
+    writeAtomic(this.site, MARKER_FILE, JSON.stringify(item) + '\n');
   }
 
-  private status(item: Marker): OwnedSiteSnapshot["state"] {
-    if (!item.process) return "stopped";
-    if (processIsOwned(item, this.site)) return "running";
-    return processPresent(item.process.pid) ? "unknown" : "stopped";
+  private status(item: Marker): OwnedSiteSnapshot['state'] {
+    if (!item.process) return 'stopped';
+    if (processIsOwned(item, this.site)) return 'running';
+    return processPresent(item.process.pid) ? 'unknown' : 'stopped';
   }
 
   inspect(): OwnedSiteSnapshot {
@@ -176,8 +198,8 @@ export class OwnedDemoHost implements OwnedSitePort {
     return {
       version: 1,
       id: OWNED_DEMO_ID,
-      ownership: item ? "pockethost" : "none",
-      state: item ? this.status(item) : "absent",
+      ownership: item ? 'pockethost' : 'none',
+      state: item ? this.status(item) : 'absent',
       port: this.port,
       url: `http://127.0.0.1:${this.port}/`,
       contentVersion: item?.contentVersion ?? null,
@@ -194,14 +216,20 @@ export class OwnedDemoHost implements OwnedSitePort {
     verifyPlainDirectory(this.root);
     mkdirSync(this.site, { mode: 0o700 });
     verifyPlainDirectory(this.site);
-    writeFileSync(path.join(this.site, "index-v1.html"), staticDocument(1), {
-      mode: 0o600, flag: "wx",
+    writeFileSync(path.join(this.site, 'index-v1.html'), staticDocument(1), {
+      mode: 0o600,
+      flag: 'wx',
     });
-    copyFileSync(path.join(this.site, "index-v1.html"), path.join(this.site, "index.html"));
+    copyFileSync(path.join(this.site, 'index-v1.html'), path.join(this.site, 'index.html'));
     this.save({
-      schema: 1, id: OWNED_DEMO_ID, ownership: "pockethost",
-      instance: randomUUID(), port: this.port, contentVersion: 1,
-      previousVersion: null, process: null,
+      schema: 1,
+      id: OWNED_DEMO_ID,
+      ownership: 'pockethost',
+      instance: randomUUID(),
+      port: this.port,
+      contentVersion: 1,
+      previousVersion: null,
+      process: null,
     });
     return this.inspect();
   }
@@ -212,27 +240,29 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   private async startInternal(): Promise<OwnedSiteSnapshot> {
     const item = this.mustRead();
-    if (this.status(item) === "running") return this.inspect();
+    if (this.status(item) === 'running') return this.inspect();
     if (item.process && processPresent(item.process.pid)) {
-      throw new Error("Unverified process identity: fail closed without stopping anything");
+      throw new Error('Unverified process identity: fail closed without stopping anything');
     }
-    if (!(await availablePort(item.port))) throw new Error("Dedicated demo port already occupied");
+    if (!(await availablePort(item.port))) throw new Error('Dedicated demo port already occupied');
 
-    const log = openSync(path.join(this.site, "activity.log"), "a", 0o600);
+    const log = openSync(path.join(this.site, 'activity.log'), 'a', 0o600);
     let child;
     try {
       child = spawn(process.execPath, [SERVER_SCRIPT, String(item.port), item.instance], {
-        cwd: this.site, shell: false, detached: true,
-        env: { PATH: process.env.PATH ?? "", HOME: os.homedir() },
-        stdio: ["ignore", log, log],
+        cwd: this.site,
+        shell: false,
+        detached: true,
+        env: { PATH: process.env.PATH ?? '', HOME: os.homedir() },
+        stdio: ['ignore', log, log],
       });
     } finally {
       closeSync(log);
     }
-    child.on("error", () => {
+    child.on('error', () => {
       // Report startup failure to the caller without crashing the admin process.
     });
-    if (!child.pid) throw new Error("Failed to start owned test site");
+    if (!child.pid) throw new Error('Failed to start owned test site');
 
     let ticks: string | null = null;
     for (let i = 0; i < 30; i++) {
@@ -240,7 +270,7 @@ export class OwnedDemoHost implements OwnedSitePort {
       if (ticks) break;
       await new Promise((resolve) => setTimeout(resolve, 35));
     }
-    if (!ticks) throw new Error("Cannot verify new child process start time");
+    if (!ticks) throw new Error('Cannot verify new child process start time');
     item.process = { pid: child.pid, startTicks: ticks };
     this.save(item);
     child.unref();
@@ -251,7 +281,7 @@ export class OwnedDemoHost implements OwnedSitePort {
         const response = await fetch(`http://127.0.0.1:${item.port}/`, {
           signal: AbortSignal.timeout(500),
         });
-        if (response.ok && response.headers.get("x-pockethost-instance") === item.instance) {
+        if (response.ok && response.headers.get('x-pockethost-instance') === item.instance) {
           return this.inspect();
         }
       } catch {
@@ -265,7 +295,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     } catch {
       // Keep the marker for explicit diagnosis if safe cleanup is unavailable.
     }
-    throw new Error("Owned test site did not pass the ready check");
+    throw new Error('Owned test site did not pass the ready check');
   }
 
   stop(): Promise<OwnedSiteSnapshot> {
@@ -281,10 +311,10 @@ export class OwnedDemoHost implements OwnedSitePort {
       return this.inspect();
     }
     if (!processIsOwned(item, this.site)) {
-      throw new Error("Unverified process identity: stop denied");
+      throw new Error('Unverified process identity: stop denied');
     }
     // Kill only the exact verified PocketHost child; never kill a process group.
-    process.kill(item.process.pid, "SIGTERM");
+    process.kill(item.process.pid, 'SIGTERM');
     for (let i = 0; i < 35; i++) {
       if (!processIsOwned(item, this.site)) {
         item.process = null;
@@ -293,18 +323,18 @@ export class OwnedDemoHost implements OwnedSitePort {
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
-    throw new Error("Graceful stop timed out; no forced termination attempted");
+    throw new Error('Graceful stop timed out; no forced termination attempted');
   }
 
   publish(): OwnedSiteSnapshot {
     const item = this.mustRead();
-    if (this.status(item) === "unknown") throw new Error("Unverified process identity");
+    if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
     const target = item.contentVersion === 1 ? 2 : 1;
     const archive = path.join(this.site, `index-v${target}.html`);
     if (!existsSync(archive)) {
-      writeFileSync(archive, staticDocument(target), { flag: "wx", mode: 0o600 });
+      writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
     }
-    writeAtomic(this.site, "index.html", readFileSync(archive, "utf8"));
+    writeAtomic(this.site, 'index.html', readFileSync(archive, 'utf8'));
     item.previousVersion = item.contentVersion;
     item.contentVersion = target;
     this.save(item);
@@ -313,11 +343,11 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   rollback(): OwnedSiteSnapshot {
     const item = this.mustRead();
-    if (this.status(item) === "unknown") throw new Error("Unverified process identity");
-    if (item.previousVersion === null) throw new RangeError("No prior demo version");
+    if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
+    if (item.previousVersion === null) throw new RangeError('No prior demo version');
     const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
-    const html = readFileSync(archive, "utf8");
-    writeAtomic(this.site, "index.html", html);
+    const html = readFileSync(archive, 'utf8');
+    writeAtomic(this.site, 'index.html', html);
     const version = item.contentVersion;
     item.contentVersion = item.previousVersion;
     item.previousVersion = version;
@@ -327,21 +357,25 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   readLogs(): ReadonlyArray<string> {
     this.mustRead();
-    const log = path.join(this.site, "activity.log");
+    const log = path.join(this.site, 'activity.log');
     if (!existsSync(log)) return [];
     const stat = lstatSync(log);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Unsafe log location");
-    const fd = openSync(log, "r");
-    let text = "";
+    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe log location');
+    const fd = openSync(log, 'r');
+    let text = '';
     try {
       const size = fstatSync(fd).size;
       const count = Math.min(size, MAX_LOG_BYTES);
       const buffer = Buffer.alloc(count);
       readSync(fd, buffer, 0, count, size - count);
-      text = buffer.toString("utf8");
+      text = buffer.toString('utf8');
     } finally {
       closeSync(fd);
     }
-    return text.split("\n").filter(Boolean).slice(-25).map((line) => line.slice(0, 200));
+    return text
+      .split('\n')
+      .filter(Boolean)
+      .slice(-25)
+      .map((line) => line.slice(0, 200));
   }
 }
