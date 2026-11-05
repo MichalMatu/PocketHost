@@ -41,3 +41,4 @@
 - [Commercial MIT template and UI cleanup](checkpoints/2026-11-05-commercial-template-cleanup.md)
 - [Header appearance menu integration](checkpoints/2026-11-05-appearance-header-menu.md)
 - [Full P0–P2 checkpoint and quality review](checkpoints/2026-11-05-pocket-host-full-checkpoint.md)
+- [P3: owned single test site and native acceptance gates](checkpoints/2026-11-05-p3-owned-single-site.md)
