@@ -31,6 +31,8 @@ The pinned imported source belongs to `apps/admin` and preserves its original co
 
 The new development-only read-only host snapshot must pass native Termux unit tests and negative request checks: allowlist rejection, sanitized states, GET-only API, foreign-Origin rejection and no external service control. No assumptions about real host states from fixtures. See [host overview feature checkpoint](checkpoints/2026-11-05-host-overview-work-start.md).
 
+**Actual P1 acceptance:** see [Host overview P1 checkpoint](checkpoints/2026-11-05-host-overview-work-start.md) for on-phone 18/18 tests, lint/build PASS, HTTP 200 snapshot/dashboard/host, rejected POST/foreign Origin and independently verified IleStoi.pl `running`. No native browser automation was claimed.
+
 ## Gate 2: feature code (future)
 
 - Tests for each module's contract, input validation, failures and security boundaries.
