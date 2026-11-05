@@ -34,42 +34,57 @@ type Snapshot = {
 }
 
 const endpoint = "/api/v1/host/snapshot"
+const unavailableMessage = "Could not read Termux status. The admin demo remains available."
+
+async function requestHostSnapshot(signal?: AbortSignal): Promise<Snapshot> {
+  const response = await fetch(endpoint, {
+    method: "GET",
+    credentials: "omit",
+    cache: "no-store",
+    signal,
+  })
+  if (!response.ok) throw new Error("Snapshot service returned an error")
+  const data: Snapshot = await response.json()
+  if (data.version !== 1 || data.mode !== "read-only" || !Array.isArray(data.services)) {
+    throw new Error("Unexpected snapshot response")
+  }
+  return data
+}
 
 export default function HostOverview() {
   const [snapshot, setSnapshot] = React.useState<Snapshot | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
-  const refresh = React.useCallback(async (signal?: AbortSignal) => {
+  const refresh = async () => {
     setLoading(true)
     try {
-      const response = await fetch(endpoint, {
-        method: "GET",
-        credentials: "omit",
-        cache: "no-store",
-        signal,
-      })
-      if (!response.ok) throw new Error("Snapshot service returned an error")
-      const data: Snapshot = await response.json()
-      if (data.version !== 1 || data.mode !== "read-only" || !Array.isArray(data.services)) {
-        throw new Error("Unexpected snapshot response")
-      }
-      if (signal?.aborted) return
+      const data = await requestHostSnapshot()
       setSnapshot(data)
       setError(null)
     } catch {
-      if (signal?.aborted) return
-      setError("Could not read Termux status. The admin demo remains available.")
+      setError(unavailableMessage)
     } finally {
-      if (!signal?.aborted) setLoading(false)
+      setLoading(false)
     }
-  }, [])
+  }
 
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    void requestHostSnapshot(controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return
+        setSnapshot(data)
+        setError(null)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError(unavailableMessage)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
     return () => controller.abort()
-  }, [refresh])
+  }, [])
 
   return (
     <BaseLayout title="Host overview" description="Read-only status from this Android Termux installation">
