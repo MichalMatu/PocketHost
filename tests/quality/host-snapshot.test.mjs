@@ -1,6 +1,12 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { SERVICE_CATALOG, parseRunitStatus, probeServiceState, readHostSnapshot } from '../../src/modules/host/host-snapshot.ts';
+import {
+  SERVICE_CATALOG,
+  parseRunitStatus,
+  probeServiceState,
+  readStorageSnapshot,
+  readHostSnapshot,
+} from '../../src/modules/host/host-snapshot.ts';
 
 test('runit response normalization exposes only three statuses', () => {
   assert.equal(parseRunitStatus('run: /a/thing (pid 42) 10s'), 'running');
@@ -15,20 +21,50 @@ test('inspection allowlist rejects arbitrary service names without probing', () 
   assert.equal(calls, 0);
 });
 
-test('IleStoi status maps to fixed runit service; process detail is not exposed', () => {
+test('IleStoi status maps to fixed system runit service; raw PID is not exposed', () => {
   const names = [];
-  const state = probeServiceState('ilestoi', (name) => {
-    names.push(name);
+  const state = probeServiceState('ilestoi', (name, scope) => {
+    names.push([name, scope]);
     return 'run: /some/path (pid 987654) 100s';
   });
   assert.equal(state, 'running');
-  assert.deepEqual(names, ['wreckscanner']);
+  assert.deepEqual(names, [['wreckscanner', 'system']]);
 });
 
-test('snapshot includes only allowlisted externally owned services', () => {
+test('Local Agent status maps to private runit scope, not a system service', () => {
+  const probes = [];
+  const state = probeServiceState('local-agent', (name, scope) => {
+    probes.push([name, scope]);
+    return 'run: /private/runit (pid 123) 3s, normally down';
+  });
+  assert.equal(state, 'running');
+  assert.deepEqual(probes, [['termux-agent', 'local-agent']]);
+});
+
+test('storage probe returns bounded MiB counts without filesystem paths', () => {
+  const stats = readStorageSnapshot(() => ({
+    bsize: 4096n,
+    blocks: 1000000n,
+    bavail: 250000n,
+  }));
+  assert.deepEqual(stats, { totalMiB: 3906, availableMiB: 976 });
+  assert.deepEqual(Object.keys(stats).sort(), ['availableMiB', 'totalMiB']);
+});
+
+test('storage probe fails closed on missing permission, invalid and overflow stats', () => {
+  assert.equal(readStorageSnapshot(() => { throw new Error('permission denied'); }), null);
+  assert.equal(readStorageSnapshot(() => ({ bsize: -1n, blocks: 10n, bavail: 5n })), null);
+  assert.equal(readStorageSnapshot(() => ({ bsize: 4096n, blocks: 10n, bavail: 11n })), null);
+  assert.equal(readStorageSnapshot(() => ({
+    bsize: 999999999999999999n, blocks: 99999999999n, bavail: 10n,
+  })), null);
+});
+
+test('snapshot includes only allowlisted externally owned services and safe disk data', () => {
   const data = readHostSnapshot(
-    (id) => id === 'ilestoi' ? 'running' : 'unknown',
+    (id) => id === 'ilestoi' || id === 'local-agent' ? 'running' : 'unknown',
     () => '2026-11-05T12:00:00.000Z',
+    () => ({ totalMiB: 40000, availableMiB: 9000 }),
   );
   assert.equal(data.mode, 'read-only');
   assert.equal(data.platform, 'termux');
@@ -36,6 +72,9 @@ test('snapshot includes only allowlisted externally owned services', () => {
   assert.equal(data.services.length, SERVICE_CATALOG.length);
   assert.deepEqual(new Set(data.services.map((service) => service.ownership)), new Set(['external']));
   assert.equal(data.services.find((service) => service.id === 'ilestoi')?.state, 'running');
+  assert.equal(data.services.find((service) => service.id === 'local-agent')?.state, 'running');
+  assert.equal(data.runtime.storage?.availableMiB, 9000);
   assert.equal(JSON.stringify(data).includes('987654'), false);
   assert.equal(JSON.stringify(data).includes('secret'), false);
+  assert.equal(JSON.stringify(data).includes('private/runit'), false);
 });

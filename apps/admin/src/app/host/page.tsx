@@ -29,6 +29,7 @@ type Snapshot = {
     systemUptimeSeconds: number
     totalMemoryMiB: number
     freeMemoryMiB: number
+    storage: { totalMiB: number; availableMiB: number } | null
   }
   services: Service[]
 }
@@ -105,7 +106,7 @@ export default function HostOverview() {
         )}
         {snapshot && (
           <>
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
               <Card>
                 <CardHeader>
                   <CardDescription>Runtime</CardDescription>
@@ -129,6 +130,21 @@ export default function HostOverview() {
                 </CardHeader>
                 <CardContent className="text-muted-foreground">
                   of {snapshot.runtime.totalMemoryMiB.toLocaleString()} MiB
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <CardDescription>Termux storage available</CardDescription>
+                  <CardTitle>
+                    {snapshot.runtime.storage
+                      ? `${snapshot.runtime.storage.availableMiB.toLocaleString()} MiB`
+                      : "Unavailable"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-muted-foreground">
+                  {snapshot.runtime.storage
+                    ? `of ${snapshot.runtime.storage.totalMiB.toLocaleString()} MiB on home filesystem`
+                    : "Storage information could not be read"}
                 </CardContent>
               </Card>
             </div>

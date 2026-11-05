@@ -17,6 +17,8 @@ Create docs index, ADRs, owner module instructions, manifest-controlled layout, 
 
 Build and test the typed fixed-allowlist Termux host snapshot with `runit` service states for IleStoi.pl and surrounding external services. Integrate the new `/host` route into the existing full admin template while preserving all 32 upstream screens. The first endpoint is **GET-only and DEV-only** on loopback, with no external service control. **Exit (first vertical slice accepted):** on-device 18/18 tests, Vite build, lint and HTTP/API negative-method/origin checks PASS. The user confirms the panel looks good. Further read-only diagnostics, root Gate 1 and automated browser acceptance remain follow-up work.
 
+**Next read-only host-health slice:** add the separate Local Agent supervisor status and available Termux-home filesystem capacity, preserving the desktop-first UI and the existing manual refresh. Test both valid and unknown states and retain denial of service mutations.
+
 ## P2 — local GUI
 
 Launch a desktop-first dashboard manually by CLI, ideally using the **entire** pinned ShadcnStore Vite React admin template (all routes/screens retained initially), then adapting features in later sprints, retaining browser-native pinch zoom on Android. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
