@@ -22,14 +22,15 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside PocketHost host route', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 1);
+  assert.equal(allPaths.length, originalPaths.length + 2);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
   }
   assert.ok(allPaths.includes('/host'));
+  assert.ok(allPaths.includes('/owned-site'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length);
+  assert.equal(chunks.length, originalPaths.length + 1);
   for (const page of chunks) {
     assert.ok(existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')), 'missing lazy page: ' + page);
   }
