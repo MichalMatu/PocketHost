@@ -25,4 +25,4 @@ Sandbox Node 22 Gate 0: structure PASS, documentation PASS, module boundaries PA
 
 ## Next step
 
-Verify Gate 0 and publish the foundation. Then secure dependency resolution/lockfile, run Gate 1 and conduct an explicitly read-only Termux preflight before writing inventory code.
+Foundation published on `main`; complete dependency resolution and commit a verified lockfile, run Gate 1, then conduct an explicitly read-only Termux preflight before writing inventory code.
