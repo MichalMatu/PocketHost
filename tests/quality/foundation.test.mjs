@@ -64,6 +64,21 @@ test('docs reject a missing scoped agent section', (t) => {
   assert.match(validateDocs(root).join('\n'), /Missing agent section ## Gate: src\/ui\/AGENTS.md/);
 });
 
+test('docs preserve upstream admin license without applying project heading rules', (t) => {
+  const root = fixture(t);
+  const vendor = path.join(root, 'apps/admin');
+  mkdirSync(vendor, { recursive: true });
+  writeFileSync(path.join(vendor, 'LICENSE.upstream.md'), 'MIT License\n\nCopyright (c) upstream\n');
+  assert.deepEqual(validateDocs(root), []);
+});
+
+test('docs enforce agent instructions for the admin application boundary', (t) => {
+  const root = fixture(t);
+  const file = path.join(root, 'apps/AGENTS.md');
+  writeFileSync(file, '# Admin\n\n## Scope\n\n## Forbidden\n');
+  assert.match(validateDocs(root).join('\n'), /Missing agent section ## Gate: apps\/AGENTS.md/);
+});
+
 test('structure rejects TypeScript outside declared modules', (t) => {
   const root = fixture(t);
   writeFileSync(path.join(root, 'src/untracked.ts'), 'export const bad = true;');
