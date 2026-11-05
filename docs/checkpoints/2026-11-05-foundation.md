@@ -17,7 +17,7 @@ Docs, module policy files, manifest-based directory validation, documentation va
 
 ## Acceptance evidence
 
-Sandbox Node 22 Gate 0: structure PASS, documentation PASS and 9/9 tests PASS. Full Gate 1 is pending installation of npm dev dependencies and a resolved package lock; no claim of Gate 1 passing is permitted without execution.
+Sandbox Node 22 Gate 0: structure PASS, documentation PASS, module boundaries PASS and 12/12 tests PASS. Full Gate 1 is pending installation of npm dev dependencies and a resolved package lock; no claim of Gate 1 passing is permitted without execution.
 
 ## Open verification
 

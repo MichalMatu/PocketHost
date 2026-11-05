@@ -13,6 +13,7 @@
 ## Modules
 
 - [Inventory](modules/inventory.md)
+- [Host adapter](modules/host.md)
 - [Runtime](modules/runtime.md)
 - [Packages](modules/packages.md)
 - [Sites](modules/sites.md)

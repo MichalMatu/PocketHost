@@ -1,17 +1,62 @@
 {
-  "modules": ["inventory", "runtime", "packages", "sites", "config", "diagnostics", "ai"],
-  "rootDirectories": ["docs", "src", "scripts", "tests"],
-  "requiredFiles": [
-    "README.md", "AGENTS.md", "CONTRIBUTING.md", "SECURITY.md",
-    "project.structure.json", "package.json", "eslint.config.mjs", "tsconfig.json",
-    ".editorconfig", ".gitignore", ".prettierignore", ".prettierrc.json", ".markdownlint.jsonc",
-    "docs/README.md", "docs/AGENTS.md", "docs/PRODUCT.md", "docs/ARCHITECTURE.md",
-    "docs/MODULES.md", "docs/TERMUX_INTEGRATION.md", "docs/QUALITY_GATES.md",
-    "docs/SECURITY_MODEL.md", "docs/DEVELOPMENT_PLAN.md",
-    "src/AGENTS.md", "src/ui/AGENTS.md", "src/shared/AGENTS.md",
-    "scripts/AGENTS.md", "tests/AGENTS.md"
+  "modules": [
+    "inventory",
+    "host",
+    "runtime",
+    "packages",
+    "sites",
+    "config",
+    "diagnostics",
+    "ai"
   ],
-  "documentationDirectories": ["docs", "docs/adr", "docs/checkpoints", "docs/modules"],
+  "rootDirectories": [
+    "docs",
+    "src",
+    "scripts",
+    "tests"
+  ],
+  "requiredFiles": [
+    "README.md",
+    "AGENTS.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "project.structure.json",
+    "package.json",
+    "eslint.config.mjs",
+    "tsconfig.json",
+    ".editorconfig",
+    ".gitignore",
+    ".prettierignore",
+    ".prettierrc.json",
+    ".markdownlint.jsonc",
+    "docs/README.md",
+    "docs/AGENTS.md",
+    "docs/PRODUCT.md",
+    "docs/ARCHITECTURE.md",
+    "docs/MODULES.md",
+    "docs/TERMUX_INTEGRATION.md",
+    "docs/QUALITY_GATES.md",
+    "docs/SECURITY_MODEL.md",
+    "docs/DEVELOPMENT_PLAN.md",
+    "src/AGENTS.md",
+    "src/ui/AGENTS.md",
+    "src/shared/AGENTS.md",
+    "scripts/AGENTS.md",
+    "tests/AGENTS.md"
+  ],
+  "documentationDirectories": [
+    "docs",
+    "docs/adr",
+    "docs/checkpoints",
+    "docs/modules"
+  ],
   "moduleRoot": "src/modules",
-  "excludedDirectories": [".git", "node_modules", "dist", "build", "coverage", ".tmp"]
+  "excludedDirectories": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".tmp"
+  ]
 }

@@ -14,6 +14,7 @@ purpose: Define mandatory foundation and future app quality checks
 - Exact required foundation files and allowed top-level directories.
 - Explicit module inventory, dedicated module instructions and design documents.
 - No unapproved module directories or unexpected code placed outside declared boundaries.
+- Static cross-module import enforcement and exclusive host-adapter OS access.
 - Frontmatter (`status`, `owner`, `last_reviewed`, `purpose`) on governed docs; indexed module specifications.
 - Valid local Markdown links and required `AGENTS.md` sections.
 - Intentional negative tests for missing, illegal and malformed structural artifacts.

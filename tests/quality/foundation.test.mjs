@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import { validateStructure, repositoryRoot } from '../../scripts/quality/check-structure.mjs';
 import { validateDocs } from '../../scripts/quality/check-docs.mjs';
+import { validateBoundaries } from '../../scripts/quality/check-boundaries.mjs';
 
 function fixture(t) {
   const temp = mkdtempSync(path.join(tmpdir(), 'pockethost-quality-'));
@@ -67,4 +68,20 @@ test('structure rejects TypeScript outside declared modules', (t) => {
   const root = fixture(t);
   writeFileSync(path.join(root, 'src/untracked.ts'), 'export const bad = true;');
   assert.match(validateStructure(root).join('\n'), /Unexpected source location: src\/untracked.ts/);
+});
+
+test('foundation: module boundaries are valid', () => {
+  assert.deepEqual(validateBoundaries(), []);
+});
+
+test('boundaries reject importing another module implementation', (t) => {
+  const root = fixture(t);
+  writeFileSync(path.join(root, 'src/modules/inventory/probe.ts'), "import '../runtime/service';\n");
+  assert.match(validateBoundaries(root).join('\n'), /Cross-module import in modules\/inventory\/probe.ts/);
+});
+
+test('boundaries reject host I/O outside host adapter', (t) => {
+  const root = fixture(t);
+  writeFileSync(path.join(root, 'src/modules/inventory/probe.ts'), "import { execFile } from 'node:child_process';\n");
+  assert.match(validateBoundaries(root).join('\n'), /Host-only import in modules\/inventory\/probe.ts/);
 });

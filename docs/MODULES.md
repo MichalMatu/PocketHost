@@ -13,6 +13,7 @@ Every module owns a single capability, has its own `src/modules/<name>/AGENTS.md
 
 | Module | Role | Side effects in first milestone |
 | --- | --- | --- |
+| `host` | Single approved OS/process adapter | Read-only probes only |
 | `inventory` | Detect existing services and ports | None; read-only |
 | `runtime` | Start/stop PocketHost-owned server | Disabled until ownership model exists |
 | `packages` | Discover and eventually install allowlisted tools | Inventory only; installations disabled |
@@ -22,6 +23,10 @@ Every module owns a single capability, has its own `src/modules/<name>/AGENTS.md
 | `ai` | Future authenticated publish API | Entirely disabled |
 | `ui` | Local dashboard | No shell access |
 | `shared` | Type contracts and safe utilities | No host access |
+
+## Enforced import boundary
+
+No feature module may import another feature module's implementation. UI may import shared typed contracts, not module internals. Only `host` may import Node host I/O and process libraries. A dependency-free static boundary gate enforces these rules during foundation; a syntax-aware linter is planned for later development.
 
 ## Ownership model
 

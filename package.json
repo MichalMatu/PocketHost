@@ -4,16 +4,19 @@
   "private": true,
   "type": "module",
   "description": "PocketHost foundation, documentation and quality gates",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "check:structure": "node scripts/quality/check-structure.mjs",
     "check:docs": "node scripts/quality/check-docs.mjs",
-    "check:foundation": "npm run check:structure && npm run check:docs && npm test",
+    "check:boundaries": "node scripts/quality/check-boundaries.mjs",
+    "check:foundation": "npm run check:structure && npm run check:docs && npm run check:boundaries && npm test",
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "markdownlint": "markdownlint-cli2 \u0022**/*.md\u0022 \u0022#node_modules\u0022",
+    "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
     "test": "node --test tests/quality/*.test.mjs",
     "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck"
   },
