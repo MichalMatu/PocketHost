@@ -9,9 +9,17 @@ purpose: Set an enforceable design token and component style contract for the fu
 
 ## Selected direction
 
-Use **React + Vite + TypeScript**, Tailwind CSS v4 and **shadcn/ui** with a fixed **`maia`** preset, plus [`@shadcn/lint`](https://github.com/shadcn-ui/lint). This is a **design decision subject to native Termux qualification**, not installed application code. Prefer a local web/PWA dashboard opened manually by CLI, then consider a native APK wrapper later. Do not add Ubuntu, Docker, React Native or another Linux layer to build the initial UI.
+Use **React + Vite + TypeScript**, Tailwind CSS v4 and **shadcn/ui**, with **ShadcnStore Vite dashboard Base UI/base-nova** as the preferred reusable admin-shell candidate (subject to native Termux qualification), plus [`@shadcn/lint`](https://github.com/shadcn-ui/lint). This is a **design decision subject to native Termux qualification**, not installed application code. Prefer a local web/PWA dashboard opened manually by CLI, then consider a native APK wrapper later. Do not add Ubuntu, Docker, React Native or another Linux layer to build the initial UI.
 
-Upstream shadcn source lists `maia` as a supported named preset; a precise theme/base/color/font/radius/icon configuration must be resolved once and pinned in source. Never silently regenerate a different preset during agent iterations.
+The previously proposed `maia` preset is superseded in the preferred ShadcnStore route: ShadcnStore v2 uses Base UI/base-nova rather than the old Radix UI baseline. Pin a single source version, icon set, token inventory and component family after a real on-phone build. Do not mix incompatible variants or re-import unrelated demo screens. Preserve the upstream MIT notice for reused source.
+
+## Desktop-first layout and Android pinch zoom
+
+The owner selects a **desktop-first** dashboard with the same component code on desktop and Android. Reuse a ShadcnStore-style persistent sidebar, multi-column cards, tables, charts, settings and navigation rather than creating a separate mobile application. A reviewed minimum desktop content width with horizontal pan/scroll on a narrow Android screen is acceptable if all controls remain reachable.
+
+**Native browser pinch zoom must remain enabled.** Do not set `user-scalable=no`, limit `maximum-scale`, suppress global two-finger gestures or scale the entire app with a brittle CSS transform. Start with `width=device-width` and validate real phone viewport behavior. Optional fit-to-width is a separate, tested user mode, not a substitute for pinch zoom. Touch, mouse, keyboard, modal scrolling, charts and tables must behave correctly at different zoom levels.
+
+Desktop-first does not exempt mobile interaction accessibility: no invisible or clipped controls, adequate hit targets at usable zoom, reachable dialogs, readable forms and tested pan. Record Android-specific exceptions in baseline evidence.
 
 ## One token source
 
@@ -21,7 +29,7 @@ One DTCG-compatible JSON token inventory generates semantic CSS variables (using
 - Typography roles (heading, body, caption, tabular/monospace), controlled font stack, weight, size and line height.
 - One 4px-based spacing scale, icon sizing, border widths, radii, elevation, breakpoint and motion vocabulary.
 - Component variants and states: default, loading, disabled, focused, empty, error and confirmed/success.
-- A phone-first minimum interactive target size of **44 × 44 CSS pixels** as initial product rule; documented justified exceptions require review.
+- An initial minimum interactive target size of **44 × 44 CSS pixels** for critical controls where practical; documented exceptions require review.
 - Contrast and zoom accessibility checks against the rendered background, not assumptions about token names.
 
 Token values and generated CSS are pinned after initial accepted GUI fixture, before any feature screen. Components use semantic token names, **not direct palette names**.

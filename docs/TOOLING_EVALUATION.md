@@ -29,6 +29,14 @@ All PocketHost code/dependency/build/test execution runs on the existing Termux 
 
 Ruff is not appropriate for the TypeScript-first PocketHost application unless Python source is introduced.
 
+## Reusable admin dashboards versus full CMS
+
+The uploaded reference resembles [ShadcnStore's MIT-licensed React/Vite dashboard](https://github.com/shadcnstore/shadcn-dashboard-landing-template). This is an **admin UI template**, not a CMS. It provides a sidebar, navigation, tables, charts, forms, settings, dashboards and component structure. Prefer auditing/reusing the Vite version, not bringing in its entire demo/landing feature set. Its v2 release uses Base UI/base-nova; do not combine blindly with the previously proposed maia/Radix variant. Keep exact upstream attribution and license.
+
+Alternatives: [official shadcn dashboard-01](https://ui.shadcn.com/blocks) for a smaller shell, [shadcn-admin](https://github.com/satnaing/shadcn-admin) for a different Vite dashboard, and [Refine](https://github.com/refinedev/refine) only when many generic data CRUD workflows justify another framework layer.
+
+CMS platforms such as [Payload](https://github.com/payloadcms/payload), [Strapi](https://github.com/strapi/strapi) and [Directus](https://github.com/directus/directus) manage content collections, not Termux processes, packages or ownership. They introduce databases, additional services and potential native build or Docker/runtime dependencies. Do **not** adopt a CMS as PocketHost's control plane; a per-website CMS can be optional later. No CMS compatibility with Android/Termux has been qualified.
+
 ## Findings: OpenVisio
 
 OpenVisio is a real open-source project (different from Intel OpenVINO). The npm CLI + MCP server indexes symbols, imports and call graphs with tree-sitter, exports a code graph and provides a ranked repository skeleton. Upstream's `mcp/README.md` states **Node >=18.17**. Its `core/package.json` depends on `lmdb` and `web-tree-sitter`; LMDB includes native bindings. Android/Termux support and prebuilt binary availability were **not verified** on the actual device. An isolated native install/build is needed before using it as a gate; do not block early MVP on OpenVisio.

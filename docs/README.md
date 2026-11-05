@@ -11,6 +11,7 @@
 - [Quality gates](QUALITY_GATES.md)
 - [Agentic tooling evaluation and Termux compatibility](TOOLING_EVALUATION.md)
 - [Design-system and UI consistency contract](DESIGN_SYSTEM.md)
+- [Desktop-first admin shell and CMS decision](adr/0005-desktop-first-admin-shell.md)
 - [Development plan](DEVELOPMENT_PLAN.md)
 
 ## Modules
@@ -30,6 +31,7 @@
 - [ADR-0002: Keep Termux upstream](adr/0002-upstream-termux.md)
 - [ADR-0003: Termux Local Agent only](adr/0003-termux-local-agent-execution.md)
 - [ADR-0004: GUI design system and anti-drift gates](adr/0004-ui-design-system-quality.md)
+- [ADR-0005: Desktop-first admin shell, CMS deferred](adr/0005-desktop-first-admin-shell.md)
 - [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
 - [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
 - [Tooling research checkpoint](checkpoints/2026-11-05-ui-tooling-research.md)

@@ -13,7 +13,7 @@ AI-written interfaces drift when each screen invents new colors, dimensions, com
 
 ## Decision
 
-Choose React/Vite/TypeScript, Tailwind v4, shadcn/ui `maia` preset, versioned semantic design tokens, Style Dictionary token compilation, and `@shadcn/lint` enforced through ESLint. Add CSS token lint, negative tests, responsive/a11y checks and **real** on-phone screenshot baselines after a supported browser harness is established. Tools remain **proposed pending Termux qualification**, not installed, tested or accepted. OpenVisio is optional code-intelligence tooling and must not block MVP or require project binding.
+Choose React/Vite/TypeScript, Tailwind v4, shadcn/ui with a single pinned component style; the earlier maia proposal is superseded for the preferred Base UI/base-nova ShadcnStore shell by ADR-0005, versioned semantic design tokens, Style Dictionary token compilation, and `@shadcn/lint` enforced through ESLint. Add CSS token lint, negative tests, responsive/a11y checks and **real** on-phone screenshot baselines after a supported browser harness is established. Tools remain **proposed pending Termux qualification**, not installed, tested or accepted. OpenVisio is optional code-intelligence tooling and must not block MVP or require project binding.
 
 ## Consequences
 
