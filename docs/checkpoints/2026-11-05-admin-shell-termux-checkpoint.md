@@ -42,6 +42,12 @@ The Android Local Agent had stopped: private `runsvdir` absent even though the r
 - Future APK/Capacitor, package operations, service management and AI hosting: **not implemented**.
 - No measured claim of IleStoi.pl health *after* this build, beyond its processes being excluded from PocketHost changes.
 
+## Publication follow-up (same day)
+
+After the above historical checkpoint was written, the **262-file upstream UI commit was successfully transferred** from Termux via the existing Mac→Termux SSH profile and published to GitHub `feat/admin-shell-v1`, exact tip `1f00063efb9922e6251727fcd053c38f6bf06d90`. The durable `local-agent` Mac-host result `pockethost-vendor-git-transfer-mac-20261105-v1` reports authenticated Git transport only: 5,434,564-byte verified bundle, exact source parent match, 262 imported files including MIT notice, non-force push PASS and subsequent remote SHA match. No PocketHost tests, npm or build were executed on Mac.
+
+The next isolated development branch `feat/host-overview-v1` contains a fixed-allowlist, read-only `/host` status screen and DEV-only host snapshot middleware. This source remains under **native Termux qualification**, separate from the accepted demo UI.
+
 ## Next isolated sprint
 
 1. Securely publish the complete source from the phone to GitHub (without changing phone's global Git credentials or executing PocketHost tests on Mac); verify remote tree contains 262 imported files and license.
