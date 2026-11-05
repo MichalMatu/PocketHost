@@ -9,7 +9,7 @@ purpose: Record native P1.1 Local Agent and disk-status acceptance on Android Te
 
 ## Source and boundaries
 
-Feature `feat/host-health-v1` code commit `58f82e7c9ec6da09aad1207c1244da6d0f01d640`, based on the accepted P1 read-only `/host` integration. Preserves **all 32** original ShadcnStore pages and the same desktop-first UI, cards and manual refresh. One additional card shows storage available on the filesystem containing the Termux home directory, or *Unavailable* on probe failure. One new service entry shows the separate **Termux Local Agent** `runit` supervisor status.
+Feature `feat/host-health-v1` code commit `58f82e7c9ec6da09aad1207c1244da6d0f01d640`, based on the accepted P1 read-only `/host` integration. Preserves **all 32** original ShadcnStore pages and the same desktop-first UI, cards and manual refresh. One additional card shows storage available on the filesystem containing the Termux home directory, or _Unavailable_ on probe failure. One new service entry shows the separate **Termux Local Agent** `runit` supervisor status.
 
 No service controls, new admin ports, boot changes, arbitrary shell commands, path exposure or externally owned-service mutations were added. The API remains **DEV-only and loopback-only** on `127.0.0.1:8787`; production administration/authentication and automated mobile UI acceptance remain separate future gates.
 

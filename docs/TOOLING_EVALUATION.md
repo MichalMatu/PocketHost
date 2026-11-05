@@ -13,19 +13,19 @@ All PocketHost code/dependency/build/test execution runs on the existing Termux 
 
 ## Recommended layers (adoption is conditional)
 
-| Phase | Candidate and source | Purpose | Status |
-| --- | --- | --- | --- |
-| P0 | [TypeScript](https://github.com/microsoft/TypeScript), [ESLint](https://github.com/eslint/eslint), [Prettier](https://github.com/prettier/prettier) | Type, lint and formatting gates | Configured; full native check pending |
-| P0 | [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2), repo custom checks | Markdown links, structure, module architecture | Configured; current native receipt pending |
-| P1 | [Vitest](https://github.com/vitest-dev/vitest) | Typed module and fake host-adapter tests | Proposed; require native Vite compatibility |
-| P1 | [Knip](https://github.com/webpro-nl/knip) | Detect dead files, exports and dependencies | Proposed |
+| Phase  | Candidate and source                                                                                                                                            | Purpose                                                     | Status                                           |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------------------ |
+| P0     | [TypeScript](https://github.com/microsoft/TypeScript), [ESLint](https://github.com/eslint/eslint), [Prettier](https://github.com/prettier/prettier)             | Type, lint and formatting gates                             | Configured; full native check pending            |
+| P0     | [markdownlint-cli2](https://github.com/DavidAnson/markdownlint-cli2), repo custom checks                                                                        | Markdown links, structure, module architecture              | Configured; current native receipt pending       |
+| P1     | [Vitest](https://github.com/vitest-dev/vitest)                                                                                                                  | Typed module and fake host-adapter tests                    | Proposed; require native Vite compatibility      |
+| P1     | [Knip](https://github.com/webpro-nl/knip)                                                                                                                       | Detect dead files, exports and dependencies                 | Proposed                                         |
 | P1 GUI | [shadcn/ui](https://github.com/shadcn-ui/ui), [Tailwind CSS](https://github.com/tailwindlabs/tailwindcss) v4, [@shadcn/lint](https://github.com/shadcn-ui/lint) | Reuse fixed components, enforce styling and token contracts | Selected direction; native install/build pending |
-| P1 GUI | [Style Dictionary](https://github.com/style-dictionary/style-dictionary) + [DTCG token schema](https://github.com/design-tokens/community-group) | Generate CSS variables from single token source | Proposed |
-| P1 GUI | [Stylelint](https://github.com/stylelint/stylelint) + project CSS token policies | Catch direct CSS deviations missed by JSX lint | Proposed |
-| P1 GUI | [axe-core](https://github.com/dequelabs/axe-core) | Browser accessibility audit | Requires compatible on-device browser driver |
-| P2 | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser) | Advanced dependency boundaries | Optional after existing gates |
-| P2 | [Storybook](https://github.com/storybookjs/storybook) | Component/variant state gallery | Optional; memory and bundle weight |
-| P2 | [OpenVisio](https://github.com/syntaxPriest/openvisio-oss) | Local agent code graph and ranked context | Optional; **Termux compatibility unverified** |
+| P1 GUI | [Style Dictionary](https://github.com/style-dictionary/style-dictionary) + [DTCG token schema](https://github.com/design-tokens/community-group)                | Generate CSS variables from single token source             | Proposed                                         |
+| P1 GUI | [Stylelint](https://github.com/stylelint/stylelint) + project CSS token policies                                                                                | Catch direct CSS deviations missed by JSX lint              | Proposed                                         |
+| P1 GUI | [axe-core](https://github.com/dequelabs/axe-core)                                                                                                               | Browser accessibility audit                                 | Requires compatible on-device browser driver     |
+| P2     | [dependency-cruiser](https://github.com/sverweij/dependency-cruiser)                                                                                            | Advanced dependency boundaries                              | Optional after existing gates                    |
+| P2     | [Storybook](https://github.com/storybookjs/storybook)                                                                                                           | Component/variant state gallery                             | Optional; memory and bundle weight               |
+| P2     | [OpenVisio](https://github.com/syntaxPriest/openvisio-oss)                                                                                                      | Local agent code graph and ranked context                   | Optional; **Termux compatibility unverified**    |
 
 Ruff is not appropriate for the TypeScript-first PocketHost application unless Python source is introduced.
 

@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import { cpSync, mkdtempSync, rmSync, unlinkSync, writeFileSync, readFileSync, mkdirSync } from 'node:fs';
+import {
+  cpSync,
+  mkdtempSync,
+  rmSync,
+  unlinkSync,
+  writeFileSync,
+  readFileSync,
+  mkdirSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -11,7 +19,8 @@ function fixture(t) {
   const temp = mkdtempSync(path.join(tmpdir(), 'pockethost-quality-'));
   cpSync(repositoryRoot, temp, {
     recursive: true,
-    filter: (source) => !source.split(path.sep).some((name) => ['node_modules', '.git', '.tmp'].includes(name)),
+    filter: (source) =>
+      !source.split(path.sep).some((name) => ['node_modules', '.git', '.tmp'].includes(name)),
   });
   t.after(() => rmSync(temp, { recursive: true, force: true }));
   return temp;
@@ -28,7 +37,10 @@ test('foundation: valid project documentation', () => {
 test('structure rejects missing module agent policy', (t) => {
   const root = fixture(t);
   unlinkSync(path.join(root, 'src/modules/inventory/AGENTS.md'));
-  assert.match(validateStructure(root).join('\n'), /Missing required file: src\/modules\/inventory\/AGENTS.md/);
+  assert.match(
+    validateStructure(root).join('\n'),
+    /Missing required file: src\/modules\/inventory\/AGENTS.md/,
+  );
 });
 
 test('structure rejects unregistered module', (t) => {
@@ -40,7 +52,10 @@ test('structure rejects unregistered module', (t) => {
 test('structure rejects source artifacts in the wrong directory', (t) => {
   const root = fixture(t);
   writeFileSync(path.join(root, 'src/untracked.txt'), 'not allowed');
-  assert.match(validateStructure(root).join('\n'), /Unsupported source artifact: src\/untracked.txt/);
+  assert.match(
+    validateStructure(root).join('\n'),
+    /Unsupported source artifact: src\/untracked.txt/,
+  );
 });
 
 test('docs reject missing frontmatter', (t) => {
@@ -68,7 +83,10 @@ test('docs preserve upstream admin license without applying project heading rule
   const root = fixture(t);
   const vendor = path.join(root, 'apps/admin');
   mkdirSync(vendor, { recursive: true });
-  writeFileSync(path.join(vendor, 'LICENSE.upstream.md'), 'MIT License\n\nCopyright (c) upstream\n');
+  writeFileSync(
+    path.join(vendor, 'LICENSE.upstream.md'),
+    'MIT License\n\nCopyright (c) upstream\n',
+  );
   assert.deepEqual(validateDocs(root), []);
 });
 
@@ -91,12 +109,24 @@ test('foundation: module boundaries are valid', () => {
 
 test('boundaries reject importing another module implementation', (t) => {
   const root = fixture(t);
-  writeFileSync(path.join(root, 'src/modules/inventory/probe.ts'), "import '../runtime/service';\n");
-  assert.match(validateBoundaries(root).join('\n'), /Cross-module import in modules\/inventory\/probe.ts/);
+  writeFileSync(
+    path.join(root, 'src/modules/inventory/probe.ts'),
+    "import '../runtime/service';\n",
+  );
+  assert.match(
+    validateBoundaries(root).join('\n'),
+    /Cross-module import in modules\/inventory\/probe.ts/,
+  );
 });
 
 test('boundaries reject host I/O outside host adapter', (t) => {
   const root = fixture(t);
-  writeFileSync(path.join(root, 'src/modules/inventory/probe.ts'), "import { execFile } from 'node:child_process';\n");
-  assert.match(validateBoundaries(root).join('\n'), /Host-only import in modules\/inventory\/probe.ts/);
+  writeFileSync(
+    path.join(root, 'src/modules/inventory/probe.ts'),
+    "import { execFile } from 'node:child_process';\n",
+  );
+  assert.match(
+    validateBoundaries(root).join('\n'),
+    /Host-only import in modules\/inventory\/probe.ts/,
+  );
 });

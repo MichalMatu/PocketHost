@@ -20,8 +20,14 @@ test('layout has no floating theme settings trigger and keeps one header control
 
 test('one header menu offers light, dark, system, theme settings, layout and reset', () => {
   const menu = file('mode-toggle.tsx');
-  for (const action of ['setTheme("light")', 'setTheme("dark")', 'setTheme("system")',
-    'onCustomize("theme")', 'onCustomize("layout")', 'onResetAppearance']) {
+  for (const action of [
+    'setTheme("light")',
+    'setTheme("dark")',
+    'setTheme("system")',
+    'onCustomize("theme")',
+    'onCustomize("layout")',
+    'onResetAppearance',
+  ]) {
     assert.ok(menu.includes(action), 'missing menu action ' + action);
   }
   assert.match(menu, /aria-label="Appearance settings"/);
@@ -45,5 +51,8 @@ test('Base UI appearance label is inside a menu group', () => {
   const menu = file('mode-toggle.tsx');
   assert.match(menu, /<DropdownMenuGroup>\s*<DropdownMenuLabel>Appearance<\/DropdownMenuLabel>/);
   assert.match(menu, /<\/DropdownMenuGroup>\s*<DropdownMenuSeparator\s*\/>/);
-  assert.equal((menu.match(/<DropdownMenuLabel>/g) ?? []).length, (menu.match(/<DropdownMenuGroup>/g) ?? []).length);
+  assert.equal(
+    (menu.match(/<DropdownMenuLabel>/g) ?? []).length,
+    (menu.match(/<DropdownMenuGroup>/g) ?? []).length,
+  );
 });

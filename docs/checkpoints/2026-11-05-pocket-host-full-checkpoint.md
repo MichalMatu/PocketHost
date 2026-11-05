@@ -17,15 +17,15 @@ The appearance UX is consolidated into **one top-right menu**: Light, Dark, Syst
 
 ## Architecture and capabilities present
 
-| Area | Delivered | Boundary |
-| --- | --- | --- |
-| P0 foundation | Typed module boundaries, owner instructions, quality scripts, ADRs, docs, tests | Not a host daemon or independent deployment |
-| Full UI shell | Complete preserved 32-route React/Vite/TypeScript, Base UI/shadcn components, charts/forms/settings, responsive layout | Most routes still show upstream demonstration content |
-| PocketHost `/host` | Read-only live health snapshot, uptime/memory, six fixed runit service states, storage total/available | Fixed allowlist only; no arbitrary process scanning, no secret or path exposure |
-| Local Agent | Separate private `runit` supervisor state visible as an external service | Monitoring only; PocketHost cannot restart Agent |
-| UI appearance | Unified header dropdown, theme presets, layout sheet, reset, responsive Android/pinch | Most recent interactive UI acceptance: owner, not automated Chrome CDP |
-| Commercial UI | PocketHost branding; original MIT notice retained; no ShadcnStore signup or Pro requirement | Imported source only, not separately sold premium add-ons |
-| API | DEV-only `GET /api/v1/host/snapshot` on loopback, response sanitization, origin/host/method rejection | No production auth, WAN control plane, TLS or service-management API |
+| Area               | Delivered                                                                                                              | Boundary                                                                        |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| P0 foundation      | Typed module boundaries, owner instructions, quality scripts, ADRs, docs, tests                                        | Not a host daemon or independent deployment                                     |
+| Full UI shell      | Complete preserved 32-route React/Vite/TypeScript, Base UI/shadcn components, charts/forms/settings, responsive layout | Most routes still show upstream demonstration content                           |
+| PocketHost `/host` | Read-only live health snapshot, uptime/memory, six fixed runit service states, storage total/available                 | Fixed allowlist only; no arbitrary process scanning, no secret or path exposure |
+| Local Agent        | Separate private `runit` supervisor state visible as an external service                                               | Monitoring only; PocketHost cannot restart Agent                                |
+| UI appearance      | Unified header dropdown, theme presets, layout sheet, reset, responsive Android/pinch                                  | Most recent interactive UI acceptance: owner, not automated Chrome CDP          |
+| Commercial UI      | PocketHost branding; original MIT notice retained; no ShadcnStore signup or Pro requirement                            | Imported source only, not separately sold premium add-ons                       |
+| API                | DEV-only `GET /api/v1/host/snapshot` on loopback, response sanitization, origin/host/method rejection                  | No production auth, WAN control plane, TLS or service-management API            |
 
 **Explicitly not implemented:** PocketHost-owned service lifecycle/registry, own site deployment, package installation through the UI, domain/DNS setup, AI publishing, public remote administration, multi-tenant auth, productionized service process, Android APK or PocketHost autostart. External services including IleStoi.pl and Local Agent remain outside PocketHost ownership and management.
 
@@ -39,17 +39,17 @@ The appearance UX is consolidated into **one top-right menu**: Light, Dark, Syst
 
 ## Quality and real-hardware evidence
 
-| Gate | Observed outcome | Evidence |
-| --- | --- | --- |
-| Foundation Gate 0, latest Base UI fix | **PASS — 31/31** native Termux tests; boundary, docs, negative host cases and new menu-group regression | `pockethost-appearance-menugroup-fix-native-20261105-v1` |
-| Admin ESLint, latest fix | **PASS** on native Termux | Same task |
-| Admin TS/Vite build, latest fix | **PASS** on native Termux | Same task |
-| Guarded live preview restart | **PASS**, exact source `0645ee2`, PocketHost-owned prior process verified; rollback provisioned | `pockethost-menugroup-guarded-restart-20261105-v1` |
-| Live HTTP routes | `/host`, `/dashboard`, `/settings/connections`: **200**; updated Vite module: **200** | Same restart receipt |
-| Read-only API boundary | `GET` **200** / 6 fixed services; rejected `POST` **405**, foreign Origin **403** | Same restart receipt |
-| Earlier actual Android Chrome UI | 31 concrete routes rendered, visual viewport scale **1.0 → 1.7**, screenshot capture; later branding smoke **6/6** | `pockethost-closeout-onphone-chrome-route-zoom-20261105-v1`; `pockethost-commercial-clean-ui-real-android-smoke-20261105-v1` |
-| Latest Base UI menu interaction | **Owner accepted after runtime fix**; *not* independently reproduced with Android CDP after the fix because ADB had no authorized device | Conversation user confirmation; ADB bridge preflight `pockethost-menugroup-adb-cdp-bridge-20261105-v1` |
-| Full **root Gate 1** | **HOLD — audit complete:** Gate 0 PASS, Markdownlint PASS, ESLint PASS, TypeScript PASS; Prettier fails on 17 owner files; generated root lockfile is not yet committed | `pockethost-checkpoint-gate1-complete-audit-20261105-v1` (`done / exit 0` for audit script; nested full `npm run check` **exit 1**) |
+| Gate                                  | Observed outcome                                                                                                                                                        | Evidence                                                                                                                            |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Foundation Gate 0, latest Base UI fix | **PASS — 31/31** native Termux tests; boundary, docs, negative host cases and new menu-group regression                                                                 | `pockethost-appearance-menugroup-fix-native-20261105-v1`                                                                            |
+| Admin ESLint, latest fix              | **PASS** on native Termux                                                                                                                                               | Same task                                                                                                                           |
+| Admin TS/Vite build, latest fix       | **PASS** on native Termux                                                                                                                                               | Same task                                                                                                                           |
+| Guarded live preview restart          | **PASS**, exact source `0645ee2`, PocketHost-owned prior process verified; rollback provisioned                                                                         | `pockethost-menugroup-guarded-restart-20261105-v1`                                                                                  |
+| Live HTTP routes                      | `/host`, `/dashboard`, `/settings/connections`: **200**; updated Vite module: **200**                                                                                   | Same restart receipt                                                                                                                |
+| Read-only API boundary                | `GET` **200** / 6 fixed services; rejected `POST` **405**, foreign Origin **403**                                                                                       | Same restart receipt                                                                                                                |
+| Earlier actual Android Chrome UI      | 31 concrete routes rendered, visual viewport scale **1.0 → 1.7**, screenshot capture; later branding smoke **6/6**                                                      | `pockethost-closeout-onphone-chrome-route-zoom-20261105-v1`; `pockethost-commercial-clean-ui-real-android-smoke-20261105-v1`        |
+| Latest Base UI menu interaction       | **Owner accepted after runtime fix**; _not_ independently reproduced with Android CDP after the fix because ADB had no authorized device                                | Conversation user confirmation; ADB bridge preflight `pockethost-menugroup-adb-cdp-bridge-20261105-v1`                              |
+| Full **root Gate 1**                  | **HOLD — audit complete:** Gate 0 PASS, Markdownlint PASS, ESLint PASS, TypeScript PASS; Prettier fails on 17 owner files; generated root lockfile is not yet committed | `pockethost-checkpoint-gate1-complete-audit-20261105-v1` (`done / exit 0` for audit script; nested full `npm run check` **exit 1**) |
 
 **Actual full native audit (2026-11-05):** `pockethost-checkpoint-gate1-complete-audit-20261105-v1` on source `0645ee2`, Termux Node `v26.4.0` and npm `11.19.0`: root lock generated locally (98,505 bytes) and `npm ci` installed 188 packages; **Gate 0 31/31 PASS**, Markdownlint **51 files / 0 errors**, root ESLint PASS, root TypeScript PASS. Prettier reports exactly **17 owner files** requiring formatting; therefore **full `npm run check` FAIL** at the formatting step. The generated root `package-lock.json` was **untracked** and is not in GitHub yet. The earlier Node type declaration problem is resolved for this audit. A separate controlled quality-cleanup task `pockethost-quality-gate1-format-lock-closeout-20261105-v1` was submitted, but has **no accepted terminal result in this checkpoint**. Do not claim Gate 1 PASS or a committed root lockfile until verified.
 

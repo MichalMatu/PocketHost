@@ -40,7 +40,9 @@ try {
     timeout: 15_000,
   }).trim();
   if (actual !== sourceCommit) {
-    throw new Error(`Upstream HEAD drifted (expected ${sourceCommit}, got ${actual}); review and update pin`);
+    throw new Error(
+      `Upstream HEAD drifted (expected ${sourceCommit}, got ${actual}); review and update pin`,
+    );
   }
 
   const upstream = path.join(clone, 'vite-version');
@@ -56,7 +58,11 @@ try {
   });
   const routes = readFileSync(path.join(staging, 'src/config/routes.tsx'), 'utf8');
   const paths = [...routes.matchAll(/path:\s*["']([^"']+)["']/g)].map((m) => m[1]);
-  if (paths.length < 30 || !paths.includes('/dashboard') || !paths.includes('/settings/appearance')) {
+  if (
+    paths.length < 30 ||
+    !paths.includes('/dashboard') ||
+    !paths.includes('/settings/appearance')
+  ) {
     throw new Error('Incomplete upstream route inventory; refusing partial import');
   }
   writeFileSync(
@@ -77,7 +83,9 @@ try {
     'utf8',
   );
   renameSync(staging, destination);
-  console.log(`Imported full upstream dashboard at ${sourceCommit}; ${paths.length} route entries retained.`);
+  console.log(
+    `Imported full upstream dashboard at ${sourceCommit}; ${paths.length} route entries retained.`,
+  );
 } finally {
   rmSync(temp, { recursive: true, force: true });
 }

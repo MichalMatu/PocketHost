@@ -15,7 +15,11 @@ test('admin layout does not mount third-party Pro upsells', () => {
 test('visible shell is PocketHost branded, without upstream marketing or fake account', () => {
   for (const name of ['app-sidebar.tsx', 'site-header.tsx', 'site-footer.tsx']) {
     const code = source(name);
-    assert.doesNotMatch(code, /shadcnstore|Upgrade to Pro|store@example\.com|SidebarNotification|NavUser/i, name);
+    assert.doesNotMatch(
+      code,
+      /shadcnstore|Upgrade to Pro|store@example\.com|SidebarNotification|NavUser/i,
+      name,
+    );
   }
   assert.match(source('app-sidebar.tsx'), /PocketHost/);
   const html = readFileSync(path.join(root, 'apps/admin/index.html'), 'utf8');

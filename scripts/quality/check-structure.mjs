@@ -18,25 +18,37 @@ export function validateStructure(root = repositoryRoot) {
   if (![modules, rootDirectories, requiredFiles, documentationDirectories].every(Array.isArray)) {
     return ['Incomplete structure manifest'];
   }
-  if (new Set(modules).size !== modules.length || modules.some((m) => !/^[a-z][a-z0-9-]*$/.test(m))) {
+  if (
+    new Set(modules).size !== modules.length ||
+    modules.some((m) => !/^[a-z][a-z0-9-]*$/.test(m))
+  ) {
     errors.push('Module names must be unique lowercase kebab-case');
   }
-  const required = [...requiredFiles, ...modules.flatMap((m) => [`src/modules/${m}/AGENTS.md`, `docs/modules/${m}.md`])];
+  const required = [
+    ...requiredFiles,
+    ...modules.flatMap((m) => [`src/modules/${m}/AGENTS.md`, `docs/modules/${m}.md`]),
+  ];
   for (const rel of required) {
     if (!existsSync(path.join(root, rel))) errors.push(`Missing required file: ${rel}`);
   }
-  const approvedRootFiles = new Set([...requiredFiles.filter((p) => !p.includes('/')), 'package-lock.json']);
+  const approvedRootFiles = new Set([
+    ...requiredFiles.filter((p) => !p.includes('/')),
+    'package-lock.json',
+  ]);
   const approvedRootDirs = new Set(rootDirectories);
   const excludedDirs = new Set(manifest.excludedDirectories || []);
   for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (excludedDirs.has(entry.name)) continue;
-    if (entry.isDirectory() && !approvedRootDirs.has(entry.name)) errors.push(`Unexpected root directory: ${entry.name}`);
-    else if (entry.isFile() && !approvedRootFiles.has(entry.name)) errors.push(`Unexpected root file: ${entry.name}`);
+    if (entry.isDirectory() && !approvedRootDirs.has(entry.name))
+      errors.push(`Unexpected root directory: ${entry.name}`);
+    else if (entry.isFile() && !approvedRootFiles.has(entry.name))
+      errors.push(`Unexpected root file: ${entry.name}`);
   }
   const moduleRoot = path.join(root, 'src/modules');
   if (existsSync(moduleRoot)) {
     for (const entry of readdirSync(moduleRoot, { withFileTypes: true })) {
-      if (!entry.isDirectory() || !modules.includes(entry.name)) errors.push(`Unexpected module: ${entry.name}`);
+      if (!entry.isDirectory() || !modules.includes(entry.name))
+        errors.push(`Unexpected module: ${entry.name}`);
     }
   }
   const docsRoots = new Set(documentationDirectories);
@@ -45,14 +57,23 @@ export function validateStructure(root = repositoryRoot) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (excludedDirs.has(entry.name)) continue;
       const rel = path.posix.join(base, entry.name);
-      if (entry.isSymbolicLink()) { errors.push(`Symlink not allowed: ${rel}`); continue; }
+      if (entry.isSymbolicLink()) {
+        errors.push(`Symlink not allowed: ${rel}`);
+        continue;
+      }
       if (entry.isDirectory()) {
-        if (rel.startsWith('docs/') && !docsRoots.has(rel)) errors.push(`Unexpected documentation directory: ${rel}`);
-        if (rel.startsWith('src/') && !['src/ui', 'src/shared', 'src/modules'].includes(rel) &&
-          !/^src\/modules\/[a-z][a-z0-9-]*$/.test(rel)) errors.push(`Unexpected source directory: ${rel}`);
+        if (rel.startsWith('docs/') && !docsRoots.has(rel))
+          errors.push(`Unexpected documentation directory: ${rel}`);
+        if (
+          rel.startsWith('src/') &&
+          !['src/ui', 'src/shared', 'src/modules'].includes(rel) &&
+          !/^src\/modules\/[a-z][a-z0-9-]*$/.test(rel)
+        )
+          errors.push(`Unexpected source directory: ${rel}`);
         walk(path.join(dir, entry.name), rel);
       } else if (entry.isFile()) {
-        if (rel.startsWith('src/') && !/\.(ts|tsx)$/.test(rel) && !rel.endsWith('/AGENTS.md')) errors.push(`Unsupported source artifact: ${rel}`);
+        if (rel.startsWith('src/') && !/\.(ts|tsx)$/.test(rel) && !rel.endsWith('/AGENTS.md'))
+          errors.push(`Unsupported source artifact: ${rel}`);
         if (/^src\/.+\.(ts|tsx)$/.test(rel)) {
           const inSharedOrUi = /^src\/(ui|shared)\/.+\.(ts|tsx)$/.test(rel);
           const inRegisteredModule = modules.some((module) => {
@@ -61,14 +82,24 @@ export function validateStructure(root = repositoryRoot) {
             const remainder = rel.slice(prefix.length);
             return !remainder.includes('/') && /\.(ts|tsx)$/.test(remainder);
           });
-          if (!inSharedOrUi && !inRegisteredModule) errors.push(`Unexpected source location: ${rel}`);
+          if (!inSharedOrUi && !inRegisteredModule)
+            errors.push(`Unexpected source location: ${rel}`);
         }
-        if (rel.startsWith('docs/') && !rel.endsWith('.md')) errors.push(`Unexpected documentation artifact: ${rel}`);
-        if (rel.startsWith('scripts/') && !rel.endsWith('.mjs') && rel !== 'scripts/AGENTS.md') errors.push(`Unexpected script artifact: ${rel}`);
-        if (rel.startsWith('tests/') && !/\.test\.mjs$/.test(rel) && rel !== 'tests/AGENTS.md') errors.push(`Unexpected test artifact: ${rel}`);
-        if (rel.startsWith('docs/adr/') && !/^docs\/adr\/\d{4}-[a-z0-9-]+\.md$/.test(rel)) errors.push(`Invalid ADR filename: ${rel}`);
-        if (rel.startsWith('docs/checkpoints/') && !/^docs\/checkpoints\/\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(rel)) errors.push(`Invalid checkpoint filename: ${rel}`);
-        if (rel.startsWith('docs/modules/') && !modules.includes(path.basename(rel, '.md'))) errors.push(`Unexpected module specification: ${rel}`);
+        if (rel.startsWith('docs/') && !rel.endsWith('.md'))
+          errors.push(`Unexpected documentation artifact: ${rel}`);
+        if (rel.startsWith('scripts/') && !rel.endsWith('.mjs') && rel !== 'scripts/AGENTS.md')
+          errors.push(`Unexpected script artifact: ${rel}`);
+        if (rel.startsWith('tests/') && !/\.test\.mjs$/.test(rel) && rel !== 'tests/AGENTS.md')
+          errors.push(`Unexpected test artifact: ${rel}`);
+        if (rel.startsWith('docs/adr/') && !/^docs\/adr\/\d{4}-[a-z0-9-]+\.md$/.test(rel))
+          errors.push(`Invalid ADR filename: ${rel}`);
+        if (
+          rel.startsWith('docs/checkpoints/') &&
+          !/^docs\/checkpoints\/\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(rel)
+        )
+          errors.push(`Invalid checkpoint filename: ${rel}`);
+        if (rel.startsWith('docs/modules/') && !modules.includes(path.basename(rel, '.md')))
+          errors.push(`Unexpected module specification: ${rel}`);
       } else errors.push(`Unexpected filesystem entry: ${rel}`);
     }
   }
@@ -78,6 +109,8 @@ export function validateStructure(root = repositoryRoot) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const errors = validateStructure();
-  if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }
-  else console.log('Structure gate: PASS');
+  if (errors.length) {
+    console.error(errors.join('\n'));
+    process.exitCode = 1;
+  } else console.log('Structure gate: PASS');
 }
