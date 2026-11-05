@@ -23,6 +23,10 @@ purpose: Define mandatory foundation and future app quality checks
 
 `npm run check` adds `markdownlint-cli2`, Prettier, ESLint and TypeScript to Gate 0. `npm install` is needed to fetch dev dependencies; commit and validate a lockfile before application development. Ruff is deliberately absent because no Python application language is selected.
 
+## Admin app gate (once full template is imported)
+
+The pinned imported source belongs to `apps/admin` and preserves its original configuration. The root Prettier/ESLint gate excludes this vendored baseline, but the **mandatory additional native gate** runs `npm run admin:lint` and `npm run admin:build` from the PocketHost root (or the exact package-manager equivalent). All imported routes must remain present; no bypass by removing demo screens. Later edits to the app must be checked by its own linter, TypeScript build, token/style gates and browser acceptance. Import/build are `pending` until a real Termux Local Agent result proves them.
+
 ## Gate 2: feature code (future)
 
 - Tests for each module's contract, input validation, failures and security boundaries.

@@ -10,6 +10,7 @@
     "ai"
   ],
   "rootDirectories": [
+    "apps",
     "docs",
     "src",
     "scripts",
@@ -42,7 +43,10 @@
     "src/ui/AGENTS.md",
     "src/shared/AGENTS.md",
     "scripts/AGENTS.md",
-    "tests/AGENTS.md"
+    "tests/AGENTS.md",
+    "apps/AGENTS.md",
+    "scripts/import-shadcnstore.mjs",
+    "docs/ADMIN_MVP.md"
   ],
   "documentationDirectories": [
     "docs",

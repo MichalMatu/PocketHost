@@ -18,7 +18,11 @@
     "typecheck": "tsc --noEmit",
     "markdownlint": "markdownlint-cli2 \"**/*.md\" \"#node_modules\"",
     "test": "node --test tests/quality/*.test.mjs",
-    "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck"
+    "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck",
+    "admin:import": "node scripts/import-shadcnstore.mjs",
+    "admin:dev": "npm --prefix apps/admin run dev -- --host 127.0.0.1 --port 8787 --strictPort",
+    "admin:build": "npm --prefix apps/admin run build",
+    "admin:lint": "npm --prefix apps/admin run lint"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

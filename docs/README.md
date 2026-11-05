@@ -12,6 +12,7 @@
 - [Agentic tooling evaluation and Termux compatibility](TOOLING_EVALUATION.md)
 - [Design-system and UI consistency contract](DESIGN_SYSTEM.md)
 - [Desktop-first admin shell and CMS decision](adr/0005-desktop-first-admin-shell.md)
+- [Admin shell MVP import, build and manual start](ADMIN_MVP.md)
 - [Development plan](DEVELOPMENT_PLAN.md)
 
 ## Modules

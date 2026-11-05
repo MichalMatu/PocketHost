@@ -12,7 +12,7 @@ Applies to the entire repository. More specific `AGENTS.md` files refine these r
 - No host-level filesystem scan outside agreed locations; no automatic package installation, tunnel creation, DNS modification, or process killing.
 - Development is manual from CLI: do not add autostart, boot receivers, persistent services or scheduled tasks in DEV.
 - Do not invoke GitHub Actions, Codex, or ChatGPT Work. GitHub Connector is for repository edits and private task transport. **All PocketHost development command execution, dependency installation, checks, tests, builds and compilation take place exclusively on the specifically addressed Termux phone through its installed Local Agent**. Do not run development commands on Mac or in a ChatGPT Linux sandbox. See `docs/LOCAL_AGENT_TERMUX.md`.
-- No application feature code until foundation documentation, boundary rules and gates pass.
+- Before importing the full admin template, run the existing foundation gate **on Termux through Local Agent**. Preserve all 30+ existing upstream screens and routes in the first admin candidate; no feature adaptation or unused-page removal. The imported admin app lives under `apps/admin` and is treated as a pinned upstream baseline with its own package-level lint/build gate.
 
 ## Agent execution handoff
 

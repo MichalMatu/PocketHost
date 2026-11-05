@@ -18,4 +18,4 @@ PocketHost is a planned Android/Termux-based web-hosting control plane. Its firs
 3. Review [module boundaries](docs/MODULES.md), [quality gates](docs/QUALITY_GATES.md), [UI design system](docs/DESIGN_SYSTEM.md), [tooling recommendations](docs/TOOLING_EVALUATION.md) and [development plan](docs/DEVELOPMENT_PLAN.md).
 4. Via the verified Termux Local Agent and an isolated project checkout, run `npm run check:foundation`, then resolve and lock dependencies before running `npm run check`. Do not treat configured tools or historical sandbox results as a current device pass.
 
-No application runtime is committed at this stage. Structure and automated quality gates are established first.
+**Admin shell candidate:** `feat/admin-shell-v1` contains a reproducible pinned import for the **entire** ShadcnStore Vite template, including all demo routes, components and assets. See [admin MVP runbook](docs/ADMIN_MVP.md). Never interpret source staging as a verified on-phone build; import, installs and dev server run through Termux Local Agent only.

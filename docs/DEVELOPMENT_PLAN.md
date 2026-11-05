@@ -19,7 +19,7 @@ Using Local Agent after permission and preflight, record sanitized existing serv
 
 ## P2 — local GUI
 
-Launch a desktop-first dashboard manually by CLI, ideally using a Termux-qualified subset of the ShadcnStore Vite React admin template, retaining browser-native pinch zoom on Android. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
+Launch a desktop-first dashboard manually by CLI, ideally using the **entire** pinned ShadcnStore Vite React admin template (all routes/screens retained initially), then adapting features in later sprints, retaining browser-native pinch zoom on Android. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
 
 ## P3 — PocketHost-owned server
 
