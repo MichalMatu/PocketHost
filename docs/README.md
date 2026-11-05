@@ -40,3 +40,4 @@
 - [Host health P1.1 native acceptance checkpoint](checkpoints/2026-11-05-host-health-work-start.md)
 - [Commercial MIT template and UI cleanup](checkpoints/2026-11-05-commercial-template-cleanup.md)
 - [Header appearance menu integration](checkpoints/2026-11-05-appearance-header-menu.md)
+- [Full P0–P2 checkpoint and quality review](checkpoints/2026-11-05-pocket-host-full-checkpoint.md)

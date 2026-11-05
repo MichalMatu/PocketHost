@@ -25,6 +25,10 @@ Launch a desktop-first dashboard manually by CLI, ideally using the **entire** p
 
 **P2 UI branding accepted:** Remove upstream Pro upgrades, promotional banners, provider links and fake provider user profile from the rendered shell without deleting the 32 demo routes. Keep responsive mobile behavior and native pinch. Real Termux 26/26 tests, Vite build, ESLint, guarded HTTP cutover and Android Chrome UI smoke PASS. This is a standalone MIT React frontend and **does not require a third-party account**; see [commercial UI checkpoint](checkpoints/2026-11-05-commercial-template-cleanup.md).
 
+**P2 appearance acceptance:** Header theme selector consolidates Light/Dark/System, colors, layout and reset. Removed floating cog. Initial Base UI menu-group runtime error was repaired in `0645ee2` and the owner confirmed the panel works. 31/31 latest native tests, app ESLint, build and guarded HTTP restart PASS. The latest independent Android UI interaction CDP test is pending because ADB was disconnected. See [full P0–P2 checkpoint](checkpoints/2026-11-05-pocket-host-full-checkpoint.md).
+
+**Required quality-closeout before P3:** native root Gate 1, reproducible root lockfile and an automated browser interaction regression test for the appearance menu. Do not weaken the gates or repeat already accepted hardware/prototype tests unnecessarily.
+
 ## P3 — PocketHost-owned server
 
 Introduce a new owned test site, separate port and explicit lifecycle management with tests for collisions, start/stop and rollback. **Exit:** own server operable without touching any existing production application.

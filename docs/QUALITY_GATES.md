@@ -45,6 +45,12 @@ The `sprint/p1-closeout-20261105` cleanup has native Termux **26/26 tests, app l
 
 The separate full root Gate 1 was exercised on Termux. Its initial failure was caused by an overly broad Markdown glob scanning dependencies/vendor files. A narrowed owner-document glob passes **49 files, zero errors**. Root ESLint passes, but Prettier still identifies historical formatting drift, and the initial TypeScript run exposed missing Node declarations (addressed in the working branch but pending complete root Gate 1 retest and committed root lockfile). **Do not claim the complete root Gate 1 PASS yet.**
 
+## Latest P2 appearance regression and gate status
+
+At `0645ee2`, physical Termux Local Agent validated the repaired Base UI header appearance menu: **31/31 tests PASS**, app ESLint PASS and Vite build PASS (`pockethost-appearance-menugroup-fix-native-20261105-v1`). Guarded restart (`pockethost-menugroup-guarded-restart-20261105-v1`) confirmed three UI routes and updated live module HTTP 200, read-only snapshot 200, POST 405 and foreign Origin 403. The owner manually confirmed that the prior runtime error disappeared.
+
+**Important gate lesson:** a React/Base UI context error was invisible to static tests and build; next UI release requires an actual component/browser interaction test (menu open and Light/Dark/System, Theme/Layout, reset). Latest Android CDP could not run because ADB was disconnected. Full **root Gate 1 remains on HOLD** until the on-device audit `pockethost-checkpoint-gate1-complete-audit-20261105-v1` is reviewed; admin build/lint do not imply root Gate 1 PASS. See [complete checkpoint](checkpoints/2026-11-05-pocket-host-full-checkpoint.md).
+
 ## Gate 2: feature code (future)
 
 - Tests for each module's contract, input validation, failures and security boundaries.
