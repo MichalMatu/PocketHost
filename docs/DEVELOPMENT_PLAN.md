@@ -15,13 +15,15 @@ Create docs index, ADRs, owner module instructions, manifest-controlled layout, 
 
 ## P1 — real Termux inventory (read-only; first vertical slice accepted)
 
-Build and test the typed fixed-allowlist Termux host snapshot with `runit` service states for IleStoi.pl and surrounding external services. Integrate the new `/host` route into the existing full admin template while preserving all 32 upstream screens. The first endpoint is **GET-only and DEV-only** on loopback, with no external service control. **Exit (first vertical slice accepted):** on-device 18/18 tests, Vite build, lint and HTTP/API negative-method/origin checks PASS. The user confirms the panel looks good. Further read-only diagnostics, root Gate 1 and automated browser acceptance remain follow-up work.
+Build and test the typed fixed-allowlist Termux host snapshot with `runit` service states for IleStoi.pl and surrounding external services. Integrate the new `/host` route into the existing full admin template while preserving all 32 upstream screens. The first endpoint is **GET-only and DEV-only** on loopback, with no external service control. **Exit (first vertical slice accepted):** on-device 18/18 tests, Vite build, lint and HTTP/API negative-method/origin checks PASS. The user confirms the panel looks good. Further read-only diagnostics and full root Gate 1 remain follow-up work. Real Android Chrome confirmed navigation across 31 concrete non-redirect routes, functional pinch zoom and subsequent six-control PocketHost branding/upsell smoke; detailed E2E accessibility remains future work.
 
 **P1.1 accepted on real Android Termux:** Local Agent private supervisor and Termux-home filesystem capacity are now visible on the same `/host` page. **21/21 tests, app lint and build PASS**; GET 200, POST 405, foreign Origin 403, forged Host 403; six fixed external services observed. See [P1.1 accepted checkpoint](checkpoints/2026-11-05-host-health-work-start.md).
 
 ## P2 — local GUI
 
 Launch a desktop-first dashboard manually by CLI, ideally using the **entire** pinned ShadcnStore Vite React admin template (all routes/screens retained initially), then adapting features in later sprints, retaining browser-native pinch zoom on Android. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
+
+**P2 UI branding accepted:** Remove upstream Pro upgrades, promotional banners, provider links and fake provider user profile from the rendered shell without deleting the 32 demo routes. Keep responsive mobile behavior and native pinch. Real Termux 26/26 tests, Vite build, ESLint, guarded HTTP cutover and Android Chrome UI smoke PASS. This is a standalone MIT React frontend and **does not require a third-party account**; see [commercial UI checkpoint](checkpoints/2026-11-05-commercial-template-cleanup.md).
 
 ## P3 — PocketHost-owned server
 
@@ -37,4 +39,4 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 
 ## Blockers
 
-Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: root Gate 1, reproducible root dependency policy, automated mobile browser acceptance and Local Agent supervisor boot resilience. Treat a status snapshot as observed data, not proof of continuing uptime.
+Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: complete root Gate 1 (formatting/Node typings/committed root lock), full E2E accessibility, and Local Agent supervisor boot resilience. Basic on-phone Chrome route, pinch and no-upsell UI smoke are now accepted. Treat a status snapshot as observed data, not proof of continuing uptime.

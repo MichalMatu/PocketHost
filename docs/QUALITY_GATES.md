@@ -39,6 +39,12 @@ The new development-only read-only host snapshot must pass native Termux unit te
 
 **Actual P1.1 acceptance:** [Host health native checkpoint](checkpoints/2026-11-05-host-health-work-start.md) records **21/21 tests, app lint/build PASS**, six service statuses including Local Agent, storage capacity/availability or unavailable sentinel, and on-device GET/POST/Origin/Host HTTP checks.
 
+## Commercial standalone-shell acceptance
+
+The `sprint/p1-closeout-20261105` cleanup has native Termux **26/26 tests, app lint and build PASS**, guarded live DEV preview HTTP security checks PASS and six real Android Chrome browser checks PASS. See [commercial UI checkpoint](checkpoints/2026-11-05-commercial-template-cleanup.md). The preserved source is explicitly MIT licensed. No Pro upsells, external provider account/profile or vendor shop links are rendered in the PocketHost shell.
+
+The separate full root Gate 1 was exercised on Termux. Its initial failure was caused by an overly broad Markdown glob scanning dependencies/vendor files. A narrowed owner-document glob passes **49 files, zero errors**. Root ESLint passes, but Prettier still identifies historical formatting drift, and the initial TypeScript run exposed missing Node declarations (addressed in the working branch but pending complete root Gate 1 retest and committed root lockfile). **Do not claim the complete root Gate 1 PASS yet.**
+
 ## Gate 2: feature code (future)
 
 - Tests for each module's contract, input validation, failures and security boundaries.
