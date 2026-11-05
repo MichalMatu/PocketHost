@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import {
-  closeSync, copyFileSync, existsSync, lstatSync, mkdirSync, openSync,
-  readFileSync, readlinkSync, realpathSync, renameSync, writeFileSync,
+  closeSync, copyFileSync, existsSync, fstatSync, lstatSync, mkdirSync, openSync,
+  readFileSync, readSync, readlinkSync, realpathSync, renameSync, writeFileSync,
 } from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -20,7 +20,7 @@ import {
 const PORT = 18787;
 const SERVER_SCRIPT = path.resolve(import.meta.dirname, "owned-site-server.mjs");
 const MARKER_FILE = ".pockethost-owner.json";
-const MIB_LOG_CAP = 8192;
+const MAX_LOG_BYTES = 8192;
 
 interface Marker {
   schema: 1;
@@ -133,7 +133,14 @@ export class OwnedDemoHost implements OwnedSitePort {
       item.ownership !== "pockethost" || item.port !== this.port ||
       !/^[0-9a-f-]{36}$/.test(item.instance) ||
       (item.contentVersion !== 1 && item.contentVersion !== 2) ||
-      (item.previousVersion !== null && item.previousVersion !== 1 && item.previousVersion !== 2)) {
+      (item.previousVersion !== null && item.previousVersion !== 1 && item.previousVersion !== 2) ||
+      (item.process !== null && (
+        !item.process ||
+        !Number.isSafeInteger(item.process.pid) ||
+        item.process.pid < 2 ||
+        typeof item.process.startTicks !== "string" ||
+        !/^\\d+$/.test(item.process.startTicks)
+      ))) {
       throw new Error("Ownership record failed validation");
     }
     return item;
@@ -209,6 +216,9 @@ export class OwnedDemoHost implements OwnedSitePort {
     } finally {
       closeSync(log);
     }
+    child.on("error", () => {
+      // Report startup failure to the caller without crashing the admin process.
+    });
     if (!child.pid) throw new Error("Failed to start owned test site");
 
     let ticks: string | null = null;
@@ -235,6 +245,12 @@ export class OwnedDemoHost implements OwnedSitePort {
         // Child is starting, or the port is not ready yet.
       }
       await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    // No failed readiness check may leave an untracked owned process.
+    try {
+      await this.stop();
+    } catch {
+      // Keep the marker for explicit diagnosis if safe cleanup is unavailable.
     }
     throw new Error("Owned test site did not pass the ready check");
   }
@@ -265,6 +281,7 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   publish(): OwnedSiteSnapshot {
     const item = this.mustRead();
+    if (this.status(item) === "unknown") throw new Error("Unverified process identity");
     const target = item.contentVersion === 1 ? 2 : 1;
     const archive = path.join(this.site, `index-v${target}.html`);
     if (!existsSync(archive)) {
@@ -279,6 +296,7 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   rollback(): OwnedSiteSnapshot {
     const item = this.mustRead();
+    if (this.status(item) === "unknown") throw new Error("Unverified process identity");
     if (item.previousVersion === null) throw new RangeError("No prior demo version");
     const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
     const html = readFileSync(archive, "utf8");
@@ -296,7 +314,17 @@ export class OwnedDemoHost implements OwnedSitePort {
     if (!existsSync(log)) return [];
     const stat = lstatSync(log);
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error("Unsafe log location");
-    const text = readFileSync(log, "utf8").slice(-MIB_LOG_CAP);
-    return text.split("\n").filter(Boolean).slice(-25).map((line) => line.slice(0, 200));
+    const fd = openSync(log, "r");
+    let text = "";
+    try {
+      const size = fstatSync(fd).size;
+      const count = Math.min(size, MAX_LOG_BYTES);
+      const buffer = Buffer.alloc(count);
+      readSync(fd, buffer, 0, count, size - count);
+      text = buffer.toString("utf8");
+    } finally {
+      closeSync(fd);
+    }
+    return text.split("\\n").filter(Boolean).slice(-25).map((line) => line.slice(0, 200));
   }
 }
