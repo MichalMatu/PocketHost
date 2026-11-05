@@ -15,7 +15,7 @@ The previously proposed `maia` preset is superseded in the preferred ShadcnStore
 
 ## Desktop-first layout and Android pinch zoom
 
-The owner selects a **desktop-first** dashboard with the same component code on desktop and Android. Reuse a ShadcnStore-style persistent sidebar, multi-column cards, tables, charts, settings and navigation rather than creating a separate mobile application. A reviewed minimum desktop content width with horizontal pan/scroll on a narrow Android screen is acceptable if all controls remain reachable.
+The owner confirmed that the imported dashboard already has a good **responsive mobile layout** and that Android **pinch zoom works correctly**. Preserve the existing adaptive sidebar, cards, tables, mobile breakpoints and touch interaction; keep the same React codebase for desktop and Android. **Do not force a desktop-only minimum width, add CSS zoom transforms or implement a second mobile GUI.** Desktop remains the primary information-dense layout on larger screens, while the current responsive phone layout and native browser zoom are both accepted. Any breakpoint or viewport change requires renewed physical-device acceptance.
 
 **Native browser pinch zoom must remain enabled.** Do not set `user-scalable=no`, limit `maximum-scale`, suppress global two-finger gestures or scale the entire app with a brittle CSS transform. Start with `width=device-width` and validate real phone viewport behavior. Optional fit-to-width is a separate, tested user mode, not a substitute for pinch zoom. Touch, mouse, keyboard, modal scrolling, charts and tables must behave correctly at different zoom levels.
 
