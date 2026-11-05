@@ -1,0 +1,32 @@
+---
+status: accepted
+owner: core
+last_reviewed: 2026-11-05
+purpose: List modules, responsibilities and allowed dependencies
+---
+
+# Module Boundaries
+
+## Rules
+
+Every module owns a single capability, has its own `src/modules/<name>/AGENTS.md` and `docs/modules/<name>.md`, and communicates via explicit exported contracts. `ui` calls application ports; only the host adapter may execute Termux commands. Shared types may live in `src/shared` but must not become a catch-all service module.
+
+| Module | Role | Side effects in first milestone |
+| --- | --- | --- |
+| `inventory` | Detect existing services and ports | None; read-only |
+| `runtime` | Start/stop PocketHost-owned server | Disabled until ownership model exists |
+| `packages` | Discover and eventually install allowlisted tools | Inventory only; installations disabled |
+| `sites` | Track PocketHost-owned site metadata | No adoption of existing services |
+| `config` | Validate application settings | Read-only, no host config writes |
+| `diagnostics` | Report health and sanitized logs | Read-only |
+| `ai` | Future authenticated publish API | Entirely disabled |
+| `ui` | Local dashboard | No shell access |
+| `shared` | Type contracts and safe utilities | No host access |
+
+## Ownership model
+
+Discovery is not adoption. Every externally discovered service has `owner: external` or `owner: unknown`; only a registration explicitly created by PocketHost can be `owner: pockethost`. Runtime operations must require the latter plus an exact persisted instance identifier.
+
+## Future changes
+
+Adding a module requires an ADR or approved architecture update, a matching docs page, a scoped `AGENTS.md`, an entry in `project.structure.json`, test contract and gate update. A new module must not bypass established safety boundaries.

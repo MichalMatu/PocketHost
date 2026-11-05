@@ -1,0 +1,36 @@
+---
+status: accepted
+owner: core
+last_reviewed: 2026-11-05
+purpose: Define staged delivery with phase gates
+---
+
+# Development Plan
+
+## P0 — repository foundation (current)
+
+Create docs index, ADRs, owner module instructions, manifest-controlled layout, guardrail tests, formatting/lint/type configurations and first checkpoint. No application code and no host modifications. **Exit:** Gate 0 passes and Gate 1 tooling is configured; lockfile/dependency verification tracked if registry unavailable.
+
+## P1 — real Termux inventory (read-only)
+
+Using Local Agent after permission and preflight, record sanitized existing service/network configuration. Build a host adapter behind a testable interface. **Exit:** discovery accurately reports IleStoi.pl without changing it, with failure-case tests and evidence.
+
+## P2 — local GUI
+
+Launch dashboard manually by CLI. Display inventory, detected settings, ownership and service health. UI binds loopback, no login exposed over WAN. **Exit:** user can inspect existing server and nothing can stop it.
+
+## P3 — PocketHost-owned server
+
+Introduce a new owned test site, separate port and explicit lifecycle management with tests for collisions, start/stop and rollback. **Exit:** own server operable without touching any existing production application.
+
+## P4 — package catalog and assisted configuration
+
+Add reviewed install plans, explicit approvals and safe diagnostics; installation is never implicit during discovery.
+
+## P5 — AI deploy, domains and Android package
+
+Add scoped publish API, site validation, version rollback, optional public ingress and packaging only after threat model, contract and device tests.
+
+## Blockers
+
+Before P1, obtain actual read-only Local Agent session capability and a verified host baseline. Do not infer host state from GitHub sources.

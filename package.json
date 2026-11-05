@@ -1,0 +1,30 @@
+{
+  "name": "pockethost",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PocketHost foundation, documentation and quality gates",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "check:structure": "node scripts/quality/check-structure.mjs",
+    "check:docs": "node scripts/quality/check-docs.mjs",
+    "check:foundation": "npm run check:structure && npm run check:docs && npm test",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write .",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "markdownlint": "markdownlint-cli2 \u0022**/*.md\u0022 \u0022#node_modules\u0022",
+    "test": "node --test tests/quality/*.test.mjs",
+    "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0",
+    "markdownlint-cli2": "^0.18.1",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3"
+  }
+}
