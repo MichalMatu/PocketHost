@@ -25,13 +25,15 @@ purpose: Define mandatory foundation and future app quality checks
 
 ## Admin app gate (once full template is imported)
 
-The pinned imported source belongs to `apps/admin` and preserves its original configuration. The root Prettier/ESLint gate excludes this vendored baseline, but the **mandatory additional native gate** runs `npm run admin:lint` and `npm run admin:build` from the PocketHost root (or the exact package-manager equivalent). All imported routes must remain present; no bypass by removing demo screens. Later edits to the app must be checked by its own linter, TypeScript build, token/style gates and browser acceptance. Import/build are `pending` until a real Termux Local Agent result proves them.
+The pinned imported source belongs to `apps/admin` and preserves its original configuration. The root Prettier/ESLint gate excludes this vendored baseline, but the **mandatory additional native gate** runs `npm run admin:lint` and `npm run admin:build` from the PocketHost root (or the exact package-manager equivalent). All imported routes must remain present; no bypass by removing demo screens. Later edits to the app must be checked by its own linter, TypeScript build, token/style gates and browser acceptance. Full vendor import, native app build/lint, P1 read-only HTTP and P1.1 host-health app build/lint are proven on real Termux; root Gate 1 remains unverified.
 
 ## P1 host snapshot feature gate
 
 The new development-only read-only host snapshot must pass native Termux unit tests and negative request checks: allowlist rejection, sanitized states, GET-only API, foreign-Origin rejection and no external service control. No assumptions about real host states from fixtures. See [host overview feature checkpoint](checkpoints/2026-11-05-host-overview-work-start.md).
 
 **Actual P1 acceptance:** see [Host overview P1 checkpoint](checkpoints/2026-11-05-host-overview-work-start.md) for on-phone 18/18 tests, lint/build PASS, HTTP 200 snapshot/dashboard/host, rejected POST/foreign Origin and independently verified IleStoi.pl `running`. No native browser automation was claimed.
+
+**Actual P1.1 acceptance:** [Host health native checkpoint](checkpoints/2026-11-05-host-health-work-start.md) records **21/21 tests, app lint/build PASS**, six service statuses including Local Agent, storage capacity/availability or unavailable sentinel, and on-device GET/POST/Origin/Host HTTP checks.
 
 ## Gate 2: feature code (future)
 
@@ -42,7 +44,7 @@ The new development-only read-only host snapshot must pass native Termux unit te
 
 ## Planned UI and agentic coding quality gates
 
-After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with locked `maia` preset, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
+After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
 
 UI gate requirements: forbid raw palette colors, arbitrary values, unapproved component restyling, inline style attributes and unreadable dynamic classes; enforce shared tokens, variants and component ownership. Supplement JSX lint with CSS checks, accessibility tests, responsive interactions and deterministic screenshot comparisons of a real supported phone browser/WebView. Confirm negative fixtures **fail the gate** before trusting it. Lint PASS alone is not visual PASS; Android screenshot automation requires separate device qualification.
 

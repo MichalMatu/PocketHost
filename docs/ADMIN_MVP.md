@@ -15,7 +15,7 @@ The first UI candidate is the **complete 30+ screen** upstream ShadcnStore React
 
 Use **only the selected Termux phone's Local Agent host-command interface**, ordinary Git, Node/npm and an independent PocketHost checkout. No Agent project binding, Mac/sandbox compile, GitHub Actions, Codex, Work or automatic Termux app startup. Do not touch IleStoi.pl, Local Agent services or public ports.
 
-Source branch: `feat/admin-shell-v1`. The first run must verify its exact origin and clean checkout and pass the dependency-free foundation quality gate on Termux.
+Original pinned template branch: `feat/admin-shell-v1`. Current accepted P1.1 feature branch: `feat/host-health-v1`. For a fresh checkout, verify origin and current HEAD, then run the foundation gate on real Termux before installing or launching any app.
 
 ## First run (commands to dispatch through the authorized phone agent)
 
@@ -23,14 +23,13 @@ Source branch: `feat/admin-shell-v1`. The first run must verify its exact origin
 # Run from the verified, isolated PocketHost checkout.
 npm run check:foundation
 npm run admin:import
-# Upstream Vite app has pnpm-lock.yaml; prefer the pinned pnpm workflow if pnpm is present.
+# For a *fresh* isolated full-template checkout only; never reimport into existing apps/admin.
 cd apps/admin
-pnpm install --frozen-lockfile
-pnpm run build
-pnpm run lint
-# Alternative only after explicit dependency/lock review: npm install && npm run build.
-# Then start manually in foreground on a distinct loopback-only port:
-pnpm run dev -- --host 127.0.0.1 --port 8787 --strictPort
+npm ci --no-audit --no-fund
+npm run build
+npm run lint
+# When 8787 is unoccupied, launch manually in foreground:
+npm run dev -- --host 127.0.0.1 --port 8787 --strictPort
 ```
 
 Do **not** assume these commands passed or the panel is running until actual Local Agent task results and HTTP check prove it. Pin package manager and lock after native preflight. If port 8787 is occupied, stop safely; do not select another port silently. If the Agent's bounded task runner cannot host persistent foreground processes, use a separate manually admitted, verified PocketHost-owned process method; never make an Agent service or boot hook launch the app.
@@ -50,4 +49,4 @@ Do **not** assume these commands passed or the panel is running until actual Loc
 
 ## Current status
 
-Pinned importer and documentation are staged on the UI feature branch. **Native import, package installation, full compilation, browser screenshot and live server status are not yet verified** until returned by Local Agent.
+**Native demo and read-only host status are verified on physical Termux:** all 32 template screens retained, read-only `/host` added, P1.1 21/21 tests plus admin lint/build PASS and live GET/POST/Origin/Host checks PASS. The working local DEV preview remains `http://127.0.0.1:8787/host`. See [accepted P1 checkpoint](checkpoints/2026-11-05-host-overview-work-start.md) and [accepted P1.1 checkpoint](checkpoints/2026-11-05-host-health-work-start.md). **Full browser screenshot, pinch/zoom/a11y automation and root Gate 1 are still pending.**

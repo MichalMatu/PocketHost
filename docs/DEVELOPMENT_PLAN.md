@@ -7,7 +7,7 @@ purpose: Define staged delivery with phase gates
 
 # Development Plan
 
-## P0 — repository foundation (current)
+## P0 — repository foundation (Gate 0 accepted; full Gate 1 pending)
 
 **Execution contract:** All PocketHost coding-command execution, dependency installation, compilation and validation run on Termux through the installed Local Agent (the existing host-command lane; no project binding required). The [fast-start runbook](LOCAL_AGENT_TERMUX.md) is the source for dispatch and evidence; no Mac/sandbox fallbacks.
 
@@ -17,7 +17,7 @@ Create docs index, ADRs, owner module instructions, manifest-controlled layout, 
 
 Build and test the typed fixed-allowlist Termux host snapshot with `runit` service states for IleStoi.pl and surrounding external services. Integrate the new `/host` route into the existing full admin template while preserving all 32 upstream screens. The first endpoint is **GET-only and DEV-only** on loopback, with no external service control. **Exit (first vertical slice accepted):** on-device 18/18 tests, Vite build, lint and HTTP/API negative-method/origin checks PASS. The user confirms the panel looks good. Further read-only diagnostics, root Gate 1 and automated browser acceptance remain follow-up work.
 
-**Next read-only host-health slice:** add the separate Local Agent supervisor status and available Termux-home filesystem capacity, preserving the desktop-first UI and the existing manual refresh. Test both valid and unknown states and retain denial of service mutations.
+**P1.1 accepted on real Android Termux:** Local Agent private supervisor and Termux-home filesystem capacity are now visible on the same `/host` page. **21/21 tests, app lint and build PASS**; GET 200, POST 405, foreign Origin 403, forged Host 403; six fixed external services observed. See [P1.1 accepted checkpoint](checkpoints/2026-11-05-host-health-work-start.md).
 
 ## P2 — local GUI
 
@@ -37,4 +37,4 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 
 ## Blockers
 
-Before P1, obtain actual read-only Local Agent session capability and a verified host baseline. Do not infer host state from GitHub sources.
+Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: root Gate 1, reproducible root dependency policy, automated mobile browser acceptance and Local Agent supervisor boot resilience. Treat a status snapshot as observed data, not proof of continuing uptime.

@@ -37,4 +37,4 @@
 - [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
 - [Tooling research checkpoint](checkpoints/2026-11-05-ui-tooling-research.md)
 - [Read-only host overview P1 acceptance checkpoint](checkpoints/2026-11-05-host-overview-work-start.md)
-- [Host health P1.1 implementation checkpoint](checkpoints/2026-11-05-host-health-work-start.md)
+- [Host health P1.1 native acceptance checkpoint](checkpoints/2026-11-05-host-health-work-start.md)

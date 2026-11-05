@@ -32,9 +32,9 @@ When a CLI launcher is implemented: bind the administrative UI to `127.0.0.1`, d
 
 ## Read-only host overview prototype
 
-The `feat/host-overview-v1` source adds a development-only Vite route `/host` and a single `GET /api/v1/host/snapshot` endpoint. It uses the host-module fixed runit allowlist without accepting dynamic command arguments, shows only sanitized states and runtime memory/uplink metadata, and deliberately has **no service-control API**. Requests stay on 127.0.0.1:8787 and reject browser cross-origin access. This is not a hardened remote administration surface and must not be exposed to WAN.
+The accepted `feat/host-health-v1` source retains the development-only Vite route `/host` and the single `GET /api/v1/host/snapshot` endpoint. It uses the host-module fixed runit allowlist without accepting dynamic command arguments, shows only sanitized states and runtime memory/uptime metadata, the private Local Agent supervisor state and available/total Termux-home filesystem MiB, and deliberately has **no service-control API**. Requests stay on 127.0.0.1:8787 and reject browser cross-origin access. This is not a hardened remote administration surface and must not be exposed to WAN.
 
-The demo's existing `/dashboard` and all 32 upstream routes are retained. Qualification requires on-device Gate 0, app lint/build, exact HTTP read checks, write-method denial, negative cross-origin test, and a new real-phone visual check before this feature is called accepted.
+The demo's existing `/dashboard` and all 32 upstream routes are retained. Native Gate 0, app lint/build, exact HTTP read checks and denial tests are accepted for P1.1; browser-driven screenshot/zoom/a11y automation still requires a separate real-phone qualification. See [P1.1 checkpoint](checkpoints/2026-11-05-host-health-work-start.md).
 
 ## Evidence required before claims of compatibility
 
