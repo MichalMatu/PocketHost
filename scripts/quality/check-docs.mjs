@@ -17,6 +17,9 @@ export function validateDocs(root = repositoryRoot) {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       if (excluded.has(entry.name) || entry.isSymbolicLink()) continue;
       const rel = path.posix.join(base, entry.name);
+      // Upstream Vite template is pinned vendor code; its license/docs retain original formatting.
+      // Project-owned docs, AGENTS contracts and module links remain strictly validated.
+      if (rel === 'apps/admin' || rel.startsWith('apps/admin/')) continue;
       if (entry.isDirectory()) walk(path.join(dir, entry.name), rel);
       else if (entry.isFile() && entry.name.endsWith('.md')) mdFiles.push(rel);
     }
@@ -48,7 +51,8 @@ export function validateDocs(root = repositoryRoot) {
   }
   const scopedAgents = [
     'docs/AGENTS.md', 'src/AGENTS.md', 'src/ui/AGENTS.md', 'src/shared/AGENTS.md',
-    'scripts/AGENTS.md', 'tests/AGENTS.md', ...modules.map((m) => `src/modules/${m}/AGENTS.md`),
+    'scripts/AGENTS.md', 'tests/AGENTS.md', 'apps/AGENTS.md',
+    ...modules.map((m) => `src/modules/${m}/AGENTS.md`),
   ];
   for (const rel of scopedAgents) {
     const file = path.join(root, rel);
