@@ -27,8 +27,14 @@ purpose: Define mandatory foundation and future app quality checks
 
 - Tests for each module's contract, input validation, failures and security boundaries.
 - Integration test with a fake Termux host adapter and port conflicts.
-- No regressions to externally managed services; test on sandbox and separately on device.
+- No regressions to externally managed services; execute tests on Termux through Local Agent, using isolated fixtures, with separate live-device evidence.
 - Explicit verification record for every physical-host claim.
+
+## Planned UI and agentic coding quality gates
+
+After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with locked `maia` preset, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
+
+UI gate requirements: forbid raw palette colors, arbitrary values, unapproved component restyling, inline style attributes and unreadable dynamic classes; enforce shared tokens, variants and component ownership. Supplement JSX lint with CSS checks, accessibility tests, responsive interactions and deterministic screenshot comparisons of a real supported phone browser/WebView. Confirm negative fixtures **fail the gate** before trusting it. Lint PASS alone is not visual PASS; Android screenshot automation requires separate device qualification.
 
 ## Workflow
 

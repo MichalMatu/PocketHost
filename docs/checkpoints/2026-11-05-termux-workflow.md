@@ -11,6 +11,10 @@ purpose: Track implementation of Termux-only Local Agent development workflow
 
 The owner selected the Termux phone with existing Local Agent as the sole PocketHost execution/validation/compile target. GitHub Connector may publish source, documentation and correctly addressed private agent tasks. PocketHost has no DEV autostart.
 
+## Project-binding clarification
+
+The independent Termux Local Agent host-command executor does not require PocketHost project enrollment/binding to run ordinary Git or developer commands. The phone's verified host/installation identity still matters for transport routing. The owner reports tools are installed, but no current live versions are asserted by source-only inspection.
+
 ## Documentation change
 
 Added the explicit [fast-start runbook](../LOCAL_AGENT_TERMUX.md), normative root/module instructions, links and [ADR-0003](../adr/0003-termux-local-agent-execution.md). Corrected the older sandbox-oriented Gate workflow.

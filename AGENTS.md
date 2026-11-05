@@ -16,7 +16,7 @@ Applies to the entire repository. More specific `AGENTS.md` files refine these r
 
 ## Agent execution handoff
 
-At the start of a new session read `docs/LOCAL_AGENT_TERMUX.md`; select the **exact** Termux host and installation from fresh private control evidence, not a guessed or historic ID. The current Termux Local Agent profile is host-command oriented: do not assume automatic project checkout, a repository worker, or tool availability. Use an isolated PocketHost checkout; never reuse IleStoi.pl or Local Agent directories. PocketHost itself starts only by an explicit Termux CLI command in DEV, not by device boot or Local Agent startup. Do not infer a successful run from a task publication alone.
+At the start of a new session read `docs/LOCAL_AGENT_TERMUX.md`; select the **exact** Termux host and installation from fresh private control evidence, not a guessed or historic ID. The current Termux Local Agent profile is host-command oriented: do not assume automatic project checkout, a repository worker, or tool availability. Do **not** require PocketHost project binding or Agent project registration: CLI host tasks work independently. The exact Agent **host/installation** identity remains mandatory. Use an isolated ordinary Git checkout; never reuse IleStoi.pl or Local Agent directories. PocketHost itself starts only by an explicit Termux CLI command in DEV, not by device boot or Local Agent startup. Do not infer a successful run from a task publication alone.
 
 ## Architecture contract
 

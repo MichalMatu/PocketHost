@@ -13,7 +13,7 @@ PocketHost is designed to operate on the same Termux phone as IleStoi.pl and an 
 
 ## Decision
 
-Use GitHub Connector for source/document changes and secure private task transport. Execute all PocketHost dependency installs, build/lint/typecheck/test/compile commands on the **exact selected Termux host via its installed Local Agent**. The currently documented Termux lane is host-command-only; use a separate confirmed PocketHost checkout and do not assume project-mode registration. Keep PocketHost manual-CLI-only with no autostart in DEV.
+Use GitHub Connector for source/document changes and secure private task transport. Execute all PocketHost dependency installs, build/lint/typecheck/test/compile commands on the **exact selected Termux host via its installed Local Agent**. The existing Termux host-command lane can use its ordinary CLI tools (including Git and npm where installed). **PocketHost project enrollment, a project binding UUID and project-repository worker are not required and confer no demonstrated benefit for the requested work.** Use a separate regular Git checkout and host tasks. Only the exact Agent host/installation identity is required for task routing. Keep PocketHost manual-CLI-only with no autostart in DEV.
 
 ## Consequences
 
