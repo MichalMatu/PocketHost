@@ -22,3 +22,7 @@ The Vite API is compiled behind `POCKETHOST_ENABLE_OWNED_SITE_DEV=1` and is **di
 - Negative HTTP tests for foreign Host/Origin, missing action header, disabled flag, wrong method, arbitrary action and unexpected request body.
 - Physical browser control testing when ADB/CDP is available; otherwise label as pending, not PASS.
 - Do not enable the feature in the currently accepted preview or launch permanent server processes until all gates and manual host ownership checks are green. Existing IleStoi.pl and Local Agent remain untouched.
+
+## Integration cross-reference (2026-11-05)
+
+The initial P3 branch was incorporated into `sprint/p3-mvp-integration-20261105` at `99fa9a3`, together with the proven Gate 1 predecessor and real Base UI component interaction tests. The initially submitted P3 native lab attempts stopped before tests; no earlier P3 PASS is claimed. The candidate also fixes marker start-ticks parsing, log-line splitting and transfer-encoded body rejection. The [exact integrated quality checkpoint](2026-11-05-p3-mvp-integration-candidate.md) tracks the new Termux result and pending phone acceptance. Keep feature actions disabled until that gate is explicitly accepted.

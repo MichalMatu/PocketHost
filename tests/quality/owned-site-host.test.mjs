@@ -30,7 +30,9 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.equal(site.inspect().state, 'absent');
     assert.equal(site.create().state, 'stopped');
     assert.equal(site.create().contentVersion, 1);
-    assert.equal((await site.start()).state, 'running');
+    const [firstStart, concurrentStart] = await Promise.all([site.start(), site.start()]);
+    assert.equal(firstStart.state, 'running');
+    assert.equal(concurrentStart.state, 'running');
     let response = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /First local site/);

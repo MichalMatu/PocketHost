@@ -11,6 +11,7 @@ test('P3 API is explicit DEV opt-in and localhost-only', () => {
   assert.match(vite, /runtime = enabled \?/);
   assert.match(vite, /"x-pockethost-intent"/);
   assert.match(vite, /"transfer-encoding"/);
+  assert.match(vite, /serializeMutation/);
   assert.match(vite, /"owned-demo"/);
   assert.match(vite, /allowedActions = new Set\(\["create", "start", "stop", "publish", "rollback"\]\)/);
   assert.doesNotMatch(vite, /req\.body\.command|shell:\s*true/);

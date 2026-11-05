@@ -72,6 +72,12 @@ function ownedDemoApi(): Plugin {
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1"
       // No filesystem inspection or process management when the flag is off.
       const runtime = enabled ? createOwnedSiteRuntime(new OwnedDemoHost()) : null
+      let mutationQueue: Promise<void> = Promise.resolve()
+      const serializeMutation = <T,>(action: () => Promise<T> | T): Promise<T> => {
+        const result = mutationQueue.then(action, action)
+        mutationQueue = result.then(() => undefined, () => undefined)
+        return result
+      }
       server.middlewares.use("/api/v1/owned-site", async (request, response) => {
         response.setHeader("Cache-Control", "no-store")
         response.setHeader("X-Content-Type-Options", "nosniff")
@@ -141,12 +147,13 @@ function ownedDemoApi(): Plugin {
           return
         }
         try {
-          const site =
+          const site = await serializeMutation(() =>
             action === "create" ? runtime.create() :
-            action === "start" ? await runtime.start() :
-            action === "stop" ? await runtime.stop() :
+            action === "start" ? runtime.start() :
+            action === "stop" ? runtime.stop() :
             action === "publish" ? runtime.publish() :
             runtime.rollback()
+          )
           response.statusCode = 200
           response.end(JSON.stringify({ site }))
         } catch {

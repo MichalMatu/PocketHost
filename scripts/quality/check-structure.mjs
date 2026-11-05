@@ -4,6 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
+const ownedHostScript = 'src/modules/host/owned-site-server.mjs';
+
 export function validateStructure(root = repositoryRoot) {
   const errors = [];
   const manifestPath = path.join(root, 'project.structure.json');
@@ -72,7 +74,12 @@ export function validateStructure(root = repositoryRoot) {
           errors.push(`Unexpected source directory: ${rel}`);
         walk(path.join(dir, entry.name), rel);
       } else if (entry.isFile()) {
-        if (rel.startsWith('src/') && !/\.(ts|tsx)$/.test(rel) && !rel.endsWith('/AGENTS.md'))
+        if (
+          rel.startsWith('src/') &&
+          !/\.(ts|tsx)$/.test(rel) &&
+          rel !== ownedHostScript &&
+          !rel.endsWith('/AGENTS.md')
+        )
           errors.push(`Unsupported source artifact: ${rel}`);
         if (/^src\/.+\.(ts|tsx)$/.test(rel)) {
           const inSharedOrUi = /^src\/(ui|shared)\/.+\.(ts|tsx)$/.test(rel);

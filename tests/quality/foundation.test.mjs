@@ -130,3 +130,25 @@ test('boundaries reject host I/O outside host adapter', (t) => {
     /Host-only import in modules\/inventory\/probe.ts/,
   );
 });
+
+test('structure allows only the dedicated host server executable script', (t) => {
+  const root = fixture(t);
+  assert.deepEqual(validateStructure(root), []);
+  writeFileSync(path.join(root, 'src/modules/runtime/foreign-server.mjs'), 'export {};\n');
+  assert.match(
+    validateStructure(root).join('\n'),
+    /Unsupported source artifact: src\/modules\/runtime\/foreign-server\.mjs/,
+  );
+});
+
+test('boundaries reject HTTP server imports outside the host adapter', (t) => {
+  const root = fixture(t);
+  writeFileSync(
+    path.join(root, 'src/modules/runtime/unapproved-server.ts'),
+    "import http from 'node:http';\n",
+  );
+  assert.match(
+    validateBoundaries(root).join('\n'),
+    /Host-only import in modules\/runtime\/unapproved-server\.ts: node:http/,
+  );
+});

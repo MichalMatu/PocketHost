@@ -7,7 +7,7 @@ purpose: Define staged delivery with phase gates
 
 # Development Plan
 
-## P0 — repository foundation (Gate 0 accepted; full Gate 1 pending)
+## P0 — repository foundation (Gate 0 accepted; Gate 1 accepted on its exact branch)
 
 **Execution contract:** All PocketHost coding-command execution, dependency installation, compilation and validation run on Termux through the installed Local Agent (the existing host-command lane; no project binding required). The [fast-start runbook](LOCAL_AGENT_TERMUX.md) is the source for dispatch and evidence; no Mac/sandbox fallbacks.
 
@@ -27,11 +27,11 @@ Launch a desktop-first dashboard manually by CLI, ideally using the **entire** p
 
 **P2 appearance acceptance:** Header theme selector consolidates Light/Dark/System, colors, layout and reset. Removed floating cog. Initial Base UI menu-group runtime error was repaired in `0645ee2` and the owner confirmed the panel works. 31/31 latest native tests, app ESLint, build and guarded HTTP restart PASS. The latest independent Android UI interaction CDP test is pending because ADB was disconnected. See [full P0–P2 checkpoint](checkpoints/2026-11-05-pocket-host-full-checkpoint.md).
 
-**Required quality-closeout before P3:** native root Gate 1, reproducible root lockfile and an automated browser interaction regression test for the appearance menu. Do not weaken the gates or repeat already accepted hardware/prototype tests unnecessarily.
+**P3 prerequisite result:** native root Gate 1 and reproducible root lockfile PASS at exact \`93cba36b\` (receipt \`pockethost-root-gate1-published-native-20261105-v1\`). Actual Base UI interactions PASS in Termux jsdom at \`3563512\`. Both are integrated into a P3 candidate and require a fresh all-in-one gate on that candidate; Android Chrome acceptance is separate.
 
 ## P3 — PocketHost-owned server
 
-Introduce a new owned test site, separate port and explicit lifecycle management with tests for collisions, start/stop and rollback. **Exit:** own server operable without touching any existing production application.
+A single isolated owned demo server and controls are implemented in the candidate branch \`sprint/p3-mvp-integration-20261105\`, with mutations disabled by default and loopback port 18787. The candidate includes start/stop, logs, sample publish and rollback with negative ownership tests. **Exit remains pending:** exact integrated native gates and physical-browser controlled test without touching existing production applications. See [P3 integration candidate checkpoint](checkpoints/2026-11-05-p3-mvp-integration-candidate.md).
 
 ## P4 — package catalog and assisted configuration
 
@@ -43,4 +43,4 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 
 ## Blockers
 
-Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: complete root Gate 1 (formatting/Node typings/committed root lock), full E2E accessibility, and Local Agent supervisor boot resilience. Basic on-phone Chrome route, pinch and no-upsell UI smoke are now accepted. Treat a status snapshot as observed data, not proof of continuing uptime.
+Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: integrated P3 native quality gates, secure live-device P3 demo, full E2E accessibility and Local Agent supervisor boot resilience. Root Gate 1 already passed on its pinned predecessor; this is not evidence of P3 quality. Basic on-phone Chrome route, pinch and no-upsell UI smoke are now accepted. Treat a status snapshot as observed data, not proof of continuing uptime.

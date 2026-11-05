@@ -101,6 +101,7 @@ export class OwnedDemoHost implements OwnedSitePort {
   private readonly root: string;
   private readonly site: string;
   private readonly port: number;
+  private lifecycleQueue: Promise<void> = Promise.resolve();
 
   constructor(root?: string, port = PORT) {
     const home = realpathSync(os.homedir());
@@ -112,6 +113,14 @@ export class OwnedDemoHost implements OwnedSitePort {
       throw new RangeError("Invalid dedicated demo port");
     }
     this.port = port;
+  }
+
+  private enqueueLifecycle(
+    action: () => Promise<OwnedSiteSnapshot>,
+  ): Promise<OwnedSiteSnapshot> {
+    const result = this.lifecycleQueue.then(action, action);
+    this.lifecycleQueue = result.then(() => undefined, () => undefined);
+    return result;
   }
 
   private markerPath(): string {
@@ -197,7 +206,11 @@ export class OwnedDemoHost implements OwnedSitePort {
     return this.inspect();
   }
 
-  async start(): Promise<OwnedSiteSnapshot> {
+  start(): Promise<OwnedSiteSnapshot> {
+    return this.enqueueLifecycle(() => this.startInternal());
+  }
+
+  private async startInternal(): Promise<OwnedSiteSnapshot> {
     const item = this.mustRead();
     if (this.status(item) === "running") return this.inspect();
     if (item.process && processPresent(item.process.pid)) {
@@ -248,14 +261,18 @@ export class OwnedDemoHost implements OwnedSitePort {
     }
     // No failed readiness check may leave an untracked owned process.
     try {
-      await this.stop();
+      await this.stopInternal();
     } catch {
       // Keep the marker for explicit diagnosis if safe cleanup is unavailable.
     }
     throw new Error("Owned test site did not pass the ready check");
   }
 
-  async stop(): Promise<OwnedSiteSnapshot> {
+  stop(): Promise<OwnedSiteSnapshot> {
+    return this.enqueueLifecycle(() => this.stopInternal());
+  }
+
+  private async stopInternal(): Promise<OwnedSiteSnapshot> {
     const item = this.mustRead();
     if (!item.process) return this.inspect();
     if (!processPresent(item.process.pid)) {

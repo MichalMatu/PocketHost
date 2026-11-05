@@ -28,3 +28,7 @@ No arbitrary command strings, modification of existing service configuration, pa
 ## Quality
 
 Test allowlist rejection, timeout and error paths. No shell execution can occur in UI or other modules.
+
+## P3 isolated owned-site candidate
+
+The candidate `owned-site-host.ts` is the only adapter permitted to create and control a new fixed `pockethost-demo` instance beneath its dedicated `PocketHost-OwnedSites` root. Its loopback port is 18787, and its marker binds an instance UUID, executable script path, cwd, PID and Linux process start ticks. The API cannot supply paths, PIDs, ports or shell commands. The adapter rejects unverified process identity, port collisions and symlinked owned roots. This candidate is **not approved for live preview enablement** until physical Termux negative tests and rollback checks pass; all observed external services remain read-only.

@@ -12,6 +12,12 @@ const hostOnlyImports = new Set([
   'node:fs/promises',
   'os',
   'node:os',
+  'http',
+  'node:http',
+  'https',
+  'node:https',
+  'net',
+  'node:net',
 ]);
 
 export function validateBoundaries(root = repositoryRoot) {
@@ -30,7 +36,7 @@ export function validateBoundaries(root = repositoryRoot) {
         walk(abs);
         continue;
       }
-      if (!entry.isFile() || !/\.(ts|tsx)$/.test(entry.name)) continue;
+      if (!entry.isFile() || !/\.(ts|tsx|mjs)$/.test(entry.name)) continue;
 
       const source = path.relative(srcRoot, abs).replaceAll(path.sep, '/');
       const content = readFileSync(abs, 'utf8');

@@ -34,6 +34,7 @@
 - [ADR-0004: GUI design system and anti-drift gates](adr/0004-ui-design-system-quality.md)
 - [ADR-0005: Desktop-first admin shell, CMS deferred](adr/0005-desktop-first-admin-shell.md)
 - [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
+- [Full admin shell Termux acceptance](checkpoints/2026-11-05-admin-shell-termux-checkpoint.md)
 - [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
 - [Tooling research checkpoint](checkpoints/2026-11-05-ui-tooling-research.md)
 - [Read-only host overview P1 acceptance checkpoint](checkpoints/2026-11-05-host-overview-work-start.md)
@@ -41,3 +42,5 @@
 - [Commercial MIT template and UI cleanup](checkpoints/2026-11-05-commercial-template-cleanup.md)
 - [Header appearance menu integration](checkpoints/2026-11-05-appearance-header-menu.md)
 - [Full P0–P2 checkpoint and quality review](checkpoints/2026-11-05-pocket-host-full-checkpoint.md)
+- [P3 single-site candidate](checkpoints/2026-11-05-p3-owned-single-site.md)
+- [P3 integration candidate and release gates](checkpoints/2026-11-05-p3-mvp-integration-candidate.md)

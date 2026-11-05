@@ -9,11 +9,11 @@ purpose: Define the runtime module contract
 
 ## Responsibility
 
-Manage lifecycle of explicitly PocketHost-owned server instances once ownership is implemented.
+Manage lifecycle only of explicitly PocketHost-owned server instances. P3 introduces a restricted, opt-in single-site implementation candidate; no foreign-process adoption.
 
 ## Inputs and outputs
 
-Inputs will be typed application contracts, not free-form shell strings. Outputs expose an explicit availability/permission/error state and never leak secrets. Final interface schemas are deferred until the module is implemented.
+The P3 candidate's typed `OwnedSitePort` exposes inspect, create, start, stop, publish, rollback and bounded logs for a fixed demo ID. Every mutation requires the current snapshot to identify `ownership: pockethost`; an absent or externally owned site cannot be started or stopped. All filesystem and process side effects remain in the host adapter. This interface is DEV-only and not a general remote process manager.
 
 ## Forbidden
 
@@ -22,3 +22,7 @@ No action on processes discovered by inventory; no PID-only ownership; no implic
 ## Quality
 
 Tests cover ownership proof, port collision, failed startup, shutdown and cleanup without touching other services.
+
+## Acceptance state
+
+The candidate is not released. Native feature tests, negative HTTP tests and actual phone-browser lifecycle acceptance remain mandatory before controls can be enabled.
