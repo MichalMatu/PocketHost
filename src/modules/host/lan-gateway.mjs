@@ -99,7 +99,7 @@ function upstreamHeaders(request, internalPort) {
   delete headers['x-forwarded-for'];
   delete headers.forwarded;
   headers.host = '127.0.0.1:' + internalPort;
-  if (headers.origin) headers.origin = 'http://127.0.0.1:8787';
+  if (headers.origin) headers.origin = 'http://127.0.0.1:' + internalPort;
   return headers;
 }
 
