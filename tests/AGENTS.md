@@ -2,7 +2,7 @@
 
 ## Scope
 
-Foundation quality tests and future module/unit/integration tests. Default execution environment is the isolated Linux sandbox.
+Foundation quality tests and future module/unit/integration tests. Every PocketHost test must run on the exact Samsung Termux target through Local Agent; isolated on-device detached QA checkouts are allowed.
 
 ## Forbidden
 
