@@ -152,3 +152,21 @@ test('boundaries reject HTTP server imports outside the host adapter', (t) => {
     /Host-only import in modules\/runtime\/unapproved-server\.ts: node:http/,
   );
 });
+
+test('docs require the checkpoint archive entrypoint', (t) => {
+  const root = fixture(t);
+  unlinkSync(path.join(root, 'docs/checkpoints/README.md'));
+  assert.match(validateDocs(root).join('\n'), /Missing docs\/checkpoints\/README\.md/);
+});
+
+test('docs reject historical checkpoints missing from their archive index', (t) => {
+  const root = fixture(t);
+  const file = path.join(root, 'docs/checkpoints/README.md');
+  const original = readFileSync(file, 'utf8');
+  assert.match(original, /\(2026-11-05-foundation\.md\)/);
+  writeFileSync(file, original.replace('(2026-11-05-foundation.md)', '(missing-foundation.md)'));
+  assert.match(
+    validateDocs(root).join('\n'),
+    /Document missing from checkpoint archive index: docs\/checkpoints\/2026-11-05-foundation\.md/,
+  );
+});

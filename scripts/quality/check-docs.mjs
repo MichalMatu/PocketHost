@@ -11,6 +11,9 @@ export function validateDocs(root = repositoryRoot) {
   const indexPath = path.join(root, 'docs/README.md');
   if (!existsSync(indexPath)) return ['Missing docs/README.md'];
   const index = readFileSync(indexPath, 'utf8');
+  const archivePath = path.join(root, 'docs/checkpoints/README.md');
+  if (!existsSync(archivePath)) return ['Missing docs/checkpoints/README.md'];
+  const archiveIndex = readFileSync(archivePath, 'utf8');
   const excluded = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.tmp']);
   const mdFiles = [];
   function walk(dir, base = '') {
@@ -37,8 +40,12 @@ export function validateDocs(root = repositoryRoot) {
           if (!new RegExp(`^${key}:\\s*\\S+`, 'm').test(frontmatter[1]))
             errors.push(`Missing ${key}: ${rel}`);
         }
-      if (!index.includes(`(${rel.slice(5)})`))
-        errors.push(`Document missing from docs index: ${rel}`);
+      const archived = rel.startsWith('docs/checkpoints/') && rel !== 'docs/checkpoints/README.md';
+      const listing = archived ? archiveIndex : index;
+      const linkTarget = archived ? rel.slice('docs/checkpoints/'.length) : rel.slice(5);
+      if (!listing.includes(`(${linkTarget})`)) {
+        errors.push(`Document missing from ${archived ? 'checkpoint archive' : 'docs'} index: ${rel}`);
+      }
     }
     const withoutFences = content.replace(/^```[^\n]*\n[\s\S]*?^```\s*$/gm, '');
     for (const match of withoutFences.matchAll(/!?\[[^\]]*\]\(([^)]+)\)/g)) {

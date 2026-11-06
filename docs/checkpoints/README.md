@@ -1,0 +1,35 @@
+---
+status: accepted-with-follow-up
+owner: core
+last_reviewed: 2026-11-06
+purpose: Index historical evidence without overloading the active documentation entrypoint
+---
+
+# PocketHost checkpoint archive
+
+Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
+
+## 2026-11-06
+
+- [Local network access](2026-11-06-local-network-access.md)
+- [P4 live panel cutover](2026-11-06-p4-live-panel-cutover.md)
+- [P4 managed photomap catalog](2026-11-06-p4-managed-photomap-catalog.md)
+- [Photomap isolated rootfs python qa closeout](2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md)
+- [Photomap runit autorestart regression](2026-11-06-photomap-runit-autorestart-regression.md)
+- [Photomap runtime inert native](2026-11-06-photomap-runtime-inert-native.md)
+- [Pocket host new chat sprint checkpoint](2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
+- [Pocket host samsung source and handoff final](2026-11-06-pocket-host-samsung-source-and-handoff-final.md)
+
+## 2026-11-05
+
+- [Admin shell termux checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
+- [Appearance header menu](2026-11-05-appearance-header-menu.md)
+- [Commercial template cleanup](2026-11-05-commercial-template-cleanup.md)
+- [Foundation](2026-11-05-foundation.md)
+- [Host health work start](2026-11-05-host-health-work-start.md)
+- [Host overview work start](2026-11-05-host-overview-work-start.md)
+- [P3 mvp integration candidate](2026-11-05-p3-mvp-integration-candidate.md)
+- [P3 owned single site](2026-11-05-p3-owned-single-site.md)
+- [Pocket host full checkpoint](2026-11-05-pocket-host-full-checkpoint.md)
+- [Termux workflow](2026-11-05-termux-workflow.md)
+- [Ui tooling research](2026-11-05-ui-tooling-research.md)

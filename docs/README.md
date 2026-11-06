@@ -27,7 +27,7 @@
 - [Diagnostics](modules/diagnostics.md)
 - [AI API](modules/ai.md)
 
-## Decisions and checkpoints
+## Architectural decisions
 
 - [ADR-0001: Foundation and no-autostart](adr/0001-foundation.md)
 - [ADR-0002: Keep Termux upstream](adr/0002-upstream-termux.md)
@@ -38,22 +38,9 @@
 - [ADR-0007: Stopped managed PhotoMap instance layout](adr/0007-photomap-managed-instance-layout.md)
 - [ADR-0008: P4 read-only managed PhotoMap catalog](adr/0008-photomap-p4-managed-catalog.md)
 - [ADR-0009: Versioned isolated PhotoMap runtime proposal](adr/0009-photomap-isolated-runtime.md)
-- [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
-- [Full admin shell Termux acceptance](checkpoints/2026-11-05-admin-shell-termux-checkpoint.md)
-- [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
-- [Tooling research checkpoint](checkpoints/2026-11-05-ui-tooling-research.md)
-- [Read-only host overview P1 acceptance checkpoint](checkpoints/2026-11-05-host-overview-work-start.md)
-- [Host health P1.1 native acceptance checkpoint](checkpoints/2026-11-05-host-health-work-start.md)
-- [Commercial MIT template and UI cleanup](checkpoints/2026-11-05-commercial-template-cleanup.md)
-- [Header appearance menu integration](checkpoints/2026-11-05-appearance-header-menu.md)
-- [Full P0–P2 checkpoint and quality review](checkpoints/2026-11-05-pocket-host-full-checkpoint.md)
-- [P3 single-site candidate](checkpoints/2026-11-05-p3-owned-single-site.md)
-- [P3 integration candidate and release gates](checkpoints/2026-11-05-p3-mvp-integration-candidate.md)
-- [PocketHost private LAN access candidate](checkpoints/2026-11-06-local-network-access.md)
-- [PhotoMap stopped-import and runit regression record](checkpoints/2026-11-06-photomap-runit-autorestart-regression.md)
-- [P4 managed PhotoMap catalog candidate](checkpoints/2026-11-06-p4-managed-photomap-catalog.md)
-- [P4 live panel acceptance on Samsung](checkpoints/2026-11-06-p4-live-panel-cutover.md)
-- [PhotoMap runtime inert adapter — Samsung native checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md)
-- [PhotoMap staged Debian, Python and source QA closeout](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md)
-- [PocketHost final Samsung source QA and next-chat handoff](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md)
-- [PocketHost clean next-chat sprint checkpoint](checkpoints/2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
+
+## Historical execution evidence
+
+- [Checkpoint archive (read only when needed)](checkpoints/README.md)
+
+The active entrypoints are the handoff, architecture, development plan and quality gates. Historical receipts remain available through the archive; do not load or regenerate every checkpoint during routine work.
