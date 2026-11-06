@@ -34,3 +34,10 @@ Use an independent test SQLite work copy and scoped media working set for the in
 Samsung acceptance must cover owner forgery, symlinks, PID reuse, changed start ticks, mismatched executable/cwd/argv, port conflict, failed Start, timeout, graceful Stop, idempotent Stop, orphan detection, log redaction and exact HTTP health. Confirm port 8010 off at the end, P3 unchanged, all six external Termux services unchanged and IleStoi readiness. Do not claim this gate from mocks or from the P4 source tests.
 
 Package plans and transactional rollback of source + Python runtime + SQLite/migrations + media are **deferred** until hardware runtime acceptance and demonstrated restore. No rollback or package button may be enabled on a partial snapshot.
+
+## Staging outcome and unresolved activation contract — 2026-11-06
+
+Samsung receipts now confirm two separate versioned rootfs copies and an independent disposable source/SQLite workset for \`debian12-photomap-20261106-v1\`, plus Python 3.11.2 with all eight required distributions. Exact \`d5b5591\` code passed 62/62 root tests and 6/6 host negative tests. This **staging acceptance does not turn this proposed ADR into runtime activation approval**. See [physical closeout](../checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md).
+
+The staged \`debian12-photomap-20261106-v1\` profile remains \`staged-unapproved\`, its \`isolated_rootfs=false\` activation guard is intentional, and no active version is selected. The currently coded PRoot launch path uses \`/opt/pockethost-venv/bin/python\` whereas observed Debian uses \`/opt/photomap-venv/bin/python\`. Reconcile exact runtime identity, interpreter, pinned requirements and fail-closed owner checks before considering activation. Keep original and imported data immutable and no autostart. The next separately authorized device gate must prove real controlled Start/health/Stop, exact child PID/executable/cwd/argv/start ticks, bounded cleanup and port 8010 off afterwards. Full-instance restore and package changes remain deferred.
+

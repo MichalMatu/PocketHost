@@ -68,6 +68,16 @@ The first managed project must pass native tests for correct schema/release/owne
 
 **PhotoMap inert runtime source gate:** Samsung task `pockethost-photomap-runtime-native-final-gate-20261106-v4` finished done / exit 0 at `32c09f2c`, with root 60/60 Node tests, 64 Markdown files, Prettier, ESLint, TypeScript, targeted 9/9 runtime tests and real-import lifecycle denials. Port 8010 remained off and six other services were running. This does not accept an installed rootfs or live PhotoMap Start/Stop. See [checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md).
 
+## PhotoMap staged runtime and source quality closeout — 2026-11-06
+
+**Exact code QA:** Samsung Local Agent task \`pockethost-photomap-worksource-final-native-20261106-v3\` finished **done / exit 0** at source \`d5b559156becdc91a1f49e0ab2982d7c2c7f699f\`. Targeted host negative tests **6/6** and root \`npm run check\` **62/62 Node tests** PASS; **65 Markdown files / 0 errors**, Prettier, ESLint and TypeScript PASS. The test verified existing stopped rootfs/workset and port 8010 off. It supersedes 60/60 and 61/61 only **for the newer code SHA**, not as evidence of PhotoMap Start/Stop.
+
+**Independent device evidence:** \`pockethost-photomap-managed-rootfs-stopped-stage-20261106-v1\`, \`pockethost-photomap-isolated-rootfs-stage-20261106-v2\`, \`pockethost-photomap-isolated-workset-stage-20261106-v1\` and \`pockethost-photomap-staged-debian-python-readonly-smoke-20261106-v2\` all finished **done / exit 0**. Stopped Debian 12, duplicate-safe versioned snapshots, disposable source/SQLite and Python 3.11.2 with eight expected dependencies were validated. Imported SQLite/media and source remained preserved; **no PhotoMap process or browser mutation control** was started.
+
+**Open quality gates:** release-specific Python executable/profile alignment, real launch/health/Stop PID and orphan verification, final independent service snapshot, backend logs and SQLite/migration safety, full transactional restore, P3 Mac publish/rollback GUI clicks. Documentation-only commits after \`d5b5591\` require their own Termux documentation/root quality receipt and do **not** silently inherit its exact-SHA test status.
+
+See [terminal-scope checkpoint](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md) and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
+
 ## Planned UI and agentic coding quality gates
 
 After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
