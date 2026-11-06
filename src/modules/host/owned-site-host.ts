@@ -326,10 +326,12 @@ export class OwnedDemoHost implements OwnedSitePort {
     throw new Error('Graceful stop timed out; no forced termination attempted');
   }
 
-  publish(): OwnedSiteSnapshot {
+  publish(target: DemoVersion): OwnedSiteSnapshot {
     const item = this.mustRead();
     if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
-    const target = item.contentVersion === 1 ? 2 : 1;
+    if (target !== 1 && target !== 2) throw new RangeError('Unsupported demo version');
+    // A repeated publish of the current version must not create another undo point.
+    if (target === item.contentVersion) return this.inspect();
     const archive = path.join(this.site, `index-v${target}.html`);
     if (!existsSync(archive)) {
       writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
