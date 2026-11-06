@@ -348,9 +348,9 @@ export class OwnedDemoHost implements OwnedSitePort {
     const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
     const html = readFileSync(archive, 'utf8');
     writeAtomic(this.site, 'index.html', html);
-    const version = item.contentVersion;
     item.contentVersion = item.previousVersion;
-    item.previousVersion = version;
+    // Consume the one-step undo. A second rollback must not redeploy the superseded release.
+    item.previousVersion = null;
     this.save(item);
     return this.inspect();
   }

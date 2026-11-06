@@ -64,3 +64,11 @@ Po wznowieniu sprawdź świeży HEAD i stan czystego worktree oraz portów 8787/
 Historical candidate HOLD text above is superseded for live HTTP and visual access. P3 native ownership/lifecycle tests 9/9 passed, and the bounded physical server acceptance checked GET/HEAD, built-in v1/v2 sample publish, rollback to v1 and logs while preserving the other six services. The exact no-login LAN source `f89519a892eb8222940d25877a7ba04c004a6736` passed the Termux root Gate 1, admin build/lint and UI tests.
 
 The owner supplied MacBook Chrome screenshots of the actual P3 `My test site` view (owned, running, v1) and of the separately hosted v1 page through the LAN gateway, and confirmed both worked without login. See [LAN checkpoint](2026-11-06-local-network-access.md). **Actual Mac browser write-button interactions and final `main` merge remain pending.** The demo server is intentionally kept running.
+
+## Owner's MacBook GUI mutation acceptance and rollback semantics defect — 2026-11-06
+
+The owner reports **Switch sample version and Rollback version work in real MacBook Chrome**, with content changing between built-in v1 and v2 in both directions. The supplied screenshot shows the owned site `running` / `Content v1` and bounded logs. This closes the previous *basic browser button interaction* uncertainty, not the later semantic-quality defect.
+
+Reaudit of the exact live host adapter found that `rollback()` swaps `previousVersion` with `contentVersion` and therefore can alternate v1/v2 indefinitely. This is technically the current two-document demo behavior, but it is misleading as a production-quality rollback. The P3 correction must consume the previous-version pointer after one rollback; a second rollback must be rejected until an explicit new publish. The UI should disable the button when `canRollback=false`.
+
+The code fix is treated as a **new candidate gate**, not silently shipped to the active owned service. Re-run native Termux Gate 1, P3 lifecycle/negative cases, admin lint/build and UI tests on the exact published SHA; a controlled live upgrade and Mac browser acceptance are required before any merge to `main`.

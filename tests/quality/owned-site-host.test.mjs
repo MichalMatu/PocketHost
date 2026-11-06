@@ -49,9 +49,21 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.equal(site.publish().contentVersion, 2);
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /Updated local site/);
-    assert.equal(site.rollback().contentVersion, 1);
+    const restored = site.rollback();
+    assert.equal(restored.contentVersion, 1);
+    assert.equal(restored.previousVersion, null);
+    assert.equal(restored.canRollback, false);
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /First local site/);
+    assert.throws(() => site.rollback(), /No prior demo version/);
+    assert.equal(site.inspect().contentVersion, 1);
+    // A later explicit publish creates a new rollback window, never a permanent toggle.
+    const republished = site.publish();
+    assert.equal(republished.contentVersion, 2);
+    assert.equal(republished.previousVersion, 1);
+    assert.equal(republished.canRollback, true);
+    assert.equal(site.rollback().contentVersion, 1);
+    assert.equal(site.inspect().canRollback, false);
     assert.ok(site.readLogs().some((line) => line.includes('PocketHost owned demo listening')));
     appendFileSync(path.join(root, 'pockethost-demo', 'activity.log'), 'entry one\nentry two\n');
     const lines = site.readLogs();

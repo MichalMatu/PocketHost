@@ -88,3 +88,9 @@ The owner explicitly withdrew the LAN login/password requirement for their trust
 - Independent post-switch Termux task `pockethost-lan-no-login-independent-health-20261106-v1` finished `done`, exit 0, `pass:true`: no-login admin and API HTTP 200, denied foreign Origin 403, test page GET 200 and POST 405, unchanged local preview and demo, verified gateway owner and six other services still running.
 
 **LAN access/visual acceptance: closed.** **P3 full GUI write-action acceptance: open.** No evidence yet that the owner clicked Switch version / Rollback in Chrome; no reboot persistence, public authentication or WAN ingress is claimed. All actions remain restricted to the owned demo. Leave `main` unmodified pending that final gate.
+
+## Owner-tested publish / rollback UI — 2026-11-06, 03:35 Europe/Warsaw
+
+The owner confirmed on the MacBook that the sample publish and rollback buttons change versions in both directions. An additional Chrome screenshot shows the running owned v1 page, the working P3 dashboard and an activity-log message. This closes the former unanswered *basic UI interaction* gate.
+
+**Newly observed limitation:** repeated Rollback acts as a permanent two-version toggle, because the current host adapter swaps `previousVersion` and `contentVersion`. This is not the desired one-step rollback semantics. The one-use correction is tracked in [P3 integration checkpoint](2026-11-05-p3-mvp-integration-candidate.md), pending exact-source Termux qualification and controlled live acceptance. No external Termux services are part of that change.

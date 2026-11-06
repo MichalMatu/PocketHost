@@ -161,8 +161,13 @@ export default function OwnedSitePage() {
                       <Upload /> Switch sample version
                     </Button>
                   )}
-                  {isOwned && site.canRollback && !unknown && (
-                    <Button variant="outline" disabled={busy} onClick={() => void act("rollback")}>
+                  {isOwned && (
+                    <Button
+                      variant="outline"
+                      disabled={busy || unknown || !site.canRollback}
+                      title={site.canRollback ? "Undo last sample publish" : "No recent sample publish to undo"}
+                      onClick={() => void act("rollback")}
+                    >
                       <RotateCcw /> Rollback version
                     </Button>
                   )}

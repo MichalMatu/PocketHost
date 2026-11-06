@@ -46,7 +46,7 @@ function fixture() {
     },
     rollback: () => {
       events.push('rollback');
-      state = { ...state, previousVersion: 2, contentVersion: 1 };
+      state = { ...state, previousVersion: null, contentVersion: 1, canRollback: false };
       return { ...state };
     },
     readLogs: () => ['demo started', 'demo stopped'],
@@ -79,6 +79,7 @@ test('single explicit site can be created, started, published, rolled back and s
   assert.throws(runtime.rollback, RangeError);
   assert.equal(runtime.publish().contentVersion, 2);
   assert.equal(runtime.rollback().contentVersion, 1);
+  assert.throws(runtime.rollback, /No owned version available/);
   assert.equal((await runtime.stop()).state, 'stopped');
   assert.deepEqual(runtime.logs(), ['demo started', 'demo stopped']);
   assert.deepEqual(events, ['create', 'start', 'publish', 'rollback', 'stop']);
