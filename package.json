@@ -18,6 +18,7 @@
     "typecheck": "tsc --noEmit",
     "markdownlint": "markdownlint-cli2 \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/**/*.md\" \"src/**/AGENTS.md\" \"scripts/**/AGENTS.md\" \"tests/**/AGENTS.md\" \"apps/AGENTS.md\"",
     "test": "node --test tests/quality/*.test.mjs",
+    "test:coverage": "node --test --experimental-test-coverage tests/quality/*.test.mjs",
     "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck",
     "admin:import": "node scripts/import-shadcnstore.mjs",
     "admin:dev": "npm --prefix apps/admin run dev -- --host 127.0.0.1 --port 8787 --strictPort",
