@@ -4,7 +4,6 @@ import {
   closeSync,
   existsSync,
   lstatSync,
-  mkdirSync,
   openSync,
   readFileSync,
   readlinkSync,
@@ -152,6 +151,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     ) {
       return null;
     }
+    directory(path.join(this.instance, 'runtime'));
     const active = json(path.join(this.instance, 'runtime', 'active-version.json'));
     owner(active);
     const version = active.selected_runtime;
@@ -159,7 +159,6 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       throw new Error('Unsafe runtime version');
     }
     const base = path.join(this.instance, 'runtime', 'versions');
-    directory(path.join(this.instance, 'runtime'));
     directory(base);
     const versionRoot = path.join(base, version);
     directory(versionRoot);
@@ -251,7 +250,9 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       !Number.isSafeInteger(item.pid) ||
       item.pid < 2 ||
       !/^\d+$/.test(item.startTicks) ||
-      !/^[a-f0-9]{64}$/.test(item.argvSha256)
+      !/^[a-f0-9]{64}$/.test(item.argvSha256) ||
+      typeof item.executable !== 'string' ||
+      typeof item.cwd !== 'string'
     ) {
       throw new Error('Unsafe PhotoMap process marker');
     }
@@ -314,8 +315,10 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     if (!existsSync(this.state)) return;
     directory(this.state);
     const file = path.join(this.state, 'events.log');
-    if (existsSync(file) && lstatSync(file).size > LOG_LIMIT) {
-      unlinkSync(file);
+    if (existsSync(file)) {
+      const stat = lstatSync(file);
+      if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe event log');
+      if (stat.size > LOG_LIMIT) unlinkSync(file);
     }
     writeFileSync(file, new Date().toISOString() + ' ' + message + '\n', {
       flag: 'a',
