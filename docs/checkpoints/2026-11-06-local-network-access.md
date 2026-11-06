@@ -31,3 +31,16 @@ LAN exposure is **not yet an accepted implementation**. This checkpoint is the d
 3. Native Termux lint, types, build and security negative tests on a pinned source SHA.
 4. Controlled live LAN test from a second device, verify independent existing services remain unchanged, record actual links.
 5. Update documentation and mark accepted only after hardware and browser acceptance.
+
+## Scope narrowed at owner's request
+
+This sprint implements **PocketHost only**. IleStoi.pl stays on its existing public HTTPS hostname with no change to the productive Samsung backend, tunnel, ports or service. PhotoMap is excluded. Access from the MacBook should be a saved local link rather than repeated SSH forwarding.
+
+## LAN gateway candidate
+
+- `src/modules/host/lan-gateway.mjs` is an explicit, manually launched, password-protected HTTP gateway. It must bind to one exact RFC1918 IPv4 address belonging to the Samsung Wi-Fi interface, not `0.0.0.0`.
+- The admin LAN port is `18878` with browser Basic authentication and same-origin request checks. The owned demonstration site uses `18879` and is read-only for GET/HEAD without authentication. Both proxy only to existing `127.0.0.1` services; do not open the upstream 8787 or 18787 listeners.
+- Admin username is `pocket`. The high-entropy password is generated and kept only in a `0600` file on the phone under its private Termux user home; never place it in Git, an agent receipt or request arguments.
+- The existing P3 API checks still require the original loopback Host, Origin and explicit intent header after the authenticated gateway validates the LAN request. The UI uses same-origin credentials and transforms the preview link into the dedicated read-only LAN site link when reached via port 18878.
+- All LAN links remain HTTP and Basic credentials are not encrypted end-to-end. This mode is restricted to the user's trusted Wi-Fi; do not use it on shared/guest networks, public internet or via router port forwarding. Prefer SSH if that assumption changes.
+- This is a **candidate**, not permission for automatic startup or permanent service registration. The branch must pass Termux native Gate 1, admin lint/build/UI, gateway negative HTTP tests, an actual guarded LAN smoke and user acceptance before release.
