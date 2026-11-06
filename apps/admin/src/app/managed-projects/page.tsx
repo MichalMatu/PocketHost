@@ -21,6 +21,12 @@ interface Project {
   runtimeState: "disabled" | "unknown"
   release: string | null
   port: 8010
+  tools: Array<{
+    name: "node" | "npm" | "git" | "python3" | "proot" | "proot-distro"
+    state: "available" | "unavailable"
+    version: string | null
+  }>
+  lockfiles: Array<{ path: string; sha256: string }>
   data: {
     databaseBytes: number
     privateMediaFiles: number
@@ -142,6 +148,34 @@ export default function ManagedProjectsPage() {
               <CardContent className="space-y-3 text-sm">
                 <p>Expected localhost port: <strong>{project.port}</strong>. No public PhotoMap endpoint is opened.</p>
                 <p>Python / Debian PRoot: <strong>{project.dependencies?.prootEnvironment ?? "not imported"}</strong>.</p>
+                {project.tools.length > 0 && (
+                  <div className="rounded-lg border p-4">
+                    <p className="font-medium mb-3">Imported tool inventory</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {project.tools.map((tool) => (
+                        <div className="flex justify-between gap-2" key={tool.name}>
+                          <span>{tool.name}</span>
+                          <span className="text-muted-foreground text-right">{tool.version ?? tool.state}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {project.lockfiles.length > 0 && (
+                  <div className="rounded-lg border p-4">
+                    <p className="font-medium mb-3">Preserved project dependency locks</p>
+                    <div className="space-y-2">
+                      {project.lockfiles.map((file) => (
+                        <div key={file.path} className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-4">
+                          <span className="break-all">{file.path}</span>
+                          <code className="text-muted-foreground text-xs" title={file.sha256}>
+                            SHA-256 {file.sha256.slice(0, 12)}…
+                          </code>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <p>Project start / stop: <strong>{project.capabilities.startStop ? "available" : "not enabled"}</strong>.</p>
                 <p>Project-scoped package updates: <strong>{project.capabilities.packages ? "available" : "not enabled"}</strong>.</p>
                 <p>Full-instance rollback: <strong>{project.capabilities.rollback ? "available" : "not enabled"}</strong>.</p>
