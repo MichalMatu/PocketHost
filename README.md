@@ -4,12 +4,12 @@ PocketHost is an experimental Android/Termux hosting control panel. P0–P2 prov
 
 ## Current development status
 
-| Milestone | Scope                                                                      | Status                                                                                                   |
-| --------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| P0–P2     | Foundation, native monitoring and dashboard                                | Native device accepted                                                                                   |
+| Milestone | Scope                                                                      | Status                                                                                                                            |
+| --------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| P0–P2     | Foundation, native monitoring and dashboard                                | Native device accepted                                                                                                            |
 | P3        | Explicitly owned static demo and private-LAN gateway                       | Device/browser viewing accepted; final P3 control/browser gates and production release still blocked by browser interaction gates |
-| P4        | Private PhotoMap snapshot, registry, versions and safe read-only catalog   | Verified import and full Samsung-native source QA PASS; live panel deployment pending                    |
-| Next      | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented                                                                                          |
+| P4        | Private PhotoMap snapshot, registry, versions and safe read-only catalog   | Verified import and full Samsung-native source QA PASS; live panel deployment pending                                             |
+| Next      | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented                                                                                                                   |
 
 PhotoMap original checkout, including local changes, was preserved. Its verified stopped import contains copied SQLite and **2,196 media files**. PhotoMap runtime is explicitly disabled: no autostart, package updates or full rollback. Existing IleStoi.pl, Raspberry Pi production PhotoMap, Cloudflare and Local Agent are out of scope.
 
@@ -22,6 +22,6 @@ PhotoMap original checkout, including local changes, was preserved. Its verified
 
 ## Where to resume
 
-Read [next-chat handoff](docs/HANDOFF_NEXT_CHAT.md), [latest P4 checkpoint](docs/checkpoints/2026-11-06-p4-managed-photomap-catalog.md), [PhotoMap import closeout](docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), [architecture](docs/ARCHITECTURE.md), [quality gates](docs/QUALITY_GATES.md) and [Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md). Read [AGENTS.md](AGENTS.md) before any operations. The only development branch is `main`; verify its current HEAD before each change. Historical branches are scheduled for safe retirement.
+Read [next-chat handoff](docs/HANDOFF_NEXT_CHAT.md), [latest P4 checkpoint](docs/checkpoints/2026-11-06-p4-managed-photomap-catalog.md), [PhotoMap import closeout](docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), [architecture](docs/ARCHITECTURE.md), [quality gates](docs/QUALITY_GATES.md) and [Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md). Read [AGENTS.md](AGENTS.md) before any operations. The only development branch is `main`; verify its current HEAD before each change. All ten historical branches were safely removed after merged ancestry verification.
 
 For code changes, run `npm run check`, `npm run admin:lint`, `npm run admin:build` and `npm --prefix apps/admin run test:ui` **on Samsung Termux via Local Agent only**, then obtain terminal task results and independent physical checks before declaring acceptance.

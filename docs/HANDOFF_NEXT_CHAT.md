@@ -9,7 +9,7 @@ purpose: Single concise current-state handoff for safe PocketHost continuation
 
 ## Start from fresh source and host state
 
-Repository `MichalMatu/PocketHost`; develop **only on fresh `main`**, unless the owner explicitly directs otherwise. The former sprint's 188 commits were fast-forwarded to `main` on 2026-11-07 (source `eefd870`). Historical working branches are already its ancestors and are awaiting safe deletion. The consolidation is **not** a production release or a new native QA receipt.
+Repository `MichalMatu/PocketHost`; develop **only on fresh `main`**, unless the owner explicitly directs otherwise. The former sprint's 188 commits were fast-forwarded to `main` on 2026-11-07 (source `eefd870`). All ten historical working branches were verified as ancestors and removed. The consolidation is **not** a production release or a new native QA receipt.
 
 The last **source-accepted** SHA is
 `a5443070f1c6e41798641aa9c2098a9acc9e17a4`.
@@ -83,4 +83,14 @@ evidence only at real acceptance boundaries. Do not reread or rerun the entire h
 
 ## Current quality refactor — 2026-11-07
 
-All ten historical branches were verified as ancestors of `main` and deleted through Git-only transport. The owner-requested `main`-only policy now appears in root instructions and development docs. The first Samsung `check:all` at `eefd870` found the checkpoint-index structure rule; its corrected `a56e94` successor passed 68/68 Node tests and stopped at one Markdownlint MD059 link in the quality document. That lint has been corrected. The generic managed-runtime extraction on `main` is new code and **requires fresh same-SHA native `check:all`**, not inherited acceptance. PhotoMap runtime activation remains disabled.
+- All ten historical branches were verified as ancestors of `main` and deleted through
+  Git-only transport. The `main`-only policy is now in root instructions and development docs.
+- At `eefd870`, Samsung `check:all` rejected the checkpoint archive index; this was
+  fixed by `a56e94`. The next run passed 68/68 Node tests but stopped at Markdownlint MD059.
+- At `634aa3f`, the four new generic runtime tests, three process evidence tests and all
+  75 root Node tests passed, as did Markdownlint. Full `check:all` stopped at Prettier
+  on four files. ESLint, TypeScript, admin build and Vitest were not reached.
+- The latest bounded source sprint and exact open work are recorded in the
+  [2026-11-07 checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md).
+  The new generic runtime still requires full same-SHA Samsung QA; PhotoMap activation
+  remains disabled.

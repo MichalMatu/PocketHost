@@ -40,8 +40,7 @@ export function validateDocs(root = repositoryRoot) {
           if (!new RegExp(`^${key}:\\s*\\S+`, 'm').test(frontmatter[1]))
             errors.push(`Missing ${key}: ${rel}`);
         }
-      const archived =
-        rel.startsWith('docs/checkpoints/') && rel !== 'docs/checkpoints/README.md';
+      const archived = rel.startsWith('docs/checkpoints/') && rel !== 'docs/checkpoints/README.md';
       const listing = archived ? archiveIndex : index;
       const linkTarget = archived ? rel.slice('docs/checkpoints/'.length) : rel.slice(5);
       if (!listing.includes(`(${linkTarget})`)) {

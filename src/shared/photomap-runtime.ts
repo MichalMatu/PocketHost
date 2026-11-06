@@ -1,7 +1,4 @@
-import type {
-  ManagedRuntimePort,
-  ManagedRuntimeSnapshot,
-} from './managed-runtime.ts';
+import type { ManagedRuntimePort, ManagedRuntimeSnapshot } from './managed-runtime.ts';
 
 /** Application-specific PhotoMap binding; the core runtime has no PhotoMap dependency. */
 export const OWNED_PHOTOMAP_ID = 'photomap-test' as const;
