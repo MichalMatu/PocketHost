@@ -91,13 +91,7 @@ function upstreamHeaders(request, internalPort) {
 export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
-    const status = requestAllowed(
-      request,
-      bind,
-      port || server.address()?.port,
-      mask,
-      admin,
-    );
+    const status = requestAllowed(request, bind, port || server.address()?.port, mask, admin);
     if (status !== 200) {
       rejected(response, status);
       return;

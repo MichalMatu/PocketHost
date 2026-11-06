@@ -1,11 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import test from 'node:test';
-import {
-  createGateway,
-  ownLanInterface,
-  sameSubnet,
-} from '../../src/modules/host/lan-gateway.mjs';
+import { createGateway, ownLanInterface, sameSubnet } from '../../src/modules/host/lan-gateway.mjs';
 
 const bind = '127.0.0.1';
 const mask = '255.0.0.0';
@@ -84,10 +80,7 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
     assert.equal(response.status, 200);
     body = await response.json();
     assert.equal(body.authorizationForwarded, false);
-    assert.equal(
-      await requestWithHeaders(port, { Host: 'evil.example' }),
-      403,
-    );
+    assert.equal(await requestWithHeaders(port, { Host: 'evil.example' }), 403);
     assert.equal(
       await requestWithHeaders(port, {
         Host: '127.0.0.1:' + port,
@@ -110,14 +103,8 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
       ),
       403,
     );
-    assert.equal(
-      (await request('/', { headers: { Origin: 'http://evil.example' } })).status,
-      403,
-    );
-    assert.equal(
-      (await request('/', { headers: { 'Sec-Fetch-Site': 'cross-site' } })).status,
-      403,
-    );
+    assert.equal((await request('/', { headers: { Origin: 'http://evil.example' } })).status, 403);
+    assert.equal((await request('/', { headers: { 'Sec-Fetch-Site': 'cross-site' } })).status, 403);
     response = await request('/api/v1/owned-site/publish', {
       method: 'POST',
       headers: {
