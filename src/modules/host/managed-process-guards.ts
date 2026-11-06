@@ -39,3 +39,14 @@ export function safeStopEvidence(evidence: {
     evidence.descendantsExited === true
   );
 }
+
+/**
+ * A missing leader PID does not prove an empty PRoot process group.
+ * Inaccessible/ambiguous group status always fails closed.
+ */
+export function processGroupAbsent(
+  leaderPid: number,
+  observe: (groupId: number) => 'absent' | 'present' | 'unknown',
+): boolean {
+  return Number.isSafeInteger(leaderPid) && leaderPid > 1 && observe(leaderPid) === 'absent';
+}

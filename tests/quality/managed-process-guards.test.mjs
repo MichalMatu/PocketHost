@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import {
   attestsManagedProcess,
   safeStopEvidence,
+  processGroupAbsent,
 } from '../../src/modules/host/managed-process-guards.ts';
 
 const expected = {
@@ -53,4 +55,23 @@ test('graceful-stop evidence rejects surviving PRoot descendants and occupied po
     safeStopEvidence({ leaderExited: true, portReleased: true, descendantsExited: true }),
     true,
   );
+});
+
+test('PRoot process group probe fails closed for unknown and surviving descendants', () => {
+  assert.equal(processGroupAbsent(420, () => 'absent'), true);
+  assert.equal(processGroupAbsent(420, () => 'present'), false);
+  assert.equal(processGroupAbsent(420, () => 'unknown'), false);
+  assert.equal(processGroupAbsent(1, () => 'absent'), false);
+  assert.equal(processGroupAbsent(Number.NaN, () => 'absent'), false);
+});
+
+test('PhotoMap adapter may not delete its marker on leader-only stop evidence', () => {
+  const source = readFileSync(
+    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /const complete = safeStopEvidence\(/);
+  assert.match(source, /descendantsExited: processGroupAbsent\(/);
+  assert.match(source, /if \(complete\) \{/);
+  assert.match(source, /PhotoMap graceful stop uncertain; marker retained/);
 });

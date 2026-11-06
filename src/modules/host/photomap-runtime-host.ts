@@ -14,7 +14,7 @@ import {
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { attestsManagedProcess } from './managed-process-guards.ts';
+import { attestsManagedProcess, processGroupAbsent, safeStopEvidence } from './managed-process-guards.ts';
 import {
   OWNED_PHOTOMAP_ID,
   OWNED_PHOTOMAP_PORT,
@@ -460,7 +460,20 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     }
     process.kill(marker.pid, 'SIGTERM');
     for (let i = 0; i < 40; i++) {
-      if (startTicks(marker.pid) === null && (await portFree())) {
+      // A dead leader and free port are insufficient: PRoot children may remain.
+      const complete = safeStopEvidence({
+        leaderExited: startTicks(marker.pid) === null,
+        portReleased: await portFree(),
+        descendantsExited: processGroupAbsent(marker.pid, (pgid) => {
+          try {
+            process.kill(-pgid, 0);
+            return 'present';
+          } catch (error) {
+            return (error as NodeJS.ErrnoException).code === 'ESRCH' ? 'absent' : 'unknown';
+          }
+        }),
+      });
+      if (complete) {
         unlinkSync(path.join(this.state, 'active.json'));
         this.event('manual-stop-completed');
         return this.inspect();
