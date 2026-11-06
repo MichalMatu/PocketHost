@@ -5,6 +5,13 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
   Card,
   CardContent,
   CardDescription,
@@ -40,6 +47,7 @@ export default function OwnedSitePage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [logs, setLogs] = React.useState<string[]>([])
+  const [targetVersion, setTargetVersion] = React.useState<"1" | "2">("1")
 
   const refresh = async () => {
     const current = await getState()
@@ -59,6 +67,10 @@ export default function OwnedSitePage() {
   }
 
   React.useEffect(() => {
+    if (state?.site?.contentVersion) setTargetVersion(String(state.site.contentVersion) as "1" | "2")
+  }, [state?.site?.contentVersion])
+
+  React.useEffect(() => {
     const controller = new AbortController()
     void getState(controller.signal)
       .then((data) => {
@@ -70,7 +82,7 @@ export default function OwnedSitePage() {
     return () => controller.abort()
   }, [])
 
-  const act = async (name: "create" | "start" | "stop" | "publish" | "rollback") => {
+  const act = async (name: "create" | "start" | "stop" | "publish/v1" | "publish/v2" | "rollback") => {
     if (!state?.enabled || busy) return
     setBusy(true)
     setError(null)
@@ -157,9 +169,33 @@ export default function OwnedSitePage() {
                     </Button>
                   )}
                   {isOwned && !unknown && (
-                    <Button variant="outline" disabled={busy} onClick={() => void act("publish")}>
-                      <Upload /> Switch sample version
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label htmlFor="pockethost-demo-version" className="text-sm text-muted-foreground">
+                        Target version
+                      </label>
+                      <Select
+                        value={targetVersion}
+                        onValueChange={(value) => {
+                          if (value === "1" || value === "2") setTargetVersion(value)
+                        }}
+                        disabled={busy}
+                      >
+                        <SelectTrigger id="pockethost-demo-version" aria-label="Target version">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">v1 — First local site</SelectItem>
+                          <SelectItem value="2">v2 — Updated local site</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        disabled={busy || targetVersion === String(site.contentVersion)}
+                        onClick={() => void act(targetVersion === "1" ? "publish/v1" : "publish/v2")}
+                      >
+                        <Upload /> Publish selected version
+                      </Button>
+                    </div>
                   )}
                   {isOwned && (
                     <Button
