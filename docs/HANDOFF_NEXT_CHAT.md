@@ -7,6 +7,17 @@ purpose: Resume PocketHost after Samsung-verified 62/62 source quality and inact
 
 # PocketHost — next-chat handoff
 
+## Fresh next-chat checkpoint
+
+[Clean sprint checkpoint](checkpoints/2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
+records the current docs-only branch HEAD `1d996d93dc6171fbffc8082153444a599f44328e`,
+the last independently Samsung-tested source `a5443070`,
+accepted 9/9 negative and 65/65 root tests, and the still-disabled PhotoMap.
+Start the next chat from that checkpoint and the current HEAD, not from
+historical test counts. A new real PhotoMap Start/health/Stop still requires
+separate approval. No merge while P3 browser Publish/Rollback interaction is
+unaccepted.
+
 ## Latest verified checkpoint — 2026-11-06
 
 See [Samsung source QA and final sprint handoff](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md).

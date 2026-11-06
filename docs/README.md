@@ -56,3 +56,4 @@
 - [PhotoMap runtime inert adapter — Samsung native checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md)
 - [PhotoMap staged Debian, Python and source QA closeout](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md)
 - [PocketHost final Samsung source QA and next-chat handoff](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md)
+- [PocketHost clean next-chat sprint checkpoint](checkpoints/2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
