@@ -37,6 +37,10 @@ A single isolated owned demo server and controls are implemented in the candidat
 
 Add reviewed install plans, explicit approvals and safe diagnostics; installation is never implicit during discovery.
 
+## P4.1 — managed PhotoMap catalog candidate (2026-11-06)
+
+On `sprint/p3-mvp-integration-20261105`, P4 adds the first real stopped managed project: `photomap-test` with a typed validated registry, source release, database/media count, tool availability and project lock checksums. The DEV GET-only endpoint and `/managed-projects` panel are candidate code pending Samsung-native quality and actual panel acceptance. PhotoMap runtime start/stop, PRoot isolation, package changes and whole-instance rollback remain disabled. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
+
 ## P5 — AI deploy, domains and Android package
 
 Add scoped publish API, site validation, version rollback, optional public ingress and packaging only after threat model, contract and device tests.
