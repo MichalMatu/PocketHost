@@ -40,7 +40,7 @@ const unavailableMessage = "Could not read Termux status. The admin demo remains
 async function requestHostSnapshot(signal?: AbortSignal): Promise<Snapshot> {
   const response = await fetch(endpoint, {
     method: "GET",
-    credentials: "omit",
+    credentials: "same-origin",
     cache: "no-store",
     signal,
   })
