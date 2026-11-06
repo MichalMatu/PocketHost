@@ -8,7 +8,6 @@ import {
   readFileSync,
   readlinkSync,
   realpathSync,
-  renameSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs';
