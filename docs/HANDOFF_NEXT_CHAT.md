@@ -94,3 +94,14 @@ evidence only at real acceptance boundaries. Do not reread or rerun the entire h
   [2026-11-07 checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md).
   The new generic runtime still requires full same-SHA Samsung QA; PhotoMap activation
   remains disabled.
+
+## New bounded source changes awaiting Samsung acceptance
+
+After the accepted formatted **QA checkout** trial at `634aa3f`, further `main`
+changes added process-group stop evidence, read-only host API Zod validation,
+component-level P3 accessibility checks, `test:coverage`, JSONL error events and a
+dry-run recovery plan. These changes do **not** activate PhotoMap, install packages,
+manage foreign services or complete real browser acceptance. See the
+[quality sprint checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md)
+for exact receipts and unresolved work. Verify fresh `main`, apply required
+Prettier formatting and obtain a new full Samsung `check:all` receipt.
