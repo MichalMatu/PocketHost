@@ -4,6 +4,7 @@ import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 import { readHostSnapshot } from "../../src/modules/host/host-snapshot.ts"
 import { OwnedDemoHost } from "../../src/modules/host/owned-site-host.ts"
+import { ManagedPhotoMapHost } from "../../src/modules/host/managed-photomap-host.ts"
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 
 /** DEV-only, loopback-only read-only API. There are no mutation endpoints. */
@@ -166,9 +167,60 @@ function ownedDemoApi(): Plugin {
   }
 }
 
+/**
+ * P4: a strictly read-only catalog for one verified imported project.
+ * This does not enable PhotoMap launch, package mutations or rollback.
+ */
+function managedPhotoMapApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-photomap-catalog",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/managed-photomap", (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        const remote = request.socket.remoteAddress
+        if (
+          !hosts.has(request.headers.host ?? "") ||
+          (request.headers.origin && !origins.has(request.headers.origin)) ||
+          request.headers["sec-fetch-site"] === "cross-site" ||
+          (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")
+        ) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.url !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method !== "GET") {
+          response.setHeader("Allow", "GET")
+          response.statusCode = 405
+          response.end("{}")
+          return
+        }
+        try {
+          const project = new ManagedPhotoMapHost().inspect()
+          response.statusCode = 200
+          response.end(JSON.stringify({ project }))
+        } catch {
+          response.statusCode = 409
+          response.end(JSON.stringify({ error: "managed-project-unavailable" }))
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), managedPhotoMapApi()],
   server: { host: "127.0.0.1", port: 8787, strictPort: true },
   resolve: {
     alias: {
