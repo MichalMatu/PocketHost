@@ -41,13 +41,19 @@ Add reviewed install plans, explicit approvals and safe diagnostics; installatio
 
 On `sprint/p3-mvp-integration-20261105`, P4 adds the first real stopped managed project: `photomap-test` with a typed validated registry, source release, database/media count, tool availability and project lock checksums. The DEV GET-only endpoint and `/managed-projects` panel passed **full native Samsung source quality** at `471fdfec` (51/51 Node tests, six UI tests, root lint/types/format/Markdown and admin build). **P4 live cutover accepted** on Samsung (`pockethost-p4-same-root-guarded-cutover-20261106-v3`): JSON GET and request-security negatives passed; P3 and six external services remained unchanged. PhotoMap runtime start/stop, PRoot isolation, package changes and whole-instance rollback remain disabled. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
 
+## P4.2 — inactive PhotoMap runtime adapter (native accepted)
+
+Samsung task `pockethost-photomap-disabled-marker-hardening-native-20261106-v1` accepted the exact code at `4e7f1c2`: **61/61 Node tests**, 65 Markdown documents, Prettier, lint and TypeScript PASS. The typed runtime port and host adapter reject foreign owners, forged paths and stale process markers, and the real imported instance refused Start/Stop. This is a source/negative-test gate, **not** permission to run PhotoMap. See [checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md) and [ADR-0009](adr/0009-photomap-isolated-runtime.md).
+
+The independent Debian rootfs/source and SQLite work-copy stages still require distinct physical validation. No generic package or transactional rollback controls will be exposed before real restoration testing.
+
 ## P5 — AI deploy, domains and Android package
 
 Add scoped publish API, site validation, version rollback, optional public ingress and packaging only after threat model, contract and device tests.
 
 ## Blockers
 
-P0–P2 native acceptance, P3 single-site device hosting and the trusted-home-LAN gateway are documented. Current release blockers are final P4 same-SHA quality/build and live catalog HTTP acceptance, P3 Mac browser mutation-button verification before merge, complete accessibility E2E, and Local Agent boot-resilience qualification. A historical PASS at another SHA never substitutes for a current-source PASS.
+P0–P2 native acceptance, P3 single-site device hosting and the trusted-home-LAN gateway are documented. The P4 live catalog and inert PhotoMap adapter gates are accepted. Remaining blockers are owned Debian/Python runtime staging and a separate manual PhotoMap lifecycle acceptance on Samsung, P3 Mac browser mutation-button verification before merge, accessibility E2E and Local Agent boot-resilience qualification. A historical PASS at another SHA never substitutes for a current-source PASS.
 
 ## Current state and next bounded step — 2026-11-06
 
@@ -55,4 +61,4 @@ The **P3 LAN viewing milestone is accepted**: the real MacBook Chrome screenshot
 
 **P3 release gate not yet closed:** browser interactions for `Switch sample version` and `Rollback version` have not been user-tested from the MacBook; never infer their browser behavior from visible controls. Keep the demo live at v1 and avoid merging until that acceptance and a fresh six-service snapshot are recorded.
 
-**Current next step:** finish the P4 catalog release gate for the already copied and stopped PhotoMap TEST, then move to an isolated, owned, versioned PhotoMap Debian PRoot runtime with manual lifecycle controls. Do **not** enable package updates or full rollback until dependency, database and media restoration is proven. Start with [P4 closeout](checkpoints/2026-11-06-p4-managed-photomap-catalog.md) and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
+**Current next step:** preserve accepted P4 live catalog and the 61/61 inert adapter gate, then verify the standalone Debian PRoot copy, stage a separate SQLite/source work set and qualify manual Start/Stop on the Samsung. Do **not** enable package updates or full rollback until dependency, database and media restoration is proven. Start with [P4 closeout](checkpoints/2026-11-06-p4-managed-photomap-catalog.md) and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
