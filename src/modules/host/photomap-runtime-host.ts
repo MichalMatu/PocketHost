@@ -14,6 +14,7 @@ import {
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { attestsManagedProcess } from './managed-process-guards.ts';
 import {
   OWNED_PHOTOMAP_ID,
   OWNED_PHOTOMAP_PORT,
@@ -293,10 +294,21 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       const argv = readFileSync('/proc/' + marker.pid + '/cmdline', 'utf8')
         .split('\0')
         .filter(Boolean);
-      return (
-        exe === plan.executable &&
-        cwd === plan.versionRoot &&
-        digest(argv.slice(1)) === marker.argvSha256
+      return attestsManagedProcess(
+        {
+          pid: marker.pid,
+          startTicks: marker.startTicks,
+          executable: plan.executable,
+          cwd: plan.versionRoot,
+          argvSha256: marker.argvSha256,
+        },
+        {
+          pid: marker.pid,
+          startTicks: startTicks(marker.pid) ?? '',
+          executable: exe,
+          cwd,
+          argvSha256: digest(argv.slice(1)),
+        },
       );
     } catch {
       return false;
