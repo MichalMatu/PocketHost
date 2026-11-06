@@ -80,8 +80,8 @@ export function createPhotoMapRuntime(port: PhotoMapRuntimePort) {
         .slice(-40)
         .map((line) =>
           line
-            .replace(/(bearer\\s+)\\S+/gi, '$1[redacted]')
-            .replace(/(token|password|secret)\\s*[:=]\\s*\\S+/gi, '$1=[redacted]')
+            .replace(/(bearer\s+)\S+/gi, '$1[redacted]')
+            .replace(/(token|password|secret)\s*[:=]\s*\S+/gi, '$1=[redacted]')
             .slice(0, 240),
         );
     },
