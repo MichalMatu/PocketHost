@@ -53,3 +53,4 @@
 - [PhotoMap stopped-import and runit regression record](checkpoints/2026-11-06-photomap-runit-autorestart-regression.md)
 - [P4 managed PhotoMap catalog candidate](checkpoints/2026-11-06-p4-managed-photomap-catalog.md)
 - [P4 live panel acceptance on Samsung](checkpoints/2026-11-06-p4-live-panel-cutover.md)
+- [PhotoMap runtime inert adapter — Samsung native checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md)
