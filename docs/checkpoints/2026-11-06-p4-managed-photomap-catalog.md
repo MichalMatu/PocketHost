@@ -38,10 +38,10 @@ Earlier task retries were triggered by invalid timeout budgets, Git branch drift
 
 **Accepted:** PhotoMap stopped import; P4 catalog source; native root/admin quality; actual managed manifest read; guarded cleanup; independent P3/six-service preflight.
 
-**Not deployed:** The running P3/Vite admin preview was **not restarted or switched to P4**. A GET returning HTTP 200 for the new catalog path on the existing preview is not proof of P4 routing because Vite may serve its SPA fallback. P4 live acceptance still requires a guarded, reversible source update and **JSON schema/ownership GET 200**, POST 405 and forged Host/Origin 403, while preserving P3 owned process/script identity and all six external services. No production or trusted-LAN admin update was claimed.
+**Subsequent live acceptance:** Samsung terminal task `pockethost-p4-same-root-guarded-cutover-20261106-v3` successfully completed the guarded panel update with JSON GET 200, POST 405, forged Host/Origin 403, preserved P3 ownership and unchanged services. This source checkpoint remains the historical source/import closeout; see [P4 live deployment](2026-11-06-p4-live-panel-cutover.md) for terminal cutover evidence.
 
 **Not implemented:** Isolated Debian PRoot/Python dependency runtime, manual PhotoMap Start/Stop, project-scoped package changes, consistent SQLite/media restore, or entire-instance rollback. The old run script still targets the original checkout, and the imported PRoot remains `external-unfrozen`. Port 8010 and autostart stay off.
 
 The repository `main` remained at `8378663725f10beacf9c527f194e7f568170284d` at the last check. No branch merge, new branch or force push occurred.
 
-Resume from [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md) to finish the guarded P4 GUI gate and then develop an isolated PhotoMap runtime without repeating accepted imports or tests.
+With the live P4 GUI gate closed, resume from [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md) with isolated PhotoMap runtime engineering, not repeated import or previously accepted tests.
