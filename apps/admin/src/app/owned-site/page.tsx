@@ -28,7 +28,7 @@ type StateResponse = { enabled: boolean; site: Demo | null }
 async function getState(signal?: AbortSignal): Promise<StateResponse> {
   const response = await fetch("/api/v1/owned-site", {
     cache: "no-store",
-    credentials: "omit",
+    credentials: "same-origin",
     signal,
   })
   if (!response.ok) throw new Error("Site state unavailable")
@@ -46,7 +46,7 @@ export default function OwnedSitePage() {
     setState(current)
     if (current.enabled && current.site?.state !== "absent") {
       const response = await fetch("/api/v1/owned-site/logs", {
-        credentials: "omit",
+        credentials: "same-origin",
         cache: "no-store",
       })
       if (response.ok) {
@@ -77,7 +77,7 @@ export default function OwnedSitePage() {
     try {
       const response = await fetch(`/api/v1/owned-site/${name}`, {
         method: "POST",
-        credentials: "omit",
+        credentials: "same-origin",
         headers: { "X-PocketHost-Intent": "owned-demo" },
       })
       if (!response.ok) throw new Error("Operation refused. Check ownership or port availability.")
