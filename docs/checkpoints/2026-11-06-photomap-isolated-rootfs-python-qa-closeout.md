@@ -53,3 +53,12 @@ Do not treat these historical failed task IDs as current source failures or reru
 5. P3 Mac browser **publish/rollback button click** acceptance, UI accessibility follow-up, final checkpoint and decision about merging `main` are independent release holds.
 
 **Overall:** staged environment + same-SHA source QA PASS; PhotoMap lifecycle/release HOLD. See [ADR-0009](../adr/0009-photomap-isolated-runtime.md), [quality gates](../QUALITY_GATES.md) and [handoff](../HANDOFF_NEXT_CHAT.md).
+
+## Subsequent exact-source negative gate — 2026-11-06
+
+Samsung task `pockethost-photomap-python-contract-final-samsung-20261106-v2` finished **done / exit 0** at source `a5443070f1c6e41798641aa9c2098a9acc9e17a4`.
+The guest PRoot launch plan now names the independently observed `/opt/photomap-venv/bin/python`, and the host adapter requires additional explicit `approved-manual`, `launch_allowed`, `activation_approved` and exact interpreter profile controls. The isolated host negative tests passed **9/9**; full `npm run check` passed **65/65 Node tests**, **66 Markdown files with zero errors**, Prettier, ESLint and TypeScript. The task independently verified that port 8010 remained OFF.
+
+The earlier `pockethost-photomap-guarded-python-contract-native-20261106-v1` task found an ESLint `no-regex-spaces` violation although its 65/65 tests passed. A test-only regex quantifier change at `a5443070` resolved it. Do not repeat these accepted tests without a code change.
+
+**Still open:** the inactive staged profile is *not* approved for activation; no live PhotoMap process, precise PRoot child PID attestation, real HTTP health/Stop, backend log capture, full rollback, package mutations or browser lifecycle controls were accepted. Preserve both copied Debian versions, original SQLite/media and the running P3/six foreign services. The next hardware gate must be scoped and fail-closed.
