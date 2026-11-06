@@ -31,7 +31,7 @@ Launch a desktop-first dashboard manually by CLI, ideally using the **entire** p
 
 ## P3 — PocketHost-owned server
 
-A single isolated owned demo server and controls are implemented in the candidate branch `sprint/p3-mvp-integration-20261105`, with mutations disabled by default and loopback port 18787. The candidate includes start/stop, logs, sample publish and rollback with negative ownership tests. **Exit remains pending:** exact integrated native gates and physical-browser controlled test without touching existing production applications. See [P3 integration candidate checkpoint](checkpoints/2026-11-05-p3-mvp-integration-candidate.md).
+A single isolated owned demo server and controls were implemented in `sprint/p3-mvp-integration-20261105`, with explicit start/stop, logs, sample version publication and one-use rollback. Native Samsung quality, guarded demo start and trusted-home-LAN gateway viewing were accepted; owner-confirmed Mac Chrome display and the read-only device health receipt are recorded in the [LAN checkpoint](checkpoints/2026-11-06-local-network-access.md). **The exact Mac browser publish/rollback click gate and merge to `main` remain separate release decisions.** The P3 static demo is intentionally distinct from PhotoMap.
 
 ## P4 — package catalog and assisted configuration
 
@@ -47,7 +47,7 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 
 ## Blockers
 
-Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: integrated P3 native quality gates, secure live-device P3 demo, full E2E accessibility and Local Agent supervisor boot resilience. Root Gate 1 already passed on its pinned predecessor; this is not evidence of P3 quality. Basic on-phone Chrome route, pinch and no-upsell UI smoke are now accepted. Treat a status snapshot as observed data, not proof of continuing uptime.
+P0–P2 native acceptance, P3 single-site device hosting and the trusted-home-LAN gateway are documented. Current release blockers are final P4 same-SHA quality/build and live catalog HTTP acceptance, P3 Mac browser mutation-button verification before merge, complete accessibility E2E, and Local Agent boot-resilience qualification. A historical PASS at another SHA never substitutes for a current-source PASS.
 
 ## Current state and next bounded step — 2026-11-06
 
@@ -55,4 +55,4 @@ The **P3 LAN viewing milestone is accepted**: the real MacBook Chrome screenshot
 
 **P3 release gate not yet closed:** browser interactions for `Switch sample version` and `Rollback version` have not been user-tested from the MacBook; never infer their browser behavior from visible controls. Keep the demo live at v1 and avoid merging until that acceptance and a fresh six-service snapshot are recorded.
 
-**Suggested next development slice after the P3 GUI gate:** P4.1 read-only package availability for a fixed tool allowlist, with typed unavailable/installed status and no installation, upgrades, shell-string injection, or changes to IleStoi. This is a proposal, not an install authorization.
+**Current next step:** finish the P4 catalog release gate for the already copied and stopped PhotoMap TEST, then move to an isolated, owned, versioned PhotoMap Debian PRoot runtime with manual lifecycle controls. Do **not** enable package updates or full rollback until dependency, database and media restoration is proven. Start with [P4 closeout](checkpoints/2026-11-06-p4-managed-photomap-catalog.md) and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
