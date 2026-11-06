@@ -122,3 +122,14 @@ test('disabled manifest never hides stale process identity or follows state syml
     rmSync(f.parent, { recursive: true, force: true });
   }
 });
+
+test('PRoot bind source is a disposable work copy, never the preserved import', () => {
+  const source = readFileSync(
+    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /const source = path.join\(work, 'source'\)/);
+  assert.match(source, /const preservedSource = path.join\(this.instance, 'releases'/);
+  assert.match(source, /source \+ ':\/mnt\/source'/);
+  assert.doesNotMatch(source, /preservedSource \+ ':\/mnt\/source'/);
+});
