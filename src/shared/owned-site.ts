@@ -25,7 +25,7 @@ export interface OwnedSitePort {
   create(): OwnedSiteSnapshot;
   start(): Promise<OwnedSiteSnapshot>;
   stop(): Promise<OwnedSiteSnapshot>;
-  publish(): OwnedSiteSnapshot;
+  publish(version: DemoVersion): OwnedSiteSnapshot;
   rollback(): OwnedSiteSnapshot;
   readLogs(): ReadonlyArray<string>;
 }
