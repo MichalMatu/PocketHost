@@ -11,7 +11,7 @@ purpose: Authorize narrowly scoped manual trusted-LAN access while retaining int
 
 The owner explicitly authorized one-click access to PocketHost from a trusted home LAN. This extends the original loopback-only MVP inspection rule **only** for a separately tested, manually launched gateway. It does not authorize exposing arbitrary Termux services, the production IleStoi.pl backend, Local Agent, or PhotoMap.
 
-The internal Vite admin and owned static demo continue to listen on `127.0.0.1:8787` and `127.0.0.1:18787`. The gateway accepts inbound HTTP **only on an exact, currently assigned RFC1918 IPv4 address**, never a wildcard, and uses separate dedicated ports. Administration is password-protected with a random locally stored owner-only credential; the static demo is GET/HEAD only. Host, Origin, Fetch Metadata, allowed HTTP methods, explicit P3 intent and process ownership remain enforced.
+The internal Vite admin and owned static demo continue to listen on `127.0.0.1:8787` and `127.0.0.1:18787`. The gateway accepts inbound HTTP **only on an exact, currently assigned RFC1918 IPv4 address**, never a wildcard, and uses separate dedicated ports. Following the owner's explicit decision of 2026-11-06, administration has no login/password on this strictly trusted LAN; the static demo remains GET/HEAD only. Host, Origin, Fetch Metadata, allowed HTTP methods, explicit P3 intent and process ownership remain enforced.
 
 ## Alternatives
 
@@ -19,8 +19,8 @@ An SSH local-port forward provides encryption without new listeners, but the own
 
 ## Security and lifecycle conditions
 
-- The LAN is assumed private and trusted. HTTP Basic is **not encrypted**; do not use this mode on guest Wi-Fi or forward it through the public internet.
-- Never commit passwords, print them in public logs or include them in the private agent task request/receipt. The owner reads the generated password directly from the phone.
+- The owner explicitly accepts unauthenticated admin access for devices in the trusted local Wi-Fi. Anyone on that subnet can operate the PocketHost demo. Do not use this mode on guest Wi-Fi or forward it through the public internet.
+- The LAN gateway must not demand, read, or generate a password. Never log secrets or allow incoming Authorization headers to reach the internal admin process.
 - Allow only source work on the PocketHost working branch; require actual Samsung Termux tests, negative request checks, process ownership, guarded rollback, manual Chrome acceptance and a checkpoint before treating LAN as accepted.
 - The gateway is started explicitly and has **no autostart**. Do not modify the startup policy or other services.
 

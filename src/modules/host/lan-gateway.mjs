@@ -1,5 +1,3 @@
-import { timingSafeEqual } from 'node:crypto';
-import { lstatSync, readFileSync } from 'node:fs';
 import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
@@ -8,8 +6,6 @@ import path from 'node:path';
 const ADMIN_PORT = 18878;
 const SITE_PORT = 18879;
 const INTERNAL_PORTS = { admin: 8787, site: 18787 };
-const LOGIN = 'pocket';
-const PASSWORD_FILE = path.join(os.homedir(), '.local/state/pockethost/lan-password');
 
 function numberOf(ip) {
   const bytes = ip.split('.').map(Number);
@@ -45,33 +41,7 @@ export function ownLanInterface(bind) {
   return matches[0].netmask;
 }
 
-export function safePassword(filename = PASSWORD_FILE) {
-  const stat = lstatSync(filename);
-  if (!stat.isFile() || stat.isSymbolicLink() || (stat.mode & 0o077) !== 0) {
-    throw new Error('LAN password must be a regular owner-only file');
-  }
-  const value = readFileSync(filename, 'utf8').trim();
-  if (value.length < 24 || value.length > 128 || /[\r\n:]/.test(value)) {
-    throw new Error('Invalid LAN password length or characters');
-  }
-  return value;
-}
-
-export function passwordMatches(header, password) {
-  if (typeof header !== 'string' || !header.startsWith('Basic ') || header.length > 256)
-    return false;
-  let raw;
-  try {
-    raw = Buffer.from(header.slice(6), 'base64').toString('utf8');
-  } catch {
-    return false;
-  }
-  const expected = Buffer.from(LOGIN + ':' + password);
-  const received = Buffer.from(raw);
-  return received.length === expected.length && timingSafeEqual(received, expected);
-}
-
-function requestAllowed(request, bind, port, mask, admin, password) {
+function requestAllowed(request, bind, port, mask, admin) {
   if (!sameSubnet(request.socket.remoteAddress, bind, mask)) return 403;
   const host = bind + ':' + port;
   const origin = 'http://' + host;
@@ -95,20 +65,13 @@ function requestAllowed(request, bind, port, mask, admin, password) {
   ) {
     return 403;
   }
-  if (admin) {
-    if (!passwordMatches(request.headers.authorization, password)) return 401;
-  } else if (!['GET', 'HEAD'].includes(request.method)) {
-    return 405;
-  }
+  if (!admin && !['GET', 'HEAD'].includes(request.method)) return 405;
   return 200;
 }
 
-function rejected(response, status, admin) {
+function rejected(response, status) {
   response.setHeader('Cache-Control', 'no-store');
   response.setHeader('X-Content-Type-Options', 'nosniff');
-  if (status === 401 && admin) {
-    response.setHeader('WWW-Authenticate', 'Basic realm="PocketHost LAN", charset="UTF-8"');
-  }
   if (status === 405) response.setHeader('Allow', 'GET, HEAD');
   response.writeHead(status);
   response.end();
@@ -125,7 +88,7 @@ function upstreamHeaders(request, internalPort) {
   return headers;
 }
 
-export function createGateway({ bind, mask, admin, password, port, testUpstreamPort }) {
+export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
     const status = requestAllowed(
@@ -134,10 +97,9 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
       port || server.address()?.port,
       mask,
       admin,
-      password,
     );
     if (status !== 200) {
-      rejected(response, status, admin);
+      rejected(response, status);
       return;
     }
     const headers = admin
@@ -162,7 +124,7 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
     );
     upstream.on('timeout', () => upstream.destroy());
     upstream.on('error', () => {
-      if (!response.headersSent) rejected(response, 502, admin);
+      if (!response.headersSent) rejected(response, 502);
       else response.destroy();
     });
     request.pipe(upstream);
@@ -170,7 +132,7 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
   server.on('upgrade', (request, socket, head) => {
     if (
       !admin ||
-      requestAllowed(request, bind, port || server.address()?.port, mask, admin, password) !== 200
+      requestAllowed(request, bind, port || server.address()?.port, mask, admin) !== 200
     ) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
@@ -195,10 +157,10 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
   return server;
 }
 
-export async function startLanGateway(bind, password) {
+export async function startLanGateway(bind) {
   const mask = ownLanInterface(bind);
-  const admin = createGateway({ bind, mask, admin: true, password, port: ADMIN_PORT });
-  const site = createGateway({ bind, mask, admin: false, password, port: SITE_PORT });
+  const admin = createGateway({ bind, mask, admin: true, port: ADMIN_PORT });
+  const site = createGateway({ bind, mask, admin: false, port: SITE_PORT });
   async function listen(server, port) {
     return new Promise((resolve, reject) => {
       server.once('error', reject);
@@ -232,8 +194,7 @@ export async function startLanGateway(bind, password) {
 if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   const bind = process.env.POCKETHOST_LAN_BIND;
   try {
-    const password = safePassword();
-    const gateway = await startLanGateway(bind, password);
+    const gateway = await startLanGateway(bind);
     console.log(
       JSON.stringify({ state: 'running', admin: gateway.adminUrl, site: gateway.siteUrl }),
     );
