@@ -25,23 +25,29 @@ purpose: Keep exact evidence and remaining quality hardening work for a bounded 
 6. Added seven deterministic generic runtime and process-guard negative/positive tests. These **do not** amount to PRoot hardware lifecycle acceptance.
 7. Applied owner-directed `main`-only policy across root instructions, contributing guidance and operational docs.
 
+8. Added a fail-closed PRoot process-group observation to the stop decision. Leader PID exit and port release alone do not clear an owned marker. Separate process groups and reparented children still require hardware acceptance.
+9. Added `test:coverage` using Node's built-in coverage (no new dependencies).
+10. Added Zod response validation for the six-service read-only host snapshot and three API contract tests, using the admin's already installed Zod. Other API endpoints remain pending.
+11. Added three rendered UI checks for P3 disabled/unknown controls, target-version semantics and rollback availability. These do not replace a real browser audit.
+12. Added bounded JSONL runtime events, an event-history reader and a dry-run-only recovery decision; there is no automatic recovery or managed PhotoMap activation.
+
 ## Exact native QA evidence (Samsung Termux)
 
 - `eefd870` task `pockethost-main-consolidation-checkall-20261107-v1`: **FAIL** at structure gate: archive `README.md` treated as invalid checkpoint; fixed in `a56e94`.
 - `a56e94` task `pockethost-main-native-checkall-after-structure-fix-20261107-v1`: **68/68 Node PASS**, then Markdownlint MD059 on a non-descriptive link; fixed in follow-up source.
 - `634aa3f` task `pockethost-main-generic-runtime-process-gate-20261107-v1`: **4/4 generic runtime PASS**, **3/3 process evidence PASS**, **75/75 root Node PASS**, **Markdownlint PASS**. `check:all` returned FAIL at Prettier: `README.md`, `docs/HANDOFF_NEXT_CHAT.md`, `scripts/quality/check-docs.mjs`, `src/shared/photomap-runtime.ts`. ESLint, TypeScript, admin build and Vitest were **not reached** in that run.
-- Task `pockethost-sprint-prettier-diff-gates-20261107-v1` requested Prettier formatting **only in an isolated clean Samsung QA checkout**, with diff capture and further gates. Do not mark PASS until its terminal result and final committed SHA are verified.
+- Task `pockethost-sprint-prettier-diff-gates-20261107-v1` completed **done/0** after formatting four files **inside an isolated QA checkout at source `634aa3f`**: 75/75 Node tests, Markdownlint, Prettier, ESLint, TypeScript, admin lint/build and 6/6 Vitest PASS; checkout restored clean. This proves an intermediate formatted candidate, **not** the current committed `main`.
 
-No `check:all` PASS on the whole refactored `main` has been accepted as of this checkpoint.
+The current refactored `main` (new process-group, API and diagnostics changes) still requires a new exact-SHA native `check:all` and independent browser/device acceptance. An earlier formatted checkout PASS is not transferable.
 
 ## Open work — strictly ordered
 
-1. **Gate repair and same-SHA acceptance:** apply verified Prettier changes to `main`, rerun `check:all` on Samsung, record tool versions, exact SHA, exit codes and unchanged port 8010.
+1. **Same-SHA gate:** run `check:all` plus `test:coverage` on the final committed `main` SHA; fix all lint/format/type/build/Vitest issues and record unchanged port 8010.
 2. **Host process safety:** negative fixtures for failed PRoot spawn, PID reuse, timeout, port collision, stale start claims, surviving descendants and process group confusion; do not infer descendant death from leader exit. A reliable cleanup and orphan recovery strategy is still unimplemented.
 3. **Decouple PhotoMap host:** split manifest/profile validation, release storage, launch-plan construction, process supervision and log/reporting behind app-neutral typed ports; keep a PhotoMap-specific adapter and never copy its paths into the core. Do this in independently tested increments.
-4. **Quality tooling:** add a reproducible Node-native coverage report and calibrate realistic host/runtime coverage thresholds; evaluate Knip compatibility and baseline without installing unreviewed dependencies or removing upstream template files. Add versioned API input/output schemas and negative contract tests.
-5. **Accessibility:** add meaningful rendered keyboard/ARIA interaction checks for owned-site controls; retain a distinct real browser and device acceptance for P3 Publish/Rollback and keyboard navigation.
-6. **Diagnostics:** introduce bounded structured event logs, redaction, error history and controlled dry-run recovery cases before any automated recovery.
+4. **Quality tooling:** collect and review the new Node coverage baseline, then calibrate host/runtime thresholds; evaluate Knip compatibility without installing unreviewed packages or deleting vendor files. Extend Zod contracts beyond the host-snapshot endpoint.
+5. **Accessibility:** qualify newly added component checks, then run a real-device browser and keyboard/ARIA audit for P3 Publish/Rollback and version selection.
+6. **Diagnostics:** qualify the new JSONL/error-history and recovery dry-run code; then add retention/error-category metrics and a separately approved device recovery procedure. Automated recovery remains prohibited.
 7. **Separate release holds:** P3 actual browser command interactions, affected external service readback; P4 on-device safe process-tree identity, test-only controlled Start/health/Stop, SQLite/media restore. Never activate P4 without a separate explicit owner authorization.
 
 ## Safe continuation rule
