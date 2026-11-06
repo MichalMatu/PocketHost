@@ -25,7 +25,7 @@ Run `npm run check:foundation`:
 - Run deterministic Node contract/negative tests; keep external and imported projects read-only.
 - Preserve upstream admin routes, licenses and original vendor code until a reviewed change.
 
-The checkpoint archive is [here](checkpoints/README.md). It is evidence, not an active to-do list.
+The checkpoint archive is [checkpoint archive](checkpoints/README.md). It is evidence, not an active to-do list.
 
 ## G1 — project source quality
 
