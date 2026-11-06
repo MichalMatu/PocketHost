@@ -106,7 +106,7 @@ function upstreamHeaders(request, internalPort) {
 export function createGateway({ bind, mask, admin, password, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
-    const status = requestAllowed(request, bind, port, mask, admin, password);
+    const status = requestAllowed(request, bind, port || server.address()?.port, mask, admin, password);
     if (status !== 200) {
       rejected(response, status, admin);
       return;
@@ -137,7 +137,7 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
     request.pipe(upstream);
   });
   server.on('upgrade', (request, socket, head) => {
-    if (!admin || requestAllowed(request, bind, port, mask, admin, password) !== 200) {
+    if (!admin || requestAllowed(request, bind, port || server.address()?.port, mask, admin, password) !== 200) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
