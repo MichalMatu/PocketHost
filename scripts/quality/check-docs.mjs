@@ -40,11 +40,14 @@ export function validateDocs(root = repositoryRoot) {
           if (!new RegExp(`^${key}:\\s*\\S+`, 'm').test(frontmatter[1]))
             errors.push(`Missing ${key}: ${rel}`);
         }
-      const archived = rel.startsWith('docs/checkpoints/') && rel !== 'docs/checkpoints/README.md';
+      const archived =
+        rel.startsWith('docs/checkpoints/') && rel !== 'docs/checkpoints/README.md';
       const listing = archived ? archiveIndex : index;
       const linkTarget = archived ? rel.slice('docs/checkpoints/'.length) : rel.slice(5);
       if (!listing.includes(`(${linkTarget})`)) {
-        errors.push(`Document missing from ${archived ? 'checkpoint archive' : 'docs'} index: ${rel}`);
+        errors.push(
+          `Document missing from ${archived ? 'checkpoint archive' : 'docs'} index: ${rel}`,
+        );
       }
     }
     const withoutFences = content.replace(/^```[^\n]*\n[\s\S]*?^```\s*$/gm, '');
