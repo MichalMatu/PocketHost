@@ -28,6 +28,7 @@ function sanitizedToolVersions(value: unknown): ManagedProjectSnapshot['tools'] 
       entry.available &&
       typeof first === 'string' &&
       first.length <= 100 &&
+      /\d/.test(first) &&
       /^[a-z0-9 ._+\\/()\\-]+$/i.test(first)
         ? first
         : null;
