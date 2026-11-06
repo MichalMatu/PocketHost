@@ -43,7 +43,18 @@ function fixture() {
   write(files.registry, { status: 'imported-stopped', instance_path: 'instances/photomap-test', runtime_enabled: false, managed_version: release });
   write(files.instance, { release_id: release });
   write(files.runtime, { enabled: false, autostart: false, launch_allowed: false, port: 8010, runtime_kind: 'debian-proot', managed_proot_snapshot: false });
-  write(files.packages, { release_id: release, allow_package_update: false, allow_package_rollback: false, proot_python_environment: 'external-unfrozen' });
+  write(files.packages, {
+    release_id: release,
+    allow_package_update: false,
+    allow_package_rollback: false,
+    proot_python_environment: 'external-unfrozen',
+    termux_tool_versions: Object.fromEntries(
+      ['node', 'npm', 'git', 'python3', 'proot', 'proot-distro'].map((name) =>
+        [name, { available: true, version: ['v1.2.3'] }],
+      ),
+    ),
+    lockfiles: [{ path: 'backend/requirements.txt', sha256: 'a'.repeat(64) }],
+  });
   write(files.current, { selected_release: release, active_process: null, status: 'stopped' });
   write(files.source, { release_id: release });
   write(files.data, { release_id: release, database: { bytes: 19574784 }, media: { private: { files: 1098 }, public: { files: 1098 } } });
@@ -64,6 +75,9 @@ test('P4 catalog accepts only the explicitly imported, stopped and disabled Phot
     assert.equal(snap.data?.publicMediaFiles, 1098);
     assert.deepEqual(snap.capabilities, { startStop: false, packages: false, rollback: false });
     assert.equal(snap.dependencies?.isolatedRollback, false);
+    assert.equal(snap.tools.length, 6);
+    assert.equal(snap.lockfiles.length, 1);
+    assert.equal(snap.lockfiles[0].sha256, 'a'.repeat(64));
     assert.equal('origin_checkout' in snap, false);
   } finally {
     rmSync(f.parent, { recursive: true, force: true });
@@ -93,6 +107,8 @@ test('P4 rejects forged ownership, enabled launch, package changes and release t
     ['packages', { allow_package_update: true }],
     ['packages', { allow_package_rollback: true }],
     ['packages', { proot_python_environment: 'global' }],
+    ['packages', { lockfiles: [{ path: '../../private', sha256: 'a'.repeat(64) }] }],
+    ['packages', { termux_tool_versions: {} }],
     ['current', { selected_release: '../foreign' }],
     ['current', { active_process: { pid: 1 } }],
     ['data', { media: { private: { files: -1 }, public: { files: 0 } } }],
