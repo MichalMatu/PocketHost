@@ -62,6 +62,8 @@ At `0645ee2`, physical Termux Local Agent validated the repaired Base UI header 
 
 The first managed project must pass native tests for correct schema/release/ownership, withheld start/stop/package/rollback capabilities, symlink and forged-manifest rejection, bounded sanitized tool/lock inventory, fixed-path same-origin GET API and preserved upstream routes. The physical import receipt is distinct from a live P4 panel acceptance. A new version requires same-SHA root Gate 0/1, admin lint/build, UI tests, and guarded endpoint smoke on the Samsung through Local Agent. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
 
+**Actual P4 source gate:** pinned `471fdfec` on Samsung passed 51/51 Node tests, 62 Markdown files, Prettier, ESLint, TypeScript, admin lint/build and 6/6 UI tests (`pockethost-p4-closeout-final-native-quality-20261106-v1`, done/exit 0). A separate actual imported manifest adapter test passed (`pockethost-p4-closeout-real-import-adapter-20261106-v1`). This is not a live P4 panel deployment; the HTTP negative request and P3-identity preserving cutover gate remain open. See [P4 checkpoint](checkpoints/2026-11-06-p4-managed-photomap-catalog.md).
+
 ## Planned UI and agentic coding quality gates
 
 After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
