@@ -78,6 +78,10 @@ The first managed project must pass native tests for correct schema/release/owne
 
 See [terminal-scope checkpoint](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md) and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
 
+## Follow-up source hardening (not yet native accepted)
+
+The source has been prepared to use the observed Debian guest interpreter `/opt/photomap-venv/bin/python` instead of an unverified venv path; the managed runtime profile now also requires explicitly approved manual status, a matching interpreter path and `activation_approved=true` before launch planning is available. New negative fixtures reject a staged profile with forged top-level enablement and mismatched approval fields. **This is a pending new source gate until its exact SHA receives a Samsung Local Agent terminal PASS.** All staged device manifests remain disabled, and this source update does not authorize activation or package changes.
+
 ## Planned UI and agentic coding quality gates
 
 After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).

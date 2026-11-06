@@ -41,3 +41,8 @@ Samsung receipts now confirm two separate versioned rootfs copies and an indepen
 
 The staged `debian12-photomap-20261106-v1` profile remains `staged-unapproved`, its `isolated_rootfs=false` activation guard is intentional, and no active version is selected. The currently coded PRoot launch path uses `/opt/pockethost-venv/bin/python` whereas observed Debian uses `/opt/photomap-venv/bin/python`. Reconcile exact runtime identity, interpreter, pinned requirements and fail-closed owner checks before considering activation. Keep original and imported data immutable and no autostart. The next separately authorized device gate must prove real controlled Start/health/Stop, exact child PID/executable/cwd/argv/start ticks, bounded cleanup and port 8010 off afterwards. Full-instance restore and package changes remain deferred.
 
+## Source hardening sprint — activation still on HOLD
+
+The launcher source now uses the previously physically verified guest interpreter `/opt/photomap-venv/bin/python`. The host adapter additionally requires a matching explicit profile `status=approved-manual`, `launch_allowed=true`, `activation_approved=true`, `isolated_rootfs=true` and `python_executable`, as well as the existing requirements, port and ownership checks. A copied but staged version must still fail closed even if a top-level manifest flag is changed.
+
+These are **code-only safeguards pending the new Samsung same-SHA quality gate**. They do not grant permission to set any staged approval flags, write an active-version manifest or start a process. The process identity, PRoot lifecycle and real health/Stop gates remain open.

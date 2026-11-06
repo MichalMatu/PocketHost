@@ -25,6 +25,8 @@ const RELEASE = 'import-20261106';
 const MAX_MANIFEST = 65536;
 const VERSION = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const LOG_LIMIT = 65536;
+// Verified in the copied Debian 12.15 PRoot; never use the global Termux interpreter.
+const GUEST_PYTHON = '/opt/photomap-venv/bin/python';
 
 type RecordData = Record<string, unknown>;
 
@@ -169,6 +171,10 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       profile.source_release !== RELEASE ||
       profile.runtime_version !== version ||
       profile.isolated_rootfs !== true ||
+      profile.status !== 'approved-manual' ||
+      profile.launch_allowed !== true ||
+      profile.activation_approved !== true ||
+      profile.python_executable !== GUEST_PYTHON ||
       profile.autostart !== false ||
       profile.port !== OWNED_PHOTOMAP_PORT ||
       typeof profile.requirements_sha256 !== 'string' ||
@@ -232,7 +238,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       path.join(work, 'storage') + ':/mnt/storage',
       '-w',
       '/mnt/source',
-      '/opt/pockethost-venv/bin/python',
+      GUEST_PYTHON,
       '-m',
       'uvicorn',
       'server:create_app',

@@ -133,3 +133,88 @@ test('PRoot bind source is a disposable work copy, never the preserved import', 
   assert.match(source, /source \+ ':\/mnt\/source'/);
   assert.doesNotMatch(source, /preservedSource \+ ':\/mnt\/source'/);
 });
+
+function preparedRuntimeFixture() {
+  const f = fixture();
+  const version = 'debian12-photomap-20261106-v1';
+  const directory = path.join(f.instance, 'runtime');
+  const versionRoot = path.join(directory, 'versions', version);
+  mkdirSync(versionRoot, { recursive: true, mode: 0o700 });
+  f.write(path.join(directory, 'active-version.json'), { selected_runtime: version });
+  const runtime = JSON.parse(readFileSync(f.runtime, 'utf8'));
+  f.write(f.runtime, {
+    ...runtime,
+    enabled: true,
+    launch_allowed: true,
+    managed_proot_snapshot: true,
+  });
+  const profile = path.join(versionRoot, 'profile.json');
+  const ready = {
+    source_release: 'import-20261106',
+    runtime_version: version,
+    isolated_rootfs: true,
+    status: 'approved-manual',
+    launch_allowed: true,
+    activation_approved: true,
+    python_executable: '/opt/photomap-venv/bin/python',
+    autostart: false,
+    port: 8010,
+    requirements_sha256: 'a'.repeat(64),
+  };
+  return { ...f, profile, ready };
+}
+
+test('copied Debian remains inert even if only top-level launch flags are changed', async () => {
+  const f = preparedRuntimeFixture();
+  try {
+    f.write(f.profile, {
+      ...f.ready,
+      isolated_rootfs: false,
+      status: 'staged-unapproved',
+      launch_allowed: false,
+      activation_approved: false,
+    });
+    const host = new ManagedPhotoMapRuntimeHost(f.root);
+    assert.throws(() => host.inspect(), /Unsafe runtime version profile/);
+    await assert.rejects(host.start(), /Unsafe runtime version profile/);
+  } finally {
+    rmSync(f.parent, { recursive: true, force: true });
+  }
+});
+
+test('runtime launch requires every explicit profile and interpreter approval field', () => {
+  for (const change of [
+    { status: 'staged-unapproved' },
+    { launch_allowed: false },
+    { activation_approved: false },
+    { isolated_rootfs: false },
+    { python_executable: '/opt/pockethost-venv/bin/python' },
+    { python_executable: '../photomap-venv/bin/python' },
+    { autostart: true },
+    { source_release: 'external-release' },
+    { requirements_sha256: 'bad-digest' },
+  ]) {
+    const f = preparedRuntimeFixture();
+    try {
+      f.write(f.profile, { ...f.ready, ...change });
+      assert.throws(
+        () => new ManagedPhotoMapRuntimeHost(f.root).inspect(),
+        /Unsafe runtime version profile/,
+        JSON.stringify(change),
+      );
+    } finally {
+      rmSync(f.parent, { recursive: true, force: true });
+    }
+  }
+});
+
+test('PRoot launcher uses the verified guest Python and never executes host Python', () => {
+  const source = readFileSync(
+    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /const GUEST_PYTHON = '\/opt\/photomap-venv\/bin\/python'/);
+  assert.match(source, /      GUEST_PYTHON,/);
+  assert.doesNotMatch(source, /'\/opt\/pockethost-venv\/bin\/python'/);
+  assert.match(source, /profile\.activation_approved !== true/);
+});
