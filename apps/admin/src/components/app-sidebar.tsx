@@ -38,6 +38,7 @@ const data = {
       items: [
         { title: "Host overview", url: "/host", icon: ServerCog },
         { title: "My test site", url: "/owned-site", icon: Globe2 },
+        { title: "Managed projects", url: "/managed-projects", icon: ServerCog },
       ],
     },
     {
