@@ -74,7 +74,10 @@ function startTicks(pid: number): string | null {
   if (!Number.isSafeInteger(pid) || pid < 2) return null;
   try {
     const raw = readFileSync('/proc/' + pid + '/stat', 'utf8');
-    const fields = raw.slice(raw.lastIndexOf(')') + 2).trim().split(/\s+/);
+    const fields = raw
+      .slice(raw.lastIndexOf(')') + 2)
+      .trim()
+      .split(/\s+/);
     const ticks = fields[19];
     return ticks && /^\d+$/.test(ticks) ? ticks : null;
   } catch {
@@ -90,9 +93,7 @@ function portFree(): Promise<boolean> {
   return new Promise((resolve) => {
     const listener = createServer();
     listener.once('error', () => resolve(false));
-    listener.listen(OWNED_PHOTOMAP_PORT, '127.0.0.1', () =>
-      listener.close(() => resolve(true)),
-    );
+    listener.listen(OWNED_PHOTOMAP_PORT, '127.0.0.1', () => listener.close(() => resolve(true)));
   });
 }
 
