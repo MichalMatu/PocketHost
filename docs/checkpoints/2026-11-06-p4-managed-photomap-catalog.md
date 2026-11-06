@@ -1,56 +1,47 @@
 ---
-status: in-progress
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-06
-purpose: Consolidated P4 PhotoMap managed catalog acceptance and next-chat handoff
+purpose: Final P4 source and physical import acceptance with explicit live deployment boundary
 ---
 
-# P4 — PhotoMap TEST managed catalog closeout
+# P4 — managed PhotoMap TEST catalog checkpoint
 
-## Scope and result
+## Completed scope
 
-P4 introduces **one real, imported, non-running project**: `photomap-test`. This is the foundation for a generic managed-project architecture, **not** a ready-made way to run arbitrary apps.
+P4 adds **one real, privately imported, stopped project** (`photomap-test`) without assuming that a general-purpose managed runtime already exists.
 
-- Typed `ManagedProjectPort` snapshot with explicit ownership and capability flags.
-- Host-only `ManagedPhotoMapHost` validates the canonical registry, manifest schemas/owners/versions, stopped state, source release and copied data inventory. It rejects symlink escapes, forged owner, unsafe release paths, enabled autostart or unapproved package operations.
-- Localhost DEV API: **GET-only** `/api/v1/managed-photomap`, with fixed Host/Origin/method checks and no accepted arbitrary ID or command.
-- GUI route `/managed-projects`: release, database/media counts, six allowlisted tool versions and private project dependency lock-file hashes. No secrets or absolute managed paths returned.
-- All 32 original dashboard template routes, P1 read-only host status and P3 owned demo site remain available.
-- PhotoMap runtime, package updates and full rollback remain explicitly **disabled** until independently safe PRoot and whole-instance snapshots are proven.
+- `src/shared/managed-project.ts`: typed managed-project snapshot, status and disabled capabilities.
+- `src/modules/host/managed-photomap-host.ts`: fixed-path, fail-closed manifest reader with owner/schema/release matching, symlink and path guards, bounded large-media inventory, sanitized tool versions and lock SHA-256 values.
+- `apps/admin/vite.config.ts`: loopback, same-origin **GET-only** `/api/v1/managed-photomap` endpoint with fixed Host/Origin/method rules.
+- `apps/admin/src/app/managed-projects/page.tsx`: managed PhotoMap release, data counts, six tool statuses and four dependency locks. Existing 32 upstream routes, `/host` and P3 static demo remain independent.
+- Start/Stop, package changes, autostart and whole-instance rollback are **not enabled** for PhotoMap.
 
-The actual **stopped PhotoMap managed import is already accepted**: `pockethost-photomap-managed-import-copy-20261106-v2` done/exit 0, 2,746 release files, 3,011 backed-up code files, verified SQLite and 2,196 media files, 4.26 GB copied. See [import closeout](2026-11-06-photomap-runit-autorestart-regression.md).
+The managed import `import-20261106` succeeded independently before P4 code work. It preserves **2,746 release source files**, **3,011 backed-up original-code files**, a **19,574,784-byte SQLite** and **2,196 media files** (total copied data **4,258,135,454 bytes**), all checked during the import. Original PhotoMap Git HEAD `d49e94c9` **plus dirty local edits** remains preserved. [Import forensic checkpoint](2026-11-06-photomap-runit-autorestart-regression.md).
 
-## Native Samsung acceptance evidence
+## Exact physical Samsung evidence
 
-All commands ran **exclusively on the physical Samsung Termux** through the verified Local Agent; no Codex/Work, Actions, Mac build or Linux sandbox. The P4 checkout is isolated from live PocketHost and other services.
+The authoritative tested **source SHA** is `471fdfecfa8bf41f52ef1db198959ba94857c2ac` on `sprint/p3-mvp-integration-20261105`. Later commits altering only documentation do not change that code baseline.
 
-| Task                                                                | Terminal result      | Interpretation                                                                                                                          |
-| ------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `pockethost-p4-photomap-preflight-20261106-v1`                      | failed, invalid task | Timeout budget rejected before any device commands                                                                                      |
-| `pockethost-p4-photomap-preflight-20261106-v2`                      | done, exit 0         | Confirmed imported registry, runtime OFF, no runit link, port 8010 free, Node 26.4.0, npm 11.19.0, git 2.55.0 and Python 3.14.6         |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v1` | failed, exit 1       | Branch moved during clone; SHA guard stopped before dependencies/tests                                                                  |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v2` | failed, exit 1       | Pinned dependencies installed; docs gate failed for missing checkpoint index entry, subsequently fixed                                  |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v3` | failed, exit 1       | The pre-fix SHA still contained the missing docs index entry; not a current-source validation                                           |
-| `pockethost-p4-photomap-rapid-native-diagnostics-20261106-v1`       | failed, exit 1       | On `49d0cc8` **50/50 foundation tests PASS**, Markdownlint 61 files / zero errors, Prettier identified **3 files** requiring formatting |
+| Private Local Agent task suffix | Result | Evidence |
+| --- | --- | --- |
+| `p4-closeout-final-native-quality-20261106-v1` | **done, exit 0** | Pinned clean source, root `npm run check` **51/51 Node tests**, 62 Markdown files without errors, Prettier, ESLint, TypeScript, admin lint/build and **6/6 UI tests** PASS |
+| `p4-closeout-live-readonly-preflight-20261106-v1` | **done, exit 0** | Verified running P3 panel and demo, six external Termux services `running`, PhotoMap runit registration absent and port 8010 off |
+| `p4-closeout-real-import-adapter-20261106-v1` | **done, exit 0** | Actual `ManagedPhotoMapHost.inspect()` recognized owned imported release, **2,196 media files**, **6 tools**, **4 locks** and all three mutation capabilities disabled |
+| `p4-closeout-obsolete-import-stage-cleanup-20261106-v1` | **done, exit 0** | Deleted **only** failed v1 partial staging, after validating exactly 1,780 files and 597,768,154 bytes against the accepted final release |
 
-The historical failures are retained here as concise audit evidence; **none prove that the PhotoMap data import failed**. Formatting and final same-SHA quality/build gates are being closed separately. Do not claim full native quality or a new live GUI deployment until the corresponding terminal task receipts exist.
+All task names have prefix `pockethost-`; terminal receipts are stored in private `MichalMatu/local-agent` branch `agent-control`, under the exact Samsung installation. None of these P4 tasks started PhotoMap, modified global packages, registered autostart, changed Raspberry Pi production or stopped another service.
 
-## Safety and known limitations
+Earlier task retries were triggered by invalid timeout budgets, Git branch drift, a missing docs index entry, and three formatting errors. Those issues were resolved; their original terminal receipts remain available privately without being repeated as active blockers here.
 
-The imported source was created from original Git HEAD `d49e94c9` **plus local uncommitted modifications** and must never be replaced by a clean repository HEAD. The managed root is `~/Projects/PocketHost-Managed`; the original PhotoMap checkout and its backups are intact. Old PhotoMap run script still changes into `~/Projects/PhotoMap`, so merely executing it would start the wrong code. Python dependencies exist in an **external-unfrozen Debian PRoot**; they cannot be reliably rolled back with code alone.
+## Explicit release boundary
 
-No PhotoMap process, runit autostart, global package update, public listener, external service mutation, or Raspberry Pi operation was authorized in P4. Previous import evidence showed six external services unchanged; a separate exact-path service snapshot is needed if any future panel cutover is proposed.
+**Accepted:** PhotoMap stopped import; P4 catalog source; native root/admin quality; actual managed manifest read; guarded cleanup; independent P3/six-service preflight.
 
-## Release contract and next step
+**Not deployed:** The running P3/Vite admin preview was **not restarted or switched to P4**. A GET returning HTTP 200 for the new catalog path on the existing preview is not proof of P4 routing because Vite may serve its SPA fallback. P4 live acceptance still requires a guarded, reversible source update and **JSON schema/ownership GET 200**, POST 405 and forged Host/Origin 403, while preserving P3 owned process/script identity and all six external services. No production or trusted-LAN admin update was claimed.
 
-P4 is accepted **only** after complete same-SHA root `npm run check`, admin lint/build and UI tests plus a guarded localhost-only HTTP negative test for the new catalog. Until then status is **SOURCE CANDIDATE / NOT DEPLOYED**; `main` remains at its older foundation SHA and the current LAN panel has not been updated by P4.
+**Not implemented:** Isolated Debian PRoot/Python dependency runtime, manual PhotoMap Start/Stop, project-scoped package changes, consistent SQLite/media restore, or entire-instance rollback. The old run script still targets the original checkout, and the imported PRoot remains `external-unfrozen`. Port 8010 and autostart stay off.
 
-After validation, hand off to the next chat via [PocketHost next-chat handoff](../HANDOFF_NEXT_CHAT.md). The next major implementation is an isolated, versioned runtime for PhotoMap with exact managed paths, verified owned PID/start-ticks and tested stop/cleanup. Package plans and whole-instance rollback must remain disabled until Python environment, database migrations and media have restorable snapshots.
+The repository `main` remained at `8378663725f10beacf9c527f194e7f568170284d` at the last check. No branch merge, new branch or force push occurred.
 
-## Checkout freeze and outstanding receipts
-
-**Source quality is accepted at exact SHA `471fdfecfa8bf41f52ef1db198959ba94857c2ac`.** Native Local Agent task `pockethost-p4-closeout-final-native-quality-20261106-v1` finished **done / exit 0 / PASS** after clean, pinned installation of 188 root packages and 517 admin packages. All full-root gates passed: **51/51 Node tests**, Markdownlint **62 documents / 0 errors**, Prettier, ESLint and TypeScript. Admin lint, Vite build, **6/6 Vitest interactions** and final clean Git status all passed. The task ran in an isolated `PocketHost-P4-FinalQA-20261106` checkout without touching live services. The preceding native `pockethost-p4-closeout-format-current-20261106-v1` task completed **done / exit 0** and its exact Prettier diff was applied through GitHub Connector.
-
-The remaining independent device tasks were submitted and are **not accepted until terminal receipts are read**: `pockethost-p4-closeout-live-readonly-preflight-20261106-v1` (six external services and current P3 preview), `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1` (delete only the exact failed v1 copy staging root if guarded counts match), and `pockethost-p4-closeout-real-import-adapter-20261106-v1` (read the real Samsung managed PhotoMap with the adapter). Do not replay or guess results.
-
-**Release boundary:** P4 read-only catalog **source/quality PASS**, but **live GUI deployment is not claimed**. P3 preview and trusted-LAN gateway were not restarted or switched. PhotoMap stays disabled; package updates, manual runtime start/stop and full rollback remain future milestones. This source checkpoint is ready to hand off with the remaining scoped acceptance gates in [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md).
+Resume from [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md) to finish the guarded P4 GUI gate and then develop an isolated PhotoMap runtime without repeating accepted imports or tests.
