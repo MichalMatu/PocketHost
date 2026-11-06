@@ -41,7 +41,12 @@ function fixture() {
     },
     publish: (version) => {
       events.push('publish:' + version);
-      state = { ...state, previousVersion: state.contentVersion, contentVersion: version, canRollback: true };
+      state = {
+        ...state,
+        previousVersion: state.contentVersion,
+        contentVersion: version,
+        canRollback: true,
+      };
       return { ...state };
     },
     rollback: () => {
