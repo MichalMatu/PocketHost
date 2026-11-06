@@ -63,7 +63,7 @@ function termuxReadOnlyApi(): Plugin {
 function ownedDemoApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
-  const allowedActions = new Set(["create", "start", "stop", "publish", "rollback"])
+  const allowedActions = new Set(["create", "start", "stop", "publish/v1", "publish/v2", "rollback"])
 
   return {
     name: "pockethost-owned-single-site-dev",
@@ -151,7 +151,8 @@ function ownedDemoApi(): Plugin {
             action === "create" ? runtime.create() :
             action === "start" ? runtime.start() :
             action === "stop" ? runtime.stop() :
-            action === "publish" ? runtime.publish() :
+            action === "publish/v1" ? runtime.publish(1) :
+            action === "publish/v2" ? runtime.publish(2) :
             runtime.rollback()
           )
           response.statusCode = 200
