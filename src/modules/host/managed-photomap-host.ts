@@ -182,7 +182,10 @@ export class ManagedPhotoMapHost implements ManagedProjectPort {
     const snapshots = path.join(instanceDir, 'snapshots');
     plainDirectory(snapshots);
     plainDirectory(path.join(snapshots, release));
-    const inventory = manifest(path.join(snapshots, release, 'data-manifest.json'), MAX_INVENTORY_BYTES);
+    const inventory = manifest(
+      path.join(snapshots, release, 'data-manifest.json'),
+      MAX_INVENTORY_BYTES,
+    );
     checkedOwner(inventory);
     if (inventory.release_id !== release) throw new Error('Data release mismatch');
     const database = inventory.database as Record<string, unknown> | null;
