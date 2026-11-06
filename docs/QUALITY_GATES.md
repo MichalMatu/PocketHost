@@ -66,6 +66,8 @@ The first managed project must pass native tests for correct schema/release/owne
 
 **P4 live gate accepted (2026-11-06):** Samsung terminal task `pockethost-p4-same-root-guarded-cutover-20261106-v3` (`done`, exit 0) checked real JSON GET 200, POST 405, forged Host/Origin 403, unchanged owned P3 lifecycle/content, six external services, LAN and PhotoMap OFF. The initial cross-checkout P3 identity mismatch was rolled back and corrected by preserving the original script path. This is not approval for PhotoMap runtime or data rollback. See [live P4 checkpoint](checkpoints/2026-11-06-p4-live-panel-cutover.md).
 
+**PhotoMap inert runtime source gate:** Samsung task `pockethost-photomap-runtime-native-final-gate-20261106-v4` finished done / exit 0 at `32c09f2c`, with root 60/60 Node tests, 64 Markdown files, Prettier, ESLint, TypeScript, targeted 9/9 runtime tests and real-import lifecycle denials. Port 8010 remained off and six other services were running. This does not accept an installed rootfs or live PhotoMap Start/Stop. See [checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md).
+
 ## Planned UI and agentic coding quality gates
 
 After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
