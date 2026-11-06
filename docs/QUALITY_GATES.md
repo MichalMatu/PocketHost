@@ -58,6 +58,10 @@ At `0645ee2`, physical Termux Local Agent validated the repaired Base UI header 
 - No regressions to externally managed services; execute tests on Termux through Local Agent, using isolated fixtures, with separate live-device evidence.
 - Explicit verification record for every physical-host claim.
 
+## P4 managed PhotoMap catalog quality gate
+
+The first managed project must pass native tests for correct schema/release/ownership, withheld start/stop/package/rollback capabilities, symlink and forged-manifest rejection, bounded sanitized tool/lock inventory, fixed-path same-origin GET API and preserved upstream routes. The physical import receipt is distinct from a live P4 panel acceptance. A new version requires same-SHA root Gate 0/1, admin lint/build, UI tests, and guarded endpoint smoke on the Samsung through Local Agent. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
+
 ## Planned UI and agentic coding quality gates
 
 After actual Termux qualification, add Vitest for contracts, Knip for unused modules and the selected GUI design system: React/Vite/TypeScript, Tailwind v4, shadcn/ui with the pinned ShadcnStore **Base UI/base-nova** component family, and `@shadcn/lint`. Treat tools as proposed until installed and run on Termux. Read [tooling evaluation](TOOLING_EVALUATION.md) and [design-system contract](DESIGN_SYSTEM.md).
