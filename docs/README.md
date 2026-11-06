@@ -44,3 +44,4 @@
 - [Full P0–P2 checkpoint and quality review](checkpoints/2026-11-05-pocket-host-full-checkpoint.md)
 - [P3 single-site candidate](checkpoints/2026-11-05-p3-owned-single-site.md)
 - [P3 integration candidate and release gates](checkpoints/2026-11-05-p3-mvp-integration-candidate.md)
+- [PocketHost private LAN access candidate](checkpoints/2026-11-06-local-network-access.md)
