@@ -20,6 +20,10 @@ Samsung Local Agent terminal task **`pockethost-photomap-runtime-native-final-ga
 
 Historical pre-closeout: `pockethost-photomap-runtime-candidate-native-20261106-v1` passed five policy tests but exposed an unused import; `pockethost-photomap-runtime-native-closeout-20261106-v2` passed lint/types but found Prettier drift. The targeted on-Samsung Prettier diff was applied in `32c09f2`; an initial QA script guard counted two diff hunk headers incorrectly and failed safely before affecting the checkout. The corrected `v4` task closed the complete gate. Do not repeat these results without a new source change.
 
+## Follow-up: disabled marker hardening
+
+At exact source `4e7f1c2cf534de082791482fa76b8010b2e16425`, Samsung task `pockethost-photomap-disabled-marker-hardening-native-20261106-v1` finished **done / exit 0** (`DISABLED_MARKER_HARDENING_PASS`). The new negative test proves that disabling `runtime.json` cannot silently hide a previously created active-process marker: inspection reports `unknown`, and a symlinked runtime/state parent fails closed. The root quality gate passed **61/61 Node tests**, 65 Markdown files with zero errors, Prettier, lint and types. The actual imported instance still rejects Start; port 8010 remains off. This source gate supersedes the previous **60/60** acceptance only for the new code, without claiming a running PRoot service.
+
 ## Explicit non-acceptance and next gate
 
 This checkpoint accepts **code quality and real-world denial of unapproved lifecycle operations**, not a runnable PhotoMap instance. The existing `runtime.json` still requires `enabled=false`, `launch_allowed=false`, `autostart=false`, `managed_proot_snapshot=false`. The external `photomap-dev` Debian PRoot is neither adopted nor snapshotted. No independent rootfs, project-local Python dependency image, managed runtime work database, health-tested child PID or backend stdout collection has been accepted. The app's P4 read-only UI has no PhotoMap lifecycle controls.
