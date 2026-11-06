@@ -9,10 +9,7 @@ purpose: Single concise current-state handoff for safe PocketHost continuation
 
 ## Start from fresh source and host state
 
-Repository `MichalMatu/PocketHost`; work **only** on the existing branch
-`sprint/p3-mvp-integration-20261105`. `main` was last observed at
-`8378663725f10beacf9c527f194e7f568170284d`; refresh both refs.
-Do not assume the documentation HEAD is a newly tested source revision.
+Repository `MichalMatu/PocketHost`; develop **only on fresh `main`**, unless the owner explicitly directs otherwise. The former sprint's 188 commits were fast-forwarded to `main` on 2026-11-07 (source `eefd870`). Historical working branches are already its ancestors and are awaiting safe deletion. The consolidation is **not** a production release or a new native QA receipt.
 
 The last **source-accepted** SHA is
 `a5443070f1c6e41798641aa9c2098a9acc9e17a4`.
@@ -49,7 +46,7 @@ a verified active managed PhotoMap instance. Details:
   port collision, failed launch/orphans, idempotent safe Stop, logs, SQLite
   migration/recovery and full restore remain unproven on real hardware.
 - No approval for live PhotoMap Start, UI mutation, package changes, public ingress,
-  autostart, changing production services or merging the feature branch to `main`.
+  autostart, changing production services or a production release.
 
 ## Safe next action
 
