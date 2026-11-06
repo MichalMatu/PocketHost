@@ -170,3 +170,13 @@ test('docs reject historical checkpoints missing from their archive index', (t) 
     /Document missing from checkpoint archive index: docs\/checkpoints\/2026-11-05-foundation\.md/,
   );
 });
+
+test('structure allows the checkpoint archive index but rejects non-dated checkpoint files', (t) => {
+  const root = fixture(t);
+  assert.deepEqual(validateStructure(root), []);
+  writeFileSync(path.join(root, 'docs/checkpoints/not-dated.md'), '# Invalid\n');
+  assert.match(
+    validateStructure(root).join('\n'),
+    /Invalid checkpoint filename: docs\/checkpoints\/not-dated\.md/,
+  );
+});

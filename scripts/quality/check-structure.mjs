@@ -105,6 +105,7 @@ export function validateStructure(root = repositoryRoot) {
           errors.push(`Invalid ADR filename: ${rel}`);
         if (
           rel.startsWith('docs/checkpoints/') &&
+          rel !== 'docs/checkpoints/README.md' &&
           !/^docs\/checkpoints\/\d{4}-\d{2}-\d{2}-[a-z0-9-]+\.md$/.test(rel)
         )
           errors.push(`Invalid checkpoint filename: ${rel}`);
