@@ -39,9 +39,9 @@ function fixture() {
       state = { ...state, state: 'stopped' };
       return { ...state };
     },
-    publish: () => {
-      events.push('publish');
-      state = { ...state, previousVersion: 1, contentVersion: 2, canRollback: true };
+    publish: (version) => {
+      events.push('publish:' + version);
+      state = { ...state, previousVersion: state.contentVersion, contentVersion: version, canRollback: true };
       return { ...state };
     },
     rollback: () => {
@@ -64,7 +64,7 @@ test('external or nonexistent services cannot be started, stopped or published',
   const { runtime, events, set } = fixture();
   await assert.rejects(runtime.start(), SiteOwnershipError);
   await assert.rejects(runtime.stop(), SiteOwnershipError);
-  assert.throws(runtime.publish, SiteOwnershipError);
+  assert.throws(() => runtime.publish(2), SiteOwnershipError);
   assert.throws(runtime.logs, SiteOwnershipError);
   set({ ...absent(), ownership: 'external', state: 'running' });
   await assert.rejects(runtime.stop(), SiteOwnershipError);
@@ -77,12 +77,13 @@ test('single explicit site can be created, started, published, rolled back and s
   assert.equal(runtime.create().state, 'stopped');
   assert.equal((await runtime.start()).state, 'running');
   assert.throws(runtime.rollback, RangeError);
-  assert.equal(runtime.publish().contentVersion, 2);
+  assert.throws(() => runtime.publish(3), /Unsupported demo version/);
+  assert.equal(runtime.publish(2).contentVersion, 2);
   assert.equal(runtime.rollback().contentVersion, 1);
   assert.throws(runtime.rollback, /No owned version available/);
   assert.equal((await runtime.stop()).state, 'stopped');
   assert.deepEqual(runtime.logs(), ['demo started', 'demo stopped']);
-  assert.deepEqual(events, ['create', 'start', 'publish', 'rollback', 'stop']);
+  assert.deepEqual(events, ['create', 'start', 'publish:2', 'rollback', 'stop']);
 });
 
 test('fixed ID rejects discovered services; only built-in static documents are published', () => {
