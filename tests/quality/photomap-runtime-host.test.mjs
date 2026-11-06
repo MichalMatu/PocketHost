@@ -104,3 +104,21 @@ test('a partial launch flag cannot enable lifecycle actions', async () => {
     rmSync(f.parent, { recursive: true, force: true });
   }
 });
+
+test('disabled manifest never hides stale process identity or follows state symlinks', async () => {
+  const f = fixture();
+  try {
+    const state = path.join(f.instance, 'runtime', 'state');
+    mkdirSync(state, { recursive: true, mode: 0o700 });
+    writeFileSync(path.join(state, 'active.json'), '{}\n', { mode: 0o600 });
+    const host = new ManagedPhotoMapRuntimeHost(f.root);
+    assert.equal(host.inspect().state, 'unknown');
+    await assert.rejects(host.start(), /not approved/);
+    await assert.rejects(host.stop(), /not approved/);
+    rmSync(path.join(f.instance, 'runtime'), { recursive: true });
+    symlinkSync(f.manifests, path.join(f.instance, 'runtime'));
+    assert.throws(() => host.inspect(), /Unsafe disabled/);
+  } finally {
+    rmSync(f.parent, { recursive: true, force: true });
+  }
+});
