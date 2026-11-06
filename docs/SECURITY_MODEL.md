@@ -28,3 +28,9 @@ Public tunnels, DNS/API credentials, publishing ZIP archives, dependencies fetch
 ## Incident rule
 
 If a test risks IleStoi.pl or Local Agent, stop PocketHost testing and capture sanitized diagnostic evidence; do not attempt an automatic repair or restart of external services.
+
+## Optional trusted-LAN convenience gateway — P3 candidate
+
+The one-off developer gateway is isolated in `src/modules/host/lan-gateway.mjs`. It does not change the loopback-only listeners of the real admin dev process or owned static site. If separately enabled, it listens only on an explicit exact private IPv4 address and forwards to two fixed loopback ports: an authenticated admin endpoint and a GET/HEAD-only demo site. It rejects foreign Host/Origin, cross-site requests, unsupported methods on the public demo, missing admin Basic credentials and non-LAN source addresses. Authentication credentials are local, generated independently and cannot be stored in Git or agent logs.
+
+This is a local convenience feature, **not production authentication**: it uses HTTP rather than TLS and must never be opened through a public tunnel, router port forwarding or an untrusted WLAN. It is manually started and must not be registered for boot autostart in DEV. Its security tests and real-device acceptance are tracked in the [LAN checkpoint](checkpoints/2026-11-06-local-network-access.md).
