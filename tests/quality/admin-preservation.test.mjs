@@ -45,7 +45,7 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside PocketHost host route', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 2);
+  assert.equal(allPaths.length, originalPaths.length + 3);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
