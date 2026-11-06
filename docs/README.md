@@ -33,6 +33,7 @@
 - [ADR-0003: Termux Local Agent only](adr/0003-termux-local-agent-execution.md)
 - [ADR-0004: GUI design system and anti-drift gates](adr/0004-ui-design-system-quality.md)
 - [ADR-0005: Desktop-first admin shell, CMS deferred](adr/0005-desktop-first-admin-shell.md)
+- [ADR-0006: Opt-in private LAN access](adr/0006-private-lan-access.md)
 - [Foundation checkpoint](checkpoints/2026-11-05-foundation.md)
 - [Full admin shell Termux acceptance](checkpoints/2026-11-05-admin-shell-termux-checkpoint.md)
 - [Termux workflow checkpoint](checkpoints/2026-11-05-termux-workflow.md)
