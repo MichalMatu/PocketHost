@@ -7,7 +7,7 @@ PocketHost is an experimental Android/Termux hosting control panel. P0–P2 prov
 | Milestone | Scope                                                                      | Status                                                                                                   |
 | --------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
 | P0–P2     | Foundation, native monitoring and dashboard                                | Native device accepted                                                                                   |
-| P3        | Explicitly owned static demo and private-LAN gateway                       | Device/browser viewing accepted; final P3 control/browser gates and feature-branch release still tracked |
+| P3        | Explicitly owned static demo and private-LAN gateway                       | Device/browser viewing accepted; final P3 control/browser gates and production release still blocked by browser interaction gates |
 | P4        | Private PhotoMap snapshot, registry, versions and safe read-only catalog   | Verified import and full Samsung-native source QA PASS; live panel deployment pending                    |
 | Next      | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented                                                                                          |
 
@@ -15,13 +15,13 @@ PhotoMap original checkout, including local changes, was preserved. Its verified
 
 ## Strict development rules
 
-- **Only GitHub Connector + the exact Samsung Termux Local Agent** for PocketHost source/development commands. No Codex, ChatGPT Work, GitHub Actions, Mac/Linux execution, new branches or force push without separate authorization.
+- **Only GitHub Connector + the exact Samsung Termux Local Agent** for PocketHost source/development commands. No Codex, ChatGPT Work, GitHub Actions, Mac/Linux PocketHost execution, new branches or force push without separate authorization. Work directly on `main` unless the owner explicitly directs otherwise.
 - Never infer ownership from process names or ports. No control or modification of externally managed services.
 - Panel development runs manually from CLI, loopback only by default. Trusted-home-LAN gateway requires an explicit opt-in, exact private interface and security gates; it is not public authentication.
 - Project package updates, system-wide package operations, autostart and public deployment remain disabled until separately authorized and tested.
 
 ## Where to resume
 
-Read [next-chat handoff](docs/HANDOFF_NEXT_CHAT.md), [latest P4 checkpoint](docs/checkpoints/2026-11-06-p4-managed-photomap-catalog.md), [PhotoMap import closeout](docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), [architecture](docs/ARCHITECTURE.md), [quality gates](docs/QUALITY_GATES.md) and [Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md). Read [AGENTS.md](AGENTS.md) before any operations. The current development branch is `sprint/p3-mvp-integration-20261105`; verify its actual HEAD and `main` anew before work.
+Read [next-chat handoff](docs/HANDOFF_NEXT_CHAT.md), [latest P4 checkpoint](docs/checkpoints/2026-11-06-p4-managed-photomap-catalog.md), [PhotoMap import closeout](docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), [architecture](docs/ARCHITECTURE.md), [quality gates](docs/QUALITY_GATES.md) and [Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md). Read [AGENTS.md](AGENTS.md) before any operations. The only development branch is `main`; verify its current HEAD before each change. Historical branches are scheduled for safe retirement.
 
 For code changes, run `npm run check`, `npm run admin:lint`, `npm run admin:build` and `npm --prefix apps/admin run test:ui` **on Samsung Termux via Local Agent only**, then obtain terminal task results and independent physical checks before declaring acceptance.
