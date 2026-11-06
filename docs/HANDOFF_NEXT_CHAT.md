@@ -2,74 +2,84 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-06
-purpose: Resume PocketHost after Samsung-verified 62/62 source quality and inactive copied Debian/Python/SQLite PhotoMap staging
+purpose: Single concise current-state handoff for safe PocketHost continuation
 ---
 
-# PocketHost — next-chat handoff
+# PocketHost — current handoff
 
-## Fresh next-chat checkpoint
+## Start from fresh source and host state
 
-[Clean sprint checkpoint](checkpoints/2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
-records the current docs-only branch HEAD `1d996d93dc6171fbffc8082153444a599f44328e`,
-the last independently Samsung-tested source `a5443070`,
-accepted 9/9 negative and 65/65 root tests, and the still-disabled PhotoMap.
-Start the next chat from that checkpoint and the current HEAD, not from
-historical test counts. A new real PhotoMap Start/health/Stop still requires
-separate approval. No merge while P3 browser Publish/Rollback interaction is
-unaccepted.
+Repository `MichalMatu/PocketHost`; work **only** on the existing branch
+`sprint/p3-mvp-integration-20261105`. `main` was last observed at
+`8378663725f10beacf9c527f194e7f568170284d`; refresh both refs.
+Do not assume the documentation HEAD is a newly tested source revision.
 
-## Latest verified checkpoint — 2026-11-06
+The last **source-accepted** SHA is
+`a5443070f1c6e41798641aa9c2098a9acc9e17a4`.
+Samsung task `pockethost-photomap-python-contract-final-samsung-20261106-v2`
+returned done/0: 9/9 targeted negatives, 65/65 root Node tests,
+66 Markdown docs, lint/types/format PASS, PhotoMap port 8010 OFF.
+The last separate docs-only gate at `3ee728fa` returned done/0.
+Later changes need targeted new same-SHA qualification, not a replay of old results.
+See the [exact acceptance](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md).
 
-See [Samsung source QA and final sprint handoff](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md).
-Source-tested SHA **`a5443070f1c6e41798641aa9c2098a9acc9e17a4`** passed Samsung Local Agent task
-`pockethost-photomap-python-contract-final-samsung-20261106-v2`: **done / exit 0**, 9/9 host negative
-tests, 65/65 full Node tests, Markdownlint 66 documents, Prettier, ESLint, TypeScript PASS,
-PhotoMap port 8010 OFF. The following **docs-only** SHA
-`3ee728fa6c7d0272b8aa7b1fdfc332a62bf6138d` passed
-`pockethost-python-contract-docs-checkpoint-native-20261106-v2`: **done / exit 0**,
-docs structure, Markdownlint, Prettier and diff-check PASS. Do not rerun these gates merely
-to regenerate a checkpoint. A future checkpoint-only commit is not a new source-code QA.
+## What already works — preserve it
 
-**Still HOLD:** staged PhotoMap version is explicitly unapproved/disabled; no physical
-Start/health/Stop/PID/orphan/rollback acceptance. P3 Mac browser publish/rollback clicks
-and accessibility acceptance remain open. No main merge or PhotoMap activation.
+- **P0–P2:** root gates, six allowlisted external-service observations,
+  Android Termux host panel and the React/Vite admin template.
+- **P3:** a manually owned static demonstration site with guarded lifecycle,
+  publishing, one-step rollback and optional trusted-LAN gateway. Device and
+  browser *viewing* passed; actual Mac browser Publish/Rollback clicks did not.
+- **P4:** read-only PhotoMap TEST managed catalog and GET API, with POST denied.
+  An independent imported source, original/backup SQLite and 2,196 media files
+  are preserved; do not recopy or mutate them.
+- Two stopped Debian 12 rootfs versions already exist. The selected
+  `debian12-photomap-20261106-v1` has independent working source/SQLite,
+  Python 3.11.2 and eight dependencies. The profile remains
+  `staged-unapproved`; launch, autostart and activation are disabled.
 
-## Exact start protocol
+Never confuse the accepted negative tests and staged Python interpreter with
+a verified active managed PhotoMap instance. Details:
+[staged runtime evidence](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md).
 
-Continue **`MichalMatu/PocketHost`** on existing **`sprint/p3-mvp-integration-20261105`** only. First read the **actual** feature and `main` HEADs; do not assume a handoff SHA is still current. At checkpoint time, `main=8378663725f10beacf9c527f194e7f568170284d`, and last exactly source-tested feature code `a5443070f1c6e41798641aa9c2098a9acc9e17a4`. Documentation commits after this source test have a later HEAD and do not represent a second device source QA.
+## Release HOLD
 
-**Execution:** GitHub Connector for code/docs and private control transport, **exact Samsung Termux Local Agent** for any Git/test/build/command execution. Re-read the actual private `MichalMatu/local-agent` `agent-control` host/installation identity, intake and task-results before sending commands; never assume that an old identity demonstrates live service health. No Codex, ChatGPT Work, GitHub Actions **or their status checks**, Mac/sandbox project tests, new branches, force-push or repeat of accepted tests.
+- P3 button-click/keyboard/a11y acceptance, final owned-state/security readback.
+- PhotoMap precise PID/start ticks, executable/cwd/argv and PRoot-child identity;
+  port collision, failed launch/orphans, idempotent safe Stop, logs, SQLite
+  migration/recovery and full restore remain unproven on real hardware.
+- No approval for live PhotoMap Start, UI mutation, package changes, public ingress,
+  autostart, changing production services or merging the feature branch to `main`.
 
-Required reads: root `AGENTS.md`, `docs/AGENTS.md`, `docs/LOCAL_AGENT_TERMUX.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/DEVELOPMENT_PLAN.md`, `docs/QUALITY_GATES.md`, [ADR-0007](adr/0007-photomap-managed-instance-layout.md), [ADR-0008](adr/0008-photomap-p4-managed-catalog.md), [ADR-0009](adr/0009-photomap-isolated-runtime.md), [new staged-runtime QA checkpoint](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md), [import closeout](checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), and nearest `src/modules/host` / `src/modules/runtime` `AGENTS.md` before changes. Begin with a **read-only** device/service preflight.
+## Safe next action
 
-## Accepted work — do not repeat
+1. Read [agent rules](../AGENTS.md), [Local Agent runbook](LOCAL_AGENT_TERMUX.md),
+   [architecture](ARCHITECTURE.md), [quality gates](QUALITY_GATES.md) and relevant
+   [ADR-0007](adr/0007-photomap-managed-instance-layout.md),
+   [ADR-0008](adr/0008-photomap-p4-managed-catalog.md),
+   [ADR-0009](adr/0009-photomap-isolated-runtime.md).
+2. Confirm the fresh private Samsung Termux Local Agent host/installation,
+   intake, terminal ledger, independent QA checkout cleanliness and current refs.
+   The previous accepted target was `android-termux-10520` with installation
+   `6be16f1d-194b-4f07-b377-3d4bb218fcd7`; an old receipt is not liveness.
+3. Use **read-only preflight** for six foreign services, P3 ownership, port 8010,
+   rootfs/work SQLite, PRoot sessions and storage. Never affect original PhotoMap.
+4. Add only bounded negative source/fixture tests for process identity, orphans
+   and port conflicts. After code changes, qualify on Samsung with
+   `npm run check:all`, saving the exact terminal result.
+5. Obtain separate explicit authorization before any real manual
+   PhotoMap Start/health/Stop on disposable copied data. Keep all public and
+   write-control surfaces closed until independent acceptance.
 
-- **P0–P2:** foundational checks, fixed allowlisted six-service host status, full React admin template with original routes, UI/branding and appearance acceptance. Read-only external inventory only.
-- **P3:** PocketHost-owned static demo server and guarded Start/Stop, sample publication and one-use rollback, manual loopback admin and opt-in trusted private-LAN gateway. Existing P3 process and live state must be preserved. Browser visual acceptance on the Mac passed; **actual Mac publish/rollback button interactions remain open**.
-- **PhotoMap imported TEST data:** owner-verified `import-20261106` with 2,746 release source files, original source Git `d49e94c9` plus preserved dirty edits, SQLite of **19,574,784 bytes**, 2,196 media files and **4,258,135,454 bytes** of imported data. Original checkout, independent original-code backup, and source/data are not to be changed or recopied. PhotoMap runit/autostart off; its old run script still launches the **original** checkout, never a managed instance.
-- **P4 live read-only catalog:** `/managed-projects` and GET-only `/api/v1/managed-photomap` with disabled mutation capabilities. Earlier exact code gate `471fdfec`: 51/51 root Node, six UI tests, admin lint/build and format/types/docs PASS. Live same-path cutover `pockethost-p4-same-root-guarded-cutover-20261106-v3` **done/0**, deployed code `85a9634`, JSON GET 200, POST 405, forged Host/Origin 403, P3 identity/content preserved, six external services unchanged. **Do not replay earlier cross-checkout failed cutovers.**
-- **Inert PhotoMap host/runtime code:** previous device gates `32c09f2` (60/60) and `4e7f1c2` (61/61) remain historical and accepted. Latest accepted source gate `pockethost-photomap-worksource-final-native-20261106-v3` at **`d5b5591`** is **done/0**: six host negatives passed, **62/62 root Node tests**, 65 Markdown files/zero errors, ESLint, TypeScript and Prettier. Port 8010 off; staged artifacts present. **No live PhotoMap process accepted.**
-- **Existing inactive staged Debian and workset:** `pockethost-photomap-managed-rootfs-stopped-stage-20261106-v1` (done/0) and `pockethost-photomap-isolated-rootfs-stage-20261106-v2` (done/0) established **two differently named copies**: `debian-arm64-v1` and `debian12-photomap-20261106-v1`. The second rootfs is Debian 12.15, 14,118 files and 1,075 symlinks, and is paired with disposable `work/source` (2,746 files) and independent work SQLite (19,574,784 bytes, integrity `ok`) by `pockethost-photomap-isolated-workset-stage-20261106-v1` (done/0). **No media recopy**.
-- **Isolated Python smoke:** `pockethost-photomap-staged-debian-python-readonly-smoke-20261106-v2` **done/0**: staged Debian Python **3.11.2**, all eight required Python distributions available (FastAPI, Starlette, Uvicorn, SQLModel, Alembic, Pillow, Mutagen, python-multipart). No installs, no PhotoMap launch, port 8010 off. Full details and exact receipts: [staging checkpoint](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md).
+**Execution:** GitHub Connector + exact Samsung Termux Local Agent only.
+No Codex, ChatGPT Work, GitHub Actions or status checks, Mac/sandbox PocketHost
+execution, new branches or force push. Never restart or take ownership of
+IleStoi.pl, original PhotoMap, Local Agent or other external services.
 
-Failed tasks `isolated-rootfs-stage-v1`, `worksource-guard-native-v1`, `worksource-final-native-v2` and Python smoke `v1` were superseded by the passing task IDs above. Do not replay their side effects or treat them as unresolved quality regressions.
+## Documentation maintenance
 
-## Current HOLD, not a ready-to-start PhotoMap
-
-The copied Debian and work database are ready for **further isolated validation**, not for runtime activation. `debian12-photomap-20261106-v1` is explicitly `staged-unapproved` (`isolated_rootfs=false`), with no `runtime/active-version.json`; imported `runtime.json` still has `enabled=false`, `launch_allowed=false`, `managed_proot_snapshot=false`, `autostart=false`. These are deliberate fail-closed guards.
-
-**Latest accepted source hardening:** the launcher uses the observed `/opt/photomap-venv/bin/python`, and explicit profile approval/interpreter checks plus new negative tests are accepted at exact `a5443070`. Samsung task `pockethost-photomap-python-contract-final-samsung-20261106-v2` completed **done / exit 0**: 9/9 host negatives, 65/65 full Node tests, 66 Markdown documents without errors, Prettier, ESLint and TypeScript PASS; port 8010 OFF. The staged profile remains unapproved and must not be changed just to make Start work; verify release/profile hashes, version identity and `/proc` attestation before any live test. Real HTTP health, PID ownership across PRoot, effective Stop, backend output, SQLite migration behavior and final post-stop status are **unverified**. `server.py` normally performs migration/recovery; never aim it at preserved imported SQLite.
-
-The existing P3 static demo, IleStoi.pl, Local Agent, MQTT, SSH, tunnel, PhotoMap original/data, other six services and Raspberry Pi are out of scope for mutations. No new listening interface except an approved short-lived loopback smoke, no runit/autostart, no global `pkg` updates, no unverified PID kill or package install. PRoot is filesystem/dependency separation, not an OS sandbox.
-
-## Recommended bounded continuation
-
-1. Fresh read-only exact-host/installation preflight. Confirm source HEAD and clean isolated QA checkout, both stopped staged versions, working SQLite, manifest flags, free space, six unrelated services, P3 ownership, PRoot sessions and port 8010.
-2. **Do not repeat** accepted Samsung source gate `a5443070` (9/9 targeted, 65/65 root). The next new work is to extend and physically verify owner/PID/start-ticks/cwd/executable/argv/port/timeout/Stop/child-process safety for **one** selected existing isolated copy, not create a third duplicate. The approved-profile decision and live lifecycle are separate gates.
-3. With separate explicit approval for this exact test, run one bounded **manual** PhotoMap health smoke against disposable source/SQLite only, then identity-verified graceful Stop, independent port 8010 off, no orphan and all services/P3 unchanged. Preserve a safe contingency if a process cannot be conclusively owned and stopped. No UI write endpoint yet.
-4. After real lifecycle acceptance, design package installation and **whole-instance** recovery (source, Python environment, SQLite migrations, media); require demonstrated restore before enabling any package/rollback control.
-5. Independently finish P3 Mac browser publish/rollback clicks, accessibility follow-up, a new device service snapshot, release checkpoint and explicit merge decision. P5 AI deploy/domain/API remains future scope.
-
-## Next handoff rule
-
-Preserve all passed task-results and their exact source SHAs. Every new checkpoint records terminal result ID, device-local commands/exit codes, code version, process ownership proof, recovery and explicit effects. Do not merge `main` while the P3 button gate or PhotoMap runtime release decision remains open. No additional PhotoMap Start/Stop acceptance is claimed by this handoff.
+Use [the documentation entrypoint](README.md) for current work.
+Historical checkpoints are indexed separately in
+[the archive](checkpoints/README.md). Avoid a new checkpoint for every QA attempt:
+update this handoff and the affected owner/module docs; preserve detailed immutable
+evidence only at real acceptance boundaries. Do not reread or rerun the entire history.
