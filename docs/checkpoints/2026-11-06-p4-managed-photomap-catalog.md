@@ -49,15 +49,8 @@ After validation, hand off to the next chat via [PocketHost next-chat handoff](.
 
 ## Checkout freeze and outstanding receipts
 
-The post-formatting **P4 source SHA** is `471fdfecfa8bf41f52ef1db198959ba94857c2ac`. Native formatter task `pockethost-p4-closeout-format-current-20261106-v1` finished `done / exit 0` and its exact four-file Prettier diff was applied via GitHub Connector. The later `docs/DEVELOPMENT_PLAN.md` edit is prose-only and still requires a final same-SHA docs check.
+**Source quality is accepted at exact SHA `471fdfecfa8bf41f52ef1db198959ba94857c2ac`.** Native Local Agent task `pockethost-p4-closeout-final-native-quality-20261106-v1` finished **done / exit 0 / PASS** after clean, pinned installation of 188 root packages and 517 admin packages. All full-root gates passed: **51/51 Node tests**, Markdownlint **62 documents / 0 errors**, Prettier, ESLint and TypeScript. Admin lint, Vite build, **6/6 Vitest interactions** and final clean Git status all passed. The task ran in an isolated `PocketHost-P4-FinalQA-20261106` checkout without touching live services. The preceding native `pockethost-p4-closeout-format-current-20261106-v1` task completed **done / exit 0** and its exact Prettier diff was applied through GitHub Connector.
 
-The following immutable tasks were published to the same Samsung Agent but had **no terminal result at the last check**:
+The remaining independent device tasks were submitted and are **not accepted until terminal receipts are read**: `pockethost-p4-closeout-live-readonly-preflight-20261106-v1` (six external services and current P3 preview), `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1` (delete only the exact failed v1 copy staging root if guarded counts match), and `pockethost-p4-closeout-real-import-adapter-20261106-v1` (read the real Samsung managed PhotoMap with the adapter). Do not replay or guess results.
 
-- `pockethost-p4-closeout-final-native-quality-20261106-v1`: pinned P4 source; `npm ci` root/admin, full `npm run check`, admin lint/build and UI tests in a new isolated QA clone.
-- `pockethost-p4-closeout-live-readonly-preflight-20261106-v1`: verify current owned P3 preview, six external services, PhotoMap OFF and exact owned preview marker without mutation.
-- `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1`: guarded exact-path removal **only** of the failed, unpublished v1 staging directory if its known count/bytes and final managed release match.
-- `pockethost-p4-closeout-real-import-adapter-20261106-v1`: actual read-only `ManagedPhotoMapHost.inspect()` on the imported Samsung registry in the QA checkout.
-
-**Do not publish duplicates or infer a pass** while outcomes are missing. The prior Samsung native receipt independently confirms source fixtures, 50/50 foundation tests on predecessor `49d0cc8`, and 61 clean Markdown documents; **final full lint/types/build, real managed adapter and any live P4 GUI cutover are still unverified**. These tasks do not request PhotoMap startup or package changes.
-
-Until confirmed, `main` stays untouched and P4 remains **CODE/DOCS CHECKPOINT; LIVE RELEASE HOLD**. The handoff is [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md).
+**Release boundary:** P4 read-only catalog **source/quality PASS**, but **live GUI deployment is not claimed**. P3 preview and trusted-LAN gateway were not restarted or switched. PhotoMap stays disabled; package updates, manual runtime start/stop and full rollback remain future milestones. This source checkpoint is ready to hand off with the remaining scoped acceptance gates in [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md).
