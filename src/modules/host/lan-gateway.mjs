@@ -77,7 +77,19 @@ function requestAllowed(request, bind, port, mask, admin, password) {
   const origin = 'http://' + host;
   if (request.headers.host !== host) return 403;
   if (request.headers.origin && request.headers.origin !== origin) return 403;
-  if (!['none', 'same-origin', undefined].includes(request.headers['sec-fetch-site'])) return 403;
+  const fetchSite = request.headers['sec-fetch-site'];
+  const isTopLevelNavigation =
+    (request.method === 'GET' || request.method === 'HEAD') &&
+    request.headers['sec-fetch-mode'] === 'navigate' &&
+    request.headers['sec-fetch-dest'] === 'document' &&
+    !request.headers.origin;
+  if (
+    !['none', 'same-origin', undefined].includes(fetchSite) &&
+    !(
+      (fetchSite === 'same-site' || fetchSite === 'cross-site') &&
+      isTopLevelNavigation
+    )
+  ) return 403;
   if (
     typeof request.url !== 'string' ||
     !request.url.startsWith('/') ||
