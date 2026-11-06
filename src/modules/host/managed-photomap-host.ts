@@ -9,6 +9,54 @@ import {
 
 const RELEASE_PATTERN = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const MAX_MANIFEST_BYTES = 65536;
+const TOOL_NAMES = ['node', 'npm', 'git', 'python3', 'proot', 'proot-distro'] as const;
+
+function sanitizedToolVersions(value: unknown): ManagedProjectSnapshot['tools'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Managed PhotoMap tool inventory missing');
+  }
+  const record = value as Record<string, unknown>;
+  return TOOL_NAMES.map((name) => {
+    const item = record[name];
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      throw new Error('Invalid managed tool record');
+    }
+    const entry = item as { available?: unknown; version?: unknown };
+    if (typeof entry.available !== 'boolean') throw new Error('Invalid tool availability');
+    const first = Array.isArray(entry.version) ? entry.version[0] : null;
+    const version =
+      entry.available &&
+      typeof first === 'string' &&
+      first.length <= 100 &&
+      /^[a-z0-9 ._+\\/()\\-]+$/i.test(first)
+        ? first
+        : null;
+    return { name, state: entry.available ? 'available' as const : 'unavailable' as const, version };
+  });
+}
+
+function sanitizedLocks(value: unknown): ManagedProjectSnapshot['lockfiles'] {
+  if (!Array.isArray(value) || value.length > 100) {
+    throw new Error('Invalid managed PhotoMap lock inventory');
+  }
+  return value.map((entry: unknown) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error('Invalid lock entry');
+    }
+    const item = entry as { path?: unknown; sha256?: unknown };
+    if (
+      typeof item.path !== 'string' ||
+      item.path.length > 180 ||
+      !/^[a-z0-9._/-]+$/i.test(item.path) ||
+      item.path.split('/').some((part) => part === '..' || part === '.' || part === '') ||
+      typeof item.sha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(item.sha256)
+    ) {
+      throw new Error('Unsafe managed lock entry');
+    }
+    return { path: item.path, sha256: item.sha256 };
+  });
+}
 
 function plainDirectory(directory: string): void {
   const stat = lstatSync(directory);
@@ -68,6 +116,8 @@ export class ManagedPhotoMapHost implements ManagedProjectPort {
       runtimeState: 'disabled',
       release: null,
       port: 8010,
+      tools: [],
+      lockfiles: [],
       data: null,
       dependencies: null,
       capabilities: { startStop: false, packages: false, rollback: false },
@@ -143,6 +193,8 @@ export class ManagedPhotoMapHost implements ManagedProjectPort {
       importState: 'verified-copy',
       runtimeState: 'disabled',
       release,
+      tools: sanitizedToolVersions(packages.termux_tool_versions),
+      lockfiles: sanitizedLocks(packages.lockfiles),
       data: {
         databaseBytes: nonnegativeInteger(database.bytes),
         privateMediaFiles: nonnegativeInteger(privateMedia.files),
