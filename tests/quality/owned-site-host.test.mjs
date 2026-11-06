@@ -46,7 +46,12 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.match(await response.text(), /First local site/);
     assert.equal((await fetch(`http://127.0.0.1:${port}/etc/passwd`)).status, 404);
     assert.equal((await fetch(`http://127.0.0.1:${port}/`, { method: 'POST' })).status, 405);
-    assert.equal(site.publish().contentVersion, 2);
+    assert.equal(site.publish(1).contentVersion, 1);
+    assert.equal(site.inspect().canRollback, false);
+    assert.throws(() => site.publish(3), /Unsupported demo version/);
+    assert.equal(site.publish(2).contentVersion, 2);
+    assert.equal(site.publish(2).contentVersion, 2);
+    assert.equal(site.inspect().previousVersion, 1);
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /Updated local site/);
     const restored = site.rollback();
@@ -58,11 +63,17 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.throws(() => site.rollback(), /No prior demo version/);
     assert.equal(site.inspect().contentVersion, 1);
     // A later explicit publish creates a new rollback window, never a permanent toggle.
-    const republished = site.publish();
+    const republished = site.publish(2);
     assert.equal(republished.contentVersion, 2);
     assert.equal(republished.previousVersion, 1);
     assert.equal(republished.canRollback, true);
     assert.equal(site.rollback().contentVersion, 1);
+    assert.equal(site.inspect().canRollback, false);
+    // Explicit selection of v1 after v2 is a new publication, never a rollback toggle.
+    assert.equal(site.publish(2).contentVersion, 2);
+    assert.equal(site.publish(1).contentVersion, 1);
+    assert.equal(site.inspect().previousVersion, 2);
+    assert.equal(site.rollback().contentVersion, 2);
     assert.equal(site.inspect().canRollback, false);
     assert.ok(site.readLogs().some((line) => line.includes('PocketHost owned demo listening')));
     appendFileSync(path.join(root, 'pockethost-demo', 'activity.log'), 'entry one\nentry two\n');
