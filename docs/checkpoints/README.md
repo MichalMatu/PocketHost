@@ -9,6 +9,10 @@ purpose: Index historical evidence without overloading the active documentation 
 
 Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
 
+## 2026-11-07
+
+- [Quality hardening sprint](2026-11-07-quality-hardening-sprint.md)
+
 ## 2026-11-06
 
 - [Local network access](2026-11-06-local-network-access.md)
