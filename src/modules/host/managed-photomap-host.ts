@@ -88,10 +88,10 @@ function checkedOwner(value: Record<string, unknown>): void {
 }
 
 function nonnegativeInteger(value: unknown): number {
-  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0) {
     throw new Error('Invalid managed PhotoMap inventory');
   }
-  return value as number;
+  return value;
 }
 
 /**
