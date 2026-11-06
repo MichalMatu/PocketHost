@@ -1,5 +1,6 @@
 import {
   OWNED_DEMO_ID,
+  type DemoVersion,
   type OwnedSitePort,
   type OwnedSiteSnapshot,
 } from '../../shared/owned-site.ts';
@@ -42,9 +43,10 @@ export function createOwnedSiteRuntime(port: OwnedSitePort) {
       requireOwned(port.inspect());
       return requireOwned(await port.stop());
     },
-    publish: () => {
+    publish: (version: DemoVersion) => {
       requireOwned(port.inspect());
-      return requireOwned(port.publish());
+      if (version !== 1 && version !== 2) throw new RangeError('Unsupported demo version');
+      return requireOwned(port.publish(version));
     },
     rollback: () => {
       const current = requireOwned(port.inspect());
