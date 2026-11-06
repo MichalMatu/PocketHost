@@ -28,6 +28,12 @@ Read `AGENTS.md`, `docs/LOCAL_AGENT_TERMUX.md`, `docs/README.md`, `docs/ARCHITEC
 
 Samsung Local Agent task `pockethost-p4-same-root-guarded-cutover-20261106-v3` completed `done`, exit 0. The P4 application was deployed at source `85a9634978969c2c6c43ae7a1ab644fedeba3841` **in the original P3 admin checkout path**. JSON GET 200 with correct ownership/release, POST 405, forged Host/Origin 403, loopback and LAN all passed. The P3 demo retained its original owned script path, lifecycle and identical content; six unrelated services remained unchanged. PhotoMap stayed stopped with port 8010 off. A scoped P3 rollback record is preserved. Earlier cross-checkout failures were rolled back; do not replay them. See [P4 live checkpoint](checkpoints/2026-11-06-p4-live-panel-cutover.md).
 
+## Accepted inert runtime code — after P4
+
+Exact feature source `32c09f2c4a92b918f919f67570a27b0a7193ea9a` has **terminal Samsung native PASS** at `pockethost-photomap-runtime-native-final-gate-20261106-v4`: full root `npm run check` (60/60 Node, 64 Markdown, Prettier, ESLint, TypeScript) and targeted 9/9 runtime tests. The real imported PhotoMap was inspected; Start/Stop were correctly denied, port 8010 stayed off, all six external services stayed running. New typed port, runtime policy and host PRoot adapter are **inert**, not an approved running instance; don't rerun these tests without code changes. [Runtime checkpoint](checkpoints/2026-11-06-photomap-runtime-inert-native.md).
+
+External PRoot `photomap-dev` is still unfrozen. CLI `proot-distro 5.10.3` has been inspected read-only; rootfs footprint/sessions require a separate observed receipt before a staged clone. Do not use old PhotoMap launch scripts or `proot-distro backup` if it could modify source permissions. **Next bounded gate:** controlled, owner-only versioned rootfs and SQLite working copy, verified separately on Samsung. No actual PhotoMap Start/Stop acceptance or app UI mutation endpoint yet.
+
 ## Next engineering sprint — isolated PhotoMap runtime MVP
 
 1. Inspect the imported PhotoMap source, `scripts/termux-dev.sh`, Debian PRoot and backend/frontend configuration **read-only**; identify the exact Python dependencies, database, private/public media paths and port without leaking secrets.
