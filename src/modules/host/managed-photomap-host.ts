@@ -33,7 +33,11 @@ function sanitizedToolVersions(value: unknown): ManagedProjectSnapshot['tools'] 
       /^[a-z0-9 ._+()-]+$/i.test(first)
         ? first
         : null;
-    return { name, state: entry.available ? 'available' as const : 'unavailable' as const, version };
+    return {
+      name,
+      state: entry.available ? ('available' as const) : ('unavailable' as const),
+      version,
+    };
   });
 }
 
