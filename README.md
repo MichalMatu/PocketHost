@@ -4,12 +4,12 @@ PocketHost is an experimental Android/Termux hosting control panel. P0–P2 prov
 
 ## Current development status
 
-| Milestone | Scope | Status |
-| --- | --- | --- |
-| P0–P2 | Foundation, native monitoring and dashboard | Native device accepted |
-| P3 | Explicitly owned static demo and private-LAN gateway | Device/browser viewing accepted; final P3 control/browser gates and feature-branch release still tracked |
-| P4 | Private PhotoMap snapshot, registry, versions and safe read-only catalog | Data import accepted; panel/source candidate pending final same-SHA quality and guarded deployment |
-| Next | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented |
+| Milestone | Scope                                                                      | Status                                                                                                   |
+| --------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| P0–P2     | Foundation, native monitoring and dashboard                                | Native device accepted                                                                                   |
+| P3        | Explicitly owned static demo and private-LAN gateway                       | Device/browser viewing accepted; final P3 control/browser gates and feature-branch release still tracked |
+| P4        | Private PhotoMap snapshot, registry, versions and safe read-only catalog   | Data import accepted; panel/source candidate pending final same-SHA quality and guarded deployment       |
+| Next      | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented                                                                                          |
 
 PhotoMap original checkout, including local changes, was preserved. Its verified stopped import contains copied SQLite and **2,196 media files**. PhotoMap runtime is explicitly disabled: no autostart, package updates or full rollback. Existing IleStoi.pl, Raspberry Pi production PhotoMap, Cloudflare and Local Agent are out of scope.
 
