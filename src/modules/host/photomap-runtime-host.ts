@@ -176,19 +176,20 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     ) {
       throw new Error('Unsafe runtime version profile');
     }
-    const source = path.join(this.instance, 'releases', RELEASE, 'source');
+    const preservedSource = path.join(this.instance, 'releases', RELEASE, 'source');
     directory(path.join(this.instance, 'releases'));
     directory(path.join(this.instance, 'releases', RELEASE));
-    directory(source);
-    const req = path.join(source, 'backend', 'requirements.txt');
-    if (digestFile(req) !== profile.requirements_sha256 || existsSync(path.join(source, '.env'))) {
-      throw new Error('Runtime source dependency or environment mismatch');
+    directory(preservedSource);
+    if (lstatSync(path.join(preservedSource, '.env'), { throwIfNoEntry: false })) {
+      throw new Error('Preserved PhotoMap source contains an unapproved environment file');
     }
     const rootfs = path.join(versionRoot, 'rootfs');
     const work = path.join(versionRoot, 'work');
+    const source = path.join(work, 'source');
     for (const folder of [
       rootfs,
       work,
+      source,
       path.join(work, 'database'),
       path.join(work, 'storage'),
       path.join(work, 'storage', 'private'),
@@ -196,11 +197,26 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     ]) {
       directory(folder);
     }
+    // Guest code may only write to the disposable work-source copy, never to the sealed import.
+    for (const relative of [
+      'server.py',
+      'backend/requirements.txt',
+      'frontend/dist/index.html',
+    ]) {
+      if (
+        digestFile(path.join(preservedSource, relative)) !==
+        digestFile(path.join(source, relative))
+      ) {
+        throw new Error('PhotoMap work-source copy does not match the preserved release');
+      }
+    }
     if (
-      !existsSync(path.join(work, 'database', 'app.db')) ||
-      !existsSync(path.join(source, 'frontend', 'dist', 'index.html'))
+      digestFile(path.join(source, 'backend', 'requirements.txt')) !==
+        profile.requirements_sha256 ||
+      lstatSync(path.join(source, '.env'), { throwIfNoEntry: false }) ||
+      !existsSync(path.join(work, 'database', 'app.db'))
     ) {
-      throw new Error('PhotoMap isolated working data or frontend missing');
+      throw new Error('PhotoMap work dependencies, database or environment invalid');
     }
     const prefix = process.env.PREFIX ?? '';
     if (
