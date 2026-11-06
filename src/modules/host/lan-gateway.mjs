@@ -26,12 +26,19 @@ export function sameSubnet(remote, local, mask) {
 }
 
 export function ownLanInterface(bind) {
-  if (net.isIP(bind) !== 4 || bind.startsWith('127.') || bind.startsWith('169.254.')) {
+  const octets = typeof bind === 'string' ? bind.split('.').map(Number) : [];
+  const privateNetwork =
+    octets[0] === 10 ||
+    (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31) ||
+    (octets[0] === 192 && octets[1] === 168);
+  if (net.isIP(bind) !== 4 || !privateNetwork) {
     throw new Error('LAN gateway requires an exact non-loopback IPv4 address');
   }
   const matches = Object.values(os.networkInterfaces())
     .flat()
-    .filter((iface) => iface && iface.family === 'IPv4' && !iface.internal && iface.address === bind);
+    .filter(
+      (iface) => iface && iface.family === 'IPv4' && !iface.internal && iface.address === bind,
+    );
   if (matches.length !== 1 || !matches[0].netmask || !sameSubnet(bind, bind, matches[0].netmask)) {
     throw new Error('LAN IPv4 address is not uniquely present on this host');
   }
@@ -51,7 +58,8 @@ export function safePassword(filename = PASSWORD_FILE) {
 }
 
 export function passwordMatches(header, password) {
-  if (typeof header !== 'string' || !header.startsWith('Basic ') || header.length > 256) return false;
+  if (typeof header !== 'string' || !header.startsWith('Basic ') || header.length > 256)
+    return false;
   let raw;
   try {
     raw = Buffer.from(header.slice(6), 'base64').toString('utf8');
@@ -70,7 +78,11 @@ function requestAllowed(request, bind, port, mask, admin, password) {
   if (request.headers.host !== host) return 403;
   if (request.headers.origin && request.headers.origin !== origin) return 403;
   if (!['none', 'same-origin', undefined].includes(request.headers['sec-fetch-site'])) return 403;
-  if (typeof request.url !== 'string' || !request.url.startsWith('/') || request.url.startsWith('//')) {
+  if (
+    typeof request.url !== 'string' ||
+    !request.url.startsWith('/') ||
+    request.url.startsWith('//')
+  ) {
     return 403;
   }
   if (admin) {
@@ -106,12 +118,21 @@ function upstreamHeaders(request, internalPort) {
 export function createGateway({ bind, mask, admin, password, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
-    const status = requestAllowed(request, bind, port || server.address()?.port, mask, admin, password);
+    const status = requestAllowed(
+      request,
+      bind,
+      port || server.address()?.port,
+      mask,
+      admin,
+      password,
+    );
     if (status !== 200) {
       rejected(response, status, admin);
       return;
     }
-    const headers = admin ? upstreamHeaders(request, upstreamPort) : { host: '127.0.0.1:' + upstreamPort };
+    const headers = admin
+      ? upstreamHeaders(request, upstreamPort)
+      : { host: '127.0.0.1:' + upstreamPort };
     const upstream = http.request(
       {
         host: '127.0.0.1',
@@ -137,7 +158,10 @@ export function createGateway({ bind, mask, admin, password, port, testUpstreamP
     request.pipe(upstream);
   });
   server.on('upgrade', (request, socket, head) => {
-    if (!admin || requestAllowed(request, bind, port || server.address()?.port, mask, admin, password) !== 200) {
+    if (
+      !admin ||
+      requestAllowed(request, bind, port || server.address()?.port, mask, admin, password) !== 200
+    ) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
@@ -187,8 +211,12 @@ export async function startLanGateway(bind, password) {
   };
   process.once('SIGTERM', shutdown);
   process.once('SIGINT', shutdown);
-  return { admin, site, adminUrl: 'http://' + bind + ':' + ADMIN_PORT + '/owned-site',
-    siteUrl: 'http://' + bind + ':' + SITE_PORT + '/' };
+  return {
+    admin,
+    site,
+    adminUrl: 'http://' + bind + ':' + ADMIN_PORT + '/owned-site',
+    siteUrl: 'http://' + bind + ':' + SITE_PORT + '/',
+  };
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
@@ -196,7 +224,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
   try {
     const password = safePassword();
     const gateway = await startLanGateway(bind, password);
-    console.log(JSON.stringify({ state: 'running', admin: gateway.adminUrl, site: gateway.siteUrl }));
+    console.log(
+      JSON.stringify({ state: 'running', admin: gateway.adminUrl, site: gateway.siteUrl }),
+    );
   } catch (error) {
     console.error('LAN gateway refused startup: ' + error.message);
     process.exitCode = 1;

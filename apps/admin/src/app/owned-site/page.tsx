@@ -93,6 +93,10 @@ export default function OwnedSitePage() {
   const isOwned = site?.ownership === "pockethost"
   const running = site?.state === "running"
   const unknown = site?.state === "unknown"
+  const testSiteUrl =
+    typeof window !== "undefined" && window.location.port === "18878"
+      ? `${window.location.protocol}//${window.location.hostname}:18879/`
+      : site?.url
 
   return (
     <BaseLayout
@@ -165,7 +169,7 @@ export default function OwnedSitePage() {
                 </div>
                 {running && (
                   <p className="text-sm text-muted-foreground">
-                    <a href={site.url} target="_blank" rel="noopener noreferrer" className="underline">
+                    <a href={testSiteUrl} target="_blank" rel="noopener noreferrer" className="underline">
                       Open locally hosted test page
                     </a>
                   </p>

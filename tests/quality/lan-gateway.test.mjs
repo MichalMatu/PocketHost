@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
 import { mkdtempSync, rmSync, chmodSync, writeFileSync, symlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -30,6 +30,20 @@ async function close(server) {
   await new Promise((resolve) => server.close(resolve));
 }
 
+async function requestWithHost(port, host) {
+  return new Promise((resolve, reject) => {
+    const request = httpRequest(
+      { hostname: bind, port, path: '/', method: 'GET', headers: { Host: host, Authorization: auth } },
+      (response) => {
+        response.resume();
+        response.once('end', () => resolve(response.statusCode));
+      },
+    );
+    request.once('error', reject);
+    request.end();
+  });
+}
+
 test('LAN network scope requires same subnet and refuses public or other clients', () => {
   assert.equal(sameSubnet('192.168.10.12', '192.168.10.2', '255.255.255.0'), true);
   assert.equal(sameSubnet('::ffff:192.168.10.13', '192.168.10.2', '255.255.255.0'), true);
@@ -37,7 +51,7 @@ test('LAN network scope requires same subnet and refuses public or other clients
   assert.equal(sameSubnet('2001:db8::1', '192.168.10.2', '255.255.255.0'), false);
   assert.throws(() => ownLanInterface('0.0.0.0'), /requires an exact/);
   assert.throws(() => ownLanInterface('127.0.0.1'), /requires an exact/);
-  assert.throws(() => ownLanInterface('8.8.8.8'), /not uniquely present/);
+  assert.throws(() => ownLanInterface('8.8.8.8'), /requires an exact/);
 });
 
 test('owner-only password file and strict Basic credentials are required', () => {
@@ -47,7 +61,10 @@ test('owner-only password file and strict Basic credentials are required', () =>
     writeFileSync(file, password, { mode: 0o600 });
     assert.equal(safePassword(file), password);
     assert.equal(passwordMatches(auth, password), true);
-    assert.equal(passwordMatches('Basic ' + Buffer.from('pocket:wrong').toString('base64'), password), false);
+    assert.equal(
+      passwordMatches('Basic ' + Buffer.from('pocket:wrong').toString('base64'), password),
+      false,
+    );
     assert.equal(passwordMatches('Bearer something', password), false);
     assert.equal(passwordMatches(undefined, password), false);
     chmodSync(file, 0o644);
@@ -76,7 +93,14 @@ test('LAN gateway guards admin and forwards only authorized same-origin requests
     );
   });
   const upstream = await listen(backend);
-  const gateway = createGateway({ bind, mask, admin: true, password, port: 0, testUpstreamPort: upstream });
+  const gateway = createGateway({
+    bind,
+    mask,
+    admin: true,
+    password,
+    port: 0,
+    testUpstreamPort: upstream,
+  });
   try {
     const port = await listen(gateway);
     const url = 'http://' + bind + ':' + port;
@@ -91,16 +115,15 @@ test('LAN gateway guards admin and forwards only authorized same-origin requests
     assert.equal(body.host, '127.0.0.1:' + upstream);
     assert.equal(body.authorizationForwarded, false);
     assert.equal(body.path, '/owned-site');
+    assert.equal(await requestWithHost(port, 'evil.example'), 403);
     assert.equal(
-      (await request('/', { headers: { Authorization: auth, Host: 'evil.example' } })).status,
+      (await request('/', { headers: { Authorization: auth, Origin: 'http://evil.example' } }))
+        .status,
       403,
     );
     assert.equal(
-      (await request('/', { headers: { Authorization: auth, Origin: 'http://evil.example' } })).status,
-      403,
-    );
-    assert.equal(
-      (await request('/', { headers: { Authorization: auth, 'Sec-Fetch-Site': 'cross-site' } })).status,
+      (await request('/', { headers: { Authorization: auth, 'Sec-Fetch-Site': 'cross-site' } }))
+        .status,
       403,
     );
     response = await request('/api/v1/owned-site/publish', {
@@ -126,7 +149,14 @@ test('LAN gateway guards admin and forwards only authorized same-origin requests
 test('LAN site gateway is unauthenticated but GET and HEAD only', async () => {
   const backend = createServer((_request, response) => response.end('First local site'));
   const upstream = await listen(backend);
-  const gateway = createGateway({ bind, mask, admin: false, password, port: 0, testUpstreamPort: upstream });
+  const gateway = createGateway({
+    bind,
+    mask,
+    admin: false,
+    password,
+    port: 0,
+    testUpstreamPort: upstream,
+  });
   try {
     const port = await listen(gateway);
     const url = 'http://127.0.0.1:' + port;
