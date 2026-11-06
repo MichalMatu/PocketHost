@@ -9,6 +9,7 @@ import {
 
 const RELEASE_PATTERN = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const MAX_MANIFEST_BYTES = 65536;
+const MAX_INVENTORY_BYTES = 2097152;
 const TOOL_NAMES = ['node', 'npm', 'git', 'python3', 'proot', 'proot-distro'] as const;
 
 function sanitizedToolVersions(value: unknown): ManagedProjectSnapshot['tools'] {
@@ -66,9 +67,9 @@ function plainDirectory(directory: string): void {
   }
 }
 
-function manifest(file: string): Record<string, unknown> {
+function manifest(file: string, limit = MAX_MANIFEST_BYTES): Record<string, unknown> {
   const stat = lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_MANIFEST_BYTES) {
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > limit) {
     throw new Error('Unsafe managed project manifest');
   }
   const raw: unknown = JSON.parse(readFileSync(file, 'utf8'));
@@ -177,7 +178,7 @@ export class ManagedPhotoMapHost implements ManagedProjectPort {
     const snapshots = path.join(instanceDir, 'snapshots');
     plainDirectory(snapshots);
     plainDirectory(path.join(snapshots, release));
-    const inventory = manifest(path.join(snapshots, release, 'data-manifest.json'));
+    const inventory = manifest(path.join(snapshots, release, 'data-manifest.json'), MAX_INVENTORY_BYTES);
     checkedOwner(inventory);
     if (inventory.release_id !== release) throw new Error('Data release mismatch');
     const database = inventory.database as Record<string, unknown> | null;
