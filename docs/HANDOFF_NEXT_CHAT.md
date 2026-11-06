@@ -80,3 +80,7 @@ Historical checkpoints are indexed separately in
 [the archive](checkpoints/README.md). Avoid a new checkpoint for every QA attempt:
 update this handoff and the affected owner/module docs; preserve detailed immutable
 evidence only at real acceptance boundaries. Do not reread or rerun the entire history.
+
+## Current quality refactor — 2026-11-07
+
+All ten historical branches were verified as ancestors of `main` and deleted through Git-only transport. The owner-requested `main`-only policy now appears in root instructions and development docs. The first Samsung `check:all` at `eefd870` found the checkpoint-index structure rule; its corrected `a56e94` successor passed 68/68 Node tests and stopped at one Markdownlint MD059 link in the quality document. That lint has been corrected. The generic managed-runtime extraction on `main` is new code and **requires fresh same-SHA native `check:all`**, not inherited acceptance. PhotoMap runtime activation remains disabled.
