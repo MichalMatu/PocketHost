@@ -37,7 +37,7 @@ All listed task names have the common `pockethost-` prefix and are recorded in t
 
 ## Cleanup and release constraints
 
-The **failed v1 copy left an isolated, unpublished staging directory**, formerly measured at 1,780 files and 597,768,154 bytes. This is **not** part of the authoritative managed release; do not merge it into the published root. Delete it only with a dedicated exact-path guard after independent safety verification, never through a broad `Projects` cleanup.
+The failed v1 copy left an isolated, unpublished staging directory with 1,780 files and 597,768,154 bytes. It was **safely removed** by the dedicated guarded Samsung task `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1` (**done / exit 0**, `OBSOLETE_STAGE_CLEARED`), after verifying exact path, owner, counts and final published release. The authoritative managed root, original checkout and backups remain preserved. No broad `Projects` cleanup was performed.
 
 The imported Debian PRoot environment is **external and unfrozen**. `runtime.json` retains `launch_allowed=false`, `enabled=false`, `autostart=false`; project-local package updates and entire-instance rollback remain disabled. The old runit script still points to the **original checkout**, not the managed release. Start/Stop requires a new owned runtime design and physical acceptance.
 
