@@ -15,6 +15,7 @@ import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
 import { attestsManagedProcess, processGroupAbsent, safeStopEvidence } from './managed-process-guards.ts';
+import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
 import {
   OWNED_PHOTOMAP_ID,
   OWNED_PHOTOMAP_PORT,
@@ -358,7 +359,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     return { ...basic, state, manualStartAllowed: true };
   }
 
-  private event(message: string): void {
+  private event(message: RuntimeEventCode): void {
     if (!existsSync(this.state)) return;
     directory(this.state);
     const file = path.join(this.state, 'events.log');
@@ -367,7 +368,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe event log');
       if (stat.size > LOG_LIMIT) unlinkSync(file);
     }
-    writeFileSync(file, new Date().toISOString() + ' ' + message + '\n', {
+    writeFileSync(file, formatRuntimeEvent(OWNED_PHOTOMAP_ID, message), {
       flag: 'a',
       mode: 0o600,
     });
@@ -444,6 +445,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       } catch {
         // Retain the marker if the process cannot be safely stopped.
       }
+      this.event('manual-start-health-failed');
       throw new Error('PhotoMap managed health acceptance failed');
     } finally {
       unlinkSync(claim);
@@ -480,6 +482,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       }
       await pause(100);
     }
+    this.event('manual-stop-uncertain');
     throw new Error('PhotoMap graceful stop uncertain; marker retained');
   }
 
