@@ -7,6 +7,13 @@ purpose: Specify the exclusive Termux Local Agent development workflow and fast 
 
 # Termux Local Agent — Fast Start and Execution Contract
 
+## Main-only source policy
+
+All source and documentation changes go directly to the current `PocketHost/main` unless
+explicitly instructed otherwise by the owner. Detached isolated on-device QA checkouts
+are allowed for exact-source tests; they must not be used as development branches.
+Moving source to `main` does not activate any live services or waive release gates.
+
 ## No PocketHost project binding
 
 PocketHost uses **ordinary Git and host-command tasks**, not Local Agent project mode. The installed Android/Termux Local Agent bundle has a bounded CLI/host-command executor. It **does not require** PocketHost project registration, a canonical project binding UUID or an Agent-managed project checkout to run CLI tools on Termux. Do not provision these just to run Git, Node/npm or tests; there is no demonstrated advantage for this project. An independent normal PocketHost Git checkout suffices.
