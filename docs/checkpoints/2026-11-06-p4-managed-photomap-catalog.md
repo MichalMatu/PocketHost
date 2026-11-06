@@ -23,12 +23,12 @@ The managed import `import-20261106` succeeded independently before P4 code work
 
 The authoritative tested **source SHA** is `471fdfecfa8bf41f52ef1db198959ba94857c2ac` on `sprint/p3-mvp-integration-20261105`. Later commits altering only documentation do not change that code baseline.
 
-| Private Local Agent task suffix | Result | Evidence |
-| --- | --- | --- |
-| `p4-closeout-final-native-quality-20261106-v1` | **done, exit 0** | Pinned clean source, root `npm run check` **51/51 Node tests**, 62 Markdown files without errors, Prettier, ESLint, TypeScript, admin lint/build and **6/6 UI tests** PASS |
-| `p4-closeout-live-readonly-preflight-20261106-v1` | **done, exit 0** | Verified running P3 panel and demo, six external Termux services `running`, PhotoMap runit registration absent and port 8010 off |
-| `p4-closeout-real-import-adapter-20261106-v1` | **done, exit 0** | Actual `ManagedPhotoMapHost.inspect()` recognized owned imported release, **2,196 media files**, **6 tools**, **4 locks** and all three mutation capabilities disabled |
-| `p4-closeout-obsolete-import-stage-cleanup-20261106-v1` | **done, exit 0** | Deleted **only** failed v1 partial staging, after validating exactly 1,780 files and 597,768,154 bytes against the accepted final release |
+| Private Local Agent task suffix                         | Result           | Evidence                                                                                                                                                                   |
+| ------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `p4-closeout-final-native-quality-20261106-v1`          | **done, exit 0** | Pinned clean source, root `npm run check` **51/51 Node tests**, 62 Markdown files without errors, Prettier, ESLint, TypeScript, admin lint/build and **6/6 UI tests** PASS |
+| `p4-closeout-live-readonly-preflight-20261106-v1`       | **done, exit 0** | Verified running P3 panel and demo, six external Termux services `running`, PhotoMap runit registration absent and port 8010 off                                           |
+| `p4-closeout-real-import-adapter-20261106-v1`           | **done, exit 0** | Actual `ManagedPhotoMapHost.inspect()` recognized owned imported release, **2,196 media files**, **6 tools**, **4 locks** and all three mutation capabilities disabled     |
+| `p4-closeout-obsolete-import-stage-cleanup-20261106-v1` | **done, exit 0** | Deleted **only** failed v1 partial staging, after validating exactly 1,780 files and 597,768,154 bytes against the accepted final release                                  |
 
 All task names have prefix `pockethost-`; terminal receipts are stored in private `MichalMatu/local-agent` branch `agent-control`, under the exact Samsung installation. None of these P4 tasks started PhotoMap, modified global packages, registered autostart, changed Raspberry Pi production or stopped another service.
 
