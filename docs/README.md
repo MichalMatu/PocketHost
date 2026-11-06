@@ -48,4 +48,5 @@
 - [P3 single-site candidate](checkpoints/2026-11-05-p3-owned-single-site.md)
 - [P3 integration candidate and release gates](checkpoints/2026-11-05-p3-mvp-integration-candidate.md)
 - [PocketHost private LAN access candidate](checkpoints/2026-11-06-local-network-access.md)
+- [PhotoMap stopped-import and runit regression record](checkpoints/2026-11-06-photomap-runit-autorestart-regression.md)
 - [P4 managed PhotoMap catalog candidate](checkpoints/2026-11-06-p4-managed-photomap-catalog.md)
