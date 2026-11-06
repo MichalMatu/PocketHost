@@ -38,3 +38,9 @@ Test allowlist rejection, timeout and error paths. No shell execution can occur 
 ## P3 isolated owned-site candidate
 
 The candidate `owned-site-host.ts` is the only adapter permitted to create and control a new fixed `pockethost-demo` instance beneath its dedicated `PocketHost-OwnedSites` root. Its loopback port is 18787, and its marker binds an instance UUID, executable script path, cwd, PID and Linux process start ticks. The API cannot supply paths, PIDs, ports or shell commands. The adapter rejects unverified process identity, port collisions and symlinked owned roots. This candidate is **not approved for live preview enablement** until physical Termux negative tests and rollback checks pass; all observed external services remain read-only.
+
+## PhotoMap PRoot host adapter — disabled candidate
+
+`ManagedPhotoMapRuntimeHost` is the exclusive filesystem/process boundary for a future project-local `photomap-test` Debian PRoot version. It checks fixed instance/release, non-symlink manifests and directories, disabled/autostart flags, version and requirements checksum, working database/media directories, port collision and exact PID + Linux start-ticks + executable/cwd/argv identity before any lifecycle signal. The adapter refuses a disabled real import and does not interact with the original PhotoMap service. Native Termux tests passed at `32c09f2c`; see [runtime checkpoint](../checkpoints/2026-11-06-photomap-runtime-inert-native.md).
+
+This is **source qualification only**. The existing rootfs is external; no managed rootfs, health-tested Python process or manual UI control has been released. Failed/uncertain process identity must remain a HOLD, never a reason for PID-only cleanup.
