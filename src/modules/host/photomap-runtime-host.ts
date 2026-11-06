@@ -300,7 +300,18 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       manualStartAllowed: false,
       healthy: null,
     };
-    if (!plan) return basic;
+    if (!plan) {
+      // Disabled flags never hide an already recorded or suspicious process marker.
+      const state = lstatSync(this.state, { throwIfNoEntry: false });
+      if (state && (!state.isDirectory() || state.isSymbolicLink())) {
+        throw new Error('Unsafe disabled PhotoMap process-state directory');
+      }
+      const file = path.join(this.state, 'active.json');
+      if (state && lstatSync(file, { throwIfNoEntry: false })) {
+        return { ...basic, state: 'unknown' };
+      }
+      return basic;
+    }
     const marker = this.marker();
     const state = !marker
       ? 'stopped'
