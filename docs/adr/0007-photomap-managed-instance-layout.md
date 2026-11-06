@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 owner: sites
 last_reviewed: 2026-11-06
 purpose: Define isolated PocketHost-managed PhotoMap test instance, its package catalog and reversible releases
@@ -73,3 +73,7 @@ The admin UI will expose each managed project with its installed tools, versions
 ## Acceptance gates
 
 The first physical import is accepted only with a terminal Local Agent result proving: PhotoMap test HTTP port 8010 stopped, its verified runit registration disabled, source snapshot preserved, copied SQLite checksum/PRAGMA checks and media inventory matching, ownership manifests valid, target still stopped, six existing non-PhotoMap monitored services unchanged, and Pi production untouched (by operation scope, not remote claims). Package updates, managed start/stop and full rollback controls require later independent code and device gates.
+
+## Decision execution — 2026-11-06
+
+The **stopped managed import** was completed on Samsung by terminal Local Agent task `pockethost-photomap-managed-import-copy-20261106-v2` (`done`, exit 0): private release `import-20261106`, preserved source and original-code backup, verified SQLite and 2,196 media copies, disabled runtime/autostart and unchanged external services. This accepts the **layout and copy transaction only**. It does **not** accept live PhotoMap management, managed Debian PRoot installation, package updates or full-instance rollback. The initial v1 partial import stage is separate and remains cleanup debt until exact-path cleanup is independently proven. See [PhotoMap stopped-import checkpoint](../checkpoints/2026-11-06-photomap-runit-autorestart-regression.md).
