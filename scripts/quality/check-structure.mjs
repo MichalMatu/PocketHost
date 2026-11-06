@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 
 export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 
-const ownedHostScript = 'src/modules/host/owned-site-server.mjs';
+const approvedHostScripts = new Set([
+  'src/modules/host/owned-site-server.mjs',
+  'src/modules/host/lan-gateway.mjs',
+]);
 
 export function validateStructure(root = repositoryRoot) {
   const errors = [];
@@ -77,7 +80,7 @@ export function validateStructure(root = repositoryRoot) {
         if (
           rel.startsWith('src/') &&
           !/\.(ts|tsx)$/.test(rel) &&
-          rel !== ownedHostScript &&
+          !approvedHostScripts.has(rel) &&
           !rel.endsWith('/AGENTS.md')
         )
           errors.push(`Unsupported source artifact: ${rel}`);
