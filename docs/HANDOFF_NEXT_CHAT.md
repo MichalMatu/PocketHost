@@ -2,7 +2,7 @@
 status: accepted
 owner: core
 last_reviewed: 2026-11-06
-purpose: Single authoritative PocketHost next-chat handoff after P4 native code and PhotoMap stopped import
+purpose: Current PocketHost handoff after accepted live P4 catalog and stopped PhotoMap import
 ---
 
 # PocketHost — next-chat handoff
@@ -15,6 +15,8 @@ Read `AGENTS.md`, `docs/LOCAL_AGENT_TERMUX.md`, `docs/README.md`, `docs/ARCHITEC
 
 ## Accepted state — do not repeat
 
+- **P4 live deployment:** accepted terminal same-path cutover v3; P3 owned process and LAN preserved. The deployed QA code is `85a9634`, distinct from the prior exact source-test SHA `471fdfec`.
+
 - **P0–P2:** foundation, fixed allowlisted host status of six external Termux services, React admin shell and user-accepted GUI are previously verified.
 - **P3:** separate `pockethost-demo` static server with scoped owner-verified Start/Stop, sample release and one-use rollback, a manually launched admin on loopback and opt-in private trusted-LAN gateway. P3 preview is independently running and must not be replaced without guarded cutover.
 - **PhotoMap TEST import:** `import-20261106` under `~/Projects/PocketHost-Managed`, from source Git `d49e94c9` plus original dirty edits. Original checkout and independent code backup preserved. SQLite, **2,196 media files** and 4.26 GB of copied data verified. PhotoMap runit/autostart disabled; port 8010 off. The old PhotoMap run script **still launches the old checkout**; never reuse it for a managed runtime.
@@ -22,9 +24,9 @@ Read `AGENTS.md`, `docs/LOCAL_AGENT_TERMUX.md`, `docs/README.md`, `docs/ARCHITEC
 - **Independent native gates:** `pockethost-p4-closeout-real-import-adapter-20261106-v1` done/exit 0 (real owned manifest, 2,196 media, six tools, four locks, all write capabilities disabled). `pockethost-p4-closeout-live-readonly-preflight-20261106-v1` done/exit 0 (healthy owned P3 preview, six other services running, PhotoMap off). `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1` done/exit 0 (removed **only** obsolete v1 failed import stage: 597,768,154 bytes). No duplicate cleanup.
 - **Main:** not merged by the P4 sprint. The last source QA SHA is not the same as later **documentation-only** branch HEADs; always distinguish them.
 
-## First remaining gate — P4 live catalog
+## P4 live catalog — accepted
 
-**The existing P3 admin panel was deliberately left unchanged.** Before P4 is considered deployed, plan a **guarded and reversible** panel code cutover that preserves the P3 owned demo's exact script path and process-identity checks; the live preview/source record may have changed independently. Verify owner PID/start ticks, six external services, both working loopback/LAN paths and restoration plan. After cutover require **actual JSON** `GET /api/v1/managed-photomap` response with owner `pockethost` and release `import-20261106`, POST 405, forged Host/Origin 403, P3 ownership/lifecycle intact and PhotoMap still OFF. Do not count an arbitrary Vite SPA fallback HTTP 200 as a passing API gate. If any guard fails, keep P3 intact and label the live P4 gate HOLD.
+Samsung Local Agent task `pockethost-p4-same-root-guarded-cutover-20261106-v3` completed `done`, exit 0. The P4 application was deployed at source `85a9634978969c2c6c43ae7a1ab644fedeba3841` **in the original P3 admin checkout path**. JSON GET 200 with correct ownership/release, POST 405, forged Host/Origin 403, loopback and LAN all passed. The P3 demo retained its original owned script path, lifecycle and identical content; six unrelated services remained unchanged. PhotoMap stayed stopped with port 8010 off. A scoped P3 rollback record is preserved. Earlier cross-checkout failures were rolled back; do not replay them. See [P4 live checkpoint](checkpoints/2026-11-06-p4-live-panel-cutover.md).
 
 ## Next engineering sprint — isolated PhotoMap runtime MVP
 
