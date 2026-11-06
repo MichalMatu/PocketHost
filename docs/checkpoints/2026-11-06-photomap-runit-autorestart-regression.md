@@ -23,15 +23,15 @@ The earlier PhotoMap preview on 2026-11-02 re-created the runit registration as 
 
 ## Device receipts and exceptions
 
-| Local Agent task ID suffix | Terminal result | Meaning |
-| --- | --- | --- |
-| `photomap-owned-stop-preflight-20261106-v1` | done, exit 0 | Verified source, old service ownership and six external services |
-| `photomap-stop-remove-autorestart-forensics-20261106-v2` | done, exit 0 | Stopped exact PhotoMap test service, removed its registration, preserved external services |
-| `photomap-independent-no-autorestart-20261106-v1` | failed, exit 1 | False-positive matcher inspected its own diagnostic command; port was off, runit link absent and six other services running |
-| `photomap-managed-import-preflight-20261106-v1` | done, exit 0 | No PhotoMap service/listener, data integrity and free-space preflight |
-| `photomap-managed-import-copy-20261106-v1` | failed, exit 1 | Refused four live runit FIFO files during source backup; no final target published |
-| `photomap-import-symlink-diagnose-20261106-v1` | done, exit 0 | Confirmed four runtime-only FIFO entries in two `supervise/` folders |
-| `photomap-managed-import-copy-20261106-v2` | **done, exit 0** | Skipped exactly those two runtime-only `supervise/` directories, verified the release and published it stopped |
+| Local Agent task ID suffix                               | Terminal result  | Meaning                                                                                                                     |
+| -------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `photomap-owned-stop-preflight-20261106-v1`              | done, exit 0     | Verified source, old service ownership and six external services                                                            |
+| `photomap-stop-remove-autorestart-forensics-20261106-v2` | done, exit 0     | Stopped exact PhotoMap test service, removed its registration, preserved external services                                  |
+| `photomap-independent-no-autorestart-20261106-v1`        | failed, exit 1   | False-positive matcher inspected its own diagnostic command; port was off, runit link absent and six other services running |
+| `photomap-managed-import-preflight-20261106-v1`          | done, exit 0     | No PhotoMap service/listener, data integrity and free-space preflight                                                       |
+| `photomap-managed-import-copy-20261106-v1`               | failed, exit 1   | Refused four live runit FIFO files during source backup; no final target published                                          |
+| `photomap-import-symlink-diagnose-20261106-v1`           | done, exit 0     | Confirmed four runtime-only FIFO entries in two `supervise/` folders                                                        |
+| `photomap-managed-import-copy-20261106-v2`               | **done, exit 0** | Skipped exactly those two runtime-only `supervise/` directories, verified the release and published it stopped              |
 
 All listed task names have the common `pockethost-` prefix and are recorded in the **private** `MichalMatu/local-agent` repository, branch `agent-control`, under the exact Samsung installation. This checkpoint intentionally stores no private task payloads, PIDs, credentials or environment dumps.
 
