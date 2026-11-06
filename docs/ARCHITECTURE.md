@@ -46,3 +46,9 @@ Inventory and UI first. Add owned runtime and storage second. Add package manage
 ## Owner-approved private LAN exception — 2026-11-06
 
 The actual administration backend remains bound to `127.0.0.1:8787` and the owned demonstration to `127.0.0.1:18787`. A separately owned, manually launched gateway binds only an exact private phone IPv4 address and exposes `18878` (admin) and `18879` (GET/HEAD-only site). At the owner's explicit request, **no login is required** on the trusted home Wi-Fi: any connected host can operate the PocketHost demo. This is not safe for public WAN administration. Host/Origin/Fetch Metadata checks, process ownership and P3 intent enforcement remain mandatory; no autostart or router forwarding. See [ADR-0006](adr/0006-private-lan-access.md).
+
+## Generic managed runtime contract — source candidate
+
+`src/shared/managed-runtime.ts` defines application-neutral instance identity, state and host ports. The pure policy `src/modules/runtime/managed-runtime.ts` enforces owner, release, port and lifecycle transitions without importing PhotoMap. PhotoMap supplies a thin policy binding through `src/modules/runtime/photomap-runtime.ts` and retains its explicitly disabled host adapter.
+
+Future applications must register distinct approved identities and adapters; do not copy PhotoMap's fixed ID, port, paths, Python commands or data models into the shared engine. A general multi-project registry, runtime activation and API write controls are **not implemented or authorized**. PRoot does not provide OS-user isolation.
