@@ -29,7 +29,7 @@ function sanitizedToolVersions(value: unknown): ManagedProjectSnapshot['tools'] 
       typeof first === 'string' &&
       first.length <= 100 &&
       /\d/.test(first) &&
-      /^[a-z0-9 ._+\\/()\\-]+$/i.test(first)
+      /^[a-z0-9 ._+()-]+$/i.test(first)
         ? first
         : null;
     return { name, state: entry.available ? 'available' as const : 'unavailable' as const, version };
