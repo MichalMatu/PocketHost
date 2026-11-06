@@ -80,3 +80,18 @@ a later UX layer, not a reason to fork it.
 All future PocketHost changes are committed to fresh `main` by default. The 2026-11-07
 fast-forward did not waive P3 browser release gates. Do not repeat accepted
 Samsung tests or create new branches without explicit owner direction.
+
+## Quality-first sprint checkpoint — 2026-11-07
+
+The main-only consolidation is complete. A generic managed-runtime policy,
+process identity/PRoot-group guard, bounded runtime JSONL diagnostics,
+host-snapshot Zod validation and initial P3 component accessibility checks
+have been committed. Node-native coverage reporting is available as a separate
+command; a Knip baseline and strict thresholds are **not** yet accepted.
+
+The remaining sequence is: same-SHA Samsung `check:all` and coverage receipt;
+PRoot orphan/process-group failure fixtures; PhotoMap host-adapter extraction
+into independent manifest, lifecycle and launch-plan units; broader API schema
+and a11y tests; error-history/rollback recovery proofs. Preserve P3 physical
+browser and P4 runtime activation holds. The detailed [sprint checkpoint]
+(checkpoints/2026-11-07-quality-hardening-sprint.md) separates done from open.
