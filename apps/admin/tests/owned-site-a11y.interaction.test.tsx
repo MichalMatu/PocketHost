@@ -49,7 +49,7 @@ describe("owned-site keyboard and action semantics", () => {
 
   it("does not render mutating controls while the demo is disabled", async () => {
     renderWithSite(null, false)
-    await screen.findByText(/disabled/i)
+    await screen.findByText("Site management not enabled in this session")
     expect(screen.queryByRole("button", { name: "Publish selected version" })).toBeNull()
     expect(screen.queryByRole("button", { name: "Rollback version" })).toBeNull()
     expect(screen.queryByRole("button", { name: "Start site" })).toBeNull()
@@ -57,7 +57,7 @@ describe("owned-site keyboard and action semantics", () => {
 
   it("blocks controls and exposes an alert if the owned process is unknown", async () => {
     renderWithSite({ ...ownedSite(), state: "unknown" })
-    expect(await screen.findByRole("alert")).toHaveProperty("textContent")
+    expect((await screen.findByRole("alert")).textContent).toContain("Process identity")
     expect(screen.queryByRole("button", { name: "Publish selected version" })).toBeNull()
     expect(
       (screen.getByRole("button", { name: "Rollback version" }) as HTMLButtonElement).disabled,
