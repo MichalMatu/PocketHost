@@ -30,10 +30,10 @@ async function close(server) {
   await new Promise((resolve) => server.close(resolve));
 }
 
-async function requestWithHost(port, host) {
+async function requestWithHeaders(port, headers, method = 'GET') {
   return new Promise((resolve, reject) => {
     const request = httpRequest(
-      { hostname: bind, port, path: '/', method: 'GET', headers: { Host: host, Authorization: auth } },
+      { hostname: bind, port, path: '/', method, headers },
       (response) => {
         response.resume();
         response.once('end', () => resolve(response.statusCode));
@@ -42,6 +42,10 @@ async function requestWithHost(port, host) {
     request.once('error', reject);
     request.end();
   });
+}
+
+async function requestWithHost(port, host) {
+  return requestWithHeaders(port, { Host: host, Authorization: auth });
 }
 
 test('LAN network scope requires same subnet and refuses public or other clients', () => {
@@ -117,6 +121,30 @@ test('LAN gateway guards admin and forwards only authorized same-origin requests
     assert.equal(body.path, '/owned-site');
     assert.equal(await requestWithHost(port, 'evil.example'), 403);
     assert.equal(
+      await requestWithHeaders(port, {
+        Host: '127.0.0.1:' + port,
+        Authorization: auth,
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Dest': 'document',
+      }),
+      200,
+    );
+    assert.equal(
+      await requestWithHeaders(
+        port,
+        {
+          Host: '127.0.0.1:' + port,
+          Authorization: auth,
+          'Sec-Fetch-Site': 'cross-site',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Dest': 'document',
+        },
+        'POST',
+      ),
+      403,
+    );
+    assert.equal(
       (await request('/', { headers: { Authorization: auth, Origin: 'http://evil.example' } }))
         .status,
       403,
@@ -165,6 +193,31 @@ test('LAN site gateway is unauthenticated but GET and HEAD only', async () => {
     assert.match(await response.text(), /First local site/);
     assert.equal((await fetch(url, { method: 'HEAD' })).status, 200);
     assert.equal((await fetch(url, { method: 'POST' })).status, 405);
+    assert.equal(
+      await requestWithHeaders(port, {
+        Host: '127.0.0.1:' + port,
+        'Sec-Fetch-Site': 'same-site',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Dest': 'document',
+      }),
+      200,
+    );
+    assert.equal(
+      await requestWithHeaders(port, {
+        Host: '127.0.0.1:' + port,
+        'Sec-Fetch-Site': 'cross-site',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Dest': 'document',
+      }),
+      200,
+    );
+    assert.equal(
+      await requestWithHeaders(port, {
+        Host: '127.0.0.1:' + port,
+        'Sec-Fetch-Site': 'cross-site',
+      }),
+      403,
+    );
     assert.equal((await fetch(url, { headers: { Origin: 'http://evil.example' } })).status, 403);
   } finally {
     await close(gateway);
