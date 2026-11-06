@@ -198,14 +198,9 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       directory(folder);
     }
     // Guest code may only write to the disposable work-source copy, never to the sealed import.
-    for (const relative of [
-      'server.py',
-      'backend/requirements.txt',
-      'frontend/dist/index.html',
-    ]) {
+    for (const relative of ['server.py', 'backend/requirements.txt', 'frontend/dist/index.html']) {
       if (
-        digestFile(path.join(preservedSource, relative)) !==
-        digestFile(path.join(source, relative))
+        digestFile(path.join(preservedSource, relative)) !== digestFile(path.join(source, relative))
       ) {
         throw new Error('PhotoMap work-source copy does not match the preserved release');
       }
