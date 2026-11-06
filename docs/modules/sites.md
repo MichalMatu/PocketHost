@@ -15,6 +15,10 @@ Define metadata for PocketHost-owned sites and future deployment versions.
 
 The P3 candidate has one allowlisted ID, `pockethost-demo`, and two built-in static HTML versions. Switching versions and rollback never accept arbitrary uploads or paths. The metadata/ownership record is separate from the served `index.html`. Site actions are intentionally gated behind a disabled-by-default, local DEV feature flag.
 
+## P4 catalog-only PhotoMap TEST
+
+The imported `photomap-test` is a separate owned filesystem snapshot in `~/Projects/PocketHost-Managed`, not the P3 `pockethost-demo` instance. The `/managed-projects` page shows its verified copy, release and inventory. Launch, autostart, dependency mutation and rollback remain disabled while the external Debian PRoot environment is not snapshotted. See [ADR-0008](../adr/0008-photomap-p4-managed-catalog.md).
+
 ## Forbidden
 
 Do not import/adopt IleStoi.pl or mutate discovered document roots.
