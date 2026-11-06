@@ -80,3 +80,20 @@ a static unused-code/dependency audit (Knip), and live accessibility/browser tes
 when the selected Termux browser driver is proven. Add CSS token/style checks if
 actual UI drift appears. First check compatibility on Samsung and avoid parallel
 test frameworks, global installs and new automation services.
+
+## Current sprint additions — not release acceptance
+
+- `npm run test:coverage` uses the existing Node coverage machinery; run it on
+  Samsung to collect a baseline before enforcing percentage thresholds.
+- The admin host overview now validates its complete versioned read-only snapshot
+  with installed Zod. Additional APIs require their own schemas and negatives.
+- New P3 component tests verify semantic controls and blocked states in jsdom;
+  they cannot substitute for physical-browser keyboard and click acceptance.
+- PRoot stop completion now checks process-group absence in addition to leader
+  identity and port release. Reparented/detached descendants may still escape
+  that observation; full orphan recovery remains a **release HOLD**.
+- Structured JSONL events and pure recovery planning provide bounded visibility,
+  not permission to restart, kill or delete managed processes automatically.
+
+The [current sprint checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md)
+records exact receipts; this newer code must pass same-SHA `check:all`.
