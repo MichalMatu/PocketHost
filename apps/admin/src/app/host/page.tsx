@@ -2,6 +2,7 @@ import * as React from "react"
 import { RefreshCw, Server, ShieldCheck } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,32 +13,10 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-type Service = {
-  id: string
-  label: string
-  ownership: "external"
-  state: "running" | "stopped" | "unknown"
-}
-
-type Snapshot = {
-  version: 1
-  mode: "read-only"
-  observedAt: string
-  runtime: {
-    nodeVersion: string
-    architecture: string
-    systemUptimeSeconds: number
-    totalMemoryMiB: number
-    freeMemoryMiB: number
-    storage: { totalMiB: number; availableMiB: number } | null
-  }
-  services: Service[]
-}
-
 const endpoint = "/api/v1/host/snapshot"
 const unavailableMessage = "Could not read Termux status. The admin demo remains available."
 
-async function requestHostSnapshot(signal?: AbortSignal): Promise<Snapshot> {
+async function requestHostSnapshot(signal?: AbortSignal): Promise<HostSnapshot> {
   const response = await fetch(endpoint, {
     method: "GET",
     credentials: "same-origin",
@@ -45,15 +24,12 @@ async function requestHostSnapshot(signal?: AbortSignal): Promise<Snapshot> {
     signal,
   })
   if (!response.ok) throw new Error("Snapshot service returned an error")
-  const data: Snapshot = await response.json()
-  if (data.version !== 1 || data.mode !== "read-only" || !Array.isArray(data.services)) {
-    throw new Error("Unexpected snapshot response")
-  }
-  return data
+  const data: unknown = await response.json()
+  return parseHostSnapshot(data)
 }
 
 export default function HostOverview() {
-  const [snapshot, setSnapshot] = React.useState<Snapshot | null>(null)
+  const [snapshot, setSnapshot] = React.useState<HostSnapshot | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
 
