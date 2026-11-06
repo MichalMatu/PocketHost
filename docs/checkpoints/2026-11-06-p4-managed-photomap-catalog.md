@@ -30,3 +30,11 @@ No observed cross-device or live-browser P4 confirmation yet. No P4 code merge, 
 ## Next gate
 
 Complete native tests on one pinned source, correct any source issues through GitHub commits, then run a guarded separate managed-catalog GET/POST/forged-origin smoke from the actual phone. The runtime actions remain disabled until a future isolated PRoot and process ownership implementation is independently accepted.
+
+## Native QA task correction and source freeze
+
+The first requested full native QA task `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v1` returned **failed / exit 1** before any npm installation or tests: the branch moved after request publication, while the task incorrectly expected the moving branch HEAD to equal its older pin. It created only an independent QA clone; it did not affect the running panel or other services.
+
+The corrected immutable `v2` task now checks out its exact pinned commit and invokes the actual admin `test:ui` script. Subsequent static source review corrected the strict TypeScript number guard and simplified a potentially ambiguous tool-version regex, alongside final module documentation. The final source checkpoint for these source fixes is `0b15c7c2ee694121dfb6ab426e28df05cc557593`. A new `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v3` task pins that SHA in a **fresh separate** checkout, running root Gate 1, admin lint/build and UI tests. Neither `v2` nor `v3` was terminal when this update was written; **no native QA PASS is claimed**.
+
+MVP scope remains a GET-only inspected managed catalog; no activation or package mutations. Only after a complete terminal device gate and separate guarded panel cutover can the feature be considered deployed. The previously accepted PhotoMap data import is not invalidated by these QA task corrections.
