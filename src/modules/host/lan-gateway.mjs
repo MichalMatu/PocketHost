@@ -92,26 +92,26 @@ function rejected(response, status, admin) {
   response.end();
 }
 
-function upstreamHeaders(request) {
+function upstreamHeaders(request, internalPort) {
   const headers = { ...request.headers };
   delete headers.authorization;
   delete headers['proxy-authorization'];
   delete headers['x-forwarded-for'];
   delete headers.forwarded;
-  headers.host = '127.0.0.1:8787';
+  headers.host = '127.0.0.1:' + internalPort;
   if (headers.origin) headers.origin = 'http://127.0.0.1:8787';
   return headers;
 }
 
-export function createGateway({ bind, mask, admin, password, port }) {
-  const upstreamPort = INTERNAL_PORTS[admin ? 'admin' : 'site'];
+export function createGateway({ bind, mask, admin, password, port, testUpstreamPort }) {
+  const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
     const status = requestAllowed(request, bind, port, mask, admin, password);
     if (status !== 200) {
       rejected(response, status, admin);
       return;
     }
-    const headers = admin ? upstreamHeaders(request) : { host: '127.0.0.1:18787' };
+    const headers = admin ? upstreamHeaders(request, upstreamPort) : { host: '127.0.0.1:' + upstreamPort };
     const upstream = http.request(
       {
         host: '127.0.0.1',
@@ -141,8 +141,8 @@ export function createGateway({ bind, mask, admin, password, port }) {
       socket.end('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return;
     }
-    const headers = upstreamHeaders(request);
-    const upstream = net.connect(8787, '127.0.0.1');
+    const headers = upstreamHeaders(request, upstreamPort);
+    const upstream = net.connect(upstreamPort, '127.0.0.1');
     upstream.once('connect', () => {
       const lines = ['GET ' + request.url + ' HTTP/1.1'];
       for (const [key, value] of Object.entries(headers)) {
