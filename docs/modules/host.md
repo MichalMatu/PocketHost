@@ -17,6 +17,12 @@ The only module that may interact with operating system processes, Termux tools 
 
 The **development-only** Vite middleware `GET /api/v1/host/snapshot` is constrained to `127.0.0.1:8787`, blocks cross-origin requests, exposes no CORS headers and implements no write methods. The new `/host` page reads the snapshot using existing shadcn cards and badges while all 32 upstream demo routes remain intact. This API is not a production authentication design: do not expose it publicly or ship it in a production release. Future application-server packaging requires its own explicit auth/capabilities ADR.
 
+## P4 owned PhotoMap catalog read boundary
+
+`ManagedPhotoMapHost` reads only the hardcoded `photomap-test` manifest set under the dedicated owner-only `PocketHost-Managed` root, never scans for available sites. Before presenting inventory it checks canonical non-symlink directories, plain bounded JSON files, consistent schema/owner/instance/release, disabled runtime/autostart and forbidden package writes. Only sanitized allowlisted tool versions, relative lock paths and hashes, source release and copied data counts reach the browser. Inconsistent manifests fail closed with no repair.
+
+This operation is **read-only** and does not confer authority to execute the imported Debian PRoot or old PhotoMap runit script. The P3 static demo and all six external monitored services keep separate ownership boundaries.
+
 ## Initial permissions
 
 Read-only, allowlisted inventory probes with per-call timeout, bounded output and redaction. Explicitly represent unavailable tools and permission errors. No fallback to unrestricted shell.
