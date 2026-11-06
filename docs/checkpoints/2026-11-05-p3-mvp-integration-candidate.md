@@ -67,7 +67,7 @@ The owner supplied MacBook Chrome screenshots of the actual P3 `My test site` vi
 
 ## Owner's MacBook GUI mutation acceptance and rollback semantics defect — 2026-11-06
 
-The owner reports **Switch sample version and Rollback version work in real MacBook Chrome**, with content changing between built-in v1 and v2 in both directions. The supplied screenshot shows the owned site `running` / `Content v1` and bounded logs. This closes the previous *basic browser button interaction* uncertainty, not the later semantic-quality defect.
+The owner reports **Switch sample version and Rollback version work in real MacBook Chrome**, with content changing between built-in v1 and v2 in both directions. The supplied screenshot shows the owned site `running` / `Content v1` and bounded logs. This closes the previous _basic browser button interaction_ uncertainty, not the later semantic-quality defect.
 
 Reaudit of the exact live host adapter found that `rollback()` swaps `previousVersion` with `contentVersion` and therefore can alternate v1/v2 indefinitely. This is technically the current two-document demo behavior, but it is misleading as a production-quality rollback. The P3 correction must consume the previous-version pointer after one rollback; a second rollback must be rejected until an explicit new publish. The UI should disable the button when `canRollback=false`.
 
