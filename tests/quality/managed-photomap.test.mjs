@@ -84,6 +84,31 @@ test('P4 catalog accepts only the explicitly imported, stopped and disabled Phot
   }
 });
 
+test('P4 handles the real import shape: >64 KiB per-file media inventory', () => {
+  const f = fixture();
+  try {
+    const entries = Array.from({ length: 2196 }, (_, i) => ({
+      path: 'media/' + String(i).padStart(4, '0') + '.jpg',
+      bytes: 1024,
+      sha256: 'b'.repeat(64),
+    }));
+    const record = JSON.parse(readFileSync(f.files.data, 'utf8'));
+    f.write(f.files.data, {
+      ...record,
+      media: {
+        private: { files: 1098, entries: entries.slice(0, 1098) },
+        public: { files: 1098, entries: entries.slice(1098) },
+      },
+    });
+    assert.ok(readFileSync(f.files.data).byteLength > 65536);
+    const snapshot = new ManagedPhotoMapHost(f.root).inspect();
+    assert.equal(snapshot.data?.privateMediaFiles, 1098);
+    assert.equal(snapshot.data?.publicMediaFiles, 1098);
+  } finally {
+    rmSync(f.parent, { recursive: true, force: true });
+  }
+});
+
 test('unknown root is not silently adopted', () => {
   const parent = mkdtempSync(path.join(os.tmpdir(), 'pockethost-p4-empty-'));
   try {
