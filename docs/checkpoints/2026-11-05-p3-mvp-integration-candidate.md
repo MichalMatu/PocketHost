@@ -58,3 +58,9 @@ Do not restart or replace the accepted port-8787 preview to satisfy tests premat
 ### Jedna następna czynność
 
 Po wznowieniu sprawdź świeży HEAD i stan czystego worktree oraz portów 8787/18787. Następnie przez **wyłącznie GitHub Connector + właściwy Termux Local Agent** wykonaj osobny, ograniczony test sprzętowy P3: utworzenie własnej witryny, uruchomienie na `127.0.0.1:18787`, GET/HEAD, Chrome, publikacja wersji 2, rollback do wersji 1, logi, kontrolowany stop oraz porównanie wyłącznie dozwolonych stanów usług obcych. Nie restartuj panelu na 8787 i nie dotykaj innych usług. Jeżeli test lub bezpieczeństwo odmówią, pozostaw `main` nietknięty i oznacz wynik HOLD. Dopiero po akceptacji zaktualizuj dokumentację i scal do `main`.
+
+## Latest P3 owner-view checkpoint — 2026-11-06
+
+Historical candidate HOLD text above is superseded for live HTTP and visual access. P3 native ownership/lifecycle tests 9/9 passed, and the bounded physical server acceptance checked GET/HEAD, built-in v1/v2 sample publish, rollback to v1 and logs while preserving the other six services. The exact no-login LAN source `f89519a892eb8222940d25877a7ba04c004a6736` passed the Termux root Gate 1, admin build/lint and UI tests.
+
+The owner supplied MacBook Chrome screenshots of the actual P3 `My test site` view (owned, running, v1) and of the separately hosted v1 page through the LAN gateway, and confirmed both worked without login. See [LAN checkpoint](2026-11-06-local-network-access.md). **Actual Mac browser write-button interactions and final `main` merge remain pending.** The demo server is intentionally kept running.

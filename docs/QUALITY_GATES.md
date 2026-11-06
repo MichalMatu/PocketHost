@@ -77,3 +77,9 @@ An installation may not have registry access or a committed `package-lock.json`.
 The previous HOLD was resolved on physical Termux: `pockethost-root-gate1-published-native-20261105-v1` confirms exact `93cba36b`, clean `npm ci` and full `npm run check` PASS (31/31 Node tests, 52 Markdown documents without errors, Prettier, ESLint and TypeScript). The appearance interaction branch `3563512` also passed native jsdom click tests, admin lint and build. These independent results are **not** a PASS for the newly integrated `99fa9a3` P3 candidate.
 
 P3 needs actual Termux lifecycle tests, negative API requests, double-start/race and failed-start cases, Android Chrome interaction and documented safe stop/rollback. The release remains HOLD while the combined candidate is unverified. See [P3 integration checkpoint](checkpoints/2026-11-05-p3-mvp-integration-candidate.md).
+
+## Latest physical P3 acceptance boundary — 2026-11-06
+
+Exact Termux source `f89519a892eb8222940d25877a7ba04c004a6736` was verified by `pockethost-lan-no-login-full-native-gates-20261106-v2`: `done` / exit 0 / `all_pass:true`, including LAN security tests 3/3, full root Gate 1, app lint/build, appearance UI 6/6 and a clean QA checkout. The actual cutover `pockethost-lan-login-free-gateway-cutover-20261106-v2` was `done` / exit 0 / `LAN_NO_LOGIN_RUNNING`, and independent `pockethost-lan-no-login-independent-health-20261106-v1` returned `pass:true`.
+
+The owner supplied two real Mac Chrome screenshots (03:27 Europe/Warsaw) and confirmed the panel and demo page work without login. **Visual LAN gate PASS; actual GUI publish/rollback click gate OPEN.** These screenshots are not browser-mutation evidence. See [LAN acceptance](checkpoints/2026-11-06-local-network-access.md).

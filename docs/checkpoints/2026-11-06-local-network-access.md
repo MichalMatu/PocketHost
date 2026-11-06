@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: accepted
 owner: core
 last_reviewed: 2026-11-06
 purpose: Record owner-approved LAN access goal and separate safety gates for PocketHost and other sites
@@ -77,3 +77,14 @@ The owner explicitly withdrew the LAN login/password requirement for their trust
 - **URLs unchanged:** `http://192.168.0.100:18878/owned-site` (no username or password required), `http://192.168.0.100:18879/` (read-only demo). No production service, auto-start policy, WAN tunnel, router or PhotoMap/IleStoi configuration was changed.
 - **Risk acceptance:** Every device on the owner's trusted Wi-Fi subnet can access the P3 demo administration without authentication. HTTP is unencrypted, and this mode must not be used on a guest/untrusted network or exposed to the internet. Existing same-subnet, exact-interface, Host/Origin, Fetch Metadata, method allowlist, process ownership and original P3 intent checks remain in force.
 - **Outstanding:** Independent post-switch runtime check `pockethost-lan-no-login-independent-health-20261106-v1` and the owner's actual Mac Chrome interaction should be recorded before treating real-device browser acceptance as complete. The old credential file is no longer read or required by the running LAN gateway; it may remain privately stored to make a reversible rollback possible.
+
+## Real MacBook browser acceptance — 2026-11-06, 03:27 Europe/Warsaw
+
+**PASS: view-only LAN access without login.** The owner supplied two actual Chrome screenshots from a MacBook and explicitly confirmed both pages work.
+
+- The LAN admin at `http://192.168.0.100:18878/` visibly shows the desktop PocketHost shell, selected **My test site** page and `Ownership: pockethost`, `State: running`, `Content v1`. The Stop, Switch sample version and Rollback buttons are visible, but their interaction was **not** tested by the owner in these screenshots.
+- The demo at `http://192.168.0.100:18879/` renders the expected `First local site` v1 document.
+- The phrase `loopback only` on that document refers to the internal backend's `127.0.0.1:18787` binding; the dedicated LAN gateway makes it reachable from the Mac.
+- Independent post-switch Termux task `pockethost-lan-no-login-independent-health-20261106-v1` finished `done`, exit 0, `pass:true`: no-login admin and API HTTP 200, denied foreign Origin 403, test page GET 200 and POST 405, unchanged local preview and demo, verified gateway owner and six other services still running.
+
+**LAN access/visual acceptance: closed.** **P3 full GUI write-action acceptance: open.** No evidence yet that the owner clicked Switch version / Rollback in Chrome; no reboot persistence, public authentication or WAN ingress is claimed. All actions remain restricted to the owned demo. Leave `main` unmodified pending that final gate.

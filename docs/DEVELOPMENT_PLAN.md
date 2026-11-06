@@ -44,3 +44,11 @@ Add scoped publish API, site validation, version rollback, optional public ingre
 ## Blockers
 
 Read-only Local Agent capability, the on-device P1/P1.1 snapshots and HTTP security checks are verified. Remaining: integrated P3 native quality gates, secure live-device P3 demo, full E2E accessibility and Local Agent supervisor boot resilience. Root Gate 1 already passed on its pinned predecessor; this is not evidence of P3 quality. Basic on-phone Chrome route, pinch and no-upsell UI smoke are now accepted. Treat a status snapshot as observed data, not proof of continuing uptime.
+
+## Current state and next bounded step — 2026-11-06
+
+The **P3 LAN viewing milestone is accepted**: the real MacBook Chrome screenshots show the owning dashboard and hosted demo page without login, and independent Termux HTTP/security verification passed. See [LAN acceptance](checkpoints/2026-11-06-local-network-access.md).
+
+**P3 release gate not yet closed:** browser interactions for `Switch sample version` and `Rollback version` have not been user-tested from the MacBook; never infer their browser behavior from visible controls. Keep the demo live at v1 and avoid merging until that acceptance and a fresh six-service snapshot are recorded.
+
+**Suggested next development slice after the P3 GUI gate:** P4.1 read-only package availability for a fixed tool allowlist, with typed unavailable/installed status and no installation, upgrades, shell-string injection, or changes to IleStoi. This is a proposal, not an install authorization.

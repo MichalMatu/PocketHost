@@ -10,7 +10,7 @@ purpose: Describe high level architecture and trust boundaries
 ## Layered model
 
 ```text
-Local browser (loopback only)
+Local browser (loopback or private LAN gateway)
            |
         UI module
            |
@@ -42,3 +42,7 @@ Untrusted sources include network requests, file paths, discovered service metad
 ## Architectural evolution
 
 Inventory and UI first. Add owned runtime and storage second. Add package management and AI deploy behind explicit capability grants after security review. Native APK packaging is a later transport decision, not a reason to fork Termux now.
+
+## Owner-approved private LAN exception — 2026-11-06
+
+The actual administration backend remains bound to `127.0.0.1:8787` and the owned demonstration to `127.0.0.1:18787`. A separately owned, manually launched gateway binds only an exact private phone IPv4 address and exposes `18878` (admin) and `18879` (GET/HEAD-only site). At the owner's explicit request, **no login is required** on the trusted home Wi-Fi: any connected host can operate the PocketHost demo. This is not safe for public WAN administration. Host/Origin/Fetch Metadata checks, process ownership and P3 intent enforcement remain mandatory; no autostart or router forwarding. See [ADR-0006](adr/0006-private-lan-access.md).

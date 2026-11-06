@@ -25,4 +25,4 @@ Tests cover path confinement, metadata validation and rollback once enabled.
 
 ## Acceptance state
 
-Native Termux test acceptance for ownership, path rejection, version rollback and actual browser display is still pending. This is a candidate, not an externally published hosting service.
+Native Termux tests for ownership, path rejection and version rollback passed, and the owner separately confirmed actual MacBook Chrome display of the P3 admin and v1 demo page through the trusted-LAN gateway on 2026-11-06. Browser write-button interaction and P3 release merge remain pending. This is an isolated demonstration site, not a publicly hosted service.
