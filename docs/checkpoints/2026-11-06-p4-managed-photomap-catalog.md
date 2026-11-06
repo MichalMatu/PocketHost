@@ -24,14 +24,14 @@ The actual **stopped PhotoMap managed import is already accepted**: `pockethost-
 
 All commands ran **exclusively on the physical Samsung Termux** through the verified Local Agent; no Codex/Work, Actions, Mac build or Linux sandbox. The P4 checkout is isolated from live PocketHost and other services.
 
-| Task | Terminal result | Interpretation |
-| --- | --- | --- |
-| `pockethost-p4-photomap-preflight-20261106-v1` | failed, invalid task | Timeout budget rejected before any device commands |
-| `pockethost-p4-photomap-preflight-20261106-v2` | done, exit 0 | Confirmed imported registry, runtime OFF, no runit link, port 8010 free, Node 26.4.0, npm 11.19.0, git 2.55.0 and Python 3.14.6 |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v1` | failed, exit 1 | Branch moved during clone; SHA guard stopped before dependencies/tests |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v2` | failed, exit 1 | Pinned dependencies installed; docs gate failed for missing checkpoint index entry, subsequently fixed |
-| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v3` | failed, exit 1 | The pre-fix SHA still contained the missing docs index entry; not a current-source validation |
-| `pockethost-p4-photomap-rapid-native-diagnostics-20261106-v1` | failed, exit 1 | On `49d0cc8` **50/50 foundation tests PASS**, Markdownlint 61 files / zero errors, Prettier identified **3 files** requiring formatting |
+| Task                                                                | Terminal result      | Interpretation                                                                                                                          |
+| ------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `pockethost-p4-photomap-preflight-20261106-v1`                      | failed, invalid task | Timeout budget rejected before any device commands                                                                                      |
+| `pockethost-p4-photomap-preflight-20261106-v2`                      | done, exit 0         | Confirmed imported registry, runtime OFF, no runit link, port 8010 free, Node 26.4.0, npm 11.19.0, git 2.55.0 and Python 3.14.6         |
+| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v1` | failed, exit 1       | Branch moved during clone; SHA guard stopped before dependencies/tests                                                                  |
+| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v2` | failed, exit 1       | Pinned dependencies installed; docs gate failed for missing checkpoint index entry, subsequently fixed                                  |
+| `pockethost-p4-photomap-managed-catalog-native-quality-20261106-v3` | failed, exit 1       | The pre-fix SHA still contained the missing docs index entry; not a current-source validation                                           |
+| `pockethost-p4-photomap-rapid-native-diagnostics-20261106-v1`       | failed, exit 1       | On `49d0cc8` **50/50 foundation tests PASS**, Markdownlint 61 files / zero errors, Prettier identified **3 files** requiring formatting |
 
 The historical failures are retained here as concise audit evidence; **none prove that the PhotoMap data import failed**. Formatting and final same-SHA quality/build gates are being closed separately. Do not claim full native quality or a new live GUI deployment until the corresponding terminal task receipts exist.
 
