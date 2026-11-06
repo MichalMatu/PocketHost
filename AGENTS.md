@@ -4,6 +4,22 @@
 
 Applies to the entire repository. More specific `AGENTS.md` files refine these rules, but may not weaken safety constraints. Begin by reading `docs/README.md`, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`, `docs/MODULES.md`, and `docs/QUALITY_GATES.md`.
 
+## Branch policy — main only
+
+All PocketHost source, documentation, tooling, tests, architecture, checkpoints and
+quality changes must be committed directly to the **current `main`** branch by
+default. Do not create or work on feature, sprint, checkpoint or agent branches,
+or prepare a PR branch, unless the owner explicitly names the exception and
+its scope. Verify the fresh `main` HEAD before any edit and use non-force,
+expected-HEAD writes.
+
+Detached isolated QA checkouts on the designated Samsung Termux are allowed
+to validate a specific `main` SHA; they are not working branches. Historical
+branches may be deleted only after confirming all their commits are
+reachable from `main`. Committing code to `main` does **not** authorize
+production deployment, managed PhotoMap activation, package mutation,
+autostart or public exposure: independent physical release gates still apply.
+
 ## Non-negotiable safety
 
 - Never modify, restart, stop, rebind, expose, migrate, or replace existing Termux services including IleStoi.pl and Local Agent without an explicitly authorized operation for the specific target.
