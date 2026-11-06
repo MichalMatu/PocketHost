@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-06
 purpose: Limit the first managed PhotoMap MVP to a verified read-only catalog until process and dependency isolation are independently proven
@@ -30,6 +30,8 @@ The P3 static site demo is a separate owned runtime and must not be repurposed i
 
 A future independently approved runtime ADR may add exact PhotoMap CLI/image snapshot, versioned project dependencies and owned PID/start-ticks verification plus safe start/stop after on-device acceptance. Future update/rollback cannot be enabled until data, dependencies and migrations have tested restoration.
 
-## Acceptance
+## Acceptance and deferred release
 
-Run native Samsung Termux `npm run check`, `npm run admin:lint`, `npm run admin:build`, admin component checks and P4 host negative tests against one pinned commit. Verify actual imported metadata via the private device task, plus live GET 200, forged Host/Origin 403, POST 405 and service health if a guarded manual panel deployment is authorized. No GitHub Actions or other execution host. Until terminal receipts arrive, this document describes a **candidate** only.
+**Design/source accepted** at P4 source `471fdfecfa8bf41f52ef1db198959ba94857c2ac`: native Samsung `pockethost-p4-closeout-final-native-quality-20261106-v1` completed done/exit 0 with 51/51 Node tests, root docs/format/lint/types, admin lint/build and 6/6 UI tests. `pockethost-p4-closeout-real-import-adapter-20261106-v1` independently inspected actual imported PhotoMap data and returned done/exit 0 (one owned release, 2,196 media files, six tools, four lock hashes, no mutation capability). Obsolete v1 staging was removed under a separate exact-path guarded receipt. PhotoMap remains stopped without runit registration or autostart; six unrelated services were observed running in a separate preflight.
+
+**Live UI deployment is not yet accepted.** The current P3 panel was left intact. A separate gated update must verify the real catalog JSON GET, POST 405, forged Host/Origin 403, preserve P3 ownership and the six external services, and have a proven rollback. This ADR does not authorize PhotoMap Start/Stop, package installation, a global update or whole-instance rollback. See [P4 checkpoint](../checkpoints/2026-11-06-p4-managed-photomap-catalog.md).
