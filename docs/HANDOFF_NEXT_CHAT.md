@@ -7,6 +7,22 @@ purpose: Resume PocketHost after Samsung-verified 62/62 source quality and inact
 
 # PocketHost — next-chat handoff
 
+## Latest verified checkpoint — 2026-11-06
+
+See [Samsung source QA and final sprint handoff](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md).
+Source-tested SHA **`a5443070f1c6e41798641aa9c2098a9acc9e17a4`** passed Samsung Local Agent task
+`pockethost-photomap-python-contract-final-samsung-20261106-v2`: **done / exit 0**, 9/9 host negative
+tests, 65/65 full Node tests, Markdownlint 66 documents, Prettier, ESLint, TypeScript PASS,
+PhotoMap port 8010 OFF. The following **docs-only** SHA
+`3ee728fa6c7d0272b8aa7b1fdfc332a62bf6138d` passed
+`pockethost-python-contract-docs-checkpoint-native-20261106-v2`: **done / exit 0**,
+docs structure, Markdownlint, Prettier and diff-check PASS. Do not rerun these gates merely
+to regenerate a checkpoint. A future checkpoint-only commit is not a new source-code QA.
+
+**Still HOLD:** staged PhotoMap version is explicitly unapproved/disabled; no physical
+Start/health/Stop/PID/orphan/rollback acceptance. P3 Mac browser publish/rollback clicks
+and accessibility acceptance remain open. No main merge or PhotoMap activation.
+
 ## Exact start protocol
 
 Continue **`MichalMatu/PocketHost`** on existing **`sprint/p3-mvp-integration-20261105`** only. First read the **actual** feature and `main` HEADs; do not assume a handoff SHA is still current. At checkpoint time, `main=8378663725f10beacf9c527f194e7f568170284d`, and last exactly source-tested feature code `a5443070f1c6e41798641aa9c2098a9acc9e17a4`. Documentation commits after this source test have a later HEAD and do not represent a second device source QA.
