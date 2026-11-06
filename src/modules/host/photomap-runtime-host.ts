@@ -76,7 +76,8 @@ function startTicks(pid: number): string | null {
   try {
     const raw = readFileSync('/proc/' + pid + '/stat', 'utf8');
     const fields = raw.slice(raw.lastIndexOf(')') + 2).trim().split(/\s+/);
-    return /^\d+$/.test(fields[19] ?? '') ? fields[19] : null;
+    const ticks = fields[19];
+    return ticks && /^\d+$/.test(ticks) ? ticks : null;
   } catch {
     return null;
   }
