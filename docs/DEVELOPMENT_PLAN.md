@@ -39,7 +39,7 @@ Add reviewed install plans, explicit approvals and safe diagnostics; installatio
 
 ## P4.1 — managed PhotoMap catalog candidate (2026-11-06)
 
-On `sprint/p3-mvp-integration-20261105`, P4 adds the first real stopped managed project: `photomap-test` with a typed validated registry, source release, database/media count, tool availability and project lock checksums. The DEV GET-only endpoint and `/managed-projects` panel passed **full native Samsung source quality** at `471fdfec` (51/51 Node tests, six UI tests, root lint/types/format/Markdown and admin build). **Actual P4 GUI cutover and HTTP acceptance are still pending**, so do not infer that the running P3 panel serves the new API. PhotoMap runtime start/stop, PRoot isolation, package changes and whole-instance rollback remain disabled. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
+On `sprint/p3-mvp-integration-20261105`, P4 adds the first real stopped managed project: `photomap-test` with a typed validated registry, source release, database/media count, tool availability and project lock checksums. The DEV GET-only endpoint and `/managed-projects` panel passed **full native Samsung source quality** at `471fdfec` (51/51 Node tests, six UI tests, root lint/types/format/Markdown and admin build). **P4 live cutover accepted** on Samsung (`pockethost-p4-same-root-guarded-cutover-20261106-v3`): JSON GET and request-security negatives passed; P3 and six external services remained unchanged. PhotoMap runtime start/stop, PRoot isolation, package changes and whole-instance rollback remain disabled. See [ADR-0008](adr/0008-photomap-p4-managed-catalog.md).
 
 ## P5 — AI deploy, domains and Android package
 
