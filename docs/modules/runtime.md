@@ -30,3 +30,9 @@ Tests cover ownership proof, port collision, failed startup, shutdown and cleanu
 ## Acceptance state
 
 The candidate is not released. Native feature tests, negative HTTP tests and actual phone-browser lifecycle acceptance remain mandatory before controls can be enabled.
+
+## PhotoMap isolated runtime — inert code accepted, not activated
+
+The typed `PhotoMapRuntimePort` and pure `createPhotoMapRuntime` policy now cover fixed `photomap-test` ownership, a version identifier, inspect, guarded manual Start/Stop, health and redacted bounded event logs. The separate host adapter is not wired into the live UI. On Samsung, exact source `32c09f2c` passed 60/60 root tests, 9/9 targeted runtime tests and the full formatting/lint/types gate; the actual imported instance denied Start/Stop, with port 8010 off. [Terminal checkpoint](../checkpoints/2026-11-06-photomap-runtime-inert-native.md).
+
+No isolated Debian rootfs or verified Python work image is installed yet. The importer’s disabled manifests remain authoritative and no PhotoMap runtime activation, autostart or package update is authorized. The current log implementation records bounded runtime events; backend stdout/stderr capture still needs separate device acceptance.
