@@ -35,7 +35,7 @@ Fixed isolated static demo with manually requested Start/Stop, sample
 Publish/Rollback, and independently reviewed optional trusted private-LAN
 gateway. Native device/HTTP and browser viewing passed. Real Mac browser
 Publish/Rollback clicks and final protected-service readback are outstanding.
-Do not merge to `main` until this release gate closes.
+Source has been consolidated on `main`, but **production release remains blocked** until this gate closes.
 
 ## P4 — managed PhotoMap TEST (read-only accepted; runtime HOLD)
 
@@ -77,5 +77,6 @@ a later UX layer, not a reason to fork it.
 4. Verify complete source/DB/media rollback, then consider managed package controls.
 5. Review security and monitoring before exposing AI/remote management.
 
-Only merge the existing development branch after its required gates pass.
-Do not duplicate already accepted Samsung tests or create new branches.
+All future PocketHost changes are committed to fresh `main` by default. The 2026-11-07
+fast-forward did not waive P3 browser release gates. Do not repeat accepted
+Samsung tests or create new branches without explicit owner direction.
