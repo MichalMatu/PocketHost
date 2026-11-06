@@ -46,3 +46,18 @@ No PhotoMap process, runit autostart, global package update, public listener, ex
 P4 is accepted **only** after complete same-SHA root `npm run check`, admin lint/build and UI tests plus a guarded localhost-only HTTP negative test for the new catalog. Until then status is **SOURCE CANDIDATE / NOT DEPLOYED**; `main` remains at its older foundation SHA and the current LAN panel has not been updated by P4.
 
 After validation, hand off to the next chat via [PocketHost next-chat handoff](../HANDOFF_NEXT_CHAT.md). The next major implementation is an isolated, versioned runtime for PhotoMap with exact managed paths, verified owned PID/start-ticks and tested stop/cleanup. Package plans and whole-instance rollback must remain disabled until Python environment, database migrations and media have restorable snapshots.
+
+## Checkout freeze and outstanding receipts
+
+The post-formatting **P4 source SHA** is `471fdfecfa8bf41f52ef1db198959ba94857c2ac`. Native formatter task `pockethost-p4-closeout-format-current-20261106-v1` finished `done / exit 0` and its exact four-file Prettier diff was applied via GitHub Connector. The later `docs/DEVELOPMENT_PLAN.md` edit is prose-only and still requires a final same-SHA docs check.
+
+The following immutable tasks were published to the same Samsung Agent but had **no terminal result at the last check**:
+
+- `pockethost-p4-closeout-final-native-quality-20261106-v1`: pinned P4 source; `npm ci` root/admin, full `npm run check`, admin lint/build and UI tests in a new isolated QA clone.
+- `pockethost-p4-closeout-live-readonly-preflight-20261106-v1`: verify current owned P3 preview, six external services, PhotoMap OFF and exact owned preview marker without mutation.
+- `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1`: guarded exact-path removal **only** of the failed, unpublished v1 staging directory if its known count/bytes and final managed release match.
+- `pockethost-p4-closeout-real-import-adapter-20261106-v1`: actual read-only `ManagedPhotoMapHost.inspect()` on the imported Samsung registry in the QA checkout.
+
+**Do not publish duplicates or infer a pass** while outcomes are missing. The prior Samsung native receipt independently confirms source fixtures, 50/50 foundation tests on predecessor `49d0cc8`, and 61 clean Markdown documents; **final full lint/types/build, real managed adapter and any live P4 GUI cutover are still unverified**. These tasks do not request PhotoMap startup or package changes.
+
+Until confirmed, `main` stays untouched and P4 remains **CODE/DOCS CHECKPOINT; LIVE RELEASE HOLD**. The handoff is [HANDOFF_NEXT_CHAT](../HANDOFF_NEXT_CHAT.md).
