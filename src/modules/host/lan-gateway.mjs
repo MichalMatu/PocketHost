@@ -85,11 +85,9 @@ function requestAllowed(request, bind, port, mask, admin, password) {
     !request.headers.origin;
   if (
     !['none', 'same-origin', undefined].includes(fetchSite) &&
-    !(
-      (fetchSite === 'same-site' || fetchSite === 'cross-site') &&
-      isTopLevelNavigation
-    )
-  ) return 403;
+    !((fetchSite === 'same-site' || fetchSite === 'cross-site') && isTopLevelNavigation)
+  )
+    return 403;
   if (
     typeof request.url !== 'string' ||
     !request.url.startsWith('/') ||

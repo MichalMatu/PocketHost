@@ -14,8 +14,8 @@ The owner explicitly wants simple one-click access from the MacBook and other de
 - A trusted Wi-Fi network is an operational assumption, **not** authentication. A newly exposed administrative API must require its own credential and explicit opt-in. No secrets in the repository or browser URLs; no WAN ingress, router forwarding, public tunnel or default all-interfaces bind.
 - The current PocketHost panel (Vite on 127.0.0.1:8787) and owned site (127.0.0.1:18787) are local-only. Do not simply set host=0.0.0.0 or bypass the fixed Host/Origin checks in the P3 DEV mutation API.
 - PocketHost LAN access requires a separate scoped design, negative tests, real Termux checks, exact device LAN address, safe rollback and an explicit launch. Any direct LAN proxy must enforce authentication, private-network binding and request validation. Preserve own-process ownership and no automatic startup in DEV.
-- IleStoi.pl is production on the Samsung behind a Cloudflare tunnel and local port 8001. Its public user interface is already at https://ilestoi.pl; do not change its productive listener or tunnel for a convenience link.
-- PhotoMap is production on a separate Raspberry Pi Zero 2W behind Cloudflare at https://photomap.pl, not the Samsung Termux test copy (that copy is stopped). Do not deploy on Pi or restart its service merely to enable LAN.
+- IleStoi.pl is production on the Samsung behind a Cloudflare tunnel and local port 8001. Its public user interface is already at <https://ilestoi.pl>; do not change its productive listener or tunnel for a convenience link.
+- PhotoMap is production on a separate Raspberry Pi Zero 2W behind Cloudflare at <https://photomap.pl>, not the Samsung Termux test copy (that copy is stopped). Do not deploy on Pi or restart its service merely to enable LAN.
 - A browser bookmark to public domains is immediately one-click and does not require a LAN-facing administrative listener. For true offline/direct LAN hostnames, audit each host and router/DNS prerequisites independently before any production changes.
 
 ## Evidence and status
