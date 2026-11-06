@@ -40,3 +40,11 @@ The failed original managed import left a separate v1 staging root (approx. 598 
 ## Release criterion
 
 Every checkpoint must record: actual current Git SHAs, terminal Local Agent task IDs and exit codes, native root `npm run check`, `admin:lint`, `admin:build`, `test:ui`, live GET 200 / POST 405 / forged Origin and Host 403 for the catalog, six-service state comparison, manual-launch and no-autostart facts, untouched original data and an exact rollback plan for code changes. If any gate is missing, label **HOLD**, not DONE.
+
+## Outstanding checkout gates
+
+The final P4 code snapshot before closing this chat is `471fdfecfa8bf41f52ef1db198959ba94857c2ac`; verify fresh HEADs when resuming. Documentation-only commits can follow that source snapshot. The Samsung native formatting task `pockethost-p4-closeout-format-current-20261106-v1` finished `done / exit 0` and its approved formatting changes were committed.
+
+**Four terminal receipts must be checked before repeating or extending any action:** `pockethost-p4-closeout-final-native-quality-20261106-v1`, `pockethost-p4-closeout-live-readonly-preflight-20261106-v1`, `pockethost-p4-closeout-obsolete-import-stage-cleanup-20261106-v1`, and `pockethost-p4-closeout-real-import-adapter-20261106-v1`. They were pending at the last read. Do not guess completion, reissue the same device mutation or clean more filesystem paths. If final QA is green, complete the remaining guarded HTTP/browser acceptance before merging or starting a live runtime sprint. If it is not green, fix only the evidenced failing gate and rerun at a new pinned SHA.
+
+No current P4 admin preview cutover was executed in the prior chat; P3 services are intended to remain running unchanged.
