@@ -67,7 +67,7 @@ Live PhotoMap testing requires a separate explicit, bounded authorization.
   documentation, Markdownlint, formatting and diff checks.
 - **Not yet accepted:** this newer archive-index/refactoring commit and full combined
   G2 at its SHA; P3 real browser Publish/Rollback; PhotoMap live lifecycle,
-  process descendant/orphan handling, migration/restore and release merge.
+  process descendant/orphan handling, migration/restore and production release.
 
 The exact evidence and bounded next steps are in the
 [canonical handoff](HANDOFF_NEXT_CHAT.md) and
