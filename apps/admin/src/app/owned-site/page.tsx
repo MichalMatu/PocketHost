@@ -47,11 +47,13 @@ export default function OwnedSitePage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [logs, setLogs] = React.useState<string[]>([])
-  const [targetVersion, setTargetVersion] = React.useState<"1" | "2">("1")
+  const [selectedVersion, setSelectedVersion] = React.useState<"1" | "2" | null>(null)
 
   const refresh = async () => {
     const current = await getState()
     setState(current)
+    // Reset to the server's actual version after refresh or a successful action.
+    setSelectedVersion(null)
     if (current.enabled && current.site?.state !== "absent") {
       const response = await fetch("/api/v1/owned-site/logs", {
         credentials: "same-origin",
@@ -65,10 +67,6 @@ export default function OwnedSitePage() {
       setLogs([])
     }
   }
-
-  React.useEffect(() => {
-    if (state?.site?.contentVersion) setTargetVersion(String(state.site.contentVersion) as "1" | "2")
-  }, [state?.site?.contentVersion])
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -102,6 +100,7 @@ export default function OwnedSitePage() {
   }
 
   const site = state?.site
+  const targetVersion = selectedVersion ?? (site?.contentVersion === 2 ? "2" : "1")
   const isOwned = site?.ownership === "pockethost"
   const running = site?.state === "running"
   const unknown = site?.state === "unknown"
@@ -176,7 +175,7 @@ export default function OwnedSitePage() {
                       <Select
                         value={targetVersion}
                         onValueChange={(value) => {
-                          if (value === "1" || value === "2") setTargetVersion(value)
+                          if (value === "1" || value === "2") setSelectedVersion(value)
                         }}
                         disabled={busy}
                       >
