@@ -2,14 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  mkdtempSync,
-  mkdirSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { ManagedPhotoMapHost } from '../../src/modules/host/managed-photomap-host.ts';
 
 const id = 'photomap-test';
@@ -30,7 +23,8 @@ function fixture() {
   ]) {
     mkdirSync(folder, { recursive: true, mode: 0o700 });
   }
-  const write = (p, data) => writeFileSync(p, JSON.stringify({ ...base, ...data }) + '\n', { mode: 0o600 });
+  const write = (p, data) =>
+    writeFileSync(p, JSON.stringify({ ...base, ...data }) + '\n', { mode: 0o600 });
   const files = {
     registry: path.join(root, 'registry', id + '.json'),
     instance: path.join(instance, 'manifests', 'instance.json'),
@@ -40,24 +34,41 @@ function fixture() {
     source: path.join(target, 'source-manifest.json'),
     data: path.join(snap, 'data-manifest.json'),
   };
-  write(files.registry, { status: 'imported-stopped', instance_path: 'instances/photomap-test', runtime_enabled: false, managed_version: release });
+  write(files.registry, {
+    status: 'imported-stopped',
+    instance_path: 'instances/photomap-test',
+    runtime_enabled: false,
+    managed_version: release,
+  });
   write(files.instance, { release_id: release });
-  write(files.runtime, { enabled: false, autostart: false, launch_allowed: false, port: 8010, runtime_kind: 'debian-proot', managed_proot_snapshot: false });
+  write(files.runtime, {
+    enabled: false,
+    autostart: false,
+    launch_allowed: false,
+    port: 8010,
+    runtime_kind: 'debian-proot',
+    managed_proot_snapshot: false,
+  });
   write(files.packages, {
     release_id: release,
     allow_package_update: false,
     allow_package_rollback: false,
     proot_python_environment: 'external-unfrozen',
     termux_tool_versions: Object.fromEntries(
-      ['node', 'npm', 'git', 'python3', 'proot', 'proot-distro'].map((name) =>
-        [name, { available: true, version: ['v1.2.3'] }],
-      ),
+      ['node', 'npm', 'git', 'python3', 'proot', 'proot-distro'].map((name) => [
+        name,
+        { available: true, version: ['v1.2.3'] },
+      ]),
     ),
     lockfiles: [{ path: 'backend/requirements.txt', sha256: 'a'.repeat(64) }],
   });
   write(files.current, { selected_release: release, active_process: null, status: 'stopped' });
   write(files.source, { release_id: release });
-  write(files.data, { release_id: release, database: { bytes: 19574784 }, media: { private: { files: 1098 }, public: { files: 1098 } } });
+  write(files.data, {
+    release_id: release,
+    database: { bytes: 19574784 },
+    media: { private: { files: 1098 }, public: { files: 1098 } },
+  });
   return { parent, root, files, write };
 }
 
@@ -166,7 +177,10 @@ test('symlink at owned root or manifest is never followed', () => {
 
 test('P4 source includes only a read-only fixed GET route and never exposes host commands', () => {
   const vite = readFileSync(new URL('../../apps/admin/vite.config.ts', import.meta.url), 'utf8');
-  const page = readFileSync(new URL('../../apps/admin/src/app/managed-projects/page.tsx', import.meta.url), 'utf8');
+  const page = readFileSync(
+    new URL('../../apps/admin/src/app/managed-projects/page.tsx', import.meta.url),
+    'utf8',
+  );
   assert.match(vite, /managedPhotoMapApi\(\)/);
   assert.match(vite, /ManagedPhotoMapHost\(\)\.inspect\(\)/);
   assert.match(vite, /managed-photomap/);
