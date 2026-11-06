@@ -10,6 +10,12 @@ export interface ManagedProjectSnapshot {
   runtimeState: 'disabled' | 'unknown';
   release: string | null;
   port: 8010;
+  tools: ReadonlyArray<{
+    name: 'node' | 'npm' | 'git' | 'python3' | 'proot' | 'proot-distro';
+    state: 'available' | 'unavailable';
+    version: string | null;
+  }>;
+  lockfiles: ReadonlyArray<{ path: string; sha256: string }>;
   data: {
     databaseBytes: number;
     privateMediaFiles: number;
