@@ -47,6 +47,24 @@ To remove the confusing perpetual v1/v2 toggle reported from MacBook Chrome, the
 
 This code is a **candidate**, not deployed merely by committing it. Native Termux full quality gates, controlled panel update, independent service checks and Mac browser verification are required before the current running behavior can be considered changed. IleStoi and the six existing monitored services must remain untouched.
 
+## H2.1 archived version manager — source pending
+
+Persisted H2 immutable release directories are
+now enumerable as dated, bounded archived versions.
+Exact released IDs can be selected for Restore
+without a process restart; the former active
+release becomes the one-use quick rollback.
+Explicit archive deletion refuses active and
+rollback-target IDs, rejects symlinks and
+uncertain owner processes, and never automatically
+cleans older user content. Archive previews
+are static GET/HEAD only via the same separate
+owner-verified gateway.
+
+H2.1 device acceptance is not established by
+source commits alone. See the
+[H2.1 checkpoint](../checkpoints/2026-11-07-h21-release-manager-source.md).
+
 ## H2 accepted device release — user-owned static bundles
 
 H2 adds bounded ZIP and selected-folder imports, validated
