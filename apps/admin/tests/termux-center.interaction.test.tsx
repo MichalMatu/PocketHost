@@ -50,7 +50,7 @@ const tools = {
 }
 function mount() {
   const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    expect(init?.method).toBe("GET")
+    expect(init?.method ?? "GET").toBe("GET")
     const url = String(input)
     const output = url === "/api/v1/observability" ? observation :
       url === "/api/v1/sites" ? { sites: [site] } :
@@ -76,7 +76,7 @@ describe("H3 strict read-only contracts", () => {
     expect(() => parseH3Files({ files: Array(101).fill({ name: "index.html", bytes: 1 }) })).toThrow()
     expect(parseH3Files({ files: [{ name: "index.html", bytes: 1 }] })).toHaveLength(1)
   })
-  it("shows four usable tabs, package search and real owned files without a single mutation", async () => {
+  it("preserves four H3 views, package search and owned files alongside H3.4 controls", async () => {
     const user = userEvent.setup()
     const calls = mount()
     await screen.findByText("curl")
@@ -84,6 +84,8 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.getByRole("tab", { name: /Files/ })).toBeTruthy()
     expect(screen.getByRole("tab", { name: /Services/ })).toBeTruthy()
     expect(screen.getByRole("tab", { name: /Backups/ })).toBeTruthy()
+    expect(screen.getByRole("tab", { name: /Terminal/ })).toBeTruthy()
+    expect(screen.getByRole("tab", { name: /Agents/ })).toBeTruthy()
     await user.type(screen.getByLabelText("Filter installed packages"), "curl")
     await user.click(screen.getByRole("tab", { name: /Files/ }))
     await user.click(await screen.findByRole("button", { name: "Inspect files" }))
@@ -93,6 +95,6 @@ describe("H3 strict read-only contracts", () => {
     await user.click(screen.getByRole("tab", { name: /Backups/ }))
     await user.click(await screen.findByRole("button", { name: "View release history" }))
     await screen.findByText(/Stored release points/)
-    expect(calls.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 })
