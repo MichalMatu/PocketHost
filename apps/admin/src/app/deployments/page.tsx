@@ -19,7 +19,7 @@ export default function DeploymentsPage() {
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    void Promise.resolve().then(() => refresh(controller.signal))
       .catch(() => { if (!controller.signal.aborted) setError("Owned deployment history is unavailable.") })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
