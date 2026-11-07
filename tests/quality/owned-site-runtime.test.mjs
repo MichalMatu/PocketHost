@@ -86,9 +86,11 @@ test('single explicit site can be created, started, published, rolled back and s
   assert.equal(runtime.publish(2).contentVersion, 2);
   assert.equal(runtime.rollback().contentVersion, 1);
   assert.throws(runtime.rollback, /No owned version available/);
+  assert.equal((await runtime.restart()).state, 'running');
   assert.equal((await runtime.stop()).state, 'stopped');
+  await assert.rejects(runtime.restart(), /not running/);
   assert.deepEqual(runtime.logs(), ['demo started', 'demo stopped']);
-  assert.deepEqual(events, ['create', 'start', 'publish:2', 'rollback', 'stop']);
+  assert.deepEqual(events, ['create', 'start', 'publish:2', 'rollback', 'stop', 'start', 'stop']);
 });
 
 test('fixed ID rejects discovered services; only built-in static documents are published', () => {
