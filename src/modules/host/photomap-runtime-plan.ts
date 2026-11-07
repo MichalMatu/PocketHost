@@ -116,8 +116,7 @@ export function loadPhotoMapPlan(root: string, instance: string): LaunchPlan | n
     }
   }
   if (
-    digestFile(path.join(source, 'backend', 'requirements.txt')) !==
-      profile.requirements_sha256 ||
+    digestFile(path.join(source, 'backend', 'requirements.txt')) !== profile.requirements_sha256 ||
     lstatSync(path.join(source, '.env'), { throwIfNoEntry: false }) ||
     !existsSync(path.join(work, 'database', 'app.db'))
   ) {
