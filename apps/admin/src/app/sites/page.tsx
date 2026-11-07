@@ -59,7 +59,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   }, [])
 
   const execute = async (job: () => Promise<unknown>, success: string) => {
-    if (busy || site.state === "unknown") return
+    if (busy) return
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -75,6 +75,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     }
   }
   const action = (name: "start" | "stop" | "restart" | "rollback") => {
+    if (site.state === "unknown") return
     if ((name === "stop" || name === "restart" || name === "rollback") &&
         !window.confirm("Apply " + name + " only to " + site.name + "?")) return
     void execute(() => mutate(endpoint + "/" + site.id + "/" + name, "POST"),
