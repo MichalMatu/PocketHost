@@ -6,6 +6,8 @@ export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.met
 
 const approvedHostScripts = new Set([
   'src/modules/host/owned-site-server.mjs',
+  'src/modules/host/site-fleet-server.mjs',
+  'src/modules/host/site-fleet-proxy.mjs',
   'src/modules/host/lan-gateway.mjs',
   // Explicitly scoped host-only LAN control and its TypeScript ESM declaration.
   'src/modules/host/lan-control.mjs',
