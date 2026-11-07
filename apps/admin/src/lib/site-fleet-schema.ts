@@ -4,7 +4,7 @@ const siteId = z.string().regex(/^site-[a-f0-9]{32}$/)
 const revision = z.string().regex(/^r-[a-f0-9]{32}$/)
 const deployment = z.object({
   at: z.string().max(40),
-  action: z.enum(["publish", "rollback"]),
+  action: z.enum(["publish", "rollback", "restore", "prune"]),
   from: revision.nullable(),
   to: revision,
 }).strict()
@@ -60,4 +60,23 @@ export function parseFleetLogs(value: unknown): string[] {
 
 export function parseFleetHealth(value: unknown): boolean {
   return z.object({ healthy: z.boolean() }).strict().parse(value).healthy
+}
+
+export const fleetReleaseSchema = z.object({
+  id: revision,
+  createdAt: z.string().datetime(),
+  fileCount: z.number().int().min(1).max(100),
+  bytes: z.number().int().min(1).max(8 * 1024 * 1024),
+  active: z.boolean(),
+  rollbackTarget: z.boolean(),
+}).strict()
+
+export type FleetRelease = z.infer<typeof fleetReleaseSchema>
+
+export function parseFleetReleases(value: unknown): FleetRelease[] {
+  const releases = z.object({ releases: z.array(fleetReleaseSchema).max(16) }).strict().parse(value).releases
+  if (releases.filter(release => release.active).length > 1 ||
+      releases.filter(release => release.rollbackTarget).length > 1)
+    throw new RangeError("Inconsistent version inventory")
+  return releases
 }
