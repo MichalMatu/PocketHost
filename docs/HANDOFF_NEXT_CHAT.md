@@ -7,6 +7,32 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 
 # PocketHost — H2.1 version manager, accepted source and G3 hold
 
+## Latest continuation checkpoint — 2026-11-07
+
+- Fresh reviewed `main` was `6ff3a1d79c1aefb3feee8e80f090446083cf8582`
+  before this documentation-only checkpoint; H2.1 application code
+  remains exactly the Samsung-G2-tested `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+  Git compare showed only three documentation files changed after G2.
+- The historical H2.1 device preflight was terminal PASS, but
+  **does not establish current phone state**. A new, strictly read-only
+  Samsung task `pockethost-h21-g3-readonly-recheck-20261107-v1`
+  was published on the existing private Local Agent channel.
+  **Its terminal result was not yet observed when this handoff was written.**
+  First inspect its exact `task-results/` receipt; never replay a
+  potentially pending task.
+- **G3 remains HOLD.** The earlier guarded release was rejected
+  by tool safety checks before submission. No H2.1 production
+  deployment, version-manager live test, or original-site mutation
+  is established. Do not circumvent that rejection through
+  alternate task encoding/channel/host or unreviewed command.
+- Preserve both user's live H2 sites and six protected services.
+  Use a third disposable site only after compliant G3 permission,
+  fresh owner/PID/ticks/filesystem verification and an H2 fallback.
+- [Exact recheck, preservation baseline and next steps](
+  checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
+
+
+
 ## Active H2.1 — G2 PASS, live G3 HOLD
 
 The user confirmed two independent working ZIP-hosted sites
