@@ -98,6 +98,25 @@ rollback LAN acceptance. The live preview is H2; H1 remains
 the known rollback source. Browser ZIP/folder interaction
 on the owner's Mac remains the next acceptance step.
 
+## H2.1 — accepted H2 extension, source pending
+
+The owner verified two independently hosted ZIP
+projects and requested direct release selection.
+The existing host adapter lists immutable versions,
+checks exact-owned release contents, and changes
+only the active marker for a selected restore,
+retaining one-use undo. Unused archives can be
+removed only by confirmed, exact-ID deletion
+after refusing active/quick-rollback targets.
+The site server adds isolated archived previews;
+the admin view exposes these and fixes link spacing.
+
+Do not disturb existing user projects or their
+running PIDs. Source acceptance requires exact-SHA
+Samsung `check:all` plus a controlled device LAN
+release test and explicit Mac browser confirmation.
+See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+
 ## Next milestones after H2
 
 - **H2 owner UI acceptance:** Mac Chrome create, actual ZIP/folder
