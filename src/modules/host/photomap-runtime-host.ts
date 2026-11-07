@@ -21,6 +21,10 @@ import {
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
 import { buildManagedProotArgs } from './managed-proot-plan.ts';
 import {
+  captureManagedDescendants,
+  observedDescendantsExited,
+} from './managed-proc-tree.ts';
+import {
   admitOwnedStart,
   awaitOwnedReadiness,
   stopOwnedProcessSafely,
@@ -477,6 +481,20 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     if (!this.owned(marker, plan)) {
       throw new Error('Unverified PhotoMap process identity; stop denied');
     }
+    const descendants = captureManagedDescendants(
+      marker.pid,
+      (pid) => {
+        try {
+          return readFileSync('/proc/' + pid + '/task/' + pid + '/children', 'utf8');
+        } catch {
+          return null;
+        }
+      },
+      startTicks,
+    );
+    if (descendants === null) {
+      throw new Error('Cannot attest owned PRoot descendant graph; stop denied');
+    }
     try {
       await stopOwnedProcessSafely({
         verifyOwnership: () => this.owned(marker, plan),
@@ -484,14 +502,16 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
         observe: async () => ({
           leaderExited: startTicks(marker.pid) === null,
           portReleased: await portFree(),
-          descendantsExited: processGroupAbsent(marker.pid, (pgid) => {
-            try {
-              process.kill(-pgid, 0);
-              return 'present';
-            } catch (error) {
-              return (error as NodeJS.ErrnoException).code === 'ESRCH' ? 'absent' : 'unknown';
-            }
-          }),
+          descendantsExited:
+            observedDescendantsExited(descendants, startTicks) &&
+            processGroupAbsent(marker.pid, (pgid) => {
+              try {
+                process.kill(-pgid, 0);
+                return 'present';
+              } catch (error) {
+                return (error as NodeJS.ErrnoException).code === 'ESRCH' ? 'absent' : 'unknown';
+              }
+            }),
         }),
         pause: () => pause(100),
         maxPolls: 40,

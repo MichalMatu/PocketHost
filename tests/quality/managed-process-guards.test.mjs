@@ -86,7 +86,8 @@ test('PhotoMap adapter may not delete its marker on leader-only stop evidence', 
     'utf8',
   );
   assert.match(source, /await stopOwnedProcessSafely\(/);
-  assert.match(source, /descendantsExited: processGroupAbsent\(/);
+  assert.match(source, /observedDescendantsExited\(descendants, startTicks\)/);
+  assert.match(source, /processGroupAbsent\(marker.pid/);
   assert.match(source, /signalOwnedLeader: \(\) => process\.kill\(marker\.pid, 'SIGTERM'\)/);
   assert.match(source, /PhotoMap graceful stop uncertain; marker retained/);
 });
