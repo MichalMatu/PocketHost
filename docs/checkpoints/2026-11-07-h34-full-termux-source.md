@@ -25,10 +25,11 @@ Do not connect the LAN gateway or ttyd to public networks.
 
 - **Full Files:** `TermuxFileRoots` offers explicit HOME, PREFIX
   and Android shared storage roots. Nested files may be inspected,
-  edited (UTF-8 up to 1 MiB), imported/exported (up to 256 KiB),
-  copied, moved, created or deleted. Recursive directory deletion
-  is not automatic. Absolute traversal and linked descendants
-  are refused. The earlier scratch-workspace manager remains.
+  edited (UTF-8 up to 1 MiB), imported/exported (up to 2 MiB),
+  copied or moved, and explicitly deleted. Bounded directory-tree
+  copy and separately double-confirmed recursive deletion are
+  supported. Absolute traversal and linked descendants are
+  refused. The earlier scratch-workspace manager remains.
 - **Terminal:** `ttyd` is started only when requested, as one
   writable client, bound exclusively to `127.0.0.1:18798`.
   It embeds the existing ttyd/xterm.js frontend through the
@@ -53,7 +54,9 @@ Do not connect the LAN gateway or ttyd to public networks.
   same-OS-user Local Agent host task can call it with exact
   `X-PocketHost-Intent: termux-admin` and
   `X-PocketHost-Agent-Intent: termux-owner-agent` headers
-  without an Origin or login. Capability discovery:
+  without an Origin or login. The LAN gateway strips the agent-only
+  header so a remote Wi-Fi client cannot impersonate this local
+  transport. Capability discovery:
   `GET ?mode=agent-capabilities`. This is not a new Local
   Agent service, Git repository queue or external public API.
 
@@ -64,7 +67,8 @@ The separate H3 Restic QA task at `52629df` returned OPEN with
 151/151 Node, 41/41 UI, coverage, build and types passing, but
 Prettier/Markdown failed. Neither result validates H3.4 code.
 
-New H3.4 tests cover full named-root traversal and symlink refusal,
+New H3.4 tests cover full named-root traversal, recursive copy/delete
+with symlink refusal,
 Restic HOME/PREFIX command arguments, runit autostart admission,
 manual ttyd loopback plan and agent intent. Browser tests cover
 Files, Terminal, Backups and Agent API. Run fresh Samsung Termux
@@ -79,3 +83,16 @@ has been performed by this sprint. Verify availability of ttyd,
 restic, runit, accessible Android shared storage and actual browser
 WebSocket behavior in separate owner-accepted physical tests.
 G3 live source cutover is separately held and not implied by code.
+
+## Submitted native QA tasks
+
+- `pockethost-h34-full-source-diagnostic-b8d1232-20261107-v1`:
+  exact-SHA native diagnostic matrix (submitted).
+- `pockethost-h34-latest-native-g2-e3b1946-20261107-v1`:
+  exact-SHA full native G2 matrix after tree operations (submitted).
+- `pockethost-h34-native-style-ada4998-20261107-v1`:
+  isolated native formatting and markdown checks (submitted).
+
+At the last evidence check, Local Agent had not yet published a
+terminal result for these tasks. Submission is **not PASS**.
+Additional source changes after those SHAs require their own QA.
