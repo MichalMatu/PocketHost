@@ -413,7 +413,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     if (!existsSync(archive)) {
       writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
     }
-    const nextDocument = this.document(`index-v${target}.html`);
+    const nextDocument = this.document(target === 1 ? 'index-v1.html' : 'index-v2.html');
     this.addDeployment(item, 'publish', item.contentVersion, target);
     item.previousVersion = item.contentVersion;
     item.contentVersion = target;
@@ -425,7 +425,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     const item = this.mustRead();
     if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
     if (item.previousVersion === null) throw new RangeError('No prior demo version');
-    const html = this.document(`index-v${item.previousVersion}.html`);
+    const html = this.document(item.previousVersion === 1 ? 'index-v1.html' : 'index-v2.html');
     this.addDeployment(item, 'rollback', item.contentVersion, item.previousVersion);
     item.contentVersion = item.previousVersion;
     // Consume the one-step undo. A second rollback must not redeploy the superseded release.
