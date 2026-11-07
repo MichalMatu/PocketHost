@@ -45,7 +45,8 @@ export function createOwnedSiteRuntime(port: OwnedSitePort) {
     },
     restart: async () => {
       const current = requireOwned(port.inspect());
-      if (current.state !== 'running') throw new RangeError('Cannot restart an owned service that is not running');
+      if (current.state !== 'running')
+        throw new RangeError('Cannot restart an owned service that is not running');
       requireOwned(await port.stop());
       return requireOwned(await port.start());
     },
