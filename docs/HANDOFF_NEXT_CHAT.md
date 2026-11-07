@@ -1,74 +1,65 @@
 ---
-status: source-candidate-device-qa-pending
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Canonical O1 native acceptance and O2 implementation handoff
+purpose: Canonical post-O1 and trusted-LAN handoff
 ---
 
-# PocketHost — O1 source MVP acceptance handoff
+# PocketHost — O1 and private LAN handoff
 
-## Rules and starting state
+## Resume protocol
 
-Fetch the **fresh current main HEAD**, not a presumed SHA.
-Read `AGENTS.md`, [Termux runbook](LOCAL_AGENT_TERMUX.md),
-[ADR-0010](adr/0010-read-only-observability.md),
-[roadmap](ROADMAP.md), [quality gates](QUALITY_GATES.md)
-and [the O1 checkpoint](checkpoints/2026-11-07-o1-observability-source.md).
+1. Fetch the **fresh current `main` HEAD**, never assume it.
+2. Read root `AGENTS.md`, [Termux runbook](LOCAL_AGENT_TERMUX.md),
+   [quality gates](QUALITY_GATES.md), [roadmap](ROADMAP.md),
+   [O1 checkpoint](checkpoints/2026-11-07-o1-observability-source.md)
+   and [live LAN acceptance](checkpoints/2026-11-07-o1-lan-live-acceptance.md).
+3. All code and QA run only on verified Samsung Termux via Local Agent.
+   GitHub connector is source and task transport, not execution.
+   No GitHub Actions, Codex, Work, new feature branch or force push.
+4. Keep six foreign services, imported PhotoMap TEST and
+   PocketHost-owned P3 runtime behind strict ownership gates.
 
-All source commits stay directly on `main` with expected-HEAD
-non-force updates. All code execution, builds, tests and native
-observations occur exclusively on verified Samsung/Termux Local Agent;
-no Actions, Work, Codex, Mac or sandbox substitute.
+## Current implemented and verified slice
 
-## O1 functionality implemented in source
+Source `315e0632a53444038fbe159dd5a075cdc7fb72c6`
+passed Samsung `npm run check:all` (including **19/19 UI tests**).
+The exact-SHA guarded live task
+`pockethost-lan-settings-cutover-315e063-live85a963-20261107-v1`
+returned **done/0 PASS** and safely switched only the verified
+PocketHost panel and its LAN gateway.
 
-- `host/observability-probes.ts`: CPU delta, Android battery and
-  network counters, 96-entry partial process view with start ticks,
-  fixed shell-free installed packages and local cached update hints.
-- `observability/overview.ts`: bounded in-memory history, alerts,
-  strictly sanitized structured runtime event summaries and PID reuse
-  checks. No persistent sampler or second process supervisor.
-- `apps/admin`: GET-only DEV loopback endpoint,
-  `/observability` route, sidebar entry, sample chart, processes,
-  package inventory, service health, alerts, diagnostics. Does not
-  enable public API or automatic recovery.
-- Tests for missing permission, PID reuse, metadata rejection,
-  history limits, foreign ownership and UI validation.
+- `/observability`: on-demand host and process metrics, read-only
+  packages, six-service statuses, bounded history and diagnostics.
+  Android-denied CPU, battery and network counters stay unavailable.
+- `/settings/network`: choose a real private Wi-Fi IPv4 address,
+  manually enable/disable the current session's own LAN gateway,
+  show admin and owned-demo URLs.
+- Default panel upstream: `127.0.0.1:8787`.
+  Current LAN admin: `http://192.168.0.100:18878/observability`.
+  Network settings: `http://192.168.0.100:18878/settings/network`.
+  Owned demo: `http://192.168.0.100:18879/`.
+- No public ingress, autostart, background sampling,
+  automatic repair, general service control or package changes.
+  The home-LAN demo admin has no login and uses plaintext HTTP.
 
-This is a **source candidate** until all checks and read-only live
-measurements pass on the exact final SHA. Existing accepted baseline
-`bc5e553` 101/101 Node, 16/16 UI, is not O1 validation.
+Historical earlier task `pockethost-lan-settings-guarded-live-cutover-315e063-20261107-v1`
+had a successful G2, but stopped before deployment due a wrong
+assumption about the old live SHA. The later accepted cutover
+verified the actual old SHA and required precise process identity.
 
-## Samsung requests to reconcile
+## Next work, without repeating closed gates
 
-- `pockethost-o1-setup-native-docs-gate-9aa07b1-20261107-v1`:
-  done/0, structure/docs/Markdownlint/format/boundaries/types PASS.
-- `pockethost-o1-readonly-preflight-20261107-0301-v1`:
-  invalid task timeout schema, **no execution**.
-- `pockethost-o1-readonly-preflight-20261107-0304-v2`:
-  read terminal result before claiming six-service/port evidence.
-- `pockethost-o1-first-native-gates-19eaa36-20261107-v1`:
-  fail-closed `main moved`; did not run tests.
-- Await any final-SHA Samsung `check:all` and live metric receipts
-  if submitted; never assume publication proves execution.
+- Obtain the owner's real Mac Chrome acceptance of Observability
+  and Network Access, including Refresh and visible reading states.
+  Test only the PocketHost settings gateway toggle; do not
+  infer permission to manage external listeners.
+- Improve O1.3 diagnostics and per-process CPU delta as separately
+  scoped work. Keep unavailable Android counters honest.
+- Preserve P3 browser keyboard/ARIA, PRoot detached-orphan
+  recovery and PhotoMap live activation as independent holds.
+  No physical PhotoMap Start without separate authorization.
 
-## Next actions
-
-1. Confirm exact phone installation identity and pending task outcomes.
-   Preserve all six existing services and PhotoMap port 8010.
-2. Fix native TypeScript, lint, Prettier, unit, React build or schema
-   findings on `main`. Do not silence tests or bypass quality gates.
-3. On **immutable final main SHA**, run `npm run check:all` and a
-   bounded real-device read-only collector acceptance through Local
-   Agent. Capture task ID, exit code and real field availability.
-4. If successful, verify actual React route and GET contract on
-   loopback without starting PhotoMap or changing external services.
-5. Expand diagnostic history and per-process CPU delta only after
-   O1 native MVP is accepted; preserve existing runtime engine.
-
-## Unchanged release holds
-
-Real P3 Chromium Publish/Rollback keyboard/ARIA checks, detached PRoot
-orphans and marker recovery, and live PhotoMap TEST Start remain
-unapproved. No automatic recovery, arbitrary shell, package upgrades,
-public API, persistent background agent or new Android permissions.
+A subsequent documentation-only commit may move `main` beyond the
+application-tested source SHA. Record its own docs/check results;
+do not claim the old full QA applies to modified application code.

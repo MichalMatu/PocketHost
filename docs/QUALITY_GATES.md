@@ -75,11 +75,18 @@ This closes the prior P3 native/API lifecycle check, **not G3 browser UI**.
 See the [current handoff](HANDOFF_NEXT_CHAT.md) and
 [final Samsung checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).
 
-## O1 Observability acceptance
+## O1 Observability and private LAN acceptance
 
-Source candidates were committed during the O1 sprint. Exact-SHA
-`check:all` and physical availability are **not accepted** until a
-terminal Samsung receipt exists for the final code and documentation HEAD.
+The exact application source `315e0632a53444038fbe159dd5a075cdc7fb72c6`
+passed Samsung `npm run check:all` including 19/19 UI interactions.
+The guarded live handover
+`pockethost-lan-settings-cutover-315e063-live85a963-20261107-v1`
+returned done/0 PASS for the owned PocketHost preview and LAN gateway.
+The source test is accepted; actual new-version Mac Chrome interaction
+is not yet recorded. See the [live checkpoint](checkpoints/2026-11-07-o1-lan-live-acceptance.md).
+
+Documentation-only follow-up commits must pass their own docs gates;
+application source changed after this SHA requires a fresh full test.
 
 New host/process metrics must pass negative
 tests for inaccessible Android `/proc` and

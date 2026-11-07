@@ -14,7 +14,7 @@ passed 101/101 Node and 16/16 UI tests on Samsung;
 a separate owned P3 HTTP Publish/Rollback/Stop/Start
 cycle passed. This is not production acceptance.
 
-## O1 — Observability: source MVP, Samsung acceptance pending
+## O1 — Observability: Samsung source and LAN HTTP accepted, Mac browser pending
 
 **Observe and diagnose first; automate only after
 separate safety and release gates.**
@@ -41,10 +41,12 @@ separate safety and release gates.**
    native Samsung results, exact-SHA `check:all`,
    browser/device evidence and a single checkpoint.
 
-Source candidates now include on-request CPU/battery/network sampling, bounded
-process identity counters, installed package inventory, existing runtime
-event consumption and a React dashboard. Real Samsung O1 acceptance,
-full exact-HEAD QA and browser verification remain pending.
+Samsung source `315e063` passed full native QA and 19/19 UI tests.
+A guarded deployment verified O1 routes, real GET API and safe
+manual LAN management on the phone, preserving six external services.
+Real new-version Mac visual and interactive acceptance remains open.
+CPU/battery/network may be inaccessible under Android permissions.
+See [live O1/LAN checkpoint](checkpoints/2026-11-07-o1-lan-live-acceptance.md).
 
 Deliver useful vertical slices rather than mock screens.
 Use the existing module owners plus the new pure

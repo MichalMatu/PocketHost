@@ -1,5 +1,5 @@
 ---
-status: source-candidate-device-qa-pending
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
 purpose: O1 observational MVP source, task evidence and release holds
@@ -82,6 +82,18 @@ purpose: O1 observational MVP source, task evidence and release holds
   prepared for a new exact-source quality run.
 - **Final-HEAD full quality gate and browser acceptance
   are still pending in this intermediate checkpoint.**
+
+## Later verified Samsung acceptance (supersedes the pending snapshot above)
+
+Application source `315e0632a53444038fbe159dd5a075cdc7fb72c6`
+passed the full Samsung `check:all` including 19 UI interactions.
+The guarded PocketHost-only LAN panel cutover returned done/0 PASS
+at task `pockethost-lan-settings-cutover-315e063-live85a963-20261107-v1`.
+The new `/observability` and `/settings/network` routes and GET
+APIs returned HTTP 200 from phone loopback and private Wi-Fi.
+All six external services stayed running; PhotoMap TEST port 8010
+stayed closed. Real Mac Chrome new-version browser acceptance remains
+unrecorded. See the [live acceptance record](2026-11-07-o1-lan-live-acceptance.md).
 
 ## Safety and outstanding acceptance
 
