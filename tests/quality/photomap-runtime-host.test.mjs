@@ -123,6 +123,34 @@ test('disabled manifest never hides stale process identity or follows state syml
   }
 });
 
+test('a leftover start claim is a recovery hold, never a safe stopped runtime', async () => {
+  const f = fixture();
+  try {
+    const state = path.join(f.instance, 'runtime', 'state');
+    mkdirSync(state, { recursive: true, mode: 0o700 });
+    const claim = path.join(state, 'start.claim');
+    writeFileSync(claim, '', { mode: 0o600 });
+    const host = new ManagedPhotoMapRuntimeHost(f.root);
+    assert.equal(host.inspect().state, 'unknown');
+    await assert.rejects(host.start(), /not approved/);
+    rmSync(claim);
+    symlinkSync(f.current, claim);
+    assert.throws(() => host.inspect(), /Unsafe PhotoMap start claim/);
+  } finally {
+    rmSync(f.parent, { recursive: true, force: true });
+  }
+});
+
+test('uncertain PRoot startup never silently releases its claim', () => {
+  const source = readFileSync(
+    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /let launchAccepted = false/);
+  assert.match(source, /if \(launchAccepted\) unlinkSync\(claim\)/);
+  assert.doesNotMatch(source, /finally \{\s+unlinkSync\(claim\)/);
+});
+
 test('PRoot bind source is a disposable work copy, never the preserved import', () => {
   const source = readFileSync(
     new URL('../../src/modules/host/photomap-runtime-plan.ts', import.meta.url),

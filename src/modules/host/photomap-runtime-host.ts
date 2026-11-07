@@ -101,6 +101,17 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     return loadPhotoMapPlan(this.root, this.instance);
   }
 
+  private claimPresent(): boolean {
+    const file = path.join(this.state, 'start.claim');
+    const stat = lstatSync(file, { throwIfNoEntry: false });
+    if (!stat) return false;
+    directory(this.state);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128) {
+      throw new Error('Unsafe PhotoMap start claim');
+    }
+    return true;
+  }
+
   private marker(): OwnedMarker | null {
     const file = path.join(this.state, 'active.json');
     if (!existsSync(file)) return null;
@@ -188,12 +199,16 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
         throw new Error('Unsafe disabled PhotoMap process-state directory');
       }
       const file = path.join(this.state, 'active.json');
-      if (state && lstatSync(file, { throwIfNoEntry: false })) {
+      if (state && (lstatSync(file, { throwIfNoEntry: false }) || this.claimPresent())) {
         return { ...basic, state: 'unknown' };
       }
       return basic;
     }
     const marker = this.marker();
+    if (!marker && this.claimPresent()) {
+      // A launch may have produced an untracked PRoot leader. Never adopt it.
+      return { ...basic, state: 'unknown' };
+    }
     // A dead leader with a retained marker may still have orphaned children.
     const state = classifyManagedProcessState(
       marker !== null,
@@ -234,6 +249,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     const claim = path.join(this.state, 'start.claim');
     const handle = openSync(claim, 'wx', 0o600);
     closeSync(handle);
+    let launchAccepted = false;
     try {
       const child = spawn(plan.executable, plan.args, {
         cwd: plan.versionRoot,
@@ -289,7 +305,12 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
           pause: () => pause(110),
           maxPolls: 45,
         });
-        return this.inspect();
+        const accepted = this.inspect();
+        if (accepted.state !== 'running') {
+          throw new Error('PRoot launch identity was not retained');
+        }
+        launchAccepted = true;
+        return accepted;
       } catch {
         try {
           if (this.owned(marker, plan)) await this.stop();
@@ -300,7 +321,9 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
         throw new Error('PhotoMap managed health acceptance failed');
       }
     } finally {
-      unlinkSync(claim);
+      // Failed/unattested launches retain an explicit recovery obligation.
+      // The claim is only released after the verified owned process is healthy.
+      if (launchAccepted) unlinkSync(claim);
     }
   }
 
