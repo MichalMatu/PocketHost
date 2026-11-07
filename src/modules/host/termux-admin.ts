@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
   copyFileSync, constants, existsSync, lstatSync, mkdirSync, openSync, closeSync, readdirSync,
-  readFileSync, renameSync, rmSync, statSync, writeFileSync,
+  readFileSync, renameSync, rmSync, rmdirSync, statSync, writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -208,9 +208,10 @@ export class WorkspaceFiles {
       writeFileSync(destination, bytes, { flag: 'wx', mode: 0o600 });
     } else {
       const target = this.locate(relative);
-      if (lstatSync(target).isDirectory() && readdirSync(target).length)
-        throw new Error('Delete empty directories only');
-      rmSync(target);
+      if (lstatSync(target).isDirectory()) {
+        if (readdirSync(target).length) throw new Error('Delete empty directories only');
+        rmdirSync(target);
+      } else rmSync(target);
     }
   }
 }
