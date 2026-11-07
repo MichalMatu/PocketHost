@@ -6,6 +6,7 @@
 - [Next-chat handoff](HANDOFF_NEXT_CHAT.md)
 - [O1 Observability source checkpoint](checkpoints/2026-11-07-o1-observability-source.md)
 - [O1/LAN live Samsung acceptance](checkpoints/2026-11-07-o1-lan-live-acceptance.md)
+- [O1 502 proxy repair and live recovery](checkpoints/2026-11-07-o1-502-live-recovery.md)
 - [Development plan](DEVELOPMENT_PLAN.md)
 - [Quality gates](QUALITY_GATES.md)
 - [ADR-0010: Read-only Observability](adr/0010-read-only-observability.md)

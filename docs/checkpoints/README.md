@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [O1 502 proxy live recovery](2026-11-07-o1-502-live-recovery.md)
+
 - [O1 Observability source checkpoint](2026-11-07-o1-observability-source.md)
 - [O1 and LAN Samsung live acceptance](2026-11-07-o1-lan-live-acceptance.md)
 

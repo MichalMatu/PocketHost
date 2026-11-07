@@ -12,8 +12,9 @@ purpose: Canonical post-O1 and trusted-LAN handoff
 1. Fetch the **fresh current `main` HEAD**, never assume it.
 2. Read root `AGENTS.md`, [Termux runbook](LOCAL_AGENT_TERMUX.md),
    [quality gates](QUALITY_GATES.md), [roadmap](ROADMAP.md),
-   [O1 checkpoint](checkpoints/2026-11-07-o1-observability-source.md)
-   and [live LAN acceptance](checkpoints/2026-11-07-o1-lan-live-acceptance.md).
+   [O1 checkpoint](checkpoints/2026-11-07-o1-observability-source.md),
+   [live LAN acceptance](checkpoints/2026-11-07-o1-lan-live-acceptance.md)
+   and [502 recovery](checkpoints/2026-11-07-o1-502-live-recovery.md).
 3. All code and QA run only on verified Samsung Termux via Local Agent.
    GitHub connector is source and task transport, not execution.
    No GitHub Actions, Codex, Work, new feature branch or force push.
@@ -47,6 +48,23 @@ Historical earlier task `pockethost-lan-settings-guarded-live-cutover-315e063-20
 had a successful G2, but stopped before deployment due a wrong
 assumption about the old live SHA. The later accepted cutover
 verified the actual old SHA and required precise process identity.
+
+## Later accepted O1 502 correction
+
+After Chrome reported a 502 for the long-running Observability API,
+the gateway was fixed in source `f0dd506c996f700d50421b0545816c641f348bc5`.
+A first guarded redeploy rolled back safely because the active Git
+checkout lacked that commit; the corrected Samsung task
+`pockethost-o1-502-git-fetch-repair-and-guarded-cutover-f0dd506-20261107-v2`
+returned `done/0 PASS`. Exact-source `check:all` passed, including
+19/19 UI tests. The panel now runs this source; three consecutive
+LAN Observability GETs returned HTTP 200 (5.71, 6.23, 5.80 seconds).
+Six protected services stayed unchanged and PhotoMap 8010 remained
+closed. See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).
+
+**Do not repeat the closed Git repair or G2 work without new evidence.**
+Real Mac Chrome acceptance remains pending; browser testing must not
+be confused with the three successful HTTP probes.
 
 ## Next work, without repeating closed gates
 

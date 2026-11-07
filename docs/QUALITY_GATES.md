@@ -105,3 +105,16 @@ changes, automatic recovery or PhotoMap
 activation are allowed within O1.
 See [the roadmap](ROADMAP.md) and
 [ADR-0010](adr/0010-read-only-observability.md).
+
+## O1 502 guarded repair — later live acceptance
+
+At source `f0dd506c996f700d50421b0545816c641f348bc5`,
+Samsung task
+`pockethost-o1-502-git-fetch-repair-and-guarded-cutover-f0dd506-20261107-v2`
+returned terminal done/0 PASS after repairing the missing Git object
+in the *owned* live checkout. `npm run check:all` passed,
+including 19/19 UI tests. The exact live source matched `f0dd506`;
+3/3 Observability LAN GETs returned 200 (5.71, 6.23, 5.80 seconds).
+Six protected services remained unchanged and PhotoMap 8010 closed.
+Mac Chrome new-version interaction remains G3 HOLD.
+See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).

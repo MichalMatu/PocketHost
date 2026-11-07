@@ -44,6 +44,9 @@ separate safety and release gates.**
 Samsung source `315e063` passed full native QA and 19/19 UI tests.
 A guarded deployment verified O1 routes, real GET API and safe
 manual LAN management on the phone, preserving six external services.
+Later `f0dd506` repaired intermittent LAN O1 502 responses:
+Samsung check:all PASS, 3/3 LAN HTTP 200 and preserved services.
+See the [502 recovery](checkpoints/2026-11-07-o1-502-live-recovery.md).
 Real new-version Mac visual and interactive acceptance remains open.
 CPU/battery/network may be inaccessible under Android permissions.
 See [live O1/LAN checkpoint](checkpoints/2026-11-07-o1-lan-live-acceptance.md).
