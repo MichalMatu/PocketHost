@@ -69,6 +69,7 @@ test('external or nonexistent services cannot be started, stopped or published',
   const { runtime, events, set } = fixture();
   await assert.rejects(runtime.start(), SiteOwnershipError);
   await assert.rejects(runtime.stop(), SiteOwnershipError);
+  await assert.rejects(runtime.restart(), SiteOwnershipError);
   assert.throws(() => runtime.publish(2), SiteOwnershipError);
   assert.throws(runtime.logs, SiteOwnershipError);
   set({ ...absent(), ownership: 'external', state: 'running' });
