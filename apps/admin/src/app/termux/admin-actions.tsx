@@ -10,7 +10,7 @@ type FileInfo = { name: string; kind: "directory" | "file"; bytes: number }
 type SnapshotInfo = { name: string; createdAt: string; files: number }
 const endpoint = "/api/v1/termux-admin"
 
-async function action<T>(payload: { action: string; name?: string; path?: string; destination?: string; content?: string }): Promise<T> {
+async function action<T>(payload: { action: string; name?: string; path?: string; destination?: string; content?: string; base64?: string }): Promise<T> {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-PocketHost-Intent": "termux-admin" },
