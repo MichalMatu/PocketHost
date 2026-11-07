@@ -1,24 +1,25 @@
 ---
-status: implementation-pending-native-acceptance
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: H2 self-hosted static-site implementation, risks and physical release gate
+purpose: H2 source, terminal Samsung tests, guarded LAN acceptance and next handoff
 ---
 
 # H2 — multiple user-owned static sites on Android Termux
 
-## Scope and unchanged H1 baseline
+## Scope and preserved H1 rollback baseline
 
 The owner approved one large H2 functional sprint: create multiple sites from
 the browser, upload a ZIP or browser-selected folder, deploy updates, roll back,
 start/stop/restart, inspect logs and resource statistics, and accept the
 result on Samsung through a guarded release.
 
-Previous H1 application source `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`
-remains the **accepted and deployed** rollback baseline. H2 source commits
-on `main` do not themselves switch that running panel.
+The accepted H1 application SHA `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`
+is retained as the rollback baseline. H2 application source
+`750c4b3fba2126647c3b593ae89d108ba2a67206` is now live after
+exact-SHA QA and a guarded LAN switch on Samsung.
 
-## Source candidate
+## Implemented H2 scope
 
 - `src/modules/sites/site-bundle.ts`: bounded ZIP central-directory parser
   and folder-base64 decoder. Reject ZIP slip, archive symlinks, invalid
@@ -65,26 +66,68 @@ authentication**: only operate it on an approved trusted subnet.
 - The six existing services and imported PhotoMap remain read-only
   and excluded from all H2 operations.
 
-## Pending native and release gates
+## Accepted native and LAN release evidence — 2026-11-07
 
-1. Run `npm run check:all` in a clean exact-main detached QA checkout
-   **only through the Samsung Termux Local Agent**. Fix focused failures
-   without weakening tests. Record Node/Vitest counts and exact SHA.
-2. On Samsung, test a genuinely uploaded new HTML/CSS/JS site,
-   then a second distinct site; verify isolation and live GET/HEAD
-   assets, update, one-use rollback, restart/stop/start, bounded logs
-   and memory/uptime readings if accessible.
-3. Verify traversal, ZIP bomb/symlink, malicious PID, port collision,
-   foreign-origin and missing-intent denial; verify protected six
-   services and PhotoMap TEST 8010 before/after.
-4. Only after exact-SHA G2, perform a guarded PocketHost-only live
-   panel switch with old PID/start-ticks checks and automatic rollback
-   on failure. Test real LAN site preview paths and the admin UI.
-5. Record independent owner Mac Chrome ZIP/folder interactions
-   separately. HTTP probes are not browser-button acceptance.
+**G2: PASS.** Local Agent task
+`pockethost-h2-final-native-check-all-750c4b3-20261107-v2`
+returned terminal `done/0` for application source
+`750c4b3fba2126647c3b593ae89d108ba2a67206`.
+The complete `npm run check:all` passed on Samsung,
+including 26/26 admin UI tests, the Node suite and its
+coverage gate, lint, TypeScript, format, docs and Vite build.
+The isolated QA checkout was verified clean.
 
-**H2 is SOURCE ONLY until terminal device and live-release receipts
-prove otherwise.**
+**G3: PASS.** Guarded task
+`pockethost-h2-guarded-g3-real-static-sites-750c4b3-20261107-v2`
+returned terminal `done/0 PASS`. Before any process change
+it checked the old H1 source, PID/start ticks, exact Termux
+worktrees, owner gateway record, current demo state and all
+six protected services. The approved private-LAN preview
+was switched to the exact G2-tested H2 application.
+
+Real HTTP acceptance created **two separate user-owned projects**
+with distinct loopback ports, uploaded a ZIP and a browser-folder-format
+JSON bundle, started both processes, and served their HTML/CSS/JS
+assets through the existing LAN site gateway. It then published
+an updated ZIP, verified live content, consumed the single-use
+rollback, rejected a repeated rollback, restarted the verified
+owned process and read bounded logs. Rejection checks included
+ZIP traversal, foreign Origin, missing write intent, private
+owner files and POST on the static site gateway.
+
+The task stopped both test processes, verified their owner
+markers and closed ports, and removed **only its two own
+temporary test projects**. The existing H1 demo was
+preserved in the user's actual selected version (the initial
+G3 attempt had safely held because it incorrectly assumed v2).
+All six protected services remained running; PhotoMap TEST
+port 8010 remained closed. No protected process or production
+data was changed.
+
+New LAN admin: `http://192.168.0.100:18878/sites`.
+Private static previews: port `18879`, `/h2/<site-id>/`.
+This is a manually started, trusted-LAN, **unauthenticated
+HTTP** development capability. No WAN access, authenticated
+multi-user hosting, server-side Node/Python execution or
+package CMS is included.
+
+## Remaining user/browser acceptance and future constraints
+
+The owner should test **one actual ZIP or folder upload
+through Chrome on Mac**, Start, open static site, update and
+Rollback. Samsung G3 HTTP automation is not equivalent to a
+user physically clicking every browser control. Full mobile,
+keyboard/ARIA and negative-state testing remain a separate
+quality follow-up, not a claim already proved here.
+
+H2 currently permits up to eight projects and 16 release
+folders per project; a controlled delete/prune UI and
+storage-quota operations have not been implemented.
+Uploaded sites should use relative asset URLs.
+
+**H2 device release is accepted. Mac browser signoff remains pending.**
+The H2 application SHA remains `750c4b3` even after
+documentation-only follow-up commits.
 
 See the [handoff](../HANDOFF_NEXT_CHAT.md), [roadmap](../ROADMAP.md),
 [quality gates](../QUALITY_GATES.md) and [H1 acceptance](2026-11-07-h1-hosting-mvp-source.md).
