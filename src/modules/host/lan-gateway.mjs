@@ -90,13 +90,17 @@ function upstreamHeaders(request, internalPort) {
 }
 
 /**
- * Observability reads fixed host/package diagnostics that have individual
- * bounded process timeouts. Only that read-only endpoint has a longer LAN
- * upstream idle budget; other admin and demo requests keep 5 seconds.
+ * Keep ordinary LAN routes on their short budget. The exact H3 admin
+ * endpoint needs enough time for native apt transactions (up to 10 minutes);
+ * no other admin endpoint inherits the extended timeout.
  */
-export function upstreamTimeoutMs(requestPath) {
+export function upstreamTimeoutMs(requestPath, method = 'GET') {
+  const route = requestPath?.split('?')[0];
+  if (route === '/api/v1/termux-admin') {
+    return method === 'POST' ? 610000 : method === 'GET' ? 30000 : 5000;
+  }
   if (requestPath?.startsWith('/api/v1/sites')) return 30000;
-  return requestPath?.split('?')[0] === '/api/v1/observability' ? 25000 : 5000;
+  return route === '/api/v1/observability' ? 25000 : 5000;
 }
 
 export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
@@ -126,7 +130,7 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
         path: hosted?.path ?? request.url,
         method: request.method,
         headers,
-        timeout: upstreamTimeoutMs(request.url),
+        timeout: upstreamTimeoutMs(request.url, request.method),
       },
       (upstreamResponse) => {
         response.writeHead(upstreamResponse.statusCode ?? 502, {
