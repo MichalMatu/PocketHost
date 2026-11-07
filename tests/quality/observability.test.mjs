@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   cpuPercentage, parseProcessStat, parseProcessRss, readBatteryPercent,
-  readNetworkBytes, readProcessInventory, parseInstalledPackages, readPackageInventory,
+  readNetworkBytes, readProcessInventory, parseInstalledPackages, parseNpmGlobals, parsePipInstalled, readPackageInventory,
 } from '../../src/modules/host/observability-probes.ts';
 import { ObservabilityHistory, sameProcessIdentity, sanitizeEvents } from '../../src/modules/observability/overview.ts';
 
@@ -85,4 +85,18 @@ test('aggregation retains only bounded history, synthetic values never replace u
   assert.deepEqual(sanitizeEvents([{timestamp:time,instanceId:'owned-demo',code:'manual-stop-completed',secret:'DO_NOT_LEAK'}]),[
     {timestamp:time,instanceId:'owned-demo',code:'manual-stop-completed'},
   ]);
+});
+
+test('Node global and Python pip inventories admit only structured safe metadata', () => {
+  assert.deepEqual(parseNpmGlobals(JSON.stringify({ dependencies: {
+    typescript: { version: '5.9.3' },
+    '@scope/tool': { version: '1.2.0' },
+    '../../token': { version: 'bad' },
+  } })).map((p) => p.name), ['typescript', '@scope/tool']);
+  assert.deepEqual(parsePipInstalled(JSON.stringify([
+    {name:'requests', version:'2.32.0'},
+    {name:'../../../secret', version:'1.0'},
+  ])).map((p) => p.name), ['requests']);
+  assert.deepEqual(parsePipInstalled('invalid json'), []);
+  assert.deepEqual(parseNpmGlobals('invalid json'), []);
 });
