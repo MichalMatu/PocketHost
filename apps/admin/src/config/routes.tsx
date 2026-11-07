@@ -93,6 +93,7 @@ export const routes: RouteObject[] = [
     lazy: page(() => import("@/app/errors/under-maintenance/page")),
   },
   // Settings Routes
+  { path: "/settings/network", lazy: page(() => import("@/app/settings/network/page")) },
   {
     path: "/settings/user",
     lazy: page(() => import("@/app/settings/user/page")),

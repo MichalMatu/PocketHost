@@ -151,7 +151,7 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
   return server;
 }
 
-export async function startLanGateway(bind) {
+export async function startLanGateway(bind, { registerSignals = true } = {}) {
   const mask = ownLanInterface(bind);
   const admin = createGateway({ bind, mask, admin: true, port: ADMIN_PORT });
   const site = createGateway({ bind, mask, admin: false, port: SITE_PORT });
@@ -171,15 +171,30 @@ export async function startLanGateway(bind) {
     await new Promise((resolve) => admin.close(resolve));
     throw error;
   }
-  const shutdown = () => {
-    admin.close();
-    site.close();
-  };
-  process.once('SIGTERM', shutdown);
-  process.once('SIGINT', shutdown);
+  let closed = false;
+  async function close() {
+    if (closed) return;
+    closed = true;
+    process.removeListener('SIGTERM', shutdown);
+    process.removeListener('SIGINT', shutdown);
+    await Promise.all([admin, site].map((listener) =>
+      new Promise((resolve) => {
+        listener.closeAllConnections?.();
+        listener.close(() => resolve());
+      }),
+    ));
+  }
+  function shutdown() {
+    void close();
+  }
+  if (registerSignals) {
+    process.once('SIGTERM', shutdown);
+    process.once('SIGINT', shutdown);
+  }
   return {
     admin,
     site,
+    close,
     adminUrl: 'http://' + bind + ':' + ADMIN_PORT + '/owned-site',
     siteUrl: 'http://' + bind + ':' + SITE_PORT + '/',
   };

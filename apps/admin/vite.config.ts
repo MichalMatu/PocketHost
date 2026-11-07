@@ -2,6 +2,7 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
+import { createLanControl } from "../../src/modules/host/lan-control.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -297,9 +298,89 @@ function observabilityApi(): Plugin {
   }
 }
 
+
+/** Opt-in manual LAN listener control. Never signals a preexisting gateway. */
+function networkAccessApi(): Plugin {
+  const controller = createLanControl()
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-manual-lan-control",
+    apply: "serve",
+    configureServer(server) {
+      server.httpServer?.once("close", () => {
+        void controller.disable()
+      })
+      server.middlewares.use("/api/v1/network-access", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        const remote = request.socket.remoteAddress
+        if (
+          !hosts.has(request.headers.host ?? "") ||
+          (request.headers.origin && !origins.has(request.headers.origin)) ||
+          request.headers["sec-fetch-site"] === "cross-site" ||
+          (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")
+        ) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        const route = request.url?.split("?")[0] ?? ""
+        if (route === "/" && request.method === "GET") {
+          response.end(JSON.stringify(controller.status()))
+          return
+        }
+        if (request.method !== "POST" || !["/enable", "/disable"].includes(route)) {
+          response.statusCode = route === "/" ? 405 : 404
+          response.end(JSON.stringify({ error: "not-found" }))
+          return
+        }
+        if (
+          !request.headers.origin ||
+          !origins.has(request.headers.origin) ||
+          request.headers["x-pockethost-intent"] !== "lan-control" ||
+          request.headers["transfer-encoding"] !== undefined ||
+          ![undefined, "0"].includes(request.headers["content-length"])
+        ) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "action-not-authorized" }))
+          return
+        }
+        try {
+          if (route === "/enable") {
+            const bind = request.headers["x-pockethost-lan-bind"]
+            if (typeof bind !== "string") {
+              response.statusCode = 400
+              response.end(JSON.stringify({ error: "invalid-lan-interface" }))
+              return
+            }
+            const state = await controller.enable(bind)
+            response.end(JSON.stringify(state))
+          } else {
+            // Finish the proxied response before closing the gateway that carried it.
+            const state = controller.status()
+            response.once("finish", () => {
+              void controller.disable().catch(() => undefined)
+            })
+            response.end(JSON.stringify({
+              ...state, enabled: false, bind: null, adminUrl: null, siteUrl: null,
+            }))
+          }
+        } catch {
+          // Includes EADDRINUSE: never claim or stop a legacy gateway.
+          response.statusCode = 409
+          response.end(JSON.stringify({ error: "gateway-unavailable-or-not-owned" }))
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), managedPhotoMapApi(), observabilityApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi()],
   server: { host: "127.0.0.1", port: 8787, strictPort: true },
   resolve: {
     alias: {
