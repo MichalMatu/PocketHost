@@ -17,7 +17,7 @@ read-only G3 ownership preflight is terminal `done/0 PASS`.
 This chat repaired the missing H2.1 G3 archive-index entry
 in `docs/checkpoints/README.md` (commit `ea5ed4d`),
 then recorded the final H2.1/G3 disposition.
- A single bounded, docs-only isolated Samsung QA request,
+A single bounded, docs-only isolated Samsung QA request,
 `pockethost-h21-final-docs-gate-9144f9f-20261107-v1`,
 was published for exact main `9144f9fde7d65d665f90ebfb0868ccace4b46bc6`.
 Its terminal receipt was **not yet observed** at this checkpoint.
@@ -128,7 +128,7 @@ of this private-LAN development session.
 
 **Next-chat mission:** resolve the permitted
 mechanism for owner-verified H2.1 G3 deployment,
-preserving both existing sites *bit-for-bit*.
+preserving both existing sites _bit-for-bit_.
 If permitted, perform a guarded release with
 source/host/PID/owner checks and H2 fallback,
 then test version restore/rollback/archived GET
