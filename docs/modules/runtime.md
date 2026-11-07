@@ -66,3 +66,19 @@ process is adopted. Unknown identity fails closed; backend restart
 may leave the owned demo stopped if startup fails, without affecting
 any foreign service. Broader app adapters and automatic recovery
 remain outside this MVP. Device and browser acceptance are pending.
+
+## H2 static fleet scope and runtime separation
+
+H2 does not activate the generic PhotoMap/PRoot
+runtime. The dedicated static-site host adapter
+owns exact loopback child identity and explicit
+start, stop and restart for uploaded static assets
+only. Its immutable releases and one-step rollback
+do not grant permission to execute uploaded backend
+code, install packages or manage discovered services.
+
+Samsung exact-source G2 and guarded two-site LAN
+G3 passed for H2 `750c4b3`. The H1 single-demo
+runtime remains available and was preserved without
+forcing the user's version or rollback state.
+See [H2 checkpoint](../checkpoints/2026-11-07-h2-static-hosting-source.md).
