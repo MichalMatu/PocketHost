@@ -4,11 +4,14 @@ import { hostSnapshotSchema } from "@/lib/host-snapshot-schema"
 const stamp = z.string().datetime({ offset: true })
 const state = z.enum(["ok", "stale", "unavailable", "permission-denied"])
 const reading = <T extends z.ZodTypeAny>(value: T) =>
-  z.object({ state, value: value.nullable(), observedAt: stamp }).strict().superRefine((item, ctx) => {
-    if ((item.state === "ok") !== (item.value !== null)) {
-      ctx.addIssue({ code: "custom", message: "Unavailable and valid values cannot be interchanged" })
-    }
-  })
+  z.union([
+    z.object({ state: z.literal("ok"), value, observedAt: stamp }).strict(),
+    z.object({
+      state: z.enum(["stale", "unavailable", "permission-denied"]),
+      value: z.null(),
+      observedAt: stamp,
+    }).strict(),
+  ])
 const count = z.number().int().nonnegative()
 const cpu = z.number().finite().min(0).max(100)
 const process = z.object({
