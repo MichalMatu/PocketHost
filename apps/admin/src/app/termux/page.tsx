@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -91,18 +92,18 @@ export default function TermuxCenterPage() {
   const tooling = tools?.tools ?? []
 
   return (
-    <BaseLayout title="Termux Control Center" description="Existing tools and owned data · safe read-only overview">
+    <BaseLayout title="Termux Control Center" description="Manage Termux packages, workspace, owned services and snapshots">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" /> H3 · read-only</Badge>
+          <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" /> H3 · owner operations</Badge>
           <Button variant="outline" onClick={() => void refresh()} disabled={reading}>
             <RefreshCw className={reading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
         <GuardNotice>
-          This trusted-LAN development panel has no admin login. Package changes, file edits,
-          service control, terminal and backup execution stay disabled until authenticated,
-          scoped authorization is implemented. Nothing is installed automatically.
+          This trusted-LAN development panel has no login. Administrative actions are available
+          without passwords, with explicit confirmations and fixed Termux commands.
+          Do not expose this panel to public networks.
         </GuardNotice>
         <Tabs defaultValue="packages" className="w-full">
           <TabsList className="h-auto flex-wrap justify-start gap-1 p-1" aria-label="Termux modules">
@@ -136,9 +137,10 @@ export default function TermuxCenterPage() {
                     </div>)}
                     {installed.length === 0 && <p className="text-muted-foreground">No matching packages in the bounded sample.</p>}
                   </div>
-                  <GuardNotice>Install, Remove, Update and Upgrade are intentionally unavailable. No global Termux mutation is performed.</GuardNotice>
+                  <GuardNotice>Package modifications execute only when you select and confirm an action.</GuardNotice>
                 </>}
                 {!snapshot && !errors.snapshot && <p role="status">Reading package metadata…</p>}
+                <PackageActions />
               </CardContent>
             </Card>
           </TabsContent>
@@ -173,7 +175,7 @@ export default function TermuxCenterPage() {
                 </>}
                 {detailError && <p role="alert">{detailError}</p>}
                 <a className="text-sm underline underline-offset-4" href="/sites">Open existing site upload and version manager</a>
-                <GuardNotice>No arbitrary Termux directory access, hidden files, downloading secrets or editing files. The separate Cloud Commander integration requires authentication first.</GuardNotice>
+                <WorkspaceManager />
               </CardContent>
             </Card>
           </TabsContent>
@@ -191,7 +193,7 @@ export default function TermuxCenterPage() {
                   <div className="flex gap-2"><Badge variant="outline">External</Badge><State value={service.state} /></div>
                 </div>)}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
-                <GuardNotice>Start, Stop and Restart remain unavailable for external services. No process is signalled by this page.</GuardNotice>
+                <SiteServiceActions sites={sites} reload={() => refresh()} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -225,7 +227,8 @@ export default function TermuxCenterPage() {
                   </div>)}
                 </div>}
                 {detailError && <p role="alert">{detailError}</p>}
-                <GuardNotice>Site releases are not backups of databases, system configuration or other apps. Restic backup/restore and scheduling are not wired to executable controls.</GuardNotice>
+                <WorkspaceBackupActions />
+                <GuardNotice>Snapshots protect the H3 workspace; website releases are separate and do not replace a full Termux backup.</GuardNotice>
                 <p className="text-sm font-medium">Optional integrations</p>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
