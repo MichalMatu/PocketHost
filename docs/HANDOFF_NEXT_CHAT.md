@@ -5,7 +5,29 @@ last_reviewed: 2026-11-07
 purpose: Canonical H1 Hosting MVP sprint state with O1 release history
 ---
 
-# PocketHost — H1 Hosting MVP and prior O1 handoff
+# PocketHost — H2 static hosting sprint; H1 accepted baseline
+
+## Active H2 — source candidate, NOT deployed
+
+The owner approved one large browser-driven multi-site hosting sprint.
+New code on `main` includes ZIP/folder static imports, eight owned
+sites, dedicated loopback ports, immutable releases, one-use rollback,
+verified process lifecycle, bounded log/statistics and GET-only
+private-LAN previews at `/h2/<site-id>/`. H2 accepts no backend
+commands, arbitrary host paths, unknown PIDs or package changes.
+
+**Do not deploy H2 until the exact final SHA passes Samsung
+`npm run check:all` and a guarded device acceptance task.**
+At this checkpoint the actual running PocketHost source is still
+the accepted H1 `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`.
+Preserve its rollback and all six foreign services.
+
+Read [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
+Next: focused native QA in the isolated Termux checkout, resolve
+specific failures, prove two real uploaded sites and guarded LAN
+handover. Do not repeat accepted H1 gates for their old SHA.
+
+## Historical H1 and O1 acceptance
 
 ## H1 one-demo MVP — accepted and deployed
 
