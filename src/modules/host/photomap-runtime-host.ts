@@ -14,17 +14,11 @@ import {
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  attestsManagedProcess,
-  processGroupAbsent,
-} from './managed-process-guards.ts';
+import { attestsManagedProcess, processGroupAbsent } from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
 import { directory, json } from './managed-runtime-files.ts';
 import { loadPhotoMapPlan, RELEASE, type LaunchPlan } from './photomap-runtime-plan.ts';
-import {
-  captureManagedDescendants,
-  observedDescendantsExited,
-} from './managed-proc-tree.ts';
+import { captureManagedDescendants, observedDescendantsExited } from './managed-proc-tree.ts';
 import {
   admitOwnedStart,
   awaitOwnedReadiness,

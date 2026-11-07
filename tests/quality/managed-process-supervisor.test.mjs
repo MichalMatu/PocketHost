@@ -14,7 +14,10 @@ test('start admission refuses forged owner, stale marker, and occupied port', as
   ]) {
     let calls = 0;
     const probe = {
-      approved: () => { calls++; return true; },
+      approved: () => {
+        calls++;
+        return true;
+      },
       noUnresolvedMarker: () => true,
       portFree: async () => true,
       ...change,
@@ -29,7 +32,9 @@ test('safe Stop never signals unverified or recycled PID', async () => {
   await assert.rejects(
     stopOwnedProcessSafely({
       verifyOwnership: () => false,
-      signalOwnedLeader: () => { signals++; },
+      signalOwnedLeader: () => {
+        signals++;
+      },
       observe: async () => ({ leaderExited: true, portReleased: true, descendantsExited: true }),
       pause: async () => {},
     }),
@@ -49,8 +54,13 @@ test('safe Stop rejects orphan descendants, port leaks, and deadline exhaustion'
     await assert.rejects(
       stopOwnedProcessSafely({
         verifyOwnership: () => true,
-        signalOwnedLeader: () => { signals++; },
-        observe: async () => { polls++; return evidence; },
+        signalOwnedLeader: () => {
+          signals++;
+        },
+        observe: async () => {
+          polls++;
+          return evidence;
+        },
         pause: async () => {},
         maxPolls: 3,
       }),
@@ -66,7 +76,9 @@ test('safe Stop accepts only full exit evidence and signals once', async () => {
   let polls = 0;
   await stopOwnedProcessSafely({
     verifyOwnership: () => true,
-    signalOwnedLeader: () => { signals++; },
+    signalOwnedLeader: () => {
+      signals++;
+    },
     observe: async () => {
       polls++;
       return { leaderExited: polls >= 2, portReleased: true, descendantsExited: true };
@@ -92,7 +104,10 @@ test('readiness cannot promote PID reuse or non-healthy PRoot to running', async
   await assert.rejects(
     awaitOwnedReadiness({
       identityMatches: () => true,
-      health: async () => { checks++; return false; },
+      health: async () => {
+        checks++;
+        return false;
+      },
       pause: async () => {},
       maxPolls: 2,
     }),
@@ -117,7 +132,9 @@ test('invalid polling limits fail before any process signal', async () => {
   await assert.rejects(
     stopOwnedProcessSafely({
       verifyOwnership: () => true,
-      signalOwnedLeader: () => { calls++; },
+      signalOwnedLeader: () => {
+        calls++;
+      },
       observe: async () => ({ leaderExited: true, portReleased: true, descendantsExited: true }),
       pause: async () => {},
       maxPolls: 0,

@@ -14,7 +14,9 @@ export interface ManagedRuntimeRegistration {
  * No PhotoMap constants, process discovery, or shell. Only explicitly registered
  * PocketHost-owned adapters are available; ports and IDs must be unique.
  */
-export function createManagedRuntimeRegistry(registrations: ReadonlyArray<ManagedRuntimeRegistration>) {
+export function createManagedRuntimeRegistry(
+  registrations: ReadonlyArray<ManagedRuntimeRegistration>,
+) {
   const registry = new Map<string, ManagedRuntimeRegistration>();
   const usedPorts = new Set<number>();
   for (const entry of registrations) {
