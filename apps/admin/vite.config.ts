@@ -1,6 +1,6 @@
 import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
-import { applyPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
+import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -627,7 +627,7 @@ function termuxAdminApi(): Plugin {
     return result
   }
   async function parseBody(req: IncomingMessage): Promise<{
-    action?: string; name?: string; path?: string; destination?: string; content?: string;
+    action?: string; name?: string; path?: string; destination?: string; content?: string; base64?: string;
   }> {
     const declared = req.headers["content-length"]
     if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 360000)))
@@ -644,13 +644,13 @@ function termuxAdminApi(): Plugin {
     const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new RangeError("Bad action")
     const data = value as Record<string, unknown>
-    if (Object.keys(data).some(key => !["action","name","path","destination","content"].includes(key)))
+    if (Object.keys(data).some(key => !["action","name","path","destination","content","base64"].includes(key)))
       throw new RangeError("Extra input denied")
-    for (const key of ["action","name","path","destination","content"]) {
+    for (const key of ["action","name","path","destination","content","base64"]) {
       if (data[key] !== undefined && typeof data[key] !== "string")
         throw new RangeError("Bad request field")
     }
-    return data as { action?: string; name?: string; path?: string; destination?: string; content?: string }
+    return data as { action?: string; name?: string; path?: string; destination?: string; content?: string; base64?: string }
   }
 
   return {
@@ -701,6 +701,14 @@ function termuxAdminApi(): Plugin {
         try {
           const input = await parseBody(request)
           const result = await serialize(async () => {
+            if (input.action === "package-preview") {
+              if (!input.name || !["install","remove","upgrade","upgrade-all"].includes(input.name))
+                throw new RangeError("Invalid package preview")
+              return { operation: input.name, result: await previewPackageAction(
+                input.name as "install" | "remove" | "upgrade" | "upgrade-all",
+                input.path,
+              ) }
+            }
             if (input.action === "package") {
               if (!input.name || !["refresh", "install", "remove", "upgrade", "upgrade-all"].includes(input.name))
                 throw new RangeError("Invalid package action")
@@ -710,18 +718,22 @@ function termuxAdminApi(): Plugin {
               ) }
             }
             if (input.action === "file") {
-              if (!input.name || !["mkdir", "save", "rename", "delete"].includes(input.name))
+              if (!input.name || !["mkdir", "save", "rename", "delete", "copy", "upload"].includes(input.name))
                 throw new RangeError("Invalid file action")
-              files.apply(input.name as "mkdir" | "save" | "rename" | "delete", input.path ?? "", {
-                destination: input.destination, content: input.content,
+              files.apply(input.name as "mkdir" | "save" | "rename" | "delete" | "copy" | "upload", input.path ?? "", {
+                destination: input.destination, content: input.content, base64: input.base64,
               })
               return { changed: true }
             }
             if (input.action === "read-file") {
               return { content: files.read(input.path ?? "") }
             }
+            if (input.action === "download-file") {
+              return files.download(input.path ?? "")
+            }
             if (input.action === "snapshot") {
               if (input.name === "create") return { snapshot: backups.create() }
+              if (input.name === "verify") return { verification: backups.verify(input.path ?? "") }
               if (input.name === "restore") return { snapshot: backups.restore(input.path ?? "") }
               if (input.name === "delete") {
                 backups.delete(input.path ?? "")
