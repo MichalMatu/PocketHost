@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog } from "@/app/termux/admin-actions"
 
 const site = {
   id: "site-" + "a".repeat(32), name: "Owned Test Site", state: "stopped",
@@ -164,5 +164,26 @@ describe("H3 runit service registration UI", () => {
       .map((call: [string, RequestInit?]) => JSON.parse(String(call[1]?.body)))
     expect(operations.map((operation: { name: string }) => operation.name)).toEqual(["register", "start"])
     expect(operations.every((operation: { path: string }) => operation.path === "site-worker")).toBe(true)
+  })
+})
+
+describe("H3 complete Termux software catalog", () => {
+  it("loads dpkg inventory and searches available apt packages with no writes", async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (url: string, options?: RequestInit) => {
+      expect(options?.method).toBe("GET")
+      return { ok: true, json: async () => url.includes("mode=packages")
+        ? { packages: [{ name: "curl", version: "8.1" }], truncated: false }
+        : { query: "restic", packages: [{ name: "restic", description: "Encrypted backups" }], truncated: false } }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    render(<PackageCatalog />)
+    await user.click(screen.getByRole("button", { name: "Load installed Termux packages" }))
+    await screen.findByText("curl")
+    await user.type(screen.getByLabelText("Search available Termux software"), "restic")
+    await user.click(screen.getByRole("button", { name: "Search catalog" }))
+    await screen.findByText("Encrypted backups")
+    expect(fetchMock.mock.calls).toHaveLength(2)
+    expect(fetchMock.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
   })
 })
