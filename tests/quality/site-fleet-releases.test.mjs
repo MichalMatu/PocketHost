@@ -2,9 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { SiteFleetHost } from '../../src/modules/host/site-fleet-host.ts';
 
@@ -52,10 +50,15 @@ test('H2.1: list three immutable releases, preview older without a switch, resto
     const second = (await fleet.deploy(project.id, file('Middle v2'))).activeRelease;
     const third = (await fleet.deploy(project.id, file('Latest v3'))).activeRelease;
     assert.equal(fleet.listReleases(project.id).length, 3);
-    assert.deepEqual(new Set(fleet.listReleases(project.id).map((x) => x.id)), new Set([first, second, third]));
-    assert.ok(fleet.listReleases(project.id).every(x => x.createdAt && x.fileCount === 1 && x.bytes > 0));
-    assert.equal(fleet.listReleases(project.id).filter(x => x.active)[0].id, third);
-    assert.equal(fleet.listReleases(project.id).filter(x => x.rollbackTarget)[0].id, second);
+    assert.deepEqual(
+      new Set(fleet.listReleases(project.id).map((x) => x.id)),
+      new Set([first, second, third]),
+    );
+    assert.ok(
+      fleet.listReleases(project.id).every((x) => x.createdAt && x.fileCount === 1 && x.bytes > 0),
+    );
+    assert.equal(fleet.listReleases(project.id).filter((x) => x.active)[0].id, third);
+    assert.equal(fleet.listReleases(project.id).filter((x) => x.rollbackTarget)[0].id, second);
 
     await fleet.start(project.id);
     const originalPid = fleet.inspect(project.id).pid;
@@ -64,14 +67,24 @@ test('H2.1: list three immutable releases, preview older without a switch, resto
     assert.match((await get(project.port, '/__versions/' + second + '/')).text, /Middle v2/);
     assert.match((await get(project.port)).text, /Latest v3/);
     assert.equal((await get(project.port, '/__versions/r-invalid/')).status, 404);
-    assert.equal((await get(project.port, '/__versions/' + first + '/.pockethost-site.json')).status, 404);
-    assert.equal((await get(project.port, '/__versions/' + first + '/%2e%2e/index.html')).status, 404);
+    assert.equal(
+      (await get(project.port, '/__versions/' + first + '/.pockethost-site.json')).status,
+      404,
+    );
+    assert.equal(
+      (await get(project.port, '/__versions/' + first + '/%2e%2e/index.html')).status,
+      404,
+    );
 
     const restored = await fleet.restoreRelease(project.id, first);
     assert.equal(restored.activeRelease, first);
     assert.equal(restored.previousRelease, third);
     assert.equal(restored.canRollback, true);
-    assert.equal(restored.pid, originalPid, 'selecting archived release must not restart the process');
+    assert.equal(
+      restored.pid,
+      originalPid,
+      'selecting archived release must not restart the process',
+    );
     assert.equal(restored.history[0].action, 'restore');
     assert.match((await get(project.port)).text, /Original v1/);
     assert.equal((await fleet.rollback(project.id)).activeRelease, third);
@@ -82,7 +95,7 @@ test('H2.1: list three immutable releases, preview older without a switch, resto
     assert.equal(pruned.activeRelease, third);
     assert.equal(pruned.history[0].action, 'prune');
     assert.equal(fleet.listReleases(project.id).length, 2);
-    assert.ok(!fleet.listReleases(project.id).some(x => x.id === first));
+    assert.ok(!fleet.listReleases(project.id).some((x) => x.id === first));
     assert.equal((await get(project.port, '/__versions/' + first + '/')).status, 404);
     await assert.rejects(fleet.restoreRelease(project.id, first), /ENOENT|release|directory/i);
     assert.equal((await fleet.restoreRelease(project.id, second)).activeRelease, second);
@@ -107,7 +120,10 @@ test('H2.1: prune protects active, rollback and other projects and checks exact 
     await assert.rejects(fleet.pruneRelease(alpha.id, b1), /ENOENT|release|directory/i);
     await assert.rejects(fleet.restoreRelease(alpha.id, b1), /ENOENT|release|directory/i);
     await assert.rejects(fleet.pruneRelease(alpha.id, '../../foreign'), /Invalid release/);
-    await assert.rejects(fleet.restoreRelease(alpha.id, b1.replace('r-', '../')), /Invalid release/);
+    await assert.rejects(
+      fleet.restoreRelease(alpha.id, b1.replace('r-', '../')),
+      /Invalid release/,
+    );
     assert.equal(fleet.listReleases(beta.id).length, 1);
     assert.equal(fleet.inspect(beta.id).activeRelease, b1);
     assert.equal(fleet.inspect(alpha.id).releases, 2);
@@ -131,7 +147,9 @@ test('H2.1: linked archived content rejects listing, restore and deletion withou
     await assert.rejects(fleet.pruneRelease(item.id, older), /Linked static asset/);
     assert.equal(readFileSync(external, 'utf8'), 'foreign content');
     assert.equal(fleet.inspect(item.id).activeRelease !== older, true);
-  } finally { await cleanup(fleet, root); }
+  } finally {
+    await cleanup(fleet, root);
+  }
 });
 
 test('H2.1: unknown process owner blocks all mutating archived-version actions', async () => {
@@ -146,7 +164,10 @@ test('H2.1: unknown process owner blocks all mutating archived-version actions',
     const stat = readFileSync('/proc/' + process.pid + '/stat', 'utf8');
     marker.process = {
       pid: process.pid,
-      ticks: stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19],
+      ticks: stat
+        .slice(stat.lastIndexOf(')') + 2)
+        .trim()
+        .split(/\s+/)[19],
       startedAt: new Date().toISOString(),
     };
     writeFileSync(filename, JSON.stringify(marker));
@@ -155,7 +176,9 @@ test('H2.1: unknown process owner blocks all mutating archived-version actions',
     await assert.rejects(fleet.pruneRelease(item.id, older), /uncertain/);
     assert.equal(fleet.listReleases(item.id).length, 3);
     assert.equal(fleet.inspect(item.id).activeRelease, marker.activeRelease);
-  } finally { await cleanup(fleet, root); }
+  } finally {
+    await cleanup(fleet, root);
+  }
 });
 
 test('H2.1: explicitly pruning only obsolete versions frees a bounded archive slot', async () => {
@@ -175,5 +198,7 @@ test('H2.1: explicitly pruning only obsolete versions frees a bounded archive sl
     assert.equal(recent.releases, 16);
     assert.equal(fleet.listReleases(item.id).length, 16);
     assert.equal(recent.activeRelease !== versions[0], true);
-  } finally { await cleanup(fleet, root); }
+  } finally {
+    await cleanup(fleet, root);
+  }
 });
