@@ -20,6 +20,8 @@ export const routes: RouteObject[] = [
   { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
   // PocketHost-owned test site; opt-in DEV-only actions (no external service controls)
   { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
+  { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
+  { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
   // P4: explicit, read-only catalog for imported PhotoMap TEST
   { path: "/managed-projects", lazy: page(() => import("@/app/managed-projects/page")) },
   // Dashboard Routes
