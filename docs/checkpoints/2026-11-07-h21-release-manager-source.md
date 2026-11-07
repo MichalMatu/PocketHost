@@ -1,5 +1,5 @@
 ---
-status: implementation-pending-native-acceptance
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
 purpose: H2.1 release manager scope, preservation rules and exact-SHA Samsung gates
@@ -88,10 +88,68 @@ The original H2 rollback remains intact.
    and deletion confirmation separately. Automated
    HTTP is not proof of user interaction.
 
-**Status: SOURCE candidate only until device G2 and
-controlled G3 terminal evidence exist.** The accepted
-H2 application keeps serving the user's actual sites
-during source QA.
+## Exact H2.1 G2 and owner preflight — accepted
+
+**Code SHA:** `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+Samsung Local Agent task
+`pockethost-h21-full-native-g2-89ebf99-20261107-v1`
+returned **done/0 PASS** on this exact SHA: full
+`npm run check:all`, 134/134 Node tests, 29/29 UI tests,
+lint, TypeScript, Prettier, docs and Vite build.
+Do not repeat this closed G2 without new source changes.
+
+Read-only live device preflight
+`pockethost-h21-readonly-live-preflight-20261107-v2`
+returned **done/0 PASS**. The active H2 application was
+still `750c4b3fba2126647c3b593ae89d108ba2a67206`;
+the owned panel was PID 31592, start ticks 40515916.
+The known two running user sites and their files were
+recorded with exact SHA-256 tree digests:
+
+- `site-1066192a717d4f50988ff48678bca738`,
+  loopback 19080, PID 5840, ticks 40649153,
+  three saved releases; tree digest
+  `b67b02e5b68cb629666e4ca897137025a25b7159655aaf192450df80ca18395b`.
+- `site-2ddc3464f26b46728d758924ce78fda1`,
+  loopback 19081, PID 2804, ticks 40638777,
+  one saved release; tree digest
+  `6af83094458bcc43d78471181e0c746d39909da6c1397ff645088d3733110b7f`.
+
+The six protected services were running and PhotoMap
+TEST port 8010 was closed. These are **historical
+preflight facts**, not permission to assume the same
+PIDs, hashes or service states at a later cutover.
+
+## G3 HOLD and next-chat contract
+
+No H2.1 live release task has succeeded or been
+registered on the Samsung. A proposed large guarded
+G3 task could not be submitted because its tool call
+was rejected by safety checks. It was **not executed**.
+Do not reframe this as G3 PASS or attempt to evade
+the tool block with a different encoding or channel.
+
+Resume from a **fresh current main and device
+state readout**. If an allowed, reviewable G3 mechanism
+is available, use an exact-SHA guarded preview
+transition and disposable test project only.
+Verify both owner sites' files, active/rollback
+releases, process PID/start ticks and loopback ports
+before and after. Do not stop, restart, prune,
+restore, delete or redeploy either user-owned site.
+
+G3 acceptance requires live LAN tests of three
+versions of one disposable project: archived
+GET/HEAD HTML and JS preview, selected restore,
+quick rollback, active/rollback-target deletion
+refusal, deliberate pruning of an obsolete
+archive, and exact fixture cleanup. Guard the
+existing six services, PhotoMap TEST and the
+H2 source rollback candidate. Record any browser
+confirmation separately from API probes.
+
+**Current stage: H2.1 G2 accepted, G3 HOLD;
+H2 continues serving both user sites.**
 
 See [handoff](../HANDOFF_NEXT_CHAT.md),
 [H2 checkpoint](2026-11-07-h2-static-hosting-source.md)
