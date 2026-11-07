@@ -19,7 +19,7 @@ export default function RuntimeLogsPage() {
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    void Promise.resolve().then(() => refresh(controller.signal))
       .catch(() => { if (!controller.signal.aborted) setError("Runtime logs unavailable; no foreign logs are read.") })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
