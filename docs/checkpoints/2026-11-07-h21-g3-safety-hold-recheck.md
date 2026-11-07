@@ -56,10 +56,19 @@ installation via GitHub Connector:
 - Payload: previously accepted read-only H2.1 ownership / site
   preservation preflight; no release, restart, restore, delete,
   package command or test-site creation.
-- **Receipt at checkpoint creation: NOT YET OBSERVED.**
-  A published request alone is not terminal execution evidence.
-  Check the exact task's `task-results/` path before assigning a
-  PASS/FAIL/UNKNOWN. Do not replay while it could be pending.
+- **Terminal receipt observed:** `done/0 PASS`, completed
+  2026-11-07 at **11:35:54 UTC** (12:35:54 Europe/Warsaw);
+  command exit `0`, output `status: PASS`.
+- Exact owner preview retained H2 source `750c4b3fba2126647c3b593ae89d108ba2a67206`,
+  PID `31592`, start ticks `40515916`; all process-identity
+  and preview/gateway checks PASS.
+- Both existing sites kept **identical** PID/start ticks,
+  loopback ports, active/previous releases, release counts
+  and SHA-256 tree digests from the table above.
+- All six protected services remained running and PhotoMap
+  TEST port `8010` remained closed.
+- This receipt verifies the state **at its execution time**;
+  it does not authorize any later release or mutation.
 
 ## G3 decision: HOLD, not deployed
 
@@ -72,8 +81,10 @@ using a different host, or executing directly elsewhere.
 
 No production site, release, service, process or gateway was
 intentionally changed by the operations in this checkpoint.
-Without a fresh terminal device receipt, do not claim current
-phone files/processes are independently reverified.
+The new terminal result confirms phone files/processes matched
+the historical baseline at the time of this recheck. A later
+G3 cutover would still require a new immediate pre-mutation
+identity/fingerprint read and a compliant permitted mechanism.
 
 **H2 remains the accepted active production/dev preview baseline.**
 The H2.1 version-manager code is accepted at G2 but G3 is OPEN/HOLD.
@@ -81,11 +92,11 @@ The sprint is **not physically closed**. No H3 or H4 work begins.
 
 ## Next handoff — exact continuation
 
-1. Read the terminal result for the already published Samsung
-   `pockethost-h21-g3-readonly-recheck-20261107-v1`;
-   do not publish another duplicate task while pending.
-   If the result failed/changed/UNKNOWN, diagnose read-only and
-   leave live H2 untouched.
+1. Retain the accepted terminal `done/0 PASS` receipt for
+   `pockethost-h21-g3-readonly-recheck-20261107-v1`.
+   Do not replay this closed read-only gate. Refresh live
+   identity/fingerprints immediately before any future
+   separately permitted G3 mutation.
 2. Recheck fresh PocketHost `main` and verify H2.1 application
    files remain identical to `89ebf99`; do not repeat accepted
    134 Node / 29 UI G2 merely because docs changed.
