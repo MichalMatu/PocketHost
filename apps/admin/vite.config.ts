@@ -3,6 +3,7 @@ import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inve
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
+import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -623,6 +624,7 @@ function termuxAdminApi(): Plugin {
   const files = new WorkspaceFiles()
   const backups = new WorkspaceBackups(files)
   const services = new TermuxServiceAdmin()
+  const restic = new ResticWorkspaceAdmin(files)
   let operations: Promise<void> = Promise.resolve()
   const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
     const result = operations.then(job, job)
@@ -686,6 +688,8 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
+              mode === "restic-status" ? { restic: restic.status() } :
+              mode === "restic-snapshots" ? { snapshots: await restic.snapshots() } :
               mode === "packages" ? await listInstalledTermuxPackages() :
               mode === "search-packages" ? await searchAvailableTermuxPackages(url.searchParams.get("query") ?? "") : null
             if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
@@ -722,6 +726,15 @@ function termuxAdminApi(): Plugin {
                 input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
                 input.path,
               ) }
+            }
+            if (input.action === "restic") {
+              if (!input.name || !["init","backup","check","restore","forget"].includes(input.name))
+                throw new RangeError("Invalid Restic operation")
+              if (input.name === "init") return { restic: await restic.initialize() }
+              if (input.name === "backup") return { result: await restic.backup() }
+              if (input.name === "check") return { result: await restic.check() }
+              if (input.name === "restore") return { result: await restic.restoreToStaging(input.path ?? "") }
+              if (input.name === "forget") return { result: await restic.forget(input.path ?? "") }
             }
             if (input.action === "service") {
               if (!input.name || !["register","unregister","start","stop","restart"].includes(input.name))
