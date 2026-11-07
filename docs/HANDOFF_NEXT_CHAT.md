@@ -16,7 +16,14 @@ read-only G3 ownership preflight is terminal `done/0 PASS`.
 
 This chat repaired the missing H2.1 G3 archive-index entry
 in `docs/checkpoints/README.md` (commit `ea5ed4d`),
-then recorded the final H2.1/G3 disposition. The previous
+then recorded the final H2.1/G3 disposition.
+ A single bounded, docs-only isolated Samsung QA request,
+`pockethost-h21-final-docs-gate-9144f9f-20261107-v1`,
+was published for exact main `9144f9fde7d65d665f90ebfb0868ccace4b46bc6`.
+Its terminal receipt was **not yet observed** at this checkpoint.
+Check that exact receipt; do not replay or assume PASS.
+This handoff note itself is not included in the prior requested
+SHA and is not independently certified. The previous
 tool-safety rejection of the guarded live release remains;
 there is no H2.1 G3 deployment task or terminal G3 receipt.
 **Do not attempt to bypass the block.**
