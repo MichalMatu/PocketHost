@@ -53,6 +53,16 @@ test('only the fixed read-only O1 snapshot gets a bounded extended LAN upstream 
   }
 });
 
+test('H3 admin LAN timeout is long only for its exact typed endpoint', () => {
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin?mode=packages', 'GET'), 30000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'POST'), 610000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin?mode=files', 'POST'), 610000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin/unexpected', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-tools', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/observability', 'POST'), 25000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'PUT'), 5000);
+});
+
 test('LAN remains exact RFC1918 address only; same subnet and no public bind', () => {
   assert.equal(sameSubnet('192.168.10.12', '192.168.10.2', '255.255.255.0'), true);
   assert.equal(sameSubnet('::ffff:192.168.10.13', '192.168.10.2', '255.255.255.0'), true);
