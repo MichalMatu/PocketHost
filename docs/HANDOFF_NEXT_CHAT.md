@@ -7,7 +7,7 @@ purpose: Canonical H1 Hosting MVP sprint state with O1 release history
 
 # PocketHost — H1 Hosting MVP and prior O1 handoff
 
-## Active H1 sprint — not yet released
+## H1 one-demo MVP — accepted and deployed
 
 The owner requested one large Hosting MVP vertical slice. Main source now contains
 the real PocketHost-owned demo project lifecycle: Create, Start, verified HTTP
@@ -31,22 +31,29 @@ Network Access enabled. The first preflight
 returned `failed/125, not_started` due inadequate task-time
 budget, with no host command executed. Retry corrected the budget.
 
-**H1 implementation and documentation commits are source candidates only.**
-No new native `check:all` result or guarded live-panel cutover can
-be presumed without an exact terminal receipt and G3 validation. Live
-preview is still last accepted O1 source `f0dd506`.
-A native QA task was requested at intermediate `09474fb`
-(`pockethost-h1-native-check-all-09474fb-20261107-v1`),
-but later source edits mean its result cannot count for the
-final H1 code SHA. Await terminal result, fix focused failures,
-and test the final current `main` SHA on Samsung.
+**Accepted H1 application SHA:** `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`.
+Samsung task `pockethost-h1-final-native-check-all-1edbd1b-20261107-v1`
+returned `done/0 PASS`: 115/115 Node, 23/23 UI, lint,
+types and build green. Guarded live cutover task
+`pockethost-h1-guarded-g3-lan-release-1edbd1b-20261107-v1`
+returned `done/0 PASS`: verified live PID/start ticks,
+switched only the owned panel, restored trusted-LAN gateway,
+tested v2 → publish v1 → rollback v2 → restart → stop → start,
+and verified all six protected services still running and
+PhotoMap TEST 8010 closed. **Live H1 source is `1edbd1b`.**
 
-Next operations: confirm latest `main`, finish `check:all` and
-owned-only HTTP lifecycle on Samsung, then guarded manual LAN cutover
-with independently verified own-preview PID/start ticks and complete
-rollback. At any uncertain identity or failed rollback, **stop live release
-without touching protected services**. No PhotoMap Start. Real
-Mac Chrome UI acceptance is separate and not proven by HTTP probes.
+The owner then supplied real Mac Chrome screenshots showing
+running/healthy and stopped project states, bounded logs,
+deployment history, hosted HTML v1/v2 and a browser-originated
+publish event, and reported that the experience appeared to work.
+This is core browser acceptance, not exhaustive keyboard/ARIA
+and negative-state evidence. The header still shows
+`Template landing` on Project details; minor UX follow-up.
+
+No generic app uploads, multi-project deployment, package
+management, public AI API, production PhotoMap, autostart or
+authenticated management surface were implemented as H1.
+
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
 ## Prior accepted O1 and private LAN history
@@ -65,7 +72,7 @@ See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 4. Keep six foreign services, imported PhotoMap TEST and
    PocketHost-owned P3 runtime behind strict ownership gates.
 
-## Current implemented and verified slice
+## Historical O1 implementation and accepted slice
 
 Source `315e0632a53444038fbe159dd5a075cdc7fb72c6`
 passed Samsung `npm run check:all` (including **19/19 UI tests**).
@@ -101,7 +108,7 @@ A first guarded redeploy rolled back safely because the active Git
 checkout lacked that commit; the corrected Samsung task
 `pockethost-o1-502-git-fetch-repair-and-guarded-cutover-f0dd506-20261107-v2`
 returned `done/0 PASS`. Exact-source `check:all` passed, including
-19/19 UI tests. The panel now runs this source; three consecutive
+19/19 UI tests. At that earlier O1 stage the panel ran this source; three consecutive
 LAN Observability GETs returned HTTP 200 (5.71, 6.23, 5.80 seconds).
 Six protected services stayed unchanged and PhotoMap 8010 remained
 closed. See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).
