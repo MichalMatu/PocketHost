@@ -68,7 +68,7 @@ function getFile(root, uri) {
   if (!Object.hasOwn(MIME, ext)) throw new Error('Unsupported asset');
   return { bytes: readFileSync(filename), type: MIME[ext] };
 }
-function getRelease(site, id, port, instance) {
+function getRelease(site, id, port, instance, selectedRelease = null) {
   checkDirectory(site);
   const markerFile = path.join(site, '.pockethost-site.json');
   const stat = lstatSync(markerFile);
@@ -86,7 +86,9 @@ function getRelease(site, id, port, instance) {
     throw new Error('Invalid site ownership');
   const releases = path.join(site, 'releases');
   checkDirectory(releases);
-  const root = path.join(releases, marker.activeRelease);
+  if (selectedRelease !== null && !RELEASE.test(selectedRelease))
+    throw new Error('Invalid archived release selection');
+  const root = path.join(releases, selectedRelease ?? marker.activeRelease);
   checkDirectory(root);
   return root;
 }
@@ -120,7 +122,20 @@ export function startSiteServer({ port, id, instance, site = process.cwd() }) {
       return;
     }
     try {
-      const { bytes, type } = getFile(getRelease(site, id, port, instance), request.url);
+      // An archived preview never switches the active marker. The release
+      // identifier is allowlisted, and assets are read from that exact tree.
+      let assetPath = request.url;
+      let selectedRelease = null;
+      if (request.url?.startsWith('/__versions/')) {
+        const match = /^\/__versions\/(r-[a-f0-9]{32})(\/[^?#]*)?(?:\?[^#]*)?$/.exec(request.url);
+        if (!match) throw new Error('Invalid archived preview');
+        selectedRelease = match[1];
+        assetPath = match[2] || '/';
+      }
+      const { bytes, type } = getFile(
+        getRelease(site, id, port, instance, selectedRelease),
+        assetPath,
+      );
       response.writeHead(200, { 'Content-Type': type, 'Content-Length': bytes.length });
       response.end(request.method === 'HEAD' ? undefined : bytes);
     } catch {
