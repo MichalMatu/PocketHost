@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { parseFleetHealth, parseFleetLogs, parseFleetSite, parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
+import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 
 const endpoint = "/api/v1/sites"
 const intent = "owned-sites"
@@ -18,7 +18,7 @@ async function readSites(signal?: AbortSignal): Promise<FleetSite[]> {
   if (!response.ok) throw new Error("Site management is not available in this PocketHost session.")
   return parseFleetSites(await response.json())
 }
-async function mutate(url: string, method: "POST" | "PUT", body?: BodyInit, type?: string): Promise<FleetSite> {
+async function mutate(url: string, method: "POST" | "PUT" | "DELETE", body?: BodyInit, type?: string): Promise<FleetSite> {
   const response = await fetch(url, {
     method, credentials: "same-origin",
     headers: { "X-PocketHost-Intent": intent, ...(type ? { "Content-Type": type } : {}) },
@@ -52,12 +52,40 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [message, setMessage] = React.useState<string | null>(null)
   const [health, setHealth] = React.useState<boolean | null>(null)
   const [logs, setLogs] = React.useState<string[] | null>(null)
+  const [versions, setVersions] = React.useState<FleetRelease[] | null>(null)
+  const [versionsLoading, setVersionsLoading] = React.useState(false)
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
 
+  const readVersions = async () => {
+    const response = await fetch(endpoint + "/" + site.id + "/releases", {
+      credentials: "same-origin", cache: "no-store",
+    })
+    if (!response.ok) throw new Error("Version history is unavailable.")
+    setVersions(parseFleetReleases(await response.json()))
+  }
+  const toggleVersions = () => {
+    if (versions !== null) { setVersions(null); return }
+    if (versionsLoading || busy) return
+    setVersionsLoading(true)
+    setError(null)
+    void readVersions()
+      .catch(cause => setError(cause instanceof Error ? cause.message : "Version inventory unavailable."))
+      .finally(() => setVersionsLoading(false))
+  }
+  const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
+    if (site.state === "unknown" || busy) return
+    const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
+    if (!window.confirm(verb + " (" + release.id + ") of " + site.name + "?")) return
+    void execute(
+      () => mutate(endpoint + "/" + site.id + "/releases/" + release.id + "/" + action,
+        action === "restore" ? "POST" : "DELETE"),
+      action === "restore" ? "Selected release restored. You can still use one-step Rollback." : "Archived release permanently removed.",
+    )
+  }
   const execute = async (job: () => Promise<unknown>, success: string) => {
     if (busy) return
     setBusy(true)
@@ -67,6 +95,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     try {
       await job()
       await onChange()
+      if (versions !== null) await readVersions()
       setMessage(success)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Operation failed safely.")
@@ -158,8 +187,10 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         {site.state === "unknown" && <p role="alert" className="text-destructive text-sm">
           Process identity is uncertain. All mutations are blocked; no unverified process is signalled.
         </p>}
-        {site.state === "running" && <a className="text-sm underline underline-offset-4"
-          target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>}
+        {site.state === "running" && <div className="pb-2 pt-1">
+          <a className="inline-flex py-1 text-sm underline underline-offset-4"
+            target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>
+        </div>}
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-zip"}>
@@ -186,7 +217,47 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             onClick={() => action("rollback")}><History /> Rollback</Button>
           <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
           <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
+          <Button variant="outline" disabled={busy || versionsLoading} onClick={toggleVersions}>
+            <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Reading versions…" : "Manage versions"}
+          </Button>
         </div>
+        {versions !== null && <section className="space-y-3 rounded-lg border p-4" aria-label={"Saved versions of " + site.name}>
+          <div>
+            <h3 className="text-sm font-semibold">Saved releases</h3>
+            <p className="text-muted-foreground text-xs">Preview older snapshots, restore any saved release or remove unused archives. Active and quick-rollback versions are protected.</p>
+          </div>
+          {versions.length === 0 && <p className="text-muted-foreground text-xs">No versions published yet.</p>}
+          <ol className="space-y-2">
+            {versions.map(release => <li key={release.id}
+              className="flex flex-col gap-2 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0 space-y-1 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="break-all font-mono">{release.id}</span>
+                  {release.active && <Badge variant="secondary">Active</Badge>}
+                  {release.rollbackTarget && <Badge variant="outline">Quick rollback</Badge>}
+                </div>
+                <p className="text-muted-foreground">
+                  <time dateTime={release.createdAt}>{new Date(release.createdAt).toLocaleString()}</time>
+                  {" · "}{release.fileCount} files{" · "}{formatSize(release.bytes)}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {site.state === "running" && <a
+                  href={siteAddress(site) + "__versions/" + release.id + "/"}
+                  target="_blank" rel="noopener noreferrer"
+                  className="inline-flex rounded-md border px-3 py-2 text-xs font-medium hover:bg-muted"
+                >Preview</a>}
+                <Button size="sm" variant="outline"
+                  disabled={busy || site.state === "unknown" || release.active}
+                  onClick={() => versionAction(release, "restore")}>Restore</Button>
+                <Button size="sm" variant="outline"
+                  disabled={busy || site.state === "unknown" || release.active || release.rollbackTarget}
+                  onClick={() => versionAction(release, "prune")}>Delete archive</Button>
+              </div>
+            </li>)}
+          </ol>
+          <p className="text-muted-foreground text-xs">Pre-existing running sites may need a manual Restart once to enable archived preview links. Restore works without a restart.</p>
+        </section>}
         {busy && <p role="status" className="text-sm">Working with this owned site…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
