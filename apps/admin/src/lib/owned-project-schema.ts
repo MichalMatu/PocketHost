@@ -20,7 +20,7 @@ export const ownedProjectSchema = z.object({
   contentVersion: demoVersion.nullable(),
   previousVersion: demoVersion.nullable(),
   pid: z.number().int().min(2).nullable(),
-  startTicks: z.string().regex(/^\\d+$/).max(40).nullable(),
+  startTicks: z.string().regex(/^\d+$/).max(40).nullable(),
   history: z.array(deploymentSchema).max(25),
 }).strict().superRefine((project, ctx) => {
   if (project.url !== `http://127.0.0.1:${project.port}/`) {
