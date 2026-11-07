@@ -2,8 +2,13 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import type {
-  HostMetrics, PackageEntry, PackageInventory, ProcessInventory,
-  ProcessObservation, Reading, ReadingState,
+  HostMetrics,
+  PackageEntry,
+  PackageInventory,
+  ProcessInventory,
+  ProcessObservation,
+  Reading,
+  ReadingState,
 } from '../../shared/observability.ts';
 
 const MAX_PROCESSES = 96;
@@ -24,8 +29,12 @@ function reason(error: unknown): ReadingState {
 
 /** Kernel CPU times are accumulated; percentages require two separate samples. */
 export function cpuPercentage(
-  before: ReadonlyArray<{ times: { user: number; nice: number; sys: number; idle: number; irq: number } }>,
-  after: ReadonlyArray<{ times: { user: number; nice: number; sys: number; idle: number; irq: number } }>,
+  before: ReadonlyArray<{
+    times: { user: number; nice: number; sys: number; idle: number; irq: number };
+  }>,
+  after: ReadonlyArray<{
+    times: { user: number; nice: number; sys: number; idle: number; irq: number };
+  }>,
 ): number | null {
   if (before.length === 0 || before.length !== after.length) return null;
   let total = 0;
@@ -34,7 +43,13 @@ export function cpuPercentage(
     const a = before[i]?.times;
     const b = after[i]?.times;
     if (!a || !b) return null;
-    const values = [b.user - a.user, b.nice - a.nice, b.sys - a.sys, b.idle - a.idle, b.irq - a.irq];
+    const values = [
+      b.user - a.user,
+      b.nice - a.nice,
+      b.sys - a.sys,
+      b.idle - a.idle,
+      b.irq - a.irq,
+    ];
     if (values.some((n) => !Number.isFinite(n) || n < 0)) return null;
     total += values.reduce((sum, n) => sum + n, 0);
     idle += values[3] ?? 0;
@@ -87,7 +102,8 @@ export function readNetworkBytes(
       const match = /^\s*([a-zA-Z0-9_.-]+):\s*(.+)$/.exec(line);
       if (!match || match[1] === 'lo') continue;
       const columns = match[2]?.trim().split(/\s+/) ?? [];
-      if (columns.length < 16 || !/^\d+$/.test(columns[0] ?? '') || !/^\d+$/.test(columns[8] ?? '')) continue;
+      if (columns.length < 16 || !/^\d+$/.test(columns[0] ?? '') || !/^\d+$/.test(columns[8] ?? ''))
+        continue;
       const a = Number(columns[0]);
       const b = Number(columns[8]);
       if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b)) return missing('unavailable', now);
@@ -95,7 +111,8 @@ export function readNetworkBytes(
       tx += b;
       matched++;
     }
-    if (matched === 0 || !Number.isSafeInteger(rx) || !Number.isSafeInteger(tx)) return missing('unavailable', now);
+    if (matched === 0 || !Number.isSafeInteger(rx) || !Number.isSafeInteger(tx))
+      return missing('unavailable', now);
     return { state: 'ok', value: { rxBytes: rx, txBytes: tx }, observedAt: now };
   } catch (error) {
     return missing(reason(error), now);
@@ -103,22 +120,33 @@ export function readNetworkBytes(
 }
 
 /** Parse /proc/PID/stat without exposing argv, comm, paths or credentials. */
-export function parseProcessStat(raw: string, expectedPid: number): Omit<ProcessObservation, 'ownership' | 'rssMiB'> | null {
+export function parseProcessStat(
+  raw: string,
+  expectedPid: number,
+): Omit<ProcessObservation, 'ownership' | 'rssMiB'> | null {
   const close = raw.lastIndexOf(') ');
   if (close < 0 || !Number.isSafeInteger(expectedPid) || expectedPid < 1) return null;
   if (raw.slice(0, raw.indexOf(' ')) !== String(expectedPid)) return null;
-  const fields = raw.slice(close + 2).trim().split(/\s+/);
+  const fields = raw
+    .slice(close + 2)
+    .trim()
+    .split(/\s+/);
   const ppid = Number(fields[1]);
   const utime = Number(fields[11]);
   const stime = Number(fields[12]);
   const ticks = fields[19];
   if (
-    !Number.isSafeInteger(ppid) || ppid < 0 ||
-    !Number.isSafeInteger(utime) || utime < 0 ||
-    !Number.isSafeInteger(stime) || stime < 0 ||
+    !Number.isSafeInteger(ppid) ||
+    ppid < 0 ||
+    !Number.isSafeInteger(utime) ||
+    utime < 0 ||
+    !Number.isSafeInteger(stime) ||
+    stime < 0 ||
     !Number.isSafeInteger(utime + stime) ||
-    !ticks || !/^\d+$/.test(ticks)
-  ) return null;
+    !ticks ||
+    !/^\d+$/.test(ticks)
+  )
+    return null;
   return { pid: expectedPid, ppid, startTicks: ticks, cpuTicks: utime + stime };
 }
 
@@ -138,11 +166,24 @@ export function readProcessInventory(
 ): ProcessInventory {
   let ids: number[];
   try {
-    ids = [...new Set([...enumerate().filter((entry) => /^[1-9]\d*$/.test(entry)).map(Number), selfPid])]
+    ids = [
+      ...new Set([
+        ...enumerate()
+          .filter((entry) => /^[1-9]\d*$/.test(entry))
+          .map(Number),
+        selfPid,
+      ]),
+    ]
       .filter((pid) => Number.isSafeInteger(pid) && pid > 0)
       .sort((a, b) => a - b);
   } catch (error) {
-    return { state: reason(error), observedAt: now, partial: true, truncated: false, processes: [] };
+    return {
+      state: reason(error),
+      observedAt: now,
+      partial: true,
+      truncated: false,
+      processes: [],
+    };
   }
   const truncated = ids.length > MAX_PROCESSES;
   const selected = ids.slice(0, MAX_PROCESSES - 1);
@@ -166,7 +207,10 @@ export function readProcessInventory(
   }
   return {
     state: processes.length ? 'ok' : denied ? 'permission-denied' : 'unavailable',
-    observedAt: now, partial: true, truncated, processes,
+    observedAt: now,
+    partial: true,
+    truncated,
+    processes,
   };
 }
 
@@ -212,13 +256,19 @@ export function parseNpmGlobals(raw: string, limit = 8): PackageEntry[] {
     const result: PackageEntry[] = [];
     for (const [name, meta] of Object.entries(deps).slice(0, 128)) {
       const version = (meta as { version?: unknown } | null)?.version;
-      if (!/^@?[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60}(?:\/[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60})?$/.test(name) ||
-          typeof version !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)) continue;
+      if (
+        !/^@?[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60}(?:\/[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60})?$/.test(name) ||
+        typeof version !== 'string' ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)
+      )
+        continue;
       result.push({ ecosystem: 'node', name, version });
       if (result.length >= limit) break;
     }
     return result;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function parsePipInstalled(raw: string, limit = 8): PackageEntry[] {
@@ -229,13 +279,20 @@ export function parsePipInstalled(raw: string, limit = 8): PackageEntry[] {
     for (const item of payload.slice(0, 256)) {
       if (!item || typeof item !== 'object') continue;
       const { name, version } = item as { name?: unknown; version?: unknown };
-      if (typeof name !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,80}$/.test(name) ||
-          typeof version !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)) continue;
+      if (
+        typeof name !== 'string' ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,80}$/.test(name) ||
+        typeof version !== 'string' ||
+        !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)
+      )
+        continue;
       result.push({ ecosystem: 'python', name, version });
       if (result.length >= limit) break;
     }
     return result;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 export function readPackageInventory(
@@ -245,21 +302,39 @@ export function readPackageInventory(
   const installed: PackageEntry[] = [{ ecosystem: 'node', name: 'node', version: process.version }];
   const npm = command(`${TERMUX_BIN}/npm`, ['--version'])?.trim();
   const python = command(`${TERMUX_BIN}/python3`, ['--version'])?.trim();
-  if (npm && /^\d+(?:\.\d+){1,3}$/.test(npm)) installed.push({ ecosystem: 'node', name: 'npm', version: npm });
-  if (python && /^Python \d+\.\d+(?:\.\d+)?$/.test(python)) installed.push({ ecosystem: 'python', name: 'python', version: python.slice(7) });
+  if (npm && /^\d+(?:\.\d+){1,3}$/.test(npm))
+    installed.push({ ecosystem: 'node', name: 'npm', version: npm });
+  if (python && /^Python \d+\.\d+(?:\.\d+)?$/.test(python))
+    installed.push({ ecosystem: 'python', name: 'python', version: python.slice(7) });
   const raw = command(`${TERMUX_BIN}/dpkg-query`, ['-W', '-f=${binary:Package}\\t${Version}\\n']);
   const termux = raw === null ? [] : parseInstalledPackages(raw, 28);
-  const npmModules = parseNpmGlobals(command(`${TERMUX_BIN}/npm`, ['ls', '--global', '--depth=0', '--json']) ?? '');
-  const pipModules = parsePipInstalled(command(`${TERMUX_BIN}/python3`, ['-m', 'pip', 'list', '--disable-pip-version-check', '--format=json']) ?? '');
+  const npmModules = parseNpmGlobals(
+    command(`${TERMUX_BIN}/npm`, ['ls', '--global', '--depth=0', '--json']) ?? '',
+  );
+  const pipModules = parsePipInstalled(
+    command(`${TERMUX_BIN}/python3`, [
+      '-m',
+      'pip',
+      'list',
+      '--disable-pip-version-check',
+      '--format=json',
+    ]) ?? '',
+  );
   installed.push(...termux, ...npmModules, ...pipModules);
   // Never refresh apt indexes or use network. Cached upgrade hints are not authoritative.
   const cached = command(`${TERMUX_BIN}/apt`, ['list', '--upgradable']);
-  const candidates = (cached ?? '').split('\n').slice(0, 128)
+  const candidates = (cached ?? '')
+    .split('\n')
+    .slice(0, 128)
     .map((line) => /^([a-z0-9][a-z0-9+.-]{0,80})\//.exec(line)?.[1])
-    .filter((v): v is string => !!v).slice(0, 24);
+    .filter((v): v is string => !!v)
+    .slice(0, 24);
   return {
-    state: raw === null ? 'unavailable' : 'ok', observedAt: now,
-    installed, truncated: raw !== null && termux.length >= 28 || npmModules.length >= 8 || pipModules.length >= 8,
+    state: raw === null ? 'unavailable' : 'ok',
+    observedAt: now,
+    installed,
+    truncated:
+      (raw !== null && termux.length >= 28) || npmModules.length >= 8 || pipModules.length >= 8,
     updates: { state: cached === null ? 'unknown' : 'cached-unverified', candidates },
   };
 }

@@ -67,15 +67,14 @@ All statuses remain **proposed** until an actual on-phone Local Agent task resul
   `LICENSE` is GPL-3.0. Useful design cue: compact host counters and
   service-state overview. Do **not** copy process/service commands,
   code or automation permissions.
-- [Android Dev Hub / OpenMonitor reference](https://github.com/1orz/OpenMonitor):
-  this inspected Android monitor is GPL-3.0. Permission-constrained
-  Android telemetry is a useful design cue; this reference has **not**
-  been proven to be the exact separately named Android Dev Hub project.
-  No implementation copied.
-- [Coolify](https://github.com/coollabsio/coolify): upstream packaging,
-  deployment and managed-service lifecycle patterns inform future
-  authorization reviews only. No Coolify code or command paths copied;
-  license/version not conclusively verified in this evaluation.
+- [Android Dev Hub](https://github.com/detriv/android-dev-hub):
+  direct bounded `/proc` reads and loopback-only GUI offer a useful
+  Android-specific pattern. Its repository did not expose a
+  root `LICENSE` during this review: **do not copy code**.
+  UID-based kill, terminal and file manager are outside O1.
+- [Coolify](https://github.com/coollabsio/coolify): upstream
+  `LICENSE` is Apache-2.0. Deployment and service lifecycle design
+  inform future authorization reviews only; no code or commands copied.
 - [CasaOS](https://github.com/IceWhaleTech/CasaOS): upstream
   `LICENSE` is Apache-2.0; its module-oriented home dashboard is a
   design reference, not a drop-in Android runtime.

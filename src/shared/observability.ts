@@ -20,7 +20,11 @@ export interface ProcessInventory {
   truncated: boolean;
   processes: ProcessObservation[];
 }
-export interface PackageEntry { name: string; version: string; ecosystem: 'termux' | 'node' | 'python'; }
+export interface PackageEntry {
+  name: string;
+  version: string;
+  ecosystem: 'termux' | 'node' | 'python';
+}
 export interface PackageInventory {
   state: ReadingState;
   observedAt: string;
@@ -48,8 +52,17 @@ export interface O1Snapshot {
   mode: 'read-only';
   observedAt: string;
   host: {
-    runtime: { totalMemoryMiB: number; freeMemoryMiB: number; storage: { totalMiB: number; availableMiB: number } | null };
-    services: { id: string; label: string; ownership: 'external'; state: 'running' | 'stopped' | 'unknown' }[];
+    runtime: {
+      totalMemoryMiB: number;
+      freeMemoryMiB: number;
+      storage: { totalMiB: number; availableMiB: number } | null;
+    };
+    services: {
+      id: string;
+      label: string;
+      ownership: 'external';
+      state: 'running' | 'stopped' | 'unknown';
+    }[];
   };
   metrics: HostMetrics;
   processes: ProcessInventory;

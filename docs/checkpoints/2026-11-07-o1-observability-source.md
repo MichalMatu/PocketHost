@@ -53,14 +53,35 @@ purpose: O1 observational MVP source, task evidence and release holds
   failed admission with `invalid_task_file`: finalization reserve
   exceeded its task timeout. **No command executed.**
 - Corrected preflight:
-  `pockethost-o1-readonly-preflight-20261107-0304-v2`.
+  `pockethost-o1-readonly-preflight-20261107-0304-v2`:
+  **done/0 PASS**, checkout clean, 6/6 protected runit services
+  running, port 8010 closed. Samsung: Node 26.4.0,
+  npm 11.19.0 and Python 3.14.6.
 - First native source gate:
   `pockethost-o1-first-native-gates-19eaa36-20261107-v1`;
   source `19eaa369c85a5d841a9769842e95a1028dc8130a`.
-  This predates npm/pip expansion. Read its terminal receipt before
-  reporting any success or failure.
-- **Final exact-HEAD `npm run check:all`, real metric availability
-  and UI physical acceptance are not yet proven in this checkpoint.**
+  Failed closed with `main moved`; no tests were executed.
+- Samsung source `f8672fd968691778d67651cd411336ad69463c66`:
+  `pockethost-o1-final-native-checkall-f8672fd-20261107-v1`
+  failed full gate at `npm test`: **107/108 PASS**; only old
+  route-count expectation (35 instead of 36) failed. Structure,
+  docs and boundaries PASSED. Later format, lint, types,
+  coverage, admin build and UI tests were not reached.
+- The same exact checkout performed live read-only O1:
+  RAM 7271 MiB total, 2131 MiB free; storage accessible;
+  36 accessible process records including one `self`;
+  30 safe package entries; cached upgrade hints are
+  unverified. CPU `unavailable`, battery and network
+  `permission-denied` due Android restrictions.
+  All six services were running before/after; 8010 closed,
+  checkout clean. **Real device probes PASS, full gate FAIL.**
+- `pockethost-o1-prettier-diff-f8672fd-20261107-v1`:
+  done/0; formatter reported only four source/test files
+  needing formatting. It restored and left QA checkout clean.
+  Formatting changes and route-count regression were then
+  prepared for a new exact-source quality run.
+- **Final-HEAD full quality gate and browser acceptance
+  are still pending in this intermediate checkpoint.**
 
 ## Safety and outstanding acceptance
 
