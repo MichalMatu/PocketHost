@@ -243,3 +243,58 @@ owner check, H2.1 target Git objects staged in live checkout,
 Do not treat verified source availability as an installed
 or running H2.1 panel. A separately permitted and reviewed
 owner-verified cutover with H2 fallback is still required.
+
+## Additional owner-backup verification and physical fixture test
+
+The owner confirmed the exact backup compare marker
+`G3_BACKUP_VERIFIED` in interactive Termux SSH, following
+`G3_FALLBACK_BACKUP_READY`. Local Agent independently
+verified the backup files matched the live preview and gateway
+records and checked the following read-only G3 transaction
+prerequisites in `pockethost-h21-g3-owner-backup-dryrun-20261107-v1`:
+
+- Terminal `done/0 PASS`; exact running H2 SHA
+  `750c4b3`, preview PID `31592`, start ticks `40515916`.
+- Verified H2.1 candidate `89ebf99` object available and
+  both original sites' tree SHA-256 digests `MATCH`.
+- Both user sites' PID/start ticks, loopback ports and
+  active/previous release pointers unchanged.
+- All six protected services running, PhotoMap TEST 8010
+  closed. No filesystem or process mutation.
+
+For independently scoped live **Termux functionality**,
+Local Agent ran a disposable `SiteFleetHost` instance
+with a distinct temporary root and loopback port.
+The first smoke script
+`pockethost-h21-g3-isolated-physical-version-smoke-20261107-v1`
+failed due solely to a test URL lacking a leading slash;
+the owned temporary fixture and process were safely
+cleaned up, without any production-site or panel change.
+
+The corrected task
+`pockethost-h21-g3-isolated-physical-version-smoke-20261107-v2`
+returned **terminal `done/0 PASS`**, with:
+
+1. Three immutable releases and correct version metadata.
+2. Real archived HTML/JS GET and HTML HEAD against
+   a temporary Termux loopback listener.
+3. Selected Restore of historical release, immediate
+   one-use Rollback and active/undo-target prune denial.
+4. Explicit pruning of an obsolete archive and a second
+   historical Restore.
+5. Verified owner-only temporary process stop and
+   exact temporary fixture cleanup (`fixture_removed: true`).
+
+This validates the actual H2.1 version engine on Samsung,
+but **does not** claim the H2.1 admin panel was cut over
+or that its private-LAN frontend controls were tested.
+The two original site folders and the running H2 preview
+were outside the fixture test's scope.
+
+**Remaining G3:** a separately permitted guarded
+panel-only H2 → H2.1 transition with reliable H2
+failback, a real LAN admin API/UI acceptance on one newly
+created third project, a post-cutover comparison of both
+original sites and six services, and the owner's Mac Chrome
+interaction confirmation. Do not repeat closed G2 or
+physical fixture-smoke gates.
