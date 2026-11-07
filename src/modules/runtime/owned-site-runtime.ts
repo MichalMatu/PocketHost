@@ -43,6 +43,12 @@ export function createOwnedSiteRuntime(port: OwnedSitePort) {
       requireOwned(port.inspect());
       return requireOwned(await port.stop());
     },
+    restart: async () => {
+      const current = requireOwned(port.inspect());
+      if (current.state !== 'running') throw new RangeError('Cannot restart an owned service that is not running');
+      requireOwned(await port.stop());
+      return requireOwned(await port.start());
+    },
     publish: (version: DemoVersion) => {
       requireOwned(port.inspect());
       if (version !== 1 && version !== 2) throw new RangeError('Unsupported demo version');
