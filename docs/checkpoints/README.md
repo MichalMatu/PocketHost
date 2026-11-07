@@ -11,6 +11,7 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [General repository audit and repair: Restic exit status and native follow-up](2026-11-07-general-repository-audit-repair.md)
 - [H3.4 Full Termux source and QA](2026-11-07-h34-full-termux-source.md)
 - [H3 Termux Control Center branch](2026-11-07-h3-termux-center-branch.md)
 

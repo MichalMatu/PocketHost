@@ -46,6 +46,27 @@ source/SQLite/media restore on disposable data. A PRoot child snapshot or
 process-group check alone is not an exhaustive orphan proof.
 No public administration, autostart or package mutations by default.
 
+## General repository audit — new source gate pending
+
+The 2026-11-07 general audit identified an exit-status
+validation gap in the injected Restic CLI runner:
+a nonzero `HostCommandResult.exit` was previously
+treated as a successful completion. The host adapter
+now refuses it and the negative unit test exercises
+initialize, backup, snapshot listing and check.
+This change requires a **new exact-SHA Samsung G2**;
+accepted H3.4 results below apply only to their
+previous source tree, not this audit change.
+
+The later physical task
+`pockethost-h34-postdeploy-physical-smoke-20261107-v1`
+ended `failed/1` at Restic backup after a bounded
+File Manager fixture passed. Root cause remains OPEN;
+do not equate the source exit-status guard with
+a demonstrated repair of the physical backup.
+The documentation-only baseline gate at `437dd646`
+returned `done/0 PASS`, independently of this change.
+
 ## H3.4 — latest Samsung G2 and guarded production G3
 
 PocketHost `main@e1c11e723105025b0f24ecf8e70974beddc0c2b5`

@@ -81,7 +81,7 @@ export class ResticWorkspaceAdmin {
     createKey = false,
   ): Promise<HostCommandResult> {
     const { repository, passwordFile } = this.prepare(createKey);
-    return run(RESTIC_BIN, ['-r', repository, ...args], {
+    const result = await run(RESTIC_BIN, ['-r', repository, ...args], {
       timeout,
       maxBuffer: 192000,
       outputLimit: 170000,
@@ -93,6 +93,8 @@ export class ResticWorkspaceAdmin {
         RESTIC_PASSWORD_FILE: passwordFile,
       },
     });
+    if (result.exit !== 0) throw new Error('Restic command failed');
+    return result;
   }
 
   async initialize(run: Exec = executeFixed): Promise<{ initialized: true }> {

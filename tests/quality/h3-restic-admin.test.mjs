@@ -114,3 +114,25 @@ test('H3 Restic refuses linked repositories and unsafe recovery key permissions'
     rmSync(sampleData.root, { recursive: true, force: true });
   }
 });
+
+test('H3 Restic refuses nonzero CLI results instead of reporting success', async () => {
+  const sampleData = sample();
+  const commands = [];
+  const failedRun = async (_binary, args) => {
+    commands.push(args[2]);
+    if (args.includes('init')) {
+      mkdirSync(path.join(sampleData.state, 'repo'), { recursive: true });
+      writeFileSync(path.join(sampleData.state, 'repo', 'config'), '{}');
+    }
+    return { exit: 17, output: 'diagnostic with private data' };
+  };
+  try {
+    await assert.rejects(sampleData.restic.initialize(failedRun), /Restic command failed/);
+    await assert.rejects(sampleData.restic.backup(failedRun), /Restic command failed/);
+    await assert.rejects(sampleData.restic.snapshots(failedRun), /Restic command failed/);
+    await assert.rejects(sampleData.restic.check(failedRun), /Restic command failed/);
+    assert.deepEqual(commands, ['init', 'backup', 'snapshots', 'check']);
+  } finally {
+    rmSync(sampleData.root, { recursive: true, force: true });
+  }
+});

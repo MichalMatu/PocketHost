@@ -9,26 +9,35 @@ production hosting manager**.
 
 ## Status (2026-11-07)
 
-- P0-P2: read-only inventory and admin baseline.
-- P3: owned HTTP Publish/Rollback/Stop/Start
-  passed on Samsung; real browser interactions HOLD.
-- Generic runtime: process safety source tested;
-  PRoot orphan recovery on hardware remains HOLD.
-- P4 PhotoMap: stopped read-only catalog accepted;
-  live execution is disabled.
-- O1 Observability: roadmap and module shell
-  registered; metrics history and new dashboard
-  are **planned, not yet implemented**.
-- Package upgrades, public AI API and autostart:
-  deferred and not authorized.
+- H2/H2.1: independent static-site hosting and
+  release history accepted with physical device
+  and owner browser evidence.
+- H3.4: named-root File Manager, scoped package
+  and runit controls, Restic backups, manual ttyd
+  terminal and a local typed Agent API are
+  implemented. Full native Samsung G2 and the
+  guarded panel-only G3 deployment passed.
+- The live trusted-LAN panel is **not** a
+  production-grade authenticated management
+  service. Public access and autostart remain
+  prohibited. PhotoMap TEST execution is disabled.
+- Hardware follow-ups remain open for Restic
+  recovery, ttyd HTTP/WebSocket operation,
+  real browser controls and service safety.
+- The general audit adds a fail-closed Restic
+  exit-status regression fix; its new source
+  needs separate exact-SHA Samsung G2 acceptance.
 
-Last verified application source:
-`bc5e5539ca4656e59077335b71c0875f967ea859`.
-Samsung reported **101/101 Node**, **16/16
-Vitest**, complete `check:all` PASS and
-80.34% line coverage. A separate owned P3
-live API cycle passed with six protected
-external services unchanged.
+Accepted H3.4 source: `cc9f47a1f7f71d7f6bdb715c98a226cf89c7d663`;
+`npm run check:all` passed on Samsung,
+including **45/45 admin UI tests**.
+The guarded installed panel source is
+`e1c11e723105025b0f24ecf8e70974beddc0c2b5`.
+A later physical smoke reached a successful
+File Manager round-trip but failed the
+Restic backup stage. See the
+[latest audit checkpoint](docs/checkpoints/2026-11-07-general-repository-audit-repair.md)
+for precise outstanding evidence.
 
 ## Development rules
 

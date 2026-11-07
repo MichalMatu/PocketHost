@@ -7,12 +7,25 @@ purpose: Define canonical PocketHost milestones including Observability O1
 
 # PocketHost Roadmap
 
-## Accepted baseline
+## Current milestone: H3.4 accepted with physical follow-ups
+
+H3.4 source `cc9f47a` passed complete Samsung G2;
+the `e1c11e7` panel-only G3 cutover preserved
+two user sites and six protected services. The
+postdeploy physical smoke later failed at the
+Restic backup stage. Disposable restore, ttyd
+session, registered test-service operation and
+real browser interactions are not all accepted.
+The general audit adds a small Restic regression
+fix requiring its own exact-source native gate.
+See [audit checkpoint](checkpoints/2026-11-07-general-repository-audit-repair.md).
+
+## Historical accepted P3 baseline
 
 Application source `bc5e5539ca4656e59077335b71c0875f967ea859`
 passed 101/101 Node and 16/16 UI tests on Samsung;
 a separate owned P3 HTTP Publish/Rollback/Stop/Start
-cycle passed. This is not production acceptance.
+cycle passed. This was not production acceptance.
 
 ## O1 — Observability: Samsung source and LAN HTTP accepted, Mac browser pending
 

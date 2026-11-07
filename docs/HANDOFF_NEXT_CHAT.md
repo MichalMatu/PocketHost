@@ -7,6 +7,33 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
 
+## Current general audit continuation — 2026-11-07
+
+The audit starts from `main@437dd64662885caedfbc8b12a40b994c3d677a06`,
+after the already accepted H3.4 G2/G3 release. The exact
+documentation-only Samsung gate for that SHA returned
+`done/0 PASS` in
+`pockethost-h34-g3-docs-qa-437dd64-20261107-v1`.
+Do not repeat it without source changes.
+
+A post-deployment physical smoke,
+`pockethost-h34-postdeploy-physical-smoke-20261107-v1`,
+ended `failed/1`: four LAN routes, two original sites,
+five read-only APIs, cross-origin mutation denial
+and one disposable File Manager round-trip passed;
+Restic backup failed before the terminal phase.
+The failure cause is not yet established.
+
+The general audit adds a narrow fail-closed Restic
+nonzero-exit regression and one new unit test.
+This new audit source is **not** covered by the
+earlier H3.4 `check:all` PASS. Do not deploy or
+claim G2 completion until the new exact-SHA Samsung
+task produces a terminal result. Native Restic,
+ttyd and browser tests remain separate G3 gates.
+Do not replay uncertain or already accepted host
+mutations. See [audit checkpoint](checkpoints/2026-11-07-general-repository-audit-repair.md).
+
 ## H3.4 current G3 release — 2026-11-07
 
 **H3.4 is deployed on the existing Samsung PocketHost panel.**
