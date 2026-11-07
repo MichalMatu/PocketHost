@@ -25,6 +25,25 @@ People can generate websites with AI but struggle to host them. PocketHost aims 
 - Explicit start/stop of PocketHost's own server only; display logs and safe configuration options.
 - No automatic deployment and no public management interface by default.
 
+## H2 accepted — multiple personal static sites
+
+PocketHost now manages up to eight explicitly created,
+isolated static sites on the Android Termux host.
+The owner can upload a bounded ZIP or Chrome-selected
+folder containing HTML/CSS/JS/assets, publish
+a new immutable revision, roll back the last
+publication once, and inspect process health,
+history, logs, memory and uptime. Each project
+binds its own localhost port and can be manually
+started, stopped or restarted.
+
+The current interface is a trusted-home-LAN
+development tool, **not an authenticated public
+hosting product**. Site bundles do not execute
+Node, Python, PHP or other backend applications.
+The user's Mac Chrome file-picker acceptance
+remains the last H2 UX confirmation.
+
 ## Out of scope until later ADR
 
 Commercial multi-tenancy, package installation through UI, public AI deployment API, automated DNS and tunnel, payments, arbitrary user-provided backend execution, Android APK packaging, OS startup integration.
