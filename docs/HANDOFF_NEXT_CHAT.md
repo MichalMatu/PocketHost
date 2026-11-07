@@ -7,7 +7,40 @@ purpose: Canonical H2 release and physical acceptance handoff; preserve earlier 
 
 # PocketHost — H2 static hosting sprint; H1 accepted baseline
 
-## H2 — live on Samsung; owner Chrome signoff pending
+## Active H2.1 — release manager source candidate
+
+The owner supplied real Mac Chrome screenshots of two
+new user-created static sites on ports 19080 and 19081,
+each serving an uploaded ZIP with HTML/CSS/JS, and
+confirmed that both work and Rollback works. The owner
+reported a tight gap between `Open hosted site` and
+`Upload static ZIP`, and approved continuation into
+a full release manager.
+
+H2.1 source adds inventory of all physically retained
+releases, archived preview links, selected-version Restore
+(with one-step undo), and explicitly confirmed removal
+of only inactive, non-rollback archive directories.
+It also fixes the link spacing. No automatic pruning
+or data migration is authorized. The owner's two
+live site IDs, contents, ports and owned PIDs must
+be preserved.
+
+**H2.1 is NOT deployed or accepted until exact-SHA
+Samsung G2 and guarded G3 receipts exist.**
+The live H2 application remains `750c4b3` and
+is the rollback baseline. Device QA must create
+only disposable fixtures and may not prune/restart
+either owner's current live site. Older running H2
+children may need an explicit manual Restart for
+archived preview after H2.1 rollout, but restore
+does not require any child restart.
+
+See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+Do not repeat already accepted H2 smoke or
+change six protected services.
+
+## H2 — accepted native and owner core browser workflow
 
 **Current deployed application source:**
 `750c4b3fba2126647c3b593ae89d108ba2a67206`.
@@ -44,14 +77,14 @@ for the accepted manual preview session, not auto-enabled
 on boot. The admin is plaintext HTTP without login:
 **trusted private LAN only, no public tunnel**.
 
-**Next action:** owner Mac Chrome acceptance of one real
-user-chosen ZIP/folder project via `/sites`, including
-Start, published asset display, update and rollback.
-Do not confuse device HTTP probes with browser UI clicks.
+**Owner browser evidence:** two real Chrome-owned sites,
+ZIP upload, Start and independently hosted v1/v2
+HTML/CSS/JS pages; owner reports Rollback also works.
+Full H2.1 archive selection/cleanup remains separately pending.
 
-**After H2 signoff:** prioritize H3 package/software CMS
-with dependency and update safeguards, plus explicit
-site delete/prune and capacity management. H4 remains a
+**After H2.1 acceptance:** prioritize H3 package/software CMS
+with dependency and update safeguards; separate
+site deletion and long-term storage capacity controls. H4 remains a
 separately authenticated Local Agent / AI API milestone.
 No PhotoMap activation, foreign service mutation, public
 API, autostart or arbitrary user backend execution
