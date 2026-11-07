@@ -166,3 +166,39 @@ and exact-owner cleanup. User Mac Chrome evidence remains separate.
 
 This addendum records a **safety hold**, not a successful
 deployment or a new terminal device test.
+
+## Final single-sprint closeout of this chat — 2026-11-07
+
+This pass is the **last attempted closeout of this chat's H2.1/G3 scope**.
+Do not reopen completed source gates or issue duplicate G3 tasks.
+
+- Current application baseline remains H2.1 source
+  `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+  The 134 Node / 29 admin UI native G2 checks are accepted for
+  that exact application source SHA. No application change was
+  made in this closeout.
+- The already terminal Samsung ownership recheck
+  `pockethost-h21-g3-readonly-recheck-20261107-v1` was
+  `done/0 PASS`, preserving the two user sites'
+  release pointers, loopback ports, PID/ticks, file-tree hashes,
+  and all six protected services at its execution instant.
+- GitHub transport inventory had **no H2.1 G3 deployment task**
+  and no G3 terminal release receipt. The active panel remained
+  H2 at the last verified phone instant, not H2.1.
+- Corrected the documentary gate regression discovered by an
+  unrelated H3 QA job: this H2.1 G3 checkpoint had been created
+  without a link in `docs/checkpoints/README.md`.
+  Added it to the archive index on main at `ea5ed4d`.
+  The H3 branch's own checkpoint index is separately owned by
+  its concurrent sprint and is not a H2.1 fix.
+- No prohibited panel cutover was attempted or re-encoded.
+  No live user site, foreign process, protected service,
+  release/archive or deployment pointer was deliberately
+  changed in this closeout.
+- **Final stage disposition: H2.1 G2 SOURCE_PASS;
+  G3 BLOCKED_BY_TOOL_SAFETY, NOT ACCEPTED; chat handoff
+  complete, physical H2.1 sprint unfinished.**
+  Do not claim the source acceptance is a production
+  deployment. A separately allowed guarded cutover, third
+  disposable-site matrix, and actual owner browser verification
+  are still required to call G3 PASS.
