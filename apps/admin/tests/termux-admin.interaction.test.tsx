@@ -1,4 +1,3 @@
-import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -26,7 +25,7 @@ describe("H3 confirmed operations, no password prerequisite", () => {
     await user.type(screen.getByLabelText("Package name"), "git")
     await user.click(screen.getByRole("button", { name: "Install" }))
     await screen.findByText("fixture install complete")
-    const sent = fetchMock.mock.calls[0]
+    const sent = fetchMock.mock.calls[0]!
     expect(JSON.parse(String(sent[1]?.body))).toEqual({ action: "package", name: "install", path: "git" })
     expect((sent[1]?.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("termux-admin")
     expect(screen.queryByLabelText(/password/i)).toBeNull()
@@ -53,15 +52,15 @@ describe("H3 confirmed operations, no password prerequisite", () => {
 
   it("reuses existing H2 service controls with explicit verified-site identity", async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }))
+    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => ({ ok: true, json: async () => ({}) }))
     const reload = vi.fn(async () => {})
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("confirm", vi.fn(() => true))
     render(<SiteServiceActions sites={[site] as never} reload={reload} />)
     await user.click(screen.getByRole("button", { name: "Start" }))
     await screen.findByText(/start completed/)
-    expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sites/" + site.id + "/start")
-    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+    expect(fetchMock.mock.calls[0]![0]).toBe("/api/v1/sites/" + site.id + "/start")
+    expect(fetchMock.mock.calls[0]![1]).toMatchObject({
       method: "POST", headers: { "X-PocketHost-Intent": "owned-sites" },
     })
     expect(reload).toHaveBeenCalledOnce()
