@@ -13,13 +13,16 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
   before this documentation-only checkpoint; H2.1 application code
   remains exactly the Samsung-G2-tested `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
   Git compare showed only three documentation files changed after G2.
-- The historical H2.1 device preflight was terminal PASS, but
-  **does not establish current phone state**. A new, strictly read-only
-  Samsung task `pockethost-h21-g3-readonly-recheck-20261107-v1`
-  was published on the existing private Local Agent channel.
-  **Its terminal result was not yet observed when this handoff was written.**
-  First inspect its exact `task-results/` receipt; never replay a
-  potentially pending task.
+- **Fresh Samsung recheck PASS:** Local Agent task
+  `pockethost-h21-g3-readonly-recheck-20261107-v1` ended
+  `done/0` on 2026-11-07 at 11:35:54 UTC
+  (12:35:54 Europe/Warsaw). Live H2 preview source, process
+  PID/ticks, both owner site release pointers, filesystem
+  hashes, PIDs, ports, and six protected services matched
+  the prior baseline; PhotoMap TEST 8010 stayed closed.
+  This proves only that point-in-time state; recheck identity
+  immediately before any separately permitted G3 cutover.
+  Do not replay the closed read-only task.
 - **G3 remains HOLD.** The earlier guarded release was rejected
   by tool safety checks before submission. No H2.1 production
   deployment, version-manager live test, or original-site mutation
