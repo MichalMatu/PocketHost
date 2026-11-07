@@ -81,7 +81,7 @@ export default function OwnedSitePage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    void Promise.resolve().then(() => refresh(controller.signal))
       .catch(() => {
         if (!controller.signal.aborted) setError("Cannot read the owned application. Existing services are unchanged.")
       })
