@@ -173,6 +173,8 @@ working four-tab administration candidate without a password prerequisite:
   services before enabling Start/Stop/Restart/Unregister.
 - **Backups:** create, list, integrity-verify, restore and delete H3
   workspace snapshots. Preserve the pre-restore workspace as a sidecar.
+  Integrate the installed Restic CLI for encrypted local workspace backup,
+  repository checks, snapshot listing, staged restore and forget/prune.
   H2 immutable releases remain version history, not system backups.
 
 All four features are actual source code, not placeholders. No package or
@@ -182,7 +184,7 @@ has no login, as explicitly requested by the owner. The H3 API uses typed
 operations, origin/host checks and explicit per-target UI confirmations
 without introducing an authentication requirement.
 
-Independent system-wide Restic backups, arbitrary Termux directories,
+Independent system-wide or off-device backups, arbitrary Termux directories,
 terminal exposure and AI agent API remain distinct integrations to evaluate
 after native QA. Do not deploy this branch over the existing live panel
 without a separate preservation gate. See the H3 checkpoint.
