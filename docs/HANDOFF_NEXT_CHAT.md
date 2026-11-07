@@ -2,10 +2,54 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Canonical post-O1 and trusted-LAN handoff
+purpose: Canonical H1 Hosting MVP sprint state with O1 release history
 ---
 
-# PocketHost — O1 and private LAN handoff
+# PocketHost — H1 Hosting MVP and prior O1 handoff
+
+## Active H1 sprint — not yet released
+
+The owner requested one large Hosting MVP vertical slice. Main source now contains
+the real PocketHost-owned demo project lifecycle: Create, Start, verified HTTP
+health, Publish fixed v1/v2, one-use Rollback, Restart, Stop; durable bounded
+deployment journal, verified PID/start ticks, owned logs, managed-projects
+listing and dedicated deployment/log screens. Original template screens remain.
+
+This is **one registered static HTML test app**, not arbitrary application
+deployment or multi-project registration. PhotoMap stays catalog-only.
+The LAN backend remains login-free on an owner-approved trusted private
+Wi-Fi, with no WAN exposure or automatic startup.
+
+Actual Samsung read-only preflight task
+`pockethost-hosting-mvp-preflight-20261107-0622-v2` returned
+terminal `done/0`: independent QA checkout clean at `faf0447`,
+live PocketHost checkout clean at `f0dd506`; six protected services
+running; loopback 8787 and 18787 and managed LAN 18878/18879
+listening; PhotoMap 8010 closed; old demo running v2,
+Network Access enabled. The first preflight
+`pockethost-hosting-mvp-preflight-20261107-0616-v1`
+returned `failed/125, not_started` due inadequate task-time
+budget, with no host command executed. Retry corrected the budget.
+
+**H1 implementation and documentation commits are source candidates only.**
+No new native `check:all` result or guarded live-panel cutover can
+be presumed without an exact terminal receipt and G3 validation. Live
+preview is still last accepted O1 source `f0dd506`.
+A native QA task was requested at intermediate `09474fb`
+(`pockethost-h1-native-check-all-09474fb-20261107-v1`),
+but later source edits mean its result cannot count for the
+final H1 code SHA. Await terminal result, fix focused failures,
+and test the final current `main` SHA on Samsung.
+
+Next operations: confirm latest `main`, finish `check:all` and
+owned-only HTTP lifecycle on Samsung, then guarded manual LAN cutover
+with independently verified own-preview PID/start ticks and complete
+rollback. At any uncertain identity or failed rollback, **stop live release
+without touching protected services**. No PhotoMap Start. Real
+Mac Chrome UI acceptance is separate and not proven by HTTP probes.
+See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
+
+## Prior accepted O1 and private LAN history
 
 ## Resume protocol
 
