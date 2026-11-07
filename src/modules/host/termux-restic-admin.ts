@@ -157,6 +157,84 @@ export class ResticWorkspaceAdmin {
     return this.restic(['forget', '--prune', id], run, 600000);
   }
 
+  private scopeRoots(scope: 'home' | 'prefix' | 'all'): string[] {
+    const home = os.homedir();
+    const prefix = '/data/data/com.termux/files/usr';
+    if (scope === 'home') return [home];
+    if (scope === 'prefix') return [prefix];
+    if (scope === 'all') return [home, prefix];
+    throw new RangeError('Unknown backup scope');
+  }
+
+  /** Real encrypted backup of chosen Termux scope; never recursively backs up the repository/key. */
+  async backupScope(
+    scope: 'home' | 'prefix' | 'all',
+    run: Exec = executeFixed,
+  ): Promise<HostCommandResult> {
+    const roots = this.scopeRoots(scope);
+    await this.initialize(run);
+    return this.restic([
+      'backup', '--tag', 'pockethost-h34-' + scope,
+      '--exclude', this.state,
+      '--', ...roots,
+    ], run, 600000);
+  }
+
+  async scopeSnapshots(
+    scope: 'home' | 'prefix' | 'all',
+    run: Exec = executeFixed,
+  ): Promise<ResticSnapshot[]> {
+    const roots = this.scopeRoots(scope);
+    const { repository } = this.prepare();
+    if (!this.isInitialized(repository)) throw new Error('Restic repository not initialized');
+    const result = await this.restic([
+      'snapshots', '--json', '--tag', 'pockethost-h34-' + scope,
+    ], run, 40000);
+    const data: unknown = JSON.parse(result.output.trim());
+    if (!Array.isArray(data) || data.length > 2000) throw new Error('Invalid system snapshot inventory');
+    const records: ResticSnapshot[] = [];
+    for (const item of data) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      const snapshot = item as Record<string, unknown>;
+      if (typeof snapshot.id !== 'string' || !SNAPSHOT_ID.test(snapshot.id) ||
+          typeof snapshot.time !== 'string' || snapshot.time.length > 60 ||
+          !Array.isArray(snapshot.paths) || snapshot.paths.length !== roots.length ||
+          !roots.every(root => snapshot.paths.includes(root)))
+        continue;
+      records.push({ id: snapshot.id, time: snapshot.time, paths: roots });
+    }
+    return records.sort((a, b) => b.time.localeCompare(a.time)).slice(0, MAX_SNAPSHOTS);
+  }
+
+  async restoreScopeToStaging(
+    scope: 'home' | 'prefix' | 'all',
+    id: string,
+    run: Exec = executeFixed,
+  ): Promise<{ restoredTo: string }> {
+    if (!SNAPSHOT_ID.test(id)) throw new RangeError('Invalid Restic snapshot ID');
+    const snapshots = await this.scopeSnapshots(scope, run);
+    if (!snapshots.some(item => item.id === id)) throw new Error('Snapshot not in selected scope');
+    const destination = path.join(this.state, 'restores', 'system-' + randomUUID());
+    mkdirSync(path.dirname(destination), { recursive: true, mode: 0o700 });
+    if (existsSync(destination)) throw new Error('Staging directory already exists');
+    await this.restic(['restore', id, '--target', destination], run, 600000);
+    if (!existsSync(destination) || !lstatSync(destination).isDirectory() ||
+        lstatSync(destination).isSymbolicLink())
+      throw new Error('System staging restore incomplete');
+    return { restoredTo: destination };
+  }
+
+  async forgetScope(
+    scope: 'home' | 'prefix' | 'all',
+    id: string,
+    run: Exec = executeFixed,
+  ): Promise<HostCommandResult> {
+    if (!SNAPSHOT_ID.test(id)) throw new RangeError('Invalid Restic snapshot ID');
+    const snapshots = await this.scopeSnapshots(scope, run);
+    if (!snapshots.some(item => item.id === id)) throw new Error('Unknown selected-scope snapshot');
+    return this.restic(['forget', '--prune', id], run, 600000);
+  }
+
   /** Summary only; encrypted repository key is never returned in the API. */
   status(): { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean } {
     const repository = path.join(this.state, 'repo');
