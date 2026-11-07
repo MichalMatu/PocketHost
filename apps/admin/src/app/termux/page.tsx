@@ -11,6 +11,8 @@ import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite 
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
+import { FullTermuxBackups } from "@/app/termux/system-backups"
+import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
@@ -116,6 +118,7 @@ export default function TermuxCenterPage() {
             <TabsTrigger value="services"><ServerCog className="size-4" /> Services</TabsTrigger>
             <TabsTrigger value="backups"><Archive className="size-4" /> Backups</TabsTrigger>
             <TabsTrigger value="terminal">Terminal</TabsTrigger>
+            <TabsTrigger value="agents">Agents / API</TabsTrigger>
           </TabsList>
 
           <TabsContent value="packages">
@@ -237,6 +240,7 @@ export default function TermuxCenterPage() {
                 {detailError && <p role="alert">{detailError}</p>}
                 <WorkspaceBackupActions />
                 <ResticActions detected={restic?.state === "detected"} />
+                <FullTermuxBackups detected={restic?.state === "detected"} />
                 <GuardNotice>Snapshots protect the H3 workspace; website releases are separate and do not replace a full Termux backup.</GuardNotice>
                 <p className="text-sm font-medium">Optional integrations</p>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
@@ -246,6 +250,9 @@ export default function TermuxCenterPage() {
           </TabsContent>
           <TabsContent value="terminal">
             <TermuxTerminalPanel />
+          </TabsContent>
+          <TabsContent value="agents">
+            <AgentApiPanel />
           </TabsContent>
         </Tabs>
       </div>
