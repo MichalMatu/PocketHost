@@ -3,7 +3,7 @@
 ## Current work
 
 - [Roadmap: H2 accepted, next H3 package CMS and H4 agent API](ROADMAP.md)
-- [H2 multi-site static hosting source and release gate](checkpoints/2026-11-07-h2-static-hosting-source.md)
+- [H2 accepted Samsung G2/G3 multi-site static hosting](checkpoints/2026-11-07-h2-static-hosting-source.md)
 - [H1 owned Hosting MVP checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md)
 - [Next-chat handoff](HANDOFF_NEXT_CHAT.md)
 - [O1 Observability source checkpoint](checkpoints/2026-11-07-o1-observability-source.md)
