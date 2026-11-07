@@ -108,23 +108,45 @@ secure Local Agent-backed AI API, multi-project adapters, arbitrary
 code uploads, DNS/HTTPS, PhotoMap release work and autostart are separate
 milestones. No current sprint item authorizes any of them.
 
-## H2 — browser-owned multiple static sites: source candidate
+## H2 — browser-owned multiple static sites: device accepted
 
-Current H2 source supports eight independently created static sites,
-with explicit project IDs, bounded ZIP/folder imports, per-project
-loopback ports, immutable releases, one-step rollback, verified
-Start/Stop/Restart, health, logs, metadata and resource statistics.
-Trusted-LAN site previews use the existing separate GET-only 18879
-gateway, never an additional public administration listener.
+H2 provides up to eight independently created static
+sites, bounded ZIP/folder imports, individual loopback
+ports, immutable releases, one-step rollback and
+verified Start/Stop/Restart. It includes HTTP health,
+bounded logs, process memory/uptime and local
+deployment history. Private-LAN read-only site previews
+reuse the existing gateway on port 18879.
 
-**No H2 release acceptance yet.** The complete exact-SHA Samsung
-`check:all`, real uploaded HTML/CSS/JS lifecycle, negative security
-cases and guarded live switch are mandatory. Until a terminal receipt,
-H2 source must not be represented as running on the owner's phone.
+**Samsung G2/G3: PASS.** Application source
+`750c4b3fba2126647c3b593ae89d108ba2a67206`
+passed full native `check:all` (26/26 UI tests).
+The guarded H2 cutover created two real sites,
+uploaded ZIP and folder bundles, served HTML/CSS/JS,
+updated and rolled back a release and verified
+service noninterference before cleaning test fixtures.
 
-H2 deliberately does not execute uploaded backend scripts or install
-dependencies. Generic Node/Python/PHP runtimes, PhotoMap activation,
-package CMS, authentication and public API access are separate
-security-reviewed milestones.
+The next gate is the owner's actual Mac Chrome
+interaction with one user-chosen uploaded site.
+Device HTTP is not equivalent to owner browser
+acceptance. No H2 autoservice, public tunnel, login,
+Node/Python backend execution or package installation.
 
-See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
+## H3 — reviewed Termux package/software CMS: next product milestone
+
+Build a constrained package inventory and reviewed
+installation/update plan, separate OS package upgrades
+from project-local dependencies, require explicit
+approval for mutations and prove safe rollback/
+failure handling on a disposable owned fixture.
+The six existing services stay unmanaged.
+
+## H4 — authenticated agent API: later milestone
+
+Extend the existing Local Agent transport with a
+scoped, authenticated local API only after
+threat modeling, identity, rate limits and audit
+contracts. Do not expose an unrestricted shell.
+
+See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md)
+and [development plan](DEVELOPMENT_PLAN.md).
