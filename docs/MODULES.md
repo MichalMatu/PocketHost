@@ -57,3 +57,20 @@ automatic recovery.
 and [ADR-0010](adr/0010-read-only-observability.md)
 own the new boundary. Source implementation
 needs device QA before being marked accepted.
+
+## H2 accepted module composition
+
+- `sites`: pure ZIP/folder validation, payload and
+  path/resource limits; no host filesystem access.
+- `host`: exact owner marker, static release storage,
+  loopback process identity, lifecycle, read-only
+  LAN preview admission and bounded resource probes.
+- `apps/admin`: typed project creation, file import,
+  deploy/rollback, process control, logs and health UI.
+- `runtime`: existing P3 demo and generic registered
+  service policy; PhotoMap remains disabled and
+  external processes remain observation-only.
+
+Full Samsung source and live LAN acceptance passed
+on H2 SHA `750c4b3`; the owner's Chrome file-picker
+gate remains open. See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
