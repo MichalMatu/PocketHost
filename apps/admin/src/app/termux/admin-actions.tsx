@@ -228,6 +228,23 @@ export function SiteServiceActions({ sites, reload }: { sites: FleetSite[] | nul
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
+  const [logLines, setLogLines] = React.useState<{ site: string; lines: string[] } | null>(null)
+  const readLogs = async (site: FleetSite) => {
+    setBusy(true); setError(null); setDone(null)
+    try {
+      const response = await fetch("/api/v1/sites/" + site.id + "/logs", {
+        method: "GET", credentials: "same-origin", cache: "no-store",
+      })
+      if (!response.ok) throw new Error("Owned service logs unavailable")
+      const body: unknown = await response.json()
+      if (!body || typeof body !== "object" || !("logs" in body) ||
+          !Array.isArray(body.logs) || body.logs.length > 25 ||
+          !body.logs.every(line => typeof line === "string" && line.length <= 200))
+        throw new Error("Invalid service logs")
+      setLogLines({ site: site.name, lines: body.logs })
+    } catch { setError("Service logs unavailable; no processes were changed.") }
+    finally { setBusy(false) }
+  }
   const run = async (site: FleetSite, name: "start" | "stop" | "restart") => {
     if (busy || !window.confirm("Run " + name + " for PocketHost-owned site " + site.name + "?")) return
     setBusy(true); setError(null); setDone(null)
@@ -247,6 +264,8 @@ export function SiteServiceActions({ sites, reload }: { sites: FleetSite[] | nul
     {sites?.map(site => <div key={site.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
       <div><p className="text-sm">{site.name}</p><Badge variant="outline">{site.state}</Badge></div>
       <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={busy || site.state === "unknown"}
+          onClick={() => void readLogs(site)}>Logs</Button>
         <Button size="sm" disabled={busy || site.state !== "stopped" || !site.activeRelease}
           onClick={() => void run(site, "start")}>Start</Button>
         <Button size="sm" variant="outline" disabled={busy || site.state !== "running"}
@@ -255,6 +274,10 @@ export function SiteServiceActions({ sites, reload }: { sites: FleetSite[] | nul
           onClick={() => void run(site, "stop")}>Stop</Button>
       </div>
     </div>)}
+    {logLines && <div className="space-y-2 rounded border p-2">
+      <p className="text-sm font-medium">Logs: {logLines.site}</p>
+      <pre className="max-h-40 overflow-auto whitespace-pre-wrap text-xs">{logLines.lines.join("\n") || "No recent logs"}</pre>
+    </div>}
     <p className="text-muted-foreground text-xs">Existing H2 process ownership checks stay in force. Unrelated runit services are not adopted.</p>
     <Feedback error={error} done={done} />
   </div>
