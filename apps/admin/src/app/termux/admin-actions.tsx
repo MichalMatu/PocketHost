@@ -336,3 +336,74 @@ export function WorkspaceBackupActions() {
     <p className="text-muted-foreground text-xs">Snapshots cover only the H3-owned workspace, not arbitrary Termux apps or databases.</p>
   </div>
 }
+
+type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown" }
+
+export function RunitServiceActions() {
+  const [services, setServices] = React.useState<RunitEntry[] | null>(null)
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const [done, setDone] = React.useState<string | null>(null)
+  const refresh = React.useCallback(async () => {
+    const data = await inspect<{ services: RunitEntry[] }>("services")
+    if (!Array.isArray(data.services) || data.services.length > 100 ||
+        !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
+          typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
+          ["running", "stopped", "unknown"].includes(item.state)))
+      throw new Error("Invalid runit inventory")
+    setServices(data.services)
+  }, [])
+  React.useEffect(() => {
+    let active = true
+    void inspect<{ services: RunitEntry[] }>("services").then(result => {
+      if (active) setServices(result.services)
+    }).catch(() => { if (active) setError("Runit services unavailable") })
+    return () => { active = false }
+  }, [])
+  const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart", service: RunitEntry) => {
+    if (busy || service.protected || !window.confirm(
+      name === "register" ?
+        "Register service " + service.name + " for PocketHost lifecycle control? Registration does not start or stop it." :
+        "Run " + name + " for explicitly registered runit service " + service.name + "?",
+    )) return
+    setBusy(true); setError(null); setDone(null)
+    try {
+      await action({ action: "service", name, path: service.name })
+      await refresh()
+      setDone(service.name + ": " + name + " completed")
+    } catch {
+      setError("Service action rejected. Registration, identity or runit availability may have changed.")
+    } finally { setBusy(false) }
+  }
+  return <div className="space-y-3 rounded-md border p-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h3 className="text-sm font-medium">Runit services</h3>
+      <Button size="sm" variant="outline" disabled={busy}
+        onClick={() => void refresh().catch(() => setError("Runit inventory unavailable"))}>Refresh runit</Button>
+    </div>
+    <p className="text-muted-foreground text-xs">
+      Existing services are only observed until you explicitly register them.
+      Six protected system services are never available for registration or mutation.
+    </p>
+    {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
+    {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
+      <div className="space-y-1">
+        <p className="text-sm font-medium">{service.name}</p>
+        <div className="flex gap-2">
+          <Badge variant="outline">{service.state}</Badge>
+          <Badge variant="outline">{service.protected ? "Protected" : service.registered ? "Registered" : "Observed"}</Badge>
+        </div>
+      </div>
+      {!service.protected && <div className="flex flex-wrap gap-1">
+        {service.registered ? <>
+          <Button size="sm" disabled={busy || service.state === "running"} onClick={() => void perform("start", service)}>Start</Button>
+          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("stop", service)}>Stop</Button>
+          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("restart", service)}>Restart</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("unregister", service)}>Unregister</Button>
+        </> : <Button size="sm" variant="outline" disabled={busy}
+          onClick={() => void perform("register", service)}>Register</Button>}
+      </div>}
+    </div>)}
+    <Feedback error={error} done={done} />
+  </div>
+}
