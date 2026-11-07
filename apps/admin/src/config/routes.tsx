@@ -12,7 +12,7 @@ function page(load: () => Promise<{ default: ComponentType }>) {
 
 export const routes: RouteObject[] = [
   // Use relative path "dashboard" instead of "/dashboard" for basename compatibility
-  { path: "/", element: <Navigate to="dashboard" replace /> },
+  { path: "/", element: <Navigate to="host" replace /> },
   // Landing Page
   { path: "/landing", lazy: page(() => import("@/app/landing/page")) },
   // PocketHost read-only status (all original upstream routes remain untouched)
