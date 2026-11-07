@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -141,6 +141,7 @@ export default function TermuxCenterPage() {
                 </>}
                 {!snapshot && !errors.snapshot && <p role="status">Reading package metadata…</p>}
                 <PackageActions />
+                <PackageCatalog />
               </CardContent>
             </Card>
           </TabsContent>
@@ -208,7 +209,7 @@ export default function TermuxCenterPage() {
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline"><Boxes className="size-3" /> Restic: {restic?.state ?? "unverified"}</Badge>
-                  <Badge variant="outline">Backup jobs: disabled</Badge>
+                  <Badge variant="outline">Restic jobs: not configured</Badge>
                 </div>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
                 {errors.sites && <p role="alert">Existing site release inventory unavailable.</p>}
