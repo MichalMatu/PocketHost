@@ -3,7 +3,7 @@ import { randomUUID } from 'node:crypto';
 import {
   closeSync, existsSync, fstatSync, lstatSync, mkdirSync, mkdtempSync,
   openSync, readFileSync, readSync, readdirSync, readlinkSync,
-  realpathSync, renameSync, statSync, writeFileSync,
+  realpathSync, renameSync, writeFileSync,
 } from 'node:fs';
 import { createServer } from 'node:net';
 import os from 'node:os';
