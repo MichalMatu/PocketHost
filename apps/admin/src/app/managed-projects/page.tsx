@@ -1,7 +1,9 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Database, FolderArchive, HardDrive, RefreshCw, ShieldCheck } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { parseOwnedProject, type OwnedProject } from "@/lib/owned-project-schema"
 import {
   parseManagedPhotoMapResponse,
   type ManagedPhotoMapProject,
@@ -27,13 +29,26 @@ async function readProject(signal?: AbortSignal): Promise<ManagedPhotoMapProject
   return parseManagedPhotoMapResponse(data)
 }
 
+async function readOwned(signal?: AbortSignal): Promise<OwnedProject> {
+  const response = await fetch("/api/v1/owned-site/project", {
+    cache: "no-store", credentials: "same-origin", signal,
+  })
+  if (!response.ok) throw new Error("Owned demo not enabled")
+  return parseOwnedProject(await response.json())
+}
+
 export default function ManagedProjectsPage() {
   const [project, setProject] = React.useState<ManagedPhotoMapProject | null>(null)
+  const [owned, setOwned] = React.useState<OwnedProject | null>(null)
+  const [ownedError, setOwnedError] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
 
   React.useEffect(() => {
     const controller = new AbortController()
+    void readOwned(controller.signal)
+      .then((value) => { if (!controller.signal.aborted) setOwned(value) })
+      .catch(() => { if (!controller.signal.aborted) setOwnedError(true) })
     void readProject(controller.signal)
       .then((value) => {
         if (!controller.signal.aborted) setProject(value)
@@ -48,7 +63,16 @@ export default function ManagedProjectsPage() {
     setLoading(true)
     setError(null)
     try {
-      setProject(await readProject())
+      const [own, imported] = await Promise.allSettled([readOwned(), readProject()])
+      if (own.status === "fulfilled") {
+        setOwned(own.value)
+        setOwnedError(false)
+      } else {
+        setOwned(null)
+        setOwnedError(true)
+      }
+      if (imported.status === "fulfilled") setProject(imported.value)
+      else setError("Cannot read the separate PhotoMap TEST inventory.")
     } catch {
       setError("Cannot read managed project state.")
     } finally {
@@ -73,7 +97,22 @@ export default function ManagedProjectsPage() {
         {error && (
           <Card><CardContent role="alert" className="text-destructive">{error}</CardContent></Card>
         )}
-        {!project && !error && <p className="text-muted-foreground">Reading managed projects…</p>}
+        {owned && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{owned.name}</CardTitle>
+              <CardDescription>{owned.description} · {owned.dataDirectory}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-wrap items-center gap-3">
+              <Badge variant="secondary">{owned.state}</Badge>
+              <Badge variant="outline">Port {owned.port}</Badge>
+              <Badge variant="outline">{owned.contentVersion === null ? "Not created" : `Release v${owned.contentVersion}`}</Badge>
+              <Button nativeButton={false} render={<Link to="/owned-site" />}>Manage project</Button>
+            </CardContent>
+          </Card>
+        )}
+        {ownedError && <p className="text-muted-foreground text-sm">PocketHost demo controls are disabled or unavailable in this session.</p>}
+        {!project && !error && <p className="text-muted-foreground">Reading imported project inventory…</p>}
         {project && (
           <>
             <Card>
