@@ -48,7 +48,7 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.equal(concurrentStart.state, 'running');
     assert.equal(await site.health(), true);
     assert.ok(site.inspectProject().pid > 1);
-    assert.match(site.inspectProject().startTicks, /^\\d+$/);
+    assert.match(site.inspectProject().startTicks, /^\d+$/);
     let response = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /First local site/);
