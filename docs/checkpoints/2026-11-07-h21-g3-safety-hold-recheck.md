@@ -202,3 +202,44 @@ Do not reopen completed source gates or issue duplicate G3 tasks.
   deployment. A separately allowed guarded cutover, third
   disposable-site matrix, and actual owner browser verification
   are still required to call G3 PASS.
+
+## Subsequent Samsung QA and safe H2.1 source staging
+
+On 2026-11-07, the owner additionally confirmed via SSH that
+both original sites' full SHA-256 file-tree digests still matched
+the exact baseline, and that all six protected runit services
+were running. The running H2 API returned both unchanged site
+release pointers and process identities. This is independent
+physical preflight evidence, **not a cutover**.
+
+The exact-SHA documentation-only native QA task
+`pockethost-h21-final-docs-pass-51d993a-20261107-v1`
+finished **done / exit 0 / PASS** on
+`51d993ab783ce11530d438d49d8e2d78405119cd`.
+Structure, documentation index, module boundaries, Markdown lint
+and Prettier format all passed. H2.1 application G2 remains
+previously accepted at `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+
+The read-only device candidate check
+`pockethost-h21-g3-candidate-readiness-20261107-v1`
+returned **done / exit 0 / PASS**: the approved H2.1 Git commit
+was in the QA repository, but was initially absent from the
+*live* PocketHost checkout's Git object database.
+
+The tightly scoped Termux task
+`pockethost-h21-g3-live-object-stage-20261107-v1`
+then returned **done / exit 0 / PASS** after fetching Git
+objects and verifying exact target commit and critical files.
+It retained the live `HEAD` at
+`750c4b3fba2126647c3b593ae89d108ba2a67206`, kept the
+working tree clean, and did not switch code, signal the panel
+or touch either original site. This was preparatory source
+staging, **not G3 deployment**.
+
+**Current precise status:** H2.1 source G2 PASS, latest native
+documentation QA PASS, original-site integrity PASS at last
+owner check, H2.1 target Git objects staged in live checkout,
+**G3 cutover and disposable-third-site acceptance still OPEN**.
+Do not treat verified source availability as an installed
+or running H2.1 panel. A separately permitted and reviewed
+owner-verified cutover with H2 fallback is still required.
