@@ -11,6 +11,7 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [H2 multi-site static hosting source candidate](2026-11-07-h2-static-hosting-source.md)
 - [H1 Hosting MVP source and device gate](2026-11-07-h1-hosting-mvp-source.md)
 
 - [O1 502 proxy live recovery](2026-11-07-o1-502-live-recovery.md)
