@@ -79,3 +79,27 @@ The installed Termux tool adapter executes only reviewed absolute
 binaries with fixed arguments and bounded output. Native device read
 availability and the exact final SHA are **not yet accepted**.
 See [ADR-0010](../adr/0010-read-only-observability.md).
+
+## H2 owned static fleet — accepted on Samsung
+
+The dedicated `site-fleet-host.ts` adapter manages only
+explicitly registered `pockethost-h2` site markers.
+It selects free ports from 19080–19095, creates up
+to eight confined site directories, stores immutable
+static releases, verifies each owned process with
+PID/start ticks, cwd, approved script and instance
+before Start/Stop/Restart, and reads bounded logs
+and optional memory/uptime observations.
+
+The small `site-fleet-server.mjs` process serves
+strict static GET/HEAD assets from the active
+owner-checked release. `site-fleet-proxy.mjs`
+admits a private-LAN preview only for an
+exactly verified running child. Unknown identity,
+foreign port occupancy or malformed paths are
+fail-closed; no foreign process is signalled.
+
+Samsung H2 source G2 and two real-site ZIP/folder
+LAN G3 passed at `750c4b3`; PhotoMap was not
+started and all six protected services remained
+running. See [H2 checkpoint](../checkpoints/2026-11-07-h2-static-hosting-source.md).
