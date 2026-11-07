@@ -249,7 +249,7 @@ export default function TermuxCenterPage() {
             </Card>
           </TabsContent>
           <TabsContent value="terminal">
-            <TermuxTerminalPanel />
+            <TermuxTerminalPanel detected={tools?.tools.some(item => item.id === "ttyd" && item.state === "detected") ?? false} />
           </TabsContent>
           <TabsContent value="agents">
             <AgentApiPanel />
