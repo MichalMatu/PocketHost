@@ -111,7 +111,10 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
     // Never relay to a port discovered from a request or stale ownership record.
     const h2 = !admin && request.url?.startsWith('/h2/');
     const hosted = h2 ? lookupHostedSite(request.url) : null;
-    if (h2 && !hosted) { rejected(response, 404); return; }
+    if (h2 && !hosted) {
+      rejected(response, 404);
+      return;
+    }
     const destination = hosted?.port ?? upstreamPort;
     const headers = admin
       ? upstreamHeaders(request, upstreamPort)
