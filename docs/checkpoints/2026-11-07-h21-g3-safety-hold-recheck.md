@@ -224,7 +224,7 @@ The read-only device candidate check
 `pockethost-h21-g3-candidate-readiness-20261107-v1`
 returned **done / exit 0 / PASS**: the approved H2.1 Git commit
 was in the QA repository, but was initially absent from the
-*live* PocketHost checkout's Git object database.
+_live_ PocketHost checkout's Git object database.
 
 The tightly scoped Termux task
 `pockethost-h21-g3-live-object-stage-20261107-v1`
