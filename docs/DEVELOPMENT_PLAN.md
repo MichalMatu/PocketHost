@@ -75,6 +75,7 @@ PRoot orphan recovery as parallel release blockers.
 See [quality gates](QUALITY_GATES.md),
 [ADR-0010](adr/0010-read-only-observability.md)
 and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
+
 ## H1 implementation — browser-driven owned Hosting MVP
 
 H1 extends the accepted P3 one-site adapter instead of introducing
