@@ -37,7 +37,7 @@ The typed `PhotoMapRuntimePort` and pure `createPhotoMapRuntime` policy now cove
 
 Staged Debian rootfs copies **do now exist** (`debian-arm64-v1` and `debian12-photomap-20261106-v1`). The latter has a disposable source and SQLite working copy; an on-device read-only Python 3.11.2 smoke verified eight dependency versions. Source at `d5b5591` passed **62/62** root tests and **6/6** host negatives. See [staging checkpoint](../checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md). The imported manifests are still disabled; no active version, live health/PID/Stop acceptance, autostart or package update is authorized. The current log implementation records bounded events, not accepted backend stdout/stderr.
 
-## Generic runtime extraction — pending same-SHA native QA
+## Generic runtime extraction — accepted as source, not live PhotoMap
 
 The reusable `ManagedRuntimeSnapshot`, `ManagedRuntimePort` and `createManagedRuntime` contracts separate ownership/state-machine policy from an app adapter. PhotoMap now supplies only its fixed identity, port, release and legacy errors to this engine. A second synthetic project receives the same fail-closed policy in deterministic tests without importing PhotoMap constants. This is **source refactoring**, not activation of the disabled PhotoMap host process.
 
@@ -51,3 +51,8 @@ same fail-closed state machine in tests without PhotoMap imports. The separate
 PhotoMap profile supplies its fixed identity and release; it does not define
 or enable the generic engine. Runtime registration is not discovery, adoption,
 provisioning, publication or permission to activate a disabled import.
+
+At exact source `bc5e553`, Samsung `check:all` passed 101/101 Node tests and
+16/16 UI tests. This qualifies the generic source contracts, not physical
+PhotoMap PRoot Start/Stop or orphan recovery. See the
+[final native checkpoint](../checkpoints/2026-11-07-final-native-qa-handoff.md).

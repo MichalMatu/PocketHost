@@ -1,27 +1,55 @@
 # PocketHost
 
-PocketHost is an experimental Android/Termux hosting control panel. P0–P2 provide a native-tested read-only host monitor and React administration dashboard. P3 adds a **manually launched PocketHost-owned static demo** with scoped Start/Stop, sample publication, single-step rollback and an opt-in private-LAN gateway. P4 introduces the first **real imported project, PhotoMap TEST**, as a private, stopped managed-data catalog. P4 is not a full managed application runtime yet.
+PocketHost is an experimental Android/Termux hosting control panel.
+It provides read-only host monitoring, a React admin panel, an
+explicitly PocketHost-owned static demo and a stopped managed
+PhotoMap TEST catalog. It is **not yet a production hosting manager**.
 
-## Current development status
+## Current status (2026-11-07)
 
-| Milestone | Scope                                                                      | Status                                                                                                                            |
-| --------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| P0–P2     | Foundation, native monitoring and dashboard                                | Native device accepted                                                                                                            |
-| P3        | Explicitly owned static demo and private-LAN gateway                       | Device/browser viewing accepted; final P3 control/browser gates and production release still blocked by browser interaction gates |
-| P4        | Private PhotoMap snapshot, registry, versions and safe read-only catalog   | Verified import and full Samsung-native source QA PASS; live panel deployment pending                                             |
-| Next      | Isolated Debian PRoot, verified PhotoMap lifecycle, snapshots and rollback | Not implemented                                                                                                                   |
+| Scope | Acceptance |
+| --- | --- |
+| P0–P2: inventory, read-only monitoring and admin baseline | Accepted |
+| P3: owned demo Start/Stop/Publish/Rollback | Native and live loopback HTTP PASS; real browser interactions HOLD |
+| Generic runtime and process safety source | Native `check:all` PASS; real PRoot orphan recovery HOLD |
+| P4: imported PhotoMap TEST catalog and isolated workset | Read-only accepted; live runtime disabled |
+| Packages, AI-facing API, public deployment and autostart | Deferred/not authorized |
 
-PhotoMap original checkout, including local changes, was preserved. Its verified stopped import contains copied SQLite and **2,196 media files**. PhotoMap runtime is explicitly disabled: no autostart, package updates or full rollback. Existing IleStoi.pl, Raspberry Pi production PhotoMap, Cloudflare and Local Agent are out of scope.
+At source `bc5e5539ca4656e59077335b71c0875f967ea859`,
+the Samsung Local Agent recorded **101/101 Node tests**, **16/16 admin
+Vitest tests**, complete `check:all` PASS and **80.34% line coverage**.
+A separate real owned P3 Publish → Rollback → Stop → Start cycle passed
+with unchanged status of six external services. PhotoMap port 8010 was
+closed. The outstanding browser, PRoot recovery and activation gates are
+listed in the [current handoff](docs/HANDOFF_NEXT_CHAT.md).
 
 ## Strict development rules
 
-- **Only GitHub Connector + the exact Samsung Termux Local Agent** for PocketHost source/development commands. No Codex, ChatGPT Work, GitHub Actions, Mac/Linux PocketHost execution, new branches or force push without separate authorization. Work directly on `main` unless the owner explicitly directs otherwise.
-- Never infer ownership from process names or ports. No control or modification of externally managed services.
-- Panel development runs manually from CLI, loopback only by default. Trusted-home-LAN gateway requires an explicit opt-in, exact private interface and security gates; it is not public authentication.
-- Project package updates, system-wide package operations, autostart and public deployment remain disabled until separately authorized and tested.
+- Work on fresh `main` with GitHub Connector and the exactly verified
+  Samsung Termux Local Agent. No Codex, ChatGPT Work, GitHub Actions,
+  Mac/Linux PocketHost execution, new branches or force push without
+  separate authorization.
+- Only explicitly registered PocketHost-owned processes may be
+  controlled. Never infer ownership from a discovered port/process.
+- No action on original PhotoMap, IleStoi.pl, Local Agent or any other
+  externally managed service. No implicit package changes, autostart,
+  public ingress or arbitrary remote shell.
+- The DEV panel launches manually and binds loopback by default.
+  A separately approved opt-in trusted private-LAN gateway is not a
+  secure public administration endpoint.
+- Code quality and native source tests do not substitute for real
+  browser interaction or hardware recovery/rollback acceptance.
 
 ## Where to resume
 
-Read [next-chat handoff](docs/HANDOFF_NEXT_CHAT.md), [latest P4 checkpoint](docs/checkpoints/2026-11-06-p4-managed-photomap-catalog.md), [PhotoMap import closeout](docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md), [architecture](docs/ARCHITECTURE.md), [quality gates](docs/QUALITY_GATES.md) and [Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md). Read [AGENTS.md](AGENTS.md) before any operations. The only development branch is `main`; verify its current HEAD before each change. All ten historical branches were safely removed after merged ancestry verification.
+Read [AGENTS.md](AGENTS.md), the
+[next-chat handoff](docs/HANDOFF_NEXT_CHAT.md),
+[quality gates](docs/QUALITY_GATES.md),
+[development plan](docs/DEVELOPMENT_PLAN.md) and
+[Samsung Local Agent runbook](docs/LOCAL_AGENT_TERMUX.md).
+The [final native QA checkpoint](docs/checkpoints/2026-11-07-final-native-qa-handoff.md)
+contains exact results; the [historical archive](docs/checkpoints/README.md)
+preserves older sprint evidence.
 
-For code changes, run `npm run check`, `npm run admin:lint`, `npm run admin:build` and `npm --prefix apps/admin run test:ui` **on Samsung Termux via Local Agent only**, then obtain terminal task results and independent physical checks before declaring acceptance.
+Do not replay already accepted checks on unchanged code or mark
+unexecuted release gates as finished.

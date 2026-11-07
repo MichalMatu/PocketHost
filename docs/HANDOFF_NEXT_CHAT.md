@@ -1,119 +1,87 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-06
-purpose: Single concise current-state handoff for safe PocketHost continuation
+last_reviewed: 2026-11-07
+purpose: Single current PocketHost entrypoint with exact native evidence and release holds
 ---
 
-# PocketHost — current handoff
+# PocketHost — next chat handoff
 
-## Start from fresh source and host state
+## Verified source and execution
 
-Repository `MichalMatu/PocketHost`; develop **only on fresh `main`**, unless the owner explicitly directs otherwise. The former sprint's 188 commits were fast-forwarded to `main` on 2026-11-07 (source `eefd870`). All ten historical working branches were verified as ancestors and removed. The consolidation is **not** a production release or a new native QA receipt.
+Repository: `MichalMatu/PocketHost`. Continue on fresh `main` only.
+The latest **fully native-tested application source** is
+`bc5e5539ca4656e59077335b71c0875f967ea859` (2026-11-07).
+Documentation updates after that commit do not automatically inherit a new
+same-SHA QA receipt. Verify the new HEAD and changed paths before work.
+The isolated Samsung QA checkout was clean after its exact-source test.
 
-The last **source-accepted** SHA is
-`a5443070f1c6e41798641aa9c2098a9acc9e17a4`.
-Samsung task `pockethost-photomap-python-contract-final-samsung-20261106-v2`
-returned done/0: 9/9 targeted negatives, 65/65 root Node tests,
-66 Markdown docs, lint/types/format PASS, PhotoMap port 8010 OFF.
-The last separate docs-only gate at `3ee728fa` returned done/0.
-Later changes need targeted new same-SHA qualification, not a replay of old results.
-See the [exact acceptance](checkpoints/2026-11-06-pocket-host-samsung-source-and-handoff-final.md).
+All project execution, tests, builds and dependency work are restricted to the
+verified Samsung Termux Local Agent through the private `agent-control` transport.
+Use [the Local Agent runbook](LOCAL_AGENT_TERMUX.md) to verify the live installation;
+an old host ID or receipt is not proof of current liveness. Do not use
+GitHub Actions, Codex, ChatGPT Work, Mac/sandbox PocketHost execution, a new
+branch or force push.
 
-## What already works — preserve it
+## What is accepted
 
-- **P0–P2:** root gates, six allowlisted external-service observations,
-  Android Termux host panel and the React/Vite admin template.
-- **P3:** a manually owned static demonstration site with guarded lifecycle,
-  publishing, one-step rollback and optional trusted-LAN gateway. Device and
-  browser _viewing_ passed; actual Mac browser Publish/Rollback clicks did not.
-- **P4:** read-only PhotoMap TEST managed catalog and GET API, with POST denied.
-  An independent imported source, original/backup SQLite and 2,196 media files
-  are preserved; do not recopy or mutate them.
-- Two stopped Debian 12 rootfs versions already exist. The selected
-  `debian12-photomap-20261106-v1` has independent working source/SQLite,
-  Python 3.11.2 and eight dependencies. The profile remains
-  `staged-unapproved`; launch, autostart and activation are disabled.
+- **P0–P2:** foundation, read-only host inventory and admin baseline.
+- **P3 code and native runtime:** explicit PocketHost-owned demo, guarded
+  Start/Stop/Publish/Rollback, typed read-only APIs and native UI component tests.
+- **P4 catalog:** stopped imported PhotoMap TEST snapshot, versioned read-only
+  metadata and isolated copied workset. PhotoMap live runtime is **disabled**.
+- **2026-11-07 native quality:** `pockethost-claim-final-clean-native-gate-bc5e55-20261107-v1`
+  returned `done/0`: `npm run check:all` passed with **101/101 Node**
+  and **16/16 Vitest** tests, plus formatting, Markdownlint, lint, TypeScript,
+  coverage floor and Vite build. Coverage: **80.34% lines, 84.30% branches,
+  79.88% functions**. PhotoMap port 8010 was closed.
+- **Real owned P3 loopback operations:** task
+  `pockethost-p3-owned-live-reversible-api-acceptance-20261107-v1`
+  returned `done/0`. It verified Publish v1 from v2, Rollback to v2,
+  Stop and Start, real HTTP content, and unchanged state of six monitored
+  foreign services. The owned demo finished running on loopback with v2.
 
-Never confuse the accepted negative tests and staged Python interpreter with
-a verified active managed PhotoMap instance. Details:
-[staged runtime evidence](checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md).
+The full source/test breakdown, task IDs and explicit limitations are in the
+[final native checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).
+Historical intermediate failures remain in the [checkpoint archive](checkpoints/README.md);
+do not repeat already accepted identical-SHA gates merely to regenerate evidence.
 
-## Release HOLD
+## Release HOLD — not finished
 
-- P3 button-click/keyboard/a11y acceptance, final owned-state/security readback.
-- PhotoMap precise PID/start ticks, executable/cwd/argv and PRoot-child identity;
-  port collision, failed launch/orphans, idempotent safe Stop, logs, SQLite
-  migration/recovery and full restore remain unproven on real hardware.
-- No approval for live PhotoMap Start, UI mutation, package changes, public ingress,
-  autostart, changing production services or a production release.
+1. **P3 browser:** a real Chromium render attempt timed out (exit 124).
+   No actual browser Publish/Rollback clicks, keyboard/ARIA or accessibility
+   acceptance exists. jsdom/Vitest and HTTP operations do not replace it.
+2. **PRoot safety:** source tests now refuse forged identities, PID reuse,
+   unverified descendants and uncertain `start.claim`; however detached/
+   reparented orphan recovery, uncertain spawn and complete physical Stop
+   and rollback remain unproven.
+3. **PhotoMap:** live Start/health/Stop, real safe recovery and full
+   source/SQLite/media restoration have **no approval or hardware acceptance**.
+   The imported original and all foreign services must stay untouched.
+4. **Knip:** v5/v6 cannot currently load the native `oxc-resolver` dependency
+   under Termux. This is a tooling limitation, not evidence of dead code.
+   Do not prune dependencies or preserved upstream screens based on it.
 
-## Safe next action
+No public ingress, autostart, package upgrades, unrestricted shell/AI API or
+production release is authorized. Do not turn source test success into service
+activation.
 
-1. Read [agent rules](../AGENTS.md), [Local Agent runbook](LOCAL_AGENT_TERMUX.md),
-   [architecture](ARCHITECTURE.md), [quality gates](QUALITY_GATES.md) and relevant
-   [ADR-0007](adr/0007-photomap-managed-instance-layout.md),
-   [ADR-0008](adr/0008-photomap-p4-managed-catalog.md),
-   [ADR-0009](adr/0009-photomap-isolated-runtime.md).
-2. Confirm the fresh private Samsung Termux Local Agent host/installation,
-   intake, terminal ledger, independent QA checkout cleanliness and current refs.
-   The previous accepted target was `android-termux-10520` with installation
-   `6be16f1d-194b-4f07-b377-3d4bb218fcd7`; an old receipt is not liveness.
-3. Use **read-only preflight** for six foreign services, P3 ownership, port 8010,
-   rootfs/work SQLite, PRoot sessions and storage. Never affect original PhotoMap.
-4. Add only bounded negative source/fixture tests for process identity, orphans
-   and port conflicts. After code changes, qualify on Samsung with
-   `npm run check:all`, saving the exact terminal result.
-5. Obtain separate explicit authorization before any real manual
-   PhotoMap Start/health/Stop on disposable copied data. Keep all public and
-   write-control surfaces closed until independent acceptance.
+## Next bounded sprint
 
-**Execution:** GitHub Connector + exact Samsung Termux Local Agent only.
-No Codex, ChatGPT Work, GitHub Actions or status checks, Mac/sandbox PocketHost
-execution, new branches or force push. Never restart or take ownership of
-IleStoi.pl, original PhotoMap, Local Agent or other external services.
+1. Perform fresh read-only host/checkout/foreign-service preflight.
+2. Solve the **P3 real-browser interaction gate** using a verified safe
+   Termux-compatible driver or manual device evidence; do not touch existing
+   occupied ports or other services. Capture actual click, keyboard,
+   version-selection and error paths with pre/post foreign-service state.
+3. Continue **PRoot orphan/unknown-claim recovery** with negative fixtures,
+   an explicit recovery plan and independent hardware evidence. Never
+   auto-kill unknown PIDs, force-delete claims or enable PhotoMap as a shortcut.
+4. Evaluate a compatible Knip baseline and targeted browser accessibility
+   tooling without changing the device package estate blindly.
+5. Request **separate explicit owner authorization** before any controlled
+   PhotoMap run against disposable copied data. Full restoration acceptance
+   is a separate gate.
 
-## Documentation maintenance
-
-Use [the documentation entrypoint](README.md) for current work.
-Historical checkpoints are indexed separately in
-[the archive](checkpoints/README.md). Avoid a new checkpoint for every QA attempt:
-update this handoff and the affected owner/module docs; preserve detailed immutable
-evidence only at real acceptance boundaries. Do not reread or rerun the entire history.
-
-## Current quality refactor — 2026-11-07
-
-- All ten historical branches were verified as ancestors of `main` and deleted through
-  Git-only transport. The `main`-only policy is now in root instructions and development docs.
-- At `eefd870`, Samsung `check:all` rejected the checkpoint archive index; this was
-  fixed by `a56e94`. The next run passed 68/68 Node tests but stopped at Markdownlint MD059.
-- At `634aa3f`, the four new generic runtime tests, three process evidence tests and all
-  75 root Node tests passed, as did Markdownlint. Full `check:all` stopped at Prettier
-  on four files. ESLint, TypeScript, admin build and Vitest were not reached.
-- The latest bounded source sprint and exact open work are recorded in the
-  [2026-11-07 checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md).
-  The new generic runtime still requires full same-SHA Samsung QA; PhotoMap activation
-  remains disabled.
-
-## New bounded source changes awaiting Samsung acceptance
-
-After the accepted formatted **QA checkout** trial at `634aa3f`, further `main`
-changes added process-group stop evidence, read-only host API Zod validation,
-component-level P3 accessibility checks, `test:coverage`, JSONL error events and a
-dry-run recovery plan. These changes do **not** activate PhotoMap, install packages,
-manage foreign services or complete real browser acceptance. See the
-[quality sprint checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md)
-for exact receipts and unresolved work. Verify fresh `main`, apply required
-Prettier formatting and obtain a new full Samsung `check:all` receipt.
-
-## Current autonomous sprint — 2026-11-07
-
-Work only on fresh `main`; all ten historical working branches are already
-deleted. The older `bd5347` source has a genuine Samsung `check:all` PASS
-(81/81 Node, 12/12 Vitest), and Node coverage at 79.38% lines. The newer
-registered runtime, process supervisor, PRoot argument builder, child-process
-attestation, PhotoMap profile extraction and P3/P4 Zod validation are **not**
-yet accepted at the latest exact HEAD. The current [checkpoint](checkpoints/2026-11-07-main-runtime-host-sprint.md) lists receipts, gaps and
-next safe steps. Before deployment: verify native `check:all`, Knip baseline
-and real P3 browser controls. Keep disabled PhotoMap inert, original data
-untouched and external services read-only.
+Keep the [development plan](DEVELOPMENT_PLAN.md), [quality contract](QUALITY_GATES.md)
+and this handoff synchronized. Preserve historical receipts; close only
+demonstrably accepted work.

@@ -1,108 +1,61 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-06
-purpose: Track milestone ownership, current release holds and the next bounded delivery
+last_reviewed: 2026-11-07
+purpose: Current milestones and the smallest safe next release gates
 ---
 
-# Development Plan
+# PocketHost Development Plan
 
-All source execution and validation run on Samsung Termux through its
-[installed Local Agent](LOCAL_AGENT_TERMUX.md), never via Mac, Linux sandbox,
-GitHub Actions, Codex or ChatGPT Work. The canonical live status is
-[the handoff](HANDOFF_NEXT_CHAT.md); historical evidence is in
-[the archive](checkpoints/README.md).
+PocketHost is a manually operated Termux hosting control panel. Keep
+UI, inventory, runtime, diagnostics, package management and future AI API
+behind typed contracts and explicit ownership. Use only fresh `main`,
+GitHub Connector and the exact Samsung Termux Local Agent; no new branches,
+GitHub Actions, Codex, Work or device-wide package changes.
 
-## P0 — foundation (accepted)
+## Milestone status
 
-Module ownership, manifest-controlled structure, security model, native
-quality gates, pinned admin dependencies and source/documentation policies.
+| Milestone | Source and native scope | Release status |
+| --- | --- | --- |
+| P0–P2 | Foundation, read-only inventory, admin UI baseline | Accepted |
+| P3 | Explicit owned demo lifecycle and versioned HTTP publish/rollback | Native/HTTP accepted; real browser G3 HOLD |
+| P4 catalog | Stopped PhotoMap TEST import, GET-only catalog, copied rootfs/workset | Read-only accepted; live runtime HOLD |
+| Generic runtime | Neutral registry, guarded process supervisor, PRoot plan/child evidence, typed schemas | Tested at `bc5e553`; live orphan/recovery HOLD |
+| P4.next | Safe package inventory/plans and approvals | Deferred; installs/upgrades disabled |
+| P5 | Scoped authenticated AI API, DNS/TLS, public access, APK | Deferred |
 
-## P1 — read-only inventory (accepted)
+## Finished in the current source sprint
 
-Fixed allowlist of six external services, sanitized Termux status and
-DEV-only typed host snapshot. No adoption or modification of foreign services.
+- Main-only consolidation and archive indexing; no obsolete branches remain
+  in the accepted branch inventory.
+- Application-neutral managed runtime registry and supervisor, with
+  PhotoMap-specific profile/launch-plan kept outside the shared engine.
+- Fail-closed PID/start-ticks/executable/cwd/argv and process/descendant
+  guards, retained unknown start claims, diagnostic JSONL and dry-run
+  recovery planning.
+- P3/P4/host read-only API response validation and component a11y tests.
+- Native `check:all` on `bc5e553`: 101/101 Node, 16/16 Vitest,
+  coverage floor, lint, TypeScript, format and build PASS.
+- Real P3 owned loopback Publish/Rollback/Stop/Start with unchanged
+  external-service states. This is **not** browser click acceptance.
 
-## P2 — admin GUI (accepted baseline)
+## Prioritized next work
 
-Desktop-first React/Vite Base UI dashboard with preserved upstream routes,
-host health and appearance interactions. Production branding and a11y
-remain ongoing; no public admin exposure.
+1. **P3 browser gate:** test real click, keyboard and version-selection
+   behavior, plus external-service and ownership readbacks. Current
+   Chromium CLI render timed out; investigate safely on the device.
+2. **PRoot recovery safety:** prove detached/reparented orphan handling,
+   uncertain spawn and failed Stop; keep unknown claims and disabled
+   PhotoMap inert until verified.
+3. **Tooling:** optional Termux-compatible Knip audit, meaningful
+   host/runtime coverage review and physical accessibility checks.
+4. **P4 controlled runtime:** only after a separate explicit approval,
+   use disposable copied data for physical Start/health/Stop and complete
+   source/database/media rollback.
+5. **Later product features:** package CMS and authenticated AI API only
+   after the owned-runtime and release gates are closed.
 
-## P3 — single owned test site (candidate, release HOLD)
-
-Fixed isolated static demo with manually requested Start/Stop, sample
-Publish/Rollback, and independently reviewed optional trusted private-LAN
-gateway. Native device/HTTP and browser viewing passed. Real Mac browser
-Publish/Rollback clicks and final protected-service readback are outstanding.
-Source has been consolidated on `main`, but **production release remains blocked** until this gate closes.
-
-## P4 — managed PhotoMap TEST (read-only accepted; runtime HOLD)
-
-The original PhotoMap data/source and backup stay outside management.
-Read-only catalog, GET-only API, independent imported copy, Debian 12 rootfs,
-independent working SQLite and required Python tools are verified.
-The selected runtime profile is disabled and unapproved; no live service
-or automatic runtime lifecycle is accepted.
-
-**Next source task:** negative tests and safeguards for forged ownership,
-PID reuse/start ticks, executable/cwd/argv, PRoot child identity, port
-collision, timeout, orphan cleanup and idempotent Stop. Do not re-copy
-existing data, rootfs or media. A bounded real Start/health/Stop on the
-independent working copy needs separate explicit authorization.
-Whole-instance recovery and dependency planning come only after safe
-real lifecycle acceptance.
-
-## P4.next — packages and assisted operations (deferred)
-
-Provide read-only tool versions, reviewed install/upgrade plans,
-explicit approvals and rollback evidence. No implicit package installation
-or global Termux upgrades during inspection. Separate local app data from
-host-managed dependencies.
-
-## P5 — AI-facing API, domains and Android distribution (deferred)
-
-Build a **scoped, authenticated capability API** on top of the existing
-Local Agent execution/admission/result machinery, not an arbitrary
-public shell endpoint. Versioned deployment, manifest validation, health,
-safe rollback, DNS/TLS, quotas and opt-in ingress require their own threat
-model and on-device hardware tests. Keep Termux upstream; APK packaging is
-a later UX layer, not a reason to fork it.
-
-## Release order
-
-1. Accept P3 actual browser mutations and external-service invariants.
-2. Finish P4 negative ownership/orphan safeguards on exact tested source.
-3. Separately approve one bounded physical PhotoMap lifecycle on disposable data.
-4. Verify complete source/DB/media rollback, then consider managed package controls.
-5. Review security and monitoring before exposing AI/remote management.
-
-All future PocketHost changes are committed to fresh `main` by default. The 2026-11-07
-fast-forward did not waive P3 browser release gates. Do not repeat accepted
-Samsung tests or create new branches without explicit owner direction.
-
-## Quality-first sprint checkpoint — 2026-11-07
-
-The main-only consolidation is complete. A generic managed-runtime policy,
-process identity/PRoot-group guard, bounded runtime JSONL diagnostics,
-host-snapshot Zod validation and initial P3 component accessibility checks
-have been committed. Node-native coverage reporting is available as a separate
-command; a Knip baseline and strict thresholds are **not** yet accepted.
-
-The remaining sequence is: same-SHA Samsung `check:all` and coverage receipt;
-PRoot orphan/process-group failure fixtures; PhotoMap host-adapter extraction
-into independent manifest, lifecycle and launch-plan units; broader API schema
-and a11y tests; error-history/rollback recovery proofs. Preserve P3 physical
-browser and P4 runtime activation holds. The detailed [sprint checkpoint]
-(checkpoints/2026-11-07-quality-hardening-sprint.md) separates done from open.
-
-## Next bounded closeout — 2026-11-07
-
-Finish `check:all` and coverage at fresh `main`, then review Knip without
-removing vendor screens or auto-changing dependencies. The reusable runtime
-registry and PhotoMap-independent host supervisor are implemented as source
-candidates; real PRoot orphan handling and whole-instance recovery need
-physical proof. Test P3's owned loopback Start/Publish/Rollback/Stop on Samsung,
-then separately verify real browser keyboard/click interactions and unchanged
-foreign services. P4 PhotoMap activation and package mutation remain blocked.
-See the [main runtime checkpoint](checkpoints/2026-11-07-main-runtime-host-sprint.md).
+Do not repeat accepted tests at an unchanged SHA or treat source coverage
+as hardware acceptance. The [current handoff](HANDOFF_NEXT_CHAT.md) is
+the operational entrypoint; exact receipts are in the
+[final native checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).

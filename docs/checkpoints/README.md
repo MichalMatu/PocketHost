@@ -11,6 +11,7 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [Final native QA and handoff](2026-11-07-final-native-qa-handoff.md)
 - [Main-only runtime and quality sprint](2026-11-07-main-runtime-host-sprint.md)
 - [Quality hardening sprint](2026-11-07-quality-hardening-sprint.md)
 
