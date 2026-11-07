@@ -88,6 +88,15 @@ function upstreamHeaders(request, internalPort) {
   return headers;
 }
 
+/**
+ * Observability reads fixed host/package diagnostics that have individual
+ * bounded process timeouts. Only that read-only endpoint has a longer LAN
+ * upstream idle budget; other admin and demo requests keep 5 seconds.
+ */
+export function upstreamTimeoutMs(requestPath) {
+  return requestPath?.split('?')[0] === '/api/v1/observability' ? 25000 : 5000;
+}
+
 export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
@@ -106,7 +115,7 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
         path: request.url,
         method: request.method,
         headers,
-        timeout: 5000,
+        timeout: upstreamTimeoutMs(request.url),
       },
       (upstreamResponse) => {
         response.writeHead(upstreamResponse.statusCode ?? 502, {
