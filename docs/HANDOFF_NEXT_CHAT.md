@@ -7,6 +7,28 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 
 # PocketHost — H2.1 version manager, accepted source and G3 hold
 
+## Closeout of this chat's H2.1/G3 scope — 2026-11-07
+
+**Do not repeat completed H2.1 G2 or preflights merely to
+obtain a new PASS.** Exact H2.1 application source `89ebf99`
+passed 134 Node / 29 UI and remains unmodified. Samsung
+read-only G3 ownership preflight is terminal `done/0 PASS`.
+
+This chat repaired the missing H2.1 G3 archive-index entry
+in `docs/checkpoints/README.md` (commit `ea5ed4d`),
+then recorded the final H2.1/G3 disposition. The previous
+tool-safety rejection of the guarded live release remains;
+there is no H2.1 G3 deployment task or terminal G3 receipt.
+**Do not attempt to bypass the block.**
+
+**Outcome: code G2 accepted; live G3 blocked/not accepted.**
+The original H2 preview still served both protected user sites
+at the last actual device readout. This chat's documented work
+is handed off; a future independently permitted release must
+satisfy the exact-owner guarded cutover, third disposable site,
+rollback and immutable baseline comparison and real Mac Chrome
+acceptance before changing G3 to PASS.
+
 ## Single-sprint H2.1 + G3 request — still safety-blocked
 
 The owner explicitly requested an autonomous **single sprint** to close
