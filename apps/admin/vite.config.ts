@@ -188,7 +188,7 @@ function ownedDemoApi(): Plugin {
             action === "create" ? runtime.create() :
             action === "start" ? runtime.start() :
             action === "stop" ? runtime.stop() :
-            action === "restart" ? (async () => { await runtime.stop(); return runtime.start() })() :
+            action === "restart" ? runtime.restart() :
             action === "publish/v1" ? runtime.publish(1) :
             action === "publish/v2" ? runtime.publish(2) :
             runtime.rollback()
