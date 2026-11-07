@@ -199,7 +199,7 @@ export class ResticWorkspaceAdmin {
       if (typeof snapshot.id !== 'string' || !SNAPSHOT_ID.test(snapshot.id) ||
           typeof snapshot.time !== 'string' || snapshot.time.length > 60 ||
           !Array.isArray(snapshot.paths) || snapshot.paths.length !== roots.length ||
-          !roots.every(root => snapshot.paths.includes(root)))
+          !roots.every(root => (snapshot.paths as string[]).includes(root)))
         continue;
       records.push({ id: snapshot.id, time: snapshot.time, paths: roots });
     }
