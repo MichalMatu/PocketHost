@@ -32,11 +32,23 @@ export default function NetworkAccessPage() {
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal).catch(() => {
-      if (!controller.signal.aborted) setError("Cannot read LAN settings from this PocketHost session.")
-    })
+    void getStatus(controller.signal)
+      .then((next) => {
+        if (controller.signal.aborted) return
+        setStatus(next)
+        setBind((previous) =>
+          next.interfaces.some((item) => item.address === previous)
+            ? previous
+            : (next.bind ?? next.interfaces[0]?.address ?? ""),
+        )
+        setError(null)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted)
+          setError("Cannot read LAN settings from this PocketHost session.")
+      })
     return () => controller.abort()
-  }, [refresh])
+  }, [])
   const change = async (enabled: boolean) => {
     if (busy) return
     setBusy(true)
