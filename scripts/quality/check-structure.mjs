@@ -7,6 +7,9 @@ export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.met
 const approvedHostScripts = new Set([
   'src/modules/host/owned-site-server.mjs',
   'src/modules/host/lan-gateway.mjs',
+  // Explicitly scoped host-only LAN control and its TypeScript ESM declaration.
+  'src/modules/host/lan-control.mjs',
+  'src/modules/host/lan-control.d.mts',
 ]);
 
 export function validateStructure(root = repositoryRoot) {
