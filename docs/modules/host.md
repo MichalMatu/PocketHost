@@ -44,3 +44,20 @@ The candidate `owned-site-host.ts` is the only adapter permitted to create and c
 `ManagedPhotoMapRuntimeHost` is the exclusive filesystem/process boundary for a future project-local `photomap-test` Debian PRoot version. It checks fixed instance/release, non-symlink manifests and directories, disabled/autostart flags, version and requirements checksum, working database/media directories, port collision and exact PID + Linux start-ticks + executable/cwd/argv identity before any lifecycle signal. The adapter refuses a disabled real import and does not interact with the original PhotoMap service. Native Termux tests passed at `32c09f2c`; see [runtime checkpoint](../checkpoints/2026-11-06-photomap-runtime-inert-native.md).
 
 **Updated staged acceptance:** independent versioned Debian rootfs copies and an owned disposable source/SQLite workset have now passed Samsung checks; a stopped Python 3.11.2 interpreter and all eight required packages were observed. At exact source `d5b5591`, **62/62** Node tests, **6/6** host negatives and root lint/types/format/docs passed. See [staging checkpoint](../checkpoints/2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md). This remains **source plus inactive staging qualification**, not a health-tested PhotoMap process or a manual UI control. The candidate launch arguments now name the observed `/opt/photomap-venv/bin/python`, and additional profile approval fields reject staged/forged activation; **same-SHA Samsung source acceptance passed** at `a5443070`: 9/9 targeted and 65/65 root Node, docs/format/lint/types PASS, port 8010 OFF. No active version or profile permission may be enabled merely to pass a test. Failed/uncertain process identity must remain a HOLD, never a reason for PID-only cleanup.
+
+## Host hardening and PhotoMap decoupling — 2026-11-07
+
+The generic `managed-process-supervisor.ts` now owns bounded, fail-closed
+start admission, identity/health readiness and Stop evidence policy.
+`managed-proc-tree.ts` reads only an explicit leader's bounded /proc child graph,
+records PID/start ticks and refuses unreadable or cyclic ancestry. Exact leader
+identity, port release, observed descendant exit and process-group disappearance
+are all required before clearing an owned PRoot marker. No forced group kill or
+orphan adoption is permitted.
+
+The generic `managed-proot-plan.ts` builds shell-free PRoot arguments from
+allowlisted binds. Generic canonical file validation is in
+`managed-runtime-files.ts`. PhotoMap's hardcoded source/release/profile,
+Python guest, disposable SQLite and runtime arguments now belong to
+`photomap-runtime-plan.ts`, separate from the process supervisor. This is a
+source-only candidate; no live PhotoMap start was approved.
