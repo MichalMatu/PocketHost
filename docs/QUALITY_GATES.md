@@ -97,3 +97,17 @@ test frameworks, global installs and new automation services.
 
 The [current sprint checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md)
 records exact receipts; this newer code must pass same-SHA `check:all`.
+
+## Latest accepted versus pending evidence — 2026-11-07
+
+On Samsung Termux, source `bd5347ff17945c0d04fa9cd66709b02e8ae651f4`
+passed `npm run check:all`: 81/81 root tests, 12/12 admin Vitest,
+Prettier, Markdownlint, ESLint, TypeScript and Vite build. Built-in Node
+coverage also passed, with 79.38% aggregate lines and 44.34% in the disabled
+PhotoMap host adapter. This is a verified **older SHA**, not acceptance of
+later source refactors. See the [current checkpoint](checkpoints/2026-11-07-main-runtime-host-sprint.md).
+
+The latest source adds more host tests and app-specific adapters; run the full
+same-SHA native gate before claiming readiness. Knip remains non-blocking
+until its baseline is reviewed. P3 browser interaction and P4 real PRoot
+recovery remain independent hardware release holds.
