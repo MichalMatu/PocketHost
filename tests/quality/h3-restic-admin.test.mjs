@@ -3,8 +3,15 @@ import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  chmodSync, existsSync, lstatSync, mkdirSync, mkdtempSync,
-  readFileSync, rmSync, symlinkSync, writeFileSync,
+  chmodSync,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import { WorkspaceFiles } from '../../src/modules/host/termux-admin.ts';
 import { ResticWorkspaceAdmin } from '../../src/modules/host/termux-restic-admin.ts';
@@ -34,20 +41,28 @@ test('H3 native Restic initializes a locally encrypted repo automatically, witho
   };
   try {
     assert.deepEqual(sampleData.restic.status(), {
-      initialized: false, repositoryPresent: false, keyPresent: false,
+      initialized: false,
+      repositoryPresent: false,
+      keyPresent: false,
     });
     await sampleData.restic.backup(runner);
     assert.equal(commands.length, 2);
     assert.ok(commands[0].args.includes('init'));
     assert.deepEqual(commands[1].args.slice(2), [
-      'backup', '--tag', 'pockethost-h3', '--', sampleData.workspace.root,
+      'backup',
+      '--tag',
+      'pockethost-h3',
+      '--',
+      sampleData.workspace.root,
     ]);
     const key = path.join(sampleData.state, 'password');
     assert.equal(lstatSync(key).mode & 0o077, 0);
     assert.ok(readFileSync(key, 'utf8').trim().length >= 32);
     assert.equal(sampleData.restic.status().initialized, true);
     assert.equal(sampleData.workspace.read('note.md'), 'original');
-  } finally { rmSync(sampleData.root, { recursive: true, force: true }); }
+  } finally {
+    rmSync(sampleData.root, { recursive: true, force: true });
+  }
 });
 test('H3 Restic exact snapshot IDs, check, staged restore, forget and no workspace overwrite', async () => {
   const sampleData = sample();
@@ -81,7 +96,9 @@ test('H3 Restic exact snapshot IDs, check, staged restore, forget and no workspa
     assert.ok(calls.some(([, args]) => args.includes('check')));
     assert.ok(calls.some(([, args]) => args.includes('forget') && args.includes('--prune')));
     assert.ok(calls.every(([binary]) => binary.endsWith('/restic')));
-  } finally { rmSync(sampleData.root, { recursive: true, force: true }); }
+  } finally {
+    rmSync(sampleData.root, { recursive: true, force: true });
+  }
 });
 test('H3 Restic refuses linked repositories and unsafe recovery key permissions', async () => {
   const sampleData = sample();
@@ -93,5 +110,7 @@ test('H3 Restic refuses linked repositories and unsafe recovery key permissions'
     writeFileSync(path.join(sampleData.state, 'password'), 'x'.repeat(48), { mode: 0o666 });
     chmodSync(path.join(sampleData.state, 'password'), 0o644);
     await assert.rejects(sampleData.restic.initialize(), /Unsafe Restic password file/);
-  } finally { rmSync(sampleData.root, { recursive: true, force: true }); }
+  } finally {
+    rmSync(sampleData.root, { recursive: true, force: true });
+  }
 });

@@ -23,8 +23,15 @@ export const OWNER_AGENT_CAPABILITIES = Object.freeze({
     'X-PocketHost-Agent-Intent': 'termux-owner-agent',
   },
   actions: [
-    'package-preview', 'package', 'full-file', 'service', 'restic',
-    'restic-system', 'terminal', 'file', 'snapshot',
+    'package-preview',
+    'package',
+    'full-file',
+    'service',
+    'restic',
+    'restic-system',
+    'terminal',
+    'file',
+    'snapshot',
   ],
   scopes: {
     files: ['home', 'prefix', 'shared'],

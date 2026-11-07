@@ -31,7 +31,7 @@ replace or modify the installed Local Agent Git task transport.
 
 ## Consequences
 
-Trusted-LAN members can perform privileged *Termux-user* actions,
+Trusted-LAN members can perform privileged _Termux-user_ actions,
 including executing commands through the interactive terminal.
 An untrusted LAN, router port forward, tunnel, public reverse
 proxy or automatically exposed terminal would be unacceptable.

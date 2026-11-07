@@ -116,7 +116,11 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
     });
     assert.equal(response.status, 200);
     body = await response.json();
-    assert.equal(body.agentIntent, null, 'LAN headers may not impersonate the on-device Local Agent');
+    assert.equal(
+      body.agentIntent,
+      null,
+      'LAN headers may not impersonate the on-device Local Agent',
+    );
     assert.equal(await requestWithHeaders(port, { Host: 'evil.example' }), 403);
     assert.equal(
       await requestWithHeaders(port, {

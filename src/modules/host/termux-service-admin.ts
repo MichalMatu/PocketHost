@@ -34,7 +34,8 @@ interface Registration {
   target: string;
   addedAt: string;
 }
-export type ServiceOperation = 'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'enable' | 'disable';
+export type ServiceOperation =
+  'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'enable' | 'disable';
 export interface TermuxService {
   name: string;
   registered: boolean;
@@ -213,14 +214,16 @@ export class TermuxServiceAdmin {
       const marker = path.join(this.serviceRoot, name, 'down');
       if (!existsSync(marker)) return true;
       return lstatSync(marker).isSymbolicLink() ? null : false;
-    } catch { return null; }
+    } catch {
+      return null;
+    }
   }
 
   logs(name: string): { lines: string[] } {
     valid(name);
     const registrations = this.registry();
     const current = this.target(name);
-    if (!registrations.some(entry => entry.name === name && entry.target === current))
+    if (!registrations.some((entry) => entry.name === name && entry.target === current))
       throw new Error('Service not registered');
     const root = path.join(PREFIX, 'var', 'log', 'sv', name);
     const file = path.join(root, 'current');
@@ -231,9 +234,21 @@ export class TermuxServiceAdmin {
     const stat = lstatSync(file);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4 * 1024 * 1024)
       throw new Error('Unsafe service log');
-    const lines = readFileSync(file, 'utf8').slice(-20000).split(/\r?\n/).slice(-100)
-      .map(line => line.replace(/(password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi,
-        '$1=[redacted]').split('').filter(char => { const code = char.charCodeAt(0); return code >= 32 && code !== 127; }).join('').slice(0, 240));
+    const lines = readFileSync(file, 'utf8')
+      .slice(-20000)
+      .split(/\r?\n/)
+      .slice(-100)
+      .map((line) =>
+        line
+          .replace(/(password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+          .split('')
+          .filter((char) => {
+            const code = char.charCodeAt(0);
+            return code >= 32 && code !== 127;
+          })
+          .join('')
+          .slice(0, 240),
+      );
     return { lines };
   }
 
@@ -243,7 +258,11 @@ export class TermuxServiceAdmin {
     run: Exec = executeFixed,
   ): Promise<{ changed: boolean; result?: HostCommandResult }> {
     valid(name);
-    if (!['register', 'unregister', 'start', 'stop', 'restart', 'enable', 'disable'].includes(operation))
+    if (
+      !['register', 'unregister', 'start', 'stop', 'restart', 'enable', 'disable'].includes(
+        operation,
+      )
+    )
       throw new RangeError('Unsupported runit action');
     if (isProtected(name)) throw new Error('Protected service');
     const registrations = this.registry();
@@ -264,7 +283,8 @@ export class TermuxServiceAdmin {
     if (operation === 'enable' || operation === 'disable') {
       const result = await run(
         path.join(PREFIX, 'bin', operation === 'enable' ? 'sv-enable' : 'sv-disable'),
-        [name], { timeout: 20000, maxBuffer: 12000, env: { ...process.env, SVDIR: this.serviceRoot } },
+        [name],
+        { timeout: 20000, maxBuffer: 12000, env: { ...process.env, SVDIR: this.serviceRoot } },
       );
       return { changed: true, result };
     }

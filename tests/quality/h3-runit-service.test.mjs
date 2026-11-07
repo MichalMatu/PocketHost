@@ -83,10 +83,15 @@ test('H3.4 runit enable/disable only explicitly registered non-protected exact s
     await admin.apply('register', 'site-worker', run);
     await admin.apply('enable', 'site-worker', run);
     await admin.apply('disable', 'site-worker', run);
-    assert.deepEqual(calls.map(([bin, args]) => [bin, args]), [
-      ['/data/data/com.termux/files/usr/bin/sv-enable', ['site-worker']],
-      ['/data/data/com.termux/files/usr/bin/sv-disable', ['site-worker']],
-    ]);
+    assert.deepEqual(
+      calls.map(([bin, args]) => [bin, args]),
+      [
+        ['/data/data/com.termux/files/usr/bin/sv-enable', ['site-worker']],
+        ['/data/data/com.termux/files/usr/bin/sv-disable', ['site-worker']],
+      ],
+    );
     assert.ok(calls.every(([, , opts]) => opts.env.SVDIR === services));
-  } finally { rmSync(tmp, { recursive: true, force: true }); }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });

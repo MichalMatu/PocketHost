@@ -1,14 +1,24 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { terminalLaunchPlan, TermuxTerminal } from '../../src/modules/host/termux-terminal.ts';
-import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from '../../src/modules/host/termux-agent-contract.ts';
+import {
+  admitsAgentCommand,
+  OWNER_AGENT_CAPABILITIES,
+} from '../../src/modules/host/termux-agent-contract.ts';
 
 test('H3.4 ttyd launch plan binds one writable terminal exclusively to loopback', () => {
   const plan = terminalLaunchPlan();
   assert.equal(plan.executable, '/data/data/com.termux/files/usr/bin/ttyd');
   assert.deepEqual(plan.args.slice(0, 9), [
-    '--interface', '127.0.0.1', '--port', '18798', '--writable', '--once',
-    '--max-clients', '1', '--base-path',
+    '--interface',
+    '127.0.0.1',
+    '--port',
+    '18798',
+    '--writable',
+    '--once',
+    '--max-clients',
+    '1',
+    '--base-path',
   ]);
   assert.equal(plan.args[9], '/terminal');
   assert.equal(plan.port, 18798);

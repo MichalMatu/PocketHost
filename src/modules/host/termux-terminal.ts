@@ -16,17 +16,36 @@ export function terminalLaunchPlan(): TerminalPlan {
   const home = os.homedir();
   return {
     executable: PREFIX + '/bin/ttyd',
-    args: ['--interface', '127.0.0.1', '--port', String(PORT), '--writable',
-      '--once', '--max-clients', '1', '--base-path', BASE, '--cwd', home,
-      PREFIX + '/bin/bash', '-l'],
+    args: [
+      '--interface',
+      '127.0.0.1',
+      '--port',
+      String(PORT),
+      '--writable',
+      '--once',
+      '--max-clients',
+      '1',
+      '--base-path',
+      BASE,
+      '--cwd',
+      home,
+      PREFIX + '/bin/bash',
+      '-l',
+    ],
     port: PORT,
     url: BASE + '/',
-    env: { HOME: home, PREFIX, PATH: PREFIX + '/bin', TERM: 'xterm-256color',
-      LANG: 'en_US.UTF-8', TMPDIR: PREFIX + '/tmp' },
+    env: {
+      HOME: home,
+      PREFIX,
+      PATH: PREFIX + '/bin',
+      TERM: 'xterm-256color',
+      LANG: 'en_US.UTF-8',
+      TMPDIR: PREFIX + '/tmp',
+    },
   };
 }
 function portOpen(port: number): Promise<boolean> {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const socket = createConnection({ host: '127.0.0.1', port });
     let finished = false;
     const complete = (open: boolean) => {
@@ -54,14 +73,20 @@ export class TermuxTerminal {
     if (this.status().running) return this.status();
     if (this.started) return this.started;
     this.started = this.startOnce();
-    try { return await this.started; }
-    finally { this.started = null; }
+    try {
+      return await this.started;
+    } finally {
+      this.started = null;
+    }
   }
   private async startOnce(): Promise<{ running: boolean; url: string | null }> {
     if (await portOpen(this.plan.port))
       throw new Error('Terminal port already in use; refusing to adopt an unknown listener');
     const child = spawn(this.plan.executable, this.plan.args, {
-      cwd: os.homedir(), env: this.plan.env, detached: false, stdio: 'ignore',
+      cwd: os.homedir(),
+      env: this.plan.env,
+      detached: false,
+      stdio: 'ignore',
     });
     const ready = await new Promise<boolean>((resolve, reject) => {
       child.once('spawn', () => resolve(true));
@@ -72,7 +97,7 @@ export class TermuxTerminal {
     for (let count = 0; count < 22; count++) {
       if (child.exitCode !== null || child.signalCode !== null) break;
       if (await portOpen(this.plan.port)) return this.status();
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise((resolve) => setTimeout(resolve, 150));
     }
     // Only terminate a process we started and still hold.
     if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
