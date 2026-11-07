@@ -179,3 +179,22 @@ test('malformed or excessive deployment records cannot grant owned runtime acces
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test('symlinked release document is rejected without touching live content', async () => {
+  const { directory, root } = fixture();
+  const port = await allocatePort();
+  try {
+    const site = new OwnedDemoHost(root, port);
+    site.create();
+    const workset = path.join(root, 'pockethost-demo');
+    const foreign = path.join(directory, 'foreign.html');
+    writeFileSync(foreign, '<h1>foreign</h1>');
+    symlinkSync(foreign, path.join(workset, 'index-v2.html'));
+    assert.throws(() => site.publish(2), /Unsafe owned release document/);
+    assert.equal(site.inspect().contentVersion, 1);
+    assert.match(readFileSync(path.join(workset, 'index.html'), 'utf8'), /First local site/);
+    assert.equal(readFileSync(foreign, 'utf8'), '<h1>foreign</h1>');
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
