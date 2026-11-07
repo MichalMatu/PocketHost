@@ -112,6 +112,27 @@ These operations require no password, but still use deliberate confirmation
 and exact targets. No install, global backup, service mutation or live H3
 deployment is performed by this development sprint.
 
+## H3.3 — native Restic and LAN command latency
+
+This branch now integrates the native Restic executable for an encrypted
+local workspace repository. An owner-private recovery secret is generated
+on first initialization; the browser is not asked for a panel password.
+Restic supports init, backup, snapshot inventory, integrity check,
+restore into a separately named staging directory and explicit
+forget/prune. The active workspace is not overwritten by Restic restores.
+Restic must already be installed through the Packages module; no
+automatic host installation occurs during runtime startup.
+
+The fixed LAN admin gateway receives an extended idle deadline only
+for the exact typed H3 endpoint. POST can perform a native apt or Restic
+operation lasting up to 10 minutes; unrelated paths keep existing
+limits. New tests cover Restic's fixed command arguments, secure key
+file, snapshot identity, staging and the LAN deadline exception.
+
+This remains a source candidate only. Native Restic CLI itself has
+not been invoked against production data, and its recovery key is
+local to the Samsung until separately backed up by the owner.
+
 ## Evidence
 
 First isolated native H3 task
