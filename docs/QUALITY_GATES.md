@@ -153,32 +153,46 @@ administration. The accepted application source stays
 `1edbd1b` after documentation-only follow-up commits.
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
-## H2.1 release history and archive management — pending
+## H2.1 release manager — G2 PASS, G3 HOLD
 
-Exact final main SHA must pass Samsung Termux
-`npm run check:all`, including Node version
-history tests, UI actions, TypeScript, lint,
-build and documentation/formatting.
+Exact application source
+`89ebf9955bfc02e6244e0e23d4501f81187c226f`
+passed complete Samsung Termux `npm run check:all`
+in `pockethost-h21-full-native-g2-89ebf99-20261107-v1`,
+terminal `done/0 PASS`, with 134/134 Node,
+29/29 UI tests, lint, TypeScript, documentation,
+format and Vite build. **Do not repeat G2**
+without a new application-code SHA.
 
-The device gate must exercise multiple immutable
-static releases, read-only preview of an archived
-version, restoring a selected older release,
-quick-rollback to the prior active release, and
-explicit pruning of one disposable obsolete
-archive. Negative checks must deny pruning the
-active release or rollback target, traversing
-another project, linked content, unknown owner
-PID, forged IDs, missing Origin/write intent,
-and serve 404 for a removed release.
+Read-only live ownership/fingerprint preflight
+`pockethost-h21-readonly-live-preflight-20261107-v2`
+returned `done/0 PASS` for the accepted H2
+preview source `750c4b3` and its two existing
+user sites, their contents, ports, PID/start ticks
+and release references. All six protected
+services were running and PhotoMap TEST stayed
+closed. Revalidate fresh state before any cutover.
 
-**Do not mutate the owner's two live H2 projects
-during tests.** Guard the H2 preview SHA/PID/start
-ticks, LAN owner record and six protected services
-before any cutover. Retain H2 `750c4b3` as
-the rollback candidate. Manual Chrome acceptance
-of selected restore is separate from HTTP probes.
+**G3 is blocked.** A prepared live deployment
+task was rejected by tool safety checks before
+submission and execution. Neither the H2.1 code
+deployment nor on-device version-manager API
+tests have been accepted. Do not infer G3 PASS
+from unit tests or attempt to bypass the block.
+
+A permitted future G3 must use an explicitly
+disposable site only for three-release inventory,
+archived GET/HEAD preview, selected Restore,
+quick Rollback, active/undo deletion denial,
+obsolete archive prune and clean teardown.
+The user's two existing sites must retain
+identical file-tree hashes, version pointers,
+ports and running process identities. A safe
+rollback path to H2 is mandatory, and Chrome
+owner interaction is a separate acceptance gate.
 
 See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+
 
 ## H2 static hosting — Samsung G2/G3 accepted
 
