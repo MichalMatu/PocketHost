@@ -82,3 +82,40 @@ describe("H3 confirmed operations, no password prerequisite", () => {
     expect(JSON.parse(String(posted?.[1]?.body))).toEqual({ action: "snapshot", name: "create" })
   })
 })
+
+describe("H3 additional native-tool integrations", () => {
+  it("previews apt changes without a confirmation or mutation", async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => ({
+      ok: true,
+      json: async () => ({ operation: "install", result: { exit: 0, output: "Simulated changes" } }),
+    }))
+    const confirm = vi.fn(() => true)
+    vi.stubGlobal("fetch", fetchMock)
+    vi.stubGlobal("confirm", confirm)
+    render(<PackageActions />)
+    await user.type(screen.getByLabelText("Package name"), "git")
+    await user.click(screen.getByRole("button", { name: "Preview install" }))
+    await screen.findByText("Simulated changes")
+    const payload = JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))
+    expect(payload).toEqual({ action: "package-preview", name: "install", path: "git" })
+    expect(confirm).not.toHaveBeenCalled()
+  })
+  it("reports snapshot verification independently from restore", async () => {
+    const user = userEvent.setup()
+    const name = "snapshot-20261107-aaaaaaaaaaaa"
+    const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => ({
+      ok: true,
+      json: async () => options?.method === "POST"
+        ? { verification: { name, state: "verified", files: 2 } }
+        : { snapshots: [{ name, createdAt: "2026-11-07T13:00:00.000Z", files: 2 }] },
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<WorkspaceBackupActions />)
+    await user.click(await screen.findByRole("button", { name: "Verify" }))
+    await screen.findByText(/Snapshot integrity: verified/)
+    const posted = fetchMock.mock.calls.find(call => call[1]?.method === "POST")!
+    expect(JSON.parse(String(posted[1]?.body))).toEqual({ action: "snapshot", name: "verify", path: name })
+  })
+})
