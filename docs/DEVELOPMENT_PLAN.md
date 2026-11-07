@@ -89,6 +89,9 @@ only verified GET/HEAD site previews on its separate origin.
 
 No packages, uploaded backend execution, autostart, WAN
 exposure, foreign service mutations or PhotoMap launch.
+H2 controls additionally require `POCKETHOST_ENABLE_USER_SITES_DEV=1`
+alongside the existing owned-demo DEV flag. This separate opt-in
+prevents a new upload API from silently appearing after a source switch.
 Each source revision requires Samsung `check:all`, then
 a device HTTP/browser and rollback gate; H1 remains live
 until a terminal guarded H2 release receipt.
