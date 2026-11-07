@@ -74,6 +74,25 @@ fixture tests may write only their own disposable directories.
 Before any live rollout, fresh process/service/site ownership preflight
 and separate live acceptance remain necessary. No live H3 deployment.
 
+## H3.2 extension — packages, files, services, backups
+
+Owner-approved password-free operations are now supplemented by:
+- Native `apt-get -s` install/remove/upgrade simulations before optional
+  package mutations. No duplicated dependency resolver.
+- Import/export of bounded binary files (128 KiB), server-side copy,
+  and browser controls for the H3-owned workspace, with relative paths,
+  no hidden/symlink traversal and no general host shell API.
+- SHA-256 manifest integrity for new workspace snapshots, an explicit
+  Verify button and refusal to restore corrupt snapshots.
+- On-demand owned static site logs in the Services tab through the
+  pre-existing bounded H2 API; external runit services remain observed
+  rather than adopted.
+- Dedicated native negative tests and Vitest UI interaction tests.
+  
+These operations require no password, but still use deliberate confirmation
+and exact targets. No install, global backup, service mutation or live H3
+deployment is performed by this development sprint.
+
 ## Evidence
 
 First isolated native H3 task
@@ -81,3 +100,9 @@ First isolated native H3 task
 returned FAILED due missing checkpoint archive index entries (including
 a concurrent H2.1 checkpoint). It did not reach code tests. Both links
 have now been added on this branch. New exact-source tests are required.
+
+Second native H3 QA task `pockethost-h3-admin-qa-88ece8a-20261107-v1`
+returned HOLD: the requested branch HEAD moved during implementation.
+This is a stale branch-tip check, not evidence of a code failure. Future
+QA must fetch the moving branch, validate the *pinned* candidate SHA as
+an ancestor, and test a detached checkout of that exact SHA.
