@@ -18,6 +18,8 @@ import {
   ServerCog,
   Globe2,
   Activity,
+  History,
+  ScrollText,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -39,12 +41,15 @@ const data = {
       items: [
         { title: "Host overview", url: "/host", icon: ServerCog },
         { title: "Observability", url: "/observability", icon: Activity },
-        { title: "My test site", url: "/owned-site", icon: Globe2 },
+        { title: "Project details", url: "/owned-site", icon: Globe2 },
+        { title: "Deployments", url: "/deployments", icon: History },
+        { title: "Runtime logs", url: "/runtime-logs", icon: ScrollText },
+        { title: "Network access", url: "/settings/network", icon: Settings },
         { title: "Managed projects", url: "/managed-projects", icon: ServerCog },
       ],
     },
     {
-      label: "Dashboards",
+      label: "Template dashboards · examples",
       items: [
         {
           title: "Dashboard 1",
@@ -59,7 +64,7 @@ const data = {
       ],
     },
     {
-      label: "Apps",
+      label: "Template apps · not connected",
       items: [
         {
           title: "Mail",
@@ -89,7 +94,7 @@ const data = {
       ],
     },
     {
-      label: "Pages",
+      label: "Template pages · examples",
       items: [
         {
           title: "Landing",
@@ -229,7 +234,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               </div>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">PocketHost</span>
-                <span className="truncate text-xs">Local admin panel</span>
+                <span className="truncate text-xs">Private hosting MVP</span>
               </div>
             </SidebarMenuButton>
           </SidebarMenuItem>
