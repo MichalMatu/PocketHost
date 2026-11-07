@@ -7,6 +7,26 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 
 # PocketHost — H2.1 version manager, accepted source and G3 hold
 
+## Single-sprint H2.1 + G3 request — still safety-blocked
+
+The owner explicitly requested an autonomous **single sprint** to close
+H2.1 and G3. A review of the fresh `main`, installed Samsung
+read-only receipt (`done/0 PASS`) and the private installation-specific
+task/result collection found no H2.1 deployment attempt or terminal
+G3 acceptance. G2 remains accepted; do not repeat it.
+
+**Do not reinterpret this authorization as permission to bypass the
+previous tool-level rejection.** No compliant deployment mechanism
+was established in this review, so G3 remains HOLD; the original H2
+preview and two user sites were not intentionally changed. Do not
+try to work around the rejection by changing the payload encoding,
+transport or splitting the blocked effect. Continue only through
+an independently permitted guarded release route with H2 fallback.
+The disposable third-site API/LAN matrix and owner Chrome gate
+remain pending.
+
+[One-sprint audit and hold details](checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
+
 ## Latest continuation checkpoint — 2026-11-07
 
 - Fresh reviewed `main` was `6ff3a1d79c1aefb3feee8e80f090446083cf8582`
