@@ -54,9 +54,22 @@ export default function ObservabilityPage() {
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    // The first load is an external request, not a synchronous state
+    // transition caused by the effect. Manual Refresh owns its loading state.
+    void loadSnapshot(controller.signal)
+      .then((data) => {
+        if (controller.signal.aborted) return
+        setSnapshot(data)
+        setError(null)
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setError(unavailable)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
     return () => controller.abort()
-  }, [refresh])
+  }, [])
   const cpu = snapshot?.metrics.cpuPercent
   const battery = snapshot?.metrics.batteryPercent
   const network = snapshot?.metrics.network
