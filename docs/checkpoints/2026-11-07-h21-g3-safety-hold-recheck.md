@@ -166,3 +166,135 @@ and exact-owner cleanup. User Mac Chrome evidence remains separate.
 
 This addendum records a **safety hold**, not a successful
 deployment or a new terminal device test.
+
+## Final single-sprint closeout of this chat — 2026-11-07
+
+This pass is the **last attempted closeout of this chat's H2.1/G3 scope**.
+Do not reopen completed source gates or issue duplicate G3 tasks.
+
+- Current application baseline remains H2.1 source
+  `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+  The 134 Node / 29 admin UI native G2 checks are accepted for
+  that exact application source SHA. No application change was
+  made in this closeout.
+- The already terminal Samsung ownership recheck
+  `pockethost-h21-g3-readonly-recheck-20261107-v1` was
+  `done/0 PASS`, preserving the two user sites'
+  release pointers, loopback ports, PID/ticks, file-tree hashes,
+  and all six protected services at its execution instant.
+- GitHub transport inventory had **no H2.1 G3 deployment task**
+  and no G3 terminal release receipt. The active panel remained
+  H2 at the last verified phone instant, not H2.1.
+- Corrected the documentary gate regression discovered by an
+  unrelated H3 QA job: this H2.1 G3 checkpoint had been created
+  without a link in `docs/checkpoints/README.md`.
+  Added it to the archive index on main at `ea5ed4d`.
+  The H3 branch's own checkpoint index is separately owned by
+  its concurrent sprint and is not a H2.1 fix.
+- No prohibited panel cutover was attempted or re-encoded.
+  No live user site, foreign process, protected service,
+  release/archive or deployment pointer was deliberately
+  changed in this closeout.
+- **Final stage disposition: H2.1 G2 SOURCE_PASS;
+  G3 BLOCKED_BY_TOOL_SAFETY, NOT ACCEPTED; chat handoff
+  complete, physical H2.1 sprint unfinished.**
+  Do not claim the source acceptance is a production
+  deployment. A separately allowed guarded cutover, third
+  disposable-site matrix, and actual owner browser verification
+  are still required to call G3 PASS.
+
+## Subsequent Samsung QA and safe H2.1 source staging
+
+On 2026-11-07, the owner additionally confirmed via SSH that
+both original sites' full SHA-256 file-tree digests still matched
+the exact baseline, and that all six protected runit services
+were running. The running H2 API returned both unchanged site
+release pointers and process identities. This is independent
+physical preflight evidence, **not a cutover**.
+
+The exact-SHA documentation-only native QA task
+`pockethost-h21-final-docs-pass-51d993a-20261107-v1`
+finished **done / exit 0 / PASS** on
+`51d993ab783ce11530d438d49d8e2d78405119cd`.
+Structure, documentation index, module boundaries, Markdown lint
+and Prettier format all passed. H2.1 application G2 remains
+previously accepted at `89ebf9955bfc02e6244e0e23d4501f81187c226f`.
+
+The read-only device candidate check
+`pockethost-h21-g3-candidate-readiness-20261107-v1`
+returned **done / exit 0 / PASS**: the approved H2.1 Git commit
+was in the QA repository, but was initially absent from the
+_live_ PocketHost checkout's Git object database.
+
+The tightly scoped Termux task
+`pockethost-h21-g3-live-object-stage-20261107-v1`
+then returned **done / exit 0 / PASS** after fetching Git
+objects and verifying exact target commit and critical files.
+It retained the live `HEAD` at
+`750c4b3fba2126647c3b593ae89d108ba2a67206`, kept the
+working tree clean, and did not switch code, signal the panel
+or touch either original site. This was preparatory source
+staging, **not G3 deployment**.
+
+**Current precise status:** H2.1 source G2 PASS, latest native
+documentation QA PASS, original-site integrity PASS at last
+owner check, H2.1 target Git objects staged in live checkout,
+**G3 cutover and disposable-third-site acceptance still OPEN**.
+Do not treat verified source availability as an installed
+or running H2.1 panel. A separately permitted and reviewed
+owner-verified cutover with H2 fallback is still required.
+
+## Additional owner-backup verification and physical fixture test
+
+The owner confirmed the exact backup compare marker
+`G3_BACKUP_VERIFIED` in interactive Termux SSH, following
+`G3_FALLBACK_BACKUP_READY`. Local Agent independently
+verified the backup files matched the live preview and gateway
+records and checked the following read-only G3 transaction
+prerequisites in `pockethost-h21-g3-owner-backup-dryrun-20261107-v1`:
+
+- Terminal `done/0 PASS`; exact running H2 SHA
+  `750c4b3`, preview PID `31592`, start ticks `40515916`.
+- Verified H2.1 candidate `89ebf99` object available and
+  both original sites' tree SHA-256 digests `MATCH`.
+- Both user sites' PID/start ticks, loopback ports and
+  active/previous release pointers unchanged.
+- All six protected services running, PhotoMap TEST 8010
+  closed. No filesystem or process mutation.
+
+For independently scoped live **Termux functionality**,
+Local Agent ran a disposable `SiteFleetHost` instance
+with a distinct temporary root and loopback port.
+The first smoke script
+`pockethost-h21-g3-isolated-physical-version-smoke-20261107-v1`
+failed due solely to a test URL lacking a leading slash;
+the owned temporary fixture and process were safely
+cleaned up, without any production-site or panel change.
+
+The corrected task
+`pockethost-h21-g3-isolated-physical-version-smoke-20261107-v2`
+returned **terminal `done/0 PASS`**, with:
+
+1. Three immutable releases and correct version metadata.
+2. Real archived HTML/JS GET and HTML HEAD against
+   a temporary Termux loopback listener.
+3. Selected Restore of historical release, immediate
+   one-use Rollback and active/undo-target prune denial.
+4. Explicit pruning of an obsolete archive and a second
+   historical Restore.
+5. Verified owner-only temporary process stop and
+   exact temporary fixture cleanup (`fixture_removed: true`).
+
+This validates the actual H2.1 version engine on Samsung,
+but **does not** claim the H2.1 admin panel was cut over
+or that its private-LAN frontend controls were tested.
+The two original site folders and the running H2 preview
+were outside the fixture test's scope.
+
+**Remaining G3:** a separately permitted guarded
+panel-only H2 → H2.1 transition with reliable H2
+failback, a real LAN admin API/UI acceptance on one newly
+created third project, a post-cutover comparison of both
+original sites and six services, and the owner's Mac Chrome
+interaction confirmation. Do not repeat closed G2 or
+physical fixture-smoke gates.

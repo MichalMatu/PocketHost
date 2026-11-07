@@ -153,7 +153,28 @@ administration. The accepted application source stays
 `1edbd1b` after documentation-only follow-up commits.
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
-## H2.1 release manager — G2 PASS, G3 HOLD
+## H2.1 release manager — current release evidence
+
+**Current G3 panel cutover: PASS by owner SSH evidence.**
+On 2026-11-07 the owner's guarded Termux command returned
+`G3_PREFLIGHT_PASS` and `G3_CUTOVER_PASS` while switching the
+owned panel from H2 `750c4b3` to H2.1 `89ebf995`.
+The command compared both original site digests, process
+identities, release pointers and six service PIDs before/after,
+and restored LAN access on ports 18878/18879. The owner
+provided two Chrome screenshots showing both original sites,
+their three/one release counts and **Manage versions** buttons.
+This is SSH/postflight plus visual render evidence, not a
+Local Agent G3 task receipt or new version-manager click test.
+
+The physical disposable-site H2.1 engine test and exact-SHA
+134 Node / 29 UI native G2 were previously accepted. New
+Chrome interactions in **Manage versions** remain a follow-up:
+archive preview, Restore, one-use Rollback and deletion guards
+on a disposable site. See [G3 SSH checkpoint](checkpoints/2026-11-07-h21-g3-owner-ssh-cutover.md).
+The following HOLD section is a **historical pre-cutover** record.
+
+## H2.1 release manager — historical G2 PASS, pre-cutover G3 HOLD
 
 Exact application source
 `89ebf9955bfc02e6244e0e23d4501f81187c226f`
