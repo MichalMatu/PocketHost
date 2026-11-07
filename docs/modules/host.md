@@ -80,6 +80,22 @@ binaries with fixed arguments and bounded output. Native device read
 availability and the exact final SHA are **not yet accepted**.
 See [ADR-0010](../adr/0010-read-only-observability.md).
 
+## H2.1 validated archive selection — source pending
+
+The H2 host adapter adds selected historical
+version restore, bounded immutable-release
+inventory and opt-in deletion of an obsolete
+archive. The exact site and release identifiers
+are validated before any filesystem operation;
+the active and rollback-target directories
+are never deleted. Foreign or unknown process
+identity continues to fail closed. An archived
+GET preview never changes the active marker.
+
+Samsung native and guarded device acceptance
+remain required for this new application SHA.
+See [H2.1 checkpoint](../checkpoints/2026-11-07-h21-release-manager-source.md).
+
 ## H2 owned static fleet — accepted on Samsung
 
 The dedicated `site-fleet-host.ts` adapter manages only
