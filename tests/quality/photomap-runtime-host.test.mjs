@@ -129,7 +129,7 @@ test('PRoot bind source is a disposable work copy, never the preserved import', 
     'utf8',
   );
   assert.match(source, /const source = path.join\(work, 'source'\)/);
-  assert.match(source, /const preservedSource = path.join\(this.instance, 'releases'/);
+  assert.match(source, /const preservedSource = path.join\(instance, 'releases'/);
   assert.match(source, /\{ source, target: '\/mnt\/source' \}/);
   assert.match(source, /buildManagedProotArgs\(/);
   assert.doesNotMatch(source, /\{ source: preservedSource, target: '\/mnt\/source' \}/);
