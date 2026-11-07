@@ -269,7 +269,8 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|start|stop|restart|rollback|deploy))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
         if (request.method === "GET") {
@@ -277,7 +278,8 @@ function ownedSiteFleetApi(): Plugin {
             const result = route === "/" ? { sites: fleet.list() } :
               id && !action ? { site: fleet.inspect(id) } :
               id && action === "health" ? { healthy: await fleet.health(id) } :
-              id && action === "logs" ? { logs: fleet.logs(id) } : null
+              id && action === "logs" ? { logs: fleet.logs(id) } :
+              id && action === "releases" ? { releases: fleet.listReleases(id) } : null
             if (!result) {
               response.statusCode = 404
               response.end("{}")
@@ -292,7 +294,11 @@ function ownedSiteFleetApi(): Plugin {
         const command = request.method === "POST" && !!id &&
           ["start", "stop", "restart", "rollback"].includes(action ?? "")
         const upload = request.method === "PUT" && !!id && action === "deploy"
-        if (!create && !command && !upload) {
+        const versionCommand = !!releaseRoute && (
+          (request.method === "POST" && releaseRoute[3] === "restore") ||
+          (request.method === "DELETE" && releaseRoute[3] === "prune")
+        )
+        if (!create && !command && !upload && !versionCommand) {
           response.statusCode = 404
           response.end("{}")
           return
@@ -303,7 +309,7 @@ function ownedSiteFleetApi(): Plugin {
           response.end(JSON.stringify({ error: "mutation-not-authorized" }))
           return
         }
-        if (command && (request.headers["transfer-encoding"] !== undefined ||
+        if ((command || versionCommand) && (request.headers["transfer-encoding"] !== undefined ||
             ![undefined, "0"].includes(request.headers["content-length"]))) {
           response.statusCode = 403
           response.end(JSON.stringify({ error: "body-not-allowed" }))
@@ -330,6 +336,13 @@ function ownedSiteFleetApi(): Plugin {
                 files = decodeSiteFolder(JSON.parse(data.toString("utf8")) as unknown)
               } else throw new RangeError("Only static ZIP or folder upload is accepted")
               return fleet.deploy(id!, files)
+            }
+            if (versionCommand && releaseRoute) {
+              const selectedSite = releaseRoute[1]
+              const revision = releaseRoute[2]
+              return releaseRoute[3] === "restore"
+                ? fleet.restoreRelease(selectedSite, revision)
+                : fleet.pruneRelease(selectedSite, revision)
             }
             if (action === "start") return fleet.start(id!)
             if (action === "stop") return fleet.stop(id!)
