@@ -1,8 +1,8 @@
 ---
-status: source-candidate
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: H3.4 Full Termux Administration source and native QA acceptance handoff
+purpose: H3.4 Full Termux Administration G2 and guarded G3 evidence
 ---
 
 # H3.4 — Full Termux Administration
@@ -120,3 +120,35 @@ Next mandatory gates: finish native code QA, apply the exact-source
 formatter, reconcile latest `main` documentation and H2.1 changes
 without losing their acceptance evidence, then perform only permitted
 disposable physical tests. No production deployment is implied.
+
+## Latest H3.4 production release — PASS, remaining tests OPEN
+
+After PR #1 merged, `main@e1c11e723105025b0f24ecf8e70974beddc0c2b5`
+had the exact same Git tree as `cc9f47a1`, the code tested
+by Samsung task
+`pockethost-h34-post-merge-native-check-all-20261107-v1`.
+The task returned `done/0 PASS` for all `check:all`
+quality gates.
+
+A separately guarded physical G3 release used task
+`pockethost-h34-guarded-production-cutover-e1c11e7-20261107-v1`,
+which returned `done/0 PASS`. It verified the owned
+H2.1 panel PID/start ticks, six running foreign services,
+the two existing user sites and SHA-256 digests, untouched
+release/process identity and an exact RFC1918 LAN bind.
+It captured fallback records, switched only the PocketHost
+panel to the merged source, and confirmed H3.4 GET APIs,
+LAN UI routes and cross-origin denial. Both existing
+user sites remained available and PhotoMap TEST closed.
+Rollback was not exercised.
+
+The running LAN entry point is
+`http://192.168.0.100:18878/termux`.
+At cutover, Restic was present and ttyd absent. Separate
+tasks were requested to verify the ttyd installation plan,
+install it only if no unrelated packages would change,
+and physically test disposable File Manager, Restic
+recovery and ttyd session behavior. Those task results
+are **not yet available**; source and live-panel acceptance
+do not prove a full hardware matrix or a disaster-recovery
+restore of the entire Termux environment.

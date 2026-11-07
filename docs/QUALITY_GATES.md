@@ -46,6 +46,30 @@ source/SQLite/media restore on disposable data. A PRoot child snapshot or
 process-group check alone is not an exhaustive orphan proof.
 No public administration, autostart or package mutations by default.
 
+## H3.4 — latest Samsung G2 and guarded production G3
+
+PocketHost `main@e1c11e723105025b0f24ecf8e70974beddc0c2b5`
+has the identical source tree as native-tested
+`cc9f47a1f7f71d7f6bdb715c98a226cf89c7d663`.
+`pockethost-h34-post-merge-native-check-all-20261107-v1`
+returned `done/0 PASS` on Samsung for `check:all`,
+including Node tests, UI interactions, coverage, lint,
+TypeScript, Markdown, Prettier and Vite build.
+
+The guarded physical release
+`pockethost-h34-guarded-production-cutover-e1c11e7-20261107-v1`
+returned `done/0 PASS`, confirming the exact live SHA,
+owned panel and LAN restoration, preserved two user sites,
+file-tree digests and process identities, unchanged six
+protected service states, and closed PhotoMap TEST port.
+A rollback snapshot was created but not exercised.
+
+**Still OPEN:** native ttyd installation and actual
+one-session terminal HTTP/WebSocket acceptance; bounded
+Restic restore against disposable data; browser File Manager
+interaction and registered test-service controls. Never
+reinterpret source tests as full production recovery testing.
+
 ## Accepted 2026-11-07 baseline
 
 At `main@bc5e5539ca4656e59077335b71c0875f967ea859`,

@@ -2,10 +2,44 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: H2.1 owner SSH G3 cutover PASS with remaining Mac Chrome version-manager click acceptance
+purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 ---
 
-# PocketHost — H2.1 live panel deployed; version-manager browser follow-up
+# PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
+
+## H3.4 current G3 release — 2026-11-07
+
+**H3.4 is deployed on the existing Samsung PocketHost panel.**
+The owner-authorized merge PR #1 produced
+`main@e1c11e723105025b0f24ecf8e70974beddc0c2b5`.
+Its source tree matches the accepted native G2
+`cc9f47a1f7f71d7f6bdb715c98a226cf89c7d663`.
+The Samsung Local Agent receipt
+`pockethost-h34-post-merge-native-check-all-20261107-v1`
+returned `done/0 PASS` for the complete `check:all` gate.
+
+The guarded G3 release task
+`pockethost-h34-guarded-production-cutover-e1c11e7-20261107-v1`
+returned `done/0 PASS`: exact old panel ownership and source,
+the two original sites and their SHA-256 file-tree digests,
+all six protected runit services, PhotoMap TEST and the
+trusted-LAN gateway were verified before and after the
+panel-only cutover. A private H2.1 fallback snapshot was
+created; no rollback was needed or exercised.
+
+The current owner LAN panel is
+`http://192.168.0.100:18878/termux`.
+Restic is installed. The ttyd terminal dependency was
+not installed at cutover. Its bounded installation and
+post-deployment disposable Restic/File Manager/terminal
+hardware checks have been submitted as separate Local
+Agent tasks; **their final results are still pending**.
+No real Mac Chrome click-through or broad system recovery
+test is claimed. Never replace the six protected services.
+
+[H3.4 checkpoint](checkpoints/2026-11-07-h34-full-termux-source.md).
+
+## Historical H2.1 G3 disposition — owner SSH release, 2026-11-07
 
 ## Current H2.1 G3 disposition — owner SSH release, 2026-11-07
 
