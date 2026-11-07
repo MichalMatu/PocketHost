@@ -76,6 +76,23 @@ See [quality gates](QUALITY_GATES.md),
 [ADR-0010](adr/0010-read-only-observability.md)
 and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
 
+## Sprint H2 — multi-project user-owned static hosting
+
+H2 is an implementation candidate beyond accepted H1.
+`sites` validates ZIP and folder uploads without extracting
+untrusted paths; `host` owns explicit project markers,
+dedicated loopback processes, immutable release directories
+and PID/start-tick verification. `apps/admin` provides
+typed creation/upload, deploy/rollback, lifecycle, logs,
+memory and uptime. The existing private LAN gateway exposes
+only verified GET/HEAD site previews on its separate origin.
+
+No packages, uploaded backend execution, autostart, WAN
+exposure, foreign service mutations or PhotoMap launch.
+Each source revision requires Samsung `check:all`, then
+a device HTTP/browser and rollback gate; H1 remains live
+until a terminal guarded H2 release receipt.
+
 ## H1 implementation — browser-driven owned Hosting MVP
 
 H1 extends the accepted P3 one-site adapter instead of introducing
