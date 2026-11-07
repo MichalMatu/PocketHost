@@ -3,7 +3,6 @@ import {
   existsSync,
   lstatSync,
   mkdirSync,
-  readFileSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -84,6 +83,9 @@ export class ResticWorkspaceAdmin {
       outputLimit: 170000,
       env: {
         ...process.env,
+        RESTIC_PASSWORD: undefined,
+        RESTIC_PASSWORD_COMMAND: undefined,
+        RESTIC_REPOSITORY: undefined,
         RESTIC_PASSWORD_FILE: passwordFile,
       },
     });
