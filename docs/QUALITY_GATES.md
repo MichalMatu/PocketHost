@@ -121,7 +121,7 @@ See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).
 ## H1 Hosting MVP release criteria
 
 The exact new source SHA must pass all existing G0–G2 gates on the
-Samsung Termux Local Agent. New negative cases cover unauthenticated
+Samsung Termux Local Agent. New negative cases cover missing-intent
 or cross-origin write rejection, malformed owner marker, forged PID,
 port conflict, symlinked release archive, duplicate Start/Publish,
 bounded deployment metadata and unowned-process noninterference.
