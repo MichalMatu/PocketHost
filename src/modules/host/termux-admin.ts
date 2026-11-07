@@ -21,11 +21,11 @@ export interface HostCommandResult {
   output: string;
 }
 export type Exec = (command: string, args: string[], opts?: {
-  timeout: number; maxBuffer: number; env?: NodeJS.ProcessEnv;
+  timeout: number; maxBuffer: number; outputLimit?: number; env?: NodeJS.ProcessEnv;
 }) => Promise<HostCommandResult>;
 
 export async function executeFixed(command: string, args: string[], opts?: {
-  timeout: number; maxBuffer: number; env?: NodeJS.ProcessEnv;
+  timeout: number; maxBuffer: number; outputLimit?: number; env?: NodeJS.ProcessEnv;
 }): Promise<HostCommandResult> {
   const { stdout, stderr } = await execFile(command, args, {
     shell: false,
@@ -34,7 +34,7 @@ export async function executeFixed(command: string, args: string[], opts?: {
     maxBuffer: opts?.maxBuffer ?? 64 * 1024,
     env: opts?.env,
   });
-  return { exit: 0, output: (stdout + '\n' + stderr).slice(-12000) };
+  return { exit: 0, output: (stdout + '\n' + stderr).slice(-Math.min(opts?.outputLimit ?? 12000, 192000)) };
 }
 
 export type PackageAction = 'refresh' | 'install' | 'remove' | 'upgrade' | 'upgrade-all';
