@@ -21,6 +21,8 @@ import { createServer } from 'node:net';
 import {
   OWNED_DEMO_ID,
   type DemoVersion,
+  type OwnedDemoDeployment,
+  type OwnedDemoProject,
   type OwnedSitePort,
   type OwnedSiteSnapshot,
 } from '../../shared/owned-site.ts';
@@ -44,6 +46,7 @@ interface Marker {
   contentVersion: DemoVersion;
   previousVersion: DemoVersion | null;
   process: { pid: number; startTicks: string } | null;
+  history?: OwnedDemoDeployment[];
 }
 
 function verifyPlainDirectory(folder: string): void {
@@ -171,6 +174,19 @@ export class OwnedDemoHost implements OwnedSitePort {
           item.process.pid < 2 ||
           typeof item.process.startTicks !== 'string' ||
           !/^\d+$/.test(item.process.startTicks)))
+      ||
+      (item.history !== undefined &&
+        (!Array.isArray(item.history) ||
+          item.history.length > 32 ||
+          item.history.some(
+            (event) =>
+              !event ||
+              typeof event.at !== 'string' ||
+              event.at.length > 40 ||
+              !['create', 'publish', 'rollback'].includes(event.action) ||
+              (event.from !== null && event.from !== 1 && event.from !== 2) ||
+              (event.to !== 1 && event.to !== 2),
+          )))
     ) {
       throw new Error('Ownership record failed validation');
     }
@@ -185,6 +201,40 @@ export class OwnedDemoHost implements OwnedSitePort {
 
   private save(item: Marker): void {
     writeAtomic(this.site, MARKER_FILE, JSON.stringify(item) + '\n');
+  }
+
+  private addDeployment(
+    item: Marker,
+    action: OwnedDemoDeployment['action'],
+    from: DemoVersion | null,
+    to: DemoVersion,
+  ): void {
+    item.history = [
+      ...(item.history ?? []).slice(-31),
+      { at: new Date().toISOString(), action, from, to },
+    ];
+  }
+
+  /** Read metadata only from the exact owner's private marker, not inventory. */
+  inspectProject(): OwnedDemoProject {
+    const marker = this.read();
+    const state = marker ? this.status(marker) : 'absent';
+    const verified = marker !== null && state === 'running' && processIsOwned(marker, this.site);
+    return {
+      id: OWNED_DEMO_ID,
+      name: 'PocketHost Demo',
+      description: 'Isolated, manually operated two-release HTML test application',
+      type: 'static-html',
+      dataDirectory: 'PocketHost-OwnedSites/pockethost-demo',
+      state,
+      port: this.port,
+      url: `http://127.0.0.1:${this.port}/`,
+      contentVersion: marker?.contentVersion ?? null,
+      previousVersion: marker?.previousVersion ?? null,
+      pid: verified ? marker.process!.pid : null,
+      startTicks: verified ? marker.process!.startTicks : null,
+      history: (marker?.history ?? []).slice(-25).reverse(),
+    };
   }
 
   private status(item: Marker): OwnedSiteSnapshot['state'] {
@@ -230,6 +280,7 @@ export class OwnedDemoHost implements OwnedSitePort {
       contentVersion: 1,
       previousVersion: null,
       process: null,
+      history: [{ at: new Date().toISOString(), action: 'create', from: null, to: 1 }],
     });
     return this.inspect();
   }
@@ -337,6 +388,7 @@ export class OwnedDemoHost implements OwnedSitePort {
       writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
     }
     writeAtomic(this.site, 'index.html', readFileSync(archive, 'utf8'));
+    this.addDeployment(item, 'publish', item.contentVersion, target);
     item.previousVersion = item.contentVersion;
     item.contentVersion = target;
     this.save(item);
@@ -350,6 +402,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
     const html = readFileSync(archive, 'utf8');
     writeAtomic(this.site, 'index.html', html);
+    this.addDeployment(item, 'rollback', item.contentVersion, item.previousVersion);
     item.contentVersion = item.previousVersion;
     // Consume the one-step undo. A second rollback must not redeploy the superseded release.
     item.previousVersion = null;
