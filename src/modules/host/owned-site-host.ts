@@ -425,7 +425,6 @@ export class OwnedDemoHost implements OwnedSitePort {
     const item = this.mustRead();
     if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
     if (item.previousVersion === null) throw new RangeError('No prior demo version');
-    const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
     const html = this.document(`index-v${item.previousVersion}.html`);
     this.addDeployment(item, 'rollback', item.contentVersion, item.previousVersion);
     item.contentVersion = item.previousVersion;
