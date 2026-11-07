@@ -10,8 +10,14 @@ test('H3 probes exactly four fixed commands without invoking any executable', ()
   });
   assert.equal(inventory.version, 1);
   assert.equal(inventory.mode, 'read-only');
-  assert.deepEqual(calls, H3_TOOLS.map((item) => item.executable));
-  assert.deepEqual(inventory.tools.map((item) => item.id), H3_TOOLS.map((item) => item.id));
+  assert.deepEqual(
+    calls,
+    H3_TOOLS.map((item) => item.executable),
+  );
+  assert.deepEqual(
+    inventory.tools.map((item) => item.id),
+    H3_TOOLS.map((item) => item.id),
+  );
   assert.equal(inventory.tools[0].state, 'detected');
   assert.ok(!JSON.stringify(inventory).includes('/data/'));
 });

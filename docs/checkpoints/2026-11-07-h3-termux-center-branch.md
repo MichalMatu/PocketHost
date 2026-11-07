@@ -107,7 +107,7 @@ Owner-approved password-free operations are now supplemented by:
   pre-existing bounded H2 API; external runit services remain observed
   rather than adopted.
 - Dedicated native negative tests and Vitest UI interaction tests.
-  
+
 These operations require no password, but still use deliberate confirmation
 and exact targets. No install, global backup, service mutation or live H3
 deployment is performed by this development sprint.
@@ -123,7 +123,7 @@ have now been added on this branch. New exact-source tests are required.
 Second native H3 QA task `pockethost-h3-admin-qa-88ece8a-20261107-v1`
 returned HOLD: the requested branch HEAD moved during implementation.
 This is a stale branch-tip check, not evidence of a code failure. Future
-QA must fetch the moving branch, validate the *pinned* candidate SHA as
+QA must fetch the moving branch, validate the _pinned_ candidate SHA as
 an ancestor, and test a detached checkout of that exact SHA.
 
 Native pinned-SHA H3.2 QA task

@@ -99,7 +99,7 @@ of this private-LAN development session.
 
 **Next-chat mission:** resolve the permitted
 mechanism for owner-verified H2.1 G3 deployment,
-preserving both existing sites *bit-for-bit*.
+preserving both existing sites _bit-for-bit_.
 If permitted, perform a guarded release with
 source/host/PID/owner checks and H2 fallback,
 then test version restore/rollback/archived GET

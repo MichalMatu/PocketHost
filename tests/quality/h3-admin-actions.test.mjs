@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, symlinkSync, existsSync } from 'node:fs';
 import {
-  applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups,
+  applyPackageAction,
+  previewPackageAction,
+  WorkspaceFiles,
+  WorkspaceBackups,
 } from '../../src/modules/host/termux-admin.ts';
 
 test('H3 package operations dispatch fixed apt-get argv without shell or arbitrary path', async () => {
@@ -18,13 +21,16 @@ test('H3 package operations dispatch fixed apt-get argv without shell or arbitra
   await applyPackageAction('remove', 'vim', mock);
   await applyPackageAction('upgrade', 'curl', mock);
   await applyPackageAction('upgrade-all', undefined, mock);
-  assert.deepEqual(calls.map(([bin, args]) => [bin, args]), [
-    ['/data/data/com.termux/files/usr/bin/apt-get', ['update']],
-    ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'install', 'git']],
-    ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'remove', 'vim']],
-    ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'install', '--only-upgrade', 'curl']],
-    ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'upgrade']],
-  ]);
+  assert.deepEqual(
+    calls.map(([bin, args]) => [bin, args]),
+    [
+      ['/data/data/com.termux/files/usr/bin/apt-get', ['update']],
+      ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'install', 'git']],
+      ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'remove', 'vim']],
+      ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'install', '--only-upgrade', 'curl']],
+      ['/data/data/com.termux/files/usr/bin/apt-get', ['-y', 'upgrade']],
+    ],
+  );
   assert.equal(calls.length, 5);
   assert.ok(calls.every(([, , options]) => options.timeout <= 600000));
   await assert.rejects(applyPackageAction('install', '../../sshd', mock), /Invalid/);
@@ -46,7 +52,10 @@ test('H3 workspace create, edit, move, delete and reversible snapshot without ex
     files.apply('mkdir', 'src');
     files.apply('save', 'src/example.ts', { content: 'export const value = 1' });
     assert.equal(files.read('src/example.ts'), 'export const value = 1');
-    assert.deepEqual(files.list('src').map(item => item.name), ['example.ts']);
+    assert.deepEqual(
+      files.list('src').map((item) => item.name),
+      ['example.ts'],
+    );
     files.apply('rename', 'src/example.ts', { destination: 'src/other.ts' });
     assert.throws(() => files.read('src/example.ts'), /absent/);
     assert.equal(files.read('src/other.ts'), 'export const value = 1');
@@ -63,7 +72,10 @@ test('H3 workspace create, edit, move, delete and reversible snapshot without ex
     assert.throws(() => files.list('../'), /Unsafe/);
     assert.throws(() => files.apply('save', '../foreign.txt', { content: 'bad' }), /Unsafe/);
     assert.throws(() => files.apply('delete', 'src'), /empty directories/);
-    assert.throws(() => files.apply('rename', 'src/other.ts', { destination: '../foreign.txt' }), /Unsafe/);
+    assert.throws(
+      () => files.apply('rename', 'src/other.ts', { destination: '../foreign.txt' }),
+      /Unsafe/,
+    );
     files.apply('delete', 'src/other.ts');
     files.apply('delete', 'src');
     assert.deepEqual(files.list(), []);
@@ -98,17 +110,23 @@ test('H3 linked workspace entries and forged snapshot names never escape root', 
 
 test('H3 package simulation uses apt native solver without executing writes or a shell', async () => {
   const calls = [];
-  const runner = async (bin, args) => { calls.push([bin, args]); return { exit: 0, output: 'Simulated' }; };
+  const runner = async (bin, args) => {
+    calls.push([bin, args]);
+    return { exit: 0, output: 'Simulated' };
+  };
   await previewPackageAction('install', 'git', runner);
   await previewPackageAction('remove', 'vim', runner);
   await previewPackageAction('upgrade', 'curl', runner);
   await previewPackageAction('upgrade-all', undefined, runner);
-  assert.deepEqual(calls.map(([, args]) => args), [
-    ['-s', 'install', 'git'],
-    ['-s', 'remove', 'vim'],
-    ['-s', 'install', '--only-upgrade', 'curl'],
-    ['-s', 'upgrade'],
-  ]);
+  assert.deepEqual(
+    calls.map(([, args]) => args),
+    [
+      ['-s', 'install', 'git'],
+      ['-s', 'remove', 'vim'],
+      ['-s', 'install', '--only-upgrade', 'curl'],
+      ['-s', 'upgrade'],
+    ],
+  );
   assert.ok(calls.every(([bin]) => bin === '/data/data/com.termux/files/usr/bin/apt-get'));
   await assert.rejects(previewPackageAction('install', '../evil', runner), /Invalid/);
   await assert.rejects(previewPackageAction('remove', 'git;echo', runner), /Invalid/);
@@ -124,13 +142,24 @@ test('H3 workspace can import, copy, export and delete bounded binary files', ()
     assert.equal(files.download('image.png').base64, payload);
     files.apply('copy', 'image.png', { destination: 'image-copy.png' });
     assert.equal(files.download('image-copy.png').bytes, 4);
-    assert.throws(() => files.apply('copy', 'image.png', { destination: 'image-copy.png' }), /exists/);
-    assert.throws(() => files.apply('upload', 'too-big.bin', { base64: Buffer.alloc(129 * 1024).toString('base64') }), /oversized/);
+    assert.throws(
+      () => files.apply('copy', 'image.png', { destination: 'image-copy.png' }),
+      /exists/,
+    );
+    assert.throws(
+      () =>
+        files.apply('upload', 'too-big.bin', {
+          base64: Buffer.alloc(129 * 1024).toString('base64'),
+        }),
+      /oversized/,
+    );
     assert.throws(() => files.apply('upload', '../evil.png', { base64: payload }), /Unsafe/);
     assert.throws(() => files.apply('upload', 'bad.bin', { base64: '#corrupt!' }), /Invalid/);
     files.apply('delete', 'image-copy.png');
     assert.equal(files.list().length, 1);
-  } finally { rmSync(tmp, { recursive: true, force: true }); }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });
 
 test('H3 snapshots have a deterministic digest and refuse tampered recovery', () => {
@@ -148,5 +177,7 @@ test('H3 snapshots have a deterministic digest and refuse tampered recovery', ()
     workspace.apply('save', 'note.md', { content: 'New current value' });
     assert.throws(() => backups.restore(saved.name), /integrity/);
     assert.equal(workspace.read('note.md'), 'New current value');
-  } finally { rmSync(tmp, { recursive: true, force: true }); }
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
 });

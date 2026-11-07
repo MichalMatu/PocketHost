@@ -29,7 +29,9 @@ test('H3 apt-cache lookup is a literal, bounded, read-only search', async () => 
     return { exit: 0, output: 'restic - Fast encrypted backup utility\nunsafe/name - bad\n' };
   };
   const result = await searchAvailableTermuxPackages('restic', fake);
-  assert.deepEqual(result.packages, [{ name: 'restic', description: 'Fast encrypted backup utility' }]);
+  assert.deepEqual(result.packages, [
+    { name: 'restic', description: 'Fast encrypted backup utility' },
+  ]);
   assert.deepEqual(commands[0][1], ['search', '--names-only', 'restic']);
   assert.equal(commands[0][0], '/data/data/com.termux/files/usr/bin/apt-cache');
   await assert.rejects(searchAvailableTermuxPackages('../../root', fake), /Invalid/);

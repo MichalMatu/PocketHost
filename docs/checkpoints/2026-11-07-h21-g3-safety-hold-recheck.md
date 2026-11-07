@@ -37,10 +37,10 @@ instant the live PocketHost admin source was H2
 the two user's sites had independently verified exact process
 identity, loopback ports, release pointers and filesystem digests:
 
-| Protected site | Loopback port | PID / start ticks | Release count | SHA-256 tree digest |
-| --- | --- | --- | --- | --- |
-| `site-1066192a717d4f50988ff48678bca738` | 19080 | 5840 / 40649153 | 3 | `b67b02e5b68cb629666e4ca897137025a25b7159655aaf192450df80ca18395b` |
-| `site-2ddc3464f26b46728d758924ce78fda1` | 19081 | 2804 / 40638777 | 1 | `6af83094458bcc43d78471181e0c746d39909da6c1397ff645088d3733110b7f` |
+| Protected site                          | Loopback port | PID / start ticks | Release count | SHA-256 tree digest                                                |
+| --------------------------------------- | ------------- | ----------------- | ------------- | ------------------------------------------------------------------ |
+| `site-1066192a717d4f50988ff48678bca738` | 19080         | 5840 / 40649153   | 3             | `b67b02e5b68cb629666e4ca897137025a25b7159655aaf192450df80ca18395b` |
+| `site-2ddc3464f26b46728d758924ce78fda1` | 19081         | 2804 / 40638777   | 1             | `6af83094458bcc43d78471181e0c746d39909da6c1397ff645088d3733110b7f` |
 
 Six protected runit services were running and PhotoMap TEST
 `127.0.0.1:8010` was closed at that historical preflight.

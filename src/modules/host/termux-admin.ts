@@ -2,8 +2,20 @@ import { execFile as callbackExecFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import {
-  copyFileSync, constants, existsSync, lstatSync, mkdirSync, openSync, closeSync, readdirSync,
-  readFileSync, renameSync, rmSync, rmdirSync, statSync, writeFileSync,
+  copyFileSync,
+  constants,
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  closeSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  rmdirSync,
+  statSync,
+  writeFileSync,
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -20,13 +32,27 @@ export interface HostCommandResult {
   exit: number;
   output: string;
 }
-export type Exec = (command: string, args: string[], opts?: {
-  timeout: number; maxBuffer: number; outputLimit?: number; env?: NodeJS.ProcessEnv;
-}) => Promise<HostCommandResult>;
+export type Exec = (
+  command: string,
+  args: string[],
+  opts?: {
+    timeout: number;
+    maxBuffer: number;
+    outputLimit?: number;
+    env?: NodeJS.ProcessEnv;
+  },
+) => Promise<HostCommandResult>;
 
-export async function executeFixed(command: string, args: string[], opts?: {
-  timeout: number; maxBuffer: number; outputLimit?: number; env?: NodeJS.ProcessEnv;
-}): Promise<HostCommandResult> {
+export async function executeFixed(
+  command: string,
+  args: string[],
+  opts?: {
+    timeout: number;
+    maxBuffer: number;
+    outputLimit?: number;
+    env?: NodeJS.ProcessEnv;
+  },
+): Promise<HostCommandResult> {
   const { stdout, stderr } = await execFile(command, args, {
     shell: false,
     windowsHide: true,
@@ -34,7 +60,10 @@ export async function executeFixed(command: string, args: string[], opts?: {
     maxBuffer: opts?.maxBuffer ?? 64 * 1024,
     env: opts?.env,
   });
-  return { exit: 0, output: (stdout + '\n' + stderr).slice(-Math.min(opts?.outputLimit ?? 12000, 192000)) };
+  return {
+    exit: 0,
+    output: (stdout + '\n' + stderr).slice(-Math.min(opts?.outputLimit ?? 12000, 192000)),
+  };
 }
 
 export type PackageAction = 'refresh' | 'install' | 'remove' | 'upgrade' | 'upgrade-all';
@@ -51,9 +80,14 @@ export async function previewPackageAction(
   if (action !== 'upgrade-all' && (!name || !NAME.test(name)))
     throw new RangeError('Invalid Termux package name');
   if (name && !NAME.test(name)) throw new RangeError('Invalid Termux package name');
-  const args = action === 'upgrade-all' ? ['-s', 'upgrade'] :
-    action === 'install' ? ['-s', 'install', name!] :
-    action === 'remove' ? ['-s', 'remove', name!] : ['-s', 'install', '--only-upgrade', name!];
+  const args =
+    action === 'upgrade-all'
+      ? ['-s', 'upgrade']
+      : action === 'install'
+        ? ['-s', 'install', name!]
+        : action === 'remove'
+          ? ['-s', 'remove', name!]
+          : ['-s', 'install', '--only-upgrade', name!];
   return run(path.join(BIN, 'apt-get'), args, { timeout: 45000, maxBuffer: 64000 });
 }
 
@@ -77,7 +111,8 @@ export async function applyPackageAction(
   };
   // Use Debian apt engine already shipped with Termux; do not implement a second resolver.
   return run(path.join(BIN, 'apt-get'), options[action], {
-    timeout: 10 * 60 * 1000, maxBuffer: 128 * 1024,
+    timeout: 10 * 60 * 1000,
+    maxBuffer: 128 * 1024,
   });
 }
 
@@ -107,9 +142,16 @@ export class WorkspaceFiles {
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Unsafe workspace root');
   }
   private locate(relative: string, allowMissing = false): string {
-    if (typeof relative !== 'string' || relative.length > 240 || relative.startsWith('/') ||
-        relative.includes('\\') || relative.includes('\0') ||
-        relative.split('/').some(part => !part || part === '.' || part === '..' || part.startsWith('.')))
+    if (
+      typeof relative !== 'string' ||
+      relative.length > 240 ||
+      relative.startsWith('/') ||
+      relative.includes('\\') ||
+      relative.includes('\0') ||
+      relative
+        .split('/')
+        .some((part) => !part || part === '.' || part === '..' || part.startsWith('.'))
+    )
       throw new RangeError('Unsafe relative workspace path');
     const parts = relative.split('/');
     if (parts.length > 8) throw new RangeError('Workspace nesting exceeded');
@@ -118,8 +160,9 @@ export class WorkspaceFiles {
     for (let i = 0; i < parts.length; i++) {
       current = path.join(current, parts[i]!);
       let stat: ReturnType<typeof lstatSync> | null = null;
-      try { stat = lstatSync(current); }
-      catch (error) {
+      try {
+        stat = lstatSync(current);
+      } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       }
       if (stat) {
@@ -166,25 +209,42 @@ export class WorkspaceFiles {
     try {
       const bytes = readFileSync(handle);
       if (bytes.length > MAX_BINARY) throw new RangeError('File exceeds export limit');
-      return { name: path.basename(relative), base64: bytes.toString('base64'), bytes: bytes.length };
-    } finally { closeSync(handle); }
+      return {
+        name: path.basename(relative),
+        base64: bytes.toString('base64'),
+        bytes: bytes.length,
+      };
+    } finally {
+      closeSync(handle);
+    }
   }
-  apply(action: FileAction, relative: string, payload?: { content?: string; destination?: string; base64?: string }): void {
+  apply(
+    action: FileAction,
+    relative: string,
+    payload?: { content?: string; destination?: string; base64?: string },
+  ): void {
     if (!['mkdir', 'save', 'rename', 'delete', 'copy', 'upload'].includes(action))
       throw new RangeError('Invalid file action');
     if (action === 'mkdir') {
       const target = this.locate(relative, true);
       mkdirSync(target, { mode: 0o700 }); // existing directory is not overwritten
     } else if (action === 'save') {
-      if (!EXT.test(relative) || typeof payload?.content !== 'string' ||
-          Buffer.byteLength(payload.content, 'utf8') > MAX_TEXT)
+      if (
+        !EXT.test(relative) ||
+        typeof payload?.content !== 'string' ||
+        Buffer.byteLength(payload.content, 'utf8') > MAX_TEXT
+      )
         throw new RangeError('Invalid or oversized text document');
       const file = this.locate(relative, true);
-      if (existsSync(file) && !lstatSync(file).isFile())
-        throw new RangeError('Not a text file');
+      if (existsSync(file) && !lstatSync(file).isFile()) throw new RangeError('Not a text file');
       const temp = path.join(path.dirname(file), '.' + randomUUID() + '.tmp');
       writeFileSync(temp, payload.content, { flag: 'wx', mode: 0o600 });
-      try { renameSync(temp, file); } catch (err) { rmSync(temp, { force: true }); throw err; }
+      try {
+        renameSync(temp, file);
+      } catch (err) {
+        rmSync(temp, { force: true });
+        throw err;
+      }
     } else if (action === 'rename' || action === 'copy') {
       const source = this.locate(relative);
       const destination = this.locate(payload?.destination ?? '', true);
@@ -192,13 +252,18 @@ export class WorkspaceFiles {
       if (action === 'rename') renameSync(source, destination);
       else {
         const stat = lstatSync(source);
-        if (!stat.isFile() || stat.size > MAX_TEXT) throw new RangeError('Only bounded regular files can be copied');
+        if (!stat.isFile() || stat.size > MAX_TEXT)
+          throw new RangeError('Only bounded regular files can be copied');
         copyFileSync(source, destination, constants.COPYFILE_EXCL);
       }
     } else if (action === 'upload') {
       const source = payload?.base64;
-      if (typeof source !== 'string' || source.length > Math.ceil(MAX_BINARY / 3) * 4 ||
-          source.length % 4 !== 0 || !/^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(source))
+      if (
+        typeof source !== 'string' ||
+        source.length > Math.ceil(MAX_BINARY / 3) * 4 ||
+        source.length % 4 !== 0 ||
+        !/^(?:[a-zA-Z0-9+/]{4})*(?:[a-zA-Z0-9+/]{2}==|[a-zA-Z0-9+/]{3}=)?$/.test(source)
+      )
         throw new RangeError('Invalid or oversized upload encoding');
       const bytes = Buffer.from(source, 'base64');
       if (bytes.length > MAX_BINARY || bytes.toString('base64') !== source)
@@ -243,50 +308,72 @@ export class WorkspaceBackups {
     return this.storage;
   }
   private snapshotName(name: string): void {
-    if (!/^snapshot-[0-9]{8}-[a-f0-9]{12}$/.test(name)) throw new RangeError('Invalid snapshot name');
+    if (!/^snapshot-[0-9]{8}-[a-f0-9]{12}$/.test(name))
+      throw new RangeError('Invalid snapshot name');
   }
   list(): BackupRecord[] {
     const root = this.root();
-    return readdirSync(root, { withFileTypes: true }).filter(entry =>
-      entry.isDirectory() && !entry.isSymbolicLink() && /^snapshot-[0-9]{8}-[a-f0-9]{12}$/.test(entry.name),
-    ).slice(0, 40).map(entry => {
-      const folder = path.join(root, entry.name);
-      const manifest = JSON.parse(readFileSync(path.join(folder, 'manifest.json'), 'utf8')) as BackupRecord;
-      if (manifest.name !== entry.name || !Number.isInteger(manifest.files) ||
-          (manifest.digest !== undefined && !/^[a-f0-9]{64}$/.test(manifest.digest)))
-        throw new Error('Invalid snapshot');
-      return manifest;
-    }).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return readdirSync(root, { withFileTypes: true })
+      .filter(
+        (entry) =>
+          entry.isDirectory() &&
+          !entry.isSymbolicLink() &&
+          /^snapshot-[0-9]{8}-[a-f0-9]{12}$/.test(entry.name),
+      )
+      .slice(0, 40)
+      .map((entry) => {
+        const folder = path.join(root, entry.name);
+        const manifest = JSON.parse(
+          readFileSync(path.join(folder, 'manifest.json'), 'utf8'),
+        ) as BackupRecord;
+        if (
+          manifest.name !== entry.name ||
+          !Number.isInteger(manifest.files) ||
+          (manifest.digest !== undefined && !/^[a-f0-9]{64}$/.test(manifest.digest))
+        )
+          throw new Error('Invalid snapshot');
+        return manifest;
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
   private capture(destination: string): number {
     const root = this.files.root;
     this.files.list();
-    let count = 0, total = 0;
-    const stack: Array<{ source: string; target: string; level: number }> =
-      [{ source: root, target: destination, level: 0 }];
+    let count = 0,
+      total = 0;
+    const stack: Array<{ source: string; target: string; level: number }> = [
+      { source: root, target: destination, level: 0 },
+    ];
     while (stack.length) {
       const dir = stack.pop()!;
       if (dir.level > 8) throw new RangeError('Workspace depth exceeded');
       mkdirSync(dir.target, { recursive: true, mode: 0o700 });
       for (const entry of readdirSync(dir.source, { withFileTypes: true })) {
-        if (entry.name.startsWith('.') || entry.isSymbolicLink()) throw new Error('Hidden or linked entry refused');
-        if (entry.isDirectory()) stack.push({
-          source: path.join(dir.source, entry.name),
-          target: path.join(dir.target, entry.name), level: dir.level + 1,
-        });
+        if (entry.name.startsWith('.') || entry.isSymbolicLink())
+          throw new Error('Hidden or linked entry refused');
+        if (entry.isDirectory())
+          stack.push({
+            source: path.join(dir.source, entry.name),
+            target: path.join(dir.target, entry.name),
+            level: dir.level + 1,
+          });
         else if (entry.isFile()) {
           const source = path.join(dir.source, entry.name);
           const bytes = statSync(source).size;
           if (++count > 200 || (total += bytes) > 8 * 1024 * 1024)
             throw new RangeError('Workspace snapshot budget exceeded');
-          writeFileSync(path.join(dir.target, entry.name), readFileSync(source), { mode: 0o600, flag: 'wx' });
+          writeFileSync(path.join(dir.target, entry.name), readFileSync(source), {
+            mode: 0o600,
+            flag: 'wx',
+          });
         } else throw new Error('Unsupported entry');
       }
     }
     return count;
   }
   private fingerprint(folder: string): { digest: string; files: number } {
-    let total = 0, files = 0;
+    let total = 0,
+      files = 0;
     const entries: Array<{ path: string; sha: string }> = [];
     const stack: Array<{ at: string; relative: string; depth: number }> = [
       { at: folder, relative: '', depth: 0 },
@@ -296,7 +383,8 @@ export class WorkspaceBackups {
       if (item.depth > 8 || lstatSync(item.at).isSymbolicLink())
         throw new Error('Invalid snapshot directory');
       for (const child of readdirSync(item.at, { withFileTypes: true })) {
-        if (child.name.startsWith('.') || child.isSymbolicLink()) throw new Error('Unsafe snapshot entry');
+        if (child.name.startsWith('.') || child.isSymbolicLink())
+          throw new Error('Unsafe snapshot entry');
         const absolute = path.join(item.at, child.name);
         const relative = item.relative ? item.relative + '/' + child.name : child.name;
         if (child.isDirectory()) stack.push({ at: absolute, relative, depth: item.depth + 1 });
@@ -304,28 +392,45 @@ export class WorkspaceBackups {
           const stat = lstatSync(absolute);
           if (++files > 200 || (total += stat.size) > 8 * 1024 * 1024)
             throw new Error('Snapshot budget exceeded');
-          entries.push({ path: relative, sha: createHash('sha256').update(readFileSync(absolute)).digest('hex') });
+          entries.push({
+            path: relative,
+            sha: createHash('sha256').update(readFileSync(absolute)).digest('hex'),
+          });
         } else throw new Error('Invalid snapshot file');
       }
     }
     entries.sort((a, b) => a.path.localeCompare(b.path));
     return { files, digest: createHash('sha256').update(JSON.stringify(entries)).digest('hex') };
   }
-  verify(name: string): { name: string; state: 'verified' | 'legacy-unverified' | 'corrupt'; files: number } {
+  verify(name: string): {
+    name: string;
+    state: 'verified' | 'legacy-unverified' | 'corrupt';
+    files: number;
+  } {
     this.snapshotName(name);
-    const record = this.list().find(item => item.name === name);
+    const record = this.list().find((item) => item.name === name);
     if (!record) throw new RangeError('Unknown snapshot');
     try {
       const actual = this.fingerprint(path.join(this.root(), name, 'data'));
-      return { name, files: actual.files,
-        state: record.digest === undefined ? 'legacy-unverified' :
-          actual.digest === record.digest && actual.files === record.files ? 'verified' : 'corrupt' };
+      return {
+        name,
+        files: actual.files,
+        state:
+          record.digest === undefined
+            ? 'legacy-unverified'
+            : actual.digest === record.digest && actual.files === record.files
+              ? 'verified'
+              : 'corrupt',
+      };
     } catch {
       return { name, files: record.files, state: 'corrupt' };
     }
   }
   create(): BackupRecord {
-    const name = 'snapshot-' + new Date().toISOString().slice(0, 10).replaceAll('-', '') + '-' +
+    const name =
+      'snapshot-' +
+      new Date().toISOString().slice(0, 10).replaceAll('-', '') +
+      '-' +
       randomBytes(6).toString('hex');
     const folder = path.join(this.root(), name);
     mkdirSync(folder, { mode: 0o700 });
@@ -333,7 +438,10 @@ export class WorkspaceBackups {
       const files = this.capture(path.join(folder, 'data'));
       const digest = this.fingerprint(path.join(folder, 'data')).digest;
       const manifest = { name, createdAt: new Date().toISOString(), files, digest };
-      writeFileSync(path.join(folder, 'manifest.json'), JSON.stringify(manifest), { flag: 'wx', mode: 0o600 });
+      writeFileSync(path.join(folder, 'manifest.json'), JSON.stringify(manifest), {
+        flag: 'wx',
+        mode: 0o600,
+      });
       return manifest;
     } catch (error) {
       rmSync(folder, { recursive: true, force: true });
@@ -342,7 +450,7 @@ export class WorkspaceBackups {
   }
   restore(name: string): BackupRecord {
     this.snapshotName(name);
-    const record = this.list().find(item => item.name === name);
+    const record = this.list().find((item) => item.name === name);
     if (!record) throw new RangeError('Unknown workspace snapshot');
     if (this.verify(name).state === 'corrupt') throw new Error('Snapshot integrity failed');
     // Restore via a fresh isolated staging directory, then atomically swap
@@ -356,8 +464,12 @@ export class WorkspaceBackups {
       new WorkspaceBackups(sourceFiles, this.storage).capture(staging);
       this.files.list();
       renameSync(this.files.root, previous);
-      try { renameSync(staging, this.files.root); }
-      catch (err) { renameSync(previous, this.files.root); throw err; }
+      try {
+        renameSync(staging, this.files.root);
+      } catch (err) {
+        renameSync(previous, this.files.root);
+        throw err;
+      }
       // Preserve previous workspace in a sidecar; never silently delete it.
       return record;
     } finally {
@@ -366,7 +478,7 @@ export class WorkspaceBackups {
   }
   delete(name: string): void {
     this.snapshotName(name);
-    if (!this.list().some(item => item.name === name)) throw new RangeError('Unknown snapshot');
+    if (!this.list().some((item) => item.name === name)) throw new RangeError('Unknown snapshot');
     rmSync(path.join(this.root(), name), { recursive: true, force: false });
   }
 }

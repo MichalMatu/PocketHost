@@ -33,7 +33,9 @@ export function readTermuxToolInventory(
     version: 1,
     mode: 'read-only',
     tools: H3_TOOLS.map(({ id, executable, purpose }) => ({
-      id, purpose, state: probe(executable),
+      id,
+      purpose,
+      state: probe(executable),
     })),
   };
 }
