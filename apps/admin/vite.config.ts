@@ -6,6 +6,7 @@ import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../.
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
 import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
+import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -694,11 +695,15 @@ function termuxAdminApi(): Plugin {
               mode === "services" ? { services: services.list() } :
               mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
+              mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :
               mode === "browse-root" ? fileRoots.list(
                 (url.searchParams.get("root") ?? "") as FileRoot, url.searchParams.get("path") ?? "",
               ) :
               mode === "restic-status" ? { restic: restic.status() } :
               mode === "restic-snapshots" ? { snapshots: await restic.snapshots() } :
+              mode === "system-snapshots" ? { snapshots: await restic.scopeSnapshots(
+                (url.searchParams.get("scope") ?? "") as "home" | "prefix" | "all",
+              ) } :
               mode === "packages" ? await listInstalledTermuxPackages() :
               mode === "search-packages" ? await searchAvailableTermuxPackages(url.searchParams.get("query") ?? "") : null
             if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
@@ -709,8 +714,15 @@ function termuxAdminApi(): Plugin {
           }
           return
         }
+        const browserIntent = !!request.headers.origin && origins.has(request.headers.origin)
+        const agentIntent = admitsAgentCommand({
+          origin: request.headers.origin,
+          intent: request.headers["x-pockethost-intent"] as string | undefined,
+          agentIntent: request.headers["x-pockethost-agent-intent"] as string | undefined,
+          fetchSite: request.headers["sec-fetch-site"] as string | undefined,
+        })
         if (request.method !== "POST" ||
-            !request.headers.origin || !origins.has(request.headers.origin) ||
+            !(browserIntent || agentIntent) ||
             request.headers["x-pockethost-intent"] !== "termux-admin" ||
             request.headers["content-type"]?.split(";")[0]?.trim() !== "application/json") {
           response.statusCode = 403
@@ -751,6 +763,15 @@ function termuxAdminApi(): Plugin {
                   relative, { destination: input.destination, content: input.content, base64: input.base64 })
               }
               throw new RangeError("Unknown filesystem operation")
+            }
+            if (input.action === "restic-system") {
+              const scope = (input.root ?? "") as "home" | "prefix" | "all"
+              if (!["home","prefix","all"].includes(scope)) throw new RangeError("Invalid backup scope")
+              if (input.name === "backup") return { result: await restic.backupScope(scope) }
+              if (input.name === "restore") return { result: await restic.restoreScopeToStaging(scope, input.path ?? "") }
+              if (input.name === "forget") return { result: await restic.forgetScope(scope, input.path ?? "") }
+              if (input.name === "check") return { result: await restic.check() }
+              throw new RangeError("Invalid system Restic action")
             }
             if (input.action === "restic") {
               if (!input.name || !["init","backup","check","restore","forget"].includes(input.name))
