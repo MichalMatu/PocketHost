@@ -2,10 +2,41 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
+purpose: H2.1 owner SSH G3 cutover PASS with remaining Mac Chrome version-manager click acceptance
 ---
 
-# PocketHost — H2.1 version manager, accepted source and G3 hold
+# PocketHost — H2.1 live panel deployed; version-manager browser follow-up
+
+## Current H2.1 G3 disposition — owner SSH release, 2026-11-07
+
+**H2.1 panel deployment is complete.** The owner executed a
+guarded Samsung Termux SSH cutover from H2 `750c4b3` to
+H2.1 `89ebf995`, returning `G3_PREFLIGHT_PASS`
+and `G3_CUTOVER_PASS`. The same command verified that the
+two original site directory digests, process identities,
+release pointers and six protected services matched before
+and after the panel-only restart. The H2 fallback code was
+prepared but not exercised because the cutover passed.
+
+Two supplied Mac Chrome screenshots at
+`http://192.168.0.100:18878/sites` show both original
+sites running on 19080 and 19081, retaining three and one
+releases respectively, and the new **Manage versions**
+buttons. This is visual browser render evidence, **not**
+the version-manager button click matrix.
+
+**Remaining optional G3 UI acceptance:** exercise history,
+archived HTML/JS preview, Restore, one-use Rollback and safe
+pruning from the real Chrome interface against a disposable
+third site only. The native H2.1 G2 (134 Node / 29 UI) and
+physical isolated version-engine test are already accepted;
+do not rerun them. No Local Agent cutover task receipt was
+created: this release evidence comes directly from the
+owner's SSH output and screenshots.
+
+[New owner SSH G3 checkpoint](checkpoints/2026-11-07-h21-g3-owner-ssh-cutover.md).
+The previously documented G3 tool-safety HOLD below is
+**historical pre-cutover context**, not the current state.
 
 ## H2.1 physical version-engine acceptance — 2026-11-07
 
