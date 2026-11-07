@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 const site = {
   id: "site-" + "a".repeat(32), name: "Owned Test Site", state: "stopped",
@@ -185,5 +185,40 @@ describe("H3 complete Termux software catalog", () => {
     await screen.findByText("Encrypted backups")
     expect(fetchMock.mock.calls).toHaveLength(2)
     expect(fetchMock.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
+  })
+})
+
+describe("H3 native encrypted Restic backup UI", () => {
+  it("backs up owned workspace through the typed endpoint without a password form", async () => {
+    const user = userEvent.setup()
+    let initialized = false
+    const calls = vi.fn(async (url: string, opts?: RequestInit) => {
+      if (opts?.method === "POST") {
+        const payload = JSON.parse(String(opts.body))
+        expect(payload).toEqual({ action: "restic", name: "backup" })
+        initialized = true
+        return { ok: true, json: async () => ({ result: { exit: 0, output: "mock done" } }) }
+      }
+      if (url.includes("mode=restic-snapshots"))
+        return { ok: true, json: async () => ({ snapshots: [] }) }
+      return { ok: true, json: async () => ({
+        restic: { initialized, repositoryPresent: initialized, keyPresent: initialized },
+      }) }
+    })
+    vi.stubGlobal("fetch", calls)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<ResticActions detected />)
+    await screen.findByText("Repository not initialized")
+    await user.click(screen.getByRole("button", { name: "Create Restic backup" }))
+    await screen.findByText("Restic backup completed")
+    expect(calls.mock.calls.some(call => call[1]?.method === "POST")).toBe(true)
+    expect(screen.queryByLabelText(/password/i)).toBeNull()
+  })
+  it("makes missing Restic installation explicit without issuing commands", () => {
+    const calls = vi.fn(async () => ({ ok: true, json: async () => ({}) }))
+    vi.stubGlobal("fetch", calls)
+    render(<ResticActions detected={false} />)
+    expect(screen.getByText(/Restic executable not detected/)).toBeTruthy()
+    expect(calls).not.toHaveBeenCalled()
   })
 })
