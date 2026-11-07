@@ -10,6 +10,7 @@ import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/ob
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
+import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
@@ -114,6 +115,7 @@ export default function TermuxCenterPage() {
             <TabsTrigger value="files"><FolderOpen className="size-4" /> Files</TabsTrigger>
             <TabsTrigger value="services"><ServerCog className="size-4" /> Services</TabsTrigger>
             <TabsTrigger value="backups"><Archive className="size-4" /> Backups</TabsTrigger>
+            <TabsTrigger value="terminal">Terminal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="packages">
@@ -241,6 +243,9 @@ export default function TermuxCenterPage() {
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
               </CardContent>
             </Card>
+          </TabsContent>
+          <TabsContent value="terminal">
+            <TermuxTerminalPanel />
           </TabsContent>
         </Tabs>
       </div>
