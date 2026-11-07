@@ -1,4 +1,3 @@
-import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -42,6 +41,7 @@ describe("H3.4 full Termux administration", () => {
   it("starts one ttyd session only on click, no password and no autostart", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, options?: RequestInit) => {
+      expect(url).toContain("/api/v1/termux-admin")
       const started = options?.method === "POST"
       return { ok: true, json: async () => ({
         terminal: started ? { running: true, url: "/terminal/" } : { running: false, url: null },
