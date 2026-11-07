@@ -34,7 +34,7 @@ exact-SHA QA and a guarded LAN switch on Samsung.
   bounded file reads, no dotfiles, path traversal, symlink following,
   directory listings, server-side commands or package execution.
 - `src/modules/host/site-fleet-proxy.mjs` and `lan-gateway.mjs`:
-  authenticated-by-owner-record **GET-only** private LAN preview route
+  owner-record-verified **GET-only** private LAN preview route
   `http://<phone-private-ip>:18879/h2/<site-id>/` after exact running
   child verification. No new LAN listening port or WAN publication.
 - `apps/admin/vite.config.ts`: serialized, separately feature-flagged private
