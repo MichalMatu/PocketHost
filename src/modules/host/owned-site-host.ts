@@ -203,6 +203,32 @@ export class OwnedDemoHost implements OwnedSitePort {
     writeAtomic(this.site, MARKER_FILE, JSON.stringify(item) + '\n');
   }
 
+  private document(name: 'index.html' | 'index-v1.html' | 'index-v2.html'): string {
+    const target = path.join(this.site, name);
+    const stat = lstatSync(target);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128 * 1024) {
+      throw new Error('Unsafe owned release document');
+    }
+    return readFileSync(target, 'utf8');
+  }
+
+  private commitDocumentAndMarker(item: Marker, document: string): void {
+    const original = this.document('index.html');
+    writeAtomic(this.site, 'index.html', document);
+    try {
+      this.save(item);
+    } catch (error) {
+      // If metadata persistence fails, restore the previous served content.
+      // A second failure is an explicit unresolved rollback, never a success.
+      try {
+        writeAtomic(this.site, 'index.html', original);
+      } catch {
+        throw new Error('Owned release restore failed; intervention required');
+      }
+      throw error;
+    }
+  }
+
   private addDeployment(
     item: Marker,
     action: OwnedDemoDeployment['action'],
@@ -387,11 +413,11 @@ export class OwnedDemoHost implements OwnedSitePort {
     if (!existsSync(archive)) {
       writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
     }
-    writeAtomic(this.site, 'index.html', readFileSync(archive, 'utf8'));
+    const nextDocument = this.document(`index-v${target}.html`);
     this.addDeployment(item, 'publish', item.contentVersion, target);
     item.previousVersion = item.contentVersion;
     item.contentVersion = target;
-    this.save(item);
+    this.commitDocumentAndMarker(item, nextDocument);
     return this.inspect();
   }
 
@@ -400,13 +426,12 @@ export class OwnedDemoHost implements OwnedSitePort {
     if (this.status(item) === 'unknown') throw new Error('Unverified process identity');
     if (item.previousVersion === null) throw new RangeError('No prior demo version');
     const archive = path.join(this.site, `index-v${item.previousVersion}.html`);
-    const html = readFileSync(archive, 'utf8');
-    writeAtomic(this.site, 'index.html', html);
+    const html = this.document(`index-v${item.previousVersion}.html`);
     this.addDeployment(item, 'rollback', item.contentVersion, item.previousVersion);
     item.contentVersion = item.previousVersion;
     // Consume the one-step undo. A second rollback must not redeploy the superseded release.
     item.previousVersion = null;
-    this.save(item);
+    this.commitDocumentAndMarker(item, html);
     return this.inspect();
   }
 
