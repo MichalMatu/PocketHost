@@ -1,8 +1,8 @@
 ---
-status: implementation-pending-native-acceptance
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Distinguish PocketHost H1 source implementation from Samsung and LAN release evidence
+purpose: Record H1 source, Samsung acceptance, guarded LAN release and owner Chrome evidence
 ---
 
 # PocketHost H1 — browser-managed Hosting MVP source
@@ -50,7 +50,7 @@ This is one built-in application with two prebuilt release documents.
 Generic multi-project registration, user uploads and arbitrary application
 execution are **outside H1**, not quietly represented as completed.
 
-## Physical evidence known at source checkpoint
+## Earlier source-stage evidence
 
 - Beginning `main`: `faf044700912a5bdad0fd613f2fd6f2bbede41b6`.
 - Initial preflight task
@@ -73,26 +73,52 @@ execution are **outside H1**, not quietly represented as completed.
   This is **not the final code SHA** because additional source changes
   followed publication. Its outcome must not be counted as final QA.
 
-The **new code has not yet passed final exact-SHA Samsung G2**
-or a new G3 live-browser and controlled-release gate at this checkpoint.
-The previously accepted historical P3/O1 runtime and LAN tests do not
-transfer to H1. Do not claim live cutover before terminal task result.
+## Accepted H1 source and Samsung device evidence — 2026-11-07
 
-## H1 release gate and pending work
+- **Application source:** `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`.
+- **G2:** Samsung Termux Local Agent task
+  `pockethost-h1-final-native-check-all-1edbd1b-20261107-v1`:
+  terminal `done/0`, exact-SHA `npm run check:all` **PASS**.
+  115/115 Node tests, 23/23 UI interaction tests, admin lint, TypeScript
+  and Vite build passed. Coverage: 82.10% lines, 82.78% branches,
+  80.54% functions. Independent QA checkout remained clean.
+- **G3 guarded release:** task
+  `pockethost-h1-guarded-g3-lan-release-1edbd1b-20261107-v1`:
+  terminal `done/0 PASS`. Verified original live checkout and
+  PID/start ticks before switching only the PocketHost preview to
+  the accepted application SHA; re-enabled the owner-approved trusted-LAN
+  gateway. Real LAN API/UI routes and owned-demo lifecycle passed:
+  v2 → publish v1 → HTTP v1 → one-use rollback v2 → HTTP v2 →
+  denied second rollback → restart → stop → start; checked changed
+  owned process identity and bounded logs. Six protected services
+  reported running and unchanged; PhotoMap TEST port 8010 stayed closed.
+- **Owner Mac Chrome evidence:** owner supplied six actual Chrome
+  screenshots and reported that the experience appeared to work.
+  Images show the `/owned-site` panel with running/healthy v2,
+  owned PID/start ticks, deployment history, bounded runtime logs,
+  the stopped state with Start offered, and hosted HTML pages for
+  `Updated local site` (v2) and `First local site` (v1).
+  A later screenshot shows the browser-originated v2 → v1 publish
+  entry in the history. The screenshots support core visual/browser
+  operation; they do not individually prove every keyboard/failure
+  state, browser rollback click or all other pages.
 
-1. Resolve the intermediate QA task and any specific lint/type/test failures.
-2. Run `npm run check:all` on Samsung via Local Agent on final `main`
-   SHA; record the exact terminal task ID, exit code and UI test count.
-3. Prove own project HTTP response, real two-version publish, one-step
-   rollback, restart/stop/start, bounded logs and no port conflict,
-   all without touching six foreign services or PhotoMap TEST.
-4. If native G2 passes, verify current live preview owner PID/start ticks
-   and record, guarded switch of PocketHost-only Vite preview, restore
-   manual trusted-LAN gateway and test LAN API/UI. Roll back to exact
-   old source on failure. If process identity or rollback uncertain,
-   **hold deployment** and leave unrelated services untouched.
-5. Record Mac Chrome visual/keyboard success separately; HTTP 200 on
-   Samsung is not proof of a real human browser interaction.
+**H1 core single-demo MVP accepted and deployed.** The live
+application remains `1edbd1b`; later documentation-only commits
+must pass their own documentation checks and are not a new
+application deployment.
+
+## Follow-up, not a blocker for the accepted H1 demo
+
+- The top-right header still says `Template landing` while
+  displaying Project details; polish this UX in a separately tested
+  code change.
+- Complete exhaustive keyboard/ARIA and failure-state browser testing
+  before treating the broader UI accessibility gate as fully closed.
+- Preserve the no-login trusted-private-LAN limitation: HTTP admin
+  is not appropriate for untrusted networks or public exposure.
+- Generic multi-project hosting, user-provided deployments, packages,
+  authenticated AI API and production PhotoMap remain future scope.
 
 ## Deferred modules
 
