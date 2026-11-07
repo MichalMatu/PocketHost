@@ -56,6 +56,7 @@ At exact source `bc5e553`, Samsung `check:all` passed 101/101 Node tests and
 16/16 UI tests. This qualifies the generic source contracts, not physical
 PhotoMap PRoot Start/Stop or orphan recovery. See the
 [final native checkpoint](../checkpoints/2026-11-07-final-native-qa-handoff.md).
+
 ## Hosting MVP H1 candidate
 
 The existing fixed owned-demo runtime adds a serialized `restart`
