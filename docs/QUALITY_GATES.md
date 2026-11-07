@@ -118,3 +118,26 @@ including 19/19 UI tests. The exact live source matched `f0dd506`;
 Six protected services remained unchanged and PhotoMap 8010 closed.
 Mac Chrome new-version interaction remains G3 HOLD.
 See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).
+## H1 Hosting MVP release criteria
+
+The exact new source SHA must pass all existing G0–G2 gates on the
+Samsung Termux Local Agent. New negative cases cover unauthenticated
+or cross-origin write rejection, malformed owner marker, forged PID,
+port conflict, symlinked release archive, duplicate Start/Publish,
+bounded deployment metadata and unowned-process noninterference.
+
+G3 requires a **real** owned demo cycle:
+Create if absent → Start → GET site (instance identity) →
+Publish the opposite fixed release → HTTP content verification →
+Rollback once → HTTP previous content restored →
+deny second Rollback → Restart/Stop/Start, owned logs and process
+identity check. A preexisting demo may be used without re-creating it.
+Browser and LAN API checks must use the exact newly deployed source.
+
+Before and after, compare the six protected runit services and ensure
+PhotoMap 8010 remains closed. Never signal an uncertain PID. A failed
+or uncertain rollback, mismatched checkout SHA, stale owned process
+record or unavailable device evidence blocks the live panel switch.
+
+No history of a different source SHA proves this release. Source-only
+`[skip ci]` commits are not a G2 result or deployment receipt.
