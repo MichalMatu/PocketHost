@@ -61,17 +61,22 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.equal(site.publish(2).contentVersion, 2);
     assert.equal(site.inspect().previousVersion, 1);
     assert.equal(site.inspectProject().history[0].action, 'publish');
-    assert.equal(site.inspectProject().history.filter((event) => event.action === 'publish').length, 1);
+    assert.equal(
+      site.inspectProject().history.filter((event) => event.action === 'publish').length,
+      1,
+    );
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /Updated local site/);
     const restored = site.rollback();
     assert.equal(restored.contentVersion, 1);
     assert.equal(restored.previousVersion, null);
     assert.equal(restored.canRollback, false);
-    assert.deepEqual(
-      site.inspectProject().history[0],
-      { ...site.inspectProject().history[0], action: 'rollback', from: 2, to: 1 },
-    );
+    assert.deepEqual(site.inspectProject().history[0], {
+      ...site.inspectProject().history[0],
+      action: 'rollback',
+      from: 2,
+      to: 1,
+    });
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /First local site/);
     assert.throws(() => site.rollback(), /No prior demo version/);
@@ -170,7 +175,10 @@ test('malformed or excessive deployment records cannot grant owned runtime acces
     const markerPath = path.join(root, 'pockethost-demo', '.pockethost-owner.json');
     const record = JSON.parse(readFileSync(markerPath, 'utf8'));
     record.history = Array.from({ length: 33 }, () => ({
-      at: new Date().toISOString(), action: 'publish', from: 1, to: 2,
+      at: new Date().toISOString(),
+      action: 'publish',
+      from: 1,
+      to: 2,
     }));
     writeFileSync(markerPath, JSON.stringify(record));
     assert.throws(() => host.inspectProject(), /Ownership record failed validation/);
