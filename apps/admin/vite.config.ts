@@ -640,7 +640,7 @@ function termuxAdminApi(): Plugin {
     action?: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string;
   }> {
     const declared = req.headers["content-length"]
-    if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 360000)))
+    if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 1200000)))
       throw new RangeError("Invalid request budget")
     req.setTimeout(18000, () => req.destroy())
     let bytes = 0
@@ -648,7 +648,7 @@ function termuxAdminApi(): Plugin {
     for await (const chunk of req) {
       const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
       bytes += b.length
-      if (bytes > 360000) throw new RangeError("Request budget exceeded")
+      if (bytes > 1200000) throw new RangeError("Request budget exceeded")
       chunks.push(b)
     }
     const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
