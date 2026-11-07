@@ -189,6 +189,6 @@ test('H2: symlink root refuses all site creation without touching unrelated file
   try {
     const fleet = new SiteFleetHost(root, await freePort());
     await assert.rejects(fleet.create('Do not adopt'), /linked/);
-    assert.deepEqual(fleet.list(), await assert.rejects(Promise.resolve().then(() => fleet.list()), /linked/).then(() => []));
+    assert.throws(() => fleet.list(), /linked/);
   } finally { rmSync(tmp, { recursive: true, force: true }); }
 });
