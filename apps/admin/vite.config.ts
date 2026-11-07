@@ -1,5 +1,6 @@
 import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
+import { applyPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -608,9 +609,140 @@ function termuxToolsApi(): Plugin {
   }
 }
 
+/**
+ * H3 explicit typed admin operations for the owner-approved trusted LAN.
+ * No login dependency. Never accepts shell programs, executable paths,
+ * system-service PIDs, or general filesystem paths. Same-origin intent and
+ * confirmation are separate from authentication.
+ */
+function termuxAdminApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  const files = new WorkspaceFiles()
+  const backups = new WorkspaceBackups(files)
+  let operations: Promise<void> = Promise.resolve()
+  const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
+    const result = operations.then(job, job)
+    operations = result.then(() => undefined, () => undefined)
+    return result
+  }
+  async function parseBody(req: IncomingMessage): Promise<{
+    action?: string; name?: string; path?: string; destination?: string; content?: string;
+  }> {
+    const declared = req.headers["content-length"]
+    if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 360000)))
+      throw new RangeError("Invalid request budget")
+    req.setTimeout(18000, () => req.destroy())
+    let bytes = 0
+    const chunks: Buffer[] = []
+    for await (const chunk of req) {
+      const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      bytes += b.length
+      if (bytes > 360000) throw new RangeError("Request budget exceeded")
+      chunks.push(b)
+    }
+    const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new RangeError("Bad action")
+    const data = value as Record<string, unknown>
+    if (Object.keys(data).some(key => !["action","name","path","destination","content"].includes(key)))
+      throw new RangeError("Extra input denied")
+    for (const key of ["action","name","path","destination","content"]) {
+      if (data[key] !== undefined && typeof data[key] !== "string")
+        throw new RangeError("Bad request field")
+    }
+    return data as { action?: string; name?: string; path?: string; destination?: string; content?: string }
+  }
+
+  return {
+    name: "pockethost-h3-typed-admin",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/termux-admin", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!hosts.has(request.headers.host ?? "") ||
+            (request.headers.origin && !origins.has(request.headers.origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            !["127.0.0.1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress ?? "")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        const route = request.url?.split("?")[0]
+        if (route !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method === "GET") {
+          try {
+            const url = new URL(request.url ?? "/", "http://localhost")
+            const mode = url.searchParams.get("mode")
+            const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
+              mode === "snapshots" ? { snapshots: backups.list() } : null
+            if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
+            response.end(JSON.stringify(result))
+          } catch {
+            response.statusCode = 409
+            response.end('{"error":"unavailable"}')
+          }
+          return
+        }
+        if (request.method !== "POST" ||
+            !request.headers.origin || !origins.has(request.headers.origin) ||
+            request.headers["x-pockethost-intent"] !== "termux-admin" ||
+            request.headers["content-type"]?.split(";")[0]?.trim() !== "application/json") {
+          response.statusCode = 403
+          response.end('{"error":"intent-required"}')
+          return
+        }
+        try {
+          const input = await parseBody(request)
+          const result = await serialize(async () => {
+            if (input.action === "package") {
+              if (!input.name || !["refresh", "install", "remove", "upgrade", "upgrade-all"].includes(input.name))
+                throw new RangeError("Invalid package action")
+              return { operation: input.name, result: await applyPackageAction(
+                input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
+                input.path,
+              ) }
+            }
+            if (input.action === "file") {
+              if (!input.name || !["mkdir", "save", "rename", "delete"].includes(input.name))
+                throw new RangeError("Invalid file action")
+              files.apply(input.name as "mkdir" | "save" | "rename" | "delete", input.path ?? "", {
+                destination: input.destination, content: input.content,
+              })
+              return { changed: true }
+            }
+            if (input.action === "read-file") {
+              return { content: files.read(input.path ?? "") }
+            }
+            if (input.action === "snapshot") {
+              if (input.name === "create") return { snapshot: backups.create() }
+              if (input.name === "restore") return { snapshot: backups.restore(input.path ?? "") }
+              if (input.name === "delete") {
+                backups.delete(input.path ?? "")
+                return { changed: true }
+              }
+            }
+            throw new RangeError("Unsupported typed action")
+          })
+          response.end(JSON.stringify(result))
+        } catch {
+          response.statusCode = 409
+          response.end('{"error":"operation-failed-or-refused"}')
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: { host: "127.0.0.1", port: 8787, strictPort: true },
   resolve: {
     alias: {
