@@ -2,7 +2,8 @@
 
 ## Current work
 
-- [H3 isolated branch read-only Termux Center](checkpoints/2026-11-07-h3-termux-center-branch.md)
+- [H3.4 Full Termux Administration source candidate](checkpoints/2026-11-07-h34-full-termux-source.md)
+- [H3 Termux Control Center foundation](checkpoints/2026-11-07-h3-termux-center-branch.md)
 
 - [Roadmap: H2 accepted, next H3 package CMS and H4 agent API](ROADMAP.md)
 - [H2.1 archive manager source and release gates](checkpoints/2026-11-07-h21-release-manager-source.md)
@@ -15,6 +16,7 @@
 - [Development plan](DEVELOPMENT_PLAN.md)
 - [Quality gates](QUALITY_GATES.md)
 - [ADR-0010: Read-only Observability](adr/0010-read-only-observability.md)
+- [ADR-0011: H3.4 trusted-LAN administration](adr/0011-h34-termux-administration.md)
 
 ## Foundation
 
