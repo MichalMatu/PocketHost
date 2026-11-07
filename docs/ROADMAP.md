@@ -97,13 +97,34 @@ gateway are reused. The PhotoMap TEST catalog remains read-only and the six
 external services are excluded from every mutation. Imported admin template
 routes are retained and labeled as examples.
 
-**Status: source implemented, Samsung exact-SHA QA and guarded LAN
-deployment not yet accepted.** The previous verified O1 panel stays the
-production/dev baseline until the new G2 and G3 results exist. Version
-publication is restricted to two built-in HTML documents, not arbitrary
-application uploads or multiple projects.
+**Status: accepted.** Samsung G2 passed 115/115 Node and 23/23 UI,
+then the guarded Samsung LAN release passed. The owner verified the
+core Publish/Rollback flow and hosted v1/v2 pages from Mac Chrome.
+The accepted H1 runtime remains the rollback baseline while H2 is
+tested. H1 versions are restricted to two built-in HTML documents.
 
 After H1 device acceptance: Package CMS, Termux environment controls,
 secure Local Agent-backed AI API, multi-project adapters, arbitrary
 code uploads, DNS/HTTPS, PhotoMap release work and autostart are separate
 milestones. No current sprint item authorizes any of them.
+
+## H2 — browser-owned multiple static sites: source candidate
+
+Current H2 source supports eight independently created static sites,
+with explicit project IDs, bounded ZIP/folder imports, per-project
+loopback ports, immutable releases, one-step rollback, verified
+Start/Stop/Restart, health, logs, metadata and resource statistics.
+Trusted-LAN site previews use the existing separate GET-only 18879
+gateway, never an additional public administration listener.
+
+**No H2 release acceptance yet.** The complete exact-SHA Samsung
+`check:all`, real uploaded HTML/CSS/JS lifecycle, negative security
+cases and guarded live switch are mandatory. Until a terminal receipt,
+H2 source must not be represented as running on the owner's phone.
+
+H2 deliberately does not execute uploaded backend scripts or install
+dependencies. Generic Node/Python/PHP runtimes, PhotoMap activation,
+package CMS, authentication and public API access are separate
+security-reviewed milestones.
+
+See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
