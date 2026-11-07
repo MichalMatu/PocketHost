@@ -215,7 +215,7 @@ test('PRoot launcher uses the verified guest Python and never executes host Pyth
     'utf8',
   );
   assert.match(source, /const GUEST_PYTHON = '\/opt\/photomap-venv\/bin\/python'/);
-  assert.match(source, / {8}GUEST_PYTHON,/);
+  assert.match(source, / {6}GUEST_PYTHON,/);
   assert.match(source, /buildManagedProotArgs\(/);
   assert.doesNotMatch(source, /'\/opt\/pockethost-venv\/bin\/python'/);
   assert.match(source, /profile\.activation_approved !== true/);
