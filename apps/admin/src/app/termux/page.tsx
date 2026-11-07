@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
+import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
@@ -178,6 +179,7 @@ export default function TermuxCenterPage() {
                 </>}
                 {detailError && <p role="alert">{detailError}</p>}
                 <a className="text-sm underline underline-offset-4" href="/sites">Open existing site upload and version manager</a>
+                <TermuxFileExplorer />
                 <WorkspaceManager />
               </CardContent>
             </Card>
