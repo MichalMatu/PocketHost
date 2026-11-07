@@ -233,7 +233,7 @@ export class TermuxServiceAdmin {
       throw new Error('Unsafe service log');
     const lines = readFileSync(file, 'utf8').slice(-20000).split(/\r?\n/).slice(-100)
       .map(line => line.replace(/(password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi,
-        '$1=[redacted]').replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/g, '').slice(0, 240));
+        '$1=[redacted]').split('').filter(char => { const code = char.charCodeAt(0); return code >= 32 && code !== 127; }).join('').slice(0, 240));
     return { lines };
   }
 
