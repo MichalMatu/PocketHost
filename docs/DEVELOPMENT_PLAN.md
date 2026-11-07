@@ -75,3 +75,34 @@ PRoot orphan recovery as parallel release blockers.
 See [quality gates](QUALITY_GATES.md),
 [ADR-0010](adr/0010-read-only-observability.md)
 and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
+## H1 implementation — browser-driven owned Hosting MVP
+
+H1 extends the accepted P3 one-site adapter instead of introducing
+a competing supervisor. Module ownership:
+
+- `host`: verified PID/start-ticks, exact `pockethost-demo` identity,
+  HTTP instance-health probe, bounded durable release journal and
+  fixed-file publication with metadata-failure content restore.
+- `runtime`: existing explicit-owning policy; no inferred adoption.
+  Serialized DEV action `restart` composes verified Stop and Start.
+- `sites`: two prebuilt HTML releases only; one-step rollback,
+  no upload, path, script, command, PID or port accepted from HTTP.
+- `apps/admin`: project list, detail, deployments, logs, health,
+  lifecycle controls, visible error/disabled states and confirmation;
+  all upstream template routes retained and labeled.
+
+The existing DEV feature flag `POCKETHOST_ENABLE_OWNED_SITE_DEV=1`
+remains mandatory. The admin API stays bound to loopback and is reachable
+only through the previously approved manual trusted-LAN gateway. There
+is no login on that gateway; never enable it on untrusted networks.
+
+Native acceptance must use one fresh exact-main SHA through the selected
+Samsung Agent: negative tests, `npm run check:all`, actual controlled
+HTTP cycle, verified own PID/start ticks before Stop/Restart, successful
+one-step rollback, all six external services unchanged and PhotoMap 8010
+closed. The LAN panel may switch only after G2 passes and a guarded
+rollback plan validates its prior process identity.
+
+Until a terminal result exists, source changes are **unverified**, and
+the live UI must not be described as upgraded. Historic P3/O1 test
+receipts remain valid for their exact earlier source only.
