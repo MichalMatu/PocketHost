@@ -14,11 +14,15 @@ afterEach(() => vi.unstubAllGlobals())
 describe("H3 confirmed operations, no password prerequisite", () => {
   it("sends typed fixed package operation only after confirmation", async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => ({
-      ok: true, json: async () => ({
-        operation: "install", result: { exit: 0, output: "fixture install complete" },
-      }),
-    }))
+    const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => {
+      void _url
+      void options
+      return {
+        ok: true, json: async () => ({
+          operation: "install", result: { exit: 0, output: "fixture install complete" },
+        }),
+      }
+    })
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("confirm", vi.fn(() => true))
     render(<PackageActions />)
@@ -34,7 +38,7 @@ describe("H3 confirmed operations, no password prerequisite", () => {
   it("supports creating and saving a file in its separate workspace", async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (url: string, options?: RequestInit) => ({
-      ok: true, json: async () => options?.method === "POST" ?
+      ok: url.length > 0, json: async () => options?.method === "POST" ?
         { changed: true } : { files: [] },
     }))
     vi.stubGlobal("fetch", fetchMock)
@@ -52,7 +56,11 @@ describe("H3 confirmed operations, no password prerequisite", () => {
 
   it("reuses existing H2 service controls with explicit verified-site identity", async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => ({ ok: true, json: async () => ({}) }))
+    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => {
+      void _url
+      void _options
+      return { ok: true, json: async () => ({}) }
+    })
     const reload = vi.fn(async () => {})
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("confirm", vi.fn(() => true))
@@ -86,10 +94,14 @@ describe("H3 confirmed operations, no password prerequisite", () => {
 describe("H3 additional native-tool integrations", () => {
   it("previews apt changes without a confirmation or mutation", async () => {
     const user = userEvent.setup()
-    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => ({
-      ok: true,
-      json: async () => ({ operation: "install", result: { exit: 0, output: "Simulated changes" } }),
-    }))
+    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => {
+      void _url
+      void _options
+      return {
+        ok: true,
+        json: async () => ({ operation: "install", result: { exit: 0, output: "Simulated changes" } }),
+      }
+    })
     const confirm = vi.fn(() => true)
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("confirm", confirm)
@@ -105,7 +117,7 @@ describe("H3 additional native-tool integrations", () => {
     const user = userEvent.setup()
     const name = "snapshot-20261107-aaaaaaaaaaaa"
     const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => ({
-      ok: true,
+      ok: _url.length > 0,
       json: async () => options?.method === "POST"
         ? { verification: { name, state: "verified", files: 2 } }
         : { snapshots: [{ name, createdAt: "2026-11-07T13:00:00.000Z", files: 2 }] },
@@ -125,6 +137,7 @@ describe("H3 runit service registration UI", () => {
     const user = userEvent.setup()
     let registered = false
     const requests = vi.fn(async (url: string, options?: RequestInit) => {
+      expect(url).toContain("/api/v1/termux-admin")
       if (options?.method === "POST") {
         const body = JSON.parse(String(options.body))
         expect(body.action).toBe("service")
