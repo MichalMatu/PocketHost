@@ -15,6 +15,15 @@ for H3 work. Branch: `feature/h3-termux-control-center-20261107`,
 created from `2c4a9d9da29d7f7b60153701a503ad1a8b7af552`.
 Do not fast-forward, merge, deploy, rebase or force-update `main`.
 
+## Owner change: no password gate
+
+The owner requested operational controls without waiting for login/auth.
+H3 now includes typed package refresh/install/remove/upgrade, a managed
+workspace file editor with create/rename/delete, existing owned-site
+start/stop/restart, and reversible workspace snapshots. Each write
+requires a deliberate UI confirmation, not a login. The trusted-LAN
+session remains unauthenticated and must not be opened to WAN.
+
 ## Implemented source candidate
 
 - **Packages:** reuse existing O1 read-only dpkg/npm/pip inventory,
@@ -48,18 +57,29 @@ Do not fast-forward, merge, deploy, rebase or force-update `main`.
 
 ## Guardrails and acceptance
 
-The live home-LAN admin is currently plain HTTP without login. H3 must
-not expose an arbitrary path, shell, package mutation, file edits,
-service control, Restic execution, public ingress or autostart.
-No six protected services, PhotoMap or two user H2 sites may be
-changed by development or tests. Do not switch the live H2 panel.
+The owner explicitly removed the proposed password prerequisite. Do not
+reintroduce a login dependency or disable controls merely because
+authentication is absent. Existing strict HTTP Origin/Host checks and
+confirmed typed operations remain in place.
 
-Run `npm run check:all` only on Samsung Termux via exact Local
-Agent host+installation, isolated ordinary checkout, and capture
-terminal receipt on the exact H3 branch commit. A passing G2 is
-not live H3 deployment or Mac Chrome acceptance.
+Only the explicitly owned H3 scratch workspace can be edited; existing
+two H2 user sites, six protected foreign services, PhotoMap and Local
+Agent are excluded from this new code. H2-managed sites may be
+started/stopped/restarted through their existing verified owner API,
+but no live service action is performed by this sprint. Termux package
+mutations are real apt-get commands when explicitly triggered in H3;
+they are **not** executed by tests or on the current live panel.
 
-## Status
+Full `npm run check:all` must run on the exact H3 source SHA, exclusively
+on the verified Samsung Local Agent and isolated QA checkout. Isolated
+fixture tests may write only their own disposable directories.
+Before any live rollout, fresh process/service/site ownership preflight
+and separate live acceptance remain necessary. No live H3 deployment.
 
-Source commit and native gate to be recorded after branch publication.
-No device G3 request is made by this branch.
+## Evidence
+
+First isolated native H3 task
+`pockethost-h3-isolated-branch-native-g2-8e3d7c-20261107-v1`
+returned FAILED due missing checkpoint archive index entries (including
+a concurrent H2.1 checkpoint). It did not reach code tests. Both links
+have now been added on this branch. New exact-source tests are required.
