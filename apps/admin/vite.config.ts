@@ -69,7 +69,7 @@ function termuxReadOnlyApi(): Plugin {
 function ownedDemoApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
-  const allowedActions = new Set(["create", "start", "stop", "publish/v1", "publish/v2", "rollback"])
+  const allowedActions = new Set(["create", "start", "stop", "restart", "publish/v1", "publish/v2", "rollback"])
 
   return {
     name: "pockethost-owned-single-site-dev",
@@ -77,7 +77,8 @@ function ownedDemoApi(): Plugin {
     configureServer(server) {
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1"
       // No filesystem inspection or process management when the flag is off.
-      const runtime = enabled ? createOwnedSiteRuntime(new OwnedDemoHost()) : null
+      const adapter = enabled ? new OwnedDemoHost() : null
+      const runtime = adapter ? createOwnedSiteRuntime(adapter) : null
       let mutationQueue: Promise<void> = Promise.resolve()
       const serializeMutation = <T,>(action: () => Promise<T> | T): Promise<T> => {
         const result = mutationQueue.then(action, action)
@@ -109,6 +110,36 @@ function ownedDemoApi(): Plugin {
             enabled,
             site: enabled ? runtime!.inspect() : null,
           }))
+          return
+        }
+        if (request.method === "GET" && route === "/project") {
+          if (!adapter) {
+            response.statusCode = 404
+            response.end(JSON.stringify({ error: "project-management-disabled" }))
+            return
+          }
+          try {
+            response.statusCode = 200
+            response.end(JSON.stringify({ project: adapter.inspectProject() }))
+          } catch {
+            response.statusCode = 409
+            response.end(JSON.stringify({ error: "owned-project-unavailable" }))
+          }
+          return
+        }
+        if (request.method === "GET" && route === "/health") {
+          if (!adapter) {
+            response.statusCode = 404
+            response.end(JSON.stringify({ error: "project-management-disabled" }))
+            return
+          }
+          try {
+            response.statusCode = 200
+            response.end(JSON.stringify({ healthy: await adapter.health() }))
+          } catch {
+            response.statusCode = 409
+            response.end(JSON.stringify({ error: "owned-project-unavailable" }))
+          }
           return
         }
         if (request.method === "GET" && route === "/logs") {
@@ -157,6 +188,7 @@ function ownedDemoApi(): Plugin {
             action === "create" ? runtime.create() :
             action === "start" ? runtime.start() :
             action === "stop" ? runtime.stop() :
+            action === "restart" ? (async () => { await runtime.stop(); return runtime.start() })() :
             action === "publish/v1" ? runtime.publish(1) :
             action === "publish/v2" ? runtime.publish(2) :
             runtime.rollback()
