@@ -5,13 +5,19 @@ import { startLanGateway } from './lan-gateway.mjs';
 /** Only exact private addresses assigned to this host are selectable. */
 export function availableLanInterfaces(interfaces = os.networkInterfaces()) {
   return Object.entries(interfaces)
-    .flatMap(([name, entries]) => (entries ?? []).filter((item) =>
-      item.family === 'IPv4' && !item.internal &&
-      net.isIP(item.address) === 4 &&
-      (item.address.startsWith('10.') ||
-        item.address.startsWith('192.168.') ||
-        /^172\.(1[6-9]|2\d|3[01])\./.test(item.address))
-    ).map((item) => ({ name, address: item.address })))
+    .flatMap(([name, entries]) =>
+      (entries ?? [])
+        .filter(
+          (item) =>
+            item.family === 'IPv4' &&
+            !item.internal &&
+            net.isIP(item.address) === 4 &&
+            (item.address.startsWith('10.') ||
+              item.address.startsWith('192.168.') ||
+              /^172\.(1[6-9]|2\d|3[01])\./.test(item.address)),
+        )
+        .map((item) => ({ name, address: item.address })),
+    )
     .sort((a, b) => a.address.localeCompare(b.address));
 }
 
@@ -56,10 +62,10 @@ export function createLanControl({
     if (inFlight) throw new Error('busy');
     if (!gateway) return status();
     const instance = gateway;
-    gateway = null;
     inFlight = true;
     try {
       await instance.close();
+      gateway = null;
     } finally {
       inFlight = false;
     }

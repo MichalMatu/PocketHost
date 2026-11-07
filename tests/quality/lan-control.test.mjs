@@ -3,16 +3,19 @@ import test from 'node:test';
 import { availableLanInterfaces, createLanControl } from '../../src/modules/host/lan-control.mjs';
 
 test('LAN interface selector excludes public, loopback, IPv6 and orders eligible addresses', () => {
-  assert.deepEqual(availableLanInterfaces({
-    wlan0: [{ family: 'IPv4', internal: false, address: '192.168.0.100' }],
-    rmnet: [{ family: 'IPv4', internal: false, address: '8.8.8.8' }],
-    lo: [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
-    test: [{ family: 'IPv6', internal: false, address: 'fe80::1' }],
-    vpn: [{ family: 'IPv4', internal: false, address: '10.0.0.2' }],
-  }), [
-    { name: 'vpn', address: '10.0.0.2' },
-    { name: 'wlan0', address: '192.168.0.100' },
-  ]);
+  assert.deepEqual(
+    availableLanInterfaces({
+      wlan0: [{ family: 'IPv4', internal: false, address: '192.168.0.100' }],
+      rmnet: [{ family: 'IPv4', internal: false, address: '8.8.8.8' }],
+      lo: [{ family: 'IPv4', internal: true, address: '127.0.0.1' }],
+      test: [{ family: 'IPv6', internal: false, address: 'fe80::1' }],
+      vpn: [{ family: 'IPv4', internal: false, address: '10.0.0.2' }],
+    }),
+    [
+      { name: 'vpn', address: '10.0.0.2' },
+      { name: 'wlan0', address: '192.168.0.100' },
+    ],
+  );
 });
 
 test('LAN controller opts in only to exact own private address and manages own gateway', async () => {
@@ -21,7 +24,11 @@ test('LAN controller opts in only to exact own private address and manages own g
     interfaces: () => [{ name: 'wlan0', address: '192.168.0.100' }],
     start: async (bind) => {
       calls.push('start:' + bind);
-      return { close: async () => { calls.push('close'); } };
+      return {
+        close: async () => {
+          calls.push('close');
+        },
+      };
     },
   });
   assert.equal(control.status().enabled, false);
@@ -45,7 +52,9 @@ test('LAN controller opts in only to exact own private address and manages own g
 test('LAN controller does not take over ports from a preexisting gateway', async () => {
   const control = createLanControl({
     interfaces: () => [{ name: 'wlan0', address: '192.168.0.100' }],
-    start: async () => { throw Object.assign(new Error('used'), { code: 'EADDRINUSE' }); },
+    start: async () => {
+      throw Object.assign(new Error('used'), { code: 'EADDRINUSE' });
+    },
   });
   await assert.rejects(control.enable('192.168.0.100'), /used/);
   assert.equal(control.status().enabled, false);
@@ -57,7 +66,10 @@ test('LAN controller rejects overlapping starts without signal or process discov
   let proceed;
   const control = createLanControl({
     interfaces: () => [{ name: 'wlan0', address: '192.168.0.100' }],
-    start: () => new Promise((resolve) => { proceed = resolve; }),
+    start: () =>
+      new Promise((resolve) => {
+        proceed = resolve;
+      }),
   });
   const started = control.enable('192.168.0.100');
   await assert.rejects(control.enable('192.168.0.100'), /busy/);

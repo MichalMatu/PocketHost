@@ -177,12 +177,15 @@ export async function startLanGateway(bind, { registerSignals = true } = {}) {
     closed = true;
     process.removeListener('SIGTERM', shutdown);
     process.removeListener('SIGINT', shutdown);
-    await Promise.all([admin, site].map((listener) =>
-      new Promise((resolve) => {
-        listener.closeAllConnections?.();
-        listener.close(() => resolve());
-      }),
-    ));
+    await Promise.all(
+      [admin, site].map(
+        (listener) =>
+          new Promise((resolve) => {
+            listener.closeAllConnections?.();
+            listener.close(() => resolve());
+          }),
+      ),
+    );
   }
   function shutdown() {
     void close();
