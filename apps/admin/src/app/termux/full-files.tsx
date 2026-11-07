@@ -69,13 +69,16 @@ export function TermuxFileExplorer() {
     } catch { setError("Only bounded UTF-8 text files are editable.") }
     finally { setBusy(false) }
   }
-  const perform = async (operation: "mkdir"|"save"|"copy"|"move"|"delete", relative: string) => {
+  const perform = async (operation: "mkdir"|"save"|"copy"|"copy-tree"|"move"|"delete"|"delete-tree", relative: string) => {
     if (busy || !relative) return
     if (!window.confirm("Apply " + operation + " in " + root + ": " + relative + "?")) return
+    if (operation === "delete-tree" &&
+        !window.confirm("PERMANENTLY DELETE this entire directory tree? " + root + "/" + relative))
+      return
     setBusy(true); setNotice(""); setError("")
     try {
       await operate({ name: operation, root, path: relative,
-        destination: operation === "move" || operation === "copy" ? destination : undefined,
+        destination: operation === "move" || operation === "copy" || operation === "copy-tree" ? destination : undefined,
         content: operation === "save" ? content : undefined })
       setNotice(operation + " completed")
       setListing(await browse(root, folder))
@@ -84,7 +87,7 @@ export function TermuxFileExplorer() {
   }
   const upload = async (file: File | undefined) => {
     if (!file || busy) return
-    if (file.size > 256 * 1024) { setError("Maximum file upload is 256 KiB."); return }
+    if (file.size > 2 * 1024 * 1024) { setError("Maximum file upload is 2 MiB."); return }
     setBusy(true); setNotice(""); setError("")
     try {
       const data = await new Promise<string>((resolve, reject) => {
@@ -138,8 +141,15 @@ export function TermuxFileExplorer() {
         <span className="break-all">{item.kind === "directory" ? "📁" : item.kind === "file" ? "📄" : "🔗"} {item.name}
           {item.kind === "file" ? " (" + item.bytes + " B)" : ""}</span>
         <div className="flex flex-wrap gap-1">
-          {item.kind === "directory" && <Button size="sm" variant="outline" disabled={busy}
-            onClick={() => void load(root, combine(item.name))}>Open</Button>}
+          {item.kind === "directory" && <>
+            <Button size="sm" variant="outline" disabled={busy}
+              onClick={() => void load(root, combine(item.name))}>Open</Button>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => setTarget(combine(item.name))}>
+              Select folder
+            </Button>
+            <Button size="sm" variant="outline" disabled={busy}
+              onClick={() => void perform("delete-tree", combine(item.name))}>Delete tree</Button>
+          </>}
           {item.kind === "file" && <>
             <Button size="sm" variant="outline" disabled={busy} onClick={() => void read(item.name)}>Edit</Button>
             <Button size="sm" variant="outline" disabled={busy} onClick={() => void exportFile(item.name)}>Export</Button>
@@ -157,10 +167,12 @@ export function TermuxFileExplorer() {
     <div className="flex flex-wrap gap-2">
       <Button size="sm" disabled={busy || !target} onClick={() => void perform("mkdir", target)}>New directory</Button>
       <Button size="sm" variant="outline" disabled={busy || !target || !destination}
-        onClick={() => void perform("copy", target)}>Copy</Button>
+        onClick={() => void perform("copy", target)}>Copy file</Button>
+      <Button size="sm" variant="outline" disabled={busy || !target || !destination}
+        onClick={() => void perform("copy-tree", target)}>Copy folder</Button>
       <Button size="sm" variant="outline" disabled={busy || !target || !destination}
         onClick={() => void perform("move", target)}>Move</Button>
-      <label className="flex items-center gap-2 text-sm">Import (256 KiB)
+      <label className="flex items-center gap-2 text-sm">Import (2 MiB)
         <input type="file" aria-label="Import Termux file" disabled={busy}
           onChange={event => { void upload(event.target.files?.[0]); event.target.value = "" }} />
       </label>
