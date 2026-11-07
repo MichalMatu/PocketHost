@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [H3.4 Full Termux source and QA](2026-11-07-h34-full-termux-source.md)
+
 - [H3 Termux Control Center parallel branch](2026-11-07-h3-termux-center-branch.md)
 - [H2.1 G3 safety hold recheck](2026-11-07-h21-g3-safety-hold-recheck.md)
 
