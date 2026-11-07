@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { createServer, request as httpRequest } from 'node:http';
 import test from 'node:test';
-import { createGateway, ownLanInterface, sameSubnet, upstreamTimeoutMs } from '../../src/modules/host/lan-gateway.mjs';
+import {
+  createGateway,
+  ownLanInterface,
+  sameSubnet,
+  upstreamTimeoutMs,
+} from '../../src/modules/host/lan-gateway.mjs';
 
 const bind = '127.0.0.1';
 const mask = '255.0.0.0';
@@ -36,8 +41,14 @@ async function requestWithHeaders(port, headers, method = 'GET') {
 test('only the fixed read-only O1 snapshot gets a bounded extended LAN upstream deadline', () => {
   assert.equal(upstreamTimeoutMs('/api/v1/observability'), 25000);
   assert.equal(upstreamTimeoutMs('/api/v1/observability?refresh=1'), 25000);
-  for (const route of ['/api/v1/host/snapshot', '/api/v1/network-access',
-    '/api/v1/owned-site', '/api/v1/observability/unexpected', '/', undefined]) {
+  for (const route of [
+    '/api/v1/host/snapshot',
+    '/api/v1/network-access',
+    '/api/v1/owned-site',
+    '/api/v1/observability/unexpected',
+    '/',
+    undefined,
+  ]) {
     assert.equal(upstreamTimeoutMs(route), 5000);
   }
 });

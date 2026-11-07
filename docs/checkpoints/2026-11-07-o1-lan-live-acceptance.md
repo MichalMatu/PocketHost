@@ -19,7 +19,7 @@ purpose: Record exact-SHA O1 and manually controlled trusted-LAN acceptance on S
 ## G2 native acceptance
 
 - `pockethost-lan-settings-guarded-live-cutover-315e063-20261107-v1`:
-  terminal failed at a *pre-cutover old-baseline identity assertion*,
+  terminal failed at a _pre-cutover old-baseline identity assertion_,
   **but** its recorded `npm run check:all` completed with exit 0
   for exact source `315e063`. No running service was changed by
   that attempt. The UI test phase reported **19/19 PASS**.
