@@ -2,43 +2,74 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Canonical H2 release and physical acceptance handoff; preserve earlier H1 and O1 evidence
+purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 ---
 
-# PocketHost — H2 static hosting sprint; H1 accepted baseline
+# PocketHost — H2.1 version manager, accepted source and G3 hold
 
-## Active H2.1 — release manager source candidate
+## Active H2.1 — G2 PASS, live G3 HOLD
 
-The owner supplied real Mac Chrome screenshots of two
-new user-created static sites on ports 19080 and 19081,
-each serving an uploaded ZIP with HTML/CSS/JS, and
-confirmed that both work and Rollback works. The owner
-reported a tight gap between `Open hosted site` and
-`Upload static ZIP`, and approved continuation into
-a full release manager.
+The user confirmed two independent working ZIP-hosted sites
+in real Mac Chrome and reported successful quick rollback.
+The small `Open hosted site` spacing defect and
+full historical-version controls have been fixed in
+source `89ebf9955bfc02e6244e0e23d4501f81187c226f`:
 
-H2.1 source adds inventory of all physically retained
-releases, archived preview links, selected-version Restore
-(with one-step undo), and explicitly confirmed removal
-of only inactive, non-rollback archive directories.
-It also fixes the link spacing. No automatic pruning
-or data migration is authorized. The owner's two
-live site IDs, contents, ports and owned PIDs must
-be preserved.
+- List all retained immutable releases with date,
+  file count, bytes and active/undo state.
+- GET-only archived HTML/asset preview.
+- Restore a selected historic release, retaining
+  single-use quick rollback to the formerly active
+  release.
+- Explicitly confirmed obsolete-archive pruning,
+  with active and rollback-target deletion denied.
+- Do not automatically prune or migrate site data.
 
-**H2.1 is NOT deployed or accepted until exact-SHA
-Samsung G2 and guarded G3 receipts exist.**
-The live H2 application remains `750c4b3` and
-is the rollback baseline. Device QA must create
-only disposable fixtures and may not prune/restart
-either owner's current live site. Older running H2
-children may need an explicit manual Restart for
-archived preview after H2.1 rollout, but restore
-does not require any child restart.
+**Device G2 PASS:** Local Agent
+`pockethost-h21-full-native-g2-89ebf99-20261107-v1`
+returned terminal `done/0`, full `npm run check:all`,
+134/134 Node and 29/29 UI tests, lint, TypeScript,
+docs, formatting and build. Do **not** repeat
+this closed exact-SHA gate unless source changes.
 
-See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
-Do not repeat already accepted H2 smoke or
-change six protected services.
+**Live baseline preflight PASS:**
+`pockethost-h21-readonly-live-preflight-20261107-v2`
+returned terminal `done/0`. The live preview was
+still accepted H2 source `750c4b3fba2126647c3b593ae89d108ba2a67206`;
+both user sites were running on loopback ports
+19080 and 19081 with verified PID/start ticks and
+SHA-256 file-tree fingerprints. All six protected
+services were running and PhotoMap TEST 8010
+was closed. This preflight is historical: recheck
+the actual state before any future mutation.
+
+**G3 HOLD:** A large prepared guarded release task
+was rejected by tool safety checks before submission
+or host execution. No H2.1 deployment was confirmed.
+Do not bypass the block or assume that a draft
+script ran. The existing H2 panel and the two
+user-owned site directories remain the production
+of this private-LAN development session.
+
+**Next-chat mission:** resolve the permitted
+mechanism for owner-verified H2.1 G3 deployment,
+preserving both existing sites *bit-for-bit*.
+If permitted, perform a guarded release with
+source/host/PID/owner checks and H2 fallback,
+then test version restore/rollback/archived GET
+and safe pruning exclusively on a disposable
+third site. The owner's two existing site
+processes, files, versions and ports must not
+be restarted, pruned or modified. Record
+the owner Chrome follow-up separately.
+If tool safety restrictions still block G3,
+stop before any mutation and report the exact
+hold rather than pretending deployment succeeded.
+
+Canonical receipt details and exact owner-site
+hashes: [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+Read this first; do not repeat H2, H1 or O1 gates.
+
 
 ## H2 — accepted native and owner core browser workflow
 
