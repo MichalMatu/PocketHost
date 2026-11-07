@@ -20,6 +20,7 @@ import {
   Activity,
   History,
   ScrollText,
+  Boxes,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -41,6 +42,7 @@ const data = {
       items: [
         { title: "Host overview", url: "/host", icon: ServerCog },
         { title: "Observability", url: "/observability", icon: Activity },
+        { title: "Termux Control Center", url: "/termux", icon: Boxes },
         { title: "Hosted sites", url: "/sites", icon: Globe2 },
         { title: "Demo project", url: "/owned-site", icon: Globe2 },
         { title: "Deployments", url: "/deployments", icon: History },

@@ -121,3 +121,15 @@ Samsung full G2 and guarded LAN G3 passed at
 application source `750c4b3`; owner Mac Chrome
 file-picker acceptance remains a distinct step.
 See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
+
+## H3.4 — full local administration, source candidate
+
+The existing admin Vite process now composes pure typed requests
+with fixed Termux host adapters: named filesystem roots, package
+manager, runit, encrypted Restic scopes, and one manual ttyd
+terminal proxied through the same loopback boundary. A Local Agent
+host task can call the private HTTP action endpoint using a dedicated
+agent-intent header; no Local Agent deployment or Git task transport
+is modified. There is no password prerequisite, but the existing
+private-LAN admission requirements and manual UI confirmations
+still apply. See ADR-0011 for the associated trust warning.

@@ -53,6 +53,16 @@ test('only the fixed read-only O1 snapshot gets a bounded extended LAN upstream 
   }
 });
 
+test('H3 admin LAN timeout is long only for its exact typed endpoint', () => {
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin?mode=packages', 'GET'), 30000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'POST'), 610000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin?mode=files', 'POST'), 610000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin/unexpected', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-tools', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/observability', 'POST'), 25000);
+  assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'PUT'), 5000);
+});
+
 test('LAN remains exact RFC1918 address only; same subnet and no public bind', () => {
   assert.equal(sameSubnet('192.168.10.12', '192.168.10.2', '255.255.255.0'), true);
   assert.equal(sameSubnet('::ffff:192.168.10.13', '192.168.10.2', '255.255.255.0'), true);
@@ -74,6 +84,7 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
         origin: request.headers.origin ?? null,
         authorizationForwarded: !!request.headers.authorization,
         intent: request.headers['x-pockethost-intent'] ?? null,
+        agentIntent: request.headers['x-pockethost-agent-intent'] ?? null,
       }),
     );
   });
@@ -100,6 +111,16 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
     assert.equal(response.status, 200);
     body = await response.json();
     assert.equal(body.authorizationForwarded, false);
+    response = await request('/api/v1/termux-admin?mode=agent-capabilities', {
+      headers: { 'X-PocketHost-Agent-Intent': 'termux-owner-agent' },
+    });
+    assert.equal(response.status, 200);
+    body = await response.json();
+    assert.equal(
+      body.agentIntent,
+      null,
+      'LAN headers may not impersonate the on-device Local Agent',
+    );
     assert.equal(await requestWithHeaders(port, { Host: 'evil.example' }), 403);
     assert.equal(
       await requestWithHeaders(port, {

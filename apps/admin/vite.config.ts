@@ -1,4 +1,12 @@
 import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
+import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
+import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
+import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
+import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
+import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
+import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
+import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
+import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -269,7 +277,7 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
@@ -279,6 +287,7 @@ function ownedSiteFleetApi(): Plugin {
               id && !action ? { site: fleet.inspect(id) } :
               id && action === "health" ? { healthy: await fleet.health(id) } :
               id && action === "logs" ? { logs: fleet.logs(id) } :
+              id && action === "files" ? { files: fleet.listActiveFiles(id) } :
               id && action === "releases" ? { releases: fleet.listReleases(id) } : null
             if (!result) {
               response.statusCode = 404
@@ -568,10 +577,268 @@ function networkAccessApi(): Plugin {
   }
 }
 
+/** H3: bounded read-only tool availability; never executes or installs tools. */
+function termuxToolsApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-h3-read-only-tool-inventory",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/termux-tools", (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!hosts.has(request.headers.host ?? "") ||
+          (request.headers.origin && !origins.has(request.headers.origin)) ||
+          request.headers["sec-fetch-site"] === "cross-site" ||
+          !["127.0.0.1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress ?? "")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.url?.split("?")[0] !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method !== "GET") {
+          response.statusCode = 405
+          response.setHeader("Allow", "GET")
+          response.end("{}")
+          return
+        }
+        response.end(JSON.stringify(readTermuxToolInventory()))
+      })
+    },
+  }
+}
+
+/**
+ * H3 explicit typed admin operations for the owner-approved trusted LAN.
+ * No login dependency. Never accepts shell programs, executable paths,
+ * system-service PIDs, or general filesystem paths. Same-origin intent and
+ * confirmation are separate from authentication.
+ */
+function termuxAdminApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  const files = new WorkspaceFiles()
+  const backups = new WorkspaceBackups(files)
+  const services = new TermuxServiceAdmin()
+  const restic = new ResticWorkspaceAdmin(files)
+  const fileRoots = new TermuxFileRoots()
+  const terminal = new TermuxTerminal()
+  let operations: Promise<void> = Promise.resolve()
+  const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
+    const result = operations.then(job, job)
+    operations = result.then(() => undefined, () => undefined)
+    return result
+  }
+  async function parseBody(req: IncomingMessage): Promise<{
+    action?: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string;
+  }> {
+    const declared = req.headers["content-length"]
+    if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 3000000)))
+      throw new RangeError("Invalid request budget")
+    req.setTimeout(18000, () => req.destroy())
+    let bytes = 0
+    const chunks: Buffer[] = []
+    for await (const chunk of req) {
+      const b = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      bytes += b.length
+      if (bytes > 3000000) throw new RangeError("Request budget exceeded")
+      chunks.push(b)
+    }
+    const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
+    if (!value || typeof value !== "object" || Array.isArray(value)) throw new RangeError("Bad action")
+    const data = value as Record<string, unknown>
+    if (Object.keys(data).some(key => !["action","name","root","path","destination","content","base64"].includes(key)))
+      throw new RangeError("Extra input denied")
+    for (const key of ["action","name","root","path","destination","content","base64"]) {
+      if (data[key] !== undefined && typeof data[key] !== "string")
+        throw new RangeError("Bad request field")
+    }
+    return data as { action?: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string }
+  }
+
+  return {
+    name: "pockethost-h3-typed-admin",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/termux-admin", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!hosts.has(request.headers.host ?? "") ||
+            (request.headers.origin && !origins.has(request.headers.origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            !["127.0.0.1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress ?? "")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        const route = request.url?.split("?")[0]
+        if (route !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method === "GET") {
+          try {
+            const url = new URL(request.url ?? "/", "http://localhost")
+            const mode = url.searchParams.get("mode")
+            const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
+              mode === "snapshots" ? { snapshots: backups.list() } :
+              mode === "services" ? { services: services.list() } :
+              mode === "file-roots" ? { roots: fileRoots.available() } :
+              mode === "terminal-status" ? { terminal: terminal.status() } :
+              mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :
+              mode === "browse-root" ? fileRoots.list(
+                (url.searchParams.get("root") ?? "") as FileRoot, url.searchParams.get("path") ?? "",
+              ) :
+              mode === "restic-status" ? { restic: restic.status() } :
+              mode === "restic-snapshots" ? { snapshots: await restic.snapshots() } :
+              mode === "system-snapshots" ? { snapshots: await restic.scopeSnapshots(
+                (url.searchParams.get("scope") ?? "") as "home" | "prefix" | "all",
+              ) } :
+              mode === "packages" ? await listInstalledTermuxPackages() :
+              mode === "search-packages" ? await searchAvailableTermuxPackages(url.searchParams.get("query") ?? "") : null
+            if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
+            response.end(JSON.stringify(result))
+          } catch {
+            response.statusCode = 409
+            response.end('{"error":"unavailable"}')
+          }
+          return
+        }
+        const browserIntent = !!request.headers.origin && origins.has(request.headers.origin)
+        const agentIntent = admitsAgentCommand({
+          origin: request.headers.origin,
+          intent: request.headers["x-pockethost-intent"] as string | undefined,
+          agentIntent: request.headers["x-pockethost-agent-intent"] as string | undefined,
+          fetchSite: request.headers["sec-fetch-site"] as string | undefined,
+        })
+        if (request.method !== "POST" ||
+            !(browserIntent || agentIntent) ||
+            request.headers["x-pockethost-intent"] !== "termux-admin" ||
+            request.headers["content-type"]?.split(";")[0]?.trim() !== "application/json") {
+          response.statusCode = 403
+          response.end('{"error":"intent-required"}')
+          return
+        }
+        try {
+          const input = await parseBody(request)
+          const result = await serialize(async () => {
+            if (input.action === "package-preview") {
+              if (!input.name || !["install","remove","upgrade","upgrade-all"].includes(input.name))
+                throw new RangeError("Invalid package preview")
+              return { operation: input.name, result: await previewPackageAction(
+                input.name as "install" | "remove" | "upgrade" | "upgrade-all",
+                input.path,
+              ) }
+            }
+            if (input.action === "package") {
+              if (!input.name || !["refresh", "install", "remove", "upgrade", "upgrade-all"].includes(input.name))
+                throw new RangeError("Invalid package action")
+              return { operation: input.name, result: await applyPackageAction(
+                input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
+                input.path,
+              ) }
+            }
+            if (input.action === "terminal") {
+              if (input.name === "start") return { terminal: await terminal.start() }
+              if (input.name === "stop") return { terminal: terminal.stop() }
+              throw new RangeError("Invalid terminal action")
+            }
+            if (input.action === "full-file") {
+              const root = (input.root ?? "") as FileRoot
+              const relative = input.path ?? ""
+              if (input.name === "read") return fileRoots.readText(root, relative)
+              if (input.name === "export") return fileRoots.export(root, relative)
+              if (["mkdir","save","copy","copy-tree","move","delete","delete-tree","upload"].includes(input.name ?? "")) {
+                return fileRoots.apply(root, input.name as "mkdir"|"save"|"copy"|"copy-tree"|"move"|"delete"|"delete-tree"|"upload",
+                  relative, { destination: input.destination, content: input.content, base64: input.base64 })
+              }
+              throw new RangeError("Unknown filesystem operation")
+            }
+            if (input.action === "restic-system") {
+              const scope = (input.root ?? "") as "home" | "prefix" | "all"
+              if (!["home","prefix","all"].includes(scope)) throw new RangeError("Invalid backup scope")
+              if (input.name === "backup") return { result: await restic.backupScope(scope) }
+              if (input.name === "restore") return { result: await restic.restoreScopeToStaging(scope, input.path ?? "") }
+              if (input.name === "forget") return { result: await restic.forgetScope(scope, input.path ?? "") }
+              if (input.name === "check") return { result: await restic.check() }
+              throw new RangeError("Invalid system Restic action")
+            }
+            if (input.action === "restic") {
+              if (!input.name || !["init","backup","check","restore","forget"].includes(input.name))
+                throw new RangeError("Invalid Restic operation")
+              if (input.name === "init") return { restic: await restic.initialize() }
+              if (input.name === "backup") return { result: await restic.backup() }
+              if (input.name === "check") return { result: await restic.check() }
+              if (input.name === "restore") return { result: await restic.restoreToStaging(input.path ?? "") }
+              if (input.name === "forget") return { result: await restic.forget(input.path ?? "") }
+            }
+            if (input.action === "service-logs") {
+              return services.logs(input.path ?? "")
+            }
+            if (input.action === "service") {
+              if (!input.name || !["register","unregister","start","stop","restart","enable","disable"].includes(input.name))
+                throw new RangeError("Invalid runit operation")
+              return await services.apply(
+                input.name as "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable",
+                input.path ?? "",
+              )
+            }
+            if (input.action === "file") {
+              if (!input.name || !["mkdir", "save", "rename", "delete", "copy", "upload"].includes(input.name))
+                throw new RangeError("Invalid file action")
+              files.apply(input.name as "mkdir" | "save" | "rename" | "delete" | "copy" | "upload", input.path ?? "", {
+                destination: input.destination, content: input.content, base64: input.base64,
+              })
+              return { changed: true }
+            }
+            if (input.action === "read-file") {
+              return { content: files.read(input.path ?? "") }
+            }
+            if (input.action === "download-file") {
+              return files.download(input.path ?? "")
+            }
+            if (input.action === "snapshot") {
+              if (input.name === "create") return { snapshot: backups.create() }
+              if (input.name === "verify") return { verification: backups.verify(input.path ?? "") }
+              if (input.name === "restore") return { snapshot: backups.restore(input.path ?? "") }
+              if (input.name === "delete") {
+                backups.delete(input.path ?? "")
+                return { changed: true }
+              }
+            }
+            throw new RangeError("Unsupported typed action")
+          })
+          response.end(JSON.stringify(result))
+        } catch {
+          response.statusCode = 409
+          response.end('{"error":"operation-failed-or-refused"}')
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi()],
-  server: { host: "127.0.0.1", port: 8787, strictPort: true },
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
+  server: {
+    host: "127.0.0.1",
+    port: 8787,
+    strictPort: true,
+    proxy: {
+      "/terminal": { target: "http://127.0.0.1:18798", changeOrigin: true, ws: true },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),

@@ -157,6 +157,55 @@ approval for mutations and prove safe rollback/
 failure handling on a disposable owned fixture.
 The six existing services stay unmanaged.
 
+## H3 parallel feature branch — Termux Control Center
+
+The isolated `feature/h3-termux-control-center-20261107` branch adds a
+working four-tab administration candidate without a password prerequisite:
+
+- **Packages:** reuse native `apt-get`, `dpkg-query` and `apt-cache`,
+  including bounded full inventory, available package search, simulated
+  install/remove/upgrade plans and user-confirmed execution.
+- **Files:** display H2-owned active-release assets and provide a separate
+  owned scratch workspace with navigation, text editor, rename, copy,
+  import/export (128 KiB) and deletion.
+- **Services:** reuse the verified H2 own-site lifecycle and logs. Inspect
+  runit services and explicitly register non-protected, exact-target
+  services before enabling Start/Stop/Restart/Unregister.
+- **Backups:** create, list, integrity-verify, restore and delete H3
+  workspace snapshots. Preserve the pre-restore workspace as a sidecar.
+  Integrate the installed Restic CLI for encrypted local workspace backup,
+  repository checks, snapshot listing, staged restore and forget/prune.
+  H2 immutable releases remain version history, not system backups.
+
+All four features are actual source code, not placeholders. No package or
+service mutation is run during QA. Six protected Termux services and both
+existing user-created sites remain unchanged. The current trusted-LAN panel
+has no login, as explicitly requested by the owner. The H3 API uses typed
+operations, origin/host checks and explicit per-target UI confirmations
+without introducing an authentication requirement.
+
+Independent system-wide or off-device backups, arbitrary Termux directories,
+terminal exposure and AI agent API remain distinct integrations to evaluate
+after native QA. Do not deploy this branch over the existing live panel
+without a separate preservation gate. See the H3 checkpoint.
+
+## H3.4 — Full Termux Administration (parallel branch source)
+
+Owner-authorized continuation adds the full named-root File Manager,
+manual single-client ttyd terminal, registered runit service autostart
+and bounded logs, Restic HOME/PREFIX system backup with staging Restore,
+and the typed Local Agent local-HTTP API adapter. No password setup is
+a prerequisite. The trusted LAN and loopback trust boundary remains
+mandatory; do not expose the terminal through public ingress.
+
+All actions are source candidates. Real system backup, restore, service
+control and ttyd browser tests require a fresh Samsung G2 and separate
+live-device G3. The existing H2 panel and external services are not
+implicitly deployed, replaced or stopped.
+
+See [H3.4 checkpoint](checkpoints/2026-11-07-h34-full-termux-source.md)
+and [ADR-0011](adr/0011-h34-termux-administration.md).
+
 ## H4 — authenticated agent API: later milestone
 
 Extend the existing Local Agent transport with a

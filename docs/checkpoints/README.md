@@ -11,6 +11,9 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-07
 
+- [H3.4 Full Termux source and QA](2026-11-07-h34-full-termux-source.md)
+- [H3 Termux Control Center branch](2026-11-07-h3-termux-center-branch.md)
+
 - [H2.1 owner SSH G3 cutover PASS and Chrome screenshots](2026-11-07-h21-g3-owner-ssh-cutover.md)
 - [H2.1 version manager implementation candidate](2026-11-07-h21-release-manager-source.md)
 - [H2.1 G3 safety hold, terminal recheck and sprint evidence](2026-11-07-h21-g3-safety-hold-recheck.md)
