@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions } from "@/app/termux/admin-actions"
 
 const site = {
   id: "site-" + "a".repeat(32), name: "Owned Test Site", state: "stopped",
@@ -117,5 +117,39 @@ describe("H3 additional native-tool integrations", () => {
     await screen.findByText(/Snapshot integrity: verified/)
     const posted = fetchMock.mock.calls.find(call => call[1]?.method === "POST")!
     expect(JSON.parse(String(posted[1]?.body))).toEqual({ action: "snapshot", name: "verify", path: name })
+  })
+})
+
+describe("H3 runit service registration UI", () => {
+  it("registers only explicitly selected non-protected services, then starts them", async () => {
+    const user = userEvent.setup()
+    let registered = false
+    const requests = vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const body = JSON.parse(String(options.body))
+        expect(body.action).toBe("service")
+        expect(body.path).toBe("site-worker")
+        registered = true
+        return { ok: true, json: async () => ({ changed: true }) }
+      }
+      return { ok: true, json: async () => ({ services: [
+        { name: "wreckscanner", registered: false, protected: true, state: "running" },
+        { name: "site-worker", registered, protected: false, state: "stopped" },
+      ] }) }
+    })
+    vi.stubGlobal("fetch", requests)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<RunitServiceActions />)
+    await screen.findByText("site-worker")
+    expect(screen.getByText("wreckscanner")).toBeTruthy()
+    expect(screen.getByText("Protected")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Register" }))
+    await screen.findByText("Registered")
+    await user.click(screen.getByRole("button", { name: "Start" }))
+    await screen.findByText(/start completed/)
+    const operations = requests.mock.calls.filter((call: [string, RequestInit?]) => call[1]?.method === "POST")
+      .map((call: [string, RequestInit?]) => JSON.parse(String(call[1]?.body)))
+    expect(operations.map((operation: { name: string }) => operation.name)).toEqual(["register", "start"])
+    expect(operations.every((operation: { path: string }) => operation.path === "site-worker")).toBe(true)
   })
 })
