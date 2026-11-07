@@ -36,11 +36,19 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
   const site = new OwnedDemoHost(root, port);
   try {
     assert.equal(site.inspect().state, 'absent');
+    assert.deepEqual(site.inspectProject().history, []);
+    assert.equal(site.inspectProject().pid, null);
+    assert.equal(await site.health(), false);
     assert.equal(site.create().state, 'stopped');
     assert.equal(site.create().contentVersion, 1);
+    assert.equal(site.inspectProject().history.length, 1);
+    assert.equal(site.inspectProject().history[0].action, 'create');
     const [firstStart, concurrentStart] = await Promise.all([site.start(), site.start()]);
     assert.equal(firstStart.state, 'running');
     assert.equal(concurrentStart.state, 'running');
+    assert.equal(await site.health(), true);
+    assert.ok(site.inspectProject().pid > 1);
+    assert.match(site.inspectProject().startTicks, /^\\d+$/);
     let response = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /First local site/);
@@ -52,12 +60,18 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.equal(site.publish(2).contentVersion, 2);
     assert.equal(site.publish(2).contentVersion, 2);
     assert.equal(site.inspect().previousVersion, 1);
+    assert.equal(site.inspectProject().history[0].action, 'publish');
+    assert.equal(site.inspectProject().history.filter((event) => event.action === 'publish').length, 1);
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /Updated local site/);
     const restored = site.rollback();
     assert.equal(restored.contentVersion, 1);
     assert.equal(restored.previousVersion, null);
     assert.equal(restored.canRollback, false);
+    assert.deepEqual(
+      site.inspectProject().history[0],
+      { ...site.inspectProject().history[0], action: 'rollback', from: 2, to: 1 },
+    );
     response = await fetch(`http://127.0.0.1:${port}/`);
     assert.match(await response.text(), /First local site/);
     assert.throws(() => site.rollback(), /No prior demo version/);
@@ -82,6 +96,8 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.ok(lines.includes('entry two'));
     assert.ok(lines.every((line) => !line.includes('\n')));
     assert.equal((await site.stop()).state, 'stopped');
+    assert.equal(site.inspectProject().pid, null);
+    assert.equal(await site.health(), false);
     assert.equal((await site.stop()).state, 'stopped');
   } finally {
     if (site.inspect().state === 'running') await site.stop();
@@ -122,6 +138,9 @@ test('forged or recycled PID is never terminated; mismatched instance fails clos
     marker.process = { pid: process.pid, startTicks: fields[19] };
     writeFileSync(filename, JSON.stringify(marker));
     assert.equal(site.inspect().state, 'unknown');
+    assert.equal(site.inspectProject().pid, null);
+    assert.equal(site.inspectProject().startTicks, null);
+    assert.equal(await site.health(), false);
     await assert.rejects(site.stop(), /identity/);
     assert.equal(process.kill(process.pid, 0), true);
   } finally {
@@ -137,6 +156,25 @@ test('a symlink root does not grant ownership or write permission', () => {
   try {
     const site = new OwnedDemoHost(root, 19787);
     assert.throws(() => site.create(), /noncanonical|linked/);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test('malformed or excessive deployment records cannot grant owned runtime access', async () => {
+  const { directory, root } = fixture();
+  const port = await allocatePort();
+  try {
+    const host = new OwnedDemoHost(root, port);
+    host.create();
+    const markerPath = path.join(root, 'pockethost-demo', '.pockethost-owner.json');
+    const record = JSON.parse(readFileSync(markerPath, 'utf8'));
+    record.history = Array.from({ length: 33 }, () => ({
+      at: new Date().toISOString(), action: 'publish', from: 1, to: 2,
+    }));
+    writeFileSync(markerPath, JSON.stringify(record));
+    assert.throws(() => host.inspectProject(), /Ownership record failed validation/);
+    await assert.rejects(host.start(), /Ownership record failed validation/);
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
