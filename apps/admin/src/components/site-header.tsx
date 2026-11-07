@@ -57,7 +57,7 @@ export function SiteHeader({
                 />
               }
             >
-              Landing Page
+              Template landing
             </Button>
             <ModeToggle
               onCustomize={onCustomize}
