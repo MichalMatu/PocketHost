@@ -116,7 +116,6 @@ Canonical receipt details and exact owner-site
 hashes: [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
 Read this first; do not repeat H2, H1 or O1 gates.
 
-
 ## H2 — accepted native and owner core browser workflow
 
 **Current deployed application source:**
