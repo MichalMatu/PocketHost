@@ -2,30 +2,64 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Canonical H1 Hosting MVP sprint state with O1 release history
+purpose: Canonical H2 release and physical acceptance handoff; preserve earlier H1 and O1 evidence
 ---
 
 # PocketHost — H2 static hosting sprint; H1 accepted baseline
 
-## Active H2 — source candidate, NOT deployed
+## H2 — live on Samsung; owner Chrome signoff pending
 
-The owner approved one large browser-driven multi-site hosting sprint.
-New code on `main` includes ZIP/folder static imports, eight owned
-sites, dedicated loopback ports, immutable releases, one-use rollback,
-verified process lifecycle, bounded log/statistics and GET-only
-private-LAN previews at `/h2/<site-id>/`. H2 accepts no backend
-commands, arbitrary host paths, unknown PIDs or package changes.
+**Current deployed application source:**
+`750c4b3fba2126647c3b593ae89d108ba2a67206`.
 
-**Do not deploy H2 until the exact final SHA passes Samsung
-`npm run check:all` and a guarded device acceptance task.**
-At this checkpoint the actual running PocketHost source is still
-the accepted H1 `1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`.
-Preserve its rollback and all six foreign services.
+- G2 `pockethost-h2-final-native-check-all-750c4b3-20261107-v2`:
+  terminal `done/0 PASS`, full Samsung `npm run check:all`,
+  26/26 admin UI tests, Node coverage and native quality gates.
+- G3 `pockethost-h2-guarded-g3-real-static-sites-750c4b3-20261107-v2`:
+  terminal `done/0 PASS`, verified old H1 owner and exact
+  source before guarded cutover. Two real static projects,
+  distinct loopback ports, ZIP and folder-format uploads,
+  HTML/CSS/JS LAN GET, update, one-step rollback,
+  verified Restart and owned logs passed. Foreign Origin,
+  unsafe ZIP, missing intent and static-site POST were rejected.
+  Both temporary acceptance projects were stopped and
+  removed with exact owner verification; H1 demo remained
+  in its real user-selected state. All six protected services
+  remained running and PhotoMap TEST port 8010 stayed closed.
 
-Read [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
-Next: focused native QA in the isolated Termux checkout, resolve
-specific failures, prove two real uploaded sites and guarded LAN
-handover. Do not repeat accepted H1 gates for their old SHA.
+**Panel:** `http://192.168.0.100:18878/sites`.
+Sites use the existing private GET/HEAD-only gateway:
+`http://192.168.0.100:18879/h2/<site-id>/`.
+
+The previously accepted H1 source
+`1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`
+remains the known safe preview rollback candidate; do not
+switch source or stop a process without verifying fresh
+PID/start ticks and the gateway owner record.
+
+The H2 API requires both
+`POCKETHOST_ENABLE_OWNED_SITE_DEV=1` and
+`POCKETHOST_ENABLE_USER_SITES_DEV=1`. They are set
+for the accepted manual preview session, not auto-enabled
+on boot. The admin is plaintext HTTP without login:
+**trusted private LAN only, no public tunnel**.
+
+**Next action:** owner Mac Chrome acceptance of one real
+user-chosen ZIP/folder project via `/sites`, including
+Start, published asset display, update and rollback.
+Do not confuse device HTTP probes with browser UI clicks.
+
+**After H2 signoff:** prioritize H3 package/software CMS
+with dependency and update safeguards, plus explicit
+site delete/prune and capacity management. H4 remains a
+separately authenticated Local Agent / AI API milestone.
+No PhotoMap activation, foreign service mutation, public
+API, autostart or arbitrary user backend execution
+is authorized.
+
+See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md)
+and [quality gates](QUALITY_GATES.md). Do not repeat
+accepted H1/O1 tests merely because this handoff changed.
 
 ## Historical H1 and O1 acceptance
 
@@ -62,7 +96,7 @@ returned `done/0 PASS`: verified live PID/start ticks,
 switched only the owned panel, restored trusted-LAN gateway,
 tested v2 → publish v1 → rollback v2 → restart → stop → start,
 and verified all six protected services still running and
-PhotoMap TEST 8010 closed. **Live H1 source is `1edbd1b`.**
+PhotoMap TEST 8010 closed. **H1 accepted source was `1edbd1b` before H2.**
 
 The owner then supplied real Mac Chrome screenshots showing
 running/healthy and stopped project states, bounded logs,
