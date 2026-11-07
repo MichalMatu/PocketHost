@@ -8,7 +8,11 @@ import {
 } from '../../src/shared/runtime-diagnostics.ts';
 
 test('structured events contain a fixed code, never arbitrary raw log payloads', () => {
-  const event = formatRuntimeEvent('photomap-test', 'manual-stop-uncertain', new Date('2026-11-07'));
+  const event = formatRuntimeEvent(
+    'photomap-test',
+    'manual-stop-uncertain',
+    new Date('2026-11-07'),
+  );
   assert.deepEqual(JSON.parse(event), {
     version: 1,
     timestamp: '2026-11-07T00:00:00.000Z',
@@ -24,8 +28,9 @@ test('bounded error history drops malformed and legacy lines without executing t
   const one = formatRuntimeEvent('photomap-test', 'manual-start-health-failed');
   const two = formatRuntimeEvent('photomap-test', 'manual-stop-uncertain');
   assert.deepEqual(
-    runtimeEventHistory(['legacy plaintext', '{"unexpected":"line"}', one.trim(), two.trim()])
-      .map((item) => item.code),
+    runtimeEventHistory(['legacy plaintext', '{"unexpected":"line"}', one.trim(), two.trim()]).map(
+      (item) => item.code,
+    ),
     ['manual-start-health-failed', 'manual-stop-uncertain'],
   );
   assert.equal(runtimeEventHistory(Array.from({ length: 50 }, () => one.trim())).length, 40);
@@ -43,14 +48,8 @@ test('dry-run recovery never authorizes foreign state or uncertain PRoot descend
     planRuntimeRecovery({ ...base, descendantEvidenceComplete: false }),
     'manual-evidence-review',
   );
-  assert.equal(
-    planRuntimeRecovery({ ...base, ownership: 'external' }),
-    'manual-evidence-review',
-  );
-  assert.equal(
-    planRuntimeRecovery({ ...base, markerPresent: false }),
-    'no-action',
-  );
+  assert.equal(planRuntimeRecovery({ ...base, ownership: 'external' }), 'manual-evidence-review');
+  assert.equal(planRuntimeRecovery({ ...base, markerPresent: false }), 'no-action');
 });
 
 test('PhotoMap event recorder is structured and retains error events on failures', () => {

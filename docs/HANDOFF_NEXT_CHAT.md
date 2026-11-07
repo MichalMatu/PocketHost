@@ -26,7 +26,7 @@ See the [exact acceptance](checkpoints/2026-11-06-pocket-host-samsung-source-and
   Android Termux host panel and the React/Vite admin template.
 - **P3:** a manually owned static demonstration site with guarded lifecycle,
   publishing, one-step rollback and optional trusted-LAN gateway. Device and
-  browser *viewing* passed; actual Mac browser Publish/Rollback clicks did not.
+  browser _viewing_ passed; actual Mac browser Publish/Rollback clicks did not.
 - **P4:** read-only PhotoMap TEST managed catalog and GET API, with POST denied.
   An independent imported source, original/backup SQLite and 2,196 media files
   are preserved; do not recopy or mutate them.

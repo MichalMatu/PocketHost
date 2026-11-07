@@ -11,5 +11,8 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     include: ["tests/**/*.interaction.test.tsx"],
     clearMocks: true,
+    // Samsung Termux has limited memory/CPU; avoid jsdom test-file contention.
+    maxWorkers: 1,
+    testTimeout: 12000,
   },
 })

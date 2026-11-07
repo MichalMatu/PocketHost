@@ -58,11 +58,26 @@ test('graceful-stop evidence rejects surviving PRoot descendants and occupied po
 });
 
 test('PRoot process group probe fails closed for unknown and surviving descendants', () => {
-  assert.equal(processGroupAbsent(420, () => 'absent'), true);
-  assert.equal(processGroupAbsent(420, () => 'present'), false);
-  assert.equal(processGroupAbsent(420, () => 'unknown'), false);
-  assert.equal(processGroupAbsent(1, () => 'absent'), false);
-  assert.equal(processGroupAbsent(Number.NaN, () => 'absent'), false);
+  assert.equal(
+    processGroupAbsent(420, () => 'absent'),
+    true,
+  );
+  assert.equal(
+    processGroupAbsent(420, () => 'present'),
+    false,
+  );
+  assert.equal(
+    processGroupAbsent(420, () => 'unknown'),
+    false,
+  );
+  assert.equal(
+    processGroupAbsent(1, () => 'absent'),
+    false,
+  );
+  assert.equal(
+    processGroupAbsent(Number.NaN, () => 'absent'),
+    false,
+  );
 });
 
 test('PhotoMap adapter may not delete its marker on leader-only stop evidence', () => {

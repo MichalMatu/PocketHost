@@ -14,7 +14,11 @@ import {
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { attestsManagedProcess, processGroupAbsent, safeStopEvidence } from './managed-process-guards.ts';
+import {
+  attestsManagedProcess,
+  processGroupAbsent,
+  safeStopEvidence,
+} from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
 import {
   OWNED_PHOTOMAP_ID,
