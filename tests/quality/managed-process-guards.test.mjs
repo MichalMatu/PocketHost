@@ -85,8 +85,8 @@ test('PhotoMap adapter may not delete its marker on leader-only stop evidence', 
     new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
     'utf8',
   );
-  assert.match(source, /const complete = safeStopEvidence\(/);
+  assert.match(source, /await stopOwnedProcessSafely\(/);
   assert.match(source, /descendantsExited: processGroupAbsent\(/);
-  assert.match(source, /if \(complete\) \{/);
+  assert.match(source, /signalOwnedLeader: \(\) => process\.kill\(marker\.pid, 'SIGTERM'\)/);
   assert.match(source, /PhotoMap graceful stop uncertain; marker retained/);
 });

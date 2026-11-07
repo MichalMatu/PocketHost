@@ -17,9 +17,13 @@ import path from 'node:path';
 import {
   attestsManagedProcess,
   processGroupAbsent,
-  safeStopEvidence,
 } from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
+import {
+  admitOwnedStart,
+  awaitOwnedReadiness,
+  stopOwnedProcessSafely,
+} from './managed-process-supervisor.ts';
 import {
   OWNED_PHOTOMAP_ID,
   OWNED_PHOTOMAP_PORT,
@@ -386,7 +390,11 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     if (current.state !== 'stopped' || this.marker()) {
       throw new Error('Unverified PhotoMap process state; start denied');
     }
-    if (!(await portFree())) throw new Error('PhotoMap port already in use');
+    await admitOwnedStart({
+      approved: () => this.plan() !== null,
+      noUnresolvedMarker: () => this.marker() === null,
+      portFree,
+    });
     directory(this.state);
     const claim = path.join(this.state, 'start.claim');
     const handle = openSync(claim, 'wx', 0o600);
@@ -439,18 +447,23 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       });
       child.unref();
       this.event('manual-start-requested');
-      for (let i = 0; i < 45; i++) {
-        if (!this.owned(marker, plan)) break;
-        if (await this.health()) return this.inspect();
-        await pause(110);
-      }
       try {
-        if (this.owned(marker, plan)) await this.stop();
+        await awaitOwnedReadiness({
+          identityMatches: () => this.owned(marker, plan),
+          health: () => this.health(),
+          pause: () => pause(110),
+          maxPolls: 45,
+        });
+        return this.inspect();
       } catch {
-        // Retain the marker if the process cannot be safely stopped.
+        try {
+          if (this.owned(marker, plan)) await this.stop();
+        } catch {
+          // Retain the marker if safe cleanup cannot be established.
+        }
+        this.event('manual-start-health-failed');
+        throw new Error('PhotoMap managed health acceptance failed');
       }
-      this.event('manual-start-health-failed');
-      throw new Error('PhotoMap managed health acceptance failed');
     } finally {
       unlinkSync(claim);
     }
@@ -464,30 +477,32 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     if (!this.owned(marker, plan)) {
       throw new Error('Unverified PhotoMap process identity; stop denied');
     }
-    process.kill(marker.pid, 'SIGTERM');
-    for (let i = 0; i < 40; i++) {
-      // A dead leader and free port are insufficient: PRoot children may remain.
-      const complete = safeStopEvidence({
-        leaderExited: startTicks(marker.pid) === null,
-        portReleased: await portFree(),
-        descendantsExited: processGroupAbsent(marker.pid, (pgid) => {
-          try {
-            process.kill(-pgid, 0);
-            return 'present';
-          } catch (error) {
-            return (error as NodeJS.ErrnoException).code === 'ESRCH' ? 'absent' : 'unknown';
-          }
+    try {
+      await stopOwnedProcessSafely({
+        verifyOwnership: () => this.owned(marker, plan),
+        signalOwnedLeader: () => process.kill(marker.pid, 'SIGTERM'),
+        observe: async () => ({
+          leaderExited: startTicks(marker.pid) === null,
+          portReleased: await portFree(),
+          descendantsExited: processGroupAbsent(marker.pid, (pgid) => {
+            try {
+              process.kill(-pgid, 0);
+              return 'present';
+            } catch (error) {
+              return (error as NodeJS.ErrnoException).code === 'ESRCH' ? 'absent' : 'unknown';
+            }
+          }),
         }),
+        pause: () => pause(100),
+        maxPolls: 40,
       });
-      if (complete) {
-        unlinkSync(path.join(this.state, 'active.json'));
-        this.event('manual-stop-completed');
-        return this.inspect();
-      }
-      await pause(100);
+    } catch {
+      this.event('manual-stop-uncertain');
+      throw new Error('PhotoMap graceful stop uncertain; marker retained');
     }
-    this.event('manual-stop-uncertain');
-    throw new Error('PhotoMap graceful stop uncertain; marker retained');
+    unlinkSync(path.join(this.state, 'active.json'));
+    this.event('manual-stop-completed');
+    return this.inspect();
   }
 
   async health(): Promise<boolean> {
