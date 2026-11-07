@@ -52,3 +52,20 @@ The actual administration backend remains bound to `127.0.0.1:8787` and the owne
 `src/shared/managed-runtime.ts` defines application-neutral instance identity, state and host ports. The pure policy `src/modules/runtime/managed-runtime.ts` enforces owner, release, port and lifecycle transitions without importing PhotoMap. PhotoMap supplies a thin policy binding through `src/modules/runtime/photomap-runtime.ts` and retains its explicitly disabled host adapter.
 
 Future applications must register distinct approved identities and adapters; do not copy PhotoMap's fixed ID, port, paths, Python commands or data models into the shared engine. A general multi-project registry, runtime activation and API write controls are **not implemented or authorized**. PRoot does not provide OS-user isolation.
+
+## Runtime decoupling — source candidate, 2026-11-07
+
+```text
+Admin / typed API
+  -> registered owned runtime contracts
+  -> pure admission and lifecycle state machine
+  -> host process supervisor, /proc ancestry and PRoot argv policy
+  -> application adapter (PhotoMap TEST profile, or a different owned app)
+  -> isolated workset / exact loopback instance
+```
+
+The shared core contains no PhotoMap path, interpreter, port or launch command.
+Only a project-specific adapter can approve its immutable workset and process
+identity. The PhotoMap adapter is still disabled for live execution. One process
+group and a bounded observed child tree do not prove the absence of reparented
+processes; physical acceptance and full rollback remain mandatory.
