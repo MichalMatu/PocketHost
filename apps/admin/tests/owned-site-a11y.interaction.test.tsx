@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -54,7 +55,11 @@ function renderWithSite(
     return { ok: true, json: async () => data }
   })
   vi.stubGlobal("fetch", fetchMock)
-  render(<OwnedSitePage />)
+  render(
+    <MemoryRouter>
+      <OwnedSitePage />
+    </MemoryRouter>,
+  )
   return fetchMock
 }
 
