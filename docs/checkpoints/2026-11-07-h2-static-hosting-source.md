@@ -36,7 +36,7 @@ on `main` do not themselves switch that running panel.
   authenticated-by-owner-record **GET-only** private LAN preview route
   `http://<phone-private-ip>:18879/h2/<site-id>/` after exact running
   child verification. No new LAN listening port or WAN publication.
-- `apps/admin/vite.config.ts`: serialized, feature-flagged private
+- `apps/admin/vite.config.ts`: serialized, separately feature-flagged private
   `/api/v1/sites` controls. Same-origin, loopback and deliberate intent
   are required for writes; no arbitrary host path, command, PID or
   port accepted from request bodies.
