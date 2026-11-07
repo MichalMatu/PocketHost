@@ -119,6 +119,40 @@ Six protected services remained unchanged and PhotoMap 8010 closed.
 Mac Chrome new-version interaction remains G3 HOLD.
 See the [recovery checkpoint](checkpoints/2026-11-07-o1-502-live-recovery.md).
 
+## H1 accepted single-demo MVP — exact-source evidence
+
+The Samsung terminal receipt
+`pockethost-h1-final-native-check-all-1edbd1b-20261107-v1`
+returned `done/0 PASS` for
+`1edbd1b68cb1d0f4c21796172d25c5d0da10ebab`:
+115 Node tests, 23 admin Vitest tests, lint, TypeScript and
+Vite build passed. Coverage: 82.10% lines, 82.78% branches,
+80.54% functions. The QA tree remained clean.
+
+The separate guarded LAN release task
+`pockethost-h1-guarded-g3-lan-release-1edbd1b-20261107-v1`
+returned `done/0 PASS` on the same source: exact old live
+PID/start ticks and source were verified before cutover;
+the owned-demo v2 → publish v1 → rollback v2 → restart →
+stop → start round trip passed with HTTP content, history
+and bounded-log verification. Six protected services remained
+running and PhotoMap TEST 8010 closed.
+
+The owner's real Mac Chrome screenshots show the H1 project
+running/healthy and stopped, v1 and v2 hosted content,
+deployment history, logs and a browser-originated publish.
+The owner reported that the experience appeared to work.
+This supports **core H1 browser acceptance**, while exhaustive
+keyboard/ARIA and negative-state browser checks remain a
+distinct follow-up. The `Template landing` header on
+Project details is a non-blocking UX defect.
+
+This closes the scoped **one fixed demo, two fixed releases**
+MVP, not generic hosting, PhotoMap execution or public
+administration. The accepted application source stays
+`1edbd1b` after documentation-only follow-up commits.
+See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
+
 ## H1 Hosting MVP release criteria
 
 The exact new source SHA must pass all existing G0–G2 gates on the
