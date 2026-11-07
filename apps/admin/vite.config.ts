@@ -237,7 +237,8 @@ function ownedSiteFleetApi(): Plugin {
     name: "pockethost-owned-static-fleet-dev",
     apply: "serve",
     configureServer(server) {
-      const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1"
+      const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
+        process.env.POCKETHOST_ENABLE_USER_SITES_DEV === "1"
       const fleet = enabled ? new SiteFleetHost() : null
       let writes: Promise<void> = Promise.resolve()
       function serialize<T>(fn: () => Promise<T>): Promise<T> {
