@@ -84,7 +84,7 @@ Each milestone requires exact-SHA source and
 physical acceptance. See [development plan](DEVELOPMENT_PLAN.md)
 and [ADR-0010](adr/0010-read-only-observability.md).
 
-## H1 — Hosting MVP: one owned application, source candidate
+## H1 — Hosting MVP: one owned application, accepted
 
 The current large functional sprint is scoped to the **explicitly registered**
 `pockethost-demo` static application only. It adds a browser-driven
