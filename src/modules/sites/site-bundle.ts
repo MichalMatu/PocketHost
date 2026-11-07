@@ -40,8 +40,8 @@ export function validateSiteBundle(files: ReadonlyArray<SiteBundleFile>): SiteBu
   if (!files.length || files.length > MAX_SITE_FILES) throw new RangeError('Site file count exceeded');
   const items = files.map(({ name, bytes }) => ({ name: safeName(name), bytes }));
   if (!items.some((item) => item.name === 'index.html')) {
-    const first = items[0].name.split('/')[0];
-    if (items.every((item) => item.name.startsWith(first + '/'))) {
+    const first = items[0]?.name.split('/')[0];
+    if (first && items.every((item) => item.name.startsWith(first + '/'))) {
       for (const item of items) item.name = safeName(item.name.slice(first.length + 1));
     }
   }
