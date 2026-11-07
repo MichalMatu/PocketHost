@@ -2,6 +2,7 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
+import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -684,7 +685,9 @@ function termuxAdminApi(): Plugin {
             const mode = url.searchParams.get("mode")
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
-              mode === "services" ? { services: services.list() } : null
+              mode === "services" ? { services: services.list() } :
+              mode === "packages" ? await listInstalledTermuxPackages() :
+              mode === "search-packages" ? await searchAvailableTermuxPackages(url.searchParams.get("query") ?? "") : null
             if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
             response.end(JSON.stringify(result))
           } catch {
