@@ -79,7 +79,11 @@ export class WorkspaceFiles {
     this.root = root;
   }
   private ensureRoot(): void {
-    if (!existsSync(this.root)) mkdirSync(this.root, { recursive: true, mode: 0o700 });
+    const parent = path.dirname(this.root);
+    if (!existsSync(parent)) mkdirSync(parent, { recursive: true, mode: 0o700 });
+    if (lstatSync(parent).isSymbolicLink() || !lstatSync(parent).isDirectory())
+      throw new Error('Unsafe workspace parent');
+    if (!existsSync(this.root)) mkdirSync(this.root, { mode: 0o700 });
     const stat = lstatSync(this.root);
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new Error('Unsafe workspace root');
   }
@@ -175,7 +179,8 @@ export class WorkspaceBackups {
   ) {}
   private root(): string {
     mkdirSync(this.storage, { recursive: true, mode: 0o700 });
-    if (lstatSync(this.storage).isSymbolicLink()) throw new Error('Unsafe snapshot storage');
+    if (lstatSync(this.storage).isSymbolicLink() || !lstatSync(this.storage).isDirectory())
+      throw new Error('Unsafe snapshot storage');
     return this.storage;
   }
   private snapshotName(name: string): void {
