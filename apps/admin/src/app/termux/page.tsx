@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -194,6 +194,7 @@ export default function TermuxCenterPage() {
                 </div>)}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
                 <SiteServiceActions sites={sites} reload={() => refresh()} />
+                <RunitServiceActions />
               </CardContent>
             </Card>
           </TabsContent>
