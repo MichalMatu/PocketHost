@@ -4,6 +4,7 @@ import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBack
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
+import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -625,6 +626,7 @@ function termuxAdminApi(): Plugin {
   const backups = new WorkspaceBackups(files)
   const services = new TermuxServiceAdmin()
   const restic = new ResticWorkspaceAdmin(files)
+  const fileRoots = new TermuxFileRoots()
   let operations: Promise<void> = Promise.resolve()
   const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
     const result = operations.then(job, job)
@@ -632,7 +634,7 @@ function termuxAdminApi(): Plugin {
     return result
   }
   async function parseBody(req: IncomingMessage): Promise<{
-    action?: string; name?: string; path?: string; destination?: string; content?: string; base64?: string;
+    action?: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string;
   }> {
     const declared = req.headers["content-length"]
     if (req.headers["content-encoding"] || (declared && (!/^\d+$/.test(declared) || Number(declared) > 360000)))
@@ -649,13 +651,13 @@ function termuxAdminApi(): Plugin {
     const value: unknown = JSON.parse(Buffer.concat(chunks).toString("utf8"))
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new RangeError("Bad action")
     const data = value as Record<string, unknown>
-    if (Object.keys(data).some(key => !["action","name","path","destination","content","base64"].includes(key)))
+    if (Object.keys(data).some(key => !["action","name","root","path","destination","content","base64"].includes(key)))
       throw new RangeError("Extra input denied")
-    for (const key of ["action","name","path","destination","content","base64"]) {
+    for (const key of ["action","name","root","path","destination","content","base64"]) {
       if (data[key] !== undefined && typeof data[key] !== "string")
         throw new RangeError("Bad request field")
     }
-    return data as { action?: string; name?: string; path?: string; destination?: string; content?: string; base64?: string }
+    return data as { action?: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string }
   }
 
   return {
@@ -688,6 +690,10 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
+              mode === "file-roots" ? { roots: fileRoots.available() } :
+              mode === "browse-root" ? fileRoots.list(
+                (url.searchParams.get("root") ?? "") as FileRoot, url.searchParams.get("path") ?? "",
+              ) :
               mode === "restic-status" ? { restic: restic.status() } :
               mode === "restic-snapshots" ? { snapshots: await restic.snapshots() } :
               mode === "packages" ? await listInstalledTermuxPackages() :
@@ -726,6 +732,17 @@ function termuxAdminApi(): Plugin {
                 input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
                 input.path,
               ) }
+            }
+            if (input.action === "full-file") {
+              const root = (input.root ?? "") as FileRoot
+              const relative = input.path ?? ""
+              if (input.name === "read") return fileRoots.readText(root, relative)
+              if (input.name === "export") return fileRoots.export(root, relative)
+              if (["mkdir","save","copy","move","delete","upload"].includes(input.name ?? "")) {
+                return fileRoots.apply(root, input.name as "mkdir"|"save"|"copy"|"move"|"delete"|"upload",
+                  relative, { destination: input.destination, content: input.content, base64: input.base64 })
+              }
+              throw new RangeError("Unknown filesystem operation")
             }
             if (input.action === "restic") {
               if (!input.name || !["init","backup","check","restore","forget"].includes(input.name))
