@@ -202,6 +202,42 @@ export function parseInstalledPackages(raw: string, limit = MAX_PACKAGES): Packa
   return entries;
 }
 
+/** Read-only package metadata from two local tool JSON formats; no install plans. */
+export function parseNpmGlobals(raw: string, limit = 8): PackageEntry[] {
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return [];
+    const deps = (payload as { dependencies?: unknown }).dependencies;
+    if (!deps || typeof deps !== 'object' || Array.isArray(deps)) return [];
+    const result: PackageEntry[] = [];
+    for (const [name, meta] of Object.entries(deps).slice(0, 128)) {
+      const version = (meta as { version?: unknown } | null)?.version;
+      if (!/^@?[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60}(?:\/[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60})?$/.test(name) ||
+          typeof version !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)) continue;
+      result.push({ ecosystem: 'node', name, version });
+      if (result.length >= limit) break;
+    }
+    return result;
+  } catch { return []; }
+}
+
+export function parsePipInstalled(raw: string, limit = 8): PackageEntry[] {
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (!Array.isArray(payload)) return [];
+    const result: PackageEntry[] = [];
+    for (const item of payload.slice(0, 256)) {
+      if (!item || typeof item !== 'object') continue;
+      const { name, version } = item as { name?: unknown; version?: unknown };
+      if (typeof name !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9._-]{0,80}$/.test(name) ||
+          typeof version !== 'string' || !/^[a-zA-Z0-9][a-zA-Z0-9.+:~_-]{0,95}$/.test(version)) continue;
+      result.push({ ecosystem: 'python', name, version });
+      if (result.length >= limit) break;
+    }
+    return result;
+  } catch { return []; }
+}
+
 export function readPackageInventory(
   command: (binary: string, args: string[]) => string | null = readFixedCommand,
   now = new Date().toISOString(),
@@ -212,8 +248,10 @@ export function readPackageInventory(
   if (npm && /^\d+(?:\.\d+){1,3}$/.test(npm)) installed.push({ ecosystem: 'node', name: 'npm', version: npm });
   if (python && /^Python \d+\.\d+(?:\.\d+)?$/.test(python)) installed.push({ ecosystem: 'python', name: 'python', version: python.slice(7) });
   const raw = command(`${TERMUX_BIN}/dpkg-query`, ['-W', '-f=${binary:Package}\\t${Version}\\n']);
-  const termux = raw === null ? [] : parseInstalledPackages(raw);
-  installed.push(...termux);
+  const termux = raw === null ? [] : parseInstalledPackages(raw, 28);
+  const npmModules = parseNpmGlobals(command(`${TERMUX_BIN}/npm`, ['ls', '--global', '--depth=0', '--json']) ?? '');
+  const pipModules = parsePipInstalled(command(`${TERMUX_BIN}/python3`, ['-m', 'pip', 'list', '--disable-pip-version-check', '--format=json']) ?? '');
+  installed.push(...termux, ...npmModules, ...pipModules);
   // Never refresh apt indexes or use network. Cached upgrade hints are not authoritative.
   const cached = command(`${TERMUX_BIN}/apt`, ['list', '--upgradable']);
   const candidates = (cached ?? '').split('\n').slice(0, 128)
@@ -221,7 +259,7 @@ export function readPackageInventory(
     .filter((v): v is string => !!v).slice(0, 24);
   return {
     state: raw === null ? 'unavailable' : 'ok', observedAt: now,
-    installed, truncated: raw !== null && termux.length >= MAX_PACKAGES,
+    installed, truncated: raw !== null && termux.length >= 28 || npmModules.length >= 8 || pipModules.length >= 8,
     updates: { state: cached === null ? 'unknown' : 'cached-unverified', candidates },
   };
 }
