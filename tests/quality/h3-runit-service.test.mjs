@@ -68,3 +68,25 @@ test('H3 protected services, path traversal and symlink aliases never become man
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('H3.4 runit enable/disable only explicitly registered non-protected exact services', async () => {
+  const { tmp, services, registry } = fixture();
+  const admin = new TermuxServiceAdmin(services, registry);
+  const calls = [];
+  const run = async (binary, args, opts) => {
+    calls.push([binary, args, opts]);
+    return { exit: 0, output: 'fixture only' };
+  };
+  try {
+    await assert.rejects(admin.apply('enable', 'site-worker', run), /not explicitly registered/);
+    await assert.rejects(admin.apply('disable', 'wreckscanner', run), /Protected/);
+    await admin.apply('register', 'site-worker', run);
+    await admin.apply('enable', 'site-worker', run);
+    await admin.apply('disable', 'site-worker', run);
+    assert.deepEqual(calls.map(([bin, args]) => [bin, args]), [
+      ['/data/data/com.termux/files/usr/bin/sv-enable', ['site-worker']],
+      ['/data/data/com.termux/files/usr/bin/sv-disable', ['site-worker']],
+    ]);
+    assert.ok(calls.every(([, , opts]) => opts.env.SVDIR === services));
+  } finally { rmSync(tmp, { recursive: true, force: true }); }
+});
