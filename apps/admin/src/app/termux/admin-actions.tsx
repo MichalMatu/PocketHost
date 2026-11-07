@@ -338,13 +338,14 @@ export function WorkspaceBackupActions() {
   </div>
 }
 
-type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown" }
+type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown"; enabled?: boolean | null }
 
 export function RunitServiceActions() {
   const [services, setServices] = React.useState<RunitEntry[] | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
+  const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
   const refresh = React.useCallback(async () => {
     const data = await inspect<{ services: RunitEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
@@ -361,7 +362,18 @@ export function RunitServiceActions() {
     }).catch(() => { if (active) setError("Runit services unavailable") })
     return () => { active = false }
   }, [])
-  const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart", service: RunitEntry) => {
+  const readServiceLogs = async (service: RunitEntry) => {
+    setBusy(true); setError(null)
+    try {
+      const result = await action<{ lines: string[] }>({ action: "service-logs", path: service.name })
+      if (!Array.isArray(result.lines) || result.lines.length > 100 ||
+          !result.lines.every(line => typeof line === "string" && line.length <= 240))
+        throw new Error("Invalid runit logs")
+      setServiceLogs({ name: service.name, lines: result.lines })
+    } catch { setError("Registered runit service log unavailable.") }
+    finally { setBusy(false) }
+  }
+  const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
     if (busy || service.protected || !window.confirm(
       name === "register" ?
         "Register service " + service.name + " for PocketHost lifecycle control? Registration does not start or stop it." :
@@ -392,6 +404,8 @@ export function RunitServiceActions() {
         <p className="text-sm font-medium">{service.name}</p>
         <div className="flex gap-2">
           <Badge variant="outline">{service.state}</Badge>
+          <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
+            service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
           <Badge variant="outline">{service.protected ? "Protected" : service.registered ? "Registered" : "Observed"}</Badge>
         </div>
       </div>
@@ -400,11 +414,18 @@ export function RunitServiceActions() {
           <Button size="sm" disabled={busy || service.state === "running"} onClick={() => void perform("start", service)}>Start</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("stop", service)}>Stop</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("restart", service)}>Restart</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("enable", service)}>Enable</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("disable", service)}>Disable</Button>
+          <Button size="sm" variant="outline" disabled={busy} onClick={() => void readServiceLogs(service)}>Logs</Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("unregister", service)}>Unregister</Button>
         </> : <Button size="sm" variant="outline" disabled={busy}
           onClick={() => void perform("register", service)}>Register</Button>}
       </div>}
     </div>)}
+    {serviceLogs && <div className="rounded-md border p-2">
+      <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
+      <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>
+    </div>}
     <Feedback error={error} done={done} />
   </div>
 }
