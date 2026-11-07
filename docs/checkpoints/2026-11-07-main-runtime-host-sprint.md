@@ -26,7 +26,7 @@ remains **disabled and unapproved for live Start**.
   native `test:coverage` command also passed. Port 8010 stayed closed.
 - The coverage baseline at this source SHA is **79.38% lines, 82.52% branches,
   82.76% functions**. The disabled PhotoMap host adapter only reached
-  **44.34% line coverage**: this is *not* evidence of working live PRoot.
+  **44.34% line coverage**: this is _not_ evidence of working live PRoot.
 - The Samsung P3 `owned-site-host.test.mjs` exercises a real isolated
   loopback Node child: Create, Start, GET/HTTP, publish v2, one-step rollback
   and verified Stop. This is native process/HTTP evidence, **not** a real
@@ -54,6 +54,34 @@ remains **disabled and unapproved for live Start**.
 7. Native coverage command remains dependency-free, and Knip v6.43.0 is
    being evaluated only as an optional, non-mutating diagnostic on Termux.
    No dependency pruning or host package installations were accepted.
+
+## Additional Samsung acceptance and defects — 2026-11-07
+
+- **`main@645c2b2531b72862e9ac7f01f49053df315aaca6`**:
+  Samsung task `pockethost-final-qa-current-main-645c2b-20261107-v1`
+  completed **done/0**. Full `check:all` PASS, including 16/16
+  admin Vitest checks, Node coverage floor, TypeScript, lint, formatting and
+  Vite build. Dedicated real local P3 Create/Start/HTTP/Publish/Rollback/Stop
+  fixture passed 4/4 tests. Port 8010 stayed closed.
+- Knip 6.43.0 and Knip 5.86.0 both fail in Samsung Termux with
+  `ERR_DLOPEN_FAILED` on `oxc-resolver` Android ARM64
+  (`__emutls_get_address`); this is an **environment/tooling HOLD**, not
+  unused-code evidence. Do not prune dependencies or vendor files.
+- At **`main@05d435d4f5d71268b0ede3e6e90495c4fc0fa846`**,
+  `pockethost-current-main-gates-knip5-20261107-v1` completed FAIL:
+  99/99 Node tests and all structural gates PASS, but Markdownlint MD012
+  found two duplicated blank lines in `DEVELOPMENT_PLAN.md` and
+  `HANDOFF_NEXT_CHAT.md`. No later gates reached. This was addressed
+  in the subsequent documentation-only repair.
+- A true Chromium read-only render attempt
+  `pockethost-chromium-p3-readonly-smoke-20261107-v1` timed out (124).
+  No browser interaction PASS; native Chromium 156.0.8078.47 is available.
+  The read-only discovery task for ports 8787 and 18787 was still pending
+  at the time of this checkpoint.
+- The later start-claim patch preserves a recovery hold if PRoot spawn
+  identity or health cannot be confirmed. A retained `start.claim`
+  reports `unknown`; no automated claim deletion or process adoption.
+  This candidate requires a new full native QA receipt.
 
 ## Validation receipts still awaited
 

@@ -96,7 +96,6 @@ and a11y tests; error-history/rollback recovery proofs. Preserve P3 physical
 browser and P4 runtime activation holds. The detailed [sprint checkpoint]
 (checkpoints/2026-11-07-quality-hardening-sprint.md) separates done from open.
 
-
 ## Next bounded closeout — 2026-11-07
 
 Finish `check:all` and coverage at fresh `main`, then review Knip without

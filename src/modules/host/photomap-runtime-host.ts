@@ -214,7 +214,7 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       marker !== null,
       marker !== null && this.owned(marker, plan),
     );
-    return { ...basic, state, manualStartAllowed: true };
+    return { ...basic, state, manualStartAllowed: state !== 'unknown' };
   }
 
   private event(message: RuntimeEventCode): void {
