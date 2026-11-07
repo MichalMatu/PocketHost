@@ -47,12 +47,10 @@ session remains unauthenticated and must not be opened to WAN.
 - Cloud Commander: MIT, large Node dependency chain. Reuse its design
   patterns and/or selected middleware only behind future scoped
   authentication, not its terminal or unrestricted filesystem access.
-- CodeMirror 6 and Uppy: integrate into authenticated, owned file editor
-  later; avoid adding them before a file-write contract exists.
+- CodeMirror 6 and Uppy: integrate into the owned file editor when useful; no login dependency is required.
 - Restic: BSD-2-Clause CLI; integrate as a separately approved,
   noninteractive external process with secret-safe repository config.
-- ttyd: MIT; deny access until a separately authenticated terminal
-  channel exists.
+- ttyd: MIT; keep separate from the general admin API; do not open an arbitrary network shell.
 - Termux-services: use installed runit CLI without copying GPL-3 code.
 
 ## Guardrails and acceptance
