@@ -19,6 +19,7 @@ import {
   processGroupAbsent,
 } from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
+import { buildManagedProotArgs } from './managed-proot-plan.ts';
 import {
   admitOwnedStart,
   awaitOwnedReadiness,
@@ -237,30 +238,29 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       throw new Error('This runtime requires an exact Termux installation');
     }
     const executable = realpathSync(path.join(prefix, 'bin', 'proot'));
-    const args = [
-      '-R',
+    const args = buildManagedProotArgs({
       rootfs,
-      '-b',
-      source + ':/mnt/source',
-      '-b',
-      path.join(work, 'database') + ':/mnt/data',
-      '-b',
-      path.join(work, 'storage') + ':/mnt/storage',
-      '-w',
-      '/mnt/source',
-      GUEST_PYTHON,
-      '-m',
-      'uvicorn',
-      'server:create_app',
-      '--factory',
-      '--host',
-      '127.0.0.1',
-      '--port',
-      String(OWNED_PHOTOMAP_PORT),
-      '--lifespan',
-      'off',
-      '--no-server-header',
-    ];
+      binds: [
+        { source, target: '/mnt/source' },
+        { source: path.join(work, 'database'), target: '/mnt/data' },
+        { source: path.join(work, 'storage'), target: '/mnt/storage' },
+      ],
+      workdir: '/mnt/source',
+      command: [
+        GUEST_PYTHON,
+        '-m',
+        'uvicorn',
+        'server:create_app',
+        '--factory',
+        '--host',
+        '127.0.0.1',
+        '--port',
+        String(OWNED_PHOTOMAP_PORT),
+        '--lifespan',
+        'off',
+        '--no-server-header',
+      ],
+    });
     return { version, versionRoot, executable, args, source };
   }
 

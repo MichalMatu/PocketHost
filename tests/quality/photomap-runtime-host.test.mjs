@@ -130,8 +130,9 @@ test('PRoot bind source is a disposable work copy, never the preserved import', 
   );
   assert.match(source, /const source = path.join\(work, 'source'\)/);
   assert.match(source, /const preservedSource = path.join\(this.instance, 'releases'/);
-  assert.match(source, /source \+ ':\/mnt\/source'/);
-  assert.doesNotMatch(source, /preservedSource \+ ':\/mnt\/source'/);
+  assert.match(source, /\{ source, target: '\/mnt\/source' \}/);
+  assert.match(source, /buildManagedProotArgs\(/);
+  assert.doesNotMatch(source, /\{ source: preservedSource, target: '\/mnt\/source' \}/);
 });
 
 function preparedRuntimeFixture() {
@@ -214,7 +215,8 @@ test('PRoot launcher uses the verified guest Python and never executes host Pyth
     'utf8',
   );
   assert.match(source, /const GUEST_PYTHON = '\/opt\/photomap-venv\/bin\/python'/);
-  assert.match(source, / {6}GUEST_PYTHON,/);
+  assert.match(source, / {8}GUEST_PYTHON,/);
+  assert.match(source, /buildManagedProotArgs\(/);
   assert.doesNotMatch(source, /'\/opt\/pockethost-venv\/bin\/python'/);
   assert.match(source, /profile\.activation_approved !== true/);
 });
