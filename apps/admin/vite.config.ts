@@ -1,6 +1,7 @@
 import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
+import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -620,6 +621,7 @@ function termuxAdminApi(): Plugin {
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
   const files = new WorkspaceFiles()
   const backups = new WorkspaceBackups(files)
+  const services = new TermuxServiceAdmin()
   let operations: Promise<void> = Promise.resolve()
   const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
     const result = operations.then(job, job)
@@ -681,7 +683,8 @@ function termuxAdminApi(): Plugin {
             const url = new URL(request.url ?? "/", "http://localhost")
             const mode = url.searchParams.get("mode")
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
-              mode === "snapshots" ? { snapshots: backups.list() } : null
+              mode === "snapshots" ? { snapshots: backups.list() } :
+              mode === "services" ? { services: services.list() } : null
             if (!result) { response.statusCode = 400; response.end('{"error":"unknown-query"}'); return }
             response.end(JSON.stringify(result))
           } catch {
@@ -716,6 +719,14 @@ function termuxAdminApi(): Plugin {
                 input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
                 input.path,
               ) }
+            }
+            if (input.action === "service") {
+              if (!input.name || !["register","unregister","start","stop","restart"].includes(input.name))
+                throw new RangeError("Invalid runit operation")
+              return await services.apply(
+                input.name as "register" | "unregister" | "start" | "stop" | "restart",
+                input.path ?? "",
+              )
             }
             if (input.action === "file") {
               if (!input.name || !["mkdir", "save", "rename", "delete", "copy", "upload"].includes(input.name))
