@@ -14,6 +14,8 @@ import {
   readlinkSync,
   realpathSync,
   renameSync,
+  rmSync,
+  statSync,
   writeFileSync,
 } from 'node:fs';
 import { createServer } from 'node:net';
@@ -54,7 +56,7 @@ const ALLOWED_ASSETS = new Set([
 
 export interface SiteDeployment {
   at: string;
-  action: 'publish' | 'rollback';
+  action: 'publish' | 'rollback' | 'restore' | 'prune';
   from: string | null;
   to: string;
 }
@@ -93,6 +95,15 @@ export interface FleetProject {
 export interface FleetFile {
   name: string;
   bytes: Buffer;
+}
+
+export interface FleetRelease {
+  id: string;
+  createdAt: string;
+  fileCount: number;
+  bytes: number;
+  active: boolean;
+  rollbackTarget: boolean;
 }
 
 function directory(folder: string): void {
@@ -270,7 +281,7 @@ export class SiteFleetHost {
           !h ||
           typeof h.at !== 'string' ||
           h.at.length > 40 ||
-          !['publish', 'rollback'].includes(h.action) ||
+          !['publish', 'rollback', 'restore', 'prune'].includes(h.action) ||
           (h.from !== null && !RELEASE.test(h.from)) ||
           !RELEASE.test(h.to),
       ) ||
@@ -357,6 +368,95 @@ export class SiteFleetHost {
   inspect(id: string): FleetProject {
     return this.details(id, this.record(id));
   }
+
+  /** Only physically present, verified owned releases are actionable. */
+  listReleases(id: string): FleetRelease[] {
+    const item = this.record(id);
+    const root = path.join(this.site(id), 'releases');
+    directory(root);
+    return readdirSync(root)
+      .filter((name) => RELEASE.test(name))
+      .map((name) => {
+        const folder = requireRelease(this.site(id), name);
+        const { files, bytes } = this.counts(id, name);
+        const published = item.history.find(
+          (entry) => entry.action === 'publish' && entry.to === name,
+        );
+        return {
+          id: name,
+          createdAt: published?.at ?? statSync(folder).birthtime.toISOString(),
+          fileCount: files,
+          bytes,
+          active: item.activeRelease === name,
+          rollbackTarget: item.previousRelease === name,
+        };
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || b.id.localeCompare(a.id));
+  }
+
+  /**
+   * A selected historical release becomes active without spawning processes
+   * or modifying another project's directory. Old active is one-use undo.
+   */
+  async restoreRelease(id: string, release: string): Promise<FleetProject> {
+    return this.lock(() => {
+      const item = this.record(id);
+      if (state(item, this.site(id)) === 'unknown')
+        throw new Error('Process identity uncertain; restore denied');
+      if (!RELEASE.test(release)) throw new RangeError('Invalid release identifier');
+      if (release === item.activeRelease)
+        throw new RangeError('Release is already active');
+      requireRelease(this.site(id), release);
+      this.counts(id, release);
+      const old = item.activeRelease;
+      item.activeRelease = release;
+      item.previousRelease = old;
+      item.history = [...item.history.slice(-31), {
+        at: new Date().toISOString(), action: 'restore' as const,
+        from: old, to: release,
+      }];
+      this.save(id, item);
+      return this.inspect(id);
+    });
+  }
+
+  /**
+   * Delete only an archived version, after checking its exact owned tree.
+   * Active and immediate rollback targets are never eligible. A failed
+   * metadata save attempts to restore the original archived directory.
+   */
+  async pruneRelease(id: string, release: string): Promise<FleetProject> {
+    return this.lock(() => {
+      const item = this.record(id);
+      if (state(item, this.site(id)) === 'unknown')
+        throw new Error('Process identity uncertain; prune denied');
+      if (!RELEASE.test(release)) throw new RangeError('Invalid release identifier');
+      if (release === item.activeRelease || release === item.previousRelease)
+        throw new RangeError('Active or rollback-target release cannot be removed');
+      const folder = requireRelease(this.site(id), release);
+      this.counts(id, release);
+      const quarantine = path.join(this.site(id), 'releases', '.prune-' + randomUUID());
+      renameSync(folder, quarantine);
+      try {
+        const next: RecordOnDisk = {
+          ...item,
+          history: [...item.history.slice(-31), {
+            at: new Date().toISOString(), action: 'prune' as const,
+            from: item.activeRelease, to: release,
+          }],
+        };
+        this.save(id, next);
+      } catch (error) {
+        renameSync(quarantine, folder);
+        throw error;
+      }
+      // The version is already absent from the immutable release namespace.
+      // A failed wipe remains quarantined, never served or adopted.
+      rmSync(quarantine, { recursive: true, force: false });
+      return this.inspect(id);
+    });
+  }
+
   async create(name: string): Promise<FleetProject> {
     return this.lock(async () => {
       const label = validateName(name);
