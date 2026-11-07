@@ -144,8 +144,8 @@ deployment history, logs and a browser-originated publish.
 The owner reported that the experience appeared to work.
 This supports **core H1 browser acceptance**, while exhaustive
 keyboard/ARIA and negative-state browser checks remain a
-distinct follow-up. The `Template landing` header on
-Project details is a non-blocking UX defect.
+distinct follow-up. The former `Template landing` header was a non-blocking
+H1 UX defect, corrected in the separately tested H2 source.
 
 This closes the scoped **one fixed demo, two fixed releases**
 MVP, not generic hosting, PhotoMap execution or public
@@ -153,28 +153,48 @@ administration. The accepted application source stays
 `1edbd1b` after documentation-only follow-up commits.
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
-## H2 multiple static-site acceptance gate — pending
+## H2 static hosting — Samsung G2/G3 accepted
 
-The new H2 code is **not accepted by source commits alone**.
-On the Samsung Termux Local Agent, run exact-SHA
-`npm run check:all` and record tests, lint, types, build,
-coverage and a clean QA tree.
+Application source `750c4b3fba2126647c3b593ae89d108ba2a67206`
+passed the full exact-SHA Samsung
+`npm run check:all`, including 26/26 admin interaction
+tests, Node test/coverage gates, lint, TypeScript,
+Prettier, documentation checks and build.
 
-A separate owned-only live gate must create two new static
-sites, upload real HTML/CSS/JS assets, serve them through distinct
-loopback ports and the existing GET-only private-LAN site gateway,
-publish an update, consume the one-step rollback, verify HTTP
-content and instance, restart/stop/start and check logs and
-memory/uptime when Android permits.
+Receipt: `pockethost-h2-final-native-check-all-750c4b3-20261107-v2`,
+terminal `done/0 PASS`.
 
-Negative gates include ZIP traversal, symlink payload, CRC,
-oversized inflation, fake owner PID, occupied ports, foreign
-Origin, missing intent and arbitrary host paths. All six
-protected services must remain running; PhotoMap TEST 8010
-must stay closed. Require verified old-panel PID/start ticks
-and an executable old-version rollback path before any LAN
-preview cutover. Manual Chrome folder/ZIP acceptance is
-separate; a simulated HTTP request is not a browser click.
+Guarded native release receipt:
+`pockethost-h2-guarded-g3-real-static-sites-750c4b3-20261107-v2`,
+terminal `done/0 PASS`. The task verified the
+original H1 process PID and start ticks, source,
+owner record, trusted LAN and unrelated services.
+It switched only the PocketHost-owned preview and
+re-enabled the exact private-LAN gateway.
+
+On that live instance it created two independently
+owned sites, uploaded a bounded ZIP and folder-format
+bundle, served actual HTML/CSS/JS assets by LAN,
+published an update and verified one-use rollback,
+checked running process identity and Restart,
+inspected bounded logs, and denied unsafe ZIP,
+foreign Origin, missing intent and static-site
+POST. Its own test projects were safely stopped
+and removed; the existing H1 demo was preserved.
+All six protected services remained running, and
+PhotoMap TEST port 8010 remained closed.
+
+**Accepted:** Samsung device G2 and G3 for local
+static-site H2. **Not yet accepted:** the owner's
+actual Chrome ZIP/folder-button interactions,
+exhaustive keyboard/mobile accessibility, automatic
+startup, public administration or authenticated
+multi-user hosting. H2 is manual trusted-LAN HTTP
+development only; no unauthenticated public access.
+
+Documentation-only commits after the tested
+`750c4b3` require docs checks but not a repeat of
+the accepted H2 application hardware lifecycle.
 
 See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
 
