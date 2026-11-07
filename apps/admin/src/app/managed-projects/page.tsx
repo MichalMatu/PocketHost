@@ -2,6 +2,10 @@ import * as React from "react"
 import { Database, FolderArchive, HardDrive, RefreshCw, ShieldCheck } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import {
+  parseManagedPhotoMapResponse,
+  type ManagedPhotoMapProject,
+} from "@/lib/managed-photomap-schema"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -12,46 +16,19 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-interface Project {
-  version: 1
-  id: "photomap-test"
-  label: "PhotoMap TEST"
-  ownership: "none" | "pockethost"
-  importState: "absent" | "verified-copy"
-  runtimeState: "disabled" | "unknown"
-  release: string | null
-  port: 8010
-  tools: Array<{
-    name: "node" | "npm" | "git" | "python3" | "proot" | "proot-distro"
-    state: "available" | "unavailable"
-    version: string | null
-  }>
-  lockfiles: Array<{ path: string; sha256: string }>
-  data: {
-    databaseBytes: number
-    privateMediaFiles: number
-    publicMediaFiles: number
-  } | null
-  dependencies: {
-    prootEnvironment: "external-unfrozen"
-    isolatedRollback: false
-  } | null
-  capabilities: { startStop: false; packages: false; rollback: false }
-}
-
-async function readProject(signal?: AbortSignal): Promise<Project> {
+async function readProject(signal?: AbortSignal): Promise<ManagedPhotoMapProject> {
   const response = await fetch("/api/v1/managed-photomap", {
     cache: "no-store",
     credentials: "same-origin",
     signal,
   })
   if (!response.ok) throw new Error("Managed PhotoMap inventory could not be verified.")
-  const data: { project: Project } = await response.json()
-  return data.project
+  const data: unknown = await response.json()
+  return parseManagedPhotoMapResponse(data)
 }
 
 export default function ManagedProjectsPage() {
-  const [project, setProject] = React.useState<Project | null>(null)
+  const [project, setProject] = React.useState<ManagedPhotoMapProject | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
 

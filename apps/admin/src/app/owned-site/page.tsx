@@ -2,6 +2,11 @@ import * as React from "react"
 import { Globe2, Play, Square, RotateCcw, RefreshCw, Upload } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import {
+  parseOwnedSiteLogs,
+  parseOwnedSiteState,
+  type OwnedSiteStateResponse,
+} from "@/lib/owned-site-schema"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,31 +24,19 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 
-type Demo = {
-  version: 1
-  id: "pockethost-demo"
-  ownership: "pockethost" | "none"
-  state: "absent" | "stopped" | "running" | "unknown"
-  port: number
-  url: string
-  contentVersion: 1 | 2 | null
-  previousVersion: 1 | 2 | null
-  canRollback: boolean
-}
-type StateResponse = { enabled: boolean; site: Demo | null }
-
-async function getState(signal?: AbortSignal): Promise<StateResponse> {
+async function getState(signal?: AbortSignal): Promise<OwnedSiteStateResponse> {
   const response = await fetch("/api/v1/owned-site", {
     cache: "no-store",
     credentials: "same-origin",
     signal,
   })
   if (!response.ok) throw new Error("Site state unavailable")
-  return response.json()
+  const data: unknown = await response.json()
+  return parseOwnedSiteState(data)
 }
 
 export default function OwnedSitePage() {
-  const [state, setState] = React.useState<StateResponse | null>(null)
+  const [state, setState] = React.useState<OwnedSiteStateResponse | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [logs, setLogs] = React.useState<string[]>([])
@@ -60,8 +53,8 @@ export default function OwnedSitePage() {
         cache: "no-store",
       })
       if (response.ok) {
-        const data: { logs: string[] } = await response.json()
-        setLogs(Array.isArray(data.logs) ? data.logs.slice(-25) : [])
+        const data: unknown = await response.json()
+        setLogs(parseOwnedSiteLogs(data))
       }
     } else {
       setLogs([])
