@@ -53,3 +53,22 @@ test('H3.4 roots reject traversal, symlinks and out-of-root mutations', () => {
     assert.equal(readFileSync(outside, 'utf8'), 'do not touch');
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('H3.4 copies and removes a bounded tree only after validating all nested entries', () => {
+  const { dir, roots, files } = demo();
+  try {
+    files.apply('home', 'mkdir', 'original');
+    files.apply('home', 'mkdir', 'original/deep');
+    files.apply('home', 'save', 'original/deep/note.txt', { content: 'keep original' });
+    files.apply('home', 'copy-tree', 'original', { destination: 'clone' });
+    assert.equal(files.readText('home', 'clone/deep/note.txt').content, 'keep original');
+    files.apply('home', 'delete-tree', 'clone');
+    assert.equal(files.list('home').entries.some(item => item.name === 'clone'), false);
+    assert.equal(files.readText('home', 'original/deep/note.txt').content, 'keep original');
+    symlinkSync(roots.prefix, path.join(roots.home, 'original', 'foreign-link'));
+    assert.throws(() => files.apply('home', 'copy-tree', 'original', { destination: 'unsafe' }), /Linked tree/);
+    assert.throws(() => files.apply('home', 'delete-tree', 'original'), /Linked tree/);
+    assert.equal(files.readText('home', 'original/deep/note.txt').content, 'keep original');
+    assert.throws(() => files.apply('home', 'delete-tree', ''), /Root-level/);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
