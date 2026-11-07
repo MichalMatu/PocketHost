@@ -80,7 +80,8 @@ function portFree(): Promise<boolean> {
   });
 }
 
-const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const pause = (ms: number): Promise<void> =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
  * Project-local PhotoMap runtime candidate. The imported device manifests are
