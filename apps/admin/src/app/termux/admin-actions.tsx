@@ -86,7 +86,13 @@ export function WorkspaceManager() {
     } catch { setError("Unable to read this workspace directory.") }
     finally { setBusy(false) }
   }
-  React.useEffect(() => { void load("") }, [])
+  React.useEffect(() => {
+    let active = true
+    void inspect<{ files: FileInfo[] }>("files", "").then(response => {
+      if (active) setEntries(response.files)
+    }).catch(() => { if (active) setError("Unable to read this workspace directory.") })
+    return () => { active = false }
+  }, [])
   const full = (name: string) => [folder, name].filter(Boolean).join("/")
   const edit = async (name: string) => {
     setBusy(true); setError(null)
@@ -202,7 +208,13 @@ export function WorkspaceBackupActions() {
     const response = await inspect<{ snapshots: SnapshotInfo[] }>("snapshots")
     setItems(response.snapshots)
   }
-  React.useEffect(() => { void load().catch(() => setError("Backup inventory unavailable")) }, [])
+  React.useEffect(() => {
+    let active = true
+    void inspect<{ snapshots: SnapshotInfo[] }>("snapshots").then(response => {
+      if (active) setItems(response.snapshots)
+    }).catch(() => { if (active) setError("Backup inventory unavailable") })
+    return () => { active = false }
+  }, [])
   const run = async (name: "create" | "restore" | "delete", snapshot?: string) => {
     if (busy || !window.confirm(name === "restore"
       ? "Restore snapshot " + snapshot + "? The current workspace will be preserved in a sidecar."
