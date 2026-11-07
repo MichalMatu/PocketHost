@@ -54,10 +54,15 @@ function safeFile(file: string): string | null {
  * An exact target mismatch or protected service always refuses commands.
  */
 export class TermuxServiceAdmin {
+  private readonly serviceRoot: string;
+  private readonly registerFile: string;
   constructor(
-    private readonly serviceRoot = path.join(PREFIX, 'var', 'service'),
-    private readonly registerFile = path.join(os.homedir(), '.local', 'state', 'pockethost', 'h3-runit-registry.json'),
-  ) {}
+    serviceRoot = path.join(PREFIX, 'var', 'service'),
+    registerFile = path.join(os.homedir(), '.local', 'state', 'pockethost', 'h3-runit-registry.json'),
+  ) {
+    this.serviceRoot = serviceRoot;
+    this.registerFile = registerFile;
+  }
 
   private registry(): Registration[] {
     const raw = safeFile(this.registerFile);
