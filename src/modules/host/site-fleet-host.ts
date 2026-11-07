@@ -404,17 +404,21 @@ export class SiteFleetHost {
       if (state(item, this.site(id)) === 'unknown')
         throw new Error('Process identity uncertain; restore denied');
       if (!RELEASE.test(release)) throw new RangeError('Invalid release identifier');
-      if (release === item.activeRelease)
-        throw new RangeError('Release is already active');
+      if (release === item.activeRelease) throw new RangeError('Release is already active');
       requireRelease(this.site(id), release);
       this.counts(id, release);
       const old = item.activeRelease;
       item.activeRelease = release;
       item.previousRelease = old;
-      item.history = [...item.history.slice(-31), {
-        at: new Date().toISOString(), action: 'restore' as const,
-        from: old, to: release,
-      }];
+      item.history = [
+        ...item.history.slice(-31),
+        {
+          at: new Date().toISOString(),
+          action: 'restore' as const,
+          from: old,
+          to: release,
+        },
+      ];
       this.save(id, item);
       return this.inspect(id);
     });
@@ -440,10 +444,15 @@ export class SiteFleetHost {
       try {
         const next: RecordOnDisk = {
           ...item,
-          history: [...item.history.slice(-31), {
-            at: new Date().toISOString(), action: 'prune' as const,
-            from: item.activeRelease, to: release,
-          }],
+          history: [
+            ...item.history.slice(-31),
+            {
+              at: new Date().toISOString(),
+              action: 'prune' as const,
+              from: item.activeRelease,
+              to: release,
+            },
+          ],
         };
         this.save(id, next);
       } catch (error) {
