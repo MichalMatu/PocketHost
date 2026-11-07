@@ -226,10 +226,15 @@ export interface BackupRecord {
  * No secrets or owned production-site data are included.
  */
 export class WorkspaceBackups {
+  private readonly files: WorkspaceFiles;
+  private readonly storage: string;
   constructor(
-    private readonly files: WorkspaceFiles,
-    private readonly storage = path.join(os.homedir(), '.local', 'state', 'pockethost', 'h3-snapshots'),
-  ) {}
+    files: WorkspaceFiles,
+    storage = path.join(os.homedir(), '.local', 'state', 'pockethost', 'h3-snapshots'),
+  ) {
+    this.files = files;
+    this.storage = storage;
+  }
   private root(): string {
     mkdirSync(this.storage, { recursive: true, mode: 0o700 });
     if (lstatSync(this.storage).isSymbolicLink() || !lstatSync(this.storage).isDirectory())
