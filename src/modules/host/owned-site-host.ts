@@ -410,6 +410,21 @@ export class OwnedDemoHost implements OwnedSitePort {
     return this.inspect();
   }
 
+  async health(): Promise<boolean> {
+    const item = this.read();
+    if (!item || this.status(item) !== 'running' || !processIsOwned(item, this.site)) {
+      return false;
+    }
+    try {
+      const response = await fetch(`http://127.0.0.1:${this.port}/`, {
+        signal: AbortSignal.timeout(1500),
+      });
+      return response.status === 200 && response.headers.get('x-pockethost-instance') === item.instance;
+    } catch {
+      return false;
+    }
+  }
+
   readLogs(): ReadonlyArray<string> {
     this.mustRead();
     const log = path.join(this.site, 'activity.log');
