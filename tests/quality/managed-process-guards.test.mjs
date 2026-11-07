@@ -5,6 +5,7 @@ import {
   attestsManagedProcess,
   safeStopEvidence,
   processGroupAbsent,
+  classifyManagedProcessState,
 } from '../../src/modules/host/managed-process-guards.ts';
 
 const expected = {
@@ -90,4 +91,18 @@ test('PhotoMap adapter may not delete its marker on leader-only stop evidence', 
   assert.match(source, /processGroupAbsent\(marker.pid/);
   assert.match(source, /signalOwnedLeader: \(\) => process\.kill\(marker\.pid, 'SIGTERM'\)/);
   assert.match(source, /PhotoMap graceful stop uncertain; marker retained/);
+});
+
+test('missing leader PID cannot clear a retained PhotoMap ownership marker', () => {
+  assert.equal(classifyManagedProcessState(false, false), 'stopped');
+  assert.equal(classifyManagedProcessState(true, true), 'running');
+  assert.equal(classifyManagedProcessState(true, false), 'unknown');
+  // An inconsistent observation must never promote an absent marker.
+  assert.equal(classifyManagedProcessState(false, true), 'stopped');
+  const source = readFileSync(
+    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    'utf8',
+  );
+  assert.match(source, /classifyManagedProcessState\(/);
+  assert.doesNotMatch(source, /startTicks\(marker\.pid\) === null\s*\? 'stopped'/);
 });

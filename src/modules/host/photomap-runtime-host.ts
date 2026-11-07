@@ -14,7 +14,11 @@ import {
 import { createServer } from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
-import { attestsManagedProcess, processGroupAbsent } from './managed-process-guards.ts';
+import {
+  attestsManagedProcess,
+  classifyManagedProcessState,
+  processGroupAbsent,
+} from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
 import { directory, json } from './managed-runtime-files.ts';
 import { loadPhotoMapPlan, RELEASE, type LaunchPlan } from './photomap-runtime-plan.ts';
@@ -190,13 +194,11 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       return basic;
     }
     const marker = this.marker();
-    const state = !marker
-      ? 'stopped'
-      : this.owned(marker, plan)
-        ? 'running'
-        : startTicks(marker.pid) === null
-          ? 'stopped'
-          : 'unknown';
+    // A dead leader with a retained marker may still have orphaned children.
+    const state = classifyManagedProcessState(
+      marker !== null,
+      marker !== null && this.owned(marker, plan),
+    );
     return { ...basic, state, manualStartAllowed: true };
   }
 

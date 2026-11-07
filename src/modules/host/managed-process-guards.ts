@@ -50,3 +50,15 @@ export function processGroupAbsent(
 ): boolean {
   return Number.isSafeInteger(leaderPid) && leaderPid > 1 && observe(leaderPid) === 'absent';
 }
+
+/**
+ * A marker is a live ownership/cleanup obligation until whole-instance
+ * termination is proven. A missing leader PID is not a stopped runtime.
+ */
+export function classifyManagedProcessState(
+  markerPresent: boolean,
+  ownedProcessAttested: boolean,
+): 'stopped' | 'running' | 'unknown' {
+  if (!markerPresent) return 'stopped';
+  return ownedProcessAttested ? 'running' : 'unknown';
+}
