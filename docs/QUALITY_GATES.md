@@ -153,6 +153,33 @@ administration. The accepted application source stays
 `1edbd1b` after documentation-only follow-up commits.
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
+## H2.1 release history and archive management — pending
+
+Exact final main SHA must pass Samsung Termux
+`npm run check:all`, including Node version
+history tests, UI actions, TypeScript, lint,
+build and documentation/formatting.
+
+The device gate must exercise multiple immutable
+static releases, read-only preview of an archived
+version, restoring a selected older release,
+quick-rollback to the prior active release, and
+explicit pruning of one disposable obsolete
+archive. Negative checks must deny pruning the
+active release or rollback target, traversing
+another project, linked content, unknown owner
+PID, forged IDs, missing Origin/write intent,
+and serve 404 for a removed release.
+
+**Do not mutate the owner's two live H2 projects
+during tests.** Guard the H2 preview SHA/PID/start
+ticks, LAN owner record and six protected services
+before any cutover. Retain H2 `750c4b3` as
+the rollback candidate. Manual Chrome acceptance
+of selected restore is separate from HTTP probes.
+
+See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+
 ## H2 static hosting — Samsung G2/G3 accepted
 
 Application source `750c4b3fba2126647c3b593ae89d108ba2a67206`
