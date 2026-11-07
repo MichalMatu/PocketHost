@@ -82,6 +82,8 @@ function upstreamHeaders(request, internalPort) {
   const headers = { ...request.headers };
   delete headers.authorization;
   delete headers['proxy-authorization'];
+  // Agent-intent is accepted only from Termux loopback, not spoofed over LAN.
+  delete headers['x-pockethost-agent-intent'];
   delete headers['x-forwarded-for'];
   delete headers.forwarded;
   headers.host = '127.0.0.1:' + internalPort;
