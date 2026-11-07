@@ -51,13 +51,13 @@ export function SiteHeader({
               nativeButton={false}
               render={
                 <a
-                  href={getAppUrl("/landing")}
+                  href={getAppUrl("/sites")}
                   rel="noopener noreferrer"
                   target="_blank"
                 />
               }
             >
-              Template landing
+              Hosted sites
             </Button>
             <ModeToggle
               onCustomize={onCustomize}
