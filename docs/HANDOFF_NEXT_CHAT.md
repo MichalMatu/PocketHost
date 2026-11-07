@@ -28,10 +28,7 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 - Preserve both user's live H2 sites and six protected services.
   Use a third disposable site only after compliant G3 permission,
   fresh owner/PID/ticks/filesystem verification and an H2 fallback.
-- [Exact recheck, preservation baseline and next steps](
-  checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
-
-
+- [H2.1 G3 recheck](checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
 
 ## Active H2.1 — G2 PASS, live G3 HOLD
 
