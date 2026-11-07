@@ -105,3 +105,16 @@ manage foreign services or complete real browser acceptance. See the
 [quality sprint checkpoint](checkpoints/2026-11-07-quality-hardening-sprint.md)
 for exact receipts and unresolved work. Verify fresh `main`, apply required
 Prettier formatting and obtain a new full Samsung `check:all` receipt.
+
+
+## Current autonomous sprint — 2026-11-07
+
+Work only on fresh `main`; all ten historical working branches are already
+deleted. The older `bd5347` source has a genuine Samsung `check:all` PASS
+(81/81 Node, 12/12 Vitest), and Node coverage at 79.38% lines. The newer
+registered runtime, process supervisor, PRoot argument builder, child-process
+attestation, PhotoMap profile extraction and P3/P4 Zod validation are **not**
+yet accepted at the latest exact HEAD. The current [checkpoint](checkpoints/2026-11-07-main-runtime-host-sprint.md) lists receipts, gaps and
+next safe steps. Before deployment: verify native `check:all`, Knip baseline
+and real P3 browser controls. Keep disabled PhotoMap inert, original data
+untouched and external services read-only.
