@@ -132,6 +132,22 @@ Device HTTP is not equivalent to owner browser
 acceptance. No H2 autoservice, public tunnel, login,
 Node/Python backend execution or package installation.
 
+## H2.1 — archive selection and cleanup: source candidate
+
+The owner accepted H2 in actual Mac Chrome with
+two independently uploaded, working static sites
+and confirmed quick rollback. H2.1 implements
+on-demand version inventory with date/size/count,
+read-only archived preview, restore of any retained
+owned release and one-use rollback to the prior
+active release. Archived deletion is explicit and
+denies active or quick-rollback targets. The
+hosted link spacing was adjusted.
+
+**Source only:** exact-SHA Samsung QA and guarded
+live acceptance pending. No user site restart, automatic deletion or migration is permitted.
+See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
+
 ## H3 — reviewed Termux package/software CMS: next product milestone
 
 Build a constrained package inventory and reviewed
