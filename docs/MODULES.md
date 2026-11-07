@@ -35,3 +35,11 @@ Discovery is not adoption. Every externally discovered service has `owner: exter
 ## Future changes
 
 Adding a module requires an ADR or approved architecture update, a matching docs page, a scoped `AGENTS.md`, an entry in `project.structure.json`, test contract and gate update. A new module must not bypass established safety boundaries.
+
+## Registered runtimes and adapters — 2026-11-07
+
+The reusable `ManagedRuntimeRegistry` only exposes explicitly registered IDs and
+unique ports. It cannot adopt discovered services. The generic process supervisor
+requires a verified owner before Start/Stop signals and refuses uncertain descendant
+cleanup. App-specific manifest, workset and guest commands belong solely to their
+host adapter (PhotoMap is one example), not the shared runtime.
