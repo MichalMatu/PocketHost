@@ -19,12 +19,14 @@
     "markdownlint": "markdownlint-cli2 \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/**/*.md\" \"src/**/AGENTS.md\" \"scripts/**/AGENTS.md\" \"tests/**/AGENTS.md\" \"apps/AGENTS.md\"",
     "test": "node --test tests/quality/*.test.mjs",
     "test:coverage": "node --test --experimental-test-coverage tests/quality/*.test.mjs",
+    "test:coverage:gate": "node --test --experimental-test-coverage --test-coverage-lines=75 --test-coverage-branches=78 --test-coverage-functions=78 tests/quality/*.test.mjs",
+    "audit:knip": "npm exec --yes --package=knip@6.43.0 -- knip --reporter compact",
     "check": "npm run check:foundation && npm run markdownlint && npm run format:check && npm run lint && npm run typecheck",
     "admin:import": "node scripts/import-shadcnstore.mjs",
     "admin:dev": "npm --prefix apps/admin run dev -- --host 127.0.0.1 --port 8787 --strictPort",
     "admin:build": "npm --prefix apps/admin run build",
     "admin:lint": "npm --prefix apps/admin run lint",
-    "check:all": "npm run check && npm run admin:lint && npm run admin:build && npm --prefix apps/admin run test:ui"
+    "check:all": "npm run check && npm run test:coverage:gate && npm run admin:lint && npm run admin:build && npm --prefix apps/admin run test:ui"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
