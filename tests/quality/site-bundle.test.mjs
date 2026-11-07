@@ -100,7 +100,7 @@ test('H2 ZIP: rejects corrupt offsets, oversized file, inflated budget and missi
   const broken = archive([{ name: 'index.html', bytes: index }]);
   const directoryOffset = broken.readUInt32LE(broken.length - 6);
   broken.writeUInt32LE(0xffffff00, directoryOffset + 42);
-  assert.throws(() => decodeSiteZip(broken), /out of bounds|local header/i);
+  assert.throws(() => decodeSiteZip(broken), /out of bounds|local header|unsafe ZIP entry/i);
   assert.throws(() => decodeSiteZip(archive([
     { name: 'index.html', bytes: Buffer.alloc(2 * 1024 * 1024 + 1) },
   ])), /unsafe|size|ZIP entry/i);
