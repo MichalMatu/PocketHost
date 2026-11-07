@@ -47,6 +47,24 @@ To remove the confusing perpetual v1/v2 toggle reported from MacBook Chrome, the
 
 This code is a **candidate**, not deployed merely by committing it. Native Termux full quality gates, controlled panel update, independent service checks and Mac browser verification are required before the current running behavior can be considered changed. IleStoi and the six existing monitored services must remain untouched.
 
+## H2 source candidate — user-owned static site bundles
+
+H2 adds bounded ZIP and selected-folder imports, validated
+asset types and filenames, at most eight registered sites,
+immutable on-disk releases and one-use rollback. ZIP parser
+rejects links, traversal, invalid CRC, inflated bombs and
+missing root `index.html`. Each site gets a unique ID and
+a dedicated loopback port. It never runs uploaded server code
+or adopts externally discovered paths and processes.
+
+The existing trusted-LAN site gateway serves read-only
+`/h2/<site-id>/` previews only after verifying a running
+PocketHost-owned child. Absolute asset URLs may not work;
+users should build static bundles with relative asset paths.
+H2 physical acceptance is pending the exact-source Samsung
+and guarded live release gates in the
+[H2 checkpoint](../checkpoints/2026-11-07-h2-static-hosting-source.md).
+
 ## H1 project/deployment metadata candidate
 
 The fixed `pockethost-demo` now exposes a typed project detail
