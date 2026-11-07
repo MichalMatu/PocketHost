@@ -1,3 +1,7 @@
+import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
+import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
+import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
+import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -218,9 +222,84 @@ function managedPhotoMapApi(): Plugin {
   }
 }
 
+/** O1: on-demand, loopback-only read-only observations; no background sampler. */
+function observabilityApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  const history = new ObservabilityHistory()
+  return {
+    name: "pockethost-observability-o1",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/observability", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        const remote = request.socket.remoteAddress
+        if (
+          !hosts.has(request.headers.host ?? "") ||
+          (request.headers.origin && !origins.has(request.headers.origin)) ||
+          request.headers["sec-fetch-site"] === "cross-site" ||
+          (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")
+        ) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.url !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method !== "GET") {
+          response.setHeader("Allow", "GET")
+          response.statusCode = 405
+          response.end("{}")
+          return
+        }
+        try {
+          const [host, metrics] = await Promise.all([
+            Promise.resolve(readHostSnapshot()),
+            readHostMetrics(),
+          ])
+          const processes = readProcessInventory()
+          const packages = readPackageInventory()
+          // Only the existing fixed, disabled PhotoMap TEST adapter reads its own
+          // bounded structured log. No PhotoMap start, stop or process probe.
+          let events: ReturnType<typeof runtimeEventHistory> = []
+          let diagnosticsState: "ok" | "unavailable" = "unavailable"
+          try {
+            events = runtimeEventHistory(new ManagedPhotoMapRuntimeHost().readLogs())
+            diagnosticsState = "ok"
+          } catch {
+            // Honest absent/permission/unsafe log state; never leak raw messages.
+          }
+          const observedAt = new Date().toISOString()
+          const payload = history.append({
+            version: 1,
+            mode: "read-only",
+            observedAt,
+            host,
+            metrics,
+            processes,
+            packages,
+            diagnostics: { state: diagnosticsState, events },
+          })
+          response.statusCode = 200
+          response.end(JSON.stringify(payload))
+        } catch {
+          response.statusCode = 503
+          response.end(JSON.stringify({ error: "observation-unavailable" }))
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), managedPhotoMapApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), managedPhotoMapApi(), observabilityApi()],
   server: { host: "127.0.0.1", port: 8787, strictPort: true },
   resolve: {
     alias: {

@@ -57,7 +57,13 @@ export function runtimeEventHistory(lines: ReadonlyArray<string>): RuntimeDiagno
       ) {
         continue;
       }
-      events.push(data as unknown as RuntimeDiagnosticEvent);
+      events.push({
+        version: 1,
+        timestamp: data.timestamp,
+        source: 'managed-runtime',
+        instanceId: data.instanceId,
+        code: data.code as RuntimeEventCode,
+      });
     } catch {
       // Legacy plaintext and malformed entries never become structured events.
     }

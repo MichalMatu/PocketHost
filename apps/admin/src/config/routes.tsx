@@ -17,6 +17,7 @@ export const routes: RouteObject[] = [
   { path: "/landing", lazy: page(() => import("@/app/landing/page")) },
   // PocketHost read-only status (all original upstream routes remain untouched)
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
+  { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
   // PocketHost-owned test site; opt-in DEV-only actions (no external service controls)
   { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
   // P4: explicit, read-only catalog for imported PhotoMap TEST
