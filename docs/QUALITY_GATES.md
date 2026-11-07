@@ -153,6 +153,31 @@ administration. The accepted application source stays
 `1edbd1b` after documentation-only follow-up commits.
 See [H1 checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md).
 
+## H2 multiple static-site acceptance gate — pending
+
+The new H2 code is **not accepted by source commits alone**.
+On the Samsung Termux Local Agent, run exact-SHA
+`npm run check:all` and record tests, lint, types, build,
+coverage and a clean QA tree.
+
+A separate owned-only live gate must create two new static
+sites, upload real HTML/CSS/JS assets, serve them through distinct
+loopback ports and the existing GET-only private-LAN site gateway,
+publish an update, consume the one-step rollback, verify HTTP
+content and instance, restart/stop/start and check logs and
+memory/uptime when Android permits.
+
+Negative gates include ZIP traversal, symlink payload, CRC,
+oversized inflation, fake owner PID, occupied ports, foreign
+Origin, missing intent and arbitrary host paths. All six
+protected services must remain running; PhotoMap TEST 8010
+must stay closed. Require verified old-panel PID/start ticks
+and an executable old-version rollback path before any LAN
+preview cutover. Manual Chrome folder/ZIP acceptance is
+separate; a simulated HTTP request is not a browser click.
+
+See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
+
 ## H1 Hosting MVP release criteria
 
 The exact new source SHA must pass all existing G0–G2 gates on the
