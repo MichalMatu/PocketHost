@@ -7,6 +7,30 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 
 # PocketHost — H2.1 version manager, accepted source and G3 hold
 
+## H2.1 physical version-engine acceptance — 2026-11-07
+
+- Owner's SSH backup comparison: `G3_BACKUP_VERIFIED`.
+- Local Agent live owner/site/backup dry run
+  `pockethost-h21-g3-owner-backup-dryrun-20261107-v1`:
+  `done/0 PASS`; H2 preview and both original user sites
+  unchanged, six services running.
+- Disposable physical Termux engine acceptance
+  `pockethost-h21-g3-isolated-physical-version-smoke-20261107-v2`:
+  `done/0 PASS`; three releases, real archived GET/HEAD
+  HTML/JS, Restore, single-use Rollback, protected prune
+  rejection, obsolete pruning, subsequent restore and
+  owner-verified fixture cleanup.
+- The first fixture script had a test-only malformed URL;
+  the fixture was safely cleaned up. The corrected
+  `v2` passed. No original project process or data changed.
+- H2.1 application G2 and native documentation gates
+  are closed. **G3 panel cutover and LAN/UI acceptance
+  remain separately open**, and require a permitted
+  H2-fallback transaction, after which the original
+  site hashes and services must be rechecked.
+
+[Physical G3 evidence](checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
+
 ## Latest H2.1 G3 preparation — native and physical evidence
 
 - Exact-SHA documentation gate
