@@ -70,7 +70,7 @@ identity. The PhotoMap adapter is still disabled for live execution. One process
 group and a bounded observed child tree do not prove the absence of reparented
 processes; physical acceptance and full rollback remain mandatory.
 
-## Observability architecture — proposed O1
+## Observability architecture — source candidate O1
 
 A registered `observability` module will normalize
 admitted read-only observations into bounded series.
@@ -85,6 +85,8 @@ Foreground bounded sampling, timestamps, honest
 missing/permission-denied states and limited
 history are required. Process observation is
 not ownership or permission to signal.
-This is a **planned** architecture only.
+The first on-demand source candidate exists, but remains **unverified on
+Samsung for its final SHA**. There is no background daemon, ownership
+inference or automated recovery.
 See [ADR-0010](adr/0010-read-only-observability.md)
 and [roadmap](ROADMAP.md).

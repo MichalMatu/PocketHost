@@ -77,6 +77,10 @@ See the [current handoff](HANDOFF_NEXT_CHAT.md) and
 
 ## O1 Observability acceptance
 
+Source candidates were committed during the O1 sprint. Exact-SHA
+`check:all` and physical availability are **not accepted** until a
+terminal Samsung receipt exists for the final code and documentation HEAD.
+
 New host/process metrics must pass negative
 tests for inaccessible Android `/proc` and
 `/sys`, stale or missing readings, PID reuse,

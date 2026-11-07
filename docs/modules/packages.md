@@ -27,7 +27,7 @@ No automatic `pkg install`, `pkg upgrade`, repository changes or arbitrary comma
 
 Tests cover explicit approval, allowlist and no-op paths; installation remains disabled in first milestone.
 
-## O1 Package Inventory — proposed
+## O1 Package Inventory — source candidate
 
 Expose read-only bounded Termux, npm/Node
 and Python installed versions with provenance.
@@ -41,4 +41,11 @@ behind `host`; no automatic package install,
 upgrade, repository mutation or global Termux
 changes. Keep rolling-release host upgrades
 separate from application dependencies.
+The host source candidate runs only fixed read-only `dpkg-query`,
+`node`/`npm`, `python3 -m pip list` and cached `apt list --upgradable`
+arguments, with timeouts and bounded output. Installed Termux packages,
+global npm metadata and pip metadata are sanitized before display.
+Cached update hints are explicitly **unverified**, never a claim that
+the host is up to date. No package changes, network refresh or installs
+are performed. Native source and actual device acceptance remain pending.
 See [ADR-0010](../adr/0010-read-only-observability.md).

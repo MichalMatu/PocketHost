@@ -23,7 +23,7 @@ No unrestricted filesystem reads, secret dumps or hidden repairs.
 
 Tests cover truncated output, permissions, timeouts, secret redaction.
 
-## O1 Runtime Diagnostics — proposed
+## O1 Runtime Diagnostics — partial source candidate
 
 Reuse structured runtime events and dry-run
 recovery decisions to provide a bounded,
@@ -35,4 +35,9 @@ Tag every event with stable safe identity,
 timestamp, event code and source. Retain
 explicit unknown states; no automatic
 signals, claim deletion or service restart.
+The on-demand dashboard consumes the existing bounded, structured
+PhotoMap TEST runtime event history **without starting PhotoMap**. Event
+fields are projected onto a strict safe allowlist, preventing extra
+JSON properties from reaching the browser. No persistent cross-runtime
+crash/timeout timeline or automated recovery is implemented yet.
 See [ADR-0010](../adr/0010-read-only-observability.md).

@@ -62,7 +62,7 @@ Python guest, disposable SQLite and runtime arguments now belong to
 `photomap-runtime-plan.ts`, separate from the process supervisor. This is a
 source-only candidate; no live PhotoMap start was approved.
 
-## O1 Host Monitor and Process Inspector — proposed
+## O1 Host Monitor and Process Inspector — source candidate
 
 Extend the existing fixed read-only snapshot
 with bounded CPU delta sampling, RAM, disk,

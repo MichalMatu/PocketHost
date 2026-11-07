@@ -31,6 +31,12 @@ Codex, Work or Mac/Linux PocketHost execution.
 
 ## Sprint O1 — functional vertical slices
 
+Implemented as a source candidate in `host`, `shared`, `observability`,
+`apps/admin` and targeted negative tests. Sampling remains request-driven.
+The `/observability` route and GET-only loopback development endpoint are
+not production-exposed APIs. New source has **no completed native acceptance**
+until the final exact-SHA Samsung result is recorded.
+
 1. **Host Monitor — `host`:** CPU delta, RAM,
    storage, optional battery and network, runit;
    timestamp, provenance, missing-data handling.

@@ -31,7 +31,7 @@ has no direct OS or shell access.
 - `config`: validated configuration.
 - `diagnostics`: structured redacted event
   history and dry-run recovery information.
-- `observability`: new **proposed aggregation**
+- `observability`: source-candidate aggregation
   of admitted snapshots and bounded time series.
 - `ai`: future scoped API, currently disabled.
 - `ui` / `apps/admin`: typed dashboard views.

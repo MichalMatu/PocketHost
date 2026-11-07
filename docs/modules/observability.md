@@ -30,7 +30,7 @@ The five O1 capabilities retain their owner modules:
 it cannot read from other feature modules' internals or
 execute host commands.
 
-## Proposed data contract
+## Implemented source contract
 
 Provide snapshot version, observed timestamp, source, unit,
 bounded history and state `ok`, `stale`, `unavailable` or
@@ -41,6 +41,15 @@ Android process listing. Rate, payload and retention
 limits must be explicit.
 
 ## Acceptance
+
+`src/modules/observability/overview.ts` retains at most 36 on-demand
+CPU/RAM samples, 20 sanitized runtime events and 12 alerts. PID identity
+comparison includes start ticks. Data never grants control. The original
+structured PhotoMap TEST event reader is reused read-only; no second
+process lifecycle mechanism has been introduced. Diagnostics for other
+application types, persistent historical snapshots and complete Android
+process visibility are not yet delivered.
+
 
 Require deterministic negatives for stale data, partial
 Android `/proc` visibility, redaction, PID reuse, cardin-ality

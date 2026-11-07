@@ -14,7 +14,7 @@ passed 101/101 Node and 16/16 UI tests on Samsung;
 a separate owned P3 HTTP Publish/Rollback/Stop/Start
 cycle passed. This is not production acceptance.
 
-## O1 — Observability: next autonomous sprint
+## O1 — Observability: source MVP, Samsung acceptance pending
 
 **Observe and diagnose first; automate only after
 separate safety and release gates.**
@@ -40,6 +40,11 @@ separate safety and release gates.**
 7. **O1.6 Acceptance:** targeted negative tests,
    native Samsung results, exact-SHA `check:all`,
    browser/device evidence and a single checkpoint.
+
+Source candidates now include on-request CPU/battery/network sampling, bounded
+process identity counters, installed package inventory, existing runtime
+event consumption and a React dashboard. Real Samsung O1 acceptance,
+full exact-HEAD QA and browser verification remain pending.
 
 Deliver useful vertical slices rather than mock screens.
 Use the existing module owners plus the new pure
