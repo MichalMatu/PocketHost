@@ -23,7 +23,32 @@ Phone integrity, existing IleStoi.pl and Local Agent processes, filesystem, Term
 
 ## Deferred threats
 
-Public tunnels, DNS/API credentials, publishing ZIP archives, dependencies fetched by AI, multi-tenant isolation, package installs, commercial hosting uptime, automatic updates and APK distribution are **not implemented** and require dedicated review.
+Public tunnels, DNS/API credentials, arbitrary backend execution from archives, dependencies fetched by AI, authenticated multi-tenancy, package installs, commercial hosting uptime, automatic updates and APK distribution are **not implemented** and require dedicated review.
+
+
+## H2 bounded static ZIP and folder ingestion — accepted device scope
+
+H2 adds only static site bundles through the explicit PocketHost-owned
+site API. The server accepts at most 6 MiB ZIP archives or bounded
+browser-selected folder assets, validates central directory paths,
+rejects traversal/symlinks and corrupt CRC, restricts allowed extensions,
+enforces 100 files, 8 MiB total uncompressed content and 2 MiB per asset,
+and requires a root `index.html`.
+
+Eight sites occupy separate `127.0.0.1` ports. Processes are managed
+only when their exact owner ID, instance, port, cwd, command line,
+PID and start ticks are verified. The existing manual private-LAN
+gateway only proxies GET/HEAD previews after that ownership check;
+administrative writes require the existing exact local Origin,
+verified subnet and a deliberate intent header.
+
+**This is not user authentication.** Any device admitted to the
+trusted home subnet may still reach the login-free HTTP admin panel.
+It must not be WAN-forwarded, reverse-proxied publicly or connected
+to an untrusted network. An authenticated control plane is a later
+milestone, not a capability implicitly provided by the H2 marker.
+
+See [H2 physical checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
 
 ## Incident rule
 
