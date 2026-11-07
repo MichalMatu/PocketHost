@@ -159,19 +159,33 @@ The six existing services stay unmanaged.
 
 ## H3 parallel feature branch — Termux Control Center
 
-The isolated `feature/h3-termux-control-center-20261107` branch adds four read-only
-tabs (Packages, Files, Services, Backups), reusing O1 inventory, H2 exact-owned
-static site releases, runit observations and fixed optional-tool detection.
-No extra package is installed. Files expose only verified active-release asset
-names and sizes, never arbitrary Termux paths. Immutable release history
-is a recovery aid, not an independent backup. Restic and ttyd are optional,
-detected but not executed.
+The isolated `feature/h3-termux-control-center-20261107` branch adds a
+working four-tab administration candidate without a password prerequisite:
 
-Until authenticated admin transport and reviewed scoped capabilities exist:
-no package install/update, foreign service signals, generic filesystem
-writes, Restic backup/restore, terminal, autostart or new network listener.
-Test the branch through an independent QA checkout on Samsung without
-switching the live panel. See the H3 branch checkpoint.
+- **Packages:** reuse native `apt-get`, `dpkg-query` and `apt-cache`,
+  including bounded full inventory, available package search, simulated
+  install/remove/upgrade plans and user-confirmed execution.
+- **Files:** display H2-owned active-release assets and provide a separate
+  owned scratch workspace with navigation, text editor, rename, copy,
+  import/export (128 KiB) and deletion.
+- **Services:** reuse the verified H2 own-site lifecycle and logs. Inspect
+  runit services and explicitly register non-protected, exact-target
+  services before enabling Start/Stop/Restart/Unregister.
+- **Backups:** create, list, integrity-verify, restore and delete H3
+  workspace snapshots. Preserve the pre-restore workspace as a sidecar.
+  H2 immutable releases remain version history, not system backups.
+
+All four features are actual source code, not placeholders. No package or
+service mutation is run during QA. Six protected Termux services and both
+existing user-created sites remain unchanged. The current trusted-LAN panel
+has no login, as explicitly requested by the owner. The H3 API uses typed
+operations, origin/host checks and explicit per-target UI confirmations
+without introducing an authentication requirement.
+
+Independent system-wide Restic backups, arbitrary Termux directories,
+terminal exposure and AI agent API remain distinct integrations to evaluate
+after native QA. Do not deploy this branch over the existing live panel
+without a separate preservation gate. See the H3 checkpoint.
 
 ## H4 — authenticated agent API: later milestone
 
