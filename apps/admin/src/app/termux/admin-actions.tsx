@@ -22,6 +22,7 @@ async function action<T>(payload: { action: string; name?: string; path?: string
 }
 async function inspect<T>(mode: string, location = ""): Promise<T> {
   const request = mode === "files" ? endpoint + "?mode=files&path=" + encodeURIComponent(location) :
+    mode === "search-packages" ? endpoint + "?mode=search-packages&query=" + encodeURIComponent(location) :
     endpoint + "?mode=" + mode
   const response = await fetch(request, { method: "GET", credentials: "same-origin", cache: "no-store" })
   if (!response.ok) throw new Error("Inventory cannot be inspected.")
@@ -405,5 +406,73 @@ export function RunitServiceActions() {
       </div>}
     </div>)}
     <Feedback error={error} done={done} />
+  </div>
+}
+
+type InstalledPackage = { name: string; version: string }
+type AvailablePackage = { name: string; description: string }
+export function PackageCatalog() {
+  const [installed, setInstalled] = React.useState<{ packages: InstalledPackage[]; truncated: boolean } | null>(null)
+  const [found, setFound] = React.useState<{ packages: AvailablePackage[]; truncated: boolean } | null>(null)
+  const [filter, setFilter] = React.useState("")
+  const [query, setQuery] = React.useState("")
+  const [busy, setBusy] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
+  const loadInstalled = async () => {
+    if (busy) return
+    setBusy(true); setError(null)
+    try {
+      const result = await inspect<{ packages: InstalledPackage[]; truncated: boolean }>("packages")
+      if (!Array.isArray(result.packages) || result.packages.length > 700)
+        throw new Error("Invalid package inventory")
+      setInstalled(result)
+    } catch { setError("Full installed-package inventory is unavailable.") }
+    finally { setBusy(false) }
+  }
+  const search = async () => {
+    if (busy || !/^[a-z0-9][a-z0-9+.-]{0,39}$/.test(query)) return
+    setBusy(true); setError(null)
+    try {
+      const result = await inspect<{ packages: AvailablePackage[]; truncated: boolean }>("search-packages", query)
+      if (!Array.isArray(result.packages) || result.packages.length > 60)
+        throw new Error("Invalid package search")
+      setFound(result)
+    } catch { setError("Termux apt package catalog is unavailable.") }
+    finally { setBusy(false) }
+  }
+  const visible = installed?.packages.filter(item => item.name.toLowerCase().includes(filter.toLowerCase().trim())) ?? []
+  return <div className="space-y-3 rounded-md border p-3">
+    <h3 className="text-sm font-medium">Full Termux package catalog</h3>
+    <Button size="sm" variant="outline" disabled={busy} onClick={() => void loadInstalled()}>
+      Load installed Termux packages
+    </Button>
+    {installed && <>
+      <Input aria-label="Filter complete package inventory" placeholder="Filter installed software" value={filter}
+        onChange={event => setFilter(event.target.value)} />
+      <p className="text-muted-foreground text-xs">
+        {installed.packages.length} installed Termux packages {installed.truncated ? "(truncated)" : "(complete within the catalog limit)"}
+      </p>
+      <div className="max-h-64 overflow-auto">
+        {visible.map(item => <div key={item.name} className="flex flex-wrap justify-between gap-2 border-b py-2 text-xs">
+          <span>{item.name}</span><span className="font-mono">{item.version}</span>
+        </div>)}
+      </div>
+    </>}
+    <div className="flex flex-wrap gap-2">
+      <Input className="min-w-40 flex-1" aria-label="Search available Termux software" placeholder="Find available packages" value={query}
+        onChange={event => setQuery(event.target.value.toLowerCase())} />
+      <Button size="sm" disabled={busy || !/^[a-z0-9][a-z0-9+.-]{0,39}$/.test(query)}
+        onClick={() => void search()}>Search catalog</Button>
+    </div>
+    {found && <div className="max-h-64 space-y-1 overflow-auto">
+      {found.packages.map(item => <div key={item.name} className="border-b py-2 text-xs">
+        <p className="font-medium">{item.name}</p>
+        <p className="text-muted-foreground">{item.description}</p>
+      </div>)}
+      {found.packages.length === 0 && <p className="text-sm">No packages found.</p>}
+      {found.truncated && <p className="text-xs">Search results truncated.</p>}
+    </div>}
+    {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+    <p className="text-muted-foreground text-xs">Uses dpkg-query and apt-cache directly, without reimplementing package resolution.</p>
   </div>
 }
