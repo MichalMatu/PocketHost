@@ -83,3 +83,26 @@ Use the existing module owners plus the new pure
 Each milestone requires exact-SHA source and
 physical acceptance. See [development plan](DEVELOPMENT_PLAN.md)
 and [ADR-0010](adr/0010-read-only-observability.md).
+## H1 — Hosting MVP: one owned application, source candidate
+
+The current large functional sprint is scoped to the **explicitly registered**
+`pockethost-demo` static application only. It adds a browser-driven
+Create → Start → HTTP Health → Publish v1/v2 → one-step Rollback →
+Restart → Stop flow, a real project inventory entry, process-verified
+details, a bounded persistent deployment history and owned runtime logs.
+
+The existing P3 backend, ownership marker, loopback listener and trusted-LAN
+gateway are reused. The PhotoMap TEST catalog remains read-only and the six
+external services are excluded from every mutation. Imported admin template
+routes are retained and labeled as examples.
+
+**Status: source implemented, Samsung exact-SHA QA and guarded LAN
+deployment not yet accepted.** The previous verified O1 panel stays the
+production/dev baseline until the new G2 and G3 results exist. Version
+publication is restricted to two built-in HTML documents, not arbitrary
+application uploads or multiple projects.
+
+After H1 device acceptance: Package CMS, Termux environment controls,
+secure Local Agent-backed AI API, multi-project adapters, arbitrary
+code uploads, DNS/HTTPS, PhotoMap release work and autostart are separate
+milestones. No current sprint item authorizes any of them.
