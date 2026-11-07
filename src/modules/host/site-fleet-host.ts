@@ -457,7 +457,10 @@ export class SiteFleetHost {
       const buffer = Buffer.alloc(count);
       readSync(fd, buffer, 0, count, fstatSync(fd).size - count);
       return buffer.toString('utf8').split('\n').filter(Boolean).slice(-25)
-        .map(line => line.replace(/[\x00-\x1f\x7f]/g, '').slice(0, 200));
+        .map(line => [...line].filter(char => {
+          const code = char.charCodeAt(0);
+          return code >= 32 && code !== 127;
+        }).join('').slice(0, 200));
     } finally { closeSync(fd); }
   }
 }
