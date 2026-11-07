@@ -7,6 +7,31 @@ purpose: Canonical H2.1 G2 PASS and live G3 hold; retain H2 H1 O1 evidence
 
 # PocketHost — H2.1 version manager, accepted source and G3 hold
 
+## Latest H2.1 G3 preparation — native and physical evidence
+
+- Exact-SHA documentation gate
+  `pockethost-h21-final-docs-pass-51d993a-20261107-v1`
+  returned terminal `done/0 PASS`: structure, docs, boundaries,
+  Markdown and Prettier passed at `51d993a`.
+- The owner verified both original site file-tree digests via
+  SSH and all six protected services, plus the unchanged H2
+  site identities, ports, PID/start ticks and release pointers.
+- The read-only candidate check showed target H2.1 commit
+  `89ebf99` in the QA checkout but initially absent from
+  the live H2 Git object database.
+- Local Agent task `pockethost-h21-g3-live-object-stage-20261107-v1`
+  returned terminal `done/0 PASS`: fetched the exact approved
+  H2.1 commit and critical files **into live Git object storage only**.
+  The running H2 source stayed `750c4b3`; live worktree clean,
+  no process restart or original-site modification.
+- **Still required:** a separately accepted guarded panel
+  switch with H2 fallback and a disposable third-site
+  history/preview/restore/rollback/prune/cleanup acceptance.
+  No G3 release result exists. Do not reissue closed QA or
+  stage tasks.
+
+[Full evidence and safety gate](checkpoints/2026-11-07-h21-g3-safety-hold-recheck.md).
+
 ## Closeout of this chat's H2.1/G3 scope — 2026-11-07
 
 **Do not repeat completed H2.1 G2 or preflights merely to
