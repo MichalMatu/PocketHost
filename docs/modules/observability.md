@@ -11,8 +11,8 @@ purpose: Define the new read-only aggregation and history module
 
 Aggregate **already admitted read-only** metrics and events
 into versioned snapshots and bounded time series. This is a
-registered module contract **without implemented collectors,
-background sampling or a completed UI**.
+registered module with source-candidate in-memory aggregation, live
+probes and a dashboard. None is device accepted on the final SHA.
 
 The five O1 capabilities retain their owner modules:
 
@@ -50,9 +50,8 @@ process lifecycle mechanism has been introduced. Diagnostics for other
 application types, persistent historical snapshots and complete Android
 process visibility are not yet delivered.
 
-
 Require deterministic negatives for stale data, partial
-Android `/proc` visibility, redaction, PID reuse, cardin-ality
+Android `/proc` visibility, redaction, PID reuse, cardinality
 and retention; real read-only Samsung measurements
 and exact-SHA source gates. Preserve six external
 services and PhotoMap port 8010. See

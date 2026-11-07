@@ -20,7 +20,7 @@ const process = z.object({
   ownership: z.enum(["self", "unverified"]),
 }).strict()
 const pkg = z.object({
-  name: z.string().regex(/^[a-zA-Z0-9+._-]{1,81}$/),
+  name: z.string().regex(/^@?[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60}(?:\/[a-zA-Z0-9][a-zA-Z0-9._+-]{0,60})?$/),
   version: z.string().min(1).max(100),
   ecosystem: z.enum(["termux", "node", "python"]),
 }).strict()

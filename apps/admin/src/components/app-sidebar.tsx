@@ -17,6 +17,7 @@ import {
   Users,
   ServerCog,
   Globe2,
+  Activity,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
@@ -37,6 +38,7 @@ const data = {
       label: "PocketHost",
       items: [
         { title: "Host overview", url: "/host", icon: ServerCog },
+        { title: "Observability", url: "/observability", icon: Activity },
         { title: "My test site", url: "/owned-site", icon: Globe2 },
         { title: "Managed projects", url: "/managed-projects", icon: ServerCog },
       ],

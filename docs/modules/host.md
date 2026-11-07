@@ -64,19 +64,18 @@ source-only candidate; no live PhotoMap start was approved.
 
 ## O1 Host Monitor and Process Inspector — source candidate
 
-Extend the existing fixed read-only snapshot
-with bounded CPU delta sampling, RAM, disk,
-optional battery/network and runit observations.
-For permission denial return a typed
-unavailable state, not zero. Do not require
-Shizuku or change Android permissions.
+The host-only `observability-probes.ts` adds an on-request 180 ms CPU delta
+and reads fixed battery, network and filesystem data. Android restricted
+counters have typed unavailable or permission-denied states; missing data
+is not zero and no Android privilege changes are requested.
 
-The Process Inspector may read only bounded
-accessible process/resource data in `host`.
-PID and start ticks support identification,
-but do not independently establish ownership.
-Externally owned and unknown processes remain
-read-only. Never accept arbitrary signals,
-paths, commands or unrestricted PID inspection
-from HTTP callers. See
-[ADR-0010](../adr/0010-read-only-observability.md).
+The Process Inspector walks at most 96 accessible numeric `/proc`
+entries and returns only PID, PPID, start ticks, CPU ticks, optional RSS
+and self/unverified classification. Kernel process name, command line,
+working directory and private paths are never returned. A PID or a
+process tree is not ownership evidence; no signal operation is exposed.
+
+The installed Termux tool adapter executes only reviewed absolute
+binaries with fixed arguments and bounded output. Native device read
+availability and the exact final SHA are **not yet accepted**.
+See [ADR-0010](../adr/0010-read-only-observability.md).

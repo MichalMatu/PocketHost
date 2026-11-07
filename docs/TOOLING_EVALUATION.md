@@ -60,3 +60,30 @@ Standard Linux Playwright Chromium downloads do not establish working Termux/And
 7. Trial OpenVisio **separately**, only if its native dependencies install without disruptive changes.
 
 All statuses remain **proposed** until an actual on-phone Local Agent task result confirms them.
+
+## O1 open-source observability inspirations (license screen, 2026-11-07)
+
+- [tdash](https://github.com/inchei/tdash): upstream
+  `LICENSE` is GPL-3.0. Useful design cue: compact host counters and
+  service-state overview. Do **not** copy process/service commands,
+  code or automation permissions.
+- [Android Dev Hub / OpenMonitor reference](https://github.com/1orz/OpenMonitor):
+  this inspected Android monitor is GPL-3.0. Permission-constrained
+  Android telemetry is a useful design cue; this reference has **not**
+  been proven to be the exact separately named Android Dev Hub project.
+  No implementation copied.
+- [Coolify](https://github.com/coollabsio/coolify): upstream packaging,
+  deployment and managed-service lifecycle patterns inform future
+  authorization reviews only. No Coolify code or command paths copied;
+  license/version not conclusively verified in this evaluation.
+- [CasaOS](https://github.com/IceWhaleTech/CasaOS): upstream
+  `LICENSE` is Apache-2.0; its module-oriented home dashboard is a
+  design reference, not a drop-in Android runtime.
+- [Termux App Store](https://github.com/sabamdarif/Termux-AppStore):
+  upstream `LICENSE` is GPL-3.0; inventory and update-state
+  separation is applicable, but package installation scripts are out
+  of scope.
+
+These are **pattern studies only**. O1 uses original PocketHost code,
+no third-party implementation or bundled framework. Verify the exact
+commit/license and Termux feasibility before any future code reuse.
