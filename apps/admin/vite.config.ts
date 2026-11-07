@@ -5,6 +5,7 @@ import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
+import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -627,6 +628,7 @@ function termuxAdminApi(): Plugin {
   const services = new TermuxServiceAdmin()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
+  const terminal = new TermuxTerminal()
   let operations: Promise<void> = Promise.resolve()
   const serialize = <T,>(job: () => Promise<T> | T): Promise<T> => {
     const result = operations.then(job, job)
@@ -691,6 +693,7 @@ function termuxAdminApi(): Plugin {
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
               mode === "file-roots" ? { roots: fileRoots.available() } :
+              mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "browse-root" ? fileRoots.list(
                 (url.searchParams.get("root") ?? "") as FileRoot, url.searchParams.get("path") ?? "",
               ) :
@@ -732,6 +735,11 @@ function termuxAdminApi(): Plugin {
                 input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
                 input.path,
               ) }
+            }
+            if (input.action === "terminal") {
+              if (input.name === "start") return { terminal: await terminal.start() }
+              if (input.name === "stop") return { terminal: terminal.stop() }
+              throw new RangeError("Invalid terminal action")
             }
             if (input.action === "full-file") {
               const root = (input.root ?? "") as FileRoot
@@ -799,7 +807,14 @@ function termuxAdminApi(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
-  server: { host: "127.0.0.1", port: 8787, strictPort: true },
+  server: {
+    host: "127.0.0.1",
+    port: 8787,
+    strictPort: true,
+    proxy: {
+      "/terminal": { target: "http://127.0.0.1:18798", changeOrigin: true, ws: true },
+    },
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "./src"),
