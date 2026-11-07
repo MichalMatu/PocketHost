@@ -42,3 +42,12 @@ Staged Debian rootfs copies **do now exist** (`debian-arm64-v1` and `debian12-ph
 The reusable `ManagedRuntimeSnapshot`, `ManagedRuntimePort` and `createManagedRuntime` contracts separate ownership/state-machine policy from an app adapter. PhotoMap now supplies only its fixed identity, port, release and legacy errors to this engine. A second synthetic project receives the same fail-closed policy in deterministic tests without importing PhotoMap constants. This is **source refactoring**, not activation of the disabled PhotoMap host process.
 
 Next extraction target: app-neutral host process identity/PRoot child evidence, followed by versioned adapter registration and schema validation. No app may be adopted by mere process/port discovery.
+
+## Application-neutral registry — 2026-11-07
+
+`createManagedRuntimeRegistry` accepts only explicit unique ID/port bindings
+implementing the shared runtime port. An unrelated synthetic project uses the
+same fail-closed state machine in tests without PhotoMap imports. The separate
+PhotoMap profile supplies its fixed identity and release; it does not define
+or enable the generic engine. Runtime registration is not discovery, adoption,
+provisioning, publication or permission to activate a disabled import.
