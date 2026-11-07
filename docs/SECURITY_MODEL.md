@@ -90,3 +90,8 @@ Restic full backups exclude the local repository and encryption key,
 and restore only to staging. Independent key recovery and off-device
 backup media are not yet accepted. No live service was modified
 by creating this source candidate.
+
+The trusted-LAN gateway strips the `X-PocketHost-Agent-Intent`
+header before forwarding requests to Vite. Only a same-user
+loopback client such as an authorized Local Agent host task can
+send that non-browser intent without an Origin.
