@@ -76,3 +76,17 @@ never included in API responses or diagnostic output. Losing both
 the device and its local key means encrypted backups cannot be
 recovered. Independent recovery-key storage remains essential.
 
+## H3.4 privileged local controls — owner-approved, unshipped
+
+The new full File Manager and ttyd terminal deliberately provide
+Termux-user privileges. A LAN-connected device can therefore access
+files and launch shell commands without a password. This is **not**
+safe on untrusted Wi-Fi and must never be exposed publicly.
+
+Files use exactly chosen home/prefix/shared roots, reject symlink
+traversal and require explicit targets. ttyd starts manually with
+one client and a fixed loopback listener, not as a boot service.
+Restic full backups exclude the local repository and encryption key,
+and restore only to staging. Independent key recovery and off-device
+backup media are not yet accepted. No live service was modified
+by creating this source candidate.
