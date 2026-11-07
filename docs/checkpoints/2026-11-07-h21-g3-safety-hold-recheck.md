@@ -121,3 +121,48 @@ The sprint is **not physically closed**. No H3 or H4 work begins.
 
 Source detail: [H2.1 checkpoint](2026-11-07-h21-release-manager-source.md).
 Canonical continuation: [handoff](../HANDOFF_NEXT_CHAT.md).
+
+## One-sprint H2.1 + G3 execution request — renewed owner authorization
+
+The owner requested H2.1 and G3 together as **one autonomous sprint**.
+This is authorization to carry out an otherwise permitted, properly guarded
+release; it does **not** override a tool-enforced safety rejection.
+
+Repository/transport verification for the request:
+
+- Verified initial `PocketHost/main`: `f657cc91406b44d456527f887040115693b69c70`
+  (documentation-only follow-up to accepted H2.1 application SHA `89ebf99`).
+- Re-read the exact Samsung task result
+  `pockethost-h21-g3-readonly-recheck-20261107-v1`:
+  **terminal `done/0 PASS`**, completed at 11:35:54 UTC.
+- Queried the installation-specific private `tasks/` and
+  `task-results/` collection: there was **no H2.1 G3
+  deployment request or terminal G3 receipt**. Only H2.1 G2
+  and completed read-only preflights were present.
+- Reviewed H2.1 `SiteFleetHost` archive/restore/prune implementation,
+  the release API route and the negative tests. Their already
+  accepted Samsung G2 evidence is retained, not rerun.
+- The live admin Vite API is hardcoded to the existing
+  `127.0.0.1:8787` origin, and `SiteFleetHost` defaults to
+  the same owner site root. A second full admin process is not an
+  isolated substitute for a reviewed cutover. Changing the
+  transport/encoding or splitting the previously rejected G3
+  effect would evade the previous tool block and is forbidden.
+
+**Decision: G3 HOLD — no safe, independently permitted deployment
+mechanism became available in this review.** No new G3 command
+was published, and no user site was restarted, restored, pruned
+or removed. The renewed request does not justify pretending a
+previously rejected host mutation was executed. Do not label this
+sprint physically accepted, nor start H3 from a false H2.1 PASS.
+
+A future **genuinely permitted** G3 must still meet the recorded
+five invariants: (1) exact current panel owner and SHA/identity,
+(2) two original sites' process IDs/ticks/ports, releases and
+bytewise file-tree digests unchanged, (3) six protected services
+running and PhotoMap TEST stopped, (4) safe H2 fallback,
+(5) a disposable third site's three-version HTTP/API workflow
+and exact-owner cleanup. User Mac Chrome evidence remains separate.
+
+This addendum records a **safety hold**, not a successful
+deployment or a new terminal device test.
