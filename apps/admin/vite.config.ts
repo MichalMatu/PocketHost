@@ -782,11 +782,14 @@ function termuxAdminApi(): Plugin {
               if (input.name === "restore") return { result: await restic.restoreToStaging(input.path ?? "") }
               if (input.name === "forget") return { result: await restic.forget(input.path ?? "") }
             }
+            if (input.action === "service-logs") {
+              return services.logs(input.path ?? "")
+            }
             if (input.action === "service") {
-              if (!input.name || !["register","unregister","start","stop","restart"].includes(input.name))
+              if (!input.name || !["register","unregister","start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")
               return await services.apply(
-                input.name as "register" | "unregister" | "start" | "stop" | "restart",
+                input.name as "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable",
                 input.path ?? "",
               )
             }
