@@ -84,6 +84,7 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
         origin: request.headers.origin ?? null,
         authorizationForwarded: !!request.headers.authorization,
         intent: request.headers['x-pockethost-intent'] ?? null,
+        agentIntent: request.headers['x-pockethost-agent-intent'] ?? null,
       }),
     );
   });
@@ -110,6 +111,12 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
     assert.equal(response.status, 200);
     body = await response.json();
     assert.equal(body.authorizationForwarded, false);
+    response = await request('/api/v1/termux-admin?mode=agent-capabilities', {
+      headers: { 'X-PocketHost-Agent-Intent': 'termux-owner-agent' },
+    });
+    assert.equal(response.status, 200);
+    body = await response.json();
+    assert.equal(body.agentIntent, null, 'LAN headers may not impersonate the on-device Local Agent');
     assert.equal(await requestWithHeaders(port, { Host: 'evil.example' }), 403);
     assert.equal(
       await requestWithHeaders(port, {
