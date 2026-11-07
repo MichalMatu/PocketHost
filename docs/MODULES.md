@@ -74,3 +74,17 @@ needs device QA before being marked accepted.
 Full Samsung source and live LAN acceptance passed
 on H2 SHA `750c4b3`; the owner's Chrome file-picker
 gate remains open. See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
+
+## H3.4 parallel source candidate
+
+The host adapter now implements explicit Termux HOME/PREFIX/shared
+filesystem roots, selected registered runit units with autostart/logs,
+fixed Restic backup scopes, a manually launched loopback ttyd process
+and a typed local agent request contract. The CMS renders these in
+dedicated tabs. No feature module independently invokes a shell or
+imports host filesystem primitives.
+
+This source candidate is owner-approved without a password dependency.
+It neither changes the installed Local Agent nor grants any new public
+network listener. Full Samsung source and live device validation
+remain distinct gates.
