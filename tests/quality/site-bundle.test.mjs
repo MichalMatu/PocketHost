@@ -2,8 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { deflateRawSync } from 'node:zlib';
 import {
-  decodeSiteZip, decodeSiteFolder, validateSiteBundle,
-  MAX_SITE_BYTES, MAX_SITE_FILES,
+  decodeSiteZip,
+  decodeSiteFolder,
+  validateSiteBundle,
+  MAX_SITE_BYTES,
+  MAX_SITE_FILES,
 } from '../../src/modules/sites/site-bundle.ts';
 
 function crc32(bytes) {
@@ -11,7 +14,7 @@ function crc32(bytes) {
   for (const value of bytes) {
     crc ^= value;
     for (let bit = 0; bit < 8; bit++) {
-      crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
     }
   }
   return (crc ^ 0xffffffff) >>> 0;
@@ -66,34 +69,63 @@ test('H2 ZIP: deflated and stored files, nested assets and one common root', () 
     { name: 'MySite/css/site.css', bytes: 'body{color:red}', method: 0 },
   ]);
   const files = decodeSiteZip(zip);
-  assert.deepEqual(files.map(file => file.name), ['index.html', 'css/site.css']);
+  assert.deepEqual(
+    files.map((file) => file.name),
+    ['index.html', 'css/site.css'],
+  );
   assert.equal(files[0].bytes.toString(), index);
   assert.equal(files[1].bytes.toString(), 'body{color:red}');
 });
 
 test('H2 ZIP: rejects traversal, absolute, hidden, backslash, unsupported formats', () => {
   for (const name of [
-    '../outside.html', '/etc/passwd', '.private.html', 'a/../index.html',
-    'a\\index.html', 'index.php', 'a//index.html', 'C:/index.html',
+    '../outside.html',
+    '/etc/passwd',
+    '.private.html',
+    'a/../index.html',
+    'a\\index.html',
+    'index.php',
+    'a//index.html',
+    'C:/index.html',
   ]) {
-    assert.throws(() => decodeSiteZip(archive([
-      { name: 'index.html', bytes: index }, { name, bytes: 'foreign' },
-    ])), /Unsafe|Unsupported|Invalid/);
+    assert.throws(
+      () =>
+        decodeSiteZip(
+          archive([
+            { name: 'index.html', bytes: index },
+            { name, bytes: 'foreign' },
+          ]),
+        ),
+      /Unsafe|Unsupported|Invalid/,
+    );
   }
 });
 
 test('H2 ZIP: rejects Unix symlinks, bad CRC, duplicate case folded assets', () => {
-  assert.throws(() => decodeSiteZip(archive([
-    { name: 'index.html', bytes: index },
-    { name: 'css/link.css', bytes: 'outside', mode: 0o120777 },
-  ])), /unsafe/i);
-  assert.throws(() => decodeSiteZip(archive([
-    { name: 'index.html', bytes: index, badCrc: true },
-  ])), /integrity/);
-  assert.throws(() => decodeSiteZip(archive([
-    { name: 'index.html', bytes: index },
-    { name: 'INDEX.HTML', bytes: 'forged' },
-  ])), /Duplicate/);
+  assert.throws(
+    () =>
+      decodeSiteZip(
+        archive([
+          { name: 'index.html', bytes: index },
+          { name: 'css/link.css', bytes: 'outside', mode: 0o120777 },
+        ]),
+      ),
+    /unsafe/i,
+  );
+  assert.throws(
+    () => decodeSiteZip(archive([{ name: 'index.html', bytes: index, badCrc: true }])),
+    /integrity/,
+  );
+  assert.throws(
+    () =>
+      decodeSiteZip(
+        archive([
+          { name: 'index.html', bytes: index },
+          { name: 'INDEX.HTML', bytes: 'forged' },
+        ]),
+      ),
+    /Duplicate/,
+  );
 });
 
 test('H2 ZIP: rejects corrupt offsets, oversized file, inflated budget and missing index', () => {
@@ -101,14 +133,22 @@ test('H2 ZIP: rejects corrupt offsets, oversized file, inflated budget and missi
   const directoryOffset = broken.readUInt32LE(broken.length - 6);
   broken.writeUInt32LE(0xffffff00, directoryOffset + 42);
   assert.throws(() => decodeSiteZip(broken), /out of bounds|local header|unsafe ZIP entry/i);
-  assert.throws(() => decodeSiteZip(archive([
-    { name: 'index.html', bytes: Buffer.alloc(2 * 1024 * 1024 + 1) },
-  ])), /unsafe|size|ZIP entry/i);
-  assert.throws(() => decodeSiteZip(archive([
-    { name: 'site.html', bytes: index },
-  ])), /index.html/);
-  assert.throws(() => validateSiteBundle(Array.from({ length: MAX_SITE_FILES + 1 },
-    (_, i) => ({ name: 'asset' + i + '.css', bytes: Buffer.from('x') }))), /count/);
+  assert.throws(
+    () =>
+      decodeSiteZip(archive([{ name: 'index.html', bytes: Buffer.alloc(2 * 1024 * 1024 + 1) }])),
+    /unsafe|size|ZIP entry/i,
+  );
+  assert.throws(() => decodeSiteZip(archive([{ name: 'site.html', bytes: index }])), /index.html/);
+  assert.throws(
+    () =>
+      validateSiteBundle(
+        Array.from({ length: MAX_SITE_FILES + 1 }, (_, i) => ({
+          name: 'asset' + i + '.css',
+          bytes: Buffer.from('x'),
+        })),
+      ),
+    /count/,
+  );
   assert.ok(MAX_SITE_BYTES > 4 * 1024 * 1024);
 });
 
@@ -131,30 +171,50 @@ test('H2 folder: accept browser base64 and collapse common folder root', () => {
       { name: 'site/assets/app.js', base64: Buffer.from('console.log("site")').toString('base64') },
     ],
   });
-  assert.deepEqual(files.map(f => f.name), ['index.html', 'assets/app.js']);
+  assert.deepEqual(
+    files.map((f) => f.name),
+    ['index.html', 'assets/app.js'],
+  );
 });
 
 test('H2 folder: reject arbitrary fields, path injection and malformed base64', () => {
   assert.throws(() => decodeSiteFolder({ files: [], command: 'start' }), /Invalid/);
-  assert.throws(() => decodeSiteFolder({ files: [
-    { name: '../index.html', base64: Buffer.from(index).toString('base64') },
-  ] }), /Unsafe/);
-  assert.throws(() => decodeSiteFolder({ files: [
-    { name: 'index.html', base64: 'BAD@' },
-  ] }), /base64/);
-  assert.throws(() => decodeSiteFolder({ files: [
-    { name: 'index.html', base64: '', path: '/etc' },
-  ] }), /base64/);
+  assert.throws(
+    () =>
+      decodeSiteFolder({
+        files: [{ name: '../index.html', base64: Buffer.from(index).toString('base64') }],
+      }),
+    /Unsafe/,
+  );
+  assert.throws(
+    () => decodeSiteFolder({ files: [{ name: 'index.html', base64: 'BAD@' }] }),
+    /base64/,
+  );
+  assert.throws(
+    () => decodeSiteFolder({ files: [{ name: 'index.html', base64: '', path: '/etc' }] }),
+    /base64/,
+  );
 });
 
 test('H2 static assets are strict and empty index is never a valid release', () => {
-  assert.throws(() => validateSiteBundle([{ name: 'index.html', bytes: Buffer.alloc(0) }]), /index.html/);
-  assert.throws(() => validateSiteBundle([
-    { name: 'index.html', bytes: Buffer.from(index) },
-    { name: 'readme.sh', bytes: Buffer.from('echo owned') },
-  ]), /Unsupported/);
-  assert.throws(() => validateSiteBundle([
-    { name: 'index.html', bytes: Buffer.from(index) },
-    { name: 'index.html', bytes: Buffer.from(index) },
-  ]), /Duplicate/);
+  assert.throws(
+    () => validateSiteBundle([{ name: 'index.html', bytes: Buffer.alloc(0) }]),
+    /index.html/,
+  );
+  assert.throws(
+    () =>
+      validateSiteBundle([
+        { name: 'index.html', bytes: Buffer.from(index) },
+        { name: 'readme.sh', bytes: Buffer.from('echo owned') },
+      ]),
+    /Unsupported/,
+  );
+  assert.throws(
+    () =>
+      validateSiteBundle([
+        { name: 'index.html', bytes: Buffer.from(index) },
+        { name: 'index.html', bytes: Buffer.from(index) },
+      ]),
+    /Duplicate/,
+  );
 });
