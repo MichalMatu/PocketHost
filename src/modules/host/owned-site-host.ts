@@ -231,8 +231,8 @@ export class OwnedDemoHost implements OwnedSitePort {
       url: `http://127.0.0.1:${this.port}/`,
       contentVersion: marker?.contentVersion ?? null,
       previousVersion: marker?.previousVersion ?? null,
-      pid: verified ? marker.process!.pid : null,
-      startTicks: verified ? marker.process!.startTicks : null,
+      pid: verified ? (marker?.process?.pid ?? null) : null,
+      startTicks: verified ? (marker?.process?.startTicks ?? null) : null,
       history: (marker?.history ?? []).slice(-25).reverse(),
     };
   }
