@@ -22,7 +22,7 @@ async function command(name: "start" | "stop"): Promise<Status> {
   const result = await response.json() as { terminal: Status }
   return result.terminal
 }
-export function TermuxTerminalPanel() {
+export function TermuxTerminalPanel({ detected = true }: { detected?: boolean }) {
   const [status, setStatus] = React.useState<Status | null>(null)
   const [error, setError] = React.useState("")
   const [busy, setBusy] = React.useState(false)
@@ -34,7 +34,7 @@ export function TermuxTerminalPanel() {
     return () => { mounted = false }
   }, [])
   const run = async (name: "start" | "stop") => {
-    if (busy || !window.confirm(name === "start"
+    if (busy || !detected || !window.confirm(name === "start"
       ? "Open an interactive Termux shell for this trusted LAN session? Commands have your Termux user's permissions."
       : "End this PocketHost-owned ttyd session?")) return
     setBusy(true); setError("")
@@ -56,8 +56,9 @@ export function TermuxTerminalPanel() {
       launched manually on 127.0.0.1, through the existing private LAN gateway.
       No password prompt, persistent service or public listener.
     </p>
+    {!detected && <p className="text-sm">ttyd is not installed. Install it in Packages before opening the terminal.</p>}
     <div className="flex flex-wrap gap-2">
-      <Button disabled={busy || status?.running === true} onClick={() => void run("start")}>Start terminal</Button>
+      <Button disabled={!detected || busy || status?.running === true} onClick={() => void run("start")}>Start terminal</Button>
       <Button variant="outline" disabled={busy || !status?.running} onClick={() => void run("stop")}>Stop terminal</Button>
       <Button variant="outline" disabled={busy || !status?.running} onClick={() => setVisible(prev => !prev)}>
         {visible ? "Hide terminal" : "Show terminal"}
