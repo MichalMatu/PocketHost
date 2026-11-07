@@ -95,3 +95,15 @@ into independent manifest, lifecycle and launch-plan units; broader API schema
 and a11y tests; error-history/rollback recovery proofs. Preserve P3 physical
 browser and P4 runtime activation holds. The detailed [sprint checkpoint]
 (checkpoints/2026-11-07-quality-hardening-sprint.md) separates done from open.
+
+
+## Next bounded closeout — 2026-11-07
+
+Finish `check:all` and coverage at fresh `main`, then review Knip without
+removing vendor screens or auto-changing dependencies. The reusable runtime
+registry and PhotoMap-independent host supervisor are implemented as source
+candidates; real PRoot orphan handling and whole-instance recovery need
+physical proof. Test P3's owned loopback Start/Publish/Rollback/Stop on Samsung,
+then separately verify real browser keyboard/click interactions and unchanged
+foreign services. P4 PhotoMap activation and package mutation remain blocked.
+See the [main runtime checkpoint](checkpoints/2026-11-07-main-runtime-host-sprint.md).
