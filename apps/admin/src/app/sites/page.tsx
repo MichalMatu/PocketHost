@@ -63,10 +63,10 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     setBusy(true)
     setError(null)
     setMessage(null)
+    setHealth(null)
     try {
       await job()
       await onChange()
-      setHealth(null)
       setMessage(success)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Operation failed safely.")
