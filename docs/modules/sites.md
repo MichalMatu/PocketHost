@@ -46,6 +46,7 @@ To remove the confusing perpetual v1/v2 toggle reported from MacBook Chrome, the
 **Rollback remains distinct:** it undoes the last successful different-version publication once, then is disabled until a new explicit publication. This is an isolated PocketHost-owned test site, not general-purpose version history or upload support.
 
 This code is a **candidate**, not deployed merely by committing it. Native Termux full quality gates, controlled panel update, independent service checks and Mac browser verification are required before the current running behavior can be considered changed. IleStoi and the six existing monitored services must remain untouched.
+
 ## H1 project/deployment metadata candidate
 
 The fixed `pockethost-demo` now exposes a typed project detail
