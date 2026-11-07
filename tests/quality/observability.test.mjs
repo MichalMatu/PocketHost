@@ -8,7 +8,7 @@ import { ObservabilityHistory, sameProcessIdentity, sanitizeEvents } from '../..
 
 const time = '2026-11-07T03:00:00.000Z';
 const stat = (pid, ppid, ticks = '420') =>
-  `${pid} (safe (nested) name) S ${ppid} ${Array.from({ length: 17 }, (_, i) =>
+  `${pid} (safe (nested) name) S ${ppid} ${Array.from({ length: 18 }, (_, i) =>
     i === 9 ? '100' : i === 10 ? '50' : i === 17 ? ticks : '0').join(' ')} 0 0`;
 
 test('CPU delta reports actual utilization and refuses non-monotonic data', () => {
