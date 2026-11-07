@@ -21,7 +21,7 @@ export async function listInstalledTermuxPackages(
   const result = await run(
     path.join(BIN, 'dpkg-query'),
     ['-W', '-f=${binary:Package}\\t${Version}\\n'],
-    { timeout: 16000, maxBuffer: 192000 },
+    { timeout: 16000, maxBuffer: 192000, outputLimit: 185000 },
   );
   const packages = parseInstalledPackages(result.output, MAX_INSTALLED + 1)
     .map(item => ({ name: item.name, version: item.version }));
@@ -40,7 +40,7 @@ export async function searchAvailableTermuxPackages(
   // apt-cache accepts a regex, but only a literal escaped query is passed.
   const safe = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const result = await run(path.join(BIN, 'apt-cache'), ['search', '--names-only', safe], {
-    timeout: 15000, maxBuffer: 80000,
+    timeout: 15000, maxBuffer: 80000, outputLimit: 78000,
   });
   const packages: AvailableTermuxPackage[] = [];
   for (const line of result.output.split('\n').slice(0, 1000)) {
