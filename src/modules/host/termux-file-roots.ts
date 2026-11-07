@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  closeSync, constants, copyFileSync, existsSync, lstatSync,
+  closeSync, constants, copyFileSync, cpSync, existsSync, lstatSync,
   mkdirSync, openSync, readFileSync, readdirSync, realpathSync,
   renameSync, rmSync, rmdirSync, statSync, writeFileSync,
 } from 'node:fs';
@@ -8,7 +8,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 export type FileRoot = 'home' | 'prefix' | 'shared';
-export type FileMutation = 'mkdir' | 'save' | 'copy' | 'move' | 'delete' | 'upload';
+export type FileMutation = 'mkdir' | 'save' | 'copy' | 'copy-tree' | 'move' | 'delete' | 'delete-tree' | 'upload';
 export interface FileEntry {
   name: string;
   kind: 'directory' | 'file' | 'link' | 'other';
@@ -16,7 +16,7 @@ export interface FileEntry {
 }
 const MAX_ENTRIES = 300;
 const MAX_TEXT_BYTES = 1024 * 1024;
-const MAX_TRANSFER = 256 * 1024;
+const MAX_TRANSFER = 2 * 1024 * 1024;
 const MAX_DEPTH = 32;
 const OWN_ROOTS: Record<FileRoot, string> = {
   home: os.homedir(),
@@ -116,6 +116,26 @@ export class TermuxFileRoots {
       return { name: path.basename(target), base64: bytes.toString('base64'), bytes: bytes.length };
     } finally { closeSync(fd); }
   }
+  private inspectTree(source: string): void {
+    const pending: Array<{ at: string; depth: number }> = [{ at: source, depth: 0 }];
+    let files = 0;
+    let bytes = 0;
+    while (pending.length) {
+      const current = pending.pop()!;
+      if (current.depth > MAX_DEPTH || ++files > 10000) throw new Error('Directory operation limit exceeded');
+      const stat = lstatSync(current.at);
+      if (stat.isSymbolicLink()) throw new Error('Linked tree entry refused');
+      if (stat.isDirectory()) {
+        for (const name of readdirSync(current.at)) {
+          pending.push({ at: path.join(current.at, name), depth: current.depth + 1 });
+        }
+      } else if (stat.isFile()) {
+        bytes += stat.size;
+        if (bytes > 256 * 1024 * 1024) throw new Error('Directory operation byte limit exceeded');
+      } else throw new Error('Unsupported filesystem entry in directory');
+    }
+  }
+
   apply(
     root: FileRoot,
     operation: FileMutation,
@@ -150,6 +170,7 @@ export class TermuxFileRoots {
         break;
       }
       case 'copy':
+      case 'copy-tree':
       case 'move': {
         if (!payload.destination) throw new RangeError('Destination required');
         const destination = this.locate(root, payload.destination, true);
@@ -158,6 +179,9 @@ export class TermuxFileRoots {
           const st = lstatSync(target);
           if (!st.isFile() || st.size > MAX_TEXT_BYTES) throw new Error('Copy requires bounded file');
           copyFileSync(target, destination, constants.COPYFILE_EXCL);
+        } else if (operation === 'copy-tree') {
+          this.inspectTree(target);
+          cpSync(target, destination, { recursive: true, force: false, errorOnExist: true, dereference: false });
         } else renameSync(target, destination);
         break;
       }
@@ -166,6 +190,10 @@ export class TermuxFileRoots {
           if (readdirSync(target).length) throw new Error('Directory is not empty');
           rmdirSync(target);
         } else rmSync(target);
+        break;
+      case 'delete-tree':
+        this.inspectTree(target);
+        rmSync(target, { recursive: true, force: false });
         break;
       default: throw new RangeError('Unknown file operation');
     }
