@@ -2,6 +2,7 @@ import http from 'node:http';
 import net from 'node:net';
 import os from 'node:os';
 import path from 'node:path';
+import { lookupHostedSite } from './site-fleet-proxy.mjs';
 
 const ADMIN_PORT = 18878;
 const SITE_PORT = 18879;
@@ -94,6 +95,7 @@ function upstreamHeaders(request, internalPort) {
  * upstream idle budget; other admin and demo requests keep 5 seconds.
  */
 export function upstreamTimeoutMs(requestPath) {
+  if (requestPath?.startsWith('/api/v1/sites')) return 30000;
   return requestPath?.split('?')[0] === '/api/v1/observability' ? 25000 : 5000;
 }
 
@@ -105,14 +107,20 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
       rejected(response, status);
       return;
     }
+    // Site H2 views share the existing GET-only site gateway, never the admin origin.
+    // Never relay to a port discovered from a request or stale ownership record.
+    const h2 = !admin && request.url?.startsWith('/h2/');
+    const hosted = h2 ? lookupHostedSite(request.url) : null;
+    if (h2 && !hosted) { rejected(response, 404); return; }
+    const destination = hosted?.port ?? upstreamPort;
     const headers = admin
       ? upstreamHeaders(request, upstreamPort)
-      : { host: '127.0.0.1:' + upstreamPort };
+      : { host: '127.0.0.1:' + destination };
     const upstream = http.request(
       {
         host: '127.0.0.1',
-        port: upstreamPort,
-        path: request.url,
+        port: destination,
+        path: hosted?.path ?? request.url,
         method: request.method,
         headers,
         timeout: upstreamTimeoutMs(request.url),
