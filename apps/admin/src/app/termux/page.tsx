@@ -60,7 +60,9 @@ export default function TermuxCenterPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal)
+    void Promise.resolve().then(() => {
+      if (!controller.signal.aborted) return refresh(controller.signal)
+    })
     return () => controller.abort()
   }, [refresh])
 
