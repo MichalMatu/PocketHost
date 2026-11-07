@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [H3 isolated branch read-only Termux Center](checkpoints/2026-11-07-h3-termux-center-branch.md)
+
 - [Roadmap: H2 accepted, next H3 package CMS and H4 agent API](ROADMAP.md)
 - [H2.1 archive manager source and release gates](checkpoints/2026-11-07-h21-release-manager-source.md)
 - [H2 accepted Samsung G2/G3 multi-site static hosting](checkpoints/2026-11-07-h2-static-hosting-source.md)

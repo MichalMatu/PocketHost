@@ -369,6 +369,37 @@ export class SiteFleetHost {
     return this.details(id, this.record(id));
   }
 
+  /** Read-only, bounded listing of the active release's owned static assets. */
+  listActiveFiles(id: string): Array<{ name: string; bytes: number }> {
+    const item = this.record(id);
+    if (!item.activeRelease) return [];
+    const root = requireRelease(this.site(id), item.activeRelease);
+    const pending: Array<{ dir: string; prefix: string }> = [{ dir: root, prefix: '' }];
+    const result: Array<{ name: string; bytes: number }> = [];
+    let totalBytes = 0;
+    while (pending.length) {
+      const next = pending.pop()!;
+      directory(next.dir);
+      for (const entry of readdirSync(next.dir, { withFileTypes: true })) {
+        const name = next.prefix + entry.name;
+        const absolute = path.join(next.dir, entry.name);
+        if (entry.isSymbolicLink()) throw new Error('Linked static asset rejected');
+        if (entry.isDirectory()) {
+          if (name.split('/').length >= 6) throw new Error('Owned asset depth exceeded');
+          directory(absolute);
+          pending.push({ dir: absolute, prefix: name + '/' });
+        } else if (entry.isFile()) {
+          assetName(name);
+          const stat = lstatSync(absolute);
+          if (stat.size > MAX_FILE || result.length >= 100 || (totalBytes += stat.size) > MAX_TOTAL)
+            throw new Error('Owned asset budget exceeded');
+          result.push({ name, bytes: stat.size });
+        } else throw new Error('Unsafe static asset');
+      }
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   /** Only physically present, verified owned releases are actionable. */
   listReleases(id: string): FleetRelease[] {
     const item = this.record(id);

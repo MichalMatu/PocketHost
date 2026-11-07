@@ -1,4 +1,5 @@
 import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
+import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
@@ -269,7 +270,7 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
@@ -279,6 +280,7 @@ function ownedSiteFleetApi(): Plugin {
               id && !action ? { site: fleet.inspect(id) } :
               id && action === "health" ? { healthy: await fleet.health(id) } :
               id && action === "logs" ? { logs: fleet.logs(id) } :
+              id && action === "files" ? { files: fleet.listActiveFiles(id) } :
               id && action === "releases" ? { releases: fleet.listReleases(id) } : null
             if (!result) {
               response.statusCode = 404
@@ -568,9 +570,47 @@ function networkAccessApi(): Plugin {
   }
 }
 
+/** H3: bounded read-only tool availability; never executes or installs tools. */
+function termuxToolsApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-h3-read-only-tool-inventory",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/termux-tools", (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!hosts.has(request.headers.host ?? "") ||
+          (request.headers.origin && !origins.has(request.headers.origin)) ||
+          request.headers["sec-fetch-site"] === "cross-site" ||
+          !["127.0.0.1", "::ffff:127.0.0.1"].includes(request.socket.remoteAddress ?? "")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.url?.split("?")[0] !== "/") {
+          response.statusCode = 404
+          response.end("{}")
+          return
+        }
+        if (request.method !== "GET") {
+          response.statusCode = 405
+          response.setHeader("Allow", "GET")
+          response.end("{}")
+          return
+        }
+        response.end(JSON.stringify(readTermuxToolInventory()))
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi()],
   server: { host: "127.0.0.1", port: 8787, strictPort: true },
   resolve: {
     alias: {

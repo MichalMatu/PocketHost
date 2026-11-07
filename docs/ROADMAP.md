@@ -157,6 +157,22 @@ approval for mutations and prove safe rollback/
 failure handling on a disposable owned fixture.
 The six existing services stay unmanaged.
 
+## H3 parallel feature branch — Termux Control Center
+
+The isolated `feature/h3-termux-control-center-20261107` branch adds four read-only
+tabs (Packages, Files, Services, Backups), reusing O1 inventory, H2 exact-owned
+static site releases, runit observations and fixed optional-tool detection.
+No extra package is installed. Files expose only verified active-release asset
+names and sizes, never arbitrary Termux paths. Immutable release history
+is a recovery aid, not an independent backup. Restic and ttyd are optional,
+detected but not executed.
+
+Until authenticated admin transport and reviewed scoped capabilities exist:
+no package install/update, foreign service signals, generic filesystem
+writes, Restic backup/restore, terminal, autostart or new network listener.
+Test the branch through an independent QA checkout on Samsung without
+switching the live panel. See the H3 branch checkpoint.
+
 ## H4 — authenticated agent API: later milestone
 
 Extend the existing Local Agent transport with a
