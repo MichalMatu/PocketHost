@@ -189,6 +189,23 @@ terminal exposure and AI agent API remain distinct integrations to evaluate
 after native QA. Do not deploy this branch over the existing live panel
 without a separate preservation gate. See the H3 checkpoint.
 
+## H3.4 — Full Termux Administration (parallel branch source)
+
+Owner-authorized continuation adds the full named-root File Manager,
+manual single-client ttyd terminal, registered runit service autostart
+and bounded logs, Restic HOME/PREFIX system backup with staging Restore,
+and the typed Local Agent local-HTTP API adapter. No password setup is
+a prerequisite. The trusted LAN and loopback trust boundary remains
+mandatory; do not expose the terminal through public ingress.
+
+All actions are source candidates. Real system backup, restore, service
+control and ttyd browser tests require a fresh Samsung G2 and separate
+live-device G3. The existing H2 panel and external services are not
+implicitly deployed, replaced or stopped.
+
+See [H3.4 checkpoint](checkpoints/2026-11-07-h34-full-termux-source.md)
+and [ADR-0011](adr/0011-h34-termux-administration.md).
+
 ## H4 — authenticated agent API: later milestone
 
 Extend the existing Local Agent transport with a
