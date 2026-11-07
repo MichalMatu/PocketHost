@@ -193,7 +193,6 @@ owner interaction is a separate acceptance gate.
 
 See [H2.1 checkpoint](checkpoints/2026-11-07-h21-release-manager-source.md).
 
-
 ## H2 static hosting — Samsung G2/G3 accepted
 
 Application source `750c4b3fba2126647c3b593ae89d108ba2a67206`
