@@ -173,8 +173,7 @@ export class OwnedDemoHost implements OwnedSitePort {
           !Number.isSafeInteger(item.process.pid) ||
           item.process.pid < 2 ||
           typeof item.process.startTicks !== 'string' ||
-          !/^\d+$/.test(item.process.startTicks)))
-      ||
+          !/^\d+$/.test(item.process.startTicks))) ||
       (item.history !== undefined &&
         (!Array.isArray(item.history) ||
           item.history.length > 32 ||
@@ -443,7 +442,9 @@ export class OwnedDemoHost implements OwnedSitePort {
       const response = await fetch(`http://127.0.0.1:${this.port}/`, {
         signal: AbortSignal.timeout(1500),
       });
-      return response.status === 200 && response.headers.get('x-pockethost-instance') === item.instance;
+      return (
+        response.status === 200 && response.headers.get('x-pockethost-instance') === item.instance
+      );
     } catch {
       return false;
     }
