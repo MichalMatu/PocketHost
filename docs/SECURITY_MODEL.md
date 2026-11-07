@@ -25,7 +25,6 @@ Phone integrity, existing IleStoi.pl and Local Agent processes, filesystem, Term
 
 Public tunnels, DNS/API credentials, arbitrary backend execution from archives, dependencies fetched by AI, authenticated multi-tenancy, package installs, commercial hosting uptime, automatic updates and APK distribution are **not implemented** and require dedicated review.
 
-
 ## H2 bounded static ZIP and folder ingestion — accepted device scope
 
 H2 adds only static site bundles through the explicit PocketHost-owned
