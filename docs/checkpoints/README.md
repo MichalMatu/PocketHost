@@ -12,6 +12,7 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 ## 2026-11-07
 
 - [H2.1 version manager implementation candidate](2026-11-07-h21-release-manager-source.md)
+- [H2.1 G3 safety hold, terminal recheck and sprint evidence](2026-11-07-h21-g3-safety-hold-recheck.md)
 - [H2 multi-site static hosting native and LAN acceptance](2026-11-07-h2-static-hosting-source.md)
 - [H1 Hosting MVP source and device gate](2026-11-07-h1-hosting-mvp-source.md)
 
