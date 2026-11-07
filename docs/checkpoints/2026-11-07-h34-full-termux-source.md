@@ -96,3 +96,27 @@ G3 live source cutover is separately held and not implied by code.
 At the last evidence check, Local Agent had not yet published a
 terminal result for these tasks. Submission is **not PASS**.
 Additional source changes after those SHAs require their own QA.
+
+## 16:00 Europe/Warsaw status — integration preparation
+
+Draft PR [#1](https://github.com/MichalMatu/PocketHost/pull/1)
+targets the independently advanced `main`, and must **not** be merged
+yet. Source branches have diverged; the PR is currently non-mergeable.
+
+Native H3.4 diagnostic for `b8d1232` returned OPEN:
+157/157 Node tests and coverage passed, but TypeScript complained
+about unknown Restic snapshot paths, ESLint rejected the service-log
+control-character regex, one legacy UI GET-only assertion failed,
+and Prettier was not clean. These three functional findings were
+corrected on the H3.4 feature branch, but **no exact current-SHA
+all-green receipt exists yet**.
+
+A separate read-only Termux tool inventory task was submitted to
+confirm whether `ttyd`, `restic`, `sv-enable` and other CLI
+dependencies are actually installed. Do not confuse an adapter
+or source-only feature with an installed executable.
+
+Next mandatory gates: finish native code QA, apply the exact-source
+formatter, reconcile latest `main` documentation and H2.1 changes
+without losing their acceptance evidence, then perform only permitted
+disposable physical tests. No production deployment is implied.
