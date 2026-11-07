@@ -69,3 +69,22 @@ Only a project-specific adapter can approve its immutable workset and process
 identity. The PhotoMap adapter is still disabled for live execution. One process
 group and a bounded observed child tree do not prove the absence of reparented
 processes; physical acceptance and full rollback remain mandatory.
+
+## Observability architecture — proposed O1
+
+A registered `observability` module will normalize
+admitted read-only observations into bounded series.
+`host` alone probes Termux and `/proc`; `runtime`
+owns verified lifecycle identities; `diagnostics`
+owns structured events; `packages` owns package
+inventory; `apps/admin` renders typed views.
+No cross-module internal imports or second
+process supervisor are authorized.
+
+Foreground bounded sampling, timestamps, honest
+missing/permission-denied states and limited
+history are required. Process observation is
+not ownership or permission to signal.
+This is a **planned** architecture only.
+See [ADR-0010](adr/0010-read-only-observability.md)
+and [roadmap](ROADMAP.md).

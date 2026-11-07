@@ -74,3 +74,23 @@ This closes the prior P3 native/API lifecycle check, **not G3 browser UI**.
 
 See the [current handoff](HANDOFF_NEXT_CHAT.md) and
 [final Samsung checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).
+
+## O1 Observability acceptance
+
+New host/process metrics must pass negative
+tests for inaccessible Android `/proc` and
+`/sys`, stale or missing readings, PID reuse,
+foreign-owner classification, output bounds,
+history retention and secret redaction.
+
+Prove actual Samsung metric availability,
+safe sampling limits, unchanged six protected
+services and unchanged PhotoMap port 8010.
+Collect exact source SHA and terminal task
+results. UI jsdom tests do not substitute
+for browser interaction tests.
+No process signals, autostart, package
+changes, automatic recovery or PhotoMap
+activation are allowed within O1.
+See [the roadmap](ROADMAP.md) and
+[ADR-0010](adr/0010-read-only-observability.md).

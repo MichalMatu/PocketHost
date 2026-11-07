@@ -2,86 +2,102 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Single current PocketHost entrypoint with exact native evidence and release holds
+purpose: Canonical next-chat entrypoint for PocketHost Observability O1
 ---
 
-# PocketHost — next chat handoff
+# PocketHost — next sprint: Observability O1
 
-## Verified source and execution
+## Mandatory start
 
-Repository: `MichalMatu/PocketHost`. Continue on fresh `main` only.
-The latest **fully native-tested application source** is
-`bc5e5539ca4656e59077335b71c0875f967ea859` (2026-11-07).
-Documentation updates after that commit do not automatically inherit a new
-same-SHA QA receipt. Verify the new HEAD and changed paths before work.
-The isolated Samsung QA checkout was clean after its exact-source test.
+Repository `MichalMatu/PocketHost`, **fresh main**.
+Read root `AGENTS.md`, [runbook](LOCAL_AGENT_TERMUX.md),
+[roadmap](ROADMAP.md), [module boundaries](MODULES.md),
+[architecture](ARCHITECTURE.md),
+[ADR-0010](adr/0010-read-only-observability.md)
+and [quality gates](QUALITY_GATES.md).
+Continue only on `main` without new branches or
+force push. All project execution, dependencies,
+tests and builds run exclusively on the precisely
+verified Samsung Termux Local Agent via private
+`agent-control` transport. No GitHub Actions,
+Codex, Work or Mac/Linux fallback.
 
-All project execution, tests, builds and dependency work are restricted to the
-verified Samsung Termux Local Agent through the private `agent-control` transport.
-Use [the Local Agent runbook](LOCAL_AGENT_TERMUX.md) to verify the live installation;
-an old host ID or receipt is not proof of current liveness. Do not use
-GitHub Actions, Codex, ChatGPT Work, Mac/sandbox PocketHost execution, a new
-branch or force push.
+## Verified code baseline
 
-## What is accepted
+At `bc5e5539ca4656e59077335b71c0875f967ea859`,
+Samsung receipt
+`pockethost-claim-final-clean-native-gate-bc5e55-20261107-v1`
+returned done/0: `check:all` with 101/101 Node,
+16/16 Vitest, lint, types, format and build PASS;
+line coverage 80.34%. Separate task
+`pockethost-p3-owned-live-reversible-api-acceptance-20261107-v1`
+verified real owned P3 Publish/Rollback/Stop/Start,
+HTTP and six foreign-service invariants.
+PhotoMap port 8010 remained closed.
+[Final accepted receipt](checkpoints/2026-11-07-final-native-qa-handoff.md).
 
-- **P0–P2:** foundation, read-only host inventory and admin baseline.
-- **P3 code and native runtime:** explicit PocketHost-owned demo, guarded
-  Start/Stop/Publish/Rollback, typed read-only APIs and native UI component tests.
-- **P4 catalog:** stopped imported PhotoMap TEST snapshot, versioned read-only
-  metadata and isolated copied workset. PhotoMap live runtime is **disabled**.
-- **2026-11-07 native quality:** `pockethost-claim-final-clean-native-gate-bc5e55-20261107-v1`
-  returned `done/0`: `npm run check:all` passed with **101/101 Node**
-  and **16/16 Vitest** tests, plus formatting, Markdownlint, lint, TypeScript,
-  coverage floor and Vite build. Coverage: **80.34% lines, 84.30% branches,
-  79.88% functions**. PhotoMap port 8010 was closed.
-- **Real owned P3 loopback operations:** task
-  `pockethost-p3-owned-live-reversible-api-acceptance-20261107-v1`
-  returned `done/0`. It verified Publish v1 from v2, Rollback to v2,
-  Stop and Start, real HTTP content, and unchanged state of six monitored
-  foreign services. The owned demo finished running on loopback with v2.
+Do not transfer these results to newer HEADs.
 
-The full source/test breakdown, task IDs and explicit limitations are in the
-[final native checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).
-Historical intermediate failures remain in the [checkpoint archive](checkpoints/README.md);
-do not repeat already accepted identical-SHA gates merely to regenerate evidence.
+## Outstanding documentation QA
 
-## Release HOLD — not finished
+Documentation commit `dcebf14` passed structure,
+documentation and Markdownlint but failed Prettier
+on `README.md`, `docs/DEVELOPMENT_PLAN.md`
+and `docs/checkpoints/2026-11-07-final-native-qa-handoff.md`.
+A separate bounded Termux formatting-diff task
+`pockethost-docs-prettier-diff-dcebf14-20261107-v1`
+was submitted; its terminal result was not confirmed
+at preparation of this handoff. Read the result,
+finish any formatting correction and validate the
+current exact commit, without blindly replaying work.
 
-1. **P3 browser:** a real Chromium render attempt timed out (exit 124).
-   No actual browser Publish/Rollback clicks, keyboard/ARIA or accessibility
-   acceptance exists. jsdom/Vitest and HTTP operations do not replace it.
-2. **PRoot safety:** source tests now refuse forged identities, PID reuse,
-   unverified descendants and uncertain `start.claim`; however detached/
-   reparented orphan recovery, uncertain spawn and complete physical Stop
-   and rollback remain unproven.
-3. **PhotoMap:** live Start/health/Stop, real safe recovery and full
-   source/SQLite/media restoration have **no approval or hardware acceptance**.
-   The imported original and all foreign services must stay untouched.
-4. **Knip:** v5/v6 cannot currently load the native `oxc-resolver` dependency
-   under Termux. This is a tooling limitation, not evidence of dead code.
-   Do not prune dependencies or preserved upstream screens based on it.
+## O1 scope
 
-No public ingress, autostart, package upgrades, unrestricted shell/AI API or
-production release is authorized. Do not turn source test success into service
-activation.
+Deliver tested, read-only vertical slices:
 
-## Next bounded sprint
+1. **Host Monitor:** CPU, RAM, disk, battery/network
+   if accessible, plus current service state.
+2. **Process Inspector:** process tree, resources,
+   PID/start ticks, verified owned vs external/unknown.
+3. **Runtime Diagnostics:** bounded, sanitized
+   start/stop/crash/timeout/orphan/recovery history.
+4. **Package Inventory:** installed Termux, Node/npm
+   and Python versions and safe update metadata.
+5. **Dashboard:** history charts, states and alerts.
 
-1. Perform fresh read-only host/checkout/foreign-service preflight.
-2. Solve the **P3 real-browser interaction gate** using a verified safe
-   Termux-compatible driver or manual device evidence; do not touch existing
-   occupied ports or other services. Capture actual click, keyboard,
-   version-selection and error paths with pre/post foreign-service state.
-3. Continue **PRoot orphan/unknown-claim recovery** with negative fixtures,
-   an explicit recovery plan and independent hardware evidence. Never
-   auto-kill unknown PIDs, force-delete claims or enable PhotoMap as a shortcut.
-4. Evaluate a compatible Knip baseline and targeted browser accessibility
-   tooling without changing the device package estate blindly.
-5. Request **separate explicit owner authorization** before any controlled
-   PhotoMap run against disposable copied data. Full restoration acceptance
-   is a separate gate.
+A new `observability` module is registered as a
+**planning/contract shell only**. Reuse current
+`host`, `runtime`, `diagnostics`, `packages`
+and `apps/admin` code rather than duplicate
+process lifecycle or shell control.
 
-Keep the [development plan](DEVELOPMENT_PLAN.md), [quality contract](QUALITY_GATES.md)
-and this handoff synchronized. Preserve historical receipts; close only
-demonstrably accepted work.
+## Unchanged release blockers
+
+- Real P3 browser click, keyboard/ARIA
+  Publish/Rollback acceptance still missing.
+- PRoot detached/reparented orphans and unknown
+  claims need safe physical recovery proof.
+- PhotoMap TEST remains disabled; no approval for
+  live Start, original data mutation or autostart.
+- Knip native resolver fails on Termux; no
+  dependency pruning based on this audit.
+
+No mutation of IleStoi.pl, original PhotoMap,
+Local Agent, foreign services or package estate.
+Do not enable public ingress or automatic repair.
+
+## First operations in next chat
+
+1. Fetch fresh main, confirm exact current
+   Samsung Local Agent identity, pending results,
+   independent checkout cleanliness and six services.
+2. Fix any documentation formatting gate failure.
+3. Implement **O1.1 Host Monitor** with real
+   read-only device capability measurements,
+   proper unavailable states and negative tests.
+4. Deliver **O1.2 Process Inspector** if O1.1
+   reaches native QA; otherwise document exact
+   blockers and leave a clean next step.
+5. Record exact source SHA, task IDs, exit codes,
+   unchanged protected services and updated
+   roadmap/checkpoint. No invented PASS.

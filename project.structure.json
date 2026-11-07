@@ -1,5 +1,15 @@
 {
-  "modules": ["inventory", "host", "runtime", "packages", "sites", "config", "diagnostics", "ai"],
+  "modules": [
+    "inventory",
+    "host",
+    "runtime",
+    "packages",
+    "sites",
+    "config",
+    "diagnostics",
+    "observability",
+    "ai"
+  ],
   "rootDirectories": ["apps", "docs", "src", "scripts", "tests"],
   "requiredFiles": [
     "README.md",

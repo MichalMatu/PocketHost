@@ -26,3 +26,19 @@ No automatic `pkg install`, `pkg upgrade`, repository changes or arbitrary comma
 ## Quality
 
 Tests cover explicit approval, allowlist and no-op paths; installation remains disabled in first milestone.
+
+## O1 Package Inventory — proposed
+
+Expose read-only bounded Termux, npm/Node
+and Python installed versions with provenance.
+Separate installed version, update availability,
+unknown metadata and permission failures.
+No failed network lookup may be reported as
+proof that all packages are current.
+
+Host commands require fixed reviewed arguments
+behind `host`; no automatic package install,
+upgrade, repository mutation or global Termux
+changes. Keep rolling-release host upgrades
+separate from application dependencies.
+See [ADR-0010](../adr/0010-read-only-observability.md).

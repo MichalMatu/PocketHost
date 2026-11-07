@@ -19,11 +19,15 @@ purpose: Exact final native QA receipts, runtime observations and open release h
 
 ## Accepted Samsung Local Agent receipts
 
-| Evidence | Task/result | Terminal outcome |
-| --- | --- | --- |
-| Final exact-source `npm run check:all` | `pockethost-claim-final-clean-native-gate-bc5e55-20261107-v1` | `done`, command exit 0; PASS |
-| Owned live loopback P3 lifecycle | `pockethost-p3-owned-live-reversible-api-acceptance-20261107-v1` | `done`, command exit 0; PASS |
-| Live read-only P3/foreign-service observation | `pockethost-existing-panel-ownership-readonly-20261107-v1` | `done`, command exit 0; PASS |
+- Final exact-source `npm run check:all`:
+  `pockethost-claim-final-clean-native-gate-bc5e55-20261107-v1`;
+  terminal `done`, command exit 0, PASS.
+- Owned live loopback P3 lifecycle:
+  `pockethost-p3-owned-live-reversible-api-acceptance-20261107-v1`;
+  terminal `done`, command exit 0, PASS.
+- Read-only P3 and foreign-service observation:
+  `pockethost-existing-panel-ownership-readonly-20261107-v1`;
+  terminal `done`, command exit 0, PASS.
 
 The final source gate ran in an isolated, verified-origin, detached Samsung
 checkout and reported clean working tree after testing. Results at exact

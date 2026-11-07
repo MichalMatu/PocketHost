@@ -61,3 +61,22 @@ allowlisted binds. Generic canonical file validation is in
 Python guest, disposable SQLite and runtime arguments now belong to
 `photomap-runtime-plan.ts`, separate from the process supervisor. This is a
 source-only candidate; no live PhotoMap start was approved.
+
+## O1 Host Monitor and Process Inspector — proposed
+
+Extend the existing fixed read-only snapshot
+with bounded CPU delta sampling, RAM, disk,
+optional battery/network and runit observations.
+For permission denial return a typed
+unavailable state, not zero. Do not require
+Shizuku or change Android permissions.
+
+The Process Inspector may read only bounded
+accessible process/resource data in `host`.
+PID and start ticks support identification,
+but do not independently establish ownership.
+Externally owned and unknown processes remain
+read-only. Never accept arbitrary signals,
+paths, commands or unrestricted PID inspection
+from HTTP callers. See
+[ADR-0010](../adr/0010-read-only-observability.md).

@@ -2,60 +2,70 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-07
-purpose: Current milestones and the smallest safe next release gates
+purpose: Implementation ownership and acceptance plan for Observability O1
 ---
 
 # PocketHost Development Plan
 
-PocketHost is a manually operated Termux hosting control panel. Keep
-UI, inventory, runtime, diagnostics, package management and future AI API
-behind typed contracts and explicit ownership. Use only fresh `main`,
-GitHub Connector and the exact Samsung Termux Local Agent; no new branches,
-GitHub Actions, Codex, Work or device-wide package changes.
+The [roadmap](ROADMAP.md) is the canonical milestone sequence.
+This plan defines how to deliver the next vertical slices.
+Use only fresh `main`, GitHub Connector and the exact
+Samsung Termux Local Agent; never GitHub Actions,
+Codex, Work or Mac/Linux PocketHost execution.
 
-## Milestone status
+## Baseline
 
-| Milestone | Source and native scope | Release status |
-| --- | --- | --- |
-| P0–P2 | Foundation, read-only inventory, admin UI baseline | Accepted |
-| P3 | Explicit owned demo lifecycle and versioned HTTP publish/rollback | Native/HTTP accepted; real browser G3 HOLD |
-| P4 catalog | Stopped PhotoMap TEST import, GET-only catalog, copied rootfs/workset | Read-only accepted; live runtime HOLD |
-| Generic runtime | Neutral registry, guarded process supervisor, PRoot plan/child evidence, typed schemas | Tested at `bc5e553`; live orphan/recovery HOLD |
-| P4.next | Safe package inventory/plans and approvals | Deferred; installs/upgrades disabled |
-| P5 | Scoped authenticated AI API, DNS/TLS, public access, APK | Deferred |
+- **P0-P2:** read-only six-service monitor and admin
+  baseline accepted.
+- **P3:** owned demo HTTP Publish/Rollback/Stop/Start
+  accepted on Samsung; real browser interactions HOLD.
+- **P4:** read-only PhotoMap TEST catalog and copied,
+  stopped workset; live PRoot runtime not approved.
+- **Generic runtime:** registry, process supervisor,
+  PID identity guards, PRoot source plan, typed APIs
+  and recovery dry-run. Last complete native application
+  QA: `bc5e553`, 101/101 Node and 16/16 Vitest PASS.
+- **Prior documentation gate:** `dcebf14` passed
+  structure/docs/Markdownlint, but Prettier flagged
+  three files. Do not claim that commit fully green.
 
-## Finished in the current source sprint
+## Sprint O1 — functional vertical slices
 
-- Main-only consolidation and archive indexing; no obsolete branches remain
-  in the accepted branch inventory.
-- Application-neutral managed runtime registry and supervisor, with
-  PhotoMap-specific profile/launch-plan kept outside the shared engine.
-- Fail-closed PID/start-ticks/executable/cwd/argv and process/descendant
-  guards, retained unknown start claims, diagnostic JSONL and dry-run
-  recovery planning.
-- P3/P4/host read-only API response validation and component a11y tests.
-- Native `check:all` on `bc5e553`: 101/101 Node, 16/16 Vitest,
-  coverage floor, lint, TypeScript, format and build PASS.
-- Real P3 owned loopback Publish/Rollback/Stop/Start with unchanged
-  external-service states. This is **not** browser click acceptance.
+1. **Host Monitor — `host`:** CPU delta, RAM,
+   storage, optional battery and network, runit;
+   timestamp, provenance, missing-data handling.
+2. **Process Inspector — `host`:** bounded,
+   accessible process tree and resource statistics,
+   verified ownership evidence separate from observation.
+3. **Runtime Diagnostics — `diagnostics` and
+   `runtime`:** reuse structured JSONL events,
+   error categories, bounded history and dry-run
+   recovery decisions.
+4. **Package Inventory — `packages`:** read-only
+   Termux, Node/npm and Python versions; show
+   available updates only with valid safe metadata.
+5. **Dashboard — `apps/admin`:** metrics, graphs,
+   real states and actionable but non-mutating alerts.
+6. **Aggregation — `observability`:** validate
+   and summarize admitted snapshots behind typed
+   contracts. The registered source module is initially
+   a **contract shell**, not a running collector.
 
-## Prioritized next work
+For each meaningful slice: typed contract, negative
+tests, exact-SHA Samsung source validation and real
+read-only device observations. Close with full
+`npm run check:all`, UI/browser checks where
+available and a completed-vs-blocked checkpoint.
 
-1. **P3 browser gate:** test real click, keyboard and version-selection
-   behavior, plus external-service and ownership readbacks. Current
-   Chromium CLI render timed out; investigate safely on the device.
-2. **PRoot recovery safety:** prove detached/reparented orphan handling,
-   uncertain spawn and failed Stop; keep unknown claims and disabled
-   PhotoMap inert until verified.
-3. **Tooling:** optional Termux-compatible Knip audit, meaningful
-   host/runtime coverage review and physical accessibility checks.
-4. **P4 controlled runtime:** only after a separate explicit approval,
-   use disposable copied data for physical Start/health/Stop and complete
-   source/database/media rollback.
-5. **Later product features:** package CMS and authenticated AI API only
-   after the owned-runtime and release gates are closed.
+## Out of scope
 
-Do not repeat accepted tests at an unchanged SHA or treat source coverage
-as hardware acceptance. The [current handoff](HANDOFF_NEXT_CHAT.md) is
-the operational entrypoint; exact receipts are in the
-[final native checkpoint](checkpoints/2026-11-07-final-native-qa-handoff.md).
+No process kill/adoption, package installation/upgrades,
+automated recovery, new persistent services, Shizuku
+setup, public command API or PhotoMap live activation.
+Preserve the six foreign services and current loopback
+ownership boundary. Keep P3 browser acceptance and
+PRoot orphan recovery as parallel release blockers.
+
+See [quality gates](QUALITY_GATES.md),
+[ADR-0010](adr/0010-read-only-observability.md)
+and [next-chat handoff](HANDOFF_NEXT_CHAT.md).
