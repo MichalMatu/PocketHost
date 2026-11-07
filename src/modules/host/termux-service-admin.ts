@@ -144,7 +144,7 @@ export class TermuxServiceAdmin {
         registrations.some(item => item.name === name && item.target === resolved);
       return {
         name, registered, protected: protectedService,
-        state: protectedService ? 'unknown' : probe(name),
+        state: probe(name),
       };
     });
   }
