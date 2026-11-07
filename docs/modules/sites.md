@@ -46,3 +46,18 @@ To remove the confusing perpetual v1/v2 toggle reported from MacBook Chrome, the
 **Rollback remains distinct:** it undoes the last successful different-version publication once, then is disabled until a new explicit publication. This is an isolated PocketHost-owned test site, not general-purpose version history or upload support.
 
 This code is a **candidate**, not deployed merely by committing it. Native Termux full quality gates, controlled panel update, independent service checks and Mac browser verification are required before the current running behavior can be considered changed. IleStoi and the six existing monitored services must remain untouched.
+## H1 project/deployment metadata candidate
+
+The fixed `pockethost-demo` now exposes a typed project detail
+projection with name, type, relative data directory, state, fixed
+loopback port, version, verified PID/start ticks and a bounded
+25-entry visible history. Release events persist in the private owner
+marker (up to 32 retained) and old markers without events remain
+valid. Legacy events are not fabricated.
+
+Only two built-in static HTML documents can be published. Release
+reads reject symlinks and oversized files; a failed owner-marker
+save attempts to restore the prior served document. Any unsuccessful
+restore is a release HOLD, not a successful deployment. Dynamic
+uploads, multi-project registration and public APIs are deferred.
+Physical Samsung acceptance and guarded LAN UI rollout are pending.
