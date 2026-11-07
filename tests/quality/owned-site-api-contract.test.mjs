@@ -11,14 +11,15 @@ const page = readFileSync(
 test('P3 API is explicit DEV opt-in and localhost-only', () => {
   assert.match(vite, /POCKETHOST_ENABLE_OWNED_SITE_DEV/);
   assert.match(vite, /127\.0\.0\.1:8787/);
-  assert.match(vite, /runtime = enabled \?/);
+  assert.match(vite, /adapter = enabled \? new OwnedDemoHost/);
+  assert.match(vite, /runtime = adapter \? createOwnedSiteRuntime/);
   assert.match(vite, /"x-pockethost-intent"/);
   assert.match(vite, /"transfer-encoding"/);
   assert.match(vite, /serializeMutation/);
   assert.match(vite, /"owned-demo"/);
   assert.match(
     vite,
-    /allowedActions = new Set\(\["create", "start", "stop", "publish\/v1", "publish\/v2", "rollback"\]\)/,
+    /allowedActions = new Set\(\["create", "start", "stop", "restart", "publish\/v1", "publish\/v2", "rollback"\]\)/,
   );
   assert.match(vite, /action === "publish\/v1" \? runtime\.publish\(1\)/);
   assert.match(vite, /action === "publish\/v2" \? runtime\.publish\(2\)/);
@@ -26,11 +27,15 @@ test('P3 API is explicit DEV opt-in and localhost-only', () => {
 });
 
 test('P3 UI does not execute host commands and never offers external control', () => {
-  assert.match(page, /Ownership: \{site.ownership\}/);
-  assert.match(page, /isOwned && !running/);
+  assert.match(page, /PocketHost-owned/);
+  assert.match(page, /readProject\(/);
+  assert.match(page, /readHealth\(/);
+  assert.match(page, /owned && !running/);
   assert.match(page, /site\.canRollback/);
-  assert.match(page, /Target version/);
-  assert.match(page, /Publish selected version/);
+  assert.match(page, /Target release/);
+  assert.match(page, /Publish/);
+  assert.match(page, /window\.confirm\(/);
+  assert.match(page, /restart/);
   assert.match(page, /publish\/v1/);
   assert.match(page, /publish\/v2/);
   assert.doesNotMatch(page, /Switch sample version/);
