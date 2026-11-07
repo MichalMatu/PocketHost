@@ -125,7 +125,7 @@ test('disabled manifest never hides stale process identity or follows state syml
 
 test('PRoot bind source is a disposable work copy, never the preserved import', () => {
   const source = readFileSync(
-    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    new URL('../../src/modules/host/photomap-runtime-plan.ts', import.meta.url),
     'utf8',
   );
   assert.match(source, /const source = path.join\(work, 'source'\)/);
@@ -211,7 +211,7 @@ test('runtime launch requires every explicit profile and interpreter approval fi
 
 test('PRoot launcher uses the verified guest Python and never executes host Python', () => {
   const source = readFileSync(
-    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
+    new URL('../../src/modules/host/photomap-runtime-plan.ts', import.meta.url),
     'utf8',
   );
   assert.match(source, /const GUEST_PYTHON = '\/opt\/photomap-venv\/bin\/python'/);

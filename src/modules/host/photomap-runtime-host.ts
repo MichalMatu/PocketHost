@@ -19,7 +19,8 @@ import {
   processGroupAbsent,
 } from './managed-process-guards.ts';
 import { formatRuntimeEvent, type RuntimeEventCode } from '../../shared/runtime-diagnostics.ts';
-import { buildManagedProotArgs } from './managed-proot-plan.ts';
+import { directory, json } from './managed-runtime-files.ts';
+import { loadPhotoMapPlan, RELEASE, type LaunchPlan } from './photomap-runtime-plan.ts';
 import {
   captureManagedDescendants,
   observedDescendantsExited,
@@ -36,14 +37,8 @@ import {
   type PhotoMapRuntimeSnapshot,
 } from '../../shared/photomap-runtime.ts';
 
-const RELEASE = 'import-20261106';
-const MAX_MANIFEST = 65536;
 const VERSION = /^[a-z0-9][a-z0-9-]{1,63}$/;
 const LOG_LIMIT = 65536;
-// Verified in the copied Debian 12.15 PRoot; never use the global Termux interpreter.
-const GUEST_PYTHON = '/opt/photomap-venv/bin/python';
-
-type RecordData = Record<string, unknown>;
 
 interface OwnedMarker {
   schema: 1;
@@ -56,35 +51,6 @@ interface OwnedMarker {
   executable: string;
   cwd: string;
   argvSha256: string;
-}
-
-function directory(folder: string): void {
-  const stat = lstatSync(folder);
-  if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(folder) !== folder) {
-    throw new Error('Managed PhotoMap directory is not canonical');
-  }
-}
-
-function json(file: string): RecordData {
-  const stat = lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_MANIFEST) {
-    throw new Error('Unsafe PhotoMap runtime manifest');
-  }
-  const data: unknown = JSON.parse(readFileSync(file, 'utf8'));
-  if (!data || Array.isArray(data) || typeof data !== 'object') {
-    throw new Error('Malformed PhotoMap runtime manifest');
-  }
-  return data as RecordData;
-}
-
-function owner(item: RecordData): void {
-  if (
-    item.schema_version !== 1 ||
-    item.owner !== 'pockethost' ||
-    item.instance_id !== OWNED_PHOTOMAP_ID
-  ) {
-    throw new Error('PhotoMap runtime ownership mismatch');
-  }
 }
 
 function startTicks(pid: number): string | null {
@@ -116,14 +82,6 @@ function portFree(): Promise<boolean> {
 
 const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-interface LaunchPlan {
-  version: string;
-  versionRoot: string;
-  executable: string;
-  args: string[];
-  source: string;
-}
-
 /**
  * Project-local PhotoMap runtime candidate. The imported device manifests are
  * disabled, so this adapter cannot launch anything before a separate approved
@@ -140,132 +98,8 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
     this.state = path.join(this.instance, 'runtime', 'state');
   }
 
-  private metadata(): { runtime: RecordData; current: RecordData } {
-    directory(this.root);
-    directory(path.join(this.root, 'instances'));
-    directory(this.instance);
-    directory(path.join(this.instance, 'manifests'));
-    const runtime = json(path.join(this.instance, 'manifests', 'runtime.json'));
-    const current = json(path.join(this.instance, 'current.json'));
-    owner(runtime);
-    owner(current);
-    if (
-      current.selected_release !== RELEASE ||
-      runtime.runtime_kind !== 'debian-proot' ||
-      runtime.port !== OWNED_PHOTOMAP_PORT ||
-      runtime.autostart !== false
-    ) {
-      throw new Error('Managed PhotoMap release or runtime changed');
-    }
-    return { runtime, current };
-  }
-
   private plan(): LaunchPlan | null {
-    const { runtime } = this.metadata();
-    if (
-      runtime.enabled !== true ||
-      runtime.launch_allowed !== true ||
-      runtime.managed_proot_snapshot !== true
-    ) {
-      return null;
-    }
-    directory(path.join(this.instance, 'runtime'));
-    const active = json(path.join(this.instance, 'runtime', 'active-version.json'));
-    owner(active);
-    const version = active.selected_runtime;
-    if (typeof version !== 'string' || !VERSION.test(version)) {
-      throw new Error('Unsafe runtime version');
-    }
-    const base = path.join(this.instance, 'runtime', 'versions');
-    directory(base);
-    const versionRoot = path.join(base, version);
-    directory(versionRoot);
-    const profile = json(path.join(versionRoot, 'profile.json'));
-    owner(profile);
-    if (
-      profile.source_release !== RELEASE ||
-      profile.runtime_version !== version ||
-      profile.isolated_rootfs !== true ||
-      profile.status !== 'approved-manual' ||
-      profile.launch_allowed !== true ||
-      profile.activation_approved !== true ||
-      profile.python_executable !== GUEST_PYTHON ||
-      profile.autostart !== false ||
-      profile.port !== OWNED_PHOTOMAP_PORT ||
-      typeof profile.requirements_sha256 !== 'string' ||
-      !/^[a-f0-9]{64}$/.test(profile.requirements_sha256)
-    ) {
-      throw new Error('Unsafe runtime version profile');
-    }
-    const preservedSource = path.join(this.instance, 'releases', RELEASE, 'source');
-    directory(path.join(this.instance, 'releases'));
-    directory(path.join(this.instance, 'releases', RELEASE));
-    directory(preservedSource);
-    if (lstatSync(path.join(preservedSource, '.env'), { throwIfNoEntry: false })) {
-      throw new Error('Preserved PhotoMap source contains an unapproved environment file');
-    }
-    const rootfs = path.join(versionRoot, 'rootfs');
-    const work = path.join(versionRoot, 'work');
-    const source = path.join(work, 'source');
-    for (const folder of [
-      rootfs,
-      work,
-      source,
-      path.join(work, 'database'),
-      path.join(work, 'storage'),
-      path.join(work, 'storage', 'private'),
-      path.join(work, 'storage', 'public'),
-    ]) {
-      directory(folder);
-    }
-    // Guest code may only write to the disposable work-source copy, never to the sealed import.
-    for (const relative of ['server.py', 'backend/requirements.txt', 'frontend/dist/index.html']) {
-      if (
-        digestFile(path.join(preservedSource, relative)) !== digestFile(path.join(source, relative))
-      ) {
-        throw new Error('PhotoMap work-source copy does not match the preserved release');
-      }
-    }
-    if (
-      digestFile(path.join(source, 'backend', 'requirements.txt')) !==
-        profile.requirements_sha256 ||
-      lstatSync(path.join(source, '.env'), { throwIfNoEntry: false }) ||
-      !existsSync(path.join(work, 'database', 'app.db'))
-    ) {
-      throw new Error('PhotoMap work dependencies, database or environment invalid');
-    }
-    const prefix = process.env.PREFIX ?? '';
-    if (
-      prefix !== '/data/data/com.termux/files/usr' &&
-      prefix !== '/data/user/0/com.termux/files/usr'
-    ) {
-      throw new Error('This runtime requires an exact Termux installation');
-    }
-    const executable = realpathSync(path.join(prefix, 'bin', 'proot'));
-    const args = buildManagedProotArgs({
-      rootfs,
-      binds: [
-        { source, target: '/mnt/source' },
-        { source: path.join(work, 'database'), target: '/mnt/data' },
-        { source: path.join(work, 'storage'), target: '/mnt/storage' },
-      ],
-      workdir: '/mnt/source',
-      command: [
-        GUEST_PYTHON,
-        '-m',
-        'uvicorn',
-        'server:create_app',
-        '--factory',
-        '--host',
-        '127.0.0.1',
-        '--port',
-        String(OWNED_PHOTOMAP_PORT),
-        '--lifespan',
-        'off',
-        '--no-server-header',
-      ],
-    });
-    return { version, versionRoot, executable, args, source };
+    return loadPhotoMapPlan(this.root, this.instance);
   }
 
   private marker(): OwnedMarker | null {
@@ -554,12 +388,4 @@ export class ManagedPhotoMapRuntimeHost implements PhotoMapRuntimePort {
       .slice(-40)
       .map((line) => line.slice(0, 240));
   }
-}
-
-function digestFile(file: string): string {
-  const stat = lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_MANIFEST) {
-    throw new Error('Unsafe requirements file');
-  }
-  return createHash('sha256').update(readFileSync(file)).digest('hex');
 }
