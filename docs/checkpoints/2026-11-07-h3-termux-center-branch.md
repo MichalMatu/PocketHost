@@ -95,6 +95,7 @@ and separate live acceptance remain necessary. No live H3 deployment.
 ## H3.2 extension — packages, files, services, backups
 
 Owner-approved password-free operations are now supplemented by:
+
 - Native `apt-get -s` install/remove/upgrade simulations before optional
   package mutations. No duplicated dependency resolver.
 - Import/export of bounded binary files (128 KiB), server-side copy,
