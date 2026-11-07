@@ -90,3 +90,34 @@ Samsung for its final SHA**. There is no background daemon, ownership
 inference or automated recovery.
 See [ADR-0010](adr/0010-read-only-observability.md)
 and [roadmap](ROADMAP.md).
+
+## H2 static-site fleet — accepted device architecture
+
+H2 does not adopt external processes or replace the
+generic managed-runtime/PRoot registry. Its separate
+PocketHost-owned `SiteFleetHost` adapter is the only
+component allowed to create project directories,
+assign loopback ports, write immutable static releases,
+spawn or signal exact verified child PIDs, and read
+bounded process logs/statistics.
+
+The typed `/api/v1/sites` developer boundary accepts
+strictly bounded ZIP or browser-selected folder static
+assets. The `sites` module decodes and validates
+content without filesystem access, while `host` owns
+the actual confined storage and server processes.
+The React `/sites` UI never executes host commands.
+
+The existing manual trusted-LAN gateway retains its
+two public-to-LAN ports: owner-approved admin port
+18878 and GET/HEAD-only static previews on 18879.
+An H2 preview on `/h2/<site-id>/` is admitted only
+after checking the exact owner marker and the running
+child's process identity and port. Each child listener
+binds `127.0.0.1` only. No user-supplied program
+is launched and no unrelated service is adopted.
+
+Samsung full G2 and guarded LAN G3 passed at
+application source `750c4b3`; owner Mac Chrome
+file-picker acceptance remains a distinct step.
+See [H2 checkpoint](checkpoints/2026-11-07-h2-static-hosting-source.md).
