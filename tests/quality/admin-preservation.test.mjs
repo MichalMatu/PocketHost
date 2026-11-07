@@ -43,9 +43,9 @@ const originalPaths = [
   '*',
 ];
 
-test('full 32-route upstream admin shell remains available beside four PocketHost routes and one network-settings route', () => {
+test('full 32-route upstream admin shell remains available beside seven PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 5);
+  assert.equal(allPaths.length, originalPaths.length + 7);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -55,8 +55,10 @@ test('full 32-route upstream admin shell remains available beside four PocketHos
   assert.ok(allPaths.includes('/settings/network'));
   assert.ok(allPaths.includes('/owned-site'));
   assert.ok(allPaths.includes('/managed-projects'));
+  assert.ok(allPaths.includes('/deployments'));
+  assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 4);
+  assert.equal(chunks.length, originalPaths.length + 6);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
