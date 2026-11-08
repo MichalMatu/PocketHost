@@ -8,7 +8,7 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("phone-approved browser shell request", () => {
   it("requires pairing code and command before any network submission", async () => {
-    const fetchMock = vi.fn(async () => {
+    const fetchMock = vi.fn(async (..._args: unknown[]) => {
       return { ok: true, status: 202, json: async () => ({
         id: "a".repeat(32), state: "pending",
       }) }
