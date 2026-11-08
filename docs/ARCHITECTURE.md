@@ -133,3 +133,16 @@ agent-intent header; no Local Agent deployment or Git task transport
 is modified. There is no password prerequisite, but the existing
 private-LAN admission requirements and manual UI confirmations
 still apply. See ADR-0011 for the associated trust warning.
+
+## Termux-first UI navigation — 2026-11-08 source candidate
+
+The dashboard treats monitoring, software, files, services, terminal,
+backups and the Agent API as independent navigation routes. Hosting is
+its own section. Legacy `/termux` redirects to `/system`, and the
+original template examples remain reachable through a collapsed menu.
+No new API, listener, process ownership or authorization is introduced.
+
+One visible full-root File Manager handles HOME, PREFIX and shared
+storage with a workspace shortcut. Hosted site releases have a separate,
+read-only inventory; the legacy H3 workspace API remains for compatibility.
+Backend consolidation requires a separately reviewed migration.

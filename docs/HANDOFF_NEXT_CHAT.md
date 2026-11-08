@@ -7,6 +7,14 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
 
+## UX architecture source candidate — 2026-11-08
+
+The owner requested a Termux-first navigation redesign and one File Manager.
+The source sprint adds separate UI routes while leaving host adapters,
+protected services, production sites and the live panel untouched. See the
+[UX architecture checkpoint](checkpoints/2026-11-08-ux-architecture-main-menu.md).
+Native Samsung G2 and browser acceptance remain OPEN; do not deploy this
+source or treat the old H3.4 release gate as acceptance for new changes.
 
 ## Owner-requested production sprint disposition — 2026-11-08
 

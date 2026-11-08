@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [Termux-first UX architecture and unified File Manager source sprint](checkpoints/2026-11-08-ux-architecture-main-menu.md)
+
 - [H3.4 API, Restic and ttyd acceptance follow-up](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
 
 - [General repository audit, Restic regression and acceptance status](checkpoints/2026-11-07-general-repository-audit-repair.md)

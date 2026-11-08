@@ -1,7 +1,6 @@
 import * as React from "react"
 import {
-  Activity, AlertTriangle, Archive, Bot, Calendar, CheckSquare, CreditCard,
-  FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
+  Activity, AlertTriangle, Archive, Bot, Calendar, CheckSquare, FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
   Mail, MessageCircle, Network, Package, ScrollText, ServerCog, Settings,
   Shield, Terminal, Users,
 } from "lucide-react"

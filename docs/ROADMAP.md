@@ -7,6 +7,14 @@ purpose: Define canonical PocketHost milestones including Observability O1
 
 # PocketHost Roadmap
 
+## UX/Architecture — Termux-first source candidate
+
+The owner chose Termux system management as the primary product identity.
+Hosting is a separate section. Standalone module routes and one visible
+File Manager are implemented as a new source candidate. Samsung exact-SHA
+G2, Chrome interaction and independent G3 release gates remain OPEN.
+See [UX checkpoint](checkpoints/2026-11-08-ux-architecture-main-menu.md).
+
 ## Current milestone: H3.4 accepted with physical follow-ups
 
 H3.4 source `cc9f47a` passed complete Samsung G2;

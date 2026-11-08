@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-08
 
+- [UX architecture: Termux-first navigation and single File Manager](2026-11-08-ux-architecture-main-menu.md)
+
 - [H3.4 API, Restic and ttyd physical follow-up](2026-11-08-h34-api-restic-ttyd-acceptance.md)
 
 ## 2026-11-07

@@ -9,6 +9,11 @@ purpose: Current PocketHost source, hardware and release acceptance contract
 
 ## Execution and evidence
 
+The 2026-11-08 UX architecture source requires its own exact-SHA
+Samsung `check:all` and real browser navigation acceptance. Earlier
+H3.4 receipts do not cover this source. Production remains on the
+accepted prior release until a separate authorized cutover.
+
 PocketHost commands run only on the exactly addressed Samsung Termux Local Agent.
 GitHub Connector moves source and private task/result data, not test execution.
 No GitHub Actions, Codex, ChatGPT Work or Mac/Linux fallback. A gate is PASS
