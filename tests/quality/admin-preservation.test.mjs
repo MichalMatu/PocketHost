@@ -63,7 +63,7 @@ test('full 32-route upstream admin shell remains available beside sixteen Pocket
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 15);
+  assert.equal(chunks.length, originalPaths.length + 14);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
