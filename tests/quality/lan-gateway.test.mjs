@@ -82,6 +82,20 @@ test('Shizuku GET-only inventory routes receive bounded native-aware LAN deadlin
   }
 });
 
+test('paired shell request/poll receive only narrow POST-only timeout exceptions', () => {
+  for (const route of [
+    '/api/v1/shizuku/remote-shell/submit',
+    '/api/v1/shizuku/remote-shell/poll',
+  ]) {
+    assert.equal(upstreamTimeoutMs(route, 'POST'), 8500);
+    assert.equal(upstreamTimeoutMs(route + '?invalid=1', 'POST'), 8500);
+    assert.equal(upstreamTimeoutMs(route, 'GET'), 5000);
+    assert.equal(upstreamTimeoutMs(route, 'DELETE'), 5000);
+  }
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/execute', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/shell', 'POST'), 5000);
+});
+
 test('LAN remains exact RFC1918 address only; same subnet and no public bind', () => {
   assert.equal(sameSubnet('192.168.10.12', '192.168.10.2', '255.255.255.0'), true);
   assert.equal(sameSubnet('::ffff:192.168.10.13', '192.168.10.2', '255.255.255.0'), true);
