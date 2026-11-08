@@ -125,6 +125,10 @@ export function parseCompanionSystem(raw) {
       Math.abs(Date.now() - Date.parse(d.observedAt)) > 120000 ||
       !Array.isArray(d.processes) || d.processes.length > 512 ||
       typeof d.processesTruncated !== 'boolean') throw new Error('invalid-android-system');
+  if (d.processError !== undefined &&
+      (typeof d.processError !== 'string' || d.processError.length > 120)) {
+    throw new Error('invalid-process-error');
+  }
   const seen = new Set();
   for (const p of d.processes) {
     if (!p || typeof p !== 'object' ||

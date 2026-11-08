@@ -65,6 +65,7 @@ export const shizukuSystemSchema = z.object({
     cpuPercent: z.number().finite().min(0).max(100).nullable(),
   }).strict()).max(512),
   processesTruncated: z.boolean(),
+  processError: z.string().max(120).optional(),
   power: z.object({
     batteryLevel: z.number().int().min(0).max(100).nullable(),
     batteryTemperatureC: nullableNonnegative,

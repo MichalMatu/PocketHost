@@ -237,7 +237,7 @@ export default function ShizukuPage() {
             </CardHeader><CardContent className="space-y-3">
               <Input aria-label="Search Android processes" value={processSearch}
                 onChange={e => setProcessSearch(e.target.value)} placeholder="Search PID, user or process..." />
-              {!system ? <p className="text-muted-foreground text-sm">Process inventory unavailable; CPU headline remains independent.</p> :
+              {!system || system.processError ? <p className="text-muted-foreground text-sm">Process inventory unavailable; CPU headline remains independent.</p> :
                 <>
                   <div className="max-h-[460px] overflow-auto rounded-lg border">
                     <table className="w-full min-w-[570px] text-left text-sm">

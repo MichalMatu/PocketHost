@@ -38,7 +38,9 @@ public final class TelemetryForegroundService extends Service {
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService samples = Executors.newSingleThreadExecutor();
+    private final ExecutorService inventories = Executors.newSingleThreadExecutor();
     private final AtomicBoolean busy = new AtomicBoolean(false);
+    private final AtomicBoolean inventoryBusy = new AtomicBoolean(false);
     private volatile IPowerUserService source;
     private boolean bound;
     private boolean destroyed;
@@ -153,6 +155,24 @@ public final class TelemetryForegroundService extends Service {
                 getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
                         .putString("snapshot", snapshot.toString())
                         .putLong("observedAtMs", System.currentTimeMillis()).apply();
+                refreshInventories(remote, uid);
+            } catch (Exception e) {
+                Log.w(TAG, "CPU sample unavailable: " + e.getClass().getSimpleName());
+            } finally {
+                busy.set(false);
+            }
+        });
+    }
+
+
+    private void refreshInventories(IPowerUserService remote, int uid) {
+        long now = System.currentTimeMillis();
+        if (now - lastSystemAt < SYSTEM_REFRESH_MS &&
+                now - lastAppsAt < APPS_REFRESH_MS) return;
+        if (!inventoryBusy.compareAndSet(false, true)) return;
+        inventories.execute(() -> {
+            try {
+                // Slow diagnostic commands must never block the 15s CPU sampler.
                 if (System.currentTimeMillis() - lastSystemAt >= SYSTEM_REFRESH_MS) {
                     try {
                         JSONObject overview = new JSONObject(remote.readSystemOverview());
@@ -185,10 +205,8 @@ public final class TelemetryForegroundService extends Service {
                                 e.getClass().getSimpleName());
                     }
                 }
-            } catch (Exception e) {
-                Log.w(TAG, "CPU sample unavailable: " + e.getClass().getSimpleName());
             } finally {
-                busy.set(false);
+                inventoryBusy.set(false);
             }
         });
     }
@@ -205,6 +223,7 @@ public final class TelemetryForegroundService extends Service {
             catch (RuntimeException ignored) {}
         }
         samples.shutdownNow();
+        inventories.shutdownNow();
         super.onDestroy();
     }
 }

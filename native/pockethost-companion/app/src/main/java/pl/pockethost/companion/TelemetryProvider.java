@@ -129,6 +129,7 @@ public final class TelemetryProvider extends ContentProvider {
         result.put("observedAt", snapshot.getString("observedAt"));
         result.put("processes", snapshot.getJSONArray("processes"));
         result.put("processesTruncated", snapshot.getBoolean("processesTruncated"));
+        if (snapshot.has("processError")) result.put("processError", snapshot.getString("processError"));
         result.put("power", snapshot.getJSONObject("power"));
         result.put("settings", snapshot.getJSONObject("settings"));
         result.put("services", snapshot.getJSONObject("services"));

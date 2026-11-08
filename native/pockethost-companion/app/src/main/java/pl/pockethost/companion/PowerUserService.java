@@ -283,6 +283,12 @@ public final class PowerUserService extends IPowerUserService.Stub {
                 default:
                     throw new IllegalArgumentException("Unsupported operation");
             }
+            if (("uninstall".equals(action) || "launch".equals(action) ||
+                    "service-start".equals(action) || "service-stop".equals(action)) &&
+                    (output.contains("Failure [") || output.contains("No activities found") ||
+                     output.contains("Error:"))) {
+                throw new IllegalStateException("Android command reported a failure");
+            }
             JSONObject result = new JSONObject();
             result.put("action", action);
             result.put("target", target == null ? "" : target.substring(0, Math.min(240, target.length())));
