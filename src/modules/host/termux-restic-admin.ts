@@ -10,6 +10,7 @@ import {
 } from './termux-admin.ts';
 
 const RESTIC_BIN = '/data/data/com.termux/files/usr/bin/restic';
+const TERMUX_FILES = '/data/data/com.termux/files';
 const MAX_SNAPSHOTS = 40;
 const SNAPSHOT_ID = /^[a-f0-9]{64}$/;
 
@@ -79,12 +80,14 @@ export class ResticWorkspaceAdmin {
     run: Exec,
     timeout: number,
     createKey = false,
+    cwd?: string,
   ): Promise<HostCommandResult> {
     const { repository, passwordFile } = this.prepare(createKey);
     const result = await run(RESTIC_BIN, ['-r', repository, ...args], {
       timeout,
       maxBuffer: 192000,
       outputLimit: 170000,
+      cwd,
       env: {
         ...process.env,
         RESTIC_PASSWORD: undefined,
@@ -108,7 +111,15 @@ export class ResticWorkspaceAdmin {
 
   async backup(run: Exec = executeFixed): Promise<HostCommandResult> {
     await this.initialize(run);
-    return this.restic(['backup', '--tag', 'pockethost-h3', '--', this.files.root], run, 600000);
+    const source = this.files.root;
+    // Relative source avoids inaccessible Android ancestor xattrs (/data/data).
+    return this.restic(
+      ['backup', '--tag', 'pockethost-h3', '--', path.basename(source)],
+      run,
+      600000,
+      false,
+      path.dirname(source),
+    );
   }
 
   async snapshots(run: Exec = executeFixed): Promise<ResticSnapshot[]> {
@@ -184,10 +195,20 @@ export class ResticWorkspaceAdmin {
   ): Promise<HostCommandResult> {
     const roots = this.scopeRoots(scope);
     await this.initialize(run);
+    if (roots.some((root) => path.dirname(root) !== TERMUX_FILES))
+      throw new Error('Unexpected Termux backup roots');
+    // HOME and PREFIX are siblings: backup them relative to their readable parent.
+    // Exclude both absolute and parent-relative repository/key paths.
     return this.restic(
-      ['backup', '--tag', 'pockethost-h34-' + scope, '--exclude', this.state, '--', ...roots],
+      [
+        'backup', '--tag', 'pockethost-h34-' + scope,
+        '--exclude', this.state, '--exclude', path.relative(TERMUX_FILES, this.state),
+        '--', ...roots.map((root) => path.basename(root)),
+      ],
       run,
       600000,
+      false,
+      TERMUX_FILES,
     );
   }
 
