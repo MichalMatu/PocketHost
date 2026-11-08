@@ -1,6 +1,7 @@
 package pl.pockethost.companion;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Build;
@@ -15,6 +16,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.EditText;
+import android.widget.ScrollView;
+import android.graphics.Typeface;
 
 import org.json.JSONObject;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +31,8 @@ public final class MainActivity extends Activity {
     private final ExecutorService readings = Executors.newSingleThreadExecutor();
     private TextView status;
     private TextView reading;
+    private TextView ownerResult;
+    private LinearLayout ownerSection;
     private IPowerUserService powerService;
     private boolean bound = false;
     private boolean telemetryServiceStarted = false;
@@ -110,7 +116,38 @@ public final class MainActivity extends Activity {
         reading.setText("No privileged CPU sample yet.");
         reading.setTextIsSelectable(true);
         layout.addView(reading);
-        setContentView(layout);
+        TextView ownerTitle = new TextView(this);
+        ownerTitle.setText("Local Android power-user controls");
+        ownerTitle.setTextSize(20);
+        ownerTitle.setTypeface(null, Typeface.BOLD);
+        ownerTitle.setPadding(0, 30, 0, 12);
+        layout.addView(ownerTitle);
+        TextView ownerWarning = new TextView(this);
+        ownerWarning.setText("Actions below execute ONLY inside this phone app after confirmation. " +
+                "The PocketHost LAN dashboard remains read-only. Shizuku ADB is not root.");
+        layout.addView(ownerWarning);
+        LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setOrientation(LinearLayout.VERTICAL);
+        layout.addView(toolbar);
+        ownerSection = new LinearLayout(this);
+        ownerSection.setOrientation(LinearLayout.VERTICAL);
+        layout.addView(ownerSection);
+        ownerResult = new TextView(this);
+        ownerResult.setPadding(0, 22, 0, 40);
+        ownerResult.setTextIsSelectable(true);
+        ownerResult.setText("Select a section; no privileged action is automatic.");
+        layout.addView(ownerResult);
+        addTab(toolbar, "Applications", this::showApplications);
+        addTab(toolbar, "CPU & processes", this::showProcesses);
+        addTab(toolbar, "Permissions", this::showPermissions);
+        addTab(toolbar, "Services & settings", this::showServices);
+        addTab(toolbar, "Advanced shell", this::showShell);
+        addTab(toolbar, "Power & hardware", this::showPower);
+        showApplications();
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(layout);
+        setContentView(scroll);
 
         Shizuku.addBinderReceivedListenerSticky(binderReceived);
         Shizuku.addBinderDeadListener(binderDead);
@@ -249,6 +286,181 @@ public final class MainActivity extends Activity {
                 sampling.set(false);
             }
         });
+    }
+
+
+    private void addTab(LinearLayout parent, String name, Runnable handler) {
+        Button item = new Button(this);
+        item.setText(name);
+        item.setAllCaps(false);
+        item.setOnClickListener(v -> handler.run());
+        parent.addView(item);
+    }
+
+    private void section(String title, String hint) {
+        ownerSection.removeAllViews();
+        TextView heading = new TextView(this);
+        heading.setText(title);
+        heading.setTextSize(18);
+        heading.setTypeface(null, Typeface.BOLD);
+        heading.setPadding(0, 16, 0, 6);
+        ownerSection.addView(heading);
+        TextView description = new TextView(this);
+        description.setText(hint);
+        description.setPadding(0, 0, 0, 12);
+        ownerSection.addView(description);
+    }
+
+    private EditText field(String hint) {
+        EditText entry = new EditText(this);
+        entry.setSingleLine(true);
+        entry.setHint(hint);
+        ownerSection.addView(entry);
+        return entry;
+    }
+
+    private void action(String title, String operation, EditText target, EditText value) {
+        Button button = new Button(this);
+        button.setAllCaps(false);
+        button.setText(title);
+        button.setOnClickListener(v -> confirmOperation(operation,
+                target == null ? "" : target.getText().toString().trim(),
+                value == null ? "" : value.getText().toString().trim()));
+        ownerSection.addView(button);
+    }
+
+    private void inspect(String heading, java.util.concurrent.Callable<String> reading) {
+        if (!permissionGranted() || powerService == null) {
+            ownerResult.setText("Shizuku user service not connected. Authorize and start monitoring first.");
+            bindAndSample();
+            return;
+        }
+        ownerResult.setText("Reading " + heading + "...");
+        readings.execute(() -> {
+            try {
+                String content = reading.call();
+                if (content.length() > 18000) content = content.substring(0, 18000) + "\n[truncated]";
+                final String result = content;
+                runOnUiThread(() -> ownerResult.setText(result));
+            } catch (Exception failure) {
+                runOnUiThread(() -> ownerResult.setText("Android read rejected: " +
+                        failure.getClass().getSimpleName() + ": " + failure.getMessage()));
+            }
+        });
+    }
+
+    private void showApplications() {
+        section("Applications", "Inspect the selected Android package, launch it, force-stop it, " +
+                "or uninstall for the current Android user after explicit confirmation.");
+        EditText pkg = field("Package name (e.g. com.example.app)");
+        Button details = new Button(this);
+        details.setText("Read app details / permissions");
+        details.setAllCaps(false);
+        details.setOnClickListener(v -> inspect("app details",
+                () -> new JSONObject(powerService.inspectApp(pkg.getText().toString().trim()))
+                        .toString(2)));
+        ownerSection.addView(details);
+        action("Launch application", "launch", pkg, null);
+        action("Force-stop application", "force-stop", pkg, null);
+        action("Uninstall for Android user 0", "uninstall", pkg, null);
+    }
+
+    private void showProcesses() {
+        section("CPU & processes", "Inspect observed PIDs and memory, then optionally send TERM to " +
+                "a specifically selected PID. Killing a system process may disrupt Android.");
+        Button refresh = new Button(this);
+        refresh.setText("Read live process inventory");
+        refresh.setOnClickListener(v -> inspect("processes",
+                () -> new JSONObject(powerService.readSystemOverview())
+                        .getJSONArray("processes").toString(2)));
+        ownerSection.addView(refresh);
+        EditText pid = field("Exact process PID");
+        action("Send TERM to selected PID", "process-stop", pid, null);
+    }
+
+    private void showPermissions() {
+        section("Permissions", "Inspect a package in Applications first. Android will reject " +
+                "grants or revocations outside actual ADB/root privileges or non-runtime permissions.");
+        EditText pkg = field("Exact package name");
+        EditText permission = field("android.permission.CAMERA");
+        action("Grant selected runtime permission", "grant", pkg, permission);
+        action("Revoke selected runtime permission", "revoke", pkg, permission);
+    }
+
+    private void showServices() {
+        section("Services & settings", "Service components require their exact package/class name. " +
+                "Android may reject non-exported services or settings.");
+        Button summary = new Button(this);
+        summary.setText("Read service and settings observations");
+        summary.setOnClickListener(v -> inspect("services and settings", () -> {
+            JSONObject data = new JSONObject(powerService.readSystemOverview());
+            JSONObject limited = new JSONObject();
+            limited.put("services", data.getJSONObject("services"));
+            limited.put("settings", data.getJSONObject("settings"));
+            return limited.toString(2);
+        }));
+        ownerSection.addView(summary);
+        EditText component = field("com.example.app/.ExampleService");
+        action("Start selected service", "service-start", component, null);
+        action("Stop selected service", "service-stop", component, null);
+        EditText brightness = field("Brightness value 0–255");
+        action("Set screen brightness", "brightness", null, brightness);
+        EditText timeout = field("Screen timeout milliseconds (15000–3600000)");
+        action("Set screen timeout", "timeout", null, timeout);
+    }
+
+    private void showShell() {
+        section("Advanced shell", "Runs the exact typed command with the current Shizuku shell/root UID. " +
+                "Review every command: it may alter or remove Android data. No LAN shell endpoint exists.");
+        EditText command = field("Android shell command (max 240 characters)");
+        action("Review and execute on this phone", "shell", command, null);
+    }
+
+    private void showPower() {
+        section("Power & hardware", "Shizuku-backed battery level, temperature, available RAM and " +
+                "device settings. Missing readings remain unavailable.");
+        Button summary = new Button(this);
+        summary.setText("Read power and hardware");
+        summary.setOnClickListener(v -> inspect("power and hardware", () -> {
+            JSONObject data = new JSONObject(powerService.readSystemOverview());
+            return data.getJSONObject("power").toString(2);
+        }));
+        ownerSection.addView(summary);
+    }
+
+    private void confirmOperation(String operation, String target, String value) {
+        if (!permissionGranted() || powerService == null) {
+            ownerResult.setText("Shizuku permission or user service is missing.");
+            bindAndSample();
+            return;
+        }
+        if (target.isEmpty() && !operation.equals("brightness") && !operation.equals("timeout")) {
+            ownerResult.setText("Select an exact target before executing.");
+            return;
+        }
+        String description = "Operation: " + operation + "\nTarget: " + target +
+                (value.isEmpty() ? "" : "\nValue: " + value) +
+                "\n\nRuns as " + (Shizuku.getUid() == 0 ? "root" : "ADB shell") +
+                " on this phone. Changes may be permanent. Continue?";
+        new AlertDialog.Builder(this)
+                .setTitle("Confirm Android operation")
+                .setMessage(description)
+                .setNegativeButton("Cancel", (dialog, choice) -> ownerResult.setText("Cancelled"))
+                .setPositiveButton("Execute", (dialog, choice) -> {
+                    IPowerUserService active = powerService;
+                    ownerResult.setText("Android operation in progress...");
+                    readings.execute(() -> {
+                        try {
+                            String json = active.runOwnerAction(operation, target, value);
+                            JSONObject response = new JSONObject(json);
+                            runOnUiThread(() -> ownerResult.setText(response.toString()));
+                        } catch (Exception failure) {
+                            runOnUiThread(() -> ownerResult.setText(
+                                    "Android operation failed/refused: " +
+                                    failure.getClass().getSimpleName() + ": " + failure.getMessage()));
+                        }
+                    });
+                }).show();
     }
 
     @Override protected void onResume() {
