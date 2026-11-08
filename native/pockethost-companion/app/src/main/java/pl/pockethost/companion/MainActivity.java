@@ -422,7 +422,7 @@ public final class MainActivity extends Activity {
         arm.setOnClickListener(v -> {
             String code = RemoteShellInbox.arm();
             ownerResult.setText("Temporary browser pairing code: " + code +
-                    "\\nEnter this in PocketHost → Android & Shizuku → Advanced shell " +
+                    "\nEnter this in PocketHost → Android & Shizuku → Advanced shell " +
                     "on your computer. Every submitted command still requires approval here. " +
                     "Pairing is lost after app restart.");
         });
@@ -440,8 +440,8 @@ public final class MainActivity extends Activity {
             }
             new AlertDialog.Builder(this)
                     .setTitle("Approve browser shell command?")
-                    .setMessage("Exact command from computer:\\n\\n" + pending.command +
-                            "\\n\\nExecutes as " + (Shizuku.getUid() == 0 ? "root" : "ADB shell") +
+                    .setMessage("Exact command from computer:\n\n" + pending.command +
+                            "\n\nExecutes as " + (Shizuku.getUid() == 0 ? "root" : "ADB shell") +
                             " on this Samsung. Do not approve unexpected requests.")
                     .setNegativeButton("Deny", (dialog, choice) -> {
                         RemoteShellInbox.deny(pending.id);
