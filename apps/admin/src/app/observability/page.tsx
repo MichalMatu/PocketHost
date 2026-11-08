@@ -18,20 +18,50 @@ async function loadSnapshot(signal?: AbortSignal): Promise<ObservabilitySnapshot
   return parseObservabilitySnapshot(payload)
 }
 
-function Metric({ label, value, detail, icon: Icon }: {
+function Metric({ label, value, detail, icon: Icon, pending }: {
   label: string
   value: string
   detail: string
   icon: typeof Cpu
+  pending?: boolean
 }) {
   return (
-    <Card>
+    <Card className="min-h-36">
       <CardHeader className="gap-1">
         <CardDescription className="flex items-center gap-2"><Icon className="size-4" />{label}</CardDescription>
-        <CardTitle className="text-2xl">{value}</CardTitle>
+        <CardTitle className="text-2xl">
+          {pending
+            ? <span aria-label="Loading" className="block h-7 w-28 max-w-full animate-pulse rounded bg-muted" />
+            : value}
+        </CardTitle>
       </CardHeader>
-      <CardContent className="text-muted-foreground text-xs">{detail}</CardContent>
+      <CardContent className="text-muted-foreground min-h-4 text-xs">{pending ? "\u00a0" : detail}</CardContent>
     </Card>
+  )
+}
+
+const panelTitles = [
+  "CPU history", "Network and alerts", "Observed processes",
+  "Installed packages", "Service status", "Runtime diagnostics",
+] as const
+
+function PendingPanels({ pending }: { pending: boolean }) {
+  return (
+    <div className="grid gap-4 xl:grid-cols-2" aria-busy={pending} data-testid="observability-panels">
+      {panelTitles.map((title) => (
+        <Card key={title} className="min-h-52">
+          <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
+          <CardContent className="min-h-28">
+            {pending
+              ? <div aria-label="Loading" className="space-y-3">
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                  <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+                </div>
+              : <p className="text-muted-foreground text-sm">Unavailable</p>}
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   )
 }
 
@@ -85,23 +115,23 @@ export default function ObservabilityPage() {
           </Button>
         </div>
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-        {!snapshot && loading && <p role="status">Reading this phone…</p>}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy={loading && !snapshot} data-testid="observability-metrics">
+          <Metric label="CPU utilization" icon={Cpu} pending={loading && !snapshot}
+            value={cpu?.state === "ok" ? `${cpu.value?.toFixed(1)}%` : "Unavailable"}
+            detail={cpu?.state === "ok" ? "System-wide sampled delta" : cpu?.state ?? "unavailable"} />
+          <Metric label="Available RAM" icon={Activity} pending={loading && !snapshot}
+            value={snapshot ? `${snapshot.host.runtime.freeMemoryMiB.toLocaleString()} MiB` : "Unavailable"}
+            detail={snapshot ? `of ${snapshot.host.runtime.totalMemoryMiB.toLocaleString()} MiB · system-wide` : "unavailable"} />
+          <Metric label="Free Termux storage" icon={HardDrive} pending={loading && !snapshot}
+            value={snapshot?.host.runtime.storage ? `${snapshot.host.runtime.storage.availableMiB.toLocaleString()} MiB` : "Unavailable"}
+            detail={snapshot?.host.runtime.storage ? "Termux home filesystem" : "No permitted storage reading"} />
+          <Metric label="Battery" icon={Battery} pending={loading && !snapshot}
+            value={battery?.state === "ok" ? `${battery.value}%` : "Unavailable"}
+            detail={battery?.state === "ok" ? "Android sysfs reading" : battery?.state ?? "unavailable"} />
+        </div>
+        {!snapshot && <PendingPanels pending={loading} />}
         {snapshot && (
           <>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <Metric label="CPU utilization" icon={Cpu}
-                value={cpu?.state === "ok" ? `${cpu.value?.toFixed(1)}%` : "Unavailable"}
-                detail={cpu?.state === "ok" ? "System-wide sampled delta" : cpu?.state ?? "unavailable"} />
-              <Metric label="Available RAM" icon={Activity}
-                value={`${snapshot.host.runtime.freeMemoryMiB.toLocaleString()} MiB`}
-                detail={`of ${snapshot.host.runtime.totalMemoryMiB.toLocaleString()} MiB · system-wide`} />
-              <Metric label="Free Termux storage" icon={HardDrive}
-                value={snapshot.host.runtime.storage ? `${snapshot.host.runtime.storage.availableMiB.toLocaleString()} MiB` : "Unavailable"}
-                detail={snapshot.host.runtime.storage ? "Termux home filesystem" : "No permitted storage reading"} />
-              <Metric label="Battery" icon={Battery}
-                value={battery?.state === "ok" ? `${battery.value}%` : "Unavailable"}
-                detail={battery?.state === "ok" ? "Android sysfs reading" : battery?.state ?? "unavailable"} />
-            </div>
             <div className="grid gap-4 xl:grid-cols-2">
               <Card>
                 <CardHeader><CardTitle>CPU history</CardTitle>
