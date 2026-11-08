@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [H3.4 API, Restic and ttyd acceptance follow-up](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
+
 - [General repository audit, Restic regression and acceptance status](checkpoints/2026-11-07-general-repository-audit-repair.md)
 - [H3.4 Full Termux Administration source candidate](checkpoints/2026-11-07-h34-full-termux-source.md)
 - [H3 Termux Control Center foundation](checkpoints/2026-11-07-h3-termux-center-branch.md)
