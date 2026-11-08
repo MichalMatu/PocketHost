@@ -5,6 +5,9 @@ import android.system.Os;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.json.JSONObject;
@@ -51,21 +54,32 @@ public final class PowerUserService extends IPowerUserService.Stub {
 
     private static String execute(int limit, String... argv) throws Exception {
         Process process = new ProcessBuilder(argv).redirectErrorStream(true).start();
-        if (!process.waitFor(7, TimeUnit.SECONDS)) {
-            process.destroyForcibly();
-            throw new IllegalStateException("Android system sampling timed out");
-        }
-        if (process.exitValue() != 0) {
-            throw new IllegalStateException("Android system command rejected");
-        }
-        StringBuilder result = new StringBuilder();
-        try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            String line;
-            while ((line = input.readLine()) != null && result.length() < limit) {
-                result.append(line).append('\n');
+        ExecutorService reader = Executors.newSingleThreadExecutor();
+        try {
+            Future<String> output = reader.submit(() -> {
+                StringBuilder result = new StringBuilder();
+                try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+                    String line;
+                    while ((line = input.readLine()) != null) {
+                        // Always drain output, including after reaching the result limit.
+                        if (result.length() < limit) {
+                            result.append(line, 0, Math.min(line.length(), limit - result.length())).append('\n');
+                        }
+                    }
+                }
+                return result.toString();
+            });
+            if (!process.waitFor(7, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Android system sampling timed out");
             }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("Android system command rejected");
+            }
+            return output.get(2, TimeUnit.SECONDS);
+        } finally {
+            process.destroyForcibly();
+            reader.shutdownNow();
         }
-        return result.toString();
     }
 
     @Override
