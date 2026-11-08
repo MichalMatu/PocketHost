@@ -102,6 +102,17 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
     return method === 'POST' ? 610000 : method === 'GET' ? 30000 : 5000;
   }
   if (requestPath?.startsWith('/api/v1/sites')) return 30000;
+  // The local Companion may spend 3.5s checking Shizuku authorization plus
+  // up to 15s reading packages. Preserve the UI's 25s request budget.
+  // Never extend timeouts for commands, unrecognized paths or write methods.
+  if (
+    method === 'GET' &&
+    (route === '/api/v1/shizuku/apps' ||
+      route === '/api/v1/shizuku/app' ||
+      route === '/api/v1/shizuku/system')
+  ) {
+    return 24000;
+  }
   return route === '/api/v1/observability' ? 25000 : 5000;
 }
 
