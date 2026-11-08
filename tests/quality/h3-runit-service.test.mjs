@@ -58,7 +58,10 @@ test('H3 protected services, path traversal and symlink aliases never become man
     await assert.rejects(admin.apply('stop', 'wreckscanner'), /Protected/);
     await assert.rejects(admin.apply('register', 'wreckscanner-backup'), /Protected/);
     await assert.rejects(admin.apply('stop', 'wreckscanner-backup'), /Protected/);
-    assert.equal(admin.list(() => 'running').find((x) => x.name === 'wreckscanner-backup')?.protected, true);
+    assert.equal(
+      admin.list(() => 'running').find((x) => x.name === 'wreckscanner-backup')?.protected,
+      true,
+    );
     await assert.rejects(admin.apply('register', '../service'), /Invalid/);
     await assert.rejects(admin.apply('start', 'site-worker/../wreckscanner'), /Invalid/);
     symlinkSync(path.join(services, 'wreckscanner'), path.join(services, 'alias'));
