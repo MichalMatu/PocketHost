@@ -130,3 +130,18 @@ revert only the affected PocketHost commits on `main` without force
 push; the installed prior Companion and verified CPU bridge remain
 the stable fallback until a guarded device-level re-test passes.
 Continue from current `main` HEAD, never from these historical SHAs.
+
+
+## Follow-up scope: native charge status, selected app details, GiB (2026-11-08)
+
+- Add Android battery \`status\` and AC/USB/wireless/dock supply fallback
+  (do not invent the charge state on a full battery).
+- Display package labels and enabled state, inspect selected package
+  version/SDK/requested permissions and an optional native icon.
+- Convert KiB readings to GiB in the Android UI, with precision suitable
+  for processes and whole-device RAM.
+- Native read-only \`/app\` and browser \`/api/v1/shizuku/app\` are
+  fixed GET-only transports; no privileged web mutation API is created.
+- Exact-source Termux/Gradle, physical charge-state readings and
+  owner-confirmed harmless shell/negative action tests remain OPEN until
+  a terminal receipt confirms them.

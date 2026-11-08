@@ -7,6 +7,15 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Follow-up source: charging, application identities and GiB (2026-11-08)
+
+Battery charging states are derived from Android status and actual power-source
+flags; package labels, version, SDK, requested permissions and optional native
+icons have a fixed read-only web detail path. Android RAM/RSS displays GiB.
+Source-only until the corresponding signed Companion is installed and live
+read-only endpoint checks succeed. Keep owner mutations on the phone only.
+
+
 ## Seven-area Shizuku hardware update — 2026-11-08
 
 PocketHost Companion source at \`80c15b5\` was compiled, signature-verified

@@ -28,11 +28,11 @@ describe("Shizuku applications contract", () => {
     const inventory = {
       version: 1, source: "android-companion", connected: true, authorized: true,
       mode: "adb", observedAt: now, truncated: false,
-      packages: [{ packageName: "com.example.demo", system: false }],
+      packages: [{ packageName: "com.example.demo", system: false, label: "Example App", enabled: true }],
     }
     expect(parseShizukuApps(inventory).packages[0].system).toBe(false)
     expect(() => parseShizukuApps({ ...inventory, packages: [inventory.packages[0], inventory.packages[0]] })).toThrow()
-    expect(() => parseShizukuApps({ ...inventory, packages: [{ packageName: "bad;app", system: true }] })).toThrow()
+    expect(() => parseShizukuApps({ ...inventory, packages: [{ packageName: "bad;app", system: true, label: "Bad", enabled: true }] })).toThrow()
   })
 })
 
@@ -64,5 +64,22 @@ describe("Shizuku charging states", () => {
     expect(state.chargingState).toBe("full")
     expect(state.powerConnected).toBe(true)
     expect(state.charging).toBe(false)
+  })
+})
+
+
+describe("Shizuku selected application details", () => {
+  it("accepts only typed package metadata and unique requested permissions", async () => {
+    const { parseShizukuApp } = await import("@/lib/shizuku-schema")
+    const app = {
+      version: 1, source: "android-companion", packageName: "com.example.demo",
+      label: "Demo", versionName: "2.0", versionCode: 20, targetSdk: 35,
+      enabled: true, system: false,
+      permissions: [{ name: "android.permission.CAMERA", granted: true }],
+    }
+    expect(parseShizukuApp(app).label).toBe("Demo")
+    expect(() => parseShizukuApp({ ...app,
+      permissions: [...app.permissions, ...app.permissions] })).toThrow()
+    expect(() => parseShizukuApp({ ...app, iconPng: "not base64!" })).toThrow()
   })
 })
