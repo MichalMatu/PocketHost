@@ -7,6 +7,38 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
 
+## Latest 2026-11-08 API and hardware follow-up
+
+Read [H3.4 API and native diagnostic checkpoint](
+checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
+before retrying anything.
+
+- The existing live H3.4 panel remains on
+  `e1c11e7`; `f16982d` passed full Samsung
+  `check:all` separately and must not be retested.
+- Local Agent API package preview, filesystem
+  mutation of disposable data, snapshots and
+  protections passed. Isolated relative Restic
+  backup/check/staged restore passed; the original
+  absolute backup failed on Android ancestor xattrs.
+- The new Restic relative-source adapter passed
+  five focused Node tests on `d1e7b10`; Prettier
+  reported an issue and was fixed in subsequent
+  source commits. Exact-latest-SHA G2 is not yet
+  accepted.
+- A bounded actual ttyd start crashed with
+  SIGSEGV (-11), libwebsockets 5.1.0. HTTP 409
+  is expected until the native failure is fixed.
+  An isolated argv-compatibility task is still
+  pending; do not claim ttyd acceptance.
+- `wreckscanner-backup` was added to the protected
+  runit allow-deny policy. The change exists in
+  the repository only, not in the live panel.
+- No full system backup, restore into HOME/PREFIX,
+  package upgrades, terminal exposure, service
+  restart or new panel cutover is authorized.
+
+
 ## Current general audit continuation — 2026-11-07
 
 The audit starts from `main@437dd64662885caedfbc8b12a40b994c3d677a06`,
