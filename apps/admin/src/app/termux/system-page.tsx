@@ -18,6 +18,13 @@ const modules = [
   { title: "Agents & API", to: "/agents", icon: Bot, detail: "Local typed agent capabilities" },
 ]
 
+function MetricValue({ loading, value }: { loading: boolean; value: string | null }) {
+  if (loading) return (
+    <span aria-label="Loading" className="block h-6 w-28 max-w-full animate-pulse rounded bg-muted" />
+  )
+  return <>{value ?? "Unavailable"}</>
+}
+
 export default function SystemPage() {
   const [host, setHost] = React.useState<HostSnapshot | null>(null)
   const [error, setError] = React.useState(false)
@@ -61,28 +68,37 @@ export default function SystemPage() {
         <p className="text-muted-foreground text-sm">
           Termux controls run as this OS user. Never expose administrative actions to the public internet.
         </p>
-        {loading && <p role="status" className="text-muted-foreground text-sm">Loading host status…</p>}
-        {error && <p role="alert">Host status unavailable; module navigation remains available.</p>}
-        {host && (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <Card>
-              <CardHeader><CardDescription>Node runtime</CardDescription><CardTitle>{host.runtime.nodeVersion}</CardTitle></CardHeader>
-              <CardContent className="text-muted-foreground text-xs">{host.runtime.architecture}</CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardDescription>Free RAM</CardDescription><CardTitle>{host.runtime.freeMemoryMiB.toLocaleString()} MiB</CardTitle></CardHeader>
-              <CardContent className="text-muted-foreground text-xs">System-wide</CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardDescription>Free Termux storage</CardDescription><CardTitle>{host.runtime.storage ? host.runtime.storage.availableMiB.toLocaleString() + " MiB" : "Unavailable"}</CardTitle></CardHeader>
-              <CardContent className="text-muted-foreground text-xs">Home filesystem</CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardDescription>Observed services</CardDescription><CardTitle>{host.services.length}</CardTitle></CardHeader>
-              <CardContent className="text-muted-foreground text-xs">External services are read-only</CardContent>
-            </Card>
-          </div>
-        )}
+        <div data-testid="system-metrics" aria-busy={loading} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Card className="min-h-32">
+            <CardHeader>
+              <CardDescription>Node runtime</CardDescription>
+              <CardTitle><MetricValue loading={loading} value={!error ? host?.runtime.nodeVersion ?? null : null} /></CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-xs">{!error ? host?.runtime.architecture ?? "Unavailable" : "Unavailable"}</CardContent>
+          </Card>
+          <Card className="min-h-32">
+            <CardHeader>
+              <CardDescription>Free RAM</CardDescription>
+              <CardTitle><MetricValue loading={loading} value={!error && host ? host.runtime.freeMemoryMiB.toLocaleString() + " MiB" : null} /></CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-xs">System-wide</CardContent>
+          </Card>
+          <Card className="min-h-32">
+            <CardHeader>
+              <CardDescription>Free Termux storage</CardDescription>
+              <CardTitle><MetricValue loading={loading} value={!error && host?.runtime.storage ? host.runtime.storage.availableMiB.toLocaleString() + " MiB" : null} /></CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-xs">Home filesystem</CardContent>
+          </Card>
+          <Card className="min-h-32">
+            <CardHeader>
+              <CardDescription>Observed services</CardDescription>
+              <CardTitle><MetricValue loading={loading} value={!error && host ? String(host.services.length) : null} /></CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground text-xs">External services are read-only</CardContent>
+          </Card>
+        </div>
+        {error && <span role="alert" className="sr-only">Host status unavailable; module navigation remains available.</span>}
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {modules.map(({ title, to, icon: Icon, detail }) => (
             <Link to={to} key={to} className="rounded-lg outline-offset-2 focus-visible:outline-2 focus-visible:outline-ring">
