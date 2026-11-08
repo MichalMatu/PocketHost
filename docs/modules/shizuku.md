@@ -173,3 +173,15 @@ Memory values from \`/proc/meminfo\` and Android \`ps\` are reported in
 KiB; the UI now divides by 1024² and shows **GiB** (2 decimal digits for
 total/available RAM; 4 for per-process RSS so small processes remain visible).
 Native privileged mutations remain unavailable through the LAN gateway.
+
+## Paired browser shell source candidate (2026-11-08)
+
+The owner opted into entering Shizuku shell commands directly from the
+desktop browser. New source defines an ephemeral 10-digit phone pairing
+code, explicit phone approval for each exact command, a request-only
+Android loopback inbox and typed Termux proxy. Neither pairing nor
+browser submission executes a command; only the native foreground
+confirmation can call the authorized Shizuku Binder service.
+The LAN has no TLS, so do not place secrets into shell commands.
+See [browser shell checkpoint](../checkpoints/2026-11-08-shizuku-browser-remote-shell.md).
+Physical build, Companion install, device and browser tests are OPEN.
