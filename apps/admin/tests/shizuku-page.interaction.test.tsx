@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor, within } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -33,11 +33,6 @@ const system = {
     memoryTotalKb: 8000000, memoryAvailableKb: 3000000 },
   settings: { brightness: 128, airplaneMode: false },
   services: { names: ["com.example/.Service"], truncated: false },
-}
-const detail = {
-  version: 1, source: "android-companion", packageName: "com.example.app0",
-  label: "Example 0", versionName: "1.0", versionCode: 1, targetSdk: 35,
-  enabled: true, system: false, permissions: [],
 }
 function mount(fetcher: (url: string) => Promise<unknown>) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
