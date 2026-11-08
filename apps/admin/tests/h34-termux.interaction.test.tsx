@@ -38,6 +38,42 @@ describe("H3.4 full Termux administration", () => {
       action: "full-file", name: "save", root: "home", path: "new.md", content: "Hello Termux",
     })
   })
+  it("clears stale editor text when switching the file path", async () => {
+    const user = userEvent.setup()
+    const posts: Record<string, unknown>[] = []
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        const payload = JSON.parse(String(options.body)) as Record<string, unknown>
+        posts.push(payload)
+        return { ok: true, json: async () =>
+          payload.name === "read" ? { content: "Previous file text" } : { changed: true } }
+      }
+      if (url.includes("mode=file-roots")) return { ok: true, json: async () => ({
+        roots: [{ id: "home", available: true }, { id: "prefix", available: true }],
+      }) }
+      return { ok: true, json: async () => ({
+        path: "", entries: [{ name: "old.txt", kind: "file", bytes: 18 }], truncated: false,
+      }) }
+    }))
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<TermuxFileExplorer />)
+    await screen.findByText(/old.txt \(18 B\)/)
+    await user.click(screen.getByRole("button", { name: "Edit" }))
+    expect((screen.getByLabelText("Termux text editor") as HTMLTextAreaElement).value)
+      .toBe("Previous file text")
+    const source = screen.getByLabelText("Termux file source")
+    await user.clear(source)
+    await user.type(source, "new.txt")
+    expect(screen.queryByLabelText("Termux text editor")).toBeNull()
+    await user.click(screen.getByRole("button", { name: "New / Edit text file" }))
+    expect((screen.getByLabelText("Termux text editor") as HTMLTextAreaElement).value)
+      .toBe("")
+    await user.type(screen.getByLabelText("Termux text editor"), "New file text")
+    await user.click(screen.getByRole("button", { name: "Save text" }))
+    expect(posts.find(item => item.name === "save")).toMatchObject({
+      action: "full-file", root: "home", path: "new.txt", content: "New file text",
+    })
+  })
   it("starts one ttyd session only on click, no password and no autostart", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, options?: RequestInit) => {

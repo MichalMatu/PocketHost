@@ -1,8 +1,9 @@
 import * as React from "react"
-import { Activity, Archive, Bot, FolderOpen, Globe2, Package, ServerCog, Terminal } from "lucide-react"
+import { Activity, Archive, Bot, FolderOpen, Globe2, Package, RefreshCw, ServerCog, Terminal } from "lucide-react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 
@@ -20,6 +21,13 @@ const modules = [
 export default function SystemPage() {
   const [host, setHost] = React.useState<HostSnapshot | null>(null)
   const [error, setError] = React.useState(false)
+  const [loading, setLoading] = React.useState(true)
+  const [refreshCount, setRefreshCount] = React.useState(0)
+  const refresh = () => {
+    setLoading(true)
+    setError(false)
+    setRefreshCount(previous => previous + 1)
+  }
   React.useEffect(() => {
     const controller = new AbortController()
     void fetch("/api/v1/host/snapshot", {
@@ -31,20 +39,29 @@ export default function SystemPage() {
       if (!controller.signal.aborted) setHost(data)
     }).catch(() => {
       if (!controller.signal.aborted) setError(true)
+    }).finally(() => {
+      if (!controller.signal.aborted) setLoading(false)
     })
     return () => controller.abort()
-  }, [])
+  }, [refreshCount])
 
   return (
     <BaseLayout title="System dashboard" description="Termux management with hosting as one module">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">Private-LAN management · no login</Badge>
-          <Badge variant="outline">On-demand metrics only</Badge>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline">DEV · Private LAN</Badge>
+            <Badge variant="outline">On-demand metrics</Badge>
+          </div>
+          <Button variant="outline" size="sm" onClick={refresh} disabled={loading}>
+            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />
+            Refresh status
+          </Button>
         </div>
         <p className="text-muted-foreground text-sm">
           Termux controls run as this OS user. Never expose administrative actions to the public internet.
         </p>
+        {loading && <p role="status" className="text-muted-foreground text-sm">Loading host status…</p>}
         {error && <p role="alert">Host status unavailable; module navigation remains available.</p>}
         {host && (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">

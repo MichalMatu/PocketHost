@@ -41,11 +41,18 @@ export function TermuxFileExplorer() {
   const [notice, setNotice] = React.useState("")
   const [error, setError] = React.useState("")
   const combine = (name: string) => [folder, name].filter(Boolean).join("/")
+  // Never carry the previous file's text into another path.
+  const chooseTarget = (path: string) => {
+    setTarget(path)
+    setContent("")
+    setEditing(false)
+  }
   const load = React.useCallback(async (selected: Root, relative: string) => {
     setBusy(true); setError("")
     try {
       const data = await browse(selected, relative)
-      setRoot(selected); setFolder(relative); setListing(data); setEditing(false); setTarget("")
+      setRoot(selected); setFolder(relative); setListing(data)
+      setEditing(false); setTarget(""); setContent(""); setDestination(""); setNotice("")
     } catch (e) { setError(e instanceof Error ? e.message : "Browsing failed") }
     finally { setBusy(false) }
   }, [])
@@ -146,7 +153,7 @@ export function TermuxFileExplorer() {
           {item.kind === "directory" && <>
             <Button size="sm" variant="outline" disabled={busy}
               onClick={() => void load(root, combine(item.name))}>Open</Button>
-            <Button size="sm" variant="outline" disabled={busy} onClick={() => setTarget(combine(item.name))}>
+            <Button size="sm" variant="outline" disabled={busy} onClick={() => chooseTarget(combine(item.name))}>
               Select folder
             </Button>
             <Button size="sm" variant="outline" disabled={busy}
@@ -163,7 +170,7 @@ export function TermuxFileExplorer() {
       {listing?.truncated && <p className="p-2 text-xs">Directory listing limited to 300 entries.</p>}
     </div>
     <Input placeholder="New folder, file, or source path" aria-label="Termux file source"
-      value={target} onChange={event => setTarget(event.target.value)} />
+      value={target} onChange={event => chooseTarget(event.target.value)} />
     <Input placeholder="Destination path for copy/move" aria-label="Termux destination"
       value={destination} onChange={event => setDestination(event.target.value)} />
     <div className="flex flex-wrap gap-2">
