@@ -41,3 +41,13 @@ and heavy tests for tiny UI changes. Preserve the existing DEV
 panel and the user's explicit intent for mutations.
 
 [ADR-0013](../adr/0013-shizuku-power-user.md)
+
+## UI boundary — 2026-11-08
+
+**Android & Shizuku** owns full-device CPU utilization and Android-wide
+process telemetry, separate from ordinary Termux monitoring. Its page
+has capability cards and will consume a typed local companion status
+endpoint when implemented. Connected/authorized state must come from
+real bridge evidence, not from a previous ADB diagnostic or an installed
+app package. Controls must execute actual owner-directed actions and
+report success or refusal; no placebo authorization button.

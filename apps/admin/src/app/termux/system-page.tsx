@@ -9,8 +9,8 @@ import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema
 import { formatMemory } from "@/lib/format-memory"
 
 const modules = [
-  { title: "Monitoring", to: "/observability", icon: Activity, detail: "CPU, memory and service health" },
-  { title: "Android & Shizuku", to: "/shizuku", icon: Smartphone, detail: "Android power-user controls and device access" },
+  { title: "Monitoring", to: "/observability", icon: Activity, detail: "Termux memory, storage and visible processes" },
+  { title: "Android & Shizuku", to: "/shizuku", icon: Smartphone, detail: "Full device CPU and Android controls (native bridge)" },
   { title: "Packages", to: "/packages", icon: Package, detail: "Inventory and reviewed software actions" },
   { title: "File Manager", to: "/files", icon: FolderOpen, detail: "One explorer with named roots" },
   { title: "Services", to: "/services", icon: ServerCog, detail: "Observed and registered services" },

@@ -7,6 +7,16 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Monitoring ownership split — 2026-11-08
+
+Termux monitoring (/observability) is for actually readable Termux
+resources, visible processes and cumulative process CPU ticks; remove
+the misleading unavailable full-device CPU history. Full Android CPU
+and privileged process/app/device controls belong in /shizuku after
+real native companion authorization. Installed Shizuku Manager is
+not equivalent to a connected PocketHost bridge. The owner requested
+this split for rapid visual evaluation.
+
 ## New owner decision — Shizuku power-user evolution (2026-11-08)
 
 PocketHost should become a **full-featured power-user control panel

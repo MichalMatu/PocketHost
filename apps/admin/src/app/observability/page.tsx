@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Activity, Battery, Cpu, HardDrive, Info, Network, RefreshCw, ShieldCheck } from "lucide-react"
+import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -54,9 +55,12 @@ function AccessInfoDialog() {
           <DialogDescription>What PocketHost can read on this Samsung</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
-          <p><strong>CPU:</strong> Android denies access to system-wide CPU counters.
-            There is no normal permission switch that PocketHost can open to grant this access.
-            The panel shows accessible Termux process counters instead, not a fabricated CPU percentage.</p>
+          <p><strong>Termux:</strong> This section reports process data that the Termux app can actually read,
+            including process counts, cumulative CPU ticks, RAM, storage, and services.
+            It does not claim to measure device-wide CPU load.</p>
+          <p><strong>Android CPU:</strong> Full device CPU and Android processes belong under
+            <Link className="ml-1 underline underline-offset-4" to="/shizuku">Android & Shizuku</Link>.
+            System-level values require a connected, authorized Android companion.</p>
           <p><strong>Battery:</strong> Termux:API is installed and the battery was readable over SSH.
             If the panel still says Unavailable, the PocketHost backend needs to reload its
             Termux:API fallback. Android app permissions can be reviewed manually in
@@ -69,7 +73,7 @@ function AccessInfoDialog() {
 }
 
 const panelTitles = [
-  "CPU and process activity", "Network and alerts", "Observed processes",
+  "Termux process activity", "Network and alerts", "Observed processes",
   "Installed packages", "Service status", "Runtime diagnostics",
 ] as const
 
@@ -128,34 +132,33 @@ export default function ObservabilityPage() {
       })
     return () => controller.abort()
   }, [])
-  const cpu = snapshot?.metrics.cpuPercent
-  const battery = snapshot?.metrics.batteryPercent
+   const battery = snapshot?.metrics.batteryPercent
   const network = snapshot?.metrics.network
-  const history = snapshot?.history ?? []
-  const hasCpuHistory = history.some((point) => point.cpuPercent !== null)
   const topProcessSamples = [...(snapshot?.processes.processes ?? [])]
     .sort((a, b) => b.cpuTicks - a.cpuTicks)
     .slice(0, 5)
-  const cpuAvailable = cpu?.state === "ok"
   const processAvailable = snapshot?.processes.state === "ok"
 
   return (
-    <BaseLayout title="Observability" description="On-demand Samsung / Termux readings, no service control">
+    <BaseLayout title="Termux monitoring" description="Actual Termux-readable resources and process observations">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline"><ShieldCheck className="size-3" />Read only · sampled on request</Badge>
             <AccessInfoDialog />
           </div>
-          <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
-            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" render={<Link to="/shizuku" />}>Android CPU & Shizuku</Button>
+            <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
+              <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
+            </Button>
+          </div>
         </div>
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy={loading && !snapshot} data-testid="observability-metrics">
-          <Metric label={cpuAvailable ? "CPU utilization" : "Termux processes"} icon={Cpu} pending={loading && !snapshot}
-            value={cpuAvailable ? `${cpu.value?.toFixed(1)}%` : processAvailable ? String(snapshot?.processes.processes.length ?? 0) : "Restricted"}
-            detail={cpuAvailable ? "System-wide CPU sample" : processAvailable ? "Accessible processes · system CPU restricted" : "Android restricts CPU sampling · Access info"} />
+          <Metric label="Termux-visible processes" icon={Cpu} pending={loading && !snapshot}
+            value={processAvailable ? String(snapshot?.processes.processes.length ?? 0) : "Unavailable"}
+            detail={processAvailable ? "Partial process inventory · not device-wide CPU usage" : "Accessible process list unavailable"} />
           <Metric label="Available RAM" icon={Activity} pending={loading && !snapshot}
             value={snapshot ? formatMemory(snapshot.host.runtime.freeMemoryMiB) : "Unavailable"}
             detail={snapshot ? `of ${formatMemory(snapshot.host.runtime.totalMemoryMiB)} · system-wide` : "unavailable"} />
@@ -171,23 +174,12 @@ export default function ObservabilityPage() {
           <>
             <div className="grid gap-4 xl:grid-cols-2">
               <Card>
-                <CardHeader><CardTitle>CPU and process activity</CardTitle>
-                  <CardDescription>{hasCpuHistory
-                    ? `Last ${history.length} on-demand CPU samples`
-                    : "Termux process counters · cumulative ticks, not overall CPU %"}</CardDescription></CardHeader>
+                <CardHeader>
+                  <CardTitle>Termux process activity</CardTitle>
+                  <CardDescription>CPU time counters for processes visible to Termux, not full Android CPU utilization</CardDescription>
+                </CardHeader>
                 <CardContent>
-                  {hasCpuHistory ? (
-                    <>
-                      <div aria-label="CPU sample history" className="flex h-28 items-end gap-1" role="img">
-                        {history.map((point, index) => (
-                          <div key={index} title={`${point.observedAt}: ${point.cpuPercent ?? "unavailable"}%`}
-                            className={point.cpuPercent === null ? "bg-muted flex-1" : "bg-primary/70 flex-1 rounded-t"}
-                            style={{ height: `${Math.max(4, point.cpuPercent ?? 4)}%` }} />
-                        ))}
-                      </div>
-                      <p className="text-muted-foreground mt-2 text-xs">Missing readings are not reported as zero.</p>
-                    </>
-                  ) : topProcessSamples.length ? (
+                  {topProcessSamples.length ? (
                     <div className="space-y-2 text-sm">
                       {topProcessSamples.map((process) => (
                         <div key={`${process.pid}:${process.startTicks}`} className="flex items-center justify-between gap-3">
@@ -195,10 +187,13 @@ export default function ObservabilityPage() {
                           <span className="tabular-nums">{process.cpuTicks.toLocaleString()} CPU ticks</span>
                         </div>
                       ))}
-                      <p className="text-muted-foreground text-xs">Cumulative CPU time of accessible processes; not system utilization.</p>
+                      <p className="text-muted-foreground text-xs">Cumulative process CPU time, not current CPU %. Android-wide measurements are available through the Shizuku module after native authorization.</p>
                     </div>
                   ) : (
-                    <p className="text-muted-foreground text-sm">Android restricts CPU counters and no process samples are accessible. See Access info.</p>
+                    <p className="text-muted-foreground text-sm">
+                      No accessible process CPU samples. This is not zero CPU load.
+                      <Link to="/shizuku" className="ml-1 underline underline-offset-4">Open Android & Shizuku</Link>.
+                    </p>
                   )}
                 </CardContent>
               </Card>

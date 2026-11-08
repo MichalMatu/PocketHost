@@ -73,3 +73,18 @@ CPU access to `/proc/stat` is denied and Node `os.cpus()` reports no CPUs
 on this device. Android `top` repeatedly reports all cores idle and is
 not an authoritative system-wide utilization fallback. CPU therefore
 remains explicitly unavailable until a verified measurement source exists.
+
+## Termux vs. Android / Shizuku monitoring split — 2026-11-08
+
+The standard **Termux monitoring** screen only displays values genuinely
+available to the Termux process: RAM, Termux filesystem storage,
+Termux:API battery when its backend fallback is active, visible processes,
+process CPU ticks and service observations. The main CPU tile is now
+**Termux-visible processes**, not a fake system-wide utilization reading.
+A process CPU tick counter is cumulative, never equivalent to current CPU %.
+The old blank CPU history view is removed from normal monitoring.
+
+Full Android CPU, Android-wide process/service observation and power-user
+controls live in **Android & Shizuku**, where the privileged Android
+companion must genuinely connect and obtain authorization. Merely having
+Shizuku Manager installed is insufficient for live privileged telemetry.
