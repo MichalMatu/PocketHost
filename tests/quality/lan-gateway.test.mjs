@@ -63,6 +63,25 @@ test('H3 admin LAN timeout is long only for its exact typed endpoint', () => {
   assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'PUT'), 5000);
 });
 
+test('Shizuku GET-only inventory routes receive bounded native-aware LAN deadlines', () => {
+  for (const route of ['/api/v1/shizuku/apps', '/api/v1/shizuku/app', '/api/v1/shizuku/system']) {
+    assert.equal(upstreamTimeoutMs(route), 24000);
+    assert.equal(upstreamTimeoutMs(route + '?package=com.example.app'), 24000);
+    for (const method of ['POST', 'PUT', 'DELETE', 'HEAD']) {
+      assert.equal(upstreamTimeoutMs(route, method), 5000);
+    }
+  }
+  for (const route of [
+    '/api/v1/shizuku/status',
+    '/api/v1/shizuku/apps/unknown',
+    '/api/v1/shizuku/system/unknown',
+    '/api/v1/shizuku/app/unknown',
+    '/api/v1/shizuku/shell',
+  ]) {
+    assert.equal(upstreamTimeoutMs(route), 5000);
+  }
+});
+
 test('LAN remains exact RFC1918 address only; same subnet and no public bind', () => {
   assert.equal(sameSubnet('192.168.10.12', '192.168.10.2', '255.255.255.0'), true);
   assert.equal(sameSubnet('::ffff:192.168.10.13', '192.168.10.2', '255.255.255.0'), true);
