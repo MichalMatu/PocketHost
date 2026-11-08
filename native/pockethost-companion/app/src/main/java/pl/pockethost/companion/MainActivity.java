@@ -441,7 +441,7 @@ public final class MainActivity extends Activity {
             new AlertDialog.Builder(this)
                     .setTitle("Approve browser shell command?")
                     .setMessage("Exact command from computer:\n\n" + pending.command +
-                            "\n\nExecutes as " + (Shizuku.getUid() == 0 ? "root" : "ADB shell") +
+                            "\n\nExecutes as " + "the current Shizuku user" +
                             " on this Samsung. Do not approve unexpected requests.")
                     .setNegativeButton("Deny", (dialog, choice) -> {
                         RemoteShellInbox.deny(pending.id);
