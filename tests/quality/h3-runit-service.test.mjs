@@ -11,6 +11,7 @@ function fixture() {
   mkdirSync(services);
   mkdirSync(path.join(services, 'site-worker'));
   mkdirSync(path.join(services, 'wreckscanner'));
+  mkdirSync(path.join(services, 'wreckscanner-backup'));
   return { tmp, services, registry: path.join(tmp, 'state', 'registry.json') };
 }
 
@@ -55,14 +56,19 @@ test('H3 protected services, path traversal and symlink aliases never become man
   try {
     await assert.rejects(admin.apply('register', 'wreckscanner'), /Protected/);
     await assert.rejects(admin.apply('stop', 'wreckscanner'), /Protected/);
+    await assert.rejects(admin.apply('register', 'wreckscanner-backup'), /Protected/);
+    await assert.rejects(admin.apply('stop', 'wreckscanner-backup'), /Protected/);
+    assert.equal(admin.list(() => 'running').find((x) => x.name === 'wreckscanner-backup')?.protected, true);
     await assert.rejects(admin.apply('register', '../service'), /Invalid/);
     await assert.rejects(admin.apply('start', 'site-worker/../wreckscanner'), /Invalid/);
     symlinkSync(path.join(services, 'wreckscanner'), path.join(services, 'alias'));
     await assert.rejects(admin.apply('register', 'alias'), /Protected/);
+    symlinkSync(path.join(services, 'wreckscanner-backup'), path.join(services, 'backup-alias'));
+    await assert.rejects(admin.apply('register', 'backup-alias'), /Protected/);
     await assert.rejects(admin.apply('register', 'not-present'), /unavailable/);
     assert.deepEqual(
       admin.list(() => 'stopped').map((x) => x.name),
-      ['alias', 'site-worker', 'wreckscanner'],
+      ['alias', 'backup-alias', 'site-worker', 'wreckscanner', 'wreckscanner-backup'],
     );
   } finally {
     rmSync(tmp, { recursive: true, force: true });
