@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Activity, Archive, Bot, FolderOpen, Globe2, Package, RefreshCw, ServerCog, Terminal } from "lucide-react"
+import { Activity, Archive, Bot, FolderOpen, Globe2, Package, RefreshCw, ServerCog, Smartphone, Terminal } from "lucide-react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -10,6 +10,7 @@ import { formatMemory } from "@/lib/format-memory"
 
 const modules = [
   { title: "Monitoring", to: "/observability", icon: Activity, detail: "CPU, memory and service health" },
+  { title: "Android & Shizuku", to: "/shizuku", icon: Smartphone, detail: "Android power-user controls and device access" },
   { title: "Packages", to: "/packages", icon: Package, detail: "Inventory and reviewed software actions" },
   { title: "File Manager", to: "/files", icon: FolderOpen, detail: "One explorer with named roots" },
   { title: "Services", to: "/services", icon: ServerCog, detail: "Observed and registered services" },

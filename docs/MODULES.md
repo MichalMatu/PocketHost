@@ -18,6 +18,17 @@ a composition boundary. Only `host` executes
 Termux process/filesystem operations. The UI
 has no direct OS or shell access.
 
+## New power-user integration
+
+`shizuku` owns Android companion session detection, real ADB/root-mode
+capability negotiation and future user-directed Android controls.
+The browser cannot call Android Binder itself; the companion will
+provide a typed local bridge. The first source slice contains a
+navigable control hub and a typed contract, **not** a connected bridge.
+Scope aims for full available Android privileges rather than an
+artificially read-only feature set. See [module definition](modules/shizuku.md)
+and [ADR-0013](adr/0013-shizuku-power-user.md).
+
 ## Modules and owners
 
 - `inventory`: read-only known services and ports.
@@ -31,6 +42,7 @@ has no direct OS or shell access.
 - `config`: validated configuration.
 - `diagnostics`: structured redacted event
   history and dry-run recovery information.
+- `shizuku`: native Android power-user integration and real privilege negotiation.
 - `observability`: source-candidate aggregation
   of admitted snapshots and bounded time series.
 - `ai`: future scoped API, currently disabled.

@@ -11,6 +11,27 @@ purpose: Record security invariants and deferred threats
 
 Phone integrity, existing IleStoi.pl and Local Agent processes, filesystem, Termux package state, stored sites, credentials, public-domain routing, authenticated administration.
 
+## Owner-directed power-user Shizuku mode (2026-11-08)
+
+The owner wants broad Shizuku-backed device control, without
+artificial product policy blocks. The historical initial read-only
+defaults are for the existing modules, **not** a permanent ban on
+future advanced actions. For owner-initiated advanced operations,
+offer available Android capabilities (including package, service,
+permission and process administration) according to actual Shizuku
+ADB/root mode and any OS restrictions. Never falsely claim root,
+authorization or a successful action.
+
+The browser is currently accessible from trusted LAN without login.
+Do **not** expose a blanket privileged shell or Android Binder bridge
+through that unauthenticated network endpoint. Design a local-only
+privilege channel with genuine Shizuku per-app consent and
+user-directed target/action confirmation for impactful commands.
+These are real privilege and user-intent boundaries rather than
+arbitrary feature limitations. Do not start unrequested destructive
+operations, disable Android protections or affect other services
+merely because the module exists.
+
 ## Initial controls
 
 - Loopback-only administration; no public exposure of the UI or control API.

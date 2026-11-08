@@ -43,15 +43,16 @@ const originalPaths = [
   '*',
 ];
 
-test('full 32-route upstream admin shell remains available beside sixteen PocketHost routes', () => {
+test('full 32-route upstream admin shell remains available beside seventeen PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 16);
+  assert.equal(allPaths.length, originalPaths.length + 17);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
   }
   assert.ok(allPaths.includes('/host'));
   assert.ok(allPaths.includes('/observability'));
+  assert.ok(allPaths.includes('/shizuku'));
   assert.ok(allPaths.includes('/termux'));
   for (const route of ['/system', '/packages', '/files', '/services', '/backups', '/terminal', '/agents']) {
     assert.ok(allPaths.includes(route), 'missing first-class Termux module: ' + route);
@@ -63,7 +64,7 @@ test('full 32-route upstream admin shell remains available beside sixteen Pocket
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 14);
+  assert.equal(chunks.length, originalPaths.length + 15);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),

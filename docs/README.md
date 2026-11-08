@@ -2,6 +2,10 @@
 
 ## Current work
 
+- [Shizuku power-user integration decision](adr/0013-shizuku-power-user.md)
+- [Shizuku Android capability module](modules/shizuku.md)
+
+
 - [Current DEV fast-iteration workflow](DEV_ITERATION.md)
 - [ADR-0012: owner-authorized DEV panel refresh/restart](adr/0012-private-ui-rapid-review.md)
 

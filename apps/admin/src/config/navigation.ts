@@ -1,7 +1,7 @@
 import {
   Activity, AlertTriangle, Archive, Bot, FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
   Mail, Network, Package, ScrollText, ServerCog, Settings,
-  Shield, Terminal,
+  Shield, Smartphone, Terminal,
 } from "lucide-react"
 
 /** System management is primary; hosting and AI are separate capabilities. */
@@ -11,6 +11,7 @@ export const navGroups = [
     items: [
       { title: "Dashboard", url: "/system", icon: LayoutDashboard },
       { title: "Monitoring", url: "/observability", icon: Activity },
+      { title: "Android & Shizuku", url: "/shizuku", icon: Smartphone },
       { title: "Packages & Software", url: "/packages", icon: Package },
       { title: "File Manager", url: "/files", icon: FolderOpen },
       { title: "Services & Processes", url: "/services", icon: ServerCog },

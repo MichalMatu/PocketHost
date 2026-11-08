@@ -25,6 +25,34 @@ Local browser (loopback or private LAN gateway)
 
 Termux remains an independently maintained application; PocketHost is an additional project launched from CLI. A native Android shell can later reuse the control plane.
 
+## Android-native power-user expansion (2026-11-08)
+
+PocketHost's target is a full-power Android + Termux console.
+A future **PocketHost Android companion** obtains its own permission
+from the installed Shizuku app and uses Shizuku Binder APIs (ADB mode
+or root mode, depending on the actual session), exposing negotiated
+capabilities to the existing browser UI via a local typed bridge.
+Shizuku does not turn Node.js in Termux into a privileged Android app
+and does not automatically grant root. Privilege checks must be real,
+not inferred from the app merely being installed.
+
+```text
+PocketHost UI /shizuku
+    -> typed power-user actions and session state
+    -> loopback/native companion bridge (future)
+    -> Android companion + Shizuku permission
+    -> Shizuku Binder / Android shell user service
+    -> Android services, packages, processes, CPU, storage, controls
+```
+
+Avoid artificial product feature limits: owners may request advanced
+package, service, permission, shell and device operations when the
+actual runtime allows them. Keep user intent, target identity and
+permission status explicit; do not silently mutate other services.
+Historically read-only modules remain unchanged until individually
+connected to this owner-directed power-user capability plane.
+See [ADR-0013](adr/0013-shizuku-power-user.md).
+
 ## Isolation rules
 
 - UI never directly executes commands.

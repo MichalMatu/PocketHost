@@ -7,6 +7,24 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## New owner decision — Shizuku power-user evolution (2026-11-08)
+
+PocketHost should become a **full-featured power-user control panel
+for Android and Termux**, integrating the owner's installed Shizuku app.
+No artificial application-level restrictions on advanced operations;
+provide what actual Shizuku/Android privileges permit. Android ADB-mode
+privileges are not root. Browser access alone does not grant Binder
+permissions. Start at `/shizuku` with capability contracts and evolve
+to a native Android bridge with real per-app authorization.
+Do not fake successful permission grants or silently operate on unrelated
+services. Real advanced actions must be clearly user-directed.
+[ADR-0013](adr/0013-shizuku-power-user.md), [module](modules/shizuku.md).
+
+Hardware evidence: Samsung SM-S906B on Android 16; Shizuku app installed;
+Mac ADB `dumpsys cpuinfo` returned 31% TOTAL in a spot check. The
+Shizuku *server* and native PocketHost app authorization are not yet
+confirmed. No claim that the new UI has a working Shizuku connection.
+
 ## Current working agreement — 2026-11-08
 
 PocketHost is a **DEV panel**. Owner-approved loop:

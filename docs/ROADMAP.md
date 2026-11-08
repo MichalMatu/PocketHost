@@ -7,6 +7,36 @@ purpose: Define canonical PocketHost milestones including Observability O1
 
 # PocketHost Roadmap
 
+## New product direction: Shizuku power-user integration — 2026-11-08
+
+The owner wants **full available Android control** from within PocketHost,
+not an artificially restricted monitoring-only application.
+The installed Shizuku manager and authorized Mac ADB have been
+observed on Samsung Android 16; Mac ADB returned a genuine
+`dumpsys cpuinfo` total (31% in a one-time sample).
+This is *not* a live PocketHost Shizuku bridge.
+
+The first implementation slice is `/shizuku` in the UI and a shared
+typed capability model. Work evolves incrementally:
+1. Real service-running/ADB-vs-root mode/authorization status, native
+   Shizuku client companion and first CPU/process readings.
+2. Installed apps, permissions, Android process/service diagnostics,
+   running apps and system settings; actionable tools, not fake badges.
+3. Power-user package, service, process, permission and device
+   operations including explicit advanced shell where actual Android
+   privileges allow. Expose actual errors rather than artificial bans.
+4. Integrated local UX, task lifecycle, audit/debug visibility and
+   per-device capability discovery. No compulsory full-suite QA per
+   tiny DEV edit.
+
+True root-only operations remain unavailable in ADB mode unless the
+device actually has root. Do not broaden LAN/remote exposure or perform
+hidden actions. The owner authorizes development of these capabilities,
+not silent execution of destructive operations on unrelated processes.
+[ADR-0013](adr/0013-shizuku-power-user.md) and
+[Shizuku module](modules/shizuku.md) are the canonical spec.
+
+
 ## UX/Architecture — Termux-first source candidate
 
 The owner chose Termux system management as the primary product identity.

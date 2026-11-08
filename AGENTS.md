@@ -13,6 +13,34 @@ or prepare a PR branch, unless the owner explicitly names the exception and
 its scope. Verify the fresh `main` HEAD before any edit and use non-force,
 expected-HEAD writes.
 
+## Product direction — Android power-user control via Shizuku (owner decision 2026-11-08)
+
+**PocketHost is evolving into a full-featured power-user Android/Termux
+management console.** The owner explicitly wants Shizuku as a first-class
+integration and the broadest capabilities the Android device actually grants.
+Do not impose product-level artificial ceilings such as a permanently
+read-only Shizuku layer, arbitrary command-category bans, inaccessible
+advanced features, mandatory full QA for each tiny edit or fixed
+power-user feature whitelists.
+
+ADB-backed Shizuku privileges are **not root**; operating-system permissions,
+the Shizuku service lifecycle, Android app authorization and the actual
+transport limit what can execute. Expose real capability/permission states,
+clear user controls and direct user-triggered operations. Keep separation
+between requested actions and autonomous mutation: no hidden execution,
+unexpected WAN access, credential disclosure, forged privilege elevation or
+silent interference with unrelated services. Dangerous actions may be
+available to the power user by explicit target/action, with accurate
+consequences shown rather than pretend permissions or blanket suppression.
+
+Native Android companion / Binder integration is the long-term execution
+path; a browser alone does not receive Shizuku Binder privileges. Begin
+with the Shizuku UI hub and typed capability contracts. See
+[ADR-0013](docs/adr/0013-shizuku-power-user.md) and
+[Shizuku module](docs/modules/shizuku.md). This decision supersedes
+earlier *product-scope* assumptions that the project must stay read-only
+forever, not Android permissions or tool execution boundaries.
+
 ## Active working mode — rapid DEV iterations (owner decision 2026-11-08)
 
 PocketHost is a **development-only Termux control panel**, not a commercial

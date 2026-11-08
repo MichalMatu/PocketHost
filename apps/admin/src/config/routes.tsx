@@ -18,6 +18,7 @@ export const routes: RouteObject[] = [
   // PocketHost read-only status (all original upstream routes remain untouched)
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
   { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
+  { path: "/shizuku", lazy: page(() => import("@/app/shizuku/page")) },
   { path: "/termux", element: <Navigate to="/system" replace /> },
   { path: "/system", lazy: page(() => import("@/app/termux/system-page")) },
   { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
