@@ -22,15 +22,15 @@ PocketHost-only refreshes/restarts for this DEV loop.
 
 ## Fast commands (run on Samsung Termux through Local Agent)
 
-| Action | Command |
-| --- | --- |
-| Quick navigation/route contract | `npm run dev:quick` |
-| Focused UI interactions | `npm run dev:ui -- tests/termux-center.interaction.test.tsx` |
-| Manual PocketHost Vite start | `npm run dev:panel` |
-| Start fast DEV UI GitHub watcher | `npm run dev:sync` |
-| Check one GitHub UI update | `npm run dev:sync:once` |
-| Verify sync path guard | `npm run dev:sync:test` |
-| Final milestone or core change | `npm run dev:full` |
+| Action                           | Command                                                      |
+| -------------------------------- | ------------------------------------------------------------ |
+| Quick navigation/route contract  | `npm run dev:quick`                                          |
+| Focused UI interactions          | `npm run dev:ui -- tests/termux-center.interaction.test.tsx` |
+| Manual PocketHost Vite start     | `npm run dev:panel`                                          |
+| Start fast DEV UI GitHub watcher | `npm run dev:sync`                                           |
+| Check one GitHub UI update       | `npm run dev:sync:once`                                      |
+| Verify sync path guard           | `npm run dev:sync:test`                                      |
+| Final milestone or core change   | `npm run dev:full`                                           |
 
 For ordinary CSS/copy/menu work, the owner can directly inspect the
 updated DEV page; no compilation, full test suite, coverage or formal

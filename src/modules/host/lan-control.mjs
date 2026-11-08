@@ -75,7 +75,6 @@ export function createLanControl({
   return { status, enable, disable };
 }
 
-
 /**
  * Recover ONLY an owned gateway. A missing interface is treated as an
  * outage too: after two observations, release the stale owner listeners

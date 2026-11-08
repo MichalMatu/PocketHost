@@ -1,6 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { availableLanInterfaces, createLanControl, createLanRecovery } from '../../src/modules/host/lan-control.mjs';
+import {
+  availableLanInterfaces,
+  createLanControl,
+  createLanRecovery,
+} from '../../src/modules/host/lan-control.mjs';
 
 test('LAN interface selector excludes public, loopback, IPv6 and orders eligible addresses', () => {
   assert.deepEqual(
@@ -91,7 +95,6 @@ test('owner-selected auto mode is reported while preserving exact interface owne
   assert.equal((await control.disable()).enabled, false);
 });
 
-
 test('auto LAN recovers an owned stale listener after two failures only', async () => {
   const calls = [];
   const interfaces = () => [{ name: 'wlan0', address: '192.168.0.100' }];
@@ -100,7 +103,11 @@ test('auto LAN recovers an owned stale listener after two failures only', async 
     interfaces,
     start: async (bind) => {
       calls.push('start:' + bind);
-      return { close: async () => { calls.push('close'); } };
+      return {
+        close: async () => {
+          calls.push('close');
+        },
+      };
     },
   });
   await control.enable('192.168.0.100');
@@ -127,12 +134,17 @@ test('auto LAN recovers an owned stale listener after two failures only', async 
 test('auto LAN recovery respects manual disable and a lost private interface', async () => {
   const calls = [];
   let present = true;
-  const interfaces = () => present ? [{ name: 'wlan0', address: '192.168.0.100' }] : [];
+  const interfaces = () => (present ? [{ name: 'wlan0', address: '192.168.0.100' }] : []);
   const control = createLanControl({
-    mode: 'auto', interfaces,
+    mode: 'auto',
+    interfaces,
     start: async (bind) => {
       calls.push('start:' + bind);
-      return { close: async () => { calls.push('close'); } };
+      return {
+        close: async () => {
+          calls.push('close');
+        },
+      };
     },
   });
   const recover = createLanRecovery({ controller: control, interfaces, check: async () => false });
@@ -158,13 +170,21 @@ test('LAN recovery rate-limits repeated outages and reports degraded health', as
     interfaces,
     start: async (bind) => {
       calls.push('start:' + bind);
-      return { close: async () => { calls.push('close'); } };
+      return {
+        close: async () => {
+          calls.push('close');
+        },
+      };
     },
   });
   await controller.enable('192.168.0.100');
   const recover = createLanRecovery({
-    controller, interfaces, check: async () => healthy,
-    now: () => time, cooldownMs: 30000, maxCooldownMs: 120000,
+    controller,
+    interfaces,
+    check: async () => healthy,
+    now: () => time,
+    cooldownMs: 30000,
+    maxCooldownMs: 120000,
   });
   await recover();
   assert.equal(recover.health().state, 'unhealthy');
@@ -194,12 +214,18 @@ test('LAN recovery releases only stale owned bind after two missing-interface ch
     interfaces,
     start: async (bind) => {
       calls.push('start:' + bind);
-      return { close: async () => { calls.push('close'); } };
+      return {
+        close: async () => {
+          calls.push('close');
+        },
+      };
     },
   });
   await controller.enable('192.168.0.100');
   const recover = createLanRecovery({
-    controller, interfaces, check: async () => true,
+    controller,
+    interfaces,
+    check: async () => true,
     canRecover: () => !ownerDisabled,
   });
   available = [{ name: 'wlan0', address: '192.168.0.101' }];
