@@ -170,3 +170,18 @@ Continue from current `main` HEAD, never from these historical SHAs.
   on different viewports, browser contract/error handling, and non-destructive
   permissions/service refusal acceptance. Privileged mutations must remain
   phone-confirmed; no unauthenticated LAN controls.
+
+## Android & Shizuku UI responsiveness (2026-11-08)
+
+The browser status/CPU request now completes without waiting for slow Android
+package and process inventories; inventories load independently, each with a
+15-second request budget and separate failure/retry visibility. Applications
+and processes are rendered in bounded 80-row pages rather than inserting
+up to 1024/1200 DOM elements. Search/filter resets pagination. Mobile tab
+navigation scrolls horizontally, supports Arrow/Home/End keyboard operation
+and uses a labelled tabpanel. Selected app detail failures are distinguishable
+from an empty package record. Privileged native operations remain on-device
+only; the LAN endpoints are unchanged and read-only.
+
+The source and targeted Samsung/browser test results are tracked separately;
+no new APK build or service restart is implied by this UI-only change.

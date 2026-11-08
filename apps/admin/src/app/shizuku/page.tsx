@@ -16,6 +16,7 @@ import {
 
 type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power"
 type PackageFilter = "all" | "user" | "system"
+const PAGE_SIZE = 80
 
 const sections = [
   { id: "applications", label: "Applications", icon: AppWindow },
@@ -69,12 +70,19 @@ export default function ShizukuPage() {
   const [apps, setApps] = React.useState<ShizukuApps | null>(null)
   const [system, setSystem] = React.useState<ShizukuSystem | null>(null)
   const [loading, setLoading] = React.useState(true)
+  const [appsLoading, setAppsLoading] = React.useState(false)
+  const [systemLoading, setSystemLoading] = React.useState(false)
+  const [appsError, setAppsError] = React.useState(false)
+  const [systemError, setSystemError] = React.useState(false)
+  const [detailError, setDetailError] = React.useState(false)
   const [refreshKey, setRefreshKey] = React.useState(0)
   const [section, setSection] = React.useState<Section>("applications")
   const [packageFilter, setPackageFilter] = React.useState<PackageFilter>("all")
   const [appSearch, setAppSearch] = React.useState("")
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
+  const [appPage, setAppPage] = React.useState(0)
+  const [processPage, setProcessPage] = React.useState(0)
   const [selectedPackage, setSelectedPackage] = React.useState<string | null>(null)
   const [appDetail, setAppDetail] = React.useState<ShizukuApp | null>(null)
   const [detailLoading, setDetailLoading] = React.useState(false)
@@ -84,6 +92,7 @@ export default function ShizukuPage() {
     const request = ++detailRequest.current
     setSelectedPackage(packageName)
     setAppDetail(null)
+    setDetailError(false)
     setDetailLoading(true)
     try {
       const result = parseShizukuApp(await readJson(
@@ -94,7 +103,10 @@ export default function ShizukuPage() {
         setAppDetail(result)
       }
     } catch {
-      if (request === detailRequest.current) setAppDetail(null)
+      if (request === detailRequest.current) {
+        setAppDetail(null)
+        setDetailError(true)
+      }
     } finally {
       if (request === detailRequest.current) setDetailLoading(false)
     }
@@ -103,35 +115,44 @@ export default function ShizukuPage() {
   React.useEffect(() => {
     const controller = new AbortController()
     const signal = controller.signal
-    void (async () => {
-      try {
-        const nativeStatus = parseShizukuStatus(
-          await readJson("/api/v1/shizuku/status", signal),
-        )
+    setLoading(true)
+    setStatus(null)
+    setApps(null)
+    setSystem(null)
+    setAppsError(false)
+    setSystemError(false)
+    setAppsLoading(false)
+    setSystemLoading(false)
+    // CPU/session status is independent of potentially slow package and process scans.
+    void readJson("/api/v1/shizuku/status", AbortSignal.any([
+      signal, AbortSignal.timeout(8000),
+    ]))
+      .then(parseShizukuStatus)
+      .then(nativeStatus => {
         if (signal.aborted) return
         setStatus(nativeStatus)
-        if (!nativeStatus.connected || !nativeStatus.authorized) {
-          setApps(null)
-          setSystem(null)
-          return
-        }
-        const [packages, diagnostics] = await Promise.allSettled([
-          readJson("/api/v1/shizuku/apps", signal).then(parseShizukuApps),
-          readJson("/api/v1/shizuku/system", signal).then(parseShizukuSystem),
-        ])
-        if (signal.aborted) return
-        setApps(packages.status === "fulfilled" ? packages.value : null)
-        setSystem(diagnostics.status === "fulfilled" ? diagnostics.value : null)
-      } catch {
-        if (!signal.aborted) {
-          setStatus(null)
-          setApps(null)
-          setSystem(null)
-        }
-      } finally {
-        if (!signal.aborted) setLoading(false)
-      }
-    })()
+        if (!nativeStatus.connected || !nativeStatus.authorized) return
+
+        setAppsLoading(true)
+        void readJson("/api/v1/shizuku/apps", AbortSignal.any([
+          signal, AbortSignal.timeout(15000),
+        ]))
+          .then(parseShizukuApps)
+          .then(packages => { if (!signal.aborted) setApps(packages) })
+          .catch(() => { if (!signal.aborted) setAppsError(true) })
+          .finally(() => { if (!signal.aborted) setAppsLoading(false) })
+
+        setSystemLoading(true)
+        void readJson("/api/v1/shizuku/system", AbortSignal.any([
+          signal, AbortSignal.timeout(15000),
+        ]))
+          .then(parseShizukuSystem)
+          .then(diagnostics => { if (!signal.aborted) setSystem(diagnostics) })
+          .catch(() => { if (!signal.aborted) setSystemError(true) })
+          .finally(() => { if (!signal.aborted) setSystemLoading(false) })
+      })
+      .catch(() => { if (!signal.aborted) setStatus(null) })
+      .finally(() => { if (!signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [refreshKey])
 
@@ -149,6 +170,9 @@ export default function ShizukuPage() {
   const shownServices = (system?.services.names ?? []).filter(item =>
     item.toLowerCase().includes(serviceSearch.trim().toLowerCase())
   )
+  // Bound DOM work on Android: never render the full 1024/1200 item inventory.
+  const visibleApps = shownApps.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE)
+  const visibleProcesses = shownProcesses.slice(processPage * PAGE_SIZE, (processPage + 1) * PAGE_SIZE)
 
   return (
     <BaseLayout title="Android & Shizuku" description="Android-wide diagnostics and on-device privileged controls">
@@ -160,7 +184,17 @@ export default function ShizukuPage() {
             <LastSample observedAt={status?.observedAt} />
           </div>
           <Button variant="outline" size="sm" disabled={loading}
-            onClick={() => { detailRequest.current++; setAppDetail(null); setDetailLoading(false); setLoading(true); setRefreshKey(k => k + 1) }}>
+            onClick={() => {
+              detailRequest.current++
+              setAppDetail(null)
+              setSelectedPackage(null)
+              setDetailError(false)
+              setDetailLoading(false)
+              setAppPage(0)
+              setProcessPage(0)
+              setLoading(true)
+              setRefreshKey(k => k + 1)
+            }}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
@@ -197,17 +231,30 @@ export default function ShizukuPage() {
           </Card>
         )}
 
-        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Android modules">
-          {sections.map(item => {
+        <div className="flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Android modules">
+          {sections.map((item, index) => {
             const Icon = item.icon
-            return <Button key={item.id} size="sm" role="tab"
-              aria-selected={section === item.id} variant={section === item.id ? "default" : "outline"}
+            return <Button key={item.id} id={"android-tab-" + item.id} size="sm" role="tab"
+              aria-controls="android-module-panel" aria-selected={section === item.id}
+              tabIndex={section === item.id ? 0 : -1}
+              className="shrink-0 whitespace-nowrap"
+              variant={section === item.id ? "default" : "outline"}
+              onKeyDown={event => {
+                if (!["ArrowRight", "ArrowLeft", "Home", "End"].includes(event.key)) return
+                event.preventDefault()
+                const next = event.key === "Home" ? 0 :
+                  event.key === "End" ? sections.length - 1 :
+                    (index + (event.key === "ArrowRight" ? 1 : -1) + sections.length) % sections.length
+                setSection(sections[next].id)
+                document.getElementById("android-tab-" + sections[next].id)?.focus()
+              }}
               onClick={() => setSection(item.id)}>
               <Icon className="size-4" />{item.label}
             </Button>
           })}
         </div>
 
+        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section}>
         {section === "applications" && (
           <Card>
             <CardHeader><CardTitle>Android applications</CardTitle>
@@ -218,18 +265,18 @@ export default function ShizukuPage() {
                 <div className="relative min-w-48 flex-1">
                   <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
                   <Input aria-label="Search Android packages" className="pl-9"
-                    value={appSearch} onChange={e => setAppSearch(e.target.value)}
+                    value={appSearch} onChange={e => { setAppSearch(e.target.value); setAppPage(0) }}
                     placeholder="Find application or package..." />
                 </div>
                 {(["all", "user", "system"] as const).map(filter => (
                   <Button size="sm" key={filter} variant={packageFilter === filter ? "default" : "outline"}
-                    onClick={() => setPackageFilter(filter)}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
+                    onClick={() => { setPackageFilter(filter); setAppPage(0) }}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
                 ))}
               </div>
-              {!apps ? <p className="text-muted-foreground text-sm">Package inventory unavailable or not authorized.</p> :
+              {!apps ? <p role="status" className="text-muted-foreground text-sm">{appsLoading ? "Loading Android applications…" : appsError ? "Application inventory request failed. Try Refresh." : "Package inventory unavailable or not authorized."}</p> :
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
                   <div className="max-h-[440px] overflow-y-auto rounded-lg border">
-                    {shownApps.map(item => <button key={item.packageName} type="button"
+                    {visibleApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
                       onClick={() => { void selectPackage(item.packageName) }}>
@@ -240,8 +287,15 @@ export default function ShizukuPage() {
                       <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
                     </button>)}
                     {shownApps.length === 0 && <p className="p-4 text-sm text-muted-foreground">No matching packages.</p>}
+                    <div className="flex items-center justify-between gap-2 p-2 text-xs text-muted-foreground">
+                      <span>{shownApps.length ? appPage * PAGE_SIZE + 1 : 0}–{Math.min((appPage + 1) * PAGE_SIZE, shownApps.length)} of {shownApps.length}</span>
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="outline" aria-label="Previous applications" disabled={appPage === 0} onClick={() => setAppPage(p => p - 1)}>Previous</Button>
+                        <Button size="sm" variant="outline" aria-label="Next applications" disabled={(appPage + 1) * PAGE_SIZE >= shownApps.length} onClick={() => setAppPage(p => p + 1)}>Next</Button>
+                      </div>
+                    </div>
                   </div>
-                  <div className="space-y-3 rounded-lg border p-4">
+                  <div className="min-w-0 space-y-3 rounded-lg border p-4">
                     <p className="font-medium">Selected application</p>
                     {selectedPackage ? (
                       <p className="break-all font-mono text-xs text-muted-foreground">{selectedPackage}</p>
@@ -275,7 +329,7 @@ export default function ShizukuPage() {
                       </div>
                     )}
                     {selectedPackage && !detailLoading && !appDetail && (
-                      <p className="text-muted-foreground text-sm">Detailed metadata unavailable for this Android user.</p>
+                      <p role="status" className="text-muted-foreground text-sm">{detailError ? "App detail request failed. Select the app again to retry." : "Detailed metadata unavailable for this Android user."}</p>
                     )}
                     <p className="text-muted-foreground text-sm">
                       Launch, force-stop, uninstall and permission changes require confirmation
@@ -297,15 +351,15 @@ export default function ShizukuPage() {
               <CardDescription>Real PID, owner, RSS and CPU (where Android reports it). No fabricated per-process CPU usage.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
               <Input aria-label="Search Android processes" value={processSearch}
-                onChange={e => setProcessSearch(e.target.value)} placeholder="Search PID, user or process..." />
-              {!system || system.processError ? <p className="text-muted-foreground text-sm">Process inventory unavailable; CPU headline remains independent.</p> :
+                onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
+              {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
                   <div className="max-h-[460px] overflow-auto rounded-lg border">
                     <table className="w-full min-w-[570px] text-left text-sm">
                       <thead className="bg-muted/60 sticky top-0">
                         <tr><th className="p-3">PID</th><th className="p-3">Process</th><th className="p-3">User</th><th className="p-3 text-right">RSS</th><th className="p-3 text-right">CPU</th></tr>
                       </thead><tbody>
-                        {shownProcesses.map(proc => <tr className="border-t" key={proc.pid}>
+                        {visibleProcesses.map(proc => <tr className="border-t" key={proc.pid}>
                           <td className="p-3 font-mono">{proc.pid}</td>
                           <td className="max-w-80 break-all p-3">{proc.name}</td>
                           <td className="p-3">{proc.user}</td>
@@ -315,9 +369,14 @@ export default function ShizukuPage() {
                       </tbody>
                     </table>
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    {shownProcesses.length} listed{system.processesTruncated ? " · inventory capped at 1200" : ""}. Individual process stop is available locally in Companion after confirmation.
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>Showing {shownProcesses.length ? processPage * PAGE_SIZE + 1 : 0}–{Math.min((processPage + 1) * PAGE_SIZE, shownProcesses.length)} of {shownProcesses.length}{system.processesTruncated ? " · inventory capped at 1200" : ""}</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" aria-label="Previous processes" disabled={processPage === 0} onClick={() => setProcessPage(p => p - 1)}>Previous</Button>
+                      <Button size="sm" variant="outline" aria-label="Next processes" disabled={(processPage + 1) * PAGE_SIZE >= shownProcesses.length} onClick={() => setProcessPage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-xs">Individual process stop is available locally in Companion after confirmation.</p>
                   <LastSample observedAt={system.observedAt} />
                 </>}
             </CardContent>
@@ -388,6 +447,8 @@ export default function ShizukuPage() {
             {!system && <p className="text-muted-foreground text-sm">Android hardware sample unavailable.</p>}
           </CardContent></Card>
         )}
+
+        </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
           <p>Browser = read-only diagnostics · Companion on Samsung = confirmed privileged actions · ADB ≠ root</p>
