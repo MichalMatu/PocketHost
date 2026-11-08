@@ -57,3 +57,19 @@ and exact-SHA source gates. Preserve six external
 services and PhotoMap port 8010. See
 [ADR-0010](../adr/0010-read-only-observability.md)
 and [the roadmap](../ROADMAP.md).
+
+## Physical Samsung battery source — 2026-11-08
+
+Samsung Android denies reading `/sys/class/power_supply/battery/capacity`
+from the Termux app. Termux:API CLI was already installed, and the matching
+F-Droid Android companion (0.53.0) was installed via authorized Mac ADB
+with exact APK signer verification. SSH returned a real battery percentage.
+On demand, `host` first attempts its existing sysfs battery reading and
+then tries the fixed `termux-battery-status` executable asynchronously,
+with a 7.5-second deadline and a 4 KiB output cap. It only admits an
+integer percentage 0–100; failures preserve the original missing state.
+
+CPU access to `/proc/stat` is denied and Node `os.cpus()` reports no CPUs
+on this device. Android `top` repeatedly reports all cores idle and is
+not an authoritative system-wide utilization fallback. CPU therefore
+remains explicitly unavailable until a verified measurement source exists.

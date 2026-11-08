@@ -5,6 +5,7 @@ import {
   parseProcessStat,
   parseProcessRss,
   readBatteryPercent,
+  parseTermuxBatteryPercent,
   readNetworkBytes,
   readProcessInventory,
   parseInstalledPackages,
@@ -51,6 +52,19 @@ test('Android battery and network restrictions are explicit, not zeros', () => {
     }, time).state,
     'permission-denied',
   );
+});
+test('Termux:API battery fallback accepts only a numeric 0–100 percentage', () => {
+  assert.deepEqual(
+    parseTermuxBatteryPercent('{"percentage":88,"status":"CHARGING"}', time),
+    { state: 'ok', value: 88, observedAt: time },
+  );
+  for (const raw of ['not json', '{}', '{"percentage":"88"}',
+    '{"percentage":-1}', '{"percentage":101}', '{"percentage":12.5}', '[]']) {
+    assert.deepEqual(
+      parseTermuxBatteryPercent(raw, time),
+      { state: 'unavailable', value: null, observedAt: time },
+    );
+  }
 });
 test('process stat identity requires exact PID/start ticks and hides argv/comm', () => {
   const parsed = parseProcessStat(stat(41, 1), 41);

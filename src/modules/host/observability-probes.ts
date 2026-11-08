@@ -1,4 +1,5 @@
-import { spawnSync } from 'node:child_process';
+import { execFile, spawnSync } from 'node:child_process';
+import { promisify } from 'node:util';
 import { readFileSync, readdirSync } from 'node:fs';
 import os from 'node:os';
 import type {
@@ -17,6 +18,7 @@ const PROC = '/proc';
 const BATTERY = '/sys/class/power_supply/battery/capacity';
 const NETWORK = '/proc/net/dev';
 const TERMUX_BIN = '/data/data/com.termux/files/usr/bin';
+const execFileAsync = promisify(execFile);
 
 function missing<T>(state: ReadingState, now: string): Reading<T> {
   return { state, value: null, observedAt: now };
@@ -85,6 +87,45 @@ export function readBatteryPercent(
     return value <= 100 ? { state: 'ok', value, observedAt: now } : missing('unavailable', now);
   } catch (error) {
     return missing(reason(error), now);
+  }
+}
+
+/** Parse a fixed Termux:API battery response without accepting missing or forged values. */
+export function parseTermuxBatteryPercent(
+  raw: string,
+  now = new Date().toISOString(),
+): Reading<number> {
+  try {
+    const json: unknown = JSON.parse(raw);
+    if (!json || typeof json !== 'object' || Array.isArray(json))
+      return missing('unavailable', now);
+    const percentage = (json as { percentage?: unknown }).percentage;
+    if (typeof percentage !== 'number' || !Number.isInteger(percentage) ||
+        percentage < 0 || percentage > 100)
+      return missing('unavailable', now);
+    return { state: 'ok', value: percentage, observedAt: now };
+  } catch {
+    return missing('unavailable', now);
+  }
+}
+
+/**
+ * The Android battery sysfs path is restricted on recent Samsung builds.
+ * Termux:API is an optional, bounded, read-only companion; never use a shell.
+ */
+export async function readTermuxApiBatteryPercent(
+  now = new Date().toISOString(),
+): Promise<Reading<number>> {
+  try {
+    const result = await execFileAsync(`${TERMUX_BIN}/termux-battery-status`, [], {
+      timeout: 7500,
+      maxBuffer: 4096,
+      encoding: 'utf8',
+      shell: false,
+    });
+    return parseTermuxBatteryPercent(result.stdout, now);
+  } catch {
+    return missing('unavailable', now);
   }
 }
 
@@ -340,6 +381,14 @@ export function readPackageInventory(
 }
 
 export async function readHostMetrics(): Promise<HostMetrics> {
-  const [cpuPercent] = await Promise.all([readCpuPercent()]);
-  return { cpuPercent, batteryPercent: readBatteryPercent(), network: readNetworkBytes() };
+  const directBattery = readBatteryPercent();
+  const [cpuPercent, fallbackBattery] = await Promise.all([
+    readCpuPercent(),
+    directBattery.state === 'ok' ? Promise.resolve(directBattery) : readTermuxApiBatteryPercent(),
+  ]);
+  return {
+    cpuPercent,
+    batteryPercent: fallbackBattery.state === 'ok' ? fallbackBattery : directBattery,
+    network: readNetworkBytes(),
+  };
 }
