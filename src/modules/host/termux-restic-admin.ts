@@ -201,9 +201,15 @@ export class ResticWorkspaceAdmin {
     // Exclude both absolute and parent-relative repository/key paths.
     return this.restic(
       [
-        'backup', '--tag', 'pockethost-h34-' + scope,
-        '--exclude', this.state, '--exclude', path.relative(TERMUX_FILES, this.state),
-        '--', ...roots.map((root) => path.basename(root)),
+        'backup',
+        '--tag',
+        'pockethost-h34-' + scope,
+        '--exclude',
+        this.state,
+        '--exclude',
+        path.relative(TERMUX_FILES, this.state),
+        '--',
+        ...roots.map((root) => path.basename(root)),
       ],
       run,
       600000,
