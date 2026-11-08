@@ -74,10 +74,10 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByText("Example 174")).toBeTruthy()
 
     await user.click(screen.getByRole("tab", { name: /CPU & processes/i }))
-    await screen.findByText("1–80 of 175")
+    await screen.findByText(/Showing 1–80 of 175/)
     expect(screen.queryByText("app80")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Next processes" }))
-    expect(screen.getByText("81–160 of 175")).toBeTruthy()
+    expect(screen.getByText(/Showing 81–160 of 175/)).toBeTruthy()
     expect(screen.getByText("app80")).toBeTruthy()
   })
 
