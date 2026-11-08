@@ -20,6 +20,7 @@ const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
 const PROTECTED = new Set([
   'wreckscanner',
+  'wreckscanner-backup',
   'cloudflared',
   'sshd',
   'mosquitto',
