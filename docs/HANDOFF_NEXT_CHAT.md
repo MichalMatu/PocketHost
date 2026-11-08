@@ -666,3 +666,21 @@ be confused with the three successful HTTP probes.
 A subsequent documentation-only commit may move `main` beyond the
 application-tested source SHA. Record its own docs/check results;
 do not claim the old full QA applies to modified application code.
+
+
+## PocketHost LAN outage recovery (2026-11-08)
+
+Physical diagnosis: after a transient home LAN peer outage, Mac↔Samsung
+SSH recovered, native Shizuku and loopback Vite stayed healthy, but the
+Vite LAN controller returned \`enabled=true\` while both
+\`192.168.0.100:18878/18879\` rejected TCP connections.
+The owner-verified loopback \`/api/v1/network-access/disable\` then
+\`/enable\` restored HTTP 200 and both listeners without touching
+IleStoi, PhotoMap, Shizuku or other Termux services.
+
+Source hardening: add a bounded 8-second owned-listener TCP health check
+and require two consecutive failures on the same assigned private IP
+before recycling **only** listeners owned by this Vite controller.
+Respect manual disable and interface ownership; do not seize unrelated
+ports or reboot the router. Record exact-source tests and final live
+upgrade separately before declaring automatic self-healing accepted.

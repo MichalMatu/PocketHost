@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { availableLanInterfaces, createLanControl } from '../../src/modules/host/lan-control.mjs';
+import { availableLanInterfaces, createLanControl, createLanRecovery } from '../../src/modules/host/lan-control.mjs';
 
 test('LAN interface selector excludes public, loopback, IPv6 and orders eligible addresses', () => {
   assert.deepEqual(
@@ -89,4 +89,61 @@ test('owner-selected auto mode is reported while preserving exact interface owne
   await control.enable('192.168.0.100');
   assert.equal(control.status().enabled, true);
   assert.equal((await control.disable()).enabled, false);
+});
+
+
+test('auto LAN recovers an owned stale listener after two failures only', async () => {
+  const calls = [];
+  const interfaces = () => [{ name: 'wlan0', address: '192.168.0.100' }];
+  const control = createLanControl({
+    mode: 'auto',
+    interfaces,
+    start: async (bind) => {
+      calls.push('start:' + bind);
+      return { close: async () => { calls.push('close'); } };
+    },
+  });
+  await control.enable('192.168.0.100');
+  let healthy = false;
+  const recover = createLanRecovery({
+    controller: control,
+    interfaces,
+    check: async (bind) => {
+      assert.equal(bind, '192.168.0.100');
+      return healthy;
+    },
+  });
+  await recover();
+  assert.deepEqual(calls, ['start:192.168.0.100']);
+  await recover();
+  assert.deepEqual(calls, ['start:192.168.0.100', 'close', 'start:192.168.0.100']);
+  healthy = true;
+  await recover();
+  await recover();
+  assert.equal(calls.filter((x) => x === 'close').length, 1);
+  assert.equal(control.status().enabled, true);
+});
+
+test('auto LAN recovery respects manual disable and a lost private interface', async () => {
+  const calls = [];
+  let present = true;
+  const interfaces = () => present ? [{ name: 'wlan0', address: '192.168.0.100' }] : [];
+  const control = createLanControl({
+    mode: 'auto', interfaces,
+    start: async (bind) => {
+      calls.push('start:' + bind);
+      return { close: async () => { calls.push('close'); } };
+    },
+  });
+  const recover = createLanRecovery({ controller: control, interfaces, check: async () => false });
+  await control.enable('192.168.0.100');
+  present = false;
+  await recover();
+  await recover();
+  assert.deepEqual(calls, ['start:192.168.0.100']);
+  present = true;
+  await control.disable();
+  await recover();
+  await recover();
+  assert.deepEqual(calls, ['start:192.168.0.100', 'close']);
 });

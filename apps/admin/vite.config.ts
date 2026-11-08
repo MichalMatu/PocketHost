@@ -10,7 +10,8 @@ import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
-import { createLanControl, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
+import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
+import net from "node:net"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
@@ -633,6 +634,39 @@ function networkAccessApi(): Plugin {
   let closed = false
   let autoRetry: ReturnType<typeof setInterval> | undefined
   let starting = false
+
+  // A gateway may retain enabled=true after Wi-Fi briefly disappears,
+  // even if Android no longer accepts TCP on the bound LAN address.
+  // Probe exact own ports; never discover/kill a process by port number.
+  function canConnect(bind: string, port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+      const socket = net.createConnection({ host: bind, port })
+      let settled = false
+      const finish = (connected: boolean) => {
+        if (settled) return
+        settled = true
+        socket.destroy()
+        resolve(connected)
+      }
+      socket.once("connect", () => finish(true))
+      socket.once("error", () => finish(false))
+      socket.setTimeout(1000, () => finish(false))
+    })
+  }
+
+  const recoverOwnLan = createLanRecovery({
+    controller,
+    interfaces: () => availableLanInterfaces(),
+    check: async (bind) => {
+      if (ownerDisabled || closed || starting) return true
+      const reachable = await Promise.all([
+        canConnect(bind, 18878), canConnect(bind, 18879),
+      ])
+      return reachable.every(Boolean)
+    },
+    failureThreshold: 2,
+  })
+
   function ensurePrivateLan() {
     if (!autoStart || ownerDisabled || closed || starting || controller.status().enabled) return
     const options = availableLanInterfaces()
@@ -656,7 +690,14 @@ function networkAccessApi(): Plugin {
       if (autoStart) {
         server.httpServer?.once("listening", () => {
           ensurePrivateLan()
-          autoRetry = setInterval(ensurePrivateLan, 8000)
+          autoRetry = setInterval(() => {
+            if (ownerDisabled || closed || starting) return
+            if (!controller.status().enabled) {
+              ensurePrivateLan()
+            } else {
+              void recoverOwnLan().catch(() => undefined)
+            }
+          }, 8000)
           autoRetry.unref?.()
         })
       }

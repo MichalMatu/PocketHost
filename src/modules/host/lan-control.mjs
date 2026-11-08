@@ -74,3 +74,59 @@ export function createLanControl({
   }
   return { status, enable, disable };
 }
+
+
+/**
+ * Recover only listeners owned by this controller after an observable outage.
+ * Never enumerate, adopt, or signal a gateway by PID or listening port.
+ * Two independent failed health checks avoid recycling a live Wi-Fi session
+ * for a brief network blip. A missing original interface blocks recovery.
+ */
+export function createLanRecovery({
+  controller,
+  interfaces = () => availableLanInterfaces(),
+  check,
+  failureThreshold = 2,
+}) {
+  if (typeof check !== 'function' ||
+      !Number.isInteger(failureThreshold) || failureThreshold < 2) {
+    throw new Error('invalid-lan-recovery');
+  }
+  let failedChecks = 0;
+  let busy = false;
+  return async function checkOwnedGateway() {
+    if (busy) return controller.status();
+    busy = true;
+    try {
+      const current = controller.status();
+      if (!current.enabled || !current.bind ||
+          !interfaces().some((item) => item.address === current.bind)) {
+        failedChecks = 0;
+        return current;
+      }
+      if (await check(current.bind)) {
+        failedChecks = 0;
+        return controller.status();
+      }
+      failedChecks += 1;
+      if (failedChecks < failureThreshold) return controller.status();
+
+      // Protect an owner's concurrent manual stop or interface switch.
+      const recent = controller.status();
+      if (!recent.enabled || recent.bind !== current.bind ||
+          !interfaces().some((item) => item.address === current.bind)) {
+        failedChecks = 0;
+        return recent;
+      }
+      try {
+        await controller.disable();
+        await controller.enable(current.bind);
+      } finally {
+        failedChecks = 0;
+      }
+      return controller.status();
+    } finally {
+      busy = false;
+    }
+  };
+}

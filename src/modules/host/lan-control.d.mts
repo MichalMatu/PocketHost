@@ -31,3 +31,10 @@ export function createLanControl(options?: {
   enable(bind: string): Promise<LanStatus>;
   disable(): Promise<LanStatus>;
 };
+
+export function createLanRecovery(options: {
+  controller: ReturnType<typeof createLanControl>;
+  interfaces?: () => LanInterface[];
+  check: (bind: string) => Promise<boolean>;
+  failureThreshold?: number;
+}): () => Promise<LanStatus>;
