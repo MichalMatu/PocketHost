@@ -131,6 +131,8 @@ export function TermuxFileExplorer() {
           disabled={available?.find(item => item.id === value)?.available === false}>{value}</option>)}
       </select>
       <Badge variant="outline">{root}/{folder}</Badge>
+      <Button size="sm" variant="outline" disabled={busy || available?.find(item => item.id === "home")?.available === false}
+        onClick={() => void load("home", "Projects/PocketHost-H3-Workspace")}>Workspace</Button>
       <Button size="sm" variant="outline" disabled={busy || !folder} onClick={() =>
         void load(root, folder.split("/").slice(0, -1).join("/"))}>Up</Button>
       <Button size="sm" variant="outline" disabled={busy} onClick={() => void load(root, folder)}>Refresh</Button>

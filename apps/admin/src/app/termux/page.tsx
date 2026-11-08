@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
@@ -13,7 +12,7 @@ import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
-import { PackageActions, WorkspaceManager, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
+import { PackageActions, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -28,7 +27,18 @@ function GuardNotice({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground text-xs">{children}</p>
 }
 
-export default function TermuxCenterPage() {
+export type TermuxSection = "packages" | "files" | "services" | "backups" | "terminal" | "agents"
+
+const sectionTitles: Record<TermuxSection, string> = {
+  packages: "Packages & Software",
+  files: "File Manager",
+  services: "Services & Processes",
+  backups: "Backups & Recovery",
+  terminal: "Terminal",
+  agents: "Agents & API",
+}
+
+export default function TermuxCenterPage({ section = "packages" }: { section?: TermuxSection }) {
   const [snapshot, setSnapshot] = React.useState<ObservabilitySnapshot | null>(null)
   const [sites, setSites] = React.useState<FleetSite[] | null>(null)
   const [tools, setTools] = React.useState<H3Tools | null>(null)
@@ -43,9 +53,15 @@ export default function TermuxCenterPage() {
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setReading(true)
     const [observed, owned, optional] = await Promise.allSettled([
-      getData("/api/v1/observability", parseObservabilitySnapshot, signal),
-      getData("/api/v1/sites", parseFleetSites, signal),
-      getData("/api/v1/termux-tools", parseH3Tools, signal),
+      ["packages", "services"].includes(section)
+        ? getData("/api/v1/observability", parseObservabilitySnapshot, signal)
+        : Promise.resolve(null),
+      ["files", "services", "backups"].includes(section)
+        ? getData("/api/v1/sites", parseFleetSites, signal)
+        : Promise.resolve(null),
+      ["backups", "terminal"].includes(section)
+        ? getData("/api/v1/termux-tools", parseH3Tools, signal)
+        : Promise.resolve(null),
     ])
     if (signal?.aborted) return
     setSnapshot(observed.status === "fulfilled" ? observed.value : null)
@@ -60,7 +76,7 @@ export default function TermuxCenterPage() {
     setSelectedReleases(null)
     setDetailError(null)
     setReading(false)
-  }, [])
+  }, [section])
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -98,7 +114,7 @@ export default function TermuxCenterPage() {
   const tooling = tools?.tools ?? []
 
   return (
-    <BaseLayout title="Termux Control Center" description="Manage Termux packages, workspace, owned services and snapshots">
+    <BaseLayout title={sectionTitles[section]} description="Manage this Termux installation through scoped, typed controls">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" /> H3 · owner operations</Badge>
@@ -111,17 +127,9 @@ export default function TermuxCenterPage() {
           without passwords, with explicit confirmations and fixed Termux commands.
           Do not expose this panel to public networks.
         </GuardNotice>
-        <Tabs defaultValue="packages" className="w-full">
-          <TabsList className="h-auto flex-wrap justify-start gap-1 p-1" aria-label="Termux modules">
-            <TabsTrigger value="packages"><Package className="size-4" /> Packages</TabsTrigger>
-            <TabsTrigger value="files"><FolderOpen className="size-4" /> Files</TabsTrigger>
-            <TabsTrigger value="services"><ServerCog className="size-4" /> Services</TabsTrigger>
-            <TabsTrigger value="backups"><Archive className="size-4" /> Backups</TabsTrigger>
-            <TabsTrigger value="terminal">Terminal</TabsTrigger>
-            <TabsTrigger value="agents">Agents / API</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="packages">
+        <div className="space-y-5">
+  
+          {section === "packages" && <section className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Package className="size-5" /> Installed software</CardTitle>
@@ -152,15 +160,17 @@ export default function TermuxCenterPage() {
                 <PackageCatalog />
               </CardContent>
             </Card>
-          </TabsContent>
+          </section>}
 
-          <TabsContent value="files">
+          {section === "files" && <section className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FolderOpen className="size-5" /> Managed site files</CardTitle>
-                <CardDescription>Actual active-release file names and sizes, limited to explicitly PocketHost-owned static sites.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><FolderOpen className="size-5" /> File Manager</CardTitle>
+                <CardDescription>One explorer for HOME, PREFIX, shared storage and the H3 workspace.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <TermuxFileExplorer />
+                <h3 className="text-sm font-medium">Hosted site assets · read-only inventory</h3>
                 {errors.sites && <p role="alert">Owned site inventory unavailable or disabled.</p>}
                 {sites?.length === 0 && <p>No managed static sites.</p>}
                 <div className="space-y-2">
@@ -184,13 +194,11 @@ export default function TermuxCenterPage() {
                 </>}
                 {detailError && <p role="alert">{detailError}</p>}
                 <a className="text-sm underline underline-offset-4" href="/sites">Open existing site upload and version manager</a>
-                <TermuxFileExplorer />
-                <WorkspaceManager />
               </CardContent>
             </Card>
-          </TabsContent>
+          </section>}
 
-          <TabsContent value="services">
+          {section === "services" && <section className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><ServerCog className="size-5" /> Termux services</CardTitle>
@@ -207,9 +215,9 @@ export default function TermuxCenterPage() {
                 <RunitServiceActions />
               </CardContent>
             </Card>
-          </TabsContent>
+          </section>}
 
-          <TabsContent value="backups">
+          {section === "backups" && <section className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Archive className="size-5" /> Backup readiness</CardTitle>
@@ -247,14 +255,14 @@ export default function TermuxCenterPage() {
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
               </CardContent>
             </Card>
-          </TabsContent>
-          <TabsContent value="terminal">
+          </section>}
+          {section === "terminal" && <section className="space-y-4">
             <TermuxTerminalPanel detected={tools?.tools.some(item => item.id === "ttyd" && item.state === "detected") ?? false} />
-          </TabsContent>
-          <TabsContent value="agents">
+          </section>}
+          {section === "agents" && <section className="space-y-4">
             <AgentApiPanel />
-          </TabsContent>
-        </Tabs>
+          </section>}
+        </div>
       </div>
     </BaseLayout>
   )
