@@ -101,3 +101,63 @@ purpose: H3.4 live API test evidence, Restic source repair and ttyd native hold
 The trusted-LAN administrative interface has no login.
 Keep WAN exposure, autostart, production package changes
 and unrelated service mutations prohibited.
+
+## Owner-requested guarded production sprint — 2026-11-08
+
+**Disposition: G3 HOLD; production unchanged.**
+The owner explicitly authorized a panel-only production
+deployment, including verification and rollback. Actual
+native release gates were enforced before any process
+signal or source switch.
+
+- New changes on repository `main@417731400a81d9deb92e24543be638c6eb63bf7d`:
+  relative-path Restic backup command plans and injected
+  CLI exit-status guard, `wreckscanner-backup` runit
+  protection including aliases, focused regression tests,
+  formatting, documentation and generic protected-unit UI text.
+- Older `pockethost-h34-final-main-g2-f5883d8-20261108-v1`
+  reported terminal `failed/1` due to Markdownlint
+  `MD012`; that blank-line error was repaired.
+- Old `pockethost-h34-gated-production-0fa6839-20261108-v1`
+  reported terminal `failed/1` and stopped safely
+  before any mutation because remote `main` moved.
+  It verified the existing panel identity, both sites,
+  and **seven running services** (six historical
+  protected units plus `wreckscanner-backup`).
+- Latest `pockethost-h34-gated-production-4177314-20261108-v1`
+  reported terminal `failed/1`: before the first
+  production mutation, it verified live owner identity
+  and protected services, then ran exact-commit
+  `npm run check:all` on an independent Samsung QA
+  checkout. **159/159 Node tests passed**, Markdownlint
+  reported **0 errors**, and the quality run exited
+  unsuccessfully while running Prettier; the bounded
+  output ended at `Checking formatting...` without
+  the exit reason. This is NOT a green G2.
+- Since the quality assertion stopped the script,
+  the live panel was **not** stopped, replaced, or
+  restarted. Its last verified source remained
+  `e1c11e723105025b0f24ecf8e70974beddc0c2b5`.
+  No rollback was needed or executed.
+- `pockethost-h34-4177314-prettier-exit-native-20261108-v1`
+  was submitted to capture precise focused and full
+  formatter exit codes, without live mutations.
+  **No terminal receipt was available when this
+  checkpoint was written.**
+- Separate ttyd diagnostic
+  `pockethost-h34-ttyd-argv-safe-isolated-20261108-v1`
+  returned terminal `failed/1`: all three isolated
+  argv variants crashed with SIGSEGV (-11); terminal
+  listener remained closed and both sites responded.
+  A change to native Termux packages has NOT been
+  authorized or performed during this sprint.
+
+**Next entry:** first inspect the pending formatter
+diagnostic, correct only the actual formatting/runtime
+failure, and obtain a new exact-`main` G2 PASS on
+Samsung. Re-run a strictly guarded panel-only G3
+cutover only after green QA. Do not carry the failed
+release task as acceptance; protect foreign services,
+two original sites, their file digests, PhotoMap
+TEST disabled and LAN ownership. The ttyd native
+crash and real full-system restore remain OPEN.
