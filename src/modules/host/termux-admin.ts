@@ -40,6 +40,7 @@ export type Exec = (
     maxBuffer: number;
     outputLimit?: number;
     env?: NodeJS.ProcessEnv;
+    cwd?: string;
   },
 ) => Promise<HostCommandResult>;
 
@@ -51,6 +52,7 @@ export async function executeFixed(
     maxBuffer: number;
     outputLimit?: number;
     env?: NodeJS.ProcessEnv;
+    cwd?: string;
   },
 ): Promise<HostCommandResult> {
   const { stdout, stderr } = await execFile(command, args, {
@@ -59,6 +61,7 @@ export async function executeFixed(
     timeout: opts?.timeout ?? 120000,
     maxBuffer: opts?.maxBuffer ?? 64 * 1024,
     env: opts?.env,
+    cwd: opts?.cwd,
   });
   return {
     exit: 0,
