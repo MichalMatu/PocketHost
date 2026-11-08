@@ -71,8 +71,8 @@ public final class MainActivity extends Activity {
                 new ComponentName("pl.pockethost.companion", PowerUserService.class.getName()))
                 .daemon(false)
                 .processNameSuffix("telemetry")
-                .debuggable(true)
-                .version(1);
+                .debuggable(false)
+                .version(2);
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
