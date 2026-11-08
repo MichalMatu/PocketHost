@@ -35,3 +35,24 @@ describe("Shizuku applications contract", () => {
     expect(() => parseShizukuApps({ ...inventory, packages: [{ packageName: "bad;app", system: true }] })).toThrow()
   })
 })
+
+
+describe("Shizuku system overview contract", () => {
+  it("accepts genuine bounded process, power, settings and service fields", async () => {
+    const { parseShizukuSystem } = await import("@/lib/shizuku-schema")
+    const observation = {
+      version: 1, source: "android-companion", connected: true, authorized: true,
+      mode: "adb", observedAt: now, processesTruncated: false,
+      processes: [{ pid: 123, user: "shell", name: "com.example", rssKb: 2048, cpuPercent: null }],
+      power: { batteryLevel: 80, batteryTemperatureC: 32.5, charging: true,
+        memoryTotalKb: 6000000, memoryAvailableKb: 2000000 },
+      settings: { brightness: 140, airplaneMode: false },
+      services: { names: ["com.example/.Service"], truncated: false },
+    }
+    expect(parseShizukuSystem(observation).processes[0].rssKb).toBe(2048)
+    expect(() => parseShizukuSystem({ ...observation,
+      processes: [observation.processes[0], observation.processes[0]] })).toThrow()
+    expect(() => parseShizukuSystem({ ...observation,
+      power: { ...observation.power, batteryLevel: 140 } })).toThrow()
+  })
+})

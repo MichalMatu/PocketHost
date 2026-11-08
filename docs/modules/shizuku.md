@@ -123,3 +123,30 @@ Samsung check confirm the exact revision**. No browser action installs,
 disables, grants or uninstalls Android applications. Privileged mutations
 require a separate owner-authenticated native execution boundary; the
 trusted LAN dashboard currently does not provide that boundary.
+
+
+## Seven-module power-user sprint — source candidate, 2026-11-08
+
+The native Companion now defines verified, user-initiated Shizuku operations.
+It requests a package identity, target PID, permission, Android service
+component, setting value or shell command on the **phone itself** and
+displays an explicit confirmation before a Binder call. Supported native
+operations include app launch/force-stop/uninstall-for-user, runtime
+permission grant/revoke, process TERM, service start/stop, brightness,
+screen timeout and advanced shell (bounded output and timeout).
+Android errors and ADB-vs-root limitations must be reported as failures.
+
+The fixed read-only foreground bridge additionally samples a bounded
+process inventory (PID, process, owner, RSS and CPU if supported),
+battery, RAM, device settings and Android services into a new
+\`GET /system\` endpoint, forwarded from loopback to
+\`GET /api/v1/shizuku/system\`. Browser pages use section navigation,
+search and typed availability. No browser-to-native privileged write
+route exists; current trusted LAN has no owner authentication.
+
+**Acceptance remains OPEN:** source compilation, exact-SHA native
+Termux tests, APK installation, Samsung Android 16 hardware observation,
+positive and negative permission/management operations on a disposable
+test package, and owner UX inspection must be recorded separately.
+Do not claim all Android service/permission operations work until the
+OS accepts them on the target device.

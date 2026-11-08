@@ -1,176 +1,338 @@
 import * as React from "react"
-import { Activity, AppWindow, Battery, Cpu, ExternalLink, LockKeyhole, RefreshCw, Settings2, Shield, Smartphone, Terminal } from "lucide-react"
+import {
+  Activity, AppWindow, Battery, Cpu, LockKeyhole, RefreshCw, Settings2,
+  ShieldCheck, Smartphone, Terminal, Search, ExternalLink,
+} from "lucide-react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { parseShizukuStatus, parseShizukuApps, type ShizukuStatus, type ShizukuApps } from "@/lib/shizuku-schema"
 import { Input } from "@/components/ui/input"
+import {
+  parseShizukuStatus, parseShizukuApps, parseShizukuSystem,
+  type ShizukuStatus, type ShizukuApps, type ShizukuSystem,
+} from "@/lib/shizuku-schema"
 
-const modules = [
-  { title: "CPU & Android processes", detail: "System-wide CPU samples, process list and performance", icon: Cpu },
-  { title: "Applications", detail: "Installed applications, package operations and app details", icon: AppWindow },
-  { title: "Permissions", detail: "Android permission inspection and grants within actual privileges", icon: LockKeyhole },
-  { title: "Services & settings", detail: "Android services, device settings and system diagnostics", icon: Settings2 },
-  { title: "Advanced shell", detail: "Owner-directed commands with real ADB or root access", icon: Terminal },
-  { title: "Power & hardware", detail: "Battery, thermal and hardware-level signals", icon: Battery },
-]
+type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power"
+type PackageFilter = "all" | "user" | "system"
 
-const endpoint = "/api/v1/shizuku/status"
-const appsEndpoint = "/api/v1/shizuku/apps"
+const sections = [
+  { id: "applications", label: "Applications", icon: AppWindow },
+  { id: "processes", label: "CPU & processes", icon: Cpu },
+  { id: "permissions", label: "Permissions", icon: LockKeyhole },
+  { id: "services", label: "Services & settings", icon: Settings2 },
+  { id: "shell", label: "Advanced shell", icon: Terminal },
+  { id: "power", label: "Power & hardware", icon: Battery },
+] as const
 
-/** The browser never infers Shizuku authorization from installation alone. */
-async function readShizuku(signal?: AbortSignal): Promise<ShizukuStatus> {
-  const res = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
-  if (!res.ok) throw new Error("Native companion status unavailable")
-  return parseShizukuStatus(await res.json() as unknown)
+async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch(url, {
+    method: "GET", cache: "no-store", credentials: "same-origin", signal,
+  })
+  if (!response.ok) throw new Error("Endpoint unavailable")
+  return response.json() as Promise<unknown>
 }
 
-async function readApps(signal?: AbortSignal): Promise<ShizukuApps> {
-  const res = await fetch(appsEndpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
-  if (!res.ok) throw new Error("Android package inventory unavailable")
-  return parseShizukuApps(await res.json() as unknown)
+function unavailable(value: string | number | null | undefined, suffix = "") {
+  return value == null ? "Unavailable" : String(value) + suffix
+}
+
+function mib(value: number | null) {
+  return value == null ? "Unavailable" : (value / 1024).toFixed(1) + " MiB"
+}
+
+function LastSample({ observedAt }: { observedAt?: string }) {
+  return <span className="text-muted-foreground text-xs">
+    {observedAt ? "Sample: " + new Date(observedAt).toLocaleTimeString() : "No verified reading"}
+  </span>
+}
+
+function NativeOwnerNotice({ specific }: { specific: string }) {
+  return <Card>
+    <CardContent className="space-y-2 py-4 text-sm">
+      <p className="flex items-center gap-2 font-medium">
+        <ShieldCheck className="size-4" /> Owner-approved Android actions
+      </p>
+      <p className="text-muted-foreground">
+        {specific} To change the phone, open the PocketHost Companion on your Samsung and
+        approve the exact action there. Commands and mutations are never forwarded
+        through this login-free LAN dashboard.
+      </p>
+    </CardContent>
+  </Card>
 }
 
 export default function ShizukuPage() {
   const [status, setStatus] = React.useState<ShizukuStatus | null>(null)
+  const [apps, setApps] = React.useState<ShizukuApps | null>(null)
+  const [system, setSystem] = React.useState<ShizukuSystem | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [refreshKey, setRefreshKey] = React.useState(0)
-  const [apps, setApps] = React.useState<ShizukuApps | null>(null)
-  const [appsLoading, setAppsLoading] = React.useState(true)
-  const [query, setQuery] = React.useState("")
-  const [appType, setAppType] = React.useState<"all" | "user" | "system">("all")
+  const [section, setSection] = React.useState<Section>("applications")
+  const [packageFilter, setPackageFilter] = React.useState<PackageFilter>("all")
+  const [appSearch, setAppSearch] = React.useState("")
+  const [processSearch, setProcessSearch] = React.useState("")
+  const [serviceSearch, setServiceSearch] = React.useState("")
+  const [selectedPackage, setSelectedPackage] = React.useState<string | null>(null)
+
   React.useEffect(() => {
     const controller = new AbortController()
-    void readShizuku(controller.signal)
-      .then(value => { if (!controller.signal.aborted) setStatus(value) })
-      .catch(() => { if (!controller.signal.aborted) setStatus(null) })
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
+    const signal = controller.signal
+    void (async () => {
+      try {
+        const nativeStatus = parseShizukuStatus(
+          await readJson("/api/v1/shizuku/status", signal),
+        )
+        if (signal.aborted) return
+        setStatus(nativeStatus)
+        if (!nativeStatus.connected || !nativeStatus.authorized) {
+          setApps(null)
+          setSystem(null)
+          return
+        }
+        const [packages, diagnostics] = await Promise.allSettled([
+          readJson("/api/v1/shizuku/apps", signal).then(parseShizukuApps),
+          readJson("/api/v1/shizuku/system", signal).then(parseShizukuSystem),
+        ])
+        if (signal.aborted) return
+        setApps(packages.status === "fulfilled" ? packages.value : null)
+        setSystem(diagnostics.status === "fulfilled" ? diagnostics.value : null)
+      } catch {
+        if (!signal.aborted) {
+          setStatus(null)
+          setApps(null)
+          setSystem(null)
+        }
+      } finally {
+        if (!signal.aborted) setLoading(false)
+      }
+    })()
     return () => controller.abort()
   }, [refreshKey])
 
-  const usable = status?.connected === true && status.authorized === true
-  React.useEffect(() => {
-    if (!usable) return
-    const controller = new AbortController()
-    void readApps(controller.signal)
-      .then(value => { if (!controller.signal.aborted) setApps(value) })
-      .catch(() => { if (!controller.signal.aborted) setApps(null) })
-      .finally(() => { if (!controller.signal.aborted) setAppsLoading(false) })
-    return () => controller.abort()
-  }, [usable, refreshKey])
-
-  const visibleApps = (apps?.packages ?? []).filter(item =>
-    (appType === "all" || (appType === "system" ? item.system : !item.system)) &&
-    item.packageName.toLowerCase().includes(query.trim().toLowerCase())
+  const connected = status?.connected === true && status.authorized === true
+  const shownApps = (apps?.packages ?? []).filter(item =>
+    (packageFilter === "all" || (packageFilter === "system" ? item.system : !item.system)) &&
+    item.packageName.toLowerCase().includes(appSearch.trim().toLowerCase())
+  )
+  const shownProcesses = (system?.processes ?? []).filter(item =>
+    item.name.toLowerCase().includes(processSearch.trim().toLowerCase()) ||
+    item.user.toLowerCase().includes(processSearch.trim().toLowerCase()) ||
+    String(item.pid).includes(processSearch.trim())
+  )
+  const shownServices = (system?.services.names ?? []).filter(item =>
+    item.toLowerCase().includes(serviceSearch.trim().toLowerCase())
   )
 
   return (
-    <BaseLayout title="Android & Shizuku" description="Full Android telemetry and power-user controls">
+    <BaseLayout title="Android & Shizuku" description="Android-wide diagnostics and on-device privileged controls">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline"><Smartphone className="size-3" /> Android</Badge>
-            <Badge variant="outline"><Shield className="size-3" /> Shizuku-backed access</Badge>
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <Badge variant="outline"><Smartphone className="size-3" /> Samsung Android</Badge>
+            <Badge variant="outline"><ShieldCheck className="size-3" /> {connected ? "Shizuku " + status.mode : "Not connected"}</Badge>
+            <LastSample observedAt={status?.observedAt} />
           </div>
-          <Button variant="outline" size="sm" disabled={loading} onClick={() => { setLoading(true); setAppsLoading(true); setApps(null); setRefreshKey(v => v + 1) }}>
-            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh status
+          <Button variant="outline" size="sm" disabled={loading}
+            onClick={() => { setLoading(true); setRefreshKey(k => k + 1) }}>
+            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
-        <div className="grid gap-4 lg:grid-cols-3">
-          <Card className="min-h-36">
-            <CardHeader><CardDescription>Bridge & authorization</CardDescription>
-              <CardTitle>{loading ? "Checking…" : usable ? "Connected" : status?.connected ? "Authorization needed" : "Companion unavailable"}</CardTitle></CardHeader>
-            <CardContent className="text-muted-foreground text-xs">{usable ? `Shizuku ${status.mode} session · verified via companion` : "Installed Shizuku alone does not authorize PocketHost. Native bridge required."}</CardContent>
-          </Card>
-          <Card className="min-h-36">
-            <CardHeader><CardDescription>Android CPU utilization</CardDescription>
-              <CardTitle>{loading ? "Checking…" : usable && status?.cpuPercent != null ? `${status.cpuPercent.toFixed(1)}%` : "Unavailable"}</CardTitle></CardHeader>
-            <CardContent className="text-muted-foreground text-xs">Full-device reading from authorized companion, never guessed from Termux</CardContent>
-          </Card>
-          <Card className="min-h-36">
-            <CardHeader><CardDescription>Android-visible processes</CardDescription>
-              <CardTitle>{loading ? "Checking…" : usable && status?.visibleProcesses != null ? status.visibleProcesses : "Unavailable"}</CardTitle></CardHeader>
-            <CardContent className="text-muted-foreground text-xs">Requires real Shizuku integration</CardContent>
-          </Card>
+
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Card><CardHeader>
+            <CardDescription>Connection</CardDescription>
+            <CardTitle>{loading ? "Checking…" : connected ? "Connected" : "Unavailable"}</CardTitle>
+          </CardHeader><CardContent className="text-muted-foreground text-xs">
+            {connected ? "Authorized native " + status.mode.toUpperCase() + " service" : "Open Companion and authorize Shizuku"}
+          </CardContent></Card>
+          <Card><CardHeader><CardDescription>Android CPU</CardDescription>
+            <CardTitle>{connected && status?.cpuPercent != null ? status.cpuPercent.toFixed(1) + "%" : "—"}</CardTitle>
+          </CardHeader><CardContent className="text-muted-foreground text-xs">Full-device observed utilization</CardContent></Card>
+          <Card><CardHeader><CardDescription>Visible processes</CardDescription>
+            <CardTitle>{connected ? unavailable(status?.visibleProcesses) : "—"}</CardTitle>
+          </CardHeader><CardContent className="text-muted-foreground text-xs">Android-wide process count</CardContent></Card>
+          <Card><CardHeader><CardDescription>Installed packages</CardDescription>
+            <CardTitle>{apps ? apps.packages.length + (apps.truncated ? "+" : "") : "—"}</CardTitle>
+          </CardHeader><CardContent className="text-muted-foreground text-xs">Companion inventory, maximum 512 entries</CardContent></Card>
         </div>
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <h2 className="text-lg font-medium">Android capabilities</h2>
-            <p className="text-muted-foreground text-sm">Actual controls appear as the companion exposes and authorizes them. No artificial product feature ceiling.</p>
-          </div>
-          <Button variant="outline" size="sm" render={<Link to="/observability" />}>Termux-only monitoring</Button>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {modules.map(({ title, detail, icon: Icon }) => (
-            <Card key={title} className="min-h-36">
-              <CardHeader><CardTitle className="flex items-center gap-2"><Icon className="size-4" />{title}</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-muted-foreground text-sm">{detail}</p>
-                <p className="text-muted-foreground text-xs">{usable ? "Companion connected · capability integration in progress" : "Awaiting PocketHost Companion authorization"}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-        {usable && (
+
+        {!connected && !loading && (
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><AppWindow className="size-4" /> Android applications</CardTitle>
-              <CardDescription>Installed packages read through Shizuku. This is inspection only; no app is changed.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap gap-2">
-                <Input className="min-w-48 flex-1" value={query} onChange={e => setQuery(e.target.value)} placeholder="Find package name..." aria-label="Find Android package" />
-                <Button size="sm" variant={appType === "all" ? "default" : "outline"} onClick={() => setAppType("all")}>All</Button>
-                <Button size="sm" variant={appType === "user" ? "default" : "outline"} onClick={() => setAppType("user")}>User</Button>
-                <Button size="sm" variant={appType === "system" ? "default" : "outline"} onClick={() => setAppType("system")}>System</Button>
-              </div>
-              {appsLoading ? <p className="text-muted-foreground text-sm">Reading Android packages…</p> :
-                !apps ? <p className="text-muted-foreground text-sm">App inventory unavailable. Refresh after checking the Companion and Shizuku authorization.</p> :
-                <>
-                  <p className="text-muted-foreground text-xs">{apps.packages.length} packages reported{apps.truncated ? " · result limited to 512" : ""} · {visibleApps.length} matching</p>
-                  <div className="max-h-80 overflow-auto rounded-md border">
-                    {visibleApps.map(item => (
-                      <div className="flex items-center justify-between gap-3 border-b px-3 py-2 text-sm last:border-b-0" key={item.packageName}>
-                        <span className="min-w-0 break-all">{item.packageName}</span>
-                        <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
-                      </div>
-                    ))}
-                    {visibleApps.length === 0 && <p className="p-3 text-muted-foreground text-sm">No matching packages.</p>}
-                  </div>
-                </>
-              }
-            </CardContent>
-          </Card>
-        )}
-        {usable && status.capabilities.length > 0 && (
-          <Card>
-            <CardHeader><CardTitle>Companion capability discovery</CardTitle>
-              <CardDescription>Real capabilities reported by the authorized Android companion</CardDescription></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {status.capabilities.map(c => (
-                <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-2">
-                  <span>{c.title} <span className="text-muted-foreground">— {c.description}</span></span>
-                  <Badge variant="outline">{c.available ? "Available" : "Not available"}</Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
-        {!usable && (
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><Activity className="size-4" /> Native Shizuku connection</CardTitle>
-              <CardDescription>Why the Android dashboard is not yet showing full CPU data</CardDescription></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <p>Shizuku Manager and its server were verified on this Samsung through ADB. The PocketHost Android Companion is not yet connected to the browser, so no privileged readings or controls are claimed here.</p>
-              <p>Once the native companion requests and receives Shizuku permission, this page will read its real status and telemetry. Root-only actions remain root-only.</p>
-              <a className="inline-flex items-center gap-2 underline underline-offset-4" href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
-                Shizuku setup guide <ExternalLink className="size-4" />
+            <CardHeader><CardTitle>Native connection required</CardTitle>
+              <CardDescription>These pages never invent privileged Android data.</CardDescription>
+            </CardHeader><CardContent className="text-sm text-muted-foreground">
+              Start Shizuku, authorize PocketHost Companion on the phone, then refresh the dashboard.
+              <a className="ml-2 inline-flex items-center gap-1 underline underline-offset-4"
+                href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
+                Setup guide <ExternalLink className="size-3" />
               </a>
             </CardContent>
           </Card>
         )}
+
+        <div className="flex flex-wrap gap-2" role="tablist" aria-label="Android modules">
+          {sections.map(item => {
+            const Icon = item.icon
+            return <Button key={item.id} size="sm" role="tab"
+              aria-selected={section === item.id} variant={section === item.id ? "default" : "outline"}
+              onClick={() => setSection(item.id)}>
+              <Icon className="size-4" />{item.label}
+            </Button>
+          })}
+        </div>
+
+        {section === "applications" && (
+          <Card>
+            <CardHeader><CardTitle>Android applications</CardTitle>
+              <CardDescription>Installed package inventory. Select a package to inspect its identity; detailed operations run in Companion.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative min-w-48 flex-1">
+                  <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
+                  <Input aria-label="Search Android packages" className="pl-9"
+                    value={appSearch} onChange={e => setAppSearch(e.target.value)}
+                    placeholder="Find package..." />
+                </div>
+                {(["all", "user", "system"] as const).map(filter => (
+                  <Button size="sm" key={filter} variant={packageFilter === filter ? "default" : "outline"}
+                    onClick={() => setPackageFilter(filter)}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
+                ))}
+              </div>
+              {!apps ? <p className="text-muted-foreground text-sm">Package inventory unavailable or not authorized.</p> :
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
+                  <div className="max-h-[440px] overflow-y-auto rounded-lg border">
+                    {shownApps.map(item => <button key={item.packageName} type="button"
+                      className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
+                        (selectedPackage === item.packageName ? "bg-muted" : "")}
+                      onClick={() => setSelectedPackage(item.packageName)}>
+                      <span className="break-all font-mono text-xs">{item.packageName}</span>
+                      <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
+                    </button>)}
+                    {shownApps.length === 0 && <p className="p-4 text-sm text-muted-foreground">No matching packages.</p>}
+                  </div>
+                  <div className="space-y-3 rounded-lg border p-4">
+                    <p className="font-medium">Selected package</p>
+                    <p className="break-all font-mono text-xs">{selectedPackage ?? "Choose an app from the list"}</p>
+                    <p className="text-muted-foreground text-sm">
+                      Version, runtime permissions, launch, force-stop and uninstall are available
+                      on the phone in Companion → Applications, with explicit confirmation.
+                    </p>
+                    <p className="text-muted-foreground text-xs">
+                      {shownApps.length} matching · {apps.packages.length} reported
+                      {apps.truncated ? " · truncated" : ""}
+                    </p>
+                  </div>
+                </div>}
+              <LastSample observedAt={apps?.observedAt} />
+            </CardContent>
+          </Card>
+        )}
+        {section === "processes" && (
+          <Card>
+            <CardHeader><CardTitle>Android CPU & processes</CardTitle>
+              <CardDescription>Real PID, owner, RSS and CPU (where Android reports it). No fabricated per-process CPU usage.</CardDescription>
+            </CardHeader><CardContent className="space-y-3">
+              <Input aria-label="Search Android processes" value={processSearch}
+                onChange={e => setProcessSearch(e.target.value)} placeholder="Search PID, user or process..." />
+              {!system ? <p className="text-muted-foreground text-sm">Process inventory unavailable; CPU headline remains independent.</p> :
+                <>
+                  <div className="max-h-[460px] overflow-auto rounded-lg border">
+                    <table className="w-full min-w-[570px] text-left text-sm">
+                      <thead className="bg-muted/60 sticky top-0">
+                        <tr><th className="p-3">PID</th><th className="p-3">Process</th><th className="p-3">User</th><th className="p-3 text-right">RSS</th><th className="p-3 text-right">CPU</th></tr>
+                      </thead><tbody>
+                        {shownProcesses.map(proc => <tr className="border-t" key={proc.pid}>
+                          <td className="p-3 font-mono">{proc.pid}</td>
+                          <td className="max-w-80 break-all p-3">{proc.name}</td>
+                          <td className="p-3">{proc.user}</td>
+                          <td className="p-3 text-right">{mib(proc.rssKb)}</td>
+                          <td className="p-3 text-right">{unavailable(proc.cpuPercent, "%")}</td>
+                        </tr>)}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {shownProcesses.length} listed{system.processesTruncated ? " · inventory capped at 512" : ""}. Individual process stop is available locally in Companion after confirmation.
+                  </p>
+                  <LastSample observedAt={system.observedAt} />
+                </>}
+            </CardContent>
+          </Card>
+        )}
+        {section === "permissions" && (
+          <div className="space-y-3">
+            <NativeOwnerNotice specific="Inspect per-app runtime permissions and grant/revoke specific permissions in Companion → Permissions." />
+            <Card><CardHeader><CardTitle>Package permission inspection</CardTitle>
+              <CardDescription>Permission results come from Android package manager, not inferred from installation.</CardDescription>
+            </CardHeader><CardContent className="space-y-2 text-sm">
+              <p>Selected application: <span className="font-mono break-all">{selectedPackage ?? "None"}</span></p>
+              <p className="text-muted-foreground">Use Companion → Applications → Read app details / permissions. Then use Companion → Permissions to grant or revoke a specific runtime permission if Android allows it.</p>
+            </CardContent></Card>
+          </div>
+        )}
+        {section === "services" && (
+          <div className="space-y-3">
+            <Card><CardHeader><CardTitle>Services & Android settings</CardTitle>
+              <CardDescription>Observed Android services and settings from native Shizuku.</CardDescription>
+            </CardHeader><CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Screen brightness</p>
+                  <p className="text-2xl font-semibold">{unavailable(system?.settings.brightness)}</p></div>
+                <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Airplane mode</p>
+                  <p className="text-2xl font-semibold">{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</p></div>
+              </div>
+              <Input aria-label="Search Android services" value={serviceSearch} onChange={e => setServiceSearch(e.target.value)}
+                placeholder="Search service component..." />
+              {!system || system.services.error ? <p className="text-muted-foreground text-sm">Android service inventory unavailable.</p> :
+                <div className="max-h-72 overflow-auto rounded-lg border">
+                  {shownServices.map((service, index) => <p key={service + index} className="border-b p-3 font-mono text-xs break-all last:border-b-0">{service}</p>)}
+                  {!shownServices.length && <p className="p-3 text-muted-foreground text-sm">No observed matching services.</p>}
+                </div>}
+              <p className="text-muted-foreground text-xs">The service list is sampled and may be incomplete. Start/stop a specific Android component or change brightness/timeout from Companion on the phone.</p>
+            </CardContent></Card>
+          </div>
+        )}
+        {section === "shell" && (
+          <div className="space-y-3">
+            <NativeOwnerNotice specific="Advanced shell commands run with the actual Shizuku ADB/root UID. Command entry and execution are available ONLY in Companion → Advanced shell." />
+            <Card><CardHeader><CardTitle>Execution boundary</CardTitle>
+              <CardDescription>There is deliberately no executable command input on this LAN origin.</CardDescription>
+            </CardHeader><CardContent className="text-sm text-muted-foreground">
+              Use PocketHost Companion on the Samsung. Every command is displayed before confirmation,
+              executes with bounded output and a timeout, and reports Android refusals without claiming success.
+            </CardContent></Card>
+          </div>
+        )}
+        {section === "power" && (
+          <Card><CardHeader><CardTitle>Power & hardware</CardTitle>
+            <CardDescription>Real battery, temperature and Android RAM observations.</CardDescription>
+          </CardHeader><CardContent className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {[
+                ["Battery level", unavailable(system?.power.batteryLevel, "%")],
+                ["Charging", system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
+                ["Battery temperature", unavailable(system?.power.batteryTemperatureC, " °C")],
+                ["Available Android RAM", mib(system?.power.memoryAvailableKb ?? null)],
+              ].map(([label, value]) => <div className="rounded-lg border p-4" key={label}>
+                <p className="text-muted-foreground text-sm">{label}</p>
+                <p className="mt-2 text-xl font-semibold">{value}</p>
+              </div>)}
+            </div>
+            <p className="text-muted-foreground text-sm">Total system RAM: {mib(system?.power.memoryTotalKb ?? null)}</p>
+            <LastSample observedAt={system?.observedAt} />
+            {!system && <p className="text-muted-foreground text-sm">Android hardware sample unavailable.</p>}
+          </CardContent></Card>
+        )}
+
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+          <p>Browser = read-only diagnostics · Companion on Samsung = confirmed privileged actions · ADB ≠ root</p>
+          <Button size="sm" variant="outline" render={<Link to="/observability" />}>
+            <Activity className="size-4" /> Termux monitoring
+          </Button>
+        </div>
       </div>
     </BaseLayout>
   )

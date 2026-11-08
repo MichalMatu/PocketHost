@@ -7,6 +7,19 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## New sprint — seven Android & Shizuku areas (2026-11-08)
+
+Source builds the Android native-only owner action plane and the fixed
+read-only system diagnostics bridge. The web UI replaces six inactive
+placeholder cards with Application, CPU/Processes, Permissions,
+Services/Settings, Advanced Shell and Power/Hardware views. Actions
+are confirmed in PocketHost Companion on the physical phone, not over
+the login-free LAN. Any unverified Android operation must remain OPEN.
+Owner hardware test, current APK deployment and exact-source QA are
+separate from Git publication. Preserve all protected Termux services.
+
+
+
 ## Current source slice: Shizuku Android application inventory
 
 After the accepted CPU bridge at main 00010ada, the next source slice
