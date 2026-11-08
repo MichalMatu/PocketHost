@@ -313,7 +313,8 @@ export default function ShizukuPage() {
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {[
                 ["Battery level", unavailable(system?.power.batteryLevel, "%")],
-                ["Charging", system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
+                ["Charging", system?.power.chargingState ? ({ charging: "Charging", discharging: "Discharging", full: "Full", "not-charging": "Not charging", unknown: "Unavailable" } as const)[system.power.chargingState] : system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
+                ["External power", system?.power.powerConnected == null ? "Unavailable" : system.power.powerConnected ? "Connected" : "Disconnected"],
                 ["Battery temperature", unavailable(system?.power.batteryTemperatureC, " °C")],
                 ["Available Android RAM", mib(system?.power.memoryAvailableKb ?? null)],
               ].map(([label, value]) => <div className="rounded-lg border p-4" key={label}>

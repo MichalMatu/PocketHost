@@ -70,6 +70,8 @@ export const shizukuSystemSchema = z.object({
     batteryLevel: z.number().int().min(0).max(100).nullable(),
     batteryTemperatureC: nullableNonnegative,
     charging: z.boolean().nullable(),
+    chargingState: z.enum(["charging", "discharging", "full", "not-charging", "unknown"]).optional(),
+    powerConnected: z.boolean().nullable().optional(),
     memoryTotalKb: z.number().int().nonnegative().nullable(),
     memoryAvailableKb: z.number().int().nonnegative().nullable(),
   }).strict(),

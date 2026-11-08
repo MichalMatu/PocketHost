@@ -137,13 +137,38 @@ public final class PowerUserService extends IPowerUserService.Stub {
                 Integer level = extractInt(raw, "(?m)^\\s*level:\\s*(\\d+)\\s*$");
                 Integer temperature = extractInt(raw, "(?m)^\\s*temperature:\\s*(\\d+)\\s*$");
                 Integer plugged = extractInt(raw, "(?m)^\\s*plugged:\\s*(\\d+)\\s*$");
-                power.put("batteryLevel", level == null || level > 100 ? JSONObject.NULL : level);
+                Integer statusCode = extractInt(raw, "(?m)^\\s*status:\\s*(\\d+)\\s*$");
+                boolean hasPowerIndicators = false;
+                boolean powered = false;
+                for (String name : new String[] {"AC powered", "USB powered",
+                        "Wireless powered", "Dock powered"}) {
+                    Matcher powerIndicator = Pattern.compile("(?m)^\\s*" + Pattern.quote(name) +
+                            ":\\s*(true|false)\\s*$", Pattern.CASE_INSENSITIVE).matcher(raw);
+                    if (powerIndicator.find()) {
+                        hasPowerIndicators = true;
+                        powered |= "true".equalsIgnoreCase(powerIndicator.group(1));
+                    }
+                }
+                Boolean externalPower = plugged != null ? plugged > 0 :
+                        hasPowerIndicators ? powered : null;
+                String chargingState = statusCode == null ? "unknown" :
+                        statusCode == 2 ? "charging" :
+                        statusCode == 3 ? "discharging" :
+                        statusCode == 4 ? "not-charging" :
+                        statusCode == 5 ? "full" : "unknown";
+                power.put("batteryLevel", level == null || level < 0 || level > 100 ?
+                        JSONObject.NULL : level);
                 power.put("batteryTemperatureC", temperature == null ? JSONObject.NULL : temperature / 10.0);
-                power.put("charging", plugged == null ? JSONObject.NULL : plugged > 0);
+                power.put("powerConnected", externalPower == null ? JSONObject.NULL : externalPower);
+                power.put("chargingState", chargingState);
+                power.put("charging", "unknown".equals(chargingState) ? JSONObject.NULL :
+                        "charging".equals(chargingState));
             } catch (Exception unavailable) {
                 power.put("batteryLevel", JSONObject.NULL);
                 power.put("batteryTemperatureC", JSONObject.NULL);
                 power.put("charging", JSONObject.NULL);
+                power.put("chargingState", "unknown");
+                power.put("powerConnected", JSONObject.NULL);
             }
             try {
                 String raw = execute(8192, "/system/bin/cat", "/proc/meminfo");

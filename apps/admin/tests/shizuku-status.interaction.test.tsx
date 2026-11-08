@@ -56,3 +56,13 @@ describe("Shizuku system overview contract", () => {
       power: { ...observation.power, batteryLevel: 140 } })).toThrow()
   })
 })
+
+
+describe("Shizuku charging states", () => {
+  it("renders full and unavailable separately from external power", () => {
+    const state = { charging: false, chargingState: "full", powerConnected: true }
+    expect(state.chargingState).toBe("full")
+    expect(state.powerConnected).toBe(true)
+    expect(state.charging).toBe(false)
+  })
+})
