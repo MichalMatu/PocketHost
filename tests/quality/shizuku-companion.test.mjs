@@ -14,7 +14,8 @@ const sample = () => ({
   capabilities: [{ id: 'cpu', title: 'CPU', available: true, description: 'Shizuku sampling' }],
 });
 test('read-only native companion status preserves actual CPU observations', () => {
-  assert.deepEqual(parseCompanionStatus(JSON.stringify(sample())), sample());
+  const observed = sample();
+  assert.deepEqual(parseCompanionStatus(JSON.stringify(observed)), observed);
 });
 test('bridge rejects forged, stale and unprivileged measurements', () => {
   for (const item of [
