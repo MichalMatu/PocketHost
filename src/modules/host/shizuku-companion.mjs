@@ -1,10 +1,4 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-
-const run = promisify(execFile);
-const STATUS_URI = 'content://pl.pockethost.companion.telemetry/status';
-
-/** A device-local, read-only Android IPC result: no arbitrary commands. */
+/** Device-local telemetry from the Android Companion (not a privileged command endpoint). */
 export function parseCompanionStatus(raw) {
   const value = JSON.parse(raw);
   if (!value || typeof value !== 'object' || Array.isArray(value) ||
@@ -55,12 +49,16 @@ export function parseCompanionStatus(raw) {
   };
 }
 
+/** Android shared loopback is accessible from Termux without ADB/app_process. */
 export async function readCompanionStatus() {
-  const { stdout } = await run('/system/bin/content', ['read', '--uri', STATUS_URI], {
-    timeout: 4000,
-    maxBuffer: 16384,
-    encoding: 'utf8',
-    shell: false,
+  const response = await fetch('http://127.0.0.1:18791/status', {
+    method: 'GET',
+    redirect: 'error',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(3500),
   });
-  return parseCompanionStatus(stdout);
+  if (!response.ok) throw new Error('companion-unavailable');
+  const raw = await response.text();
+  if (raw.length > 16384) throw new Error('companion-response-too-large');
+  return parseCompanionStatus(raw);
 }

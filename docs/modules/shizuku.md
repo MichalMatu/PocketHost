@@ -78,3 +78,14 @@ If Companion is backgrounded for 30 seconds, values expire: a user-visible
 Android foreground service for persistent sampling is a next-phase task.
 Only accept physical Android evidence and authorized Shizuku state, never
 infer privileges from installed package names.
+
+## Android 16 transport correction
+
+Samsung Android 16 prevents the Termux app from starting the Android
+`content` CLI (`app_process` inaccessible). The provider remains useful
+for ADB inspection, but the actual Termux backend uses a **fixed read-only
+HTTP status bridge on Android loopback 127.0.0.1:18791**. It is started by
+the Companion app, handles only `GET /status`, and shares no Binder handle,
+privileged shell or mutation API. The Vite server uses a fixed loopback
+fetch and its existing no-store / read-only status route. No Wi-Fi listener
+or background Android service was created.

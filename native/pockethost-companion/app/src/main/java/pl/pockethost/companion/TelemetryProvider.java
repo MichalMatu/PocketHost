@@ -38,8 +38,8 @@ public final class TelemetryProvider extends ContentProvider {
         return false;
     }
 
-    private JSONObject status() throws Exception {
-        SharedPreferences state = getContext().getSharedPreferences(PREFS, 0);
+    static JSONObject status(android.content.Context context) throws Exception {
+        SharedPreferences state = context.getSharedPreferences(PREFS, 0);
         long when = state.getLong("observedAtMs", 0);
         boolean fresh = when > 0 && when <= System.currentTimeMillis() &&
                 System.currentTimeMillis() - when < MAX_AGE_MS;
@@ -73,7 +73,7 @@ public final class TelemetryProvider extends ContentProvider {
         }
         if (!permittedReader()) throw new SecurityException("Only local Termux may read");
         try {
-            final byte[] payload = status().toString().getBytes(StandardCharsets.UTF_8);
+            final byte[] payload = status(getContext()).toString().getBytes(StandardCharsets.UTF_8);
             final ParcelFileDescriptor[] pipe = ParcelFileDescriptor.createPipe();
             new Thread(() -> {
                 try (OutputStream output =
