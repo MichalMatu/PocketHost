@@ -53,8 +53,9 @@ test('H3 native Restic initializes a locally encrypted repo automatically, witho
       '--tag',
       'pockethost-h3',
       '--',
-      sampleData.workspace.root,
+      path.basename(sampleData.workspace.root),
     ]);
+    assert.equal(commands[1].options.cwd, path.dirname(sampleData.workspace.root));
     const key = path.join(sampleData.state, 'password');
     assert.equal(lstatSync(key).mode & 0o077, 0);
     assert.ok(readFileSync(key, 'utf8').trim().length >= 32);
