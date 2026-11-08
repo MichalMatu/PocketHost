@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { parseH3Files, parseH3Tools } from "@/lib/termux-center-schema"
-import { navGroups } from "@/components/app-sidebar"
+import { navGroups } from "@/config/navigation"
 import { routes } from "@/config/routes"
 
 vi.mock("@/components/layouts/base-layout", () => ({
