@@ -396,7 +396,7 @@ export function RunitServiceActions() {
     </div>
     <p className="text-muted-foreground text-xs">
       Existing services are only observed until you explicitly register them.
-      Six protected system services are never available for registration or mutation.
+      Protected system services are never available for registration or mutation.
     </p>
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
