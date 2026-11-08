@@ -4,7 +4,7 @@ export interface LanInterface {
 }
 export interface LanStatus {
   version: 1;
-  mode: 'manual';
+  mode: 'manual' | 'auto';
   enabled: boolean;
   bind: string | null;
   interfaces: LanInterface[];
@@ -22,7 +22,11 @@ export function availableLanInterfaces(
     | undefined
   >,
 ): LanInterface[];
-export function createLanControl(): {
+export function createLanControl(options?: {
+  mode?: 'manual' | 'auto';
+  interfaces?: () => LanInterface[];
+  start?: (bind: string) => Promise<{ close(): Promise<void> | void }>;
+}): {
   status(): LanStatus;
   enable(bind: string): Promise<LanStatus>;
   disable(): Promise<LanStatus>;

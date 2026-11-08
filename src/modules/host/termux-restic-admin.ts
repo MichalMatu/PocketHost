@@ -87,7 +87,7 @@ export class ResticWorkspaceAdmin {
       timeout,
       maxBuffer: 192000,
       outputLimit: 170000,
-      cwd,
+      ...(cwd === undefined ? {} : { cwd }),
       env: {
         ...process.env,
         RESTIC_PASSWORD: undefined,
