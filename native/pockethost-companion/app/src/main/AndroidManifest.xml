@@ -14,6 +14,13 @@
             </intent-filter>
         </activity>
 
+        <!-- Only a local Termux / shell caller can read bounded CPU telemetry. -->
+        <provider
+            android:name=".TelemetryProvider"
+            android:authorities="${applicationId}.telemetry"
+            android:exported="true"
+            android:grantUriPermissions="false" />
+
         <!-- Shizuku supplies the Binder through this signature-protected provider. -->
         <provider
             android:name="rikka.shizuku.ShizukuProvider"

@@ -5,6 +5,8 @@ import android.content.ComponentName;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.view.View;
@@ -15,6 +17,7 @@ import android.widget.TextView;
 import org.json.JSONObject;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import rikka.shizuku.Shizuku;
 
 public final class MainActivity extends Activity {
@@ -24,6 +27,16 @@ public final class MainActivity extends Activity {
     private TextView reading;
     private IPowerUserService powerService;
     private boolean bound = false;
+    private boolean visible = false;
+    private final AtomicBoolean sampling = new AtomicBoolean(false);
+    private final Handler refreshLoop = new Handler(Looper.getMainLooper());
+    private final Runnable onDemandRefresh = new Runnable() {
+        @Override public void run() {
+            if (!visible) return;
+            if (permissionGranted()) bindAndSample();
+            refreshLoop.postDelayed(this, 10000);
+        }
+    };
 
     private final Shizuku.OnBinderReceivedListener binderReceived = () -> runOnUiThread(this::refreshConnection);
     private final Shizuku.OnBinderDeadListener binderDead = () -> runOnUiThread(() -> {
@@ -157,21 +170,56 @@ public final class MainActivity extends Activity {
 
     private void sample() {
         IPowerUserService source = powerService;
-        if (source == null) return;
+        if (source == null || !sampling.compareAndSet(false, true)) return;
         reading.setText("Reading Android CPU…");
         readings.execute(() -> {
             try {
                 JSONObject json = new JSONObject(source.readCpuAndProcesses());
                 String cpu = json.isNull("cpuPercent") ? "Unavailable" : json.getString("cpuPercent") + "%";
                 String processes = json.isNull("visibleProcesses") ? "Unavailable" : json.getString("visibleProcesses");
-                String uid = json.optString("uid");
+                int uid = json.getInt("uid");
+                JSONObject snapshot = new JSONObject();
+                snapshot.put("version", 1);
+                snapshot.put("source", "android-companion");
+                snapshot.put("connected", true);
+                snapshot.put("authorized", true);
+                snapshot.put("mode", uid == 0 ? "root" : "adb");
+                snapshot.put("observedAt", new java.util.Date().toInstant().toString());
+                snapshot.put("cpuPercent", json.opt("cpuPercent"));
+                snapshot.put("visibleProcesses", json.opt("visibleProcesses"));
+                org.json.JSONArray capabilities = new org.json.JSONArray();
+                JSONObject capability = new JSONObject();
+                capability.put("id", "cpu-and-processes");
+                capability.put("title", "Android CPU and processes");
+                capability.put("available", !json.isNull("cpuPercent"));
+                capability.put("description", "On-device Shizuku UserService");
+                capabilities.put(capability);
+                snapshot.put("capabilities", capabilities);
+                getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
+                    .putString("snapshot", snapshot.toString())
+                    .putLong("observedAtMs", System.currentTimeMillis()).apply();
                 runOnUiThread(() -> reading.setText("Android CPU: " + cpu +
                         "\nVisible processes: " + processes + "\nShizuku UID: " + uid));
             } catch (Exception e) {
                 runOnUiThread(() -> reading.setText("Android measurement failed: " +
                         e.getClass().getSimpleName()));
+            } finally {
+                sampling.set(false);
             }
         });
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        visible = true;
+        refreshLoop.removeCallbacks(onDemandRefresh);
+        refreshLoop.post(onDemandRefresh);
+    }
+
+    @Override protected void onPause() {
+        visible = false;
+        refreshLoop.removeCallbacks(onDemandRefresh);
+        super.onPause();
     }
 
     @Override protected void onDestroy() {

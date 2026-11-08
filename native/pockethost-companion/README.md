@@ -45,3 +45,18 @@ different output; report `Unavailable` rather than guessing.
 
 Build tools: Android SDK API 36, Android Gradle Plugin 8.10.1,
 Gradle 8.11.1+ and Java 17+. No device app is installed by committing code.
+
+## DEV bridge to Termux (2026-11-08)
+
+After explicit Shizuku authorization, the companion samples CPU/process
+information while its screen is active and publishes a short-lived JSON
+snapshot via Android `content read --uri
+content://pl.pockethost.companion.telemetry/status`. The provider is
+read-only and accepts only the Termux app UID and shell UID. Snapshots
+expire after 30 seconds. It exposes no actions, Binder references or
+privileged command execution. A matching PocketHost loopback API can
+fetch this output without making an Android HTTP listener.
+
+For continued sampling when the app is in the background, a future
+Android foreground service with an explicit user-visible notification
+is needed. This first DEV version does not claim always-on telemetry.
