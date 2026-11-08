@@ -94,7 +94,6 @@ purpose: Record source scope, test evidence, security boundaries and hardware ho
   on the trusted LAN after the exact source is synchronized.
 - Confirm unauthenticated LAN cannot invoke any Shizuku mutation route.
 
-
 ## Physical read-only acceptance (2026-11-08, source 80c15b5)
 
 The Mac Local Agent targeted exactly one Samsung SM-S906B, installed the
@@ -131,7 +130,6 @@ push; the installed prior Companion and verified CPU bridge remain
 the stable fallback until a guarded device-level re-test passes.
 Continue from current `main` HEAD, never from these historical SHAs.
 
-
 ## Follow-up scope: native charge status, selected app details, GiB (2026-11-08)
 
 - Add Android battery \`status\` and AC/USB/wireless/dock supply fallback
@@ -145,7 +143,6 @@ Continue from current `main` HEAD, never from these historical SHAs.
 - Exact-source Termux/Gradle, physical charge-state readings and
   owner-confirmed harmless shell/negative action tests remain OPEN until
   a terminal receipt confirms them.
-
 
 ## Follow-up terminal acceptance — charging, app metadata and GiB
 
@@ -200,3 +197,19 @@ The React effect's synchronous state resets were moved to the explicit
 Refresh action. This removes an identified lint regression without changing
 the typed native bridge. Exact-SHA Samsung UI tests and live panel acceptance
 remain separately tracked.
+
+## Responsive UI final source review (2026-11-08)
+
+- Samsung exact `8ecdb2d` focused UI acceptance returned 5/5 PASS,
+  native Shizuku contract 6/6 PASS, admin lint and route quick checks PASS.
+- The guarded source switch reached the existing verified PocketHost Vite
+  process without restarting it. HTTP `/shizuku`, native status and system
+  were 200; the package list exceeded the 9-second diagnostic HTTP limit.
+  The task rolled back the existing source successfully and returned HOLD.
+- Browser-side application inventory timeout is extended to 25 seconds so
+  the 15-second native package request plus its 3.5-second fresh authorization
+  sample can finish without premature browser cancellation. The system and
+  CPU samples remain independent. Link-styled navigation explicitly renders
+  link semantics rather than a native button.
+- This patch requires its own final SHA QA and real HTTP/browser readback.
+  No claim of a live update or full visual acceptance is made here.

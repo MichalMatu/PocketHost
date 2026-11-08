@@ -130,7 +130,7 @@ export default function ShizukuPage() {
 
         setAppsLoading(true)
         void readJson("/api/v1/shizuku/apps", AbortSignal.any([
-          signal, AbortSignal.timeout(15000),
+          signal, AbortSignal.timeout(25000),
         ]))
           .then(parseShizukuApps)
           .then(packages => { if (!signal.aborted) setApps(packages) })
@@ -544,7 +544,7 @@ export default function ShizukuPage() {
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
           <p>Browser = read-only diagnostics · Companion on Samsung = confirmed privileged actions · ADB ≠ root</p>
-          <Button size="sm" variant="outline" render={<Link to="/observability" />}>
+          <Button size="sm" variant="outline" nativeButton={false} render={<Link to="/observability" />}>
             <Activity className="size-4" /> Termux monitoring
           </Button>
         </div>
