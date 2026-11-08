@@ -1,9 +1,8 @@
-import * as React from "react"
 import { Activity, AppWindow, Battery, Cpu, ExternalLink, LockKeyhole, Settings2, Shield, Smartphone, Terminal } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { INITIAL_SHIZUKU_SESSION } from "@/shared/shizuku"
+import { INITIAL_SHIZUKU_SESSION } from "../../../../../src/shared/shizuku"
 
 const capabilities = [
   { title: "CPU & processes", detail: "True CPU load, process inventory and diagnostics", icon: Cpu },
