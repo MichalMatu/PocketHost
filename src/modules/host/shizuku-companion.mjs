@@ -113,7 +113,8 @@ export function parseCompanionApps(raw) {
       entry.packageName.length > 200 ||
       !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(entry.packageName) ||
       typeof entry.system !== 'boolean' ||
-      typeof entry.label !== 'string' || entry.label.length > 120 ||
+      typeof entry.label !== 'string' ||
+      entry.label.length > 120 ||
       (entry.enabled !== null && typeof entry.enabled !== 'boolean') ||
       seen.has(entry.packageName)
     ) {
@@ -229,31 +230,51 @@ export async function readCompanionSystem() {
   return d;
 }
 
-
 /** Strict read-only metadata from Android PackageManager via the native Companion. */
 export function parseCompanionApp(raw) {
   const d = JSON.parse(raw);
-  if (!d || typeof d !== 'object' || Array.isArray(d) ||
-      d.version !== 1 || d.source !== 'android-companion' ||
-      typeof d.packageName !== 'string' || d.packageName.length > 200 ||
-      !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(d.packageName) ||
-      typeof d.label !== 'string' || d.label.length > 120 ||
-      typeof d.versionName !== 'string' || d.versionName.length > 120 ||
-      !Number.isSafeInteger(d.versionCode) || d.versionCode < 0 ||
-      !Number.isSafeInteger(d.targetSdk) || d.targetSdk < 0 || d.targetSdk > 100 ||
-      typeof d.system !== 'boolean' || typeof d.enabled !== 'boolean' ||
-      !Array.isArray(d.permissions) || d.permissions.length > 96 ||
-      (d.iconPng !== undefined && (typeof d.iconPng !== 'string' ||
-        d.iconPng.length > 65000 || !/^[A-Za-z0-9+/]+={0,2}$/.test(d.iconPng)))) {
+  if (
+    !d ||
+    typeof d !== 'object' ||
+    Array.isArray(d) ||
+    d.version !== 1 ||
+    d.source !== 'android-companion' ||
+    typeof d.packageName !== 'string' ||
+    d.packageName.length > 200 ||
+    !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(d.packageName) ||
+    typeof d.label !== 'string' ||
+    d.label.length > 120 ||
+    typeof d.versionName !== 'string' ||
+    d.versionName.length > 120 ||
+    !Number.isSafeInteger(d.versionCode) ||
+    d.versionCode < 0 ||
+    !Number.isSafeInteger(d.targetSdk) ||
+    d.targetSdk < 0 ||
+    d.targetSdk > 100 ||
+    typeof d.system !== 'boolean' ||
+    typeof d.enabled !== 'boolean' ||
+    !Array.isArray(d.permissions) ||
+    d.permissions.length > 96 ||
+    (d.iconPng !== undefined &&
+      (typeof d.iconPng !== 'string' ||
+        d.iconPng.length > 65000 ||
+        !/^[A-Za-z0-9+/]+={0,2}$/.test(d.iconPng)))
+  ) {
     throw new Error('invalid-android-app-details');
   }
   const seen = new Set();
   for (const p of d.permissions) {
-    if (!p || typeof p !== 'object' || Array.isArray(p) ||
-        Object.keys(p).sort().join(',') !== 'granted,name' ||
-        typeof p.name !== 'string' || p.name.length > 200 ||
-        !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(p.name) ||
-        typeof p.granted !== 'boolean' || seen.has(p.name)) {
+    if (
+      !p ||
+      typeof p !== 'object' ||
+      Array.isArray(p) ||
+      Object.keys(p).sort().join(',') !== 'granted,name' ||
+      typeof p.name !== 'string' ||
+      p.name.length > 200 ||
+      !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(p.name) ||
+      typeof p.granted !== 'boolean' ||
+      seen.has(p.name)
+    ) {
       throw new Error('invalid-android-permission');
     }
     seen.add(p.name);
@@ -262,14 +283,19 @@ export function parseCompanionApp(raw) {
 }
 
 export async function readCompanionApp(packageName) {
-  if (typeof packageName !== 'string' || packageName.length > 200 ||
-      !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(packageName)) {
+  if (
+    typeof packageName !== 'string' ||
+    packageName.length > 200 ||
+    !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(packageName)
+  ) {
     throw new Error('invalid-package-name');
   }
   const status = await readCompanionStatus();
   if (!status.connected || !status.authorized) throw new Error('companion-not-authorized');
   const result = await fetch('http://127.0.0.1:18791/app?package=' + packageName, {
-    method: 'GET', cache: 'no-store', redirect: 'error',
+    method: 'GET',
+    cache: 'no-store',
+    redirect: 'error',
     signal: AbortSignal.timeout(8000),
   });
   if (!result.ok) throw new Error('android-app-details-unavailable');

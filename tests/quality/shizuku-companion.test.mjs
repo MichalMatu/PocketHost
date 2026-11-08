@@ -37,13 +37,18 @@ test('app inventory validates bounded native Shizuku package list', async () => 
     authorized: true,
     mode: 'adb',
     observedAt: new Date().toISOString(),
-    packages: [{ packageName: 'com.example.app', system: false, label: 'Example App', enabled: true }],
+    packages: [
+      { packageName: 'com.example.app', system: false, label: 'Example App', enabled: true },
+    ],
     truncated: false,
   };
   assert.deepEqual(parseCompanionApps(JSON.stringify(inventory)), inventory);
   for (const mutation of [
     { ...inventory, authorized: false },
-    { ...inventory, packages: [{ packageName: 'bad;name', system: true, label: '', enabled: true }] },
+    {
+      ...inventory,
+      packages: [{ packageName: 'bad;name', system: true, label: '', enabled: true }],
+    },
     { ...inventory, packages: [inventory.packages[0], inventory.packages[0]] },
     { ...inventory, observedAt: '2025-01-01T00:00:00Z' },
     { ...inventory, packages: Array(1025).fill(inventory.packages[0]) },
@@ -84,13 +89,18 @@ test('native overview rejects malformed and invented process values', async () =
     assert.throws(() => parseCompanionSystem(JSON.stringify(invalid)));
 });
 
-
 test('selected Android app details are validated, untrusted package names rejected', async () => {
   const { parseCompanionApp } = await import('../../src/modules/host/shizuku-companion.mjs');
   const detail = {
-    version: 1, source: 'android-companion', packageName: 'com.example.app',
-    label: 'Example App', versionName: '1.2', versionCode: 12, targetSdk: 35,
-    system: false, enabled: true,
+    version: 1,
+    source: 'android-companion',
+    packageName: 'com.example.app',
+    label: 'Example App',
+    versionName: '1.2',
+    versionCode: 12,
+    targetSdk: 35,
+    system: false,
+    enabled: true,
     permissions: [{ name: 'android.permission.CAMERA', granted: false }],
   };
   assert.deepEqual(parseCompanionApp(JSON.stringify(detail)), detail);
@@ -99,5 +109,6 @@ test('selected Android app details are validated, untrusted package names reject
     { ...detail, permissions: [...detail.permissions, ...detail.permissions] },
     { ...detail, versionCode: -1 },
     { ...detail, iconPng: 'not an icon!' },
-  ]) assert.throws(() => parseCompanionApp(JSON.stringify(wrong)));
+  ])
+    assert.throws(() => parseCompanionApp(JSON.stringify(wrong)));
 });

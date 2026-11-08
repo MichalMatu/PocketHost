@@ -145,3 +145,28 @@ Continue from current `main` HEAD, never from these historical SHAs.
 - Exact-source Termux/Gradle, physical charge-state readings and
   owner-confirmed harmless shell/negative action tests remain OPEN until
   a terminal receipt confirms them.
+
+
+## Follow-up terminal acceptance — charging, app metadata and GiB
+
+- Source baseline `78875667691c533ee0027d35622534f8428dc712`.
+- Samsung SM-S906B Companion `0.4.0` installation: **PASS**.
+  Signed debug APK verification and native `/status`, `/apps`,
+  `/app?package=pl.pockethost.companion`, `/system`: HTTP 200.
+- Native app inventory: 550 items, 550 labeled; selected Companion returned
+  version `0.4.0`, SDK 35, five permissions and an actual PNG icon.
+- Battery: 100%, `full`, external power connected; CPU 19%, 852 processes.
+- Physical owner-action smoke: confirmed an explicit action confirmation
+  dialog and harmless `id` command in native Companion; output proved
+  Shizuku shell UID. No uninstall, force-stop or permission grants tested.
+- Termux exact SHA quality receipts: Node 5/5, Vitest 6/6, lint,
+  TypeScript typecheck and admin build **PASS**. Prettier isolated two
+  formatting-only files, addressed in the following commit.
+- Existing owner-verified PocketHost DEV source synced to same SHA without
+  PID change or rollback; `/shizuku`, `/api/v1/shizuku/status`,
+  `/apps`, `/app`, `/system` on the local endpoint and LAN view
+  all returned HTTP 200.
+- **Still OPEN:** a safe negative/error-path action matrix, visual checks
+  on different viewports, browser contract/error handling, and non-destructive
+  permissions/service refusal acceptance. Privileged mutations must remain
+  phone-confirmed; no unauthenticated LAN controls.
