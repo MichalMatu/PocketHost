@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen, within } from "@testing-library/react"
+import { MemoryRouter } from "react-router-dom"
 import SystemPage from "@/app/termux/system-page"
 
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -32,7 +33,7 @@ describe("system dashboard stable metrics layout", () => {
     let resolveFetch!: (value: unknown) => void
     const pending = new Promise(resolve => { resolveFetch = resolve })
     vi.stubGlobal("fetch", vi.fn(() => pending))
-    render(<SystemPage />)
+    render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
     expect(metrics.getAttribute("aria-busy")).toBe("true")
     for (const label of ["Node runtime", "Free RAM", "Free Termux storage", "Observed services"]) {
@@ -50,7 +51,7 @@ describe("system dashboard stable metrics layout", () => {
 
   it("keeps card positions and displays Unavailable if host status fails", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })))
-    render(<SystemPage />)
+    render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
     expect(within(metrics).getAllByLabelText("Loading")).toHaveLength(4)
     await screen.findByRole("alert")
