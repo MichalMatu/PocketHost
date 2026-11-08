@@ -3,6 +3,13 @@ package pl.pockethost.companion;
 import android.content.ContentProvider;
 import android.content.ContentValues;
 import android.content.pm.PackageManager;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.drawable.Drawable;
+import android.util.Base64;
+import java.io.ByteArrayOutputStream;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Binder;
@@ -96,8 +103,100 @@ public final class TelemetryProvider extends ContentProvider {
         result.put("authorized", true);
         result.put("mode", uid == 0 ? "root" : "adb");
         result.put("observedAt", source.getString("observedAt"));
-        result.put("packages", source.getJSONArray("packages"));
+        JSONArray original = source.getJSONArray("packages");
+        JSONArray decorated = new JSONArray();
+        PackageManager manager = context.getPackageManager();
+        for (int i = 0; i < original.length(); i++) {
+            JSONObject entry = original.getJSONObject(i);
+            String pkg = entry.getString("packageName");
+            JSONObject item = new JSONObject();
+            item.put("packageName", pkg);
+            item.put("system", entry.getBoolean("system"));
+            try {
+                ApplicationInfo application = manager.getApplicationInfo(pkg, 0);
+                item.put("label", trimLabel(manager.getApplicationLabel(application).toString()));
+                item.put("enabled", application.enabled);
+            } catch (PackageManager.NameNotFoundException unavailable) {
+                // Shizuku may observe packages absent for this Android user.
+                item.put("label", "");
+                item.put("enabled", JSONObject.NULL);
+            }
+            decorated.put(item);
+        }
+        result.put("packages", decorated);
         result.put("truncated", source.getBoolean("truncated"));
+        return result;
+    }
+
+
+    private static String trimLabel(String raw) {
+        if (raw == null) return "";
+        return raw.length() > 120 ? raw.substring(0, 120) : raw;
+    }
+
+    /**
+     * Privilege-checked read-only metadata, sourced from Android PackageManager.
+     * The package must also be present in the authorized native Shizuku inventory.
+     */
+    static JSONObject app(android.content.Context context, String packageName) throws Exception {
+        if (packageName == null || packageName.length() > 200 ||
+                !packageName.matches("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+")) {
+            throw new IllegalArgumentException("Invalid package identifier");
+        }
+        JSONObject inventory = apps(context);
+        JSONArray installed = inventory.getJSONArray("packages");
+        JSONObject selected = null;
+        for (int i = 0; i < installed.length(); i++) {
+            JSONObject item = installed.getJSONObject(i);
+            if (packageName.equals(item.getString("packageName"))) {
+                selected = item;
+                break;
+            }
+        }
+        if (selected == null) throw new SecurityException("Package not in Shizuku inventory");
+        PackageManager pm = context.getPackageManager();
+        PackageInfo info = pm.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS);
+        ApplicationInfo application = pm.getApplicationInfo(packageName, 0);
+        JSONObject result = new JSONObject();
+        result.put("version", 1);
+        result.put("source", "android-companion");
+        result.put("packageName", packageName);
+        result.put("label", trimLabel(pm.getApplicationLabel(application).toString()));
+        result.put("versionName", info.versionName == null ? "" : trimLabel(info.versionName));
+        result.put("versionCode", info.getLongVersionCode());
+        result.put("targetSdk", application.targetSdkVersion);
+        result.put("enabled", application.enabled);
+        result.put("system", selected.getBoolean("system"));
+        JSONArray permissions = new JSONArray();
+        if (info.requestedPermissions != null) {
+            for (int i = 0; i < info.requestedPermissions.length && permissions.length() < 96; i++) {
+                String name = info.requestedPermissions[i];
+                if (name == null || name.length() > 200) continue;
+                JSONObject entry = new JSONObject();
+                entry.put("name", name);
+                boolean granted = info.requestedPermissionsFlags != null &&
+                        i < info.requestedPermissionsFlags.length &&
+                        (info.requestedPermissionsFlags[i] & PackageInfo.REQUESTED_PERMISSION_GRANTED) != 0;
+                entry.put("granted", granted);
+                permissions.put(entry);
+            }
+        }
+        result.put("permissions", permissions);
+        try {
+            Drawable drawable = pm.getApplicationIcon(packageName);
+            Bitmap bitmap = Bitmap.createBitmap(56, 56, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, 56, 56);
+            drawable.draw(canvas);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            if (bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)) {
+                String encoded = Base64.encodeToString(stream.toByteArray(), Base64.NO_WRAP);
+                if (encoded.length() <= 65000) result.put("iconPng", encoded);
+            }
+            bitmap.recycle();
+        } catch (Exception ignored) {
+            // Optional icon, no fabricated image if the package is invisible.
+        }
         return result;
     }
 

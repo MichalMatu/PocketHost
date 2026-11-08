@@ -10,6 +10,8 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** Loopback-only read-only CPU and package inventory; never hosts privileged operations. */
 public final class TelemetryHttpServer {
@@ -48,14 +50,19 @@ public final class TelemetryHttpServer {
                     boolean statusRoute = request.matches("GET /status HTTP/1\\.[01]");
                     boolean appsRoute = request.matches("GET /apps HTTP/1\\.[01]");
                     boolean systemRoute = request.matches("GET /system HTTP/1\\.[01]");
+                    Matcher detailRequest = Pattern.compile(
+                            "GET /app\\?package=([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+) HTTP/1\\.[01]")
+                            .matcher(request);
+                    boolean appDetailRoute = detailRequest.matches();
                     String body;
                     int status;
-                    if (!statusRoute && !appsRoute && !systemRoute) {
+                    if (!statusRoute && !appsRoute && !systemRoute && !appDetailRoute) {
                         body = "{\"error\":\"not-found\"}";
                         status = 404;
                     } else {
                         try {
-                            body = (appsRoute ? TelemetryProvider.apps(context) :
+                            body = (appDetailRoute ? TelemetryProvider.app(context, detailRequest.group(1)) :
+                                    appsRoute ? TelemetryProvider.apps(context) :
                                     systemRoute ? TelemetryProvider.system(context) :
                                     TelemetryProvider.status(context)).toString();
                             status = 200;
