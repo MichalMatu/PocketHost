@@ -129,3 +129,8 @@ To opt out for a session set `POCKETHOST_LAN_AUTOSTART=0` before start.
 Only the PocketHost gateway is affected; this does not install a new
 Termux:Boot entry or start the panel after a complete phone reboot.
 Manual disable stays effective until the next PocketHost panel restart.
+
+The auto-start loop checks for the assigned Wi-Fi IP every eight seconds
+when the panel is running, allowing Android Wi-Fi to appear after Termux
+Boot. An explicit owner's **Disable** action suppresses automatic retries
+for that session. A new PocketHost process restores the default.

@@ -543,26 +543,40 @@ function shizukuCompanionApi(): Plugin {
 function networkAccessApi(): Plugin {
   const autoStart = process.env.POCKETHOST_LAN_AUTOSTART !== "0"
   const controller = createLanControl({ mode: autoStart ? "auto" : "manual" })
+  let ownerDisabled = false
+  let closed = false
+  let autoRetry: ReturnType<typeof setInterval> | undefined
+  let starting = false
+  function ensurePrivateLan() {
+    if (!autoStart || ownerDisabled || closed || starting || controller.status().enabled) return
+    const options = availableLanInterfaces()
+    const preferred = process.env.POCKETHOST_LAN_BIND
+    const selected = options.find((item) => item.address === preferred)
+      ?? options.find((item) => item.name.startsWith("wlan"))
+      ?? options.find((item) => item.address.startsWith("192.168."))
+      ?? options[0]
+    if (!selected) return
+    starting = true
+    void controller.enable(selected.address).catch(() => undefined).finally(() => { starting = false })
+  }
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
   return {
     name: "pockethost-manual-lan-control",
     apply: "serve",
     configureServer(server) {
-      // Owner-selected DEV default: restore the private Wi-Fi gateway at
-      // each PocketHost Vite session start. No other service is restarted.
+      // Restore on boot and after Wi-Fi comes up; do not seize an
+      // existing listener. A manual disable wins until the next session.
       if (autoStart) {
         server.httpServer?.once("listening", () => {
-          const options = availableLanInterfaces()
-          const preferred = process.env.POCKETHOST_LAN_BIND
-          const selected = options.find((item) => item.address === preferred)
-            ?? options.find((item) => item.name.startsWith("wlan"))
-            ?? options.find((item) => item.address.startsWith("192.168."))
-            ?? options[0]
-          if (selected) void controller.enable(selected.address).catch(() => undefined)
+          ensurePrivateLan()
+          autoRetry = setInterval(ensurePrivateLan, 8000)
+          autoRetry.unref?.()
         })
       }
       server.httpServer?.once("close", () => {
+        closed = true
+        if (autoRetry) clearInterval(autoRetry)
         void controller.disable()
       })
       server.middlewares.use("/api/v1/network-access", async (request, response) => {
@@ -611,10 +625,12 @@ function networkAccessApi(): Plugin {
               return
             }
             const state = await controller.enable(bind)
+            ownerDisabled = false
             response.end(JSON.stringify(state))
           } else {
             // Finish the proxied response before closing the gateway that carried it.
             const state = controller.status()
+            ownerDisabled = true
             response.once("finish", () => {
               void controller.disable().catch(() => undefined)
             })
