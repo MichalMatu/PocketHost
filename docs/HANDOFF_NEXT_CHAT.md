@@ -7,6 +7,20 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Native Shizuku companion source — 2026-11-08
+
+New source `native/pockethost-companion` is an Android Java app with
+real Shizuku Binder permission request and a Shizuku UserService that
+can sample device CPU/processes after owner approval. This is source,
+not a verified installed APK or a connected web bridge.
+Keep `/observability` Termux-only; `/shizuku` is the future real
+Android telemetry/control plane.
+Build the native app on the authorized Mac only, install/debug on
+the identified Samsung, and obtain real user Shizuku authorization.
+Then implement the local authenticated browser-status bridge.
+No full PocketHost build or duplicate QA matrix for this native slice.
+
+
 ## Monitoring ownership split — 2026-11-08
 
 Termux monitoring (/observability) is for actually readable Termux

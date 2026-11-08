@@ -1,0 +1,44 @@
+# PocketHost Companion — Android & Shizuku
+
+This native Android source begins the actual Shizuku integration. It is a
+standalone **developer app**, not yet connected to the PocketHost browser.
+
+## What works when installed and authorized
+
+- Detect real Shizuku Binder availability, permission, ADB shell (UID 2000)
+  vs root (UID 0).
+- Explicitly ask the **user** to grant Shizuku permission from Android.
+- Start a Shizuku UserService and request a bounded, real Android CPU
+  `dumpsys cpuinfo` sample and Android-visible process count.
+- Display actual readings on the phone, without inventing a system CPU %.
+
+No public HTTP endpoints, automatically granted permission, background
+daemons, privileged shell buttons or changes to unrelated Android services
+are introduced. Those are later modules, not banned features.
+
+## Development build
+
+From the Mac Android SDK environment (after installing Android Gradle
+Plugin dependencies as needed):
+
+```sh
+cd native/pockethost-companion
+gradle :app:assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+adb shell am start -n pl.pockethost.companion/.MainActivity
+```
+
+The first run needs an **on-device Shizuku permission approval**. After
+granting, tap **Read Android CPU and processes**. Native IPC with the web
+panel is a separate next slice; it must not expose an unrestricted Shizuku
+Binder bridge to the currently login-free LAN web page.
+
+Shizuku API: `dev.rikka.shizuku:api:13.1.5` and
+`dev.rikka.shizuku:provider:13.1.5`; user service is used instead
+of the deprecated `Shizuku.newProcess`.
+
+## Caveat
+
+The initial CPU parser targets the Android `dumpsys cpuinfo` `TOTAL`
+summary observed over ADB on Samsung. Other Android versions may return
+different output; report `Unavailable` rather than guessing.

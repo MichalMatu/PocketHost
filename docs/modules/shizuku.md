@@ -51,3 +51,14 @@ endpoint when implemented. Connected/authorized state must come from
 real bridge evidence, not from a previous ADB diagnostic or an installed
 app package. Controls must execute actual owner-directed actions and
 report success or refusal; no placebo authorization button.
+
+## Native companion implementation — 2026-11-08
+
+Source: `native/pockethost-companion`. First Android Java Shizuku SDK
+client requests device-user permission, identifies real shell/root UID,
+binds a Shizuku `UserService` and reads a bounded native CPU `dumpsys
+cpuinfo` TOTAL sample plus visible-process count. Debug APK build and
+physical on-device authorization must be verified separately.
+The PocketHost browser still reports *companion unavailable* until an
+owner-authorized local status IPC bridge exists; do not infer connected
+state from this source commit or from Shizuku Manager installation.
