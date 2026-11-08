@@ -6,7 +6,6 @@
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
 import { classifyUiChanges, isPocketHostOrigin, procStartTicks } from './ui-sync-policy.mjs';
 
 const root = fs.realpathSync(process.cwd());
@@ -25,9 +24,16 @@ if (!Number.isSafeInteger(ms) || ms < 5000 || ms > 120000) {
 if (args.includes('--once') && watch) throw new Error('Choose --watch or --once');
 const ownerFile = process.env.POCKETHOST_DEV_PANEL_RECORD ||
   path.join(path.dirname(root), 'PocketHost-P3-Preview-20261106.json');
-const gitDir = path.join(root, '.git');
-if (!fs.existsSync(gitDir) || !fs.statSync(gitDir).isDirectory()) {
-  throw new Error('Require a standalone PocketHost Git checkout');
+// A live DEV checkout can be a Git worktree: its .git is a pointer file.
+const gitDirInfo = spawnSync('git', ['rev-parse', '--absolute-git-dir'], {
+  cwd: root, encoding: 'utf8', timeout: 10000,
+});
+if (gitDirInfo.error || gitDirInfo.status !== 0 || !gitDirInfo.stdout.trim()) {
+  throw new Error('Require a verified PocketHost Git checkout');
+}
+const gitDir = fs.realpathSync(gitDirInfo.stdout.trim());
+if (!fs.statSync(gitDir).isDirectory()) {
+  throw new Error('Git metadata directory is unavailable');
 }
 const lockPath = path.join(gitDir, 'pockethost-ui-sync.lock');
 const lock = fs.openSync(lockPath, 'wx', 0o600);
