@@ -173,13 +173,17 @@ public final class PowerUserService extends IPowerUserService.Stub {
 
             JSONObject services = new JSONObject();
             try {
-                String raw = execute(81920, "/system/bin/dumpsys", "activity", "services");
+                String raw = execute(700000, "/system/bin/dumpsys", "activity", "services");
                 JSONArray names = new JSONArray();
-                Pattern matcherPattern = Pattern.compile("ServiceRecord\\{[^}]*?\\s([a-zA-Z0-9_.$]+/[a-zA-Z0-9_.$]+)\\}");
+                Pattern matcherPattern = Pattern.compile("ServiceRecord\\{[^}\\n]*?\\s([a-zA-Z0-9_.$]+/[a-zA-Z0-9_.$]+)(?:\\s[^}]*)?\\}");
                 Matcher matcher = matcherPattern.matcher(raw);
-                while (matcher.find() && names.length() < 96) names.put(matcher.group(1));
+                Set<String> seenServices = new TreeSet<>();
+                while (matcher.find() && names.length() < 256) {
+                    String component = matcher.group(1);
+                    if (seenServices.add(component)) names.put(component);
+                }
                 services.put("names", names);
-                services.put("truncated", names.length() >= 96);
+                services.put("truncated", names.length() >= 256);
             } catch (Exception unavailable) {
                 services.put("names", new JSONArray());
                 services.put("truncated", false);

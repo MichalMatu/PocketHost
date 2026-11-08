@@ -202,7 +202,7 @@ export function parseCompanionSystem(raw) {
     !d.services ||
     typeof d.services !== 'object' ||
     !Array.isArray(d.services.names) ||
-    d.services.names.length > 96 ||
+    d.services.names.length > 256 ||
     d.services.names.some((s) => typeof s !== 'string' || s.length > 300) ||
     typeof d.services.truncated !== 'boolean'
   )

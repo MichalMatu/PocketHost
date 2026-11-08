@@ -78,7 +78,7 @@ export const shizukuSystemSchema = z.object({
     airplaneMode: z.boolean().nullable(),
   }).strict(),
   services: z.object({
-    names: z.array(z.string().max(300)).max(96),
+    names: z.array(z.string().max(300)).max(256),
     truncated: z.boolean(),
     error: z.string().max(120).optional(),
   }).strict(),

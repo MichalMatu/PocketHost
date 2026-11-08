@@ -65,7 +65,7 @@ public final class TelemetryForegroundService extends Service {
     };
     private final Shizuku.UserServiceArgs args = new Shizuku.UserServiceArgs(
             new ComponentName("pl.pockethost.companion", PowerUserService.class.getName()))
-            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(4);
+            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(5);
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {

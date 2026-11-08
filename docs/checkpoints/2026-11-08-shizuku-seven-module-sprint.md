@@ -108,8 +108,14 @@ probe from Samsung Termux returned terminal \`done/0 PASS\` in
 - \`GET /system\`: HTTP 200, 871 detailed process entries,
   \`truncated=false\`, no process sampling error, battery level 100%,
   Android available RAM 2,915,032 kB.
-- Android services sample contained 0 names; this is **not** a pass for
-  the actual services inventory. The diagnostic is under investigation.
+- Android services sample contained 0 names; this was **not** a pass for
+  the actual services inventory. A subsequent read-only Android
+  `dumpsys activity services` probe found 152 ServiceRecord entries in
+  515,417 source characters. The original parser missed records that
+  contain trailing metadata after the component name. A corrected
+  256-entry bounded parser, larger sampling buffer and Shizuku
+  UserService version 5 are source candidates until rebuilt and
+  physically retested.
 
 The physical negative mutation matrix, permission grants/refusals,
 service control acceptance, native shell action confirmation and

@@ -78,7 +78,7 @@ public final class MainActivity extends Activity {
                 .daemon(false)
                 .processNameSuffix("telemetry")
                 .debuggable(false)
-                .version(4);
+                .version(5);
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
