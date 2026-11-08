@@ -7,6 +7,20 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## DEV LAN restart and Shizuku bridge (2026-11-08)
+
+Owner requested LAN port 18878 accessible by default after PocketHost panel
+restart and a real companion bridge for CPU. The Vite server now attempts
+automatic startup of its existing private-subnet gateway on listen, with
+`POCKETHOST_LAN_AUTOSTART=0` opt-out. The companion provides short-lived,
+on-device, read-only status via Android ContentProvider. A loopback-only
+endpoint `/api/v1/shizuku/status` reads that provider through a fixed
+Android content command. Native app reinstallation, backend restart and
+physical end-to-end verification are required; a commit alone does not
+activate these backend changes. No complete-phone reboot autostart was
+added.
+
+
 ## Native Shizuku companion source — 2026-11-08
 
 New source `native/pockethost-companion` is an Android Java app with

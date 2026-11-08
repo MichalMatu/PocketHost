@@ -7,7 +7,7 @@ const interfaceSchema = z.object({
 
 const statusSchema = z.object({
   version: z.literal(1),
-  mode: z.literal("manual"),
+  mode: z.enum(["manual", "auto"]),
   enabled: z.boolean(),
   bind: z.string().nullable(),
   interfaces: z.array(interfaceSchema),

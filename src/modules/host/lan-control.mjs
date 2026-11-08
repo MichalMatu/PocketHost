@@ -28,12 +28,13 @@ export function availableLanInterfaces(interfaces = os.networkInterfaces()) {
 export function createLanControl({
   interfaces = () => availableLanInterfaces(),
   start = (bind) => startLanGateway(bind, { registerSignals: false }),
+  mode = 'manual',
 } = {}) {
   let gateway = null;
   let inFlight = false;
   const status = () => ({
     version: 1,
-    mode: 'manual',
+    mode,
     enabled: gateway !== null,
     bind: gateway?.bind ?? null,
     interfaces: interfaces(),

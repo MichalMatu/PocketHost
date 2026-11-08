@@ -62,3 +62,19 @@ physical on-device authorization must be verified separately.
 The PocketHost browser still reports *companion unavailable* until an
 owner-authorized local status IPC bridge exists; do not infer connected
 state from this source commit or from Shizuku Manager installation.
+
+## First local read-only web bridge (2026-11-08)
+
+The Companion app exports only a **Termux/shell UID-local read-only**
+ContentProvider at `content://pl.pockethost.companion.telemetry/status`.
+A foreground authorized Shizuku service samples full Android CPU and
+process count and publishes a short-lived typed snapshot (30-second TTL).
+PocketHost's loopback Vite endpoint `/api/v1/shizuku/status` reads this
+provider via the fixed Android `content read` CLI. The LAN gateway can
+forward read-only telemetry; it does NOT forward a Binder handle or generic
+ADB/root command execution. This is not the final always-on/control bridge.
+
+If Companion is backgrounded for 30 seconds, values expire: a user-visible
+Android foreground service for persistent sampling is a next-phase task.
+Only accept physical Android evidence and authorized Shizuku state, never
+infer privileges from installed package names.

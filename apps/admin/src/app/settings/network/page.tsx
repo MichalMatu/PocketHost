@@ -83,7 +83,7 @@ export default function NetworkAccessPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="outline"><ShieldCheck className="size-3" /> Manual only · no autostart</Badge>
+              <Badge variant="outline"><ShieldCheck className="size-3" /> {status?.mode === "auto" ? "Private LAN auto-starts with PocketHost" : "Manual LAN startup"}</Badge>
               <Badge variant="secondary">{status?.enabled ? "Home LAN enabled" : "Managed gateway off"}</Badge>
               <Button variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Could not refresh gateway state."))}>
                 <RefreshCw className="size-4" /> Refresh

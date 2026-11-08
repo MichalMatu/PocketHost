@@ -78,3 +78,15 @@ test('LAN controller rejects overlapping starts without signal or process discov
   await started;
   await control.disable();
 });
+
+test('owner-selected auto mode is reported while preserving exact interface ownership', async () => {
+  const control = createLanControl({
+    mode: 'auto',
+    interfaces: () => [{ name: 'wlan0', address: '192.168.0.100' }],
+    start: async (bind) => ({ bind, close: async () => undefined }),
+  });
+  assert.equal(control.status().mode, 'auto');
+  await control.enable('192.168.0.100');
+  assert.equal(control.status().enabled, true);
+  assert.equal((await control.disable()).enabled, false);
+});

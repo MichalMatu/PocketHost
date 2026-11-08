@@ -117,3 +117,15 @@ Android, the UI shows available Termux process observations (process count
 and cumulative CPU ticks) without misrepresenting them as system CPU
 utilization. The Access info dialog explains Android restrictions and
 Termux:API setup; it **never claims to grant system permissions**.
+
+## Owner default LAN availability (2026-11-08)
+
+The existing DEV PocketHost Vite session now automatically starts its
+private-subnet LAN gateway (ports 18878/18879) when the Vite HTTP listener
+starts. The browser can reach `/system`, `/dashboard` and `/shizuku`.
+The address is selected from real private interfaces, preferring
+`POCKETHOST_LAN_BIND` when it still belongs to the host and otherwise Wi-Fi.
+To opt out for a session set `POCKETHOST_LAN_AUTOSTART=0` before start.
+Only the PocketHost gateway is affected; this does not install a new
+Termux:Boot entry or start the panel after a complete phone reboot.
+Manual disable stays effective until the next PocketHost panel restart.

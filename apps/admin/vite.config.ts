@@ -10,7 +10,8 @@ import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
-import { createLanControl } from "../../src/modules/host/lan-control.mjs"
+import { createLanControl, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
+import { readCompanionStatus } from "../../src/modules/host/shizuku-companion.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -499,14 +500,68 @@ function observabilityApi(): Plugin {
 
 
 /** Opt-in manual LAN listener control. Never signals a preexisting gateway. */
+/** Native Android Companion status, forwarded from an on-device read-only provider. */
+function shizukuCompanionApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-native-shizuku-companion",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/shizuku/status", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        const remote = request.socket.remoteAddress
+        if (!hosts.has(request.headers.host ?? "") ||
+            (request.headers.origin && !origins.has(request.headers.origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.method !== "GET" || request.url?.split("?")[0] !== "/") {
+          response.statusCode = request.method === "GET" ? 404 : 405
+          response.end(JSON.stringify({ error: "not-found" }))
+          return
+        }
+        try {
+          const snapshot = await readCompanionStatus()
+          response.statusCode = 200
+          response.end(JSON.stringify(snapshot))
+        } catch {
+          response.statusCode = 503
+          response.end(JSON.stringify({ error: "companion-not-connected" }))
+        }
+      })
+    },
+  }
+}
+
 function networkAccessApi(): Plugin {
-  const controller = createLanControl()
+  const autoStart = process.env.POCKETHOST_LAN_AUTOSTART !== "0"
+  const controller = createLanControl({ mode: autoStart ? "auto" : "manual" })
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
   return {
     name: "pockethost-manual-lan-control",
     apply: "serve",
     configureServer(server) {
+      // Owner-selected DEV default: restore the private Wi-Fi gateway at
+      // each PocketHost Vite session start. No other service is restarted.
+      if (autoStart) {
+        server.httpServer?.once("listening", () => {
+          const options = availableLanInterfaces()
+          const preferred = process.env.POCKETHOST_LAN_BIND
+          const selected = options.find((item) => item.address === preferred)
+            ?? options.find((item) => item.name.startsWith("wlan"))
+            ?? options.find((item) => item.address.startsWith("192.168."))
+            ?? options[0]
+          if (selected) void controller.enable(selected.address).catch(() => undefined)
+        })
+      }
       server.httpServer?.once("close", () => {
         void controller.disable()
       })
@@ -830,7 +885,7 @@ function termuxAdminApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",
     port: 8787,
