@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
+import { formatMemory } from "@/lib/format-memory"
 
 const modules = [
   { title: "Monitoring", to: "/observability", icon: Activity, detail: "CPU, memory and service health" },
@@ -79,14 +80,14 @@ export default function SystemPage() {
           <Card className="min-h-32">
             <CardHeader>
               <CardDescription>Free RAM</CardDescription>
-              <CardTitle><MetricValue loading={loading} value={!error && host ? host.runtime.freeMemoryMiB.toLocaleString() + " MiB" : null} /></CardTitle>
+              <CardTitle><MetricValue loading={loading} value={!error && host ? formatMemory(host.runtime.freeMemoryMiB) : null} /></CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground text-xs">System-wide</CardContent>
           </Card>
           <Card className="min-h-32">
             <CardHeader>
               <CardDescription>Free Termux storage</CardDescription>
-              <CardTitle><MetricValue loading={loading} value={!error && host?.runtime.storage ? host.runtime.storage.availableMiB.toLocaleString() + " MiB" : null} /></CardTitle>
+              <CardTitle><MetricValue loading={loading} value={!error && host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null} /></CardTitle>
             </CardHeader>
             <CardContent className="text-muted-foreground text-xs">Home filesystem</CardContent>
           </Card>

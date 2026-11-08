@@ -1,9 +1,11 @@
 import * as React from "react"
-import { Activity, Battery, Cpu, HardDrive, Network, RefreshCw, ShieldCheck } from "lucide-react"
+import { Activity, Battery, Cpu, HardDrive, Info, Network, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { formatMemory } from "@/lib/format-memory"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 
 const endpoint = "/api/v1/observability"
@@ -40,8 +42,34 @@ function Metric({ label, value, detail, icon: Icon, pending }: {
   )
 }
 
+function AccessInfoDialog() {
+  return (
+    <Dialog>
+      <DialogTrigger render={<Button variant="outline" size="sm" className="h-7 rounded-full px-3 text-xs" />}>
+        <Info className="size-3.5" /> Access info
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Android metric access</DialogTitle>
+          <DialogDescription>What PocketHost can read on this Samsung</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 text-sm">
+          <p><strong>CPU:</strong> Android denies access to system-wide CPU counters.
+            There is no normal permission switch that PocketHost can open to grant this access.
+            The panel shows accessible Termux process counters instead, not a fabricated CPU percentage.</p>
+          <p><strong>Battery:</strong> Termux:API is installed and the battery was readable over SSH.
+            If the panel still says Unavailable, the PocketHost backend needs to reload its
+            Termux:API fallback. Android app permissions can be reviewed manually in
+            Settings → Apps → Termux:API.</p>
+          <p className="text-muted-foreground text-xs">No root access, device settings changes or service control are performed here.</p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 const panelTitles = [
-  "CPU history", "Network and alerts", "Observed processes",
+  "CPU and process activity", "Network and alerts", "Observed processes",
   "Installed packages", "Service status", "Runtime diagnostics",
 ] as const
 
@@ -104,47 +132,74 @@ export default function ObservabilityPage() {
   const battery = snapshot?.metrics.batteryPercent
   const network = snapshot?.metrics.network
   const history = snapshot?.history ?? []
+  const hasCpuHistory = history.some((point) => point.cpuPercent !== null)
+  const topProcessSamples = [...(snapshot?.processes.processes ?? [])]
+    .sort((a, b) => b.cpuTicks - a.cpuTicks)
+    .slice(0, 5)
+  const cpuAvailable = cpu?.state === "ok"
+  const processAvailable = snapshot?.processes.state === "ok"
 
   return (
     <BaseLayout title="Observability" description="On-demand Samsung / Termux readings, no service control">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Badge variant="outline"><ShieldCheck className="size-3" />Read only · sampled on request</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline"><ShieldCheck className="size-3" />Read only · sampled on request</Badge>
+            <AccessInfoDialog />
+          </div>
           <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-busy={loading && !snapshot} data-testid="observability-metrics">
-          <Metric label="CPU utilization" icon={Cpu} pending={loading && !snapshot}
-            value={cpu?.state === "ok" ? `${cpu.value?.toFixed(1)}%` : "Unavailable"}
-            detail={cpu?.state === "ok" ? "System-wide sampled delta" : cpu?.state ?? "unavailable"} />
+          <Metric label={cpuAvailable ? "CPU utilization" : "Termux processes"} icon={Cpu} pending={loading && !snapshot}
+            value={cpuAvailable ? `${cpu.value?.toFixed(1)}%` : processAvailable ? String(snapshot?.processes.processes.length ?? 0) : "Restricted"}
+            detail={cpuAvailable ? "System-wide CPU sample" : processAvailable ? "Accessible processes · system CPU restricted" : "Android restricts CPU sampling · Access info"} />
           <Metric label="Available RAM" icon={Activity} pending={loading && !snapshot}
-            value={snapshot ? `${snapshot.host.runtime.freeMemoryMiB.toLocaleString()} MiB` : "Unavailable"}
-            detail={snapshot ? `of ${snapshot.host.runtime.totalMemoryMiB.toLocaleString()} MiB · system-wide` : "unavailable"} />
+            value={snapshot ? formatMemory(snapshot.host.runtime.freeMemoryMiB) : "Unavailable"}
+            detail={snapshot ? `of ${formatMemory(snapshot.host.runtime.totalMemoryMiB)} · system-wide` : "unavailable"} />
           <Metric label="Free Termux storage" icon={HardDrive} pending={loading && !snapshot}
-            value={snapshot?.host.runtime.storage ? `${snapshot.host.runtime.storage.availableMiB.toLocaleString()} MiB` : "Unavailable"}
+            value={snapshot?.host.runtime.storage ? formatMemory(snapshot.host.runtime.storage.availableMiB) : "Unavailable"}
             detail={snapshot?.host.runtime.storage ? "Termux home filesystem" : "No permitted storage reading"} />
           <Metric label="Battery" icon={Battery} pending={loading && !snapshot}
             value={battery?.state === "ok" ? `${battery.value}%` : "Unavailable"}
-            detail={battery?.state === "ok" ? "Android sysfs reading" : battery?.state ?? "unavailable"} />
+            detail={battery?.state === "ok" ? "Termux:API or Android reading" : `${battery?.state ?? "unavailable"} · Access info`} />
         </div>
         {!snapshot && <PendingPanels pending={loading} />}
         {snapshot && (
           <>
             <div className="grid gap-4 xl:grid-cols-2">
               <Card>
-                <CardHeader><CardTitle>CPU history</CardTitle>
-                  <CardDescription>Last {history.length} on-demand samples, session memory only</CardDescription></CardHeader>
+                <CardHeader><CardTitle>CPU and process activity</CardTitle>
+                  <CardDescription>{hasCpuHistory
+                    ? `Last ${history.length} on-demand CPU samples`
+                    : "Termux process counters · cumulative ticks, not overall CPU %"}</CardDescription></CardHeader>
                 <CardContent>
-                  <div aria-label="CPU sample history" className="flex h-28 items-end gap-1" role="img">
-                    {history.map((point, index) => (
-                      <div key={index} title={`${point.observedAt}: ${point.cpuPercent ?? "unavailable"}%`}
-                        className={point.cpuPercent === null ? "bg-muted flex-1" : "bg-primary/70 flex-1 rounded-t"}
-                        style={{ height: `${Math.max(4, point.cpuPercent ?? 4)}%` }} />
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground mt-2 text-xs">Missing readings are shown as muted markers, never zero.</p>
+                  {hasCpuHistory ? (
+                    <>
+                      <div aria-label="CPU sample history" className="flex h-28 items-end gap-1" role="img">
+                        {history.map((point, index) => (
+                          <div key={index} title={`${point.observedAt}: ${point.cpuPercent ?? "unavailable"}%`}
+                            className={point.cpuPercent === null ? "bg-muted flex-1" : "bg-primary/70 flex-1 rounded-t"}
+                            style={{ height: `${Math.max(4, point.cpuPercent ?? 4)}%` }} />
+                        ))}
+                      </div>
+                      <p className="text-muted-foreground mt-2 text-xs">Missing readings are not reported as zero.</p>
+                    </>
+                  ) : topProcessSamples.length ? (
+                    <div className="space-y-2 text-sm">
+                      {topProcessSamples.map((process) => (
+                        <div key={`${process.pid}:${process.startTicks}`} className="flex items-center justify-between gap-3">
+                          <span>PID {process.pid} <span className="text-muted-foreground">({process.ownership})</span></span>
+                          <span className="tabular-nums">{process.cpuTicks.toLocaleString()} CPU ticks</span>
+                        </div>
+                      ))}
+                      <p className="text-muted-foreground text-xs">Cumulative CPU time of accessible processes; not system utilization.</p>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground text-sm">Android restricts CPU counters and no process samples are accessible. See Access info.</p>
+                  )}
                 </CardContent>
               </Card>
               <Card>

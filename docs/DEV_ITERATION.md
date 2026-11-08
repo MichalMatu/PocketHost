@@ -108,3 +108,12 @@ Vite, without another agent task or test matrix. Logs use JSON lines;
 `SYNCED` contains the exact deployed SHA, `CURRENT` is a no-op,
 `MANUAL_REVIEW` is not deployed, and `HOLD` means no verified update.
 Keep normal full checks for milestone closeout.
+
+## UX iteration — 2026-11-08
+
+Monitoring formats memory/storage in binary GiB for large values and reserves
+card space while loading. When system CPU counters are inaccessible on
+Android, the UI shows available Termux process observations (process count
+and cumulative CPU ticks) without misrepresenting them as system CPU
+utilization. The Access info dialog explains Android restrictions and
+Termux:API setup; it **never claims to grant system permissions**.
