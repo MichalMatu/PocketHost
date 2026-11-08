@@ -44,10 +44,13 @@ test('H3.4 Restic full system backup uses two fixed roots, excludes own key and 
       'pockethost-h34-all',
       '--exclude',
       resticState,
+      '--exclude',
+      path.relative('/data/data/com.termux/files', resticState),
       '--',
-      os.homedir(),
-      '/data/data/com.termux/files/usr',
+      'home',
+      'usr',
     ]);
+    assert.equal(backup[2].cwd, '/data/data/com.termux/files');
     assert.equal(backup[2].env.RESTIC_PASSWORD_FILE, path.join(resticState, 'password'));
     assert.equal(backup[2].env.RESTIC_PASSWORD, undefined);
     const snaps = await restic.scopeSnapshots('all', fake);
