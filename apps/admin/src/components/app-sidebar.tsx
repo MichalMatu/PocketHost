@@ -1,8 +1,8 @@
 import * as React from "react"
 import {
-  Activity, AlertTriangle, Archive, Bot, Calendar, CheckSquare, FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
-  Mail, MessageCircle, Network, Package, ScrollText, ServerCog, Settings,
-  Shield, Terminal, Users,
+  Activity, AlertTriangle, Archive, Bot, FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
+  Mail, Network, Package, ScrollText, ServerCog, Settings,
+  Shield, Terminal,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Logo } from "@/components/logo"
