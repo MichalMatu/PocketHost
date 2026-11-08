@@ -12,13 +12,20 @@ function page(load: () => Promise<{ default: ComponentType }>) {
 
 export const routes: RouteObject[] = [
   // Use relative path "dashboard" instead of "/dashboard" for basename compatibility
-  { path: "/", element: <Navigate to="host" replace /> },
+  { path: "/", element: <Navigate to="/system" replace /> },
   // Landing Page
   { path: "/landing", lazy: page(() => import("@/app/landing/page")) },
   // PocketHost read-only status (all original upstream routes remain untouched)
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
   { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
-  { path: "/termux", lazy: page(() => import("@/app/termux/page")) },
+  { path: "/termux", element: <Navigate to="/system" replace /> },
+  { path: "/system", lazy: page(() => import("@/app/termux/system-page")) },
+  { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
+  { path: "/files", lazy: page(() => import("@/app/termux/files-page")) },
+  { path: "/services", lazy: page(() => import("@/app/termux/services-page")) },
+  { path: "/backups", lazy: page(() => import("@/app/termux/backups-page")) },
+  { path: "/terminal", lazy: page(() => import("@/app/termux/terminal-page")) },
+  { path: "/agents", lazy: page(() => import("@/app/termux/agents-page")) },
   // PocketHost-owned test site; opt-in DEV-only actions (no external service controls)
   { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
   { path: "/sites", lazy: page(() => import("@/app/sites/page")) },
