@@ -23,3 +23,26 @@ export type ShizukuStatus = z.infer<typeof shizukuStatusSchema>
 export function parseShizukuStatus(value: unknown): ShizukuStatus {
   return shizukuStatusSchema.parse(value)
 }
+
+
+export const shizukuAppsSchema = z.object({
+  version: z.literal(1),
+  source: z.literal("android-companion"),
+  connected: z.literal(true),
+  authorized: z.literal(true),
+  mode: z.enum(["adb", "root"]),
+  observedAt: z.string().datetime({ offset: true }),
+  packages: z.array(z.object({
+    packageName: z.string().regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/).max(200),
+    system: z.boolean(),
+  }).strict()).max(512),
+  truncated: z.boolean(),
+}).strict()
+export type ShizukuApps = z.infer<typeof shizukuAppsSchema>
+export function parseShizukuApps(value: unknown): ShizukuApps {
+  const parsed = shizukuAppsSchema.parse(value)
+  if (new Set(parsed.packages.map(p => p.packageName)).size !== parsed.packages.length) {
+    throw new Error("duplicate-android-package")
+  }
+  return parsed
+}

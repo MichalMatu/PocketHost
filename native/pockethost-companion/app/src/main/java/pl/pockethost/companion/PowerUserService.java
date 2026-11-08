@@ -5,6 +5,9 @@ import android.system.Os;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
+import java.util.Set;
+import java.util.TreeSet;
+import org.json.JSONArray;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -50,6 +53,51 @@ public final class PowerUserService extends IPowerUserService.Stub {
         } catch (Exception e) {
             throw new RemoteException("Failed to read CPU/processes: " + e.getClass().getSimpleName());
         }
+    }
+
+    /** Bounded Android package inventory, separated from Termux package management. */
+    @Override
+    public String readInstalledPackages() throws RemoteException {
+        try {
+            int uid = Os.getuid();
+            if (uid != 2000 && uid != 0) {
+                throw new SecurityException("Shizuku process does not run as shell/root");
+            }
+            Set<String> all = packageNames(execute(131072, "/system/bin/pm", "list", "packages"));
+            Set<String> user = packageNames(execute(131072, "/system/bin/pm", "list", "packages", "-3"));
+            JSONArray apps = new JSONArray();
+            int count = 0;
+            for (String name : all) {
+                if (count++ >= 512) break;
+                JSONObject entry = new JSONObject();
+                entry.put("packageName", name);
+                entry.put("system", !user.contains(name));
+                apps.put(entry);
+            }
+            JSONObject snapshot = new JSONObject();
+            snapshot.put("version", 1);
+            snapshot.put("source", "shizuku-user-service");
+            snapshot.put("uid", uid);
+            snapshot.put("observedAt", java.time.Instant.now().toString());
+            snapshot.put("packages", apps);
+            snapshot.put("truncated", all.size() > 512);
+            return snapshot.toString();
+        } catch (Exception e) {
+            throw new RemoteException("Failed to read Android packages: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private static Set<String> packageNames(String raw) {
+        Set<String> result = new TreeSet<>();
+        for (String line : raw.split("\\R")) {
+            if (!line.startsWith("package:")) continue;
+            String name = line.substring(8).trim();
+            if (name.length() <= 200 &&
+                    name.matches("[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+")) {
+                result.add(name);
+            }
+        }
+        return result;
     }
 
     private static String execute(int limit, String... argv) throws Exception {

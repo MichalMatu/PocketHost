@@ -106,3 +106,20 @@ This source change requires a **new APK build and physical re-test**.
 Existing LAN routes `/dashboard` and `/shizuku` were both HTTP 200
 at the last Mac SSH audit; deploy status of the new foreground service
 remains separate.
+
+
+## Next source slice — installed Android applications (2026-11-08)
+
+The native Shizuku UserService reads Android package names through fixed
+shell-privileged package-manager queries (all and third-party packages).
+The Companion foreground service caches a bounded 512-entry inventory
+and refreshes it every two minutes. Only a fresh authorized session
+can expose the cached data via fixed loopback read-only \`GET /apps\`.
+PocketHost forwards the typed result to \`GET /api/v1/shizuku/apps\`
+and displays searchable user/system package names under Android & Shizuku.
+
+This is **source-only until a new APK, backend update and physical
+Samsung check confirm the exact revision**. No browser action installs,
+disables, grants or uninstalls Android applications. Privileged mutations
+require a separate owner-authenticated native execution boundary; the
+trusted LAN dashboard currently does not provide that boundary.

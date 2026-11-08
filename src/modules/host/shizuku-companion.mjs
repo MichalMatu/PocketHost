@@ -62,3 +62,50 @@ export async function readCompanionStatus() {
   if (raw.length > 16384) throw new Error('companion-response-too-large');
   return parseCompanionStatus(raw);
 }
+
+
+/** Read-only Android package inventory; status and authorization must be fresh. */
+export function parseCompanionApps(raw) {
+  const data = JSON.parse(raw);
+  if (!data || typeof data !== 'object' || Array.isArray(data) ||
+      data.version !== 1 || data.source !== 'android-companion' ||
+      data.connected !== true || data.authorized !== true ||
+      !['adb', 'root'].includes(data.mode) ||
+      typeof data.observedAt !== 'string' ||
+      Number.isNaN(Date.parse(data.observedAt)) ||
+      Math.abs(Date.now() - Date.parse(data.observedAt)) > 300000 ||
+      typeof data.truncated !== 'boolean' ||
+      !Array.isArray(data.packages) || data.packages.length > 512) {
+    throw new Error('invalid-android-package-inventory');
+  }
+  const seen = new Set();
+  for (const entry of data.packages) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry) ||
+        Object.keys(entry).sort().join(',') !== 'packageName,system' ||
+        typeof entry.packageName !== 'string' ||
+        entry.packageName.length > 200 ||
+        !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(entry.packageName) ||
+        typeof entry.system !== 'boolean' || seen.has(entry.packageName)) {
+      throw new Error('invalid-android-package-entry');
+    }
+    seen.add(entry.packageName);
+  }
+  return data;
+}
+
+export async function readCompanionApps() {
+  const status = await readCompanionStatus();
+  if (!status.connected || !status.authorized) {
+    throw new Error('companion-not-authorized');
+  }
+  const response = await fetch('http://127.0.0.1:18791/apps', {
+    method: 'GET', redirect: 'error', cache: 'no-store',
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error('android-apps-unavailable');
+  const raw = await response.text();
+  if (raw.length > 81920) throw new Error('android-apps-response-too-large');
+  const apps = parseCompanionApps(raw);
+  if (apps.mode !== status.mode) throw new Error('android-apps-privilege-mismatch');
+  return apps;
+}

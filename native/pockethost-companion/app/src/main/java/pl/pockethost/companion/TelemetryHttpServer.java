@@ -11,7 +11,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
-/** Loopback-only read-only CPU snapshot; never hosts privileged operations. */
+/** Loopback-only read-only CPU and package inventory; never hosts privileged operations. */
 public final class TelemetryHttpServer {
     public static final int PORT = 18791;
     private static final String TAG = "PocketHostTelemetry";
@@ -45,15 +45,17 @@ public final class TelemetryHttpServer {
                     String request = input.readLine();
                     if (request == null || request.length() > 256) continue;
                     OutputStream output = client.getOutputStream();
-                    boolean allowed = request.startsWith("GET /status HTTP/1.");
+                    boolean statusRoute = request.matches("GET /status HTTP/1\\.[01]");
+                    boolean appsRoute = request.matches("GET /apps HTTP/1\\.[01]");
                     String body;
                     int status;
-                    if (!allowed) {
+                    if (!statusRoute && !appsRoute) {
                         body = "{\"error\":\"not-found\"}";
                         status = 404;
                     } else {
                         try {
-                            body = TelemetryProvider.status(context).toString();
+                            body = (appsRoute ? TelemetryProvider.apps(context) :
+                                    TelemetryProvider.status(context)).toString();
                             status = 200;
                         } catch (Exception e) {
                             body = "{\"error\":\"telemetry-unavailable\"}";

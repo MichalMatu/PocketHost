@@ -66,6 +66,41 @@ public final class TelemetryProvider extends ContentProvider {
         return disconnected;
     }
 
+    /** Only recently authorized native readings may be served to the local dashboard. */
+    static JSONObject apps(android.content.Context context) throws Exception {
+        JSONObject live = status(context);
+        if (!live.optBoolean("connected") || !live.optBoolean("authorized")) {
+            throw new SecurityException("Companion not authorized");
+        }
+        SharedPreferences state = context.getSharedPreferences(PREFS, 0);
+        long when = state.getLong("appsAtMs", 0);
+        long now = System.currentTimeMillis();
+        if (when <= 0 || when > now || now - when > 300000L) {
+            throw new IllegalStateException("Android app inventory expired");
+        }
+        String raw = state.getString("appsSnapshot", "");
+        if (raw == null || raw.length() > 81920) {
+            throw new IllegalStateException("Android app inventory missing");
+        }
+        JSONObject source = new JSONObject(raw);
+        int uid = source.getInt("uid");
+        if (source.getInt("version") != 1 ||
+                !"shizuku-user-service".equals(source.getString("source")) ||
+                (uid != 0 && uid != 2000)) {
+            throw new SecurityException("Unexpected inventory privilege");
+        }
+        JSONObject result = new JSONObject();
+        result.put("version", 1);
+        result.put("source", "android-companion");
+        result.put("connected", true);
+        result.put("authorized", true);
+        result.put("mode", uid == 0 ? "root" : "adb");
+        result.put("observedAt", source.getString("observedAt"));
+        result.put("packages", source.getJSONArray("packages"));
+        result.put("truncated", source.getBoolean("truncated"));
+        return result;
+    }
+
     @Override public ParcelFileDescriptor openFile(Uri uri, String mode)
             throws FileNotFoundException {
         if (!"/status".equals(uri.getPath()) || !"r".equals(mode)) {

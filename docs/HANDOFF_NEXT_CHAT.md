@@ -7,6 +7,18 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Current source slice: Shizuku Android application inventory
+
+After the accepted CPU bridge at main 00010ada, the next source slice
+adds a bounded package-name inventory via the native Shizuku service,
+the existing foreground Companion, local read-only /apps transport,
+and the Android & Shizuku browser page. The refreshed APK and backend
+MUST be built and checked on their authorized device environment before
+claiming Samsung PASS. No privileged app mutation was enabled.
+The LAN dashboard is currently login-free: do not forward privileged
+Shizuku actions over it before a separate real owner authorization channel.
+
+
 ## Current Shizuku CPU transport finding — 2026-11-08
 
 Mac SSH + native ADB verified: `/dashboard` and `/shizuku` returned HTTP

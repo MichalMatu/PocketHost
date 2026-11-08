@@ -32,6 +32,7 @@ public final class TelemetryForegroundService extends Service {
     private static final String CHANNEL = "pockethost-cpu";
     private static final int NOTIFICATION_ID = 52;
     private static final long SAMPLE_MS = 15000L;
+    private static final long APPS_REFRESH_MS = 120000L;
     private static final String TAG = "PocketHostTelemetry";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -40,6 +41,7 @@ public final class TelemetryForegroundService extends Service {
     private volatile IPowerUserService source;
     private boolean bound;
     private boolean destroyed;
+    private volatile long lastAppsAt;
 
     private final Shizuku.OnBinderReceivedListener binderListener = () ->
             handler.post(this::ensureBound);
@@ -59,7 +61,7 @@ public final class TelemetryForegroundService extends Service {
     };
     private final Shizuku.UserServiceArgs args = new Shizuku.UserServiceArgs(
             new ComponentName("pl.pockethost.companion", PowerUserService.class.getName()))
-            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(2);
+            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(3);
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {
@@ -149,6 +151,22 @@ public final class TelemetryForegroundService extends Service {
                 getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
                         .putString("snapshot", snapshot.toString())
                         .putLong("observedAtMs", System.currentTimeMillis()).apply();
+                if (System.currentTimeMillis() - lastAppsAt >= APPS_REFRESH_MS) {
+                    try {
+                        JSONObject inventory = new JSONObject(remote.readInstalledPackages());
+                        if (inventory.getInt("uid") != uid ||
+                                !"shizuku-user-service".equals(inventory.getString("source"))) {
+                            throw new SecurityException("Unexpected package inventory source");
+                        }
+                        getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
+                                .putString("appsSnapshot", inventory.toString())
+                                .putLong("appsAtMs", System.currentTimeMillis()).apply();
+                        lastAppsAt = System.currentTimeMillis();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Android package inventory unavailable: " +
+                                e.getClass().getSimpleName());
+                    }
+                }
             } catch (Exception e) {
                 Log.w(TAG, "CPU sample unavailable: " + e.getClass().getSimpleName());
             } finally {

@@ -5,7 +5,8 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
+import { parseShizukuStatus, parseShizukuApps, type ShizukuStatus, type ShizukuApps } from "@/lib/shizuku-schema"
+import { Input } from "@/components/ui/input"
 
 const modules = [
   { title: "CPU & Android processes", detail: "System-wide CPU samples, process list and performance", icon: Cpu },
@@ -17,6 +18,7 @@ const modules = [
 ]
 
 const endpoint = "/api/v1/shizuku/status"
+const appsEndpoint = "/api/v1/shizuku/apps"
 
 /** The browser never infers Shizuku authorization from installation alone. */
 async function readShizuku(signal?: AbortSignal): Promise<ShizukuStatus> {
@@ -25,10 +27,20 @@ async function readShizuku(signal?: AbortSignal): Promise<ShizukuStatus> {
   return parseShizukuStatus(await res.json() as unknown)
 }
 
+async function readApps(signal?: AbortSignal): Promise<ShizukuApps> {
+  const res = await fetch(appsEndpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
+  if (!res.ok) throw new Error("Android package inventory unavailable")
+  return parseShizukuApps(await res.json() as unknown)
+}
+
 export default function ShizukuPage() {
   const [status, setStatus] = React.useState<ShizukuStatus | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [refreshKey, setRefreshKey] = React.useState(0)
+  const [apps, setApps] = React.useState<ShizukuApps | null>(null)
+  const [appsLoading, setAppsLoading] = React.useState(false)
+  const [query, setQuery] = React.useState("")
+  const [appType, setAppType] = React.useState<"all" | "user" | "system">("all")
   React.useEffect(() => {
     const controller = new AbortController()
     void readShizuku(controller.signal)
@@ -39,6 +51,25 @@ export default function ShizukuPage() {
   }, [refreshKey])
 
   const usable = status?.connected === true && status.authorized === true
+  React.useEffect(() => {
+    if (!usable) {
+      setApps(null)
+      setAppsLoading(false)
+      return
+    }
+    const controller = new AbortController()
+    setAppsLoading(true)
+    void readApps(controller.signal)
+      .then(value => { if (!controller.signal.aborted) setApps(value) })
+      .catch(() => { if (!controller.signal.aborted) setApps(null) })
+      .finally(() => { if (!controller.signal.aborted) setAppsLoading(false) })
+    return () => controller.abort()
+  }, [usable, refreshKey])
+
+  const visibleApps = (apps?.packages ?? []).filter(item =>
+    (appType === "all" || (appType === "system" ? item.system : !item.system)) &&
+    item.packageName.toLowerCase().includes(query.trim().toLowerCase())
+  )
 
   return (
     <BaseLayout title="Android & Shizuku" description="Full Android telemetry and power-user controls">
@@ -87,6 +118,37 @@ export default function ShizukuPage() {
             </Card>
           ))}
         </div>
+        {usable && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><AppWindow className="size-4" /> Android applications</CardTitle>
+              <CardDescription>Installed packages read through Shizuku. This is inspection only; no app is changed.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Input className="min-w-48 flex-1" value={query} onChange={e => setQuery(e.target.value)} placeholder="Find package name..." aria-label="Find Android package" />
+                <Button size="sm" variant={appType === "all" ? "default" : "outline"} onClick={() => setAppType("all")}>All</Button>
+                <Button size="sm" variant={appType === "user" ? "default" : "outline"} onClick={() => setAppType("user")}>User</Button>
+                <Button size="sm" variant={appType === "system" ? "default" : "outline"} onClick={() => setAppType("system")}>System</Button>
+              </div>
+              {appsLoading ? <p className="text-muted-foreground text-sm">Reading Android packages…</p> :
+                !apps ? <p className="text-muted-foreground text-sm">App inventory unavailable. Refresh after checking the Companion and Shizuku authorization.</p> :
+                <>
+                  <p className="text-muted-foreground text-xs">{apps.packages.length} packages reported{apps.truncated ? " · result limited to 512" : ""} · {visibleApps.length} matching</p>
+                  <div className="max-h-80 overflow-auto rounded-md border">
+                    {visibleApps.map(item => (
+                      <div className="flex items-center justify-between gap-3 border-b px-3 py-2 text-sm last:border-b-0" key={item.packageName}>
+                        <span className="min-w-0 break-all">{item.packageName}</span>
+                        <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
+                      </div>
+                    ))}
+                    {visibleApps.length === 0 && <p className="p-3 text-muted-foreground text-sm">No matching packages.</p>}
+                  </div>
+                </>
+              }
+            </CardContent>
+          </Card>
+        )}
         {usable && status.capabilities.length > 0 && (
           <Card>
             <CardHeader><CardTitle>Companion capability discovery</CardTitle>

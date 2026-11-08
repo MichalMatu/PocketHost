@@ -20,3 +20,18 @@ describe("Shizuku status bridge contract", () => {
     })).toThrow()
   })
 })
+
+
+describe("Shizuku applications contract", () => {
+  it("validates distinct native Android packages and their origin", async () => {
+    const { parseShizukuApps } = await import("@/lib/shizuku-schema")
+    const inventory = {
+      version: 1, source: "android-companion", connected: true, authorized: true,
+      mode: "adb", observedAt: now, truncated: false,
+      packages: [{ packageName: "com.example.demo", system: false }],
+    }
+    expect(parseShizukuApps(inventory).packages[0].system).toBe(false)
+    expect(() => parseShizukuApps({ ...inventory, packages: [inventory.packages[0], inventory.packages[0]] })).toThrow()
+    expect(() => parseShizukuApps({ ...inventory, packages: [{ packageName: "bad;app", system: true }] })).toThrow()
+  })
+})
