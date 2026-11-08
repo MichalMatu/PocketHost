@@ -43,5 +43,5 @@ The initial CPU parser targets the Android `dumpsys cpuinfo` `TOTAL`
 summary observed over ADB on Samsung. Other Android versions may return
 different output; report `Unavailable` rather than guessing.
 
-Build tools: Android SDK API 36, Android Gradle Plugin 8.11.1,
-Gradle 8.13+ and Java 17+. No device app is installed by committing code.
+Build tools: Android SDK API 36, Android Gradle Plugin 8.10.1,
+Gradle 8.11.1+ and Java 17+. No device app is installed by committing code.
