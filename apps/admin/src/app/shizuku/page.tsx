@@ -81,6 +81,9 @@ export default function ShizukuPage() {
   const [appSearch, setAppSearch] = React.useState("")
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
+  const [permissionSearch, setPermissionSearch] = React.useState("")
+  const [selectedService, setSelectedService] = React.useState<string | null>(null)
+  const [servicePage, setServicePage] = React.useState(0)
   const [appPage, setAppPage] = React.useState(0)
   const [processPage, setProcessPage] = React.useState(0)
   const [selectedPackage, setSelectedPackage] = React.useState<string | null>(null)
@@ -115,14 +118,6 @@ export default function ShizukuPage() {
   React.useEffect(() => {
     const controller = new AbortController()
     const signal = controller.signal
-    setLoading(true)
-    setStatus(null)
-    setApps(null)
-    setSystem(null)
-    setAppsError(false)
-    setSystemError(false)
-    setAppsLoading(false)
-    setSystemLoading(false)
     // CPU/session status is independent of potentially slow package and process scans.
     void readJson("/api/v1/shizuku/status", AbortSignal.any([
       signal, AbortSignal.timeout(8000),
@@ -173,6 +168,10 @@ export default function ShizukuPage() {
   // Bound DOM work on Android: never render the full 1024/1200 item inventory.
   const visibleApps = shownApps.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE)
   const visibleProcesses = shownProcesses.slice(processPage * PAGE_SIZE, (processPage + 1) * PAGE_SIZE)
+  const visibleServices = shownServices.slice(servicePage * PAGE_SIZE, (servicePage + 1) * PAGE_SIZE)
+  const visiblePermissions = (appDetail?.permissions ?? []).filter(permission =>
+    permission.name.toLowerCase().includes(permissionSearch.trim().toLowerCase())
+  )
 
   return (
     <BaseLayout title="Android & Shizuku" description="Android-wide diagnostics and on-device privileged controls">
@@ -190,6 +189,15 @@ export default function ShizukuPage() {
               setSelectedPackage(null)
               setDetailError(false)
               setDetailLoading(false)
+              setApps(null)
+              setSystem(null)
+              setStatus(null)
+              setAppsError(false)
+              setSystemError(false)
+              setAppsLoading(false)
+              setSystemLoading(false)
+              setSelectedService(null)
+              setServicePage(0)
               setAppPage(0)
               setProcessPage(0)
               setLoading(true)
@@ -384,13 +392,62 @@ export default function ShizukuPage() {
         )}
         {section === "permissions" && (
           <div className="space-y-3">
-            <NativeOwnerNotice specific="Inspect per-app runtime permissions and grant/revoke specific permissions in Companion → Permissions." />
-            <Card><CardHeader><CardTitle>Package permission inspection</CardTitle>
-              <CardDescription>Permission results come from Android package manager, not inferred from installation.</CardDescription>
-            </CardHeader><CardContent className="space-y-2 text-sm">
-              <p>Selected application: <span className="font-mono break-all">{selectedPackage ?? "None"}</span></p>
-              <p className="text-muted-foreground">Use Companion → Applications → Read app details / permissions. Then use Companion → Permissions to grant or revoke a specific runtime permission if Android allows it.</p>
-            </CardContent></Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Android app permissions</CardTitle>
+                <CardDescription>Observed requested permissions for the selected app. A reported grant is not an assertion that Android will permit changing it.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {!selectedPackage ? (
+                  <div className="space-y-3">
+                    <p className="text-muted-foreground text-sm">Select an installed application to inspect its actual permission grants.</p>
+                    <Button variant="outline" onClick={() => setSection("applications")}>Choose application</Button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium break-words">{appDetail?.label || selectedPackage}</p>
+                        <p className="font-mono text-muted-foreground text-xs break-all">{selectedPackage}</p>
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => setSection("applications")}>Change app</Button>
+                    </div>
+                    {detailLoading && <p role="status" className="text-muted-foreground text-sm">Reading app permissions…</p>}
+                    {!detailLoading && !appDetail && (
+                      <p role="status" className="text-muted-foreground text-sm">
+                        {detailError ? "Permissions could not be read. Return to Applications and select the app again." : "No verified app details available."}
+                      </p>
+                    )}
+                    {appDetail && (
+                      <>
+                        <div className="flex flex-wrap gap-2 text-sm">
+                          <Badge variant="outline">{appDetail.permissions.length} requested</Badge>
+                          <Badge variant="outline">{appDetail.permissions.filter(permission => permission.granted).length} granted</Badge>
+                          <Badge variant="outline">{appDetail.permissions.filter(permission => !permission.granted).length} not granted</Badge>
+                        </div>
+                        <Input aria-label="Search Android permissions" value={permissionSearch}
+                          onChange={event => setPermissionSearch(event.target.value)}
+                          placeholder="Filter permission name…" />
+                        <div className="max-h-96 overflow-y-auto rounded-lg border">
+                          {visiblePermissions.map(permission => (
+                            <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-3 text-sm last:border-b-0">
+                              <span className="min-w-0 flex-1 break-all font-mono text-xs">{permission.name}</span>
+                              <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
+                            </div>
+                          ))}
+                          {!visiblePermissions.length && (
+                            <p className="p-3 text-sm text-muted-foreground">
+                              {appDetail.permissions.length ? "No permissions match this filter." : "Android reported no requested permissions."}
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+            <NativeOwnerNotice specific="Grant or revoke a named runtime permission in Companion → Permissions. Android may deny that operation." />
           </div>
         )}
         {section === "services" && (
@@ -404,14 +461,49 @@ export default function ShizukuPage() {
                 <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Airplane mode</p>
                   <p className="text-2xl font-semibold">{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</p></div>
               </div>
-              <Input aria-label="Search Android services" value={serviceSearch} onChange={e => setServiceSearch(e.target.value)}
+              <Input aria-label="Search Android services" value={serviceSearch}
+                onChange={e => { setServiceSearch(e.target.value); setServicePage(0) }}
                 placeholder="Search service component..." />
-              {!system || system.services.error ? <p className="text-muted-foreground text-sm">Android service inventory unavailable.</p> :
-                <div className="max-h-72 overflow-auto rounded-lg border">
-                  {shownServices.map((service, index) => <p key={service + index} className="border-b p-3 font-mono text-xs break-all last:border-b-0">{service}</p>)}
-                  {!shownServices.length && <p className="p-3 text-muted-foreground text-sm">No observed matching services.</p>}
-                </div>}
-              <p className="text-muted-foreground text-xs">The service list is sampled and may be incomplete. Start/stop a specific Android component or change brightness/timeout from Companion on the phone.</p>
+              {!system || system.services.error ? (
+                <p role="status" className="text-muted-foreground text-sm">
+                  {systemLoading ? "Loading Android services…" : systemError ? "Android system request failed. Try Refresh." :
+                    system?.services.error || "Android service inventory unavailable."}
+                </p>
+              ) : (
+                <>
+                  <p className="text-muted-foreground text-xs">
+                    {system.services.names.length} observed service components{system.services.truncated ? " · capped at 256; sample incomplete" : " · bounded snapshot"}
+                  </p>
+                  <div className="max-h-72 overflow-y-auto rounded-lg border">
+                    {visibleServices.map(service => (
+                      <button type="button" key={service}
+                        aria-pressed={selectedService === service}
+                        className={"block w-full border-b p-3 text-left font-mono text-xs break-all last:border-b-0 hover:bg-muted/60 " +
+                          (selectedService === service ? "bg-muted" : "")}
+                        onClick={() => setSelectedService(service)}>{service}</button>
+                    ))}
+                    {!shownServices.length && <p className="p-3 text-muted-foreground text-sm">No matching services in the observed sample.</p>}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <span>{shownServices.length ? servicePage * PAGE_SIZE + 1 : 0}–{Math.min((servicePage + 1) * PAGE_SIZE, shownServices.length)} of {shownServices.length} matches</span>
+                    <div className="flex gap-1">
+                      <Button size="sm" variant="outline" aria-label="Previous services"
+                        disabled={servicePage === 0} onClick={() => setServicePage(p => p - 1)}>Previous</Button>
+                      <Button size="sm" variant="outline" aria-label="Next services"
+                        disabled={(servicePage + 1) * PAGE_SIZE >= shownServices.length}
+                        onClick={() => setServicePage(p => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                  {selectedService && (
+                    <div className="space-y-1 rounded-lg border p-3 text-sm">
+                      <p className="font-medium">Selected Android component</p>
+                      <p className="break-all font-mono text-xs">{selectedService}</p>
+                      <p className="text-muted-foreground text-xs">Inspect or change this exact component in PocketHost Companion on the phone. The list alone does not prove it is controllable.</p>
+                    </div>
+                  )}
+                </>
+              )}
+              <p className="text-muted-foreground text-xs">Start/stop services and adjust brightness or timeout only in Companion on the phone; the LAN dashboard is read-only.</p>
             </CardContent></Card>
           </div>
         )}

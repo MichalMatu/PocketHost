@@ -96,7 +96,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByRole("tab", { name: /CPU & processes/i }).getAttribute("aria-selected")).toBe("true")
     await user.keyboard("{Home}")
     expect(screen.getByRole("tab", { name: /Applications/i }).getAttribute("aria-selected")).toBe("true")
-    await user.click(screen.getByRole("button", { name: /Example 0 com.example.app0/i }))
+    await user.click(screen.getByText("Example 0"))
     expect(await screen.findByText("App detail request failed. Select the app again to retry.")).toBeTruthy()
   })
 

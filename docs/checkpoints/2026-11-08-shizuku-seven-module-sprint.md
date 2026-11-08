@@ -185,3 +185,18 @@ only; the LAN endpoints are unchanged and read-only.
 
 The source and targeted Samsung/browser test results are tracked separately;
 no new APK build or service restart is implied by this UI-only change.
+
+## Permissions and Services UI follow-up (2026-11-08)
+
+The browser now presents the actual selected-app requested permission names,
+with granted/not-granted counts and search, instead of a descriptive
+placeholder. It also exposes bounded Android service component lists with
+filtering, paging, selected exact component identity, truncation and failure
+states. Both remain strictly read-only over the trusted LAN; Android
+permission and service mutations still require the phone's native Companion
+confirmation and whatever authority Android grants.
+
+The React effect's synchronous state resets were moved to the explicit
+Refresh action. This removes an identified lint regression without changing
+the typed native bridge. Exact-SHA Samsung UI tests and live panel acceptance
+remain separately tracked.
