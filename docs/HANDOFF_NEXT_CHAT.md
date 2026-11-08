@@ -38,7 +38,6 @@ before retrying anything.
   package upgrades, terminal exposure, service
   restart or new panel cutover is authorized.
 
-
 ## Current general audit continuation — 2026-11-07
 
 The audit starts from `main@437dd64662885caedfbc8b12a40b994c3d677a06`,
