@@ -43,7 +43,6 @@ was pending at handoff. Read [the 2026-11-08
 checkpoint](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
 for exact receipts before further action.
 
-
 ## Latest 2026-11-08 API and hardware follow-up
 
 Read [H3.4 API and native diagnostic checkpoint](
