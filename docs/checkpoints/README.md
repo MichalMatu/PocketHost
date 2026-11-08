@@ -9,6 +9,10 @@ purpose: Index historical evidence without overloading the active documentation 
 
 Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
 
+## 2026-11-08
+
+- [H3.4 API, Restic and ttyd physical follow-up](2026-11-08-h34-api-restic-ttyd-acceptance.md)
+
 ## 2026-11-07
 
 - [General repository audit and repair: Restic exit status and native follow-up](2026-11-07-general-repository-audit-repair.md)
