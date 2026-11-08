@@ -140,7 +140,8 @@ test('auto LAN recovery respects manual disable and a lost private interface', a
   present = false;
   await recover();
   await recover();
-  assert.deepEqual(calls, ['start:192.168.0.100']);
+  // The old address is released after two checks, ready to rebind if Wi-Fi IP changes.
+  assert.deepEqual(calls, ['start:192.168.0.100', 'close']);
   present = true;
   await control.disable();
   await recover();
