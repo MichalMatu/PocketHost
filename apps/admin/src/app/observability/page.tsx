@@ -132,7 +132,7 @@ export default function ObservabilityPage() {
       })
     return () => controller.abort()
   }, [])
-   const battery = snapshot?.metrics.batteryPercent
+  const battery = snapshot?.metrics.batteryPercent
   const network = snapshot?.metrics.network
   const topProcessSamples = [...(snapshot?.processes.processes ?? [])]
     .sort((a, b) => b.cpuTicks - a.cpuTicks)

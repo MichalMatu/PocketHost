@@ -60,12 +60,12 @@ export default function ShizukuPage() {
           </Card>
           <Card className="min-h-36">
             <CardHeader><CardDescription>Android CPU utilization</CardDescription>
-              <CardTitle>{loading ? "Checking…" : usable && status.cpuPercent !== null ? `${status.cpuPercent.toFixed(1)}%` : "Unavailable"}</CardTitle></CardHeader>
+              <CardTitle>{loading ? "Checking…" : usable && status?.cpuPercent != null ? `${status.cpuPercent.toFixed(1)}%` : "Unavailable"}</CardTitle></CardHeader>
             <CardContent className="text-muted-foreground text-xs">Full-device reading from authorized companion, never guessed from Termux</CardContent>
           </Card>
           <Card className="min-h-36">
             <CardHeader><CardDescription>Android-visible processes</CardDescription>
-              <CardTitle>{loading ? "Checking…" : usable && status.visibleProcesses !== null ? status.visibleProcesses : "Unavailable"}</CardTitle></CardHeader>
+              <CardTitle>{loading ? "Checking…" : usable && status?.visibleProcesses != null ? status.visibleProcesses : "Unavailable"}</CardTitle></CardHeader>
             <CardContent className="text-muted-foreground text-xs">Requires real Shizuku integration</CardContent>
           </Card>
         </div>
