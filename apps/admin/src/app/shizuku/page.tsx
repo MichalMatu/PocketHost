@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { RemoteShellPanel } from "./remote-shell-panel"
 import {
   parseShizukuStatus, parseShizukuApps, parseShizukuSystem, parseShizukuApp,
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
@@ -507,17 +508,7 @@ export default function ShizukuPage() {
             </CardContent></Card>
           </div>
         )}
-        {section === "shell" && (
-          <div className="space-y-3">
-            <NativeOwnerNotice specific="Advanced shell commands run with the actual Shizuku ADB/root UID. Command entry and execution are available ONLY in Companion → Advanced shell." />
-            <Card><CardHeader><CardTitle>Execution boundary</CardTitle>
-              <CardDescription>There is deliberately no executable command input on this LAN origin.</CardDescription>
-            </CardHeader><CardContent className="text-sm text-muted-foreground">
-              Use PocketHost Companion on the Samsung. Every command is displayed before confirmation,
-              executes with bounded output and a timeout, and reports Android refusals without claiming success.
-            </CardContent></Card>
-          </div>
-        )}
+        {section === "shell" && <RemoteShellPanel />}
         {section === "power" && (
           <Card><CardHeader><CardTitle>Power & hardware</CardTitle>
             <CardDescription>Real battery, temperature and Android RAM observations.</CardDescription>
