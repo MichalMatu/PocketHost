@@ -134,3 +134,24 @@ The auto-start loop checks for the assigned Wi-Fi IP every eight seconds
 when the panel is running, allowing Android Wi-Fi to appear after Termux
 Boot. An explicit owner's **Disable** action suppresses automatic retries
 for that session. A new PocketHost process restores the default.
+
+## Session-local LAN self-healing (2026-11-08)
+
+The running PocketHost Vite process now checks the real HTTP health of
+**both owned gateway ports** (18878/18879) every eight seconds. The health
+probe returns an exact 204 acknowledgement and never reaches a backend
+mutation API. Two failures trigger only an owned gateway recycle.
+Exponential backoff (30 seconds to five minutes) prevents Wi-Fi flapping
+from causing repeated restarts. Two observations of a disappeared IP
+release the stale owner-bound listeners; the next retry may select the
+current Wi-Fi address. Only a verified Wi-Fi interface (or explicitly
+selected owner bind) is eligible for unattended LAN startup.
+
+The local-only `GET /api/v1/network-access` includes self-check state,
+last probe/recovery, failure count, recovery count and retry deadlines.
+A manual **Disable** suppresses healing and startup until a new Vite session.
+The self-check does **not** supervise Vite or restart the Termux app after
+Vite exits, nor does it repair home Wi-Fi latency. There is no new Termux
+Boot entry, runit service, cron job, process manager or public listener.
+A full-service watchdog requires a separately owned runtime policy,
+bounded restart budget and host acceptance before activation.

@@ -100,6 +100,9 @@ test('LAN admin opens without login but rejects foreign Host, Origin and cross-s
     const port = await listen(gateway);
     const url = 'http://' + bind + ':' + port;
     const request = (route = '/', options = {}) => fetch(url + route, options);
+    const health = await request('/.well-known/pockethost-lan-health');
+    assert.equal(health.status, 204);
+    assert.equal(health.headers.get('x-pockethost-lan-gateway'), 'owned');
     let response = await request('/owned-site');
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('www-authenticate'), null);
@@ -178,6 +181,9 @@ test('LAN site gateway remains read-only GET and HEAD and rejects foreign origin
   try {
     const port = await listen(gateway);
     const url = 'http://127.0.0.1:' + port;
+    const health = await fetch(url + '/.well-known/pockethost-lan-health');
+    assert.equal(health.status, 204);
+    assert.equal(health.headers.get('x-pockethost-lan-gateway'), 'owned');
     const response = await fetch(url);
     assert.equal(response.status, 200);
     assert.match(await response.text(), /First local site/);

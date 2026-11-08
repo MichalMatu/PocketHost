@@ -113,6 +113,16 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
       rejected(response, status);
       return;
     }
+    // Session-local health acknowledgement; never proxies a management API,
+    // never reveals or mutates any host state.
+    if (request.method === 'GET' && request.url === '/.well-known/pockethost-lan-health') {
+      response.writeHead(204, {
+        'Cache-Control': 'no-store',
+        'X-PocketHost-Lan-Gateway': 'owned',
+      });
+      response.end();
+      return;
+    }
     // Site H2 views share the existing GET-only site gateway, never the admin origin.
     // Never relay to a port discovered from a request or stale ownership record.
     const h2 = !admin && request.url?.startsWith('/h2/');

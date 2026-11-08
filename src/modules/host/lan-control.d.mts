@@ -32,9 +32,22 @@ export function createLanControl(options?: {
   disable(): Promise<LanStatus>;
 };
 
+export interface LanRecoveryHealth {
+  state: string;
+  checkedAt: string | null;
+  recoveredAt: string | null;
+  consecutiveFailures: number;
+  recoveryCount: number;
+  nextRecoveryAt: string | null;
+  lastError: string | null;
+}
 export function createLanRecovery(options: {
   controller: ReturnType<typeof createLanControl>;
   interfaces?: () => LanInterface[];
   check: (bind: string) => Promise<boolean>;
+  canRecover?: () => boolean;
   failureThreshold?: number;
-}): () => Promise<LanStatus>;
+  cooldownMs?: number;
+  maxCooldownMs?: number;
+  now?: () => number;
+}): (() => Promise<LanStatus>) & { health(): LanRecoveryHealth };

@@ -11,7 +11,6 @@ import { ObservabilityHistory } from "../../src/modules/observability/overview.t
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
-import net from "node:net"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
@@ -635,49 +634,59 @@ function networkAccessApi(): Plugin {
   let autoRetry: ReturnType<typeof setInterval> | undefined
   let starting = false
 
-  // A gateway may retain enabled=true after Wi-Fi briefly disappears,
-  // even if Android no longer accepts TCP on the bound LAN address.
-  // Probe exact own ports; never discover/kill a process by port number.
-  function canConnect(bind: string, port: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      const socket = net.createConnection({ host: bind, port })
-      let settled = false
-      const finish = (connected: boolean) => {
-        if (settled) return
-        settled = true
-        socket.destroy()
-        resolve(connected)
-      }
-      socket.once("connect", () => finish(true))
-      socket.once("error", () => finish(false))
-      socket.setTimeout(1000, () => finish(false))
-    })
+  let startFailures = 0
+  let nextStartAttempt = 0
+
+  // A TCP handshake alone does not prove that the original PocketHost
+  // listeners still serve HTTP. Require the exact owned gateway response.
+  async function probeGateway(bind: string, port: number): Promise<boolean> {
+    try {
+      const response = await fetch(`http://${bind}:${port}/.well-known/pockethost-lan-health`, {
+        signal: AbortSignal.timeout(1800),
+        cache: "no-store",
+      })
+      return response.status === 204 && response.headers.get("x-pockethost-lan-gateway") === "owned"
+    } catch {
+      return false
+    }
   }
 
   const recoverOwnLan = createLanRecovery({
     controller,
     interfaces: () => availableLanInterfaces(),
+    canRecover: () => !ownerDisabled && !closed && !starting,
     check: async (bind) => {
-      if (ownerDisabled || closed || starting) return true
-      const reachable = await Promise.all([
-        canConnect(bind, 18878), canConnect(bind, 18879),
-      ])
-      return reachable.every(Boolean)
+      const checks = await Promise.all([probeGateway(bind, 18878), probeGateway(bind, 18879)])
+      return checks.every(Boolean)
     },
     failureThreshold: 2,
+    cooldownMs: 30000,
+    maxCooldownMs: 300000,
   })
 
   function ensurePrivateLan() {
-    if (!autoStart || ownerDisabled || closed || starting || controller.status().enabled) return
+    if (
+      !autoStart || ownerDisabled || closed || starting || controller.status().enabled ||
+      Date.now() < nextStartAttempt
+    ) return
     const options = availableLanInterfaces()
     const preferred = process.env.POCKETHOST_LAN_BIND
+    // Without an explicit owner bind, never expose the login-free panel on
+    // an arbitrary RFC1918 VPN or cellular interface.
     const selected = options.find((item) => item.address === preferred)
       ?? options.find((item) => item.name.startsWith("wlan"))
-      ?? options.find((item) => item.address.startsWith("192.168."))
-      ?? options[0]
     if (!selected) return
     starting = true
-    void controller.enable(selected.address).catch(() => undefined).finally(() => { starting = false })
+    void controller.enable(selected.address)
+      .then(() => {
+        startFailures = 0
+        nextStartAttempt = 0
+      })
+      .catch(() => {
+        startFailures += 1
+        nextStartAttempt = Date.now() + Math.min(300000, 8000 * 2 ** Math.min(startFailures - 1, 6))
+      })
+      .finally(() => { starting = false })
   }
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
@@ -724,7 +733,14 @@ function networkAccessApi(): Plugin {
         }
         const route = request.url?.split("?")[0] ?? ""
         if (route === "/" && request.method === "GET") {
-          response.end(JSON.stringify(controller.status()))
+          response.end(JSON.stringify({
+            ...controller.status(),
+            health: {
+              ...recoverOwnLan.health(),
+              startupFailures: startFailures,
+              nextStartAttemptAt: nextStartAttempt ? new Date(nextStartAttempt).toISOString() : null,
+            },
+          }))
           return
         }
         if (request.method !== "POST" || !["/enable", "/disable"].includes(route)) {

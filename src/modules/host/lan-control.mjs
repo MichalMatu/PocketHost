@@ -77,56 +77,128 @@ export function createLanControl({
 
 
 /**
- * Recover only listeners owned by this controller after an observable outage.
- * Never enumerate, adopt, or signal a gateway by PID or listening port.
- * Two independent failed health checks avoid recycling a live Wi-Fi session
- * for a brief network blip. A missing original interface blocks recovery.
+ * Recover ONLY an owned gateway. A missing interface is treated as an
+ * outage too: after two observations, release the stale owner listeners
+ * so the outer session may bind a newly assigned Wi-Fi IP.
+ *
+ * Delayed, exponential recovery prevents a flapping radio from causing
+ * an endless close/listen loop. An owner stop always takes precedence.
  */
 export function createLanRecovery({
   controller,
   interfaces = () => availableLanInterfaces(),
   check,
+  canRecover = () => true,
   failureThreshold = 2,
+  cooldownMs = 30000,
+  maxCooldownMs = 300000,
+  now = () => Date.now(),
 }) {
-  if (typeof check !== 'function' ||
-      !Number.isInteger(failureThreshold) || failureThreshold < 2) {
+  if (
+    typeof check !== 'function' ||
+    typeof canRecover !== 'function' ||
+    !Number.isInteger(failureThreshold) ||
+    failureThreshold < 2 ||
+    !Number.isInteger(cooldownMs) ||
+    cooldownMs < 0 ||
+    !Number.isInteger(maxCooldownMs) ||
+    maxCooldownMs < cooldownMs
+  ) {
     throw new Error('invalid-lan-recovery');
   }
   let failedChecks = 0;
   let busy = false;
-  return async function checkOwnedGateway() {
+  let state = 'unknown';
+  let checkedAt = null;
+  let recoveredAt = null;
+  let nextRecoveryTime = 0;
+  let recoveries = 0;
+  let attemptsSinceHealthy = 0;
+  let lastError = null;
+
+  function health() {
+    return {
+      state: !controller.status().enabled ? 'disabled' : state,
+      checkedAt,
+      recoveredAt,
+      consecutiveFailures: failedChecks,
+      recoveryCount: recoveries,
+      nextRecoveryAt: nextRecoveryTime ? new Date(nextRecoveryTime).toISOString() : null,
+      lastError,
+    };
+  }
+
+  async function checkOwnedGateway() {
     if (busy) return controller.status();
     busy = true;
     try {
       const current = controller.status();
-      if (!current.enabled || !current.bind ||
-          !interfaces().some((item) => item.address === current.bind)) {
+      if (!current.enabled || !current.bind || !canRecover()) {
         failedChecks = 0;
+        state = current.enabled ? 'paused' : 'disabled';
         return current;
       }
-      if (await check(current.bind)) {
+      const addressPresent = interfaces().some((item) => item.address === current.bind);
+      let working = false;
+      if (addressPresent) {
+        try {
+          working = (await check(current.bind)) === true;
+        } catch {
+          lastError = 'probe-error';
+        }
+      }
+      checkedAt = new Date(now()).toISOString();
+      if (working) {
         failedChecks = 0;
+        attemptsSinceHealthy = 0;
+        nextRecoveryTime = 0;
+        lastError = null;
+        state = 'healthy';
         return controller.status();
       }
       failedChecks += 1;
-      if (failedChecks < failureThreshold) return controller.status();
-
-      // Protect an owner's concurrent manual stop or interface switch.
+      state = addressPresent ? 'unhealthy' : 'interface-missing';
+      if (!lastError || !addressPresent) {
+        lastError = addressPresent ? 'probe-failed' : 'interface-missing';
+      }
+      if (failedChecks < failureThreshold || now() < nextRecoveryTime) {
+        return controller.status();
+      }
       const recent = controller.status();
-      if (!recent.enabled || recent.bind !== current.bind ||
-          !interfaces().some((item) => item.address === current.bind)) {
+      if (
+        !canRecover() ||
+        !recent.enabled ||
+        recent.bind !== current.bind ||
+        (addressPresent && !interfaces().some((item) => item.address === current.bind))
+      ) {
         failedChecks = 0;
         return recent;
       }
+      attemptsSinceHealthy += 1;
+      const delay = Math.min(
+        maxCooldownMs,
+        cooldownMs * 2 ** Math.min(attemptsSinceHealthy - 1, 8),
+      );
+      nextRecoveryTime = now() + delay;
+      failedChecks = 0;
       try {
         await controller.disable();
-        await controller.enable(current.bind);
-      } finally {
-        failedChecks = 0;
+        if (addressPresent && canRecover()) {
+          await controller.enable(current.bind);
+        }
+        recoveredAt = new Date(now()).toISOString();
+        recoveries += 1;
+        state = addressPresent ? 'recovering' : 'awaiting-interface';
+        lastError = null;
+      } catch {
+        state = 'unhealthy';
+        lastError = 'owned-recovery-failed';
       }
       return controller.status();
     } finally {
       busy = false;
     }
-  };
+  }
+  checkOwnedGateway.health = health;
+  return checkOwnedGateway;
 }

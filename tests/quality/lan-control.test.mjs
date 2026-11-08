@@ -147,3 +147,70 @@ test('auto LAN recovery respects manual disable and a lost private interface', a
   await recover();
   assert.deepEqual(calls, ['start:192.168.0.100', 'close']);
 });
+
+test('LAN recovery rate-limits repeated outages and reports degraded health', async () => {
+  const calls = [];
+  let time = 100000;
+  let healthy = false;
+  const interfaces = () => [{ name: 'wlan0', address: '192.168.0.100' }];
+  const controller = createLanControl({
+    interfaces,
+    start: async (bind) => {
+      calls.push('start:' + bind);
+      return { close: async () => { calls.push('close'); } };
+    },
+  });
+  await controller.enable('192.168.0.100');
+  const recover = createLanRecovery({
+    controller, interfaces, check: async () => healthy,
+    now: () => time, cooldownMs: 30000, maxCooldownMs: 120000,
+  });
+  await recover();
+  assert.equal(recover.health().state, 'unhealthy');
+  await recover();
+  assert.equal(recover.health().state, 'recovering');
+  assert.equal(recover.health().recoveryCount, 1);
+  await recover();
+  await recover();
+  assert.equal(calls.filter((item) => item === 'close').length, 1);
+  time += 30001;
+  await recover();
+  assert.equal(recover.health().recoveryCount, 2);
+  assert.equal(calls.filter((item) => item === 'close').length, 2);
+  healthy = true;
+  await recover();
+  assert.equal(recover.health().state, 'healthy');
+  assert.equal(recover.health().nextRecoveryAt, null);
+  assert.equal(recover.health().lastError, null);
+});
+
+test('LAN recovery releases only stale owned bind after two missing-interface checks', async () => {
+  const calls = [];
+  let available = [{ name: 'wlan0', address: '192.168.0.100' }];
+  let ownerDisabled = false;
+  const interfaces = () => available;
+  const controller = createLanControl({
+    interfaces,
+    start: async (bind) => {
+      calls.push('start:' + bind);
+      return { close: async () => { calls.push('close'); } };
+    },
+  });
+  await controller.enable('192.168.0.100');
+  const recover = createLanRecovery({
+    controller, interfaces, check: async () => true,
+    canRecover: () => !ownerDisabled,
+  });
+  available = [{ name: 'wlan0', address: '192.168.0.101' }];
+  await recover();
+  assert.equal(recover.health().state, 'interface-missing');
+  assert.equal(controller.status().enabled, true);
+  await recover();
+  assert.deepEqual(calls, ['start:192.168.0.100', 'close']);
+  assert.equal(controller.status().enabled, false);
+  await controller.enable('192.168.0.101');
+  ownerDisabled = true;
+  await recover();
+  assert.equal(recover.health().state, 'paused');
+  assert.deepEqual(calls, ['start:192.168.0.100', 'close', 'start:192.168.0.101']);
+});
