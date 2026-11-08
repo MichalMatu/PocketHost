@@ -666,7 +666,7 @@ function remoteShellInboxApi(): Plugin {
             request.headers["content-encoding"] !== undefined ||
             request.headers["transfer-encoding"] !== undefined ||
             (request.headers["content-length"] !== undefined &&
-              (!/^\\d+$/.test(request.headers["content-length"]) ||
+              (!/^\d+$/.test(request.headers["content-length"]) ||
                 Number(request.headers["content-length"]) > 2048))) {
           response.statusCode = 400
           response.end(JSON.stringify({ error: "invalid-remote-shell-body" }))
