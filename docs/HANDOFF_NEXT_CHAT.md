@@ -7,6 +7,19 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## New source candidate — paired browser Shizuku shell (2026-11-08)
+
+Owner wants a real Advanced Shell in the desktop LAN browser. Implementation
+adds a 10-minute phone-armed pairing code, exact per-command approval
+inside Companion, bounded request/poll HTTP bridge and browser editor/result
+display. Source-only: DO NOT report Android APK installation or browser
+execution PASS before native build, Samsung deployment and a positive
+`id`/denial matrix. See
+`docs/checkpoints/2026-11-08-shizuku-browser-remote-shell.md`.
+Protected Termux services and the currently accepted read-only panel
+must remain untouched during preliminary QA.
+
+
 ## Follow-up source: charging, application identities and GiB (2026-11-08)
 
 Battery charging states are derived from Android status and actual power-source
