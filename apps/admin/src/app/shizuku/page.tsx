@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import {
-  parseShizukuStatus, parseShizukuApps, parseShizukuSystem,
-  type ShizukuStatus, type ShizukuApps, type ShizukuSystem,
+  parseShizukuStatus, parseShizukuApps, parseShizukuSystem, parseShizukuApp,
+  type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
 } from "@/lib/shizuku-schema"
 
 type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power"
@@ -38,8 +38,9 @@ function unavailable(value: string | number | null | undefined, suffix = "") {
   return value == null ? "Unavailable" : String(value) + suffix
 }
 
-function mib(value: number | null) {
-  return value == null ? "Unavailable" : (value / 1024).toFixed(1) + " MiB"
+/** Android meminfo / ps report KiB; display real binary gigabytes. */
+function gib(value: number | null, precision = 2) {
+  return value == null ? "Unavailable" : (value / (1024 * 1024)).toFixed(precision) + " GiB"
 }
 
 function LastSample({ observedAt }: { observedAt?: string }) {
@@ -75,6 +76,29 @@ export default function ShizukuPage() {
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
   const [selectedPackage, setSelectedPackage] = React.useState<string | null>(null)
+  const [appDetail, setAppDetail] = React.useState<ShizukuApp | null>(null)
+  const [detailLoading, setDetailLoading] = React.useState(false)
+  const detailRequest = React.useRef(0)
+
+  async function selectPackage(packageName: string) {
+    const request = ++detailRequest.current
+    setSelectedPackage(packageName)
+    setAppDetail(null)
+    setDetailLoading(true)
+    try {
+      const result = parseShizukuApp(await readJson(
+        "/api/v1/shizuku/app?package=" + encodeURIComponent(packageName),
+        AbortSignal.timeout(10000),
+      ))
+      if (request === detailRequest.current && result.packageName === packageName) {
+        setAppDetail(result)
+      }
+    } catch {
+      if (request === detailRequest.current) setAppDetail(null)
+    } finally {
+      if (request === detailRequest.current) setDetailLoading(false)
+    }
+  }
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -114,7 +138,8 @@ export default function ShizukuPage() {
   const connected = status?.connected === true && status.authorized === true
   const shownApps = (apps?.packages ?? []).filter(item =>
     (packageFilter === "all" || (packageFilter === "system" ? item.system : !item.system)) &&
-    item.packageName.toLowerCase().includes(appSearch.trim().toLowerCase())
+    (item.packageName.toLowerCase().includes(appSearch.trim().toLowerCase()) ||
+      item.label.toLowerCase().includes(appSearch.trim().toLowerCase()))
   )
   const shownProcesses = (system?.processes ?? []).filter(item =>
     item.name.toLowerCase().includes(processSearch.trim().toLowerCase()) ||
@@ -135,7 +160,7 @@ export default function ShizukuPage() {
             <LastSample observedAt={status?.observedAt} />
           </div>
           <Button variant="outline" size="sm" disabled={loading}
-            onClick={() => { setLoading(true); setRefreshKey(k => k + 1) }}>
+            onClick={() => { detailRequest.current++; setAppDetail(null); setDetailLoading(false); setLoading(true); setRefreshKey(k => k + 1) }}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
@@ -186,7 +211,7 @@ export default function ShizukuPage() {
         {section === "applications" && (
           <Card>
             <CardHeader><CardTitle>Android applications</CardTitle>
-              <CardDescription>Installed package inventory. Select a package to inspect its identity; detailed operations run in Companion.</CardDescription>
+              <CardDescription>Search actual Android app names or package IDs. Select an app for version, SDK and permission details. Changes run only on the phone in Companion.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -194,7 +219,7 @@ export default function ShizukuPage() {
                   <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
                   <Input aria-label="Search Android packages" className="pl-9"
                     value={appSearch} onChange={e => setAppSearch(e.target.value)}
-                    placeholder="Find package..." />
+                    placeholder="Find application or package..." />
                 </div>
                 {(["all", "user", "system"] as const).map(filter => (
                   <Button size="sm" key={filter} variant={packageFilter === filter ? "default" : "outline"}
@@ -207,18 +232,54 @@ export default function ShizukuPage() {
                     {shownApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
-                      onClick={() => setSelectedPackage(item.packageName)}>
-                      <span className="break-all font-mono text-xs">{item.packageName}</span>
+                      onClick={() => { void selectPackage(item.packageName) }}>
+                      <span className="min-w-0 space-y-1">
+                        <span className="block text-sm font-medium break-words">{item.label || item.packageName}</span>
+                        <span className="block font-mono text-muted-foreground text-xs break-all">{item.packageName}</span>
+                      </span>
                       <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
                     </button>)}
                     {shownApps.length === 0 && <p className="p-4 text-sm text-muted-foreground">No matching packages.</p>}
                   </div>
                   <div className="space-y-3 rounded-lg border p-4">
-                    <p className="font-medium">Selected package</p>
-                    <p className="break-all font-mono text-xs">{selectedPackage ?? "Choose an app from the list"}</p>
+                    <p className="font-medium">Selected application</p>
+                    {selectedPackage ? (
+                      <p className="break-all font-mono text-xs text-muted-foreground">{selectedPackage}</p>
+                    ) : <p className="text-muted-foreground text-sm">Choose an app from the list</p>}
+                    {detailLoading && <p role="status" className="text-muted-foreground text-sm">Reading Android package details…</p>}
+                    {appDetail && (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          {appDetail.iconPng ? <img
+                            src={"data:image/png;base64," + appDetail.iconPng}
+                            alt=""
+                            width={44} height={44} className="size-11 rounded-lg object-contain" /> :
+                            <AppWindow aria-hidden="true" className="size-8 text-muted-foreground" />}
+                          <p className="font-medium break-words">{appDetail.label || appDetail.packageName}</p>
+                        </div>
+                        <dl className="grid grid-cols-2 gap-2 text-sm">
+                          <dt className="text-muted-foreground">Version</dt><dd className="break-all">{appDetail.versionName || "Unknown"}</dd>
+                          <dt className="text-muted-foreground">Version code</dt><dd>{appDetail.versionCode}</dd>
+                          <dt className="text-muted-foreground">Target SDK</dt><dd>{appDetail.targetSdk}</dd>
+                          <dt className="text-muted-foreground">Enabled</dt><dd>{appDetail.enabled ? "Yes" : "No"}</dd>
+                        </dl>
+                        <p className="text-sm font-medium">Requested permissions ({appDetail.permissions.length})</p>
+                        <div className="max-h-48 overflow-auto rounded-md border">
+                          {appDetail.permissions.map(p => <div key={p.name}
+                            className="flex items-start justify-between gap-2 border-b p-2 text-xs last:border-b-0">
+                            <span className="break-all">{p.name}</span>
+                            <Badge variant="outline">{p.granted ? "Granted" : "Not granted"}</Badge>
+                          </div>)}
+                          {appDetail.permissions.length === 0 && <p className="p-2 text-xs text-muted-foreground">No requested permissions reported.</p>}
+                        </div>
+                      </div>
+                    )}
+                    {selectedPackage && !detailLoading && !appDetail && (
+                      <p className="text-muted-foreground text-sm">Detailed metadata unavailable for this Android user.</p>
+                    )}
                     <p className="text-muted-foreground text-sm">
-                      Version, runtime permissions, launch, force-stop and uninstall are available
-                      on the phone in Companion → Applications, with explicit confirmation.
+                      Launch, force-stop, uninstall and permission changes require confirmation
+                      inside PocketHost Companion on the Samsung.
                     </p>
                     <p className="text-muted-foreground text-xs">
                       {shownApps.length} matching · {apps.packages.length} reported
@@ -248,7 +309,7 @@ export default function ShizukuPage() {
                           <td className="p-3 font-mono">{proc.pid}</td>
                           <td className="max-w-80 break-all p-3">{proc.name}</td>
                           <td className="p-3">{proc.user}</td>
-                          <td className="p-3 text-right">{mib(proc.rssKb)}</td>
+                          <td className="p-3 text-right" title="Resident memory (GiB)">{gib(proc.rssKb, 4)}</td>
                           <td className="p-3 text-right">{unavailable(proc.cpuPercent, "%")}</td>
                         </tr>)}
                       </tbody>
@@ -316,13 +377,13 @@ export default function ShizukuPage() {
                 ["Charging", system?.power.chargingState ? ({ charging: "Charging", discharging: "Discharging", full: "Full", "not-charging": "Not charging", unknown: "Unavailable" } as const)[system.power.chargingState] : system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
                 ["External power", system?.power.powerConnected == null ? "Unavailable" : system.power.powerConnected ? "Connected" : "Disconnected"],
                 ["Battery temperature", unavailable(system?.power.batteryTemperatureC, " °C")],
-                ["Available Android RAM", mib(system?.power.memoryAvailableKb ?? null)],
+                ["Available Android RAM", gib(system?.power.memoryAvailableKb ?? null)],
               ].map(([label, value]) => <div className="rounded-lg border p-4" key={label}>
                 <p className="text-muted-foreground text-sm">{label}</p>
                 <p className="mt-2 text-xl font-semibold">{value}</p>
               </div>)}
             </div>
-            <p className="text-muted-foreground text-sm">Total system RAM: {mib(system?.power.memoryTotalKb ?? null)}</p>
+            <p className="text-muted-foreground text-sm">Total system RAM: {gib(system?.power.memoryTotalKb ?? null)}</p>
             <LastSample observedAt={system?.observedAt} />
             {!system && <p className="text-muted-foreground text-sm">Android hardware sample unavailable.</p>}
           </CardContent></Card>
