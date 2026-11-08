@@ -67,3 +67,22 @@ because `app_process` is restricted. The supported initial transport is
 PocketHost Companion, read-only, short-lived, and without any actions.
 Termux can retrieve it directly; the existing browser panel proxies only
 typed telemetry. The provider remains for Android ADB-level diagnosis.
+
+## Background CPU access (Android 16)
+
+Android may freeze the Companion when it becomes a cached background app.
+A real on-device test restored `GET http://127.0.0.1:18791/status` immediately
+when Companion was brought to the foreground (CPU 19%, 855 processes).
+The native service `TelemetryForegroundService` is an **owner-enabled foreground
+service with a visible persistent notification**. After Shizuku approval,
+tap **Read Android CPU and processes** to activate it. It samples at most
+once per 15 seconds, keeps the local read-only HTTP listener responsive
+and makes full-device CPU visible in `/shizuku` even when the activity
+is not in front. **Stop background CPU monitoring** disables it.
+
+Android 14+ requires `FOREGROUND_SERVICE`,
+`FOREGROUND_SERVICE_SPECIAL_USE`, an appropriate special-use subtype
+and a visible notification. No Android battery optimization or cached-app
+freezer system settings are disabled. App-initiated activation is required;
+no hidden boot receiver is introduced. Following a device reboot,
+Shizuku may need to be restarted and the owner may reopen Companion.

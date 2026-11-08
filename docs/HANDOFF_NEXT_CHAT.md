@@ -7,6 +7,24 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Current Shizuku CPU transport finding — 2026-11-08
+
+Mac SSH + native ADB verified: `/dashboard` and `/shizuku` returned HTTP
+200 on `192.168.0.100:18878`, LAN controller was in automatic mode.
+The previous live source checkout remained on `c141863` after an earlier
+deployment rollback, but Vite had loaded updated LAN/Shizuku config.
+
+Android Companion + Shizuku were running; raw Termux TCP to the Companion
+port timed out in background. Reopening the Companion activity brought
+the read-only HTTP 18791 status listener back: authorized ADB/Shizuku,
+19% real Android CPU and 855 processes. Root cause is cached Android
+app freezing. A new owner-enabled `TelemetryForegroundService` keeps the
+native process active with a notification; Android build/install/test
+of this change remains the next immediate step. Do not duplicate
+the existing Shizuku browser backend or the LAN autostart implementation.
+
+
+
 ## DEV LAN restart and Shizuku bridge (2026-11-08)
 
 Owner requested LAN port 18878 accessible by default after PocketHost panel

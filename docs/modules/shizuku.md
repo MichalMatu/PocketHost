@@ -89,3 +89,20 @@ the Companion app, handles only `GET /status`, and shares no Binder handle,
 privileged shell or mutation API. The Vite server uses a fixed loopback
 fetch and its existing no-store / read-only status route. No Wi-Fi listener
 or background Android service was created.
+
+## Background telemetry fix — 2026-11-08
+
+Physical Mac→Samsung SSH evidence: while Companion was in the cached state,
+TCP connection to its Android loopback listener `127.0.0.1:18791`
+timed out although the port appeared to be listening. Reopening the
+Companion activity restored immediate HTTP 200 and a legitimate Shizuku
+sample of 19% CPU / 855 processes in ADB mode. Android cached-app
+freezing suspends app threads, so an invisible socket listener alone
+cannot maintain telemetry. The Android-native foreground service now
+retains sampling in the background with a visible notification and an
+explicit Stop control. This does not grant new privileges.
+
+This source change requires a **new APK build and physical re-test**.
+Existing LAN routes `/dashboard` and `/shizuku` were both HTTP 200
+at the last Mac SSH audit; deploy status of the new foreground service
+remains separate.

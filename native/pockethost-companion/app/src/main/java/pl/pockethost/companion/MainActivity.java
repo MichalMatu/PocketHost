@@ -2,6 +2,8 @@ package pl.pockethost.companion;
 
 import android.app.Activity;
 import android.content.ComponentName;
+import android.content.Intent;
+import android.os.Build;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -27,6 +29,7 @@ public final class MainActivity extends Activity {
     private TextView reading;
     private IPowerUserService powerService;
     private boolean bound = false;
+    private boolean telemetryServiceStarted = false;
     private boolean visible = false;
     private final AtomicBoolean sampling = new AtomicBoolean(false);
     private final Handler refreshLoop = new Handler(Looper.getMainLooper());
@@ -48,7 +51,7 @@ public final class MainActivity extends Activity {
         if (code != SHIZUKU_PERMISSION_REQUEST) return;
         runOnUiThread(() -> {
             refreshConnection();
-            if (result == PackageManager.PERMISSION_GRANTED) bindAndSample();
+            if (result == PackageManager.PERMISSION_GRANTED) enableContinuousMonitoring();
         });
     };
     private final ServiceConnection connection = new ServiceConnection() {
@@ -90,8 +93,18 @@ public final class MainActivity extends Activity {
         layout.addView(authorize);
         Button cpu = new Button(this);
         cpu.setText("Read Android CPU and processes");
-        cpu.setOnClickListener(v -> bindAndSample());
+        cpu.setOnClickListener(v -> enableContinuousMonitoring());
         layout.addView(cpu);
+        Button stop = new Button(this);
+        stop.setText("Stop background CPU monitoring");
+        stop.setOnClickListener(v -> {
+            getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
+                    .putBoolean(TelemetryForegroundService.PREF_ENABLED, false).apply();
+            stopService(new Intent(this, TelemetryForegroundService.class));
+            telemetryServiceStarted = false;
+            status.setText("Background CPU monitoring stopped");
+        });
+        layout.addView(stop);
         reading = new TextView(this);
         reading.setPadding(0, 20, 0, 0);
         reading.setText("No privileged CPU sample yet.");
@@ -103,6 +116,11 @@ public final class MainActivity extends Activity {
         Shizuku.addBinderDeadListener(binderDead);
         Shizuku.addRequestPermissionResultListener(permissionResult);
         refreshConnection();
+        if (permissionGranted() &&
+                getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE)
+                  .getBoolean(TelemetryForegroundService.PREF_ENABLED, false)) {
+            startContinuousService();
+        }
     }
 
     private boolean permissionGranted() {
@@ -130,6 +148,29 @@ public final class MainActivity extends Activity {
                     (permissionGranted() ? "authorized" : "not authorized"));
         } catch (RuntimeException e) {
             status.setText("Shizuku state unavailable: " + e.getClass().getSimpleName());
+        }
+    }
+
+    private void enableContinuousMonitoring() {
+        if (!permissionGranted()) {
+            requestAccess();
+            return;
+        }
+        getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
+                .putBoolean(TelemetryForegroundService.PREF_ENABLED, true).apply();
+        startContinuousService();
+        bindAndSample();
+    }
+
+    private void startContinuousService() {
+        if (telemetryServiceStarted) return;
+        try {
+            Intent intent = new Intent(this, TelemetryForegroundService.class);
+            if (Build.VERSION.SDK_INT >= 26) startForegroundService(intent);
+            else startService(intent);
+            telemetryServiceStarted = true;
+        } catch (RuntimeException e) {
+            status.setText("Background monitoring unavailable: " + e.getClass().getSimpleName());
         }
     }
 
@@ -213,6 +254,11 @@ public final class MainActivity extends Activity {
     @Override protected void onResume() {
         super.onResume();
         visible = true;
+        if (permissionGranted() &&
+                getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE)
+                  .getBoolean(TelemetryForegroundService.PREF_ENABLED, false)) {
+            startContinuousService();
+        }
         refreshLoop.removeCallbacks(onDemandRefresh);
         refreshLoop.post(onDemandRefresh);
     }
