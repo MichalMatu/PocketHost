@@ -101,6 +101,40 @@ public final class TelemetryProvider extends ContentProvider {
         return result;
     }
 
+    static JSONObject system(android.content.Context context) throws Exception {
+        JSONObject live = status(context);
+        if (!live.optBoolean("connected") || !live.optBoolean("authorized")) {
+            throw new SecurityException("Shizuku authorization missing");
+        }
+        SharedPreferences preferences = context.getSharedPreferences(PREFS, 0);
+        long when = preferences.getLong("systemAtMs", 0);
+        long now = System.currentTimeMillis();
+        if (when <= 0 || when > now || now - when > 120000L)
+            throw new IllegalStateException("System readings expired");
+        String raw = preferences.getString("systemSnapshot", "");
+        if (raw == null || raw.length() > 196608) throw new IllegalStateException("System data unavailable");
+        JSONObject snapshot = new JSONObject(raw);
+        int uid = snapshot.getInt("uid");
+        if (!"shizuku-user-service".equals(snapshot.getString("source")) ||
+                snapshot.getInt("version") != 1 || (uid != 0 && uid != 2000) ||
+                !snapshot.getString("observedAt").startsWith("20")) {
+            throw new SecurityException("Invalid Shizuku system data");
+        }
+        JSONObject result = new JSONObject();
+        result.put("version", 1);
+        result.put("source", "android-companion");
+        result.put("connected", true);
+        result.put("authorized", true);
+        result.put("mode", uid == 0 ? "root" : "adb");
+        result.put("observedAt", snapshot.getString("observedAt"));
+        result.put("processes", snapshot.getJSONArray("processes"));
+        result.put("processesTruncated", snapshot.getBoolean("processesTruncated"));
+        result.put("power", snapshot.getJSONObject("power"));
+        result.put("settings", snapshot.getJSONObject("settings"));
+        result.put("services", snapshot.getJSONObject("services"));
+        return result;
+    }
+
     @Override public ParcelFileDescriptor openFile(Uri uri, String mode)
             throws FileNotFoundException {
         if (!"/status".equals(uri.getPath()) || !"r".equals(mode)) {

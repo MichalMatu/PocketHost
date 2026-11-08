@@ -47,14 +47,16 @@ public final class TelemetryHttpServer {
                     OutputStream output = client.getOutputStream();
                     boolean statusRoute = request.matches("GET /status HTTP/1\\.[01]");
                     boolean appsRoute = request.matches("GET /apps HTTP/1\\.[01]");
+                    boolean systemRoute = request.matches("GET /system HTTP/1\\.[01]");
                     String body;
                     int status;
-                    if (!statusRoute && !appsRoute) {
+                    if (!statusRoute && !appsRoute && !systemRoute) {
                         body = "{\"error\":\"not-found\"}";
                         status = 404;
                     } else {
                         try {
                             body = (appsRoute ? TelemetryProvider.apps(context) :
+                                    systemRoute ? TelemetryProvider.system(context) :
                                     TelemetryProvider.status(context)).toString();
                             status = 200;
                         } catch (Exception e) {

@@ -109,3 +109,55 @@ export async function readCompanionApps() {
   if (apps.mode !== status.mode) throw new Error('android-apps-privilege-mismatch');
   return apps;
 }
+
+
+/**
+ * Fixed read-only system channel. The privileged owner actions are bound
+ * only to on-device Companion UI; never proxy command execution to LAN.
+ */
+export function parseCompanionSystem(raw) {
+  const d = JSON.parse(raw);
+  if (!d || typeof d !== 'object' || Array.isArray(d) ||
+      d.version !== 1 || d.source !== 'android-companion' ||
+      d.connected !== true || d.authorized !== true ||
+      !['adb', 'root'].includes(d.mode) ||
+      typeof d.observedAt !== 'string' || Number.isNaN(Date.parse(d.observedAt)) ||
+      Math.abs(Date.now() - Date.parse(d.observedAt)) > 120000 ||
+      !Array.isArray(d.processes) || d.processes.length > 512 ||
+      typeof d.processesTruncated !== 'boolean') throw new Error('invalid-android-system');
+  const seen = new Set();
+  for (const p of d.processes) {
+    if (!p || typeof p !== 'object' ||
+        !Number.isSafeInteger(p.pid) || p.pid < 1 || seen.has(p.pid) ||
+        typeof p.user !== 'string' || p.user.length > 48 ||
+        typeof p.name !== 'string' || p.name.length > 160 ||
+        (p.rssKb !== null && (!Number.isSafeInteger(p.rssKb) || p.rssKb < 0)) ||
+        (p.cpuPercent !== null && (typeof p.cpuPercent !== 'number' ||
+          !Number.isFinite(p.cpuPercent) || p.cpuPercent < 0 || p.cpuPercent > 100))) {
+      throw new Error('invalid-android-process');
+    }
+    seen.add(p.pid);
+  }
+  if (!d.power || typeof d.power !== 'object' || Array.isArray(d.power) ||
+      !d.settings || typeof d.settings !== 'object' ||
+      !d.services || typeof d.services !== 'object' ||
+      !Array.isArray(d.services.names) || d.services.names.length > 96 ||
+      d.services.names.some(s => typeof s !== 'string' || s.length > 300) ||
+      typeof d.services.truncated !== 'boolean') throw new Error('invalid-android-diagnostics');
+  return d;
+}
+
+export async function readCompanionSystem() {
+  const status = await readCompanionStatus();
+  if (!status.connected || !status.authorized) throw new Error('companion-not-authorized');
+  const response = await fetch('http://127.0.0.1:18791/system', {
+    method: 'GET', redirect: 'error', cache: 'no-store',
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!response.ok) throw new Error('android-system-unavailable');
+  const raw = await response.text();
+  if (raw.length > 196608) throw new Error('android-system-response-too-large');
+  const d = parseCompanionSystem(raw);
+  if (d.mode !== status.mode) throw new Error('android-system-mode-mismatch');
+  return d;
+}

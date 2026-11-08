@@ -11,7 +11,7 @@ import { ObservabilityHistory } from "../../src/modules/observability/overview.t
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import { createLanControl, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
-import { readCompanionStatus, readCompanionApps } from "../../src/modules/host/shizuku-companion.mjs"
+import { readCompanionStatus, readCompanionApps, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -509,6 +509,33 @@ function shizukuCompanionApi(): Plugin {
     apply: "serve",
     configureServer(server) {
 
+
+      server.middlewares.use("/api/v1/shizuku/system", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        const remote = request.socket.remoteAddress
+        if (!hosts.has(request.headers.host ?? "") ||
+            (request.headers.origin && !origins.has(request.headers.origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        if (request.method !== "GET" || request.url?.split("?")[0] !== "/") {
+          response.statusCode = request.method === "GET" ? 404 : 405
+          response.end(JSON.stringify({ error: "not-found" }))
+          return
+        }
+        try {
+          response.end(JSON.stringify(await readCompanionSystem()))
+        } catch {
+          response.statusCode = 503
+          response.end(JSON.stringify({ error: "android-system-unavailable" }))
+        }
+      })
       server.middlewares.use("/api/v1/shizuku/apps", async (request, response) => {
         response.setHeader("Cache-Control", "no-store")
         response.setHeader("Content-Type", "application/json; charset=utf-8")

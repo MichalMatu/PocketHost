@@ -33,6 +33,7 @@ public final class TelemetryForegroundService extends Service {
     private static final int NOTIFICATION_ID = 52;
     private static final long SAMPLE_MS = 15000L;
     private static final long APPS_REFRESH_MS = 120000L;
+    private static final long SYSTEM_REFRESH_MS = 60000L;
     private static final String TAG = "PocketHostTelemetry";
 
     private final Handler handler = new Handler(Looper.getMainLooper());
@@ -42,6 +43,7 @@ public final class TelemetryForegroundService extends Service {
     private boolean bound;
     private boolean destroyed;
     private volatile long lastAppsAt;
+    private volatile long lastSystemAt;
 
     private final Shizuku.OnBinderReceivedListener binderListener = () ->
             handler.post(this::ensureBound);
@@ -61,7 +63,7 @@ public final class TelemetryForegroundService extends Service {
     };
     private final Shizuku.UserServiceArgs args = new Shizuku.UserServiceArgs(
             new ComponentName("pl.pockethost.companion", PowerUserService.class.getName()))
-            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(3);
+            .daemon(false).processNameSuffix("telemetry").debuggable(false).version(4);
 
     private final Runnable tick = new Runnable() {
         @Override public void run() {
@@ -151,6 +153,22 @@ public final class TelemetryForegroundService extends Service {
                 getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
                         .putString("snapshot", snapshot.toString())
                         .putLong("observedAtMs", System.currentTimeMillis()).apply();
+                if (System.currentTimeMillis() - lastSystemAt >= SYSTEM_REFRESH_MS) {
+                    try {
+                        JSONObject overview = new JSONObject(remote.readSystemOverview());
+                        if (overview.getInt("uid") != uid ||
+                                !"shizuku-user-service".equals(overview.getString("source"))) {
+                            throw new SecurityException("Unexpected overview source");
+                        }
+                        getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
+                                .putString("systemSnapshot", overview.toString())
+                                .putLong("systemAtMs", System.currentTimeMillis()).apply();
+                        lastSystemAt = System.currentTimeMillis();
+                    } catch (Exception e) {
+                        Log.w(TAG, "Android system overview unavailable: " +
+                                e.getClass().getSimpleName());
+                    }
+                }
                 if (System.currentTimeMillis() - lastAppsAt >= APPS_REFRESH_MS) {
                     try {
                         JSONObject inventory = new JSONObject(remote.readInstalledPackages());
