@@ -7,6 +7,22 @@ purpose: Specify the exclusive Termux Local Agent development workflow and fast 
 
 # Termux Local Agent — Fast Start and Execution Contract
 
+## Current DEV operating mode
+
+The existing PocketHost admin panel is **DEV**. Follow
+[DEV iteration runbook](DEV_ITERATION.md): small code change -> commit ->
+relevant quick check -> HMR or verified PocketHost-only restart -> owner
+review. Full `check:all` belongs at milestone closeout, not every
+minor GUI edit. The owner has already approved normal repeated restart
+of the verified PocketHost-owned DEV panel; do not request fresh approval
+for each iteration. Do not create a second preview panel merely for UX.
+
+The old foundation/setup sequence below is for **initial onboarding,
+untrusted hosts or missing prerequisites**. Once the same Samsung Local
+Agent, isolated source checkout and owned panel are already verified,
+reuse that evidence instead of replaying full preflight and heavyweight
+tests every time. Other Termux services remain protected.
+
 ## Main-only source policy
 
 All source and documentation changes go directly to the current `PocketHost/main` unless

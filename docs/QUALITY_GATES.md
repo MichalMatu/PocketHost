@@ -9,16 +9,38 @@ purpose: Current PocketHost source, hardware and release acceptance contract
 
 ## Execution and evidence
 
-The 2026-11-08 UX architecture source requires its own exact-SHA
-Samsung `check:all` and real browser navigation acceptance. Earlier
-H3.4 receipts do not cover this source. Production remains on the
-accepted prior release until a separate authorized cutover.
+**Current default is PocketHost DEV fast iteration (ADR-0012).** The
+owner-facing panel is DEV, not a customer production deployment.
+For small UI changes, use `npm run dev:quick` and only the focused
+interaction tests that matter; visual-only changes can be reviewed
+directly via Vite HMR. Full `check:all` / browser matrices are **not
+required before every PocketHost-owned DEV panel refresh/restart**.
+They remain appropriate at milestone closeout and for changes that
+affect host operations, safety boundaries or public/product releases.
+See [DEV iteration runbook](DEV_ITERATION.md).
+
+Do not let the older historical G2/G3 acceptance sections below
+reintroduce a mandatory release ritual for every cosmetic DEV edit.
+Never claim PASS without an actual native task result.
 
 PocketHost commands run only on the exactly addressed Samsung Termux Local Agent.
 GitHub Connector moves source and private task/result data, not test execution.
 No GitHub Actions, Codex, ChatGPT Work or Mac/Linux fallback. A gate is PASS
 only with a terminal receipt, exact tested source SHA, exit code and scope.
 Do not carry a native result to a later code SHA or infer deployment from code.
+
+## DEV fast-loop tier
+
+- `npm run dev:quick`: small route-preservation regression.
+- `npm run dev:ui -- tests/termux-center.interaction.test.tsx`:
+  optional focused interactions for navigation/File Manager changes.
+- `npm run dev:panel`: existing owner-operated Vite start; HMR
+  handles most TSX/CSS edits without a restart.
+- `npm run dev:full`: full gate at meaningful closeout.
+
+A normal owner-approved restart of **only** the verified PocketHost DEV
+panel is not a G3 customer production release. Protect other processes
+and data and accurately label what has or has not been tested.
 
 ## G0 — foundation and safety
 

@@ -5,7 +5,21 @@ last_reviewed: 2026-11-07
 purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 ---
 
-# PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
+# PocketHost — DEV fast iteration; historical H3.4 release evidence
+
+## Current working agreement — 2026-11-08
+
+PocketHost is a **DEV panel**. Owner-approved loop:
+**edit -> main commit -> quick relevant test -> Vite HMR / restart only
+the verified PocketHost-owned panel -> owner feedback -> repeat**.
+Do not treat each cosmetic edit as a production G3 rollout, require
+full `check:all`, invent a second preview installation or duplicate
+the preflight already accepted for the same host. Use
+[DEV iteration runbook](DEV_ITERATION.md) and
+[ADR-0012](adr/0012-private-ui-rapid-review.md).
+Test full product quality at milestone closeout; preserve foreign services,
+site data and exact process ownership. Historical hold descriptions below
+apply to their specific prior releases, not blanket DEV UI restarts.
 
 ## UX architecture source candidate — 2026-11-08
 

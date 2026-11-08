@@ -26,7 +26,11 @@
     "admin:dev": "npm --prefix apps/admin run dev -- --host 127.0.0.1 --port 8787 --strictPort",
     "admin:build": "npm --prefix apps/admin run build",
     "admin:lint": "npm --prefix apps/admin run lint",
-    "check:all": "npm run check && npm run test:coverage:gate && npm run admin:lint && npm run admin:build && npm --prefix apps/admin run test:ui"
+    "check:all": "npm run check && npm run test:coverage:gate && npm run admin:lint && npm run admin:build && npm --prefix apps/admin run test:ui",
+    "dev:quick": "node --test tests/quality/admin-preservation.test.mjs",
+    "dev:ui": "npm --prefix apps/admin run test:ui",
+    "dev:full": "npm run check:all",
+    "dev:panel": "npm run admin:dev"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

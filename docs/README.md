@@ -2,6 +2,9 @@
 
 ## Current work
 
+- [Current DEV fast-iteration workflow](DEV_ITERATION.md)
+- [ADR-0012: owner-authorized DEV panel refresh/restart](adr/0012-private-ui-rapid-review.md)
+
 - [Termux-first UX architecture and unified File Manager source sprint](checkpoints/2026-11-08-ux-architecture-main-menu.md)
 
 - [H3.4 API, Restic and ttyd acceptance follow-up](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)

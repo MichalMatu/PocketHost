@@ -7,6 +7,18 @@ purpose: Implementation ownership and acceptance plan for Observability O1
 
 # PocketHost Development Plan
 
+## Active DEV sprint rhythm — 2026-11-08
+
+For the current Termux UI redesign the normal path is small change,
+`main` commit, narrowly useful Samsung check, HMR or PocketHost-only
+DEV panel restart, owner feedback. No second preview or mandatory
+full G2/G3 after each small adjustment. Full `check:all` occurs at
+milestone closeout or before high-impact host changes. This active
+[DEV workflow](DEV_ITERATION.md) supersedes older per-slice
+full-acceptance language in historical plans; it does not waive
+foreign-service protection or trusted-LAN restrictions.
+
+
 The [roadmap](ROADMAP.md) is the canonical milestone sequence.
 This plan defines how to deliver the next vertical slices.
 Use only fresh `main`, GitHub Connector and the exact

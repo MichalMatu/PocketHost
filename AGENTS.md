@@ -13,12 +13,36 @@ or prepare a PR branch, unless the owner explicitly names the exception and
 its scope. Verify the fresh `main` HEAD before any edit and use non-force,
 expected-HEAD writes.
 
+## Active working mode — rapid DEV iterations (owner decision 2026-11-08)
+
+PocketHost is a **development-only Termux control panel**, not a commercial
+production service. The current working loop is **edit -> commit on main ->
+minimal relevant check on Samsung -> refresh or restart the PocketHost-owned
+DEV panel -> owner reviews -> next edit**. Do not invent extra preview
+instances, approval rituals, per-change exhaustive audits, duplicated QA
+checkouts or mandatory full builds for small UI changes.
+
+Use `npm run dev:quick` for route/navigation edits; `npm run dev:ui -- <test-file>`
+when a focused interaction needs checking. Simple visual/CSS edits may be
+reviewed directly in the live DEV panel. Run `npm run dev:full` only at
+milestone closeout or when core/runtime/security changes justify it.
+Never label an unrun test as PASS. See [DEV iteration runbook](docs/DEV_ITERATION.md)
+and [ADR-0012](docs/adr/0012-private-ui-rapid-review.md).
+
+**Normal refresh/restart of the existing, verified PocketHost-owned DEV panel
+is permitted by the owner without another per-iteration approval.** It is
+not a production G3 release. Verify exact process ownership before any
+restart, never signal by name or port alone, and preserve rollback readiness.
+Do not touch other Termux services, managed sites, Local Agent, package state
+or public network exposure. Actual connector/host execution policy still applies.
+
 Detached isolated QA checkouts on the designated Samsung Termux are allowed
 to validate a specific `main` SHA; they are not working branches. Historical
 branches may be deleted only after confirming all their commits are
-reachable from `main`. Committing code to `main` does **not** authorize
-production deployment, managed PhotoMap activation, package mutation,
-autostart or public exposure: independent physical release gates still apply.
+reachable from `main`. Committing code to `main` does **not** authorize managed PhotoMap
+activation, package mutation, autostart or public exposure. The separately
+owner-authorized PocketHost-only DEV refresh/restart follows the fast-loop
+rules above; public/product releases retain independent physical gates.
 
 ## Non-negotiable safety
 
@@ -40,8 +64,19 @@ Keep UI, discovery, service lifecycle, package installation, sites, config, diag
 
 ## Changes and evidence
 
-Every change: identify owner module, update its docs/ADR as needed, arrange `npm run check:foundation` and (when dependencies are available) full `npm run check` **via the Termux Local Agent**. Record exact on-device commands, checkout SHA, exit codes, and the returned task-result ID. Documentation-only GitHub commits may precede runtime verification, but remain **unverified** until an actual Termux result is received. Record what was tested and what could not be tested. Do not claim physical Termux validation without real evidence. Never commit secrets, host paths that reveal private data, or production configuration.
+For small DEV UI changes, make a narrow, proportional check using the
+commands in `docs/DEV_ITERATION.md`; do not routinely require
+`check:foundation`, `check:all`, coverage, hardware matrices or complete
+builds. Scope broader gates to milestone closeout or actual high-impact
+backend/security changes. Record tested commit/command/result when run and
+distinguish **unverified** from **PASS**. Never commit secrets, sensitive
+host paths or live configuration. Only execute PocketHost checks on Samsung
+Termux through Local Agent.
 
 ## Gate
 
-No merge or release with failing structure/documentation/tests gates; any exception requires a documented decision in `docs/adr/` and an explicit review. See `docs/QUALITY_GATES.md`.
+Do not publish a public/product release with failing applicable gates.
+An ordinary owner-visible **DEV panel restart is not that release**; use
+proportional checks without artificial G0/G1/G2/G3 blocking on every
+small change. Respect host-ownership safeguards and tool restrictions.
+See `docs/QUALITY_GATES.md` and ADR-0012.

@@ -1,11 +1,10 @@
 # PocketHost
 
-PocketHost is an experimental Android/Termux
-hosting control panel. It includes read-only
-host inventory, a React admin dashboard, an
-explicitly owned static demo and a stopped
-PhotoMap TEST catalog. It is **not yet a
-production hosting manager**.
+PocketHost is an experimental **DEV Termux management panel**
+with hosting as one module. It includes a React admin UI,
+system monitoring, filesystem, packages, services and
+explicitly owned static sites. It is **not a public or
+customer production hosting service**.
 
 ## Status (2026-11-07)
 
@@ -38,6 +37,21 @@ File Manager round-trip but failed the
 Restic backup stage. See the
 [latest audit checkpoint](docs/checkpoints/2026-11-07-general-repository-audit-repair.md)
 for precise outstanding evidence.
+
+## Current DEV work mode (2026-11-08)
+
+Small change -> commit to `main` -> focused test if relevant ->
+Vite HMR / restart **only the PocketHost DEV panel** -> owner review.
+There is **no mandatory full audit or build for each small UX change**.
+Full checks run at milestone closeout or for high-risk host changes.
+Use `npm run dev:quick`, optional `npm run dev:ui -- <test-file>`,
+`npm run dev:panel` for manual start, and `npm run dev:full` for
+closeout. See [DEV runbook](docs/DEV_ITERATION.md) and
+[ADR-0012](docs/adr/0012-private-ui-rapid-review.md).
+
+A PocketHost-only restart has standing owner approval, provided process
+ownership is verified. Other Termux services, sites, LAN security and
+data remain protected. No second preview environment is required.
 
 ## Development rules
 

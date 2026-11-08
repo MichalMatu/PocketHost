@@ -43,3 +43,14 @@ iterations, with a full test and build matrix at the major closeout.
 short-source gate and independent fail-closed production preflight. The
 existing H3.4 accepted production source remains in place until a native
 receipt proves an exact-SHA panel cutover. No full G2 approval is inferred.
+
+## Later clarification — current DEV status
+
+The owner clarified that PocketHost itself is **DEV code** and
+refreshing/restarting only the verified PocketHost panel should be
+routine, not an artificial production deployment blocker. The current
+[DEV iteration runbook](../DEV_ITERATION.md) and
+[ADR-0012](../adr/0012-private-ui-rapid-review.md) supersede the
+earlier full-G2-before-each-UI-review wording in this checkpoint.
+Historical accepted source/release evidence is preserved. No restart
+is claimed without an actual device result.
