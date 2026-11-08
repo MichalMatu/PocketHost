@@ -34,3 +34,12 @@ The existing production panel stays at its last accepted source.
 After successful native QA, consolidate the legacy workspace backend
 behind the one File Manager contract only with an explicit data migration
 and no change to protected or externally owned directories.
+
+## Owner-directed rapid review mode — 2026-11-08
+
+The owner requested frequent private panel-only previews and faster code
+iterations, with a full test and build matrix at the major closeout.
+[ADR-0012](../adr/0012-private-ui-rapid-review.md) records the conditional
+short-source gate and independent fail-closed production preflight. The
+existing H3.4 accepted production source remains in place until a native
+receipt proves an exact-SHA panel cutover. No full G2 approval is inferred.
