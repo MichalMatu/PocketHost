@@ -102,6 +102,13 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
     return method === 'POST' ? 610000 : method === 'GET' ? 30000 : 5000;
   }
   if (requestPath?.startsWith('/api/v1/sites')) return 30000;
+  // A paired shell request is only queued in the native app. Its result
+  // remains unavailable until the user approves it on the Samsung.
+  if (
+    method === 'POST' &&
+    (route === '/api/v1/shizuku/remote-shell/submit' ||
+      route === '/api/v1/shizuku/remote-shell/poll')
+  ) return 8500;
   // The local Companion may spend 3.5s checking Shizuku authorization plus
   // up to 15s reading packages. Preserve the UI's 25s request budget.
   // Never extend timeouts for commands, unrecognized paths or write methods.
