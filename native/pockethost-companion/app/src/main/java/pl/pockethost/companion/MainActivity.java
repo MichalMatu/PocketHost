@@ -123,8 +123,9 @@ public final class MainActivity extends Activity {
         ownerTitle.setPadding(0, 30, 0, 12);
         layout.addView(ownerTitle);
         TextView ownerWarning = new TextView(this);
-        ownerWarning.setText("Actions below execute ONLY inside this phone app after confirmation. " +
-                "The PocketHost LAN dashboard remains read-only. Shizuku ADB is not root.");
+        ownerWarning.setText("Android actions require confirmation on this phone. " +
+                "Browser shell requests require a temporary pairing code AND exact command approval. " +
+                "Shizuku ADB is not root.");
         layout.addView(ownerWarning);
         LinearLayout toolbar = new LinearLayout(this);
         toolbar.setOrientation(LinearLayout.VERTICAL);
@@ -410,10 +411,79 @@ public final class MainActivity extends Activity {
     }
 
     private void showShell() {
-        section("Advanced shell", "Runs the exact typed command with the current Shizuku shell/root UID. " +
-                "Review every command: it may alter or remove Android data. No LAN shell endpoint exists.");
-        EditText command = field("Android shell command (max 240 characters)");
-        action("Review and execute on this phone", "shell", command, null);
+        section("Advanced shell", "Local commands and paired requests from your browser. " +
+                "Every browser command requires its own explicit approval on this phone.");
+        EditText command = field("Local Android shell command (max 240 characters)");
+        action("Review and execute local command", "shell", command, null);
+
+        Button arm = new Button(this);
+        arm.setAllCaps(false);
+        arm.setText("Enable browser shell pairing for 10 minutes");
+        arm.setOnClickListener(v -> {
+            String code = RemoteShellInbox.arm();
+            ownerResult.setText("Temporary browser pairing code: " + code +
+                    "\\nEnter this in PocketHost → Android & Shizuku → Advanced shell " +
+                    "on your computer. Every submitted command still requires approval here. " +
+                    "Pairing is lost after app restart.");
+        });
+        ownerSection.addView(arm);
+
+        Button review = new Button(this);
+        review.setAllCaps(false);
+        review.setText("Review pending browser command");
+        review.setOnClickListener(v -> {
+            RemoteShellInbox.Pending pending = RemoteShellInbox.pendingForReview();
+            if (pending == null) {
+                ownerResult.setText("No pending browser command. Pair on this phone, " +
+                        "submit from the computer, then review here within 90 seconds.");
+                return;
+            }
+            new AlertDialog.Builder(this)
+                    .setTitle("Approve browser shell command?")
+                    .setMessage("Exact command from computer:\\n\\n" + pending.command +
+                            "\\n\\nExecutes as " + (Shizuku.getUid() == 0 ? "root" : "ADB shell") +
+                            " on this Samsung. Do not approve unexpected requests.")
+                    .setNegativeButton("Deny", (dialog, choice) -> {
+                        RemoteShellInbox.deny(pending.id);
+                        ownerResult.setText("Browser shell request denied.");
+                    })
+                    .setPositiveButton("Execute", (dialog, choice) -> {
+                        IPowerUserService active = powerService;
+                        if (!permissionGranted() || active == null) {
+                            RemoteShellInbox.deny(pending.id);
+                            ownerResult.setText("Shizuku permission or user service missing; denied.");
+                            bindAndSample();
+                            return;
+                        }
+                        if (!RemoteShellInbox.begin(pending.id)) {
+                            ownerResult.setText("Browser request expired or changed; not executed.");
+                            return;
+                        }
+                        ownerResult.setText("Executing approved browser shell request...");
+                        readings.execute(() -> {
+                            try {
+                                String result = active.runOwnerAction("shell", pending.command, "");
+                                RemoteShellInbox.complete(pending.id, "done", result);
+                                runOnUiThread(() -> ownerResult.setText(result));
+                            } catch (Exception failure) {
+                                String message = "Android refused: " + failure.getClass().getSimpleName();
+                                RemoteShellInbox.complete(pending.id, "failed", message);
+                                runOnUiThread(() -> ownerResult.setText(message));
+                            }
+                        });
+                    })
+                    .show();
+        });
+        ownerSection.addView(review);
+
+        Button stop = new Button(this);
+        stop.setAllCaps(false);
+        stop.setText("Disable browser shell pairing");
+        stop.setOnClickListener(v -> {
+            RemoteShellInbox.disarm();
+            ownerResult.setText("Browser shell pairing disabled. Any pending request was discarded.");
+        });
+        ownerSection.addView(stop);
     }
 
     private void showPower() {
