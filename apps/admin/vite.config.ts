@@ -12,6 +12,7 @@ import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
+import { validateRemoteShellPayload } from "../../src/modules/host/remote-shell-contract.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -626,6 +627,87 @@ function shizukuCompanionApi(): Plugin {
   }
 }
 
+/**
+ * LAN accepts only a paired request/progress check, never direct execution.
+ * An exact command is executed only after a separate owner confirmation
+ * inside the Android Companion activity. No credentials are persisted here.
+ */
+function remoteShellInboxApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  return {
+    name: "pockethost-paired-remote-shell-inbox",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/shizuku/remote-shell", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Referrer-Policy", "no-referrer")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        const route = request.url?.split("?")[0] ?? ""
+        const remote = request.socket.remoteAddress
+        if (!hosts.has(request.headers.host ?? "") ||
+            !origins.has(request.headers.origin ?? "") ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1") ||
+            request.headers["x-pockethost-intent"] !== "remote-shell-request") {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "remote-shell-not-authorized" }))
+          return
+        }
+        if (request.method !== "POST" || (route !== "/submit" && route !== "/poll")) {
+          response.statusCode = 405
+          response.setHeader("Allow", "POST")
+          response.end(JSON.stringify({ error: "remote-shell-route-rejected" }))
+          return
+        }
+        if (request.headers["content-type"] !== "application/json" ||
+            request.headers["content-encoding"] !== undefined ||
+            request.headers["transfer-encoding"] !== undefined ||
+            (request.headers["content-length"] !== undefined &&
+              (!/^\\d+$/.test(request.headers["content-length"]) ||
+                Number(request.headers["content-length"]) > 2048))) {
+          response.statusCode = 400
+          response.end(JSON.stringify({ error: "invalid-remote-shell-body" }))
+          return
+        }
+        try {
+          const chunks: Buffer[] = []
+          let bytes = 0
+          for await (const chunk of request) {
+            const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+            bytes += buffer.length
+            if (bytes > 2048) throw new RangeError("Body too large")
+            chunks.push(buffer)
+          }
+          const envelope = validateRemoteShellPayload(
+            route.slice(1) as "submit" | "poll",
+            JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown,
+          )
+          const native = await fetch("http://127.0.0.1:18791/shell/" + route.slice(1), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(envelope),
+            redirect: "error",
+            cache: "no-store",
+            signal: AbortSignal.timeout(7000),
+          })
+          const raw = await native.text()
+          if (raw.length > 8192) throw new RangeError("Native response too large")
+          response.statusCode = native.status
+          response.end(raw)
+        } catch (error) {
+          response.statusCode = error instanceof SyntaxError || error instanceof RangeError ? 400 : 503
+          response.end(JSON.stringify({
+            error: response.statusCode === 400 ? "invalid-remote-shell-body" : "native-shell-inbox-unavailable",
+          }))
+        }
+      })
+    },
+  }
+}
+
 function networkAccessApi(): Plugin {
   const autoStart = process.env.POCKETHOST_LAN_AUTOSTART !== "0"
   const controller = createLanControl({ mode: autoStart ? "auto" : "manual" })
@@ -1044,7 +1126,7 @@ function termuxAdminApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellInboxApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",
     port: 8787,
