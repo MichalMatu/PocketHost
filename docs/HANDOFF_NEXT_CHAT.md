@@ -7,6 +7,35 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — H3.4 live panel deployed; hardware acceptance follow-up
 
+
+## Owner-requested production sprint disposition — 2026-11-08
+
+**G3 HOLD; live PocketHost remains at the accepted
+`e1c11e7` release.** The new source was prepared
+on `main@4177314`, including relative Restic
+paths, nonzero CLI results, and protection for
+`wreckscanner-backup`. An owner-authorized
+panel-only release was attempted behind strict
+Samsung QA and full rollback gates, but **did not
+stop or restart the production panel**.
+
+`pockethost-h34-gated-production-4177314-20261108-v1`
+returned terminal `failed/1`: 159 Node tests PASS,
+Markdownlint 0 errors, then a nonzero `check:all`
+exit during the Prettier phase without a complete
+formatter diagnostic. Seven foreign service states
+and both sites were preserved. Do not mark G2 or
+G3 PASS; do not deploy without a fresh passing
+exact-source gate.
+
+Native ttyd remains OPEN after three SIGSEGV (-11)
+isolated variants. The formatter diagnostic
+`pockethost-h34-4177314-prettier-exit-native-20261108-v1`
+was pending at handoff. Read [the 2026-11-08
+checkpoint](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
+for exact receipts before further action.
+
+
 ## Latest 2026-11-08 API and hardware follow-up
 
 Read [H3.4 API and native diagnostic checkpoint](
