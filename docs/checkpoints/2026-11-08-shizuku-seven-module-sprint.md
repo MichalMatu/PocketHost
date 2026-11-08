@@ -94,6 +94,28 @@ purpose: Record source scope, test evidence, security boundaries and hardware ho
   on the trusted LAN after the exact source is synchronized.
 - Confirm unauthenticated LAN cannot invoke any Shizuku mutation route.
 
+
+## Physical read-only acceptance (2026-11-08, source 80c15b5)
+
+The Mac Local Agent targeted exactly one Samsung SM-S906B, installed the
+signed PocketHost Companion debug APK (108,429 bytes) with \`adb install -r\`,
+and launched that Companion package only. A corrected read-only Mac SSH
+probe from Samsung Termux returned terminal \`done/0 PASS\` in
+\`pockethost-shizuku-native-device-readonly-smoke-80c15b5-20261108-v2\`:
+
+- \`GET /status\`: HTTP 200, authorized Shizuku ADB, 22% CPU, 871 visible processes.
+- \`GET /apps\`: HTTP 200, 550 packages, \`truncated=false\`.
+- \`GET /system\`: HTTP 200, 871 detailed process entries,
+  \`truncated=false\`, no process sampling error, battery level 100%,
+  Android available RAM 2,915,032 kB.
+- Android services sample contained 0 names; this is **not** a pass for
+  the actual services inventory. The diagnostic is under investigation.
+
+The physical negative mutation matrix, permission grants/refusals,
+service control acceptance, native shell action confirmation and
+new browser/Termux backend synchronization remain OPEN. This physical
+receipt covers read-only telemetry, **not** every feature in the sprint.
+
 ## Rollback and next handoff
 
 Do not reinstall an untested APK, disable existing phone services or

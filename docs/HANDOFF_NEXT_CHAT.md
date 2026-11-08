@@ -7,6 +7,16 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Seven-area Shizuku hardware update — 2026-11-08
+
+PocketHost Companion source at \`80c15b5\` was compiled, signature-verified
+and installed on the exact Samsung SM-S906B. Read-only native status/apps/system
+smoke returned 200/200/200 with 22% CPU, 871/871 detailed processes and 550
+packages. An observed Android service list of zero is unresolved.
+Phone-local privileged operation acceptance and the final browser synchronization
+remain open. Do not imply the full sprint is physically accepted.
+See \`docs/checkpoints/2026-11-08-shizuku-seven-module-sprint.md\`.
+
 ## New sprint — seven Android & Shizuku areas (2026-11-08)
 
 Source builds the Android native-only owner action plane and the fixed

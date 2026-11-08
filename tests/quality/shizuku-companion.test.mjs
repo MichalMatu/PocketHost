@@ -24,15 +24,19 @@ test('bridge rejects forged, stale and unprivileged measurements', () => {
     { ...sample(), connected: true, authorized: false, cpuPercent: 50 },
     { ...sample(), mode: 'none' },
     { ...sample(), capabilities: 'yes' },
-  ]) assert.throws(() => parseCompanionStatus(JSON.stringify(item)));
+  ])
+    assert.throws(() => parseCompanionStatus(JSON.stringify(item)));
 });
-
 
 test('app inventory validates bounded native Shizuku package list', async () => {
   const { parseCompanionApps } = await import('../../src/modules/host/shizuku-companion.mjs');
   const inventory = {
-    version: 1, source: 'android-companion', connected: true, authorized: true,
-    mode: 'adb', observedAt: new Date().toISOString(),
+    version: 1,
+    source: 'android-companion',
+    connected: true,
+    authorized: true,
+    mode: 'adb',
+    observedAt: new Date().toISOString(),
     packages: [{ packageName: 'com.example.app', system: false }],
     truncated: false,
   };
@@ -43,19 +47,28 @@ test('app inventory validates bounded native Shizuku package list', async () => 
     { ...inventory, packages: [inventory.packages[0], inventory.packages[0]] },
     { ...inventory, observedAt: '2025-01-01T00:00:00Z' },
     { ...inventory, packages: Array(1025).fill(inventory.packages[0]) },
-  ]) assert.throws(() => parseCompanionApps(JSON.stringify(mutation)));
+  ])
+    assert.throws(() => parseCompanionApps(JSON.stringify(mutation)));
 });
-
 
 test('native overview rejects malformed and invented process values', async () => {
   const { parseCompanionSystem } = await import('../../src/modules/host/shizuku-companion.mjs');
   const good = {
-    version: 1, source: 'android-companion', connected: true, authorized: true,
-    mode: 'adb', observedAt: new Date().toISOString(),
+    version: 1,
+    source: 'android-companion',
+    connected: true,
+    authorized: true,
+    mode: 'adb',
+    observedAt: new Date().toISOString(),
     processesTruncated: false,
     processes: [{ pid: 123, user: 'shell', name: 'native', rssKb: 1536, cpuPercent: null }],
-    power: { batteryLevel: 60, charging: true, batteryTemperatureC: 31,
-      memoryTotalKb: 1024000, memoryAvailableKb: 512000 },
+    power: {
+      batteryLevel: 60,
+      charging: true,
+      batteryTemperatureC: 31,
+      memoryTotalKb: 1024000,
+      memoryAvailableKb: 512000,
+    },
     settings: { brightness: 180, airplaneMode: false },
     services: { names: ['com.example/.MyService'], truncated: false },
   };
@@ -67,5 +80,6 @@ test('native overview rejects malformed and invented process values', async () =
     { ...good, processes: [good.processes[0], good.processes[0]] },
     { ...good, services: { names: 'bad', truncated: false } },
     { ...good, observedAt: '2025-01-01T00:00:00Z' },
-  ]) assert.throws(() => parseCompanionSystem(JSON.stringify(invalid)));
+  ])
+    assert.throws(() => parseCompanionSystem(JSON.stringify(invalid)));
 });
