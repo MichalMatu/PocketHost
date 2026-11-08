@@ -38,7 +38,7 @@ export default function ShizukuPage() {
   const [loading, setLoading] = React.useState(true)
   const [refreshKey, setRefreshKey] = React.useState(0)
   const [apps, setApps] = React.useState<ShizukuApps | null>(null)
-  const [appsLoading, setAppsLoading] = React.useState(false)
+  const [appsLoading, setAppsLoading] = React.useState(true)
   const [query, setQuery] = React.useState("")
   const [appType, setAppType] = React.useState<"all" | "user" | "system">("all")
   React.useEffect(() => {
@@ -52,13 +52,8 @@ export default function ShizukuPage() {
 
   const usable = status?.connected === true && status.authorized === true
   React.useEffect(() => {
-    if (!usable) {
-      setApps(null)
-      setAppsLoading(false)
-      return
-    }
+    if (!usable) return
     const controller = new AbortController()
-    setAppsLoading(true)
     void readApps(controller.signal)
       .then(value => { if (!controller.signal.aborted) setApps(value) })
       .catch(() => { if (!controller.signal.aborted) setApps(null) })
@@ -79,7 +74,7 @@ export default function ShizukuPage() {
             <Badge variant="outline"><Smartphone className="size-3" /> Android</Badge>
             <Badge variant="outline"><Shield className="size-3" /> Shizuku-backed access</Badge>
           </div>
-          <Button variant="outline" size="sm" disabled={loading} onClick={() => { setLoading(true); setRefreshKey(v => v + 1) }}>
+          <Button variant="outline" size="sm" disabled={loading} onClick={() => { setLoading(true); setAppsLoading(true); setApps(null); setRefreshKey(v => v + 1) }}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh status
           </Button>
         </div>
