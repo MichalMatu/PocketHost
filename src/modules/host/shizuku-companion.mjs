@@ -75,7 +75,7 @@ export function parseCompanionApps(raw) {
       Number.isNaN(Date.parse(data.observedAt)) ||
       Math.abs(Date.now() - Date.parse(data.observedAt)) > 300000 ||
       typeof data.truncated !== 'boolean' ||
-      !Array.isArray(data.packages) || data.packages.length > 512) {
+      !Array.isArray(data.packages) || data.packages.length > 1024) {
     throw new Error('invalid-android-package-inventory');
   }
   const seen = new Set();
@@ -104,7 +104,7 @@ export async function readCompanionApps() {
   });
   if (!response.ok) throw new Error('android-apps-unavailable');
   const raw = await response.text();
-  if (raw.length > 81920) throw new Error('android-apps-response-too-large');
+  if (raw.length > 280000) throw new Error('android-apps-response-too-large');
   const apps = parseCompanionApps(raw);
   if (apps.mode !== status.mode) throw new Error('android-apps-privilege-mismatch');
   return apps;
@@ -123,7 +123,7 @@ export function parseCompanionSystem(raw) {
       !['adb', 'root'].includes(d.mode) ||
       typeof d.observedAt !== 'string' || Number.isNaN(Date.parse(d.observedAt)) ||
       Math.abs(Date.now() - Date.parse(d.observedAt)) > 120000 ||
-      !Array.isArray(d.processes) || d.processes.length > 512 ||
+      !Array.isArray(d.processes) || d.processes.length > 1200 ||
       typeof d.processesTruncated !== 'boolean') throw new Error('invalid-android-system');
   if (d.processError !== undefined &&
       (typeof d.processError !== 'string' || d.processError.length > 120)) {
@@ -160,7 +160,7 @@ export async function readCompanionSystem() {
   });
   if (!response.ok) throw new Error('android-system-unavailable');
   const raw = await response.text();
-  if (raw.length > 196608) throw new Error('android-system-response-too-large');
+  if (raw.length > 380000) throw new Error('android-system-response-too-large');
   const d = parseCompanionSystem(raw);
   if (d.mode !== status.mode) throw new Error('android-system-mode-mismatch');
   return d;

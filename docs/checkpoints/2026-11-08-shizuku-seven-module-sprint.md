@@ -21,7 +21,7 @@ purpose: Record source scope, test evidence, security boundaries and hardware ho
 
 ## Seven areas
 
-1. **Applications:** the web UI searches up to 512 Shizuku-visible packages and
+1. **Applications:** the web UI searches up to 1024 Shizuku-visible packages and
    marks user/system type. Native Companion offers an exact package detail
    lookup (version, target SDK and observed granted runtime permissions),
    owner-confirmed launch, force stop and uninstall for Android user 0.

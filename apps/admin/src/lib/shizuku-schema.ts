@@ -35,7 +35,7 @@ export const shizukuAppsSchema = z.object({
   packages: z.array(z.object({
     packageName: z.string().regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/).max(200),
     system: z.boolean(),
-  }).strict()).max(512),
+  }).strict()).max(1024),
   truncated: z.boolean(),
 }).strict()
 export type ShizukuApps = z.infer<typeof shizukuAppsSchema>
@@ -63,7 +63,7 @@ export const shizukuSystemSchema = z.object({
     user: z.string().max(48),
     rssKb: z.number().int().nonnegative().nullable(),
     cpuPercent: z.number().finite().min(0).max(100).nullable(),
-  }).strict()).max(512),
+  }).strict()).max(1200),
   processesTruncated: z.boolean(),
   processError: z.string().max(120).optional(),
   power: z.object({

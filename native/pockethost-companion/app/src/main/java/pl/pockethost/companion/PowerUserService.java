@@ -71,7 +71,7 @@ public final class PowerUserService extends IPowerUserService.Stub {
             JSONArray apps = new JSONArray();
             int count = 0;
             for (String name : all) {
-                if (count++ >= 512) break;
+                if (count++ >= 1024) break;
                 JSONObject entry = new JSONObject();
                 entry.put("packageName", name);
                 entry.put("system", !user.contains(name));
@@ -83,7 +83,7 @@ public final class PowerUserService extends IPowerUserService.Stub {
             snapshot.put("uid", uid);
             snapshot.put("observedAt", java.time.Instant.now().toString());
             snapshot.put("packages", apps);
-            snapshot.put("truncated", all.size() > 512);
+            snapshot.put("truncated", all.size() > 1024);
             return snapshot.toString();
         } catch (Exception e) {
             throw new RemoteException("Failed to read Android packages: " + e.getClass().getSimpleName());
@@ -106,15 +106,15 @@ public final class PowerUserService extends IPowerUserService.Stub {
             try {
                 String raw;
                 try {
-                    raw = execute(131072, "/system/bin/ps", "-A", "-o", "PID,USER,RSS,%CPU,NAME");
+                    raw = execute(262144, "/system/bin/ps", "-A", "-o", "PID,USER,RSS,%CPU,NAME");
                 } catch (Exception unsupported) {
-                    raw = execute(131072, "/system/bin/ps", "-A", "-o", "PID,USER,RSS,NAME");
+                    raw = execute(262144, "/system/bin/ps", "-A", "-o", "PID,USER,RSS,NAME");
                 }
                 String[] lines = raw.split("\\R");
                 for (String line : lines) {
                     String[] fields = line.trim().split("\\s+", 5);
                     if (fields.length < 4 || !fields[0].matches("[0-9]+")) continue;
-                    if (processes.length() >= 512) { truncated = true; break; }
+                    if (processes.length() >= 1200) { truncated = true; break; }
                     JSONObject entry = new JSONObject();
                     entry.put("pid", Integer.parseInt(fields[0]));
                     entry.put("user", fields[1].substring(0, Math.min(48, fields[1].length())));

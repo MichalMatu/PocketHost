@@ -79,7 +79,7 @@ public final class TelemetryProvider extends ContentProvider {
             throw new IllegalStateException("Android app inventory expired");
         }
         String raw = state.getString("appsSnapshot", "");
-        if (raw == null || raw.length() > 81920) {
+        if (raw == null || raw.length() > 280000) {
             throw new IllegalStateException("Android app inventory missing");
         }
         JSONObject source = new JSONObject(raw);
@@ -112,7 +112,7 @@ public final class TelemetryProvider extends ContentProvider {
         if (when <= 0 || when > now || now - when > 120000L)
             throw new IllegalStateException("System readings expired");
         String raw = preferences.getString("systemSnapshot", "");
-        if (raw == null || raw.length() > 196608) throw new IllegalStateException("System data unavailable");
+        if (raw == null || raw.length() > 380000) throw new IllegalStateException("System data unavailable");
         JSONObject snapshot = new JSONObject(raw);
         int uid = snapshot.getInt("uid");
         if (!"shizuku-user-service".equals(snapshot.getString("source")) ||

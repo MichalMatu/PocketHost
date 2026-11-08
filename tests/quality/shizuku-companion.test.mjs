@@ -42,7 +42,7 @@ test('app inventory validates bounded native Shizuku package list', async () => 
     { ...inventory, packages: [{ packageName: 'bad;name', system: true }] },
     { ...inventory, packages: [inventory.packages[0], inventory.packages[0]] },
     { ...inventory, observedAt: '2025-01-01T00:00:00Z' },
-    { ...inventory, packages: Array(513).fill(inventory.packages[0]) },
+    { ...inventory, packages: Array(1025).fill(inventory.packages[0]) },
   ]) assert.throws(() => parseCompanionApps(JSON.stringify(mutation)));
 });
 

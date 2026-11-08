@@ -112,7 +112,7 @@ remains separate.
 
 The native Shizuku UserService reads Android package names through fixed
 shell-privileged package-manager queries (all and third-party packages).
-The Companion foreground service caches a bounded 512-entry inventory
+The Companion foreground service caches a bounded 1024-entry inventory
 and refreshes it every two minutes. Only a fresh authorized session
 can expose the cached data via fixed loopback read-only \`GET /apps\`.
 PocketHost forwards the typed result to \`GET /api/v1/shizuku/apps\`

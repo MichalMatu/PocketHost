@@ -155,7 +155,7 @@ export default function ShizukuPage() {
           </CardHeader><CardContent className="text-muted-foreground text-xs">Android-wide process count</CardContent></Card>
           <Card><CardHeader><CardDescription>Installed packages</CardDescription>
             <CardTitle>{apps ? apps.packages.length + (apps.truncated ? "+" : "") : "—"}</CardTitle>
-          </CardHeader><CardContent className="text-muted-foreground text-xs">Companion inventory, maximum 512 entries</CardContent></Card>
+          </CardHeader><CardContent className="text-muted-foreground text-xs">Companion inventory, maximum 1024 entries</CardContent></Card>
         </div>
 
         {!connected && !loading && (
@@ -255,7 +255,7 @@ export default function ShizukuPage() {
                     </table>
                   </div>
                   <p className="text-muted-foreground text-xs">
-                    {shownProcesses.length} listed{system.processesTruncated ? " · inventory capped at 512" : ""}. Individual process stop is available locally in Companion after confirmation.
+                    {shownProcesses.length} listed{system.processesTruncated ? " · inventory capped at 1200" : ""}. Individual process stop is available locally in Companion after confirmation.
                   </p>
                   <LastSample observedAt={system.observedAt} />
                 </>}
