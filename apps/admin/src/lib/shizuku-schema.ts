@@ -35,6 +35,8 @@ export const shizukuAppsSchema = z.object({
   packages: z.array(z.object({
     packageName: z.string().regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/).max(200),
     system: z.boolean(),
+    label: z.string().max(120),
+    enabled: z.boolean().nullable(),
   }).strict()).max(1024),
   truncated: z.boolean(),
 }).strict()
@@ -93,4 +95,30 @@ export function parseShizukuSystem(value: unknown): ShizukuSystem {
     throw new Error("duplicate-android-process")
   }
   return parsed
+}
+
+
+export const shizukuAppSchema = z.object({
+  version: z.literal(1),
+  source: z.literal("android-companion"),
+  packageName: z.string().regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/).max(200),
+  label: z.string().max(120),
+  versionName: z.string().max(120),
+  versionCode: z.number().int().nonnegative(),
+  targetSdk: z.number().int().min(0).max(100),
+  enabled: z.boolean(),
+  system: z.boolean(),
+  permissions: z.array(z.object({
+    name: z.string().regex(/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/).max(200),
+    granted: z.boolean(),
+  }).strict()).max(96),
+  iconPng: z.string().max(65000).regex(/^[A-Za-z0-9+/]+={0,2}$/).optional(),
+}).strict()
+export type ShizukuApp = z.infer<typeof shizukuAppSchema>
+export function parseShizukuApp(value: unknown): ShizukuApp {
+  const app = shizukuAppSchema.parse(value)
+  if (new Set(app.permissions.map(p => p.name)).size !== app.permissions.length) {
+    throw new Error("duplicate-android-permission")
+  }
+  return app
 }

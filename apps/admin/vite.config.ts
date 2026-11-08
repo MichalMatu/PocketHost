@@ -11,7 +11,7 @@ import { ObservabilityHistory } from "../../src/modules/observability/overview.t
 import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import { createLanControl, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
-import { readCompanionStatus, readCompanionApps, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
+import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import path from "path"
 import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
@@ -534,6 +534,38 @@ function shizukuCompanionApi(): Plugin {
         } catch {
           response.statusCode = 503
           response.end(JSON.stringify({ error: "android-system-unavailable" }))
+        }
+      })
+
+      server.middlewares.use("/api/v1/shizuku/app", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        const remote = request.socket.remoteAddress
+        if (!hosts.has(request.headers.host ?? "") ||
+            (request.headers.origin && !origins.has(request.headers.origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        const url = new URL(request.url ?? "/", "http://127.0.0.1")
+        const packages = url.searchParams.getAll("package")
+        if (request.method !== "GET" || url.pathname !== "/" ||
+            packages.length !== 1 || [...url.searchParams.keys()].length !== 1 ||
+            !/^[A-Za-z0-9_]+(?:\.[A-Za-z0-9_]+)+$/.test(packages[0] ?? "") ||
+            (packages[0]?.length ?? 0) > 200) {
+          response.statusCode = request.method === "GET" ? 400 : 405
+          response.end(JSON.stringify({ error: "invalid-request" }))
+          return
+        }
+        try {
+          response.end(JSON.stringify(await readCompanionApp(packages[0]!)))
+        } catch {
+          response.statusCode = 503
+          response.end(JSON.stringify({ error: "android-app-details-unavailable" }))
         }
       })
       server.middlewares.use("/api/v1/shizuku/apps", async (request, response) => {

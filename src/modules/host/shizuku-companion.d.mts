@@ -16,7 +16,7 @@ export interface ShizukuBridgeApps {
   authorized: true;
   mode: 'adb' | 'root';
   observedAt: string;
-  packages: Array<{ packageName: string; system: boolean }>;
+  packages: Array<{ packageName: string; system: boolean; label: string; enabled: boolean | null }>;
   truncated: boolean;
 }
 export interface ShizukuBridgeSystem {
@@ -51,3 +51,19 @@ export function parseCompanionSystem(raw: string): ShizukuBridgeSystem;
 export function readCompanionStatus(): Promise<ShizukuBridgeStatus>;
 export function readCompanionApps(): Promise<ShizukuBridgeApps>;
 export function readCompanionSystem(): Promise<ShizukuBridgeSystem>;
+
+export interface ShizukuBridgeApp {
+  version: 1;
+  source: 'android-companion';
+  packageName: string;
+  label: string;
+  versionName: string;
+  versionCode: number;
+  targetSdk: number;
+  system: boolean;
+  enabled: boolean;
+  permissions: Array<{ name: string; granted: boolean }>;
+  iconPng?: string;
+}
+export function parseCompanionApp(raw: string): ShizukuBridgeApp;
+export function readCompanionApp(packageName: string): Promise<ShizukuBridgeApp>;
