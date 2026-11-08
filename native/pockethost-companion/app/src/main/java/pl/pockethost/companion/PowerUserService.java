@@ -61,9 +61,11 @@ public final class PowerUserService extends IPowerUserService.Stub {
                 try (BufferedReader input = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                     String line;
                     while ((line = input.readLine()) != null) {
-                        // Always drain output, including after reaching the result limit.
-                        if (result.length() < limit) {
-                            result.append(line, 0, Math.min(line.length(), limit - result.length())).append('\n');
+                        // Dumpsys cpuinfo puts TOTAL near the end; retain a
+                        // bounded tail rather than the first processes only.
+                        result.append(line).append('\n');
+                        if (result.length() > limit) {
+                            result.delete(0, result.length() - limit);
                         }
                     }
                 }
