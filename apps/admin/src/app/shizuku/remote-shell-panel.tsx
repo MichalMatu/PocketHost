@@ -82,6 +82,8 @@ export function RemoteShellPanel() {
         .catch(failure => {
           if (cancelled) return
           setError(failure instanceof Error ? failure.message : "Status unavailable")
+          setState("unavailable")
+          setRequestId(null)
         })
     }, 2500)
     return () => { cancelled = true; clearInterval(interval) }
