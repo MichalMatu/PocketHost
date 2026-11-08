@@ -11,3 +11,13 @@ Never mutate physical host services, execute GitHub Actions, or auto-install OS 
 ## Gate
 
 Checks must be deterministic, dependency-free for Gate 0 and tested with negative fixtures.
+
+## DEV-only UI sync
+
+`scripts/dev/ui-sync.mjs` may be started manually inside the existing,
+verified PocketHost-owned DEV checkout. It may fetch the approved GitHub
+`main` and update only an otherwise clean PocketHost working tree when
+the exact recorded panel PID/start ticks/cwd still match. It does not restart,
+kill or adopt services, manage packages or enable public listeners. Other
+files and backends require explicit review. Never daemonize the watcher at
+boot or enroll it as a system service.

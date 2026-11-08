@@ -22,7 +22,7 @@ DEV panel -> owner reviews -> next edit**. Do not invent extra preview
 instances, approval rituals, per-change exhaustive audits, duplicated QA
 checkouts or mandatory full builds for small UI changes.
 
-Use `npm run dev:quick` for route/navigation edits; `npm run dev:ui -- <test-file>`
+Use `npm run dev:sync` once per active DEV session for UI-only GitHub-to-Samsung updates (see `docs/DEV_ITERATION.md`); no recurring Agent task per cosmetic commit. Use `npm run dev:quick` for route/navigation edits; `npm run dev:ui -- <test-file>`
 when a focused interaction needs checking. Simple visual/CSS edits may be
 reviewed directly in the live DEV panel. Run `npm run dev:full` only at
 milestone closeout or when core/runtime/security changes justify it.

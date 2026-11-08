@@ -27,6 +27,9 @@ PocketHost-only refreshes/restarts for this DEV loop.
 | Quick navigation/route contract | `npm run dev:quick` |
 | Focused UI interactions | `npm run dev:ui -- tests/termux-center.interaction.test.tsx` |
 | Manual PocketHost Vite start | `npm run dev:panel` |
+| Start fast DEV UI GitHub watcher | `npm run dev:sync` |
+| Check one GitHub UI update | `npm run dev:sync:once` |
+| Verify sync path guard | `npm run dev:sync:test` |
 | Final milestone or core change | `npm run dev:full` |
 
 For ordinary CSS/copy/menu work, the owner can directly inspect the
@@ -79,3 +82,29 @@ network exposure, persistent data migrations, or externally owned
 processes. Do not describe a device result as passed until its actual
 task receipt is available. Public/product release acceptance is separate
 from owner review of the DEV panel.
+
+## Fast GitHub to Samsung auto-sync (opt-in, 2026-11-08)
+
+Start **one** watcher with `npm run dev:sync` in the existing PocketHost DEV
+checkout while the existing Vite panel runs. Every eight seconds it fetches
+`origin/main` and, only when the checkout is clean and the panel's recorded
+PID/start-ticks/cwd match, updates the same working tree to that SHA.
+Vite then picks up changed frontend files through HMR. No new panel process,
+listener or service is created; there is no automatic runit/boot startup.
+The watcher is manually started for a DEV session and can be stopped with
+Ctrl+C (or Termux process management if started by the owner's Agent).
+
+The unattended allowlist is `apps/admin/src/**`, `apps/admin/tests/**`,
+`docs/**` and root text docs. Changes to `vite.config.ts`, package/dependency
+manifests, host adapters, network rules, service controls, scripts or other
+backend paths **pause automatic deployment** and return `MANUAL_REVIEW`.
+Any conflict, dirty worktree, unknown remote, PID reuse, failed Git fetch
+or interrupted checkout is a HOLD. The watcher never resets, kills processes,
+runs tests, starts terminals, installs packages or changes LAN settings.
+
+The first installation of this watcher is a one-time manual source sync by
+the verified Local Agent. Later small UI-only commits flow automatically to
+Vite, without another agent task or test matrix. Logs use JSON lines;
+`SYNCED` contains the exact deployed SHA, `CURRENT` is a no-op,
+`MANUAL_REVIEW` is not deployed, and `HOLD` means no verified update.
+Keep normal full checks for milestone closeout.

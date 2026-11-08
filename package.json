@@ -30,7 +30,10 @@
     "dev:quick": "node --test tests/quality/admin-preservation.test.mjs",
     "dev:ui": "npm --prefix apps/admin run test:ui",
     "dev:full": "npm run check:all",
-    "dev:panel": "npm run admin:dev"
+    "dev:panel": "npm run admin:dev",
+    "dev:sync": "node scripts/dev/ui-sync.mjs --watch --interval-ms=8000",
+    "dev:sync:once": "node scripts/dev/ui-sync.mjs --once",
+    "dev:sync:test": "node --test tests/quality/dev-ui-sync.test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
