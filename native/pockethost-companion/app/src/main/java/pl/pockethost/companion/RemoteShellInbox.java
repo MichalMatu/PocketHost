@@ -132,7 +132,7 @@ public final class RemoteShellInbox {
                 if (!input.has("command")) return error(400, "missing-command");
                 String command = input.optString("command", "");
                 if (command.isBlank() || command.length() > 240 ||
-                        command.indexOf('\u0000') >= 0) return error(400, "invalid-command");
+                        command.indexOf((char) 0) >= 0) return error(400, "invalid-command");
                 long now = SystemClock.elapsedRealtime();
                 if (now - lastSubmittedAt < 3000L) return error(429, "slow-down");
                 if (current != null && ("pending".equals(current.state) ||
