@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -69,7 +69,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     await user.click(screen.getByRole("button", { name: "Next applications" }))
     expect(screen.getByText("81–160 of 175")).toBeTruthy()
     expect(screen.getByText("Example 80")).toBeTruthy()
-    await user.type(screen.getByRole("textbox", { name: "Search Android packages" }), "Example 174")
+    fireEvent.change(screen.getByRole("textbox", { name: "Search Android packages" }), { target: { value: "Example 174" } })
     expect(screen.getByText("1–1 of 1")).toBeTruthy()
     expect(screen.getByText("Example 174")).toBeTruthy()
 
@@ -98,6 +98,43 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByRole("tab", { name: /Applications/i }).getAttribute("aria-selected")).toBe("true")
     await user.click(screen.getByText("Example 0"))
     expect(await screen.findByText("App detail request failed. Select the app again to retry.")).toBeTruthy()
+  })
+
+  it("shows real app permission grants and selectable observed Android service", async () => {
+    const detail = {
+      version: 1, source: "android-companion", packageName: "com.example.app0",
+      label: "Example 0", versionName: "1.0", versionCode: 1, targetSdk: 35,
+      enabled: true, system: false,
+      permissions: [
+        { name: "android.permission.CAMERA", granted: true },
+        { name: "android.permission.RECORD_AUDIO", granted: false },
+      ],
+    }
+    const calls = mount(async url => {
+      if (url.endsWith("/status")) return status
+      if (url.endsWith("/apps")) return apps
+      if (url.endsWith("/system")) return system
+      if (url.includes("/app?package=")) return detail
+      throw new Error("unexpected route: " + url)
+    })
+    const user = userEvent.setup()
+    await screen.findByText("Example 0")
+    await user.click(screen.getByText("Example 0"))
+    await screen.findByText("Version code")
+    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
+    expect(screen.getByText("2 requested")).toBeTruthy()
+    expect(screen.getByText("1 granted")).toBeTruthy()
+    expect(screen.getByText("1 not granted")).toBeTruthy()
+    expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
+    fireEvent.change(screen.getByRole("textbox", { name: "Search Android permissions" }), { target: { value: "CAMERA" } })
+    expect(screen.queryByText("android.permission.RECORD_AUDIO")).toBeNull()
+
+    await user.click(screen.getByRole("tab", { name: /Services & settings/i }))
+    const service = await screen.findByRole("button", { name: "com.example/.Service" })
+    await user.click(service)
+    expect(service.getAttribute("aria-pressed")).toBe("true")
+    expect(screen.getByText("Selected Android component")).toBeTruthy()
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
   it("isolates inventory failure without hiding real Shizuku connection", async () => {
