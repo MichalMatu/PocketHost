@@ -83,6 +83,18 @@ case "${1:-}" in
     [ -f "$PANEL/down" ] && [ -f "$WATCH/down" ] || \
       fail 'services not in disabled staging state'
     ports_free || fail 'panel/gateway port already occupied'
+    # runsvdir discovers newly staged directories asynchronously. Wait until
+    # BOTH supervise FIFOs have real readers before sv-enable, otherwise a
+    # same-turn stage+activate can fail with "unable to open supervise/ok".
+    for dir in "$PANEL" "$WATCH"; do
+      tries=0
+      until [ -p "$dir/supervise/ok" ] && \
+        "$PREFIX/bin/timeout" 4s "$PREFIX/bin/sv" status "$dir" >/dev/null 2>&1; do
+        tries=$((tries + 1))
+        [ "$tries" -lt 30 ] || fail "runit did not adopt $(basename "$dir")"
+        sleep 1
+      done
+    done
     # The existing Termux:Boot 00-services starts the standard service-daemon.
     # runsvdir discovers service directories; no second manager/boot hook.
     SVDIR="$SVDIR" "$PREFIX/bin/sv-enable" pockethost-panel
