@@ -14,6 +14,7 @@ export const shizukuStatusSchema = z.object({
   connected: z.boolean(),
   authorized: z.boolean(),
   mode: z.enum(["adb", "root", "none"]),
+  uid: z.number().int().nonnegative().nullable().optional(),
   observedAt: z.string().datetime({ offset: true }),
   cpuPercent: z.number().finite().min(0).max(100).nullable(),
   visibleProcesses: z.number().int().nonnegative().nullable(),
@@ -80,6 +81,7 @@ export const shizukuSystemSchema = z.object({
   settings: z.object({
     brightness: z.number().int().min(0).max(255).nullable(),
     airplaneMode: z.boolean().nullable(),
+    screenTimeoutMs: z.number().int().nonnegative().nullable().optional(),
   }).strict(),
   services: z.object({
     names: z.array(z.string().max(300)).max(256),

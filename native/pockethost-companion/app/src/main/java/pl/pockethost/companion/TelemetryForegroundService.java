@@ -36,7 +36,7 @@ public final class TelemetryForegroundService extends Service {
     private static final int NOTIFICATION_ID = 52;
     private static final long SAMPLE_MS = 15000L;
     private static final long APPS_REFRESH_MS = 120000L;
-    private static final long SYSTEM_REFRESH_MS = 60000L;
+    private static final long SYSTEM_REFRESH_MS = 30000L;
     private static final String TAG = "PocketHostTelemetry";
     private static volatile TelemetryForegroundService activeInstance;
 
@@ -148,6 +148,7 @@ public final class TelemetryForegroundService extends Service {
                 snapshot.put("connected", true);
                 snapshot.put("authorized", true);
                 snapshot.put("mode", uid == 0 ? "root" : "adb");
+                snapshot.put("uid", uid);
                 snapshot.put("observedAt", java.time.Instant.now().toString());
                 snapshot.put("cpuPercent", data.opt("cpuPercent"));
                 snapshot.put("visibleProcesses", data.opt("visibleProcesses"));
@@ -158,6 +159,15 @@ public final class TelemetryForegroundService extends Service {
                 cpu.put("available", !data.isNull("cpuPercent"));
                 cpu.put("description", "Live Shizuku UserService");
                 capabilities.put(cpu);
+                for (String feature : new String[] {"apps", "processes", "permissions",
+                        "services", "settings", "advanced-shell"}) {
+                    JSONObject cap = new JSONObject();
+                    cap.put("id", feature);
+                    cap.put("title", feature.replace('-', ' '));
+                    cap.put("available", true);
+                    cap.put("description", "Shizuku Binder operation available; Android may refuse a target");
+                    capabilities.put(cap);
+                }
                 snapshot.put("capabilities", capabilities);
                 getSharedPreferences(TelemetryProvider.PREFS, MODE_PRIVATE).edit()
                         .putString("snapshot", snapshot.toString())

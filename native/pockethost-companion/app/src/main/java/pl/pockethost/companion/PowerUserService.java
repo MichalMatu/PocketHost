@@ -194,6 +194,13 @@ public final class PowerUserService extends IPowerUserService.Stub {
             } catch (Exception unavailable) {
                 settings.put("airplaneMode", JSONObject.NULL);
             }
+            try {
+                String timeout = execute(64, "/system/bin/settings", "get", "system", "screen_off_timeout").trim();
+                long parsed = timeout.matches("\\d{1,10}") ? Long.parseLong(timeout) : -1;
+                settings.put("screenTimeoutMs", parsed >= 0 && parsed <= 86400000 ? parsed : JSONObject.NULL);
+            } catch (Exception unavailable) {
+                settings.put("screenTimeoutMs", JSONObject.NULL);
+            }
             payload.put("settings", settings);
 
             JSONObject services = new JSONObject();
