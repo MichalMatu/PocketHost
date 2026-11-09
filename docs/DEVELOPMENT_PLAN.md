@@ -9,6 +9,16 @@ purpose: Delivery priorities for modular PocketHost and historical acceptance pl
 
 ## Current delivery priority — modular platform (2026-11-09)
 
+**Reuse-first checkpoint (R0):** for every new feature, compare
+existing PocketHost/owner code with official Termux tools, then
+external maintained repositories. Prefer a typed adapter to
+`runit`, `cloudflared`, Restic, `proot-distro` and native package
+managers over copying engines. The [upstream reuse matrix](
+UPSTREAM_REUSE_STRATEGY.md) records licenses, exact interfaces,
+unsupported integrations and source-provenance requirements.
+The first M3 Node Hosting MVP remains the priority. No large
+open-source panel is imported wholesale.
+
 The [canonical roadmap](ROADMAP.md) now prioritizes:
 **M0 legacy decoupling -> M1 registries + components[] + SecretRef
 -> M2 dependency plans + shared runit/health + backup/restore
