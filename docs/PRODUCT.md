@@ -1,7 +1,7 @@
 ---
 status: accepted
 owner: core
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-09
 purpose: Define product intent and MVP exclusions
 ---
 
@@ -44,9 +44,28 @@ Node, Python, PHP or other backend applications.
 The user's Mac Chrome file-picker acceptance
 remains the last H2 UX confirmation.
 
-## Out of scope until later ADR
+## Future modular platform — approved target, not a delivered MVP
 
-Commercial multi-tenancy, package installation through UI, public AI deployment API, automated DNS and tunnel, payments, arbitrary user-provided backend execution, Android APK packaging, OS startup integration.
+The owner subsequently approved **PocketHost = modular platform,
+Hosting = orchestrator of modules**. After the accepted static H2,
+the first dynamic milestone (M3) is a disposable Node.js app created
+through PocketHost, using existing process/release contracts and
+official Termux tools. SSH, Cloudflare, Python/PRoot and later
+databases are independent reusable modules. The
+[canonical roadmap](ROADMAP.md) and [reuse matrix](
+UPSTREAM_REUSE_STRATEGY.md) override the initial-MVP exclusions
+below for *future planned development*, not for automatic activation
+of existing services.
+
+## Historical initial-MVP exclusions
+
+Commercial multi-tenancy, package installation through UI, public AI
+deployment API, automated DNS/tunnels, payments, arbitrary uploaded
+backend execution, Android APK packaging and service autostart were
+excluded from the original inventory/static-site MVP. Later owner
+decisions authorize **planning and separately tested implementation**,
+not silent public exposure, package mutation or takeover of existing
+IleStoi/Local Agent services.
 
 ## Definition of done
 
