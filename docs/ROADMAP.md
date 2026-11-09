@@ -7,6 +7,29 @@ purpose: Define canonical PocketHost milestones including Observability O1
 
 # PocketHost Roadmap
 
+## Android & Shizuku MVP — implementation sprint (2026-11-09)
+
+Owner priorities: P0 direct browser operations, Android apps and CPU/processes;
+P1 services/permissions/settings, Advanced Shell 2.0 and diagnostics. These
+capabilities are built on the existing private-LAN → Termux →
+Android-loopback Companion → Shizuku Binder path, with no pairing or
+second-phone confirmation. Actual Android ADB/root UID governs every action.
+
+Source includes app launch/stop/enable/disable/uninstall-for-user-0, named
+permission grants/revokes, PID TERM, service start/stop, brightness/timeout,
+fresher sampled process inventory, per-app process-name resource summaries,
+sortable processes and CPU session history, separate shell stdout/stderr,
+exit status, duration and command rerun, and a diagnostics view with the
+real Android UID, capability report and endpoint latency.
+
+The source is **not automatically installed or live**. The exact-source
+Samsung UI/backend gate, native Android Gradle build/install, guarded
+PocketHost-only panel refresh and physical operation/denial matrix must be
+reported separately with actual terminal results. Do not declare full MVP
+PASS from source commits. See
+[Shizuku MVP sprint checkpoint](checkpoints/2026-11-09-shizuku-mvp-sprint.md).
+
+
 ## New product direction: Shizuku power-user integration — 2026-11-08
 
 The owner wants **full available Android control** from within PocketHost,
