@@ -9,7 +9,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
-    include: ["tests/**/*.interaction.test.tsx"],
+    include: ["tests/**/*.interaction.test.tsx", "tests/**/*.test.ts"],
     clearMocks: true,
     // Samsung Termux has limited memory/CPU; avoid jsdom test-file contention.
     maxWorkers: 1,

@@ -1,7 +1,7 @@
 ---
 status: accepted
 owner: core
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-09
 purpose: Specify the exclusive Termux Local Agent development workflow and fast start
 ---
 
@@ -64,12 +64,12 @@ Canonical Local Agent references: [usage](https://github.com/MichalMatu/local-ag
 
 ## Quick start — new chat or task
 
-1. **Load project contract.** Read root `AGENTS.md`, `docs/README.md`, `docs/ARCHITECTURE.md`, `docs/TERMUX_INTEGRATION.md`, `docs/QUALITY_GATES.md` and the nearest module `AGENTS.md`. Start from the **actual current `PocketHost/main` HEAD**, never a historic handoff SHA.
+1. **Load a small project contract.** Read root `AGENTS.md`, `docs/START_HERE.md` and nearest scoped `AGENTS.md`. Read architecture, quality or historical sections only when the changed paths need them. Start from the **actual current `PocketHost/main` HEAD**, never a historic handoff SHA.
 2. **Identify one real Termux target.** Read the _current_ private Local Agent host/installation identity, task namespace, intake/status and installed support profile. An old receipt is not fresh liveness. Keep IDs/credentials out of PocketHost files and logs. If there is no confirmed usable Termux intake, mark the task **BLOCKED**, not silently executed elsewhere.
 3. **Send one harmless preflight host task.** Via GitHub Connector, publish a new immutable request through the already configured private Local Agent repository on branch `agent-control`, addressed to `.agent/hosts/<host-id>/supervisor/<installation-id>/tasks/`. Use the **installed, documented payload contract** and bounded timeout/output; never invent a task schema or reuse a task ID. Read the response from the same installation's `task-results/`. Publication or `status.json` alone is not proof of execution.
 4. **Verify the phone's developer toolchain.** Read-only commands: architecture, `git --version`, `node --version`, `npm --version`, and optionally `termux-info` if present. Report missing tools and compatibility (the repository currently requires Node >=22). Do not dump environment variables, credentials, private paths, all processes or all ports.
 5. **Verify an isolated PocketHost checkout.** Confirm its origin, actual HEAD, working tree state and location **outside** IleStoi.pl, Local Agent installation, private transport, and their production data. If no checkout exists, choose a vacant independent location and use ordinary Git through the Termux CLI to clone PocketHost. No Agent project onboarding or binding is needed; preserve every existing directory.
-6. **Run existing dependency-free gate first.** From that verified checkout, request `npm run check:foundation` through the Termux host-command lane. Capture each command's exit code and output (redacted/bounded). A passing result must refer to the exact checkout SHA.
+6. **Choose the proportional gate.** For first onboarding/untrusted checkout run `npm run check:foundation` once. For a verified continuing session prefer `npm run dev:changed -- --base=<last-verified-sha>` then `--run` in the same authorized Termux lane. Inspect prior results before rerunning; capture terminal exit status and exact source SHA.
 7. **Resolve dependencies only when approved.** The initial foundation has no verified npm lockfile. First check its state. Dependency downloads/`package-lock.json` generation and future `npm ci` must happen on Termux, with an explicit reviewed dependency plan. Use `npm ci` **only after** a verified lockfile exists; run `npm run check` afterwards. Do not invoke `pkg upgrade`, globally install packages, or modify shared Termux tools merely to satisfy tests without explicit authorization.
 8. **Record and publish evidence.** Read the terminal task result from private Git, distinguish `done`/`failed`/`UNKNOWN`, and record exact PocketHost source SHA, host profile (no secrets), tool versions, commands, exit codes, limitations and effects. If a result is missing or uncertain, investigate; never automatically replay the same side-effectful command.
 9. **Only then proceed to implementation.** Begin with read-only discovery of existing IleStoi.pl configuration, using allowlisted, sanitized probes. Do not change, restart, stop or rebind that service or Local Agent.

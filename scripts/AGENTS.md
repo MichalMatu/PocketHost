@@ -21,3 +21,12 @@ the exact recorded panel PID/start ticks/cwd still match. It does not restart,
 kill or adopt services, manage packages or enable public listeners. Other
 files and backends require explicit review. Never daemonize the watcher at
 boot or enroll it as a system service.
+
+## Changed-source checks
+
+The opt-in `scripts/dev/changed-checks.mjs` reads only a verified clean
+PocketHost Git revision range, previews by default and executes selective
+checks only when requested through Samsung Termux Local Agent. Keep its
+dependency mapping conservative: unmapped or risky files require manual
+review, not a false PASS. Persist only ignored `.tmp/` cache; never run
+install, process/service management or network control from the selector.

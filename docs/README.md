@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [Minimal context and fast-flow entrypoint](START_HERE.md)
+
 - [Latest M0/M1 canonical styling and ownership-checker checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md)
 
 - [M0/M1 complete source + QA checkpoint and next-chat handoff (latest)](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md)

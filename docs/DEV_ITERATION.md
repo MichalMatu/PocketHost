@@ -1,7 +1,7 @@
 ---
 status: accepted
 owner: ui
-last_reviewed: 2026-11-08
+last_reviewed: 2026-11-09
 purpose: Fast DEV-only change and PocketHost panel review loop
 ---
 
@@ -20,10 +20,45 @@ Small iterations are measured in visible features, not exhaustive
 acceptance checklists. The owner has explicitly approved repeated
 PocketHost-only refreshes/restarts for this DEV loop.
 
+## Change-aware Local Agent checks (2026-11-09)
+
+Prefer one **exact revision range** over full tests per commit. On the
+verified clean Samsung Termux checkout, choose a previously verified base:
+
+```sh
+npm run dev:changed -- --base=<previous-verified-sha>
+npm run dev:changed -- --base=<previous-verified-sha> --run
+```
+
+The first command previews; the second runs **only through Local Agent**.
+The planner resolves direct/transitive local imports from changed source to
+Node or Vitest tests, plus special source-read route contracts. It does not
+run coverage or a full build by default. Unmapped, deleted and infrastructure
+changes produce MANUAL_REVIEW; supplement with the smallest required test
+instead of silently calling the batch PASS. Read the terminal result and
+the actual HEAD before deciding whether another run is necessary.
+
+Use persistent root TypeScript incremental metadata in
+`.tmp/root-typecheck.tsbuildinfo`, and the existing admin TypeScript
+build-info beneath `apps/admin/node_modules/.tmp/`. Keep the existing
+npm download cache and node_modules between tasks; do **not** run
+`npm ci` at every iteration. Install only if dependencies or the lockfile
+actually changed or the verified checkout lacks dependencies. No
+always-on pre-commit hooks, package install hooks, auto-builds or repeated
+Local Agent provisioning. A clean commit with only docs runs docs checks,
+changed Markdown lint/format, and **no phone panel restart**.
+
+The selector cache is keyed by exact HEAD in ignored `.tmp/`; its plan
+is advisory, not hardware or runtime acceptance. Any high-impact
+ownership, network, filesystem or process-control change still requires
+its applicable negative tests and explicit manual impact review.
+Do not run any of these PocketHost commands in Mac, sandbox or CI.
+
 ## Fast commands (run on Samsung Termux through Local Agent)
 
 | Action                           | Command                                                      |
 | -------------------------------- | ------------------------------------------------------------ |
+| Changed-source targeted checks   | `npm run dev:changed -- --base=<sha> [--run]`              |
 | Quick navigation/route contract  | `npm run dev:quick`                                          |
 | Focused UI interactions          | `npm run dev:ui -- tests/termux-center.interaction.test.tsx` |
 | Manual PocketHost Vite start     | `npm run dev:panel`                                          |

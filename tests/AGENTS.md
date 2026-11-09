@@ -11,3 +11,11 @@ No physical production service mutations, network-dependent unit tests, unapprov
 ## Gate
 
 Exercise both success and rejection paths. A safety invariant must have a negative test before introducing a privileged feature.
+
+## Incremental DEV gate
+
+For normal iterations, select tests affected by the changed source and
+changed test files using `npm run dev:changed -- --base=<sha>`. Reuse
+prior exact-SHA terminal receipts; do not rerun successful unrelated
+suites or skip an unmapped privileged change. The full suite and coverage
+are milestone/risk gates, not a per-commit default.
