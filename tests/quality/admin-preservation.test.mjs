@@ -98,5 +98,9 @@ test('M0 keeps observed external services in System, not the Hosting project cat
   assert.doesNotMatch(hostingGroup, /url: "\/host"/);
   assert.match(hostingGroup, /url: "\/sites"/);
   assert.match(hostingGroup, /url: "\/deployments"/);
+  assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
+  assert.doesNotMatch(hostingGroup, /url: "\/settings\/network"/);
+  const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Examples",')[0] ?? '';
+  assert.match(platformGroup, /url: "\/settings\/network"/);
   assert.match(routes, /path: "\/host"/);
 });
