@@ -1,6 +1,5 @@
 import type {
   HostedProject,
-  HostingDeclarations,
   ModuleDescriptor,
   PlannedService,
   HostingCapability,
