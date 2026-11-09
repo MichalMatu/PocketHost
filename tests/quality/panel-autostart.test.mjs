@@ -29,6 +29,9 @@ test('install is guarded, disabled before activation, and scoped to the two Pock
   assert.match(installer, /: > "\$staging\/down"/);
   assert.match(installer, /already registered; refusing to replace a live service/);
   assert.match(installer, /ports_free \|\| fail/);
+  assert.match(installer, /supervise\/ok/);
+  assert.match(installer, /runit did not adopt/);
+  assert.match(installer, /"\$PREFIX\/bin\/sv" status "\$dir"/);
   assert.match(installer, /SVDIR="\$SVDIR" "\$PREFIX\/bin\/sv-enable" pockethost-panel/);
   assert.match(installer, /SVDIR="\$SVDIR" "\$PREFIX\/bin\/sv-enable" pockethost-panel-watch/);
   assert.doesNotMatch(installer, /rm -rf|pkill|killall|0\.0\.0\.0/);
