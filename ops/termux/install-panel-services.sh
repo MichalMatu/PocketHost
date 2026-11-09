@@ -51,15 +51,19 @@ assert_installed() {
 }
 ports_free() {
   "$PREFIX/bin/python3" - <<'PY'
-import socket,sys
-for addr,port in [('127.0.0.1',8787),('127.0.0.1',18787),('127.0.0.1',18878),('127.0.0.1',18879)]:
-    # The standalone managed demo (18787) is NOT controlled by this service.
-    # Check only the actual PocketHost panel and gateway listeners.
-    if port==18787: continue
-    with socket.socket() as sock:
-        sock.settimeout(.8)
-        if sock.connect_ex((addr,port))==0:
-            print(f'occupied {addr}:{port}',file=sys.stderr);sys.exit(1)
+import re,socket,subprocess,sys
+addresses=['127.0.0.1']
+try:
+    p=subprocess.run(['/data/data/com.termux/files/usr/bin/ip','-4','-o','addr','show','wlan0'],capture_output=True,text=True,timeout=5)
+    addresses.extend(re.findall(r'\binet (10\.\d+\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+|192\.168\.\d+\.\d+)/',p.stdout))
+except (OSError,subprocess.TimeoutExpired):
+    pass
+for addr in addresses:
+    for port in ([8787] if addr=='127.0.0.1' else [18878,18879]):
+        with socket.socket() as sock:
+            sock.settimeout(.8)
+            if sock.connect_ex((addr,port))==0:
+                print(f'occupied {addr}:{port}',file=sys.stderr);sys.exit(1)
 PY
 }
 case "${1:-}" in
