@@ -200,3 +200,18 @@ The LAN HTTP route is intentionally unauthenticated during functional DEV,
 not hardened or suitable for public exposure. See
 [direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
 The full Android/browser hardware acceptance remains OPEN until verified.
+
+## Live direct Shizuku Advanced Shell — 2026-11-09
+
+Real Samsung SM-S906B hardware acceptance passed for the private-LAN
+Advanced Shell browser route. The signed native Companion APK was installed
+and the verified PocketHost-only DEV panel restarted from source
+`186185680d74ffc1d44eaedeb6ee4702a1f6174e`.
+A live desktop-equivalent LAN POST of `id` returned Android shell UID via
+Shizuku ADB (PASS). The old 10-digit pairing and phone confirmation
+were removed. The user can test at
+`http://192.168.0.100:18878/shizuku` → Advanced shell → Run on Samsung.
+Node 9/9, browser UI 2/2, lint, TypeScript, Vite and native Gradle builds
+passed. Unrelated Termux services retained all prior observed states.
+For evidence and pending final owner visual review, see
+[2026-11-09 direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
