@@ -21,6 +21,7 @@ exact commit; the reported overall status was `OPEN`. It must not
 be represented as a full quality PASS.
 
 Its component results:
+
 - **PASS:** top-level `npm test` **196/196**,
   including H2 isolated static site create/publish, health and rollback
   tests, and source structure, documentation and module-boundary checks.
