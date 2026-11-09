@@ -117,8 +117,9 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.getAllByText("Full Termux file manager")).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Workspace" }))
     expect(calls.mock.calls.some(call => String(call[0]).includes("Projects%2FPocketHost-H3-Workspace"))).toBe(true)
-    await user.click(await screen.findByRole("button", { name: "Inspect files" }))
-    await screen.findByText("css/main.css")
+    expect(screen.queryByRole("button", { name: "Inspect files" })).toBeNull()
+    expect(screen.getByRole("link", { name: "Hosting → Websites" }).getAttribute("href")).toBe("/sites")
+    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
