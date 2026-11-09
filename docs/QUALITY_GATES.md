@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
+## M0/M1 focused source follow-up (2026-11-09)
+
+[Latest resumed checkpoint](checkpoints/2026-11-09-m0-m1-resume-native-validation-handoff.md) records the targeted UI test corrections (`4754b535`) and M1 registry hardening (`10731bca`). Native focused testing and read-only Prettier-diff tasks were published, **not yet accepted**. Do not reuse prior 196/18/18 PASS as exact-current-HEAD certification. The inherited Prettier nine-file warning and four full-UI failures remain OPEN until verified repaired. M1 rejects silent legacy/future schema migration; no migration or physical ownership acceptance occurred. **G0/G1/G2 and G3 remain OPEN** on latest source.
+
 ## Latest M0/M1 source status (2026-11-09)
 
 See [complete M0/M1 QA and handoff checkpoint](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md). The S22 exact `5bccbe2` remaining-gate run passed Markdownlint, ESLint, TypeScript, coverage, admin lint and build, but failed Prettier in nine files and the full UI suite (four failures). Therefore M0 full source acceptance remains OPEN, not PASS. New M1 code also needs its own exact-SHA focused receipt; no later source inherits the prior PASS. All live/physical validation is separately OPEN.

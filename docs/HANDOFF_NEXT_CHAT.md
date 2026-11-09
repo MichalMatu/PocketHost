@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## START HERE — M0/M1 resumed source and native QA checkpoint (2026-11-09)
+
+Read [the latest M0/M1 resume checkpoint](checkpoints/2026-11-09-m0-m1-resume-native-validation-handoff.md) **before** the previous checkpoint below. Source repair commits: `4754b535` (M0 UI test relocation/units) and `10731bca` (M1 private ownership, fsync and negative migration guards). Two new exact-source Samsung requests were published for focused tests and read-only Prettier diffs; their **terminal results were not yet observed**. Three prior tasks also remain without observed receipts. Never repeat accepted 196/18/18 tests or mislabel queued work as PASS. M0 source G0/G1/G2 and M1 native acceptance remain OPEN; physical G3 also OPEN. No live service, registry migration, website or Agent was changed.
+
 ## START HERE — M0/M1 full checkpoint (2026-11-09)
 
 Read [the complete M0/M1 checkpoint](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md) **before** historical notes below. The last prepared source snapshot was `2b5d300fd63e825305415a97d25ef1278860984e`; fetch fresh `main` before edits. The exact S22 M0 `5bccbe2` remaining-gate result has Markdownlint, root ESLint, TypeScript, coverage, admin lint and build **PASS**; Prettier (nine files) and the full UI suite (four failures) **OPEN**. Prior 196/196 Node, 18/18 host and 18/18 UI tests remain accepted historical evidence. Two other M0/M1 task results were still unpublished; source/physical gates are not final PASS. One host-owned declarative M1 store remains; no live service or release was changed by this documentation handoff.
