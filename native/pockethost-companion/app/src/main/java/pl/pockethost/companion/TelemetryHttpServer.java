@@ -10,6 +10,8 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,6 +21,7 @@ public final class TelemetryHttpServer {
     public static final int PORT = 18791;
     private static final String TAG = "PocketHostTelemetry";
     private static volatile boolean running;
+    private static final ExecutorService CLIENTS = Executors.newFixedThreadPool(4);
 
     private TelemetryHttpServer() {}
 
@@ -57,7 +60,19 @@ public final class TelemetryHttpServer {
     private static void serve(Context context, ServerSocket listener) {
         try {
             while (!listener.isClosed()) {
-                try (Socket client = listener.accept()) {
+                Socket client = listener.accept();
+                CLIENTS.execute(() -> serveClient(context, client));
+            }
+        } catch (Exception error) {
+            Log.w(TAG, "Companion localhost listener stopped: " + error.getClass().getSimpleName());
+        } finally {
+            try { listener.close(); } catch (Exception ignored) {}
+            running = false;
+        }
+    }
+
+    private static void serveClient(Context context, Socket socket) {
+        try (Socket client = socket) {
                     client.setSoTimeout(2500);
                     InputStream input = new BufferedInputStream(client.getInputStream());
                     String request = readLine(input, 512);
@@ -71,6 +86,7 @@ public final class TelemetryHttpServer {
                             .matcher(request);
                     boolean appDetailRoute = detailRequest.matches();
                     boolean runRoute = request.matches("POST /shell/run HTTP/1\\.[01]");
+                    boolean actionRoute = request.matches("POST /action/run HTTP/1\\.[01]");
                     int length = -1;
                     boolean json = false;
                     boolean invalid = false;
@@ -98,9 +114,10 @@ public final class TelemetryHttpServer {
                     if (invalid || !ended) {
                         body = "{\"error\":\"invalid-request\"}";
                         status = 400;
-                    } else if (runRoute) {
+                    } else if (runRoute || actionRoute) {
                         if (!json || length < 2 || length > 1024) {
-                            body = "{\"error\":\"invalid-command-request\"}";
+                            body = runRoute ? "{\"error\":\"invalid-command-request\"}" :
+                                    "{\"error\":\"invalid-action-request\"}";
                             status = 400;
                         } else {
                             byte[] payload = input.readNBytes(length);
@@ -111,12 +128,24 @@ public final class TelemetryHttpServer {
                                 try {
                                     org.json.JSONObject inputBody = new org.json.JSONObject(
                                             new String(payload, StandardCharsets.UTF_8));
-                                    if (inputBody.length() != 1 ||
-                                            !(inputBody.opt("command") instanceof String)) {
-                                        throw new IllegalArgumentException("Expected exact command string");
+                                    if (runRoute) {
+                                        if (inputBody.length() != 1 ||
+                                                !(inputBody.opt("command") instanceof String)) {
+                                            throw new IllegalArgumentException("Expected exact command string");
+                                        }
+                                        body = TelemetryForegroundService.runBrowserShell(inputBody.getString("command"));
+                                    } else {
+                                        if (inputBody.length() != 3 ||
+                                                !(inputBody.opt("action") instanceof String) ||
+                                                !(inputBody.opt("target") instanceof String) ||
+                                                !(inputBody.opt("value") instanceof String)) {
+                                            throw new IllegalArgumentException("Expected exact action, target and value");
+                                        }
+                                        body = TelemetryForegroundService.runBrowserAction(
+                                                inputBody.getString("action"),
+                                                inputBody.getString("target"),
+                                                inputBody.getString("value"));
                                     }
-                                    String command = inputBody.getString("command");
-                                    body = TelemetryForegroundService.runBrowserShell(command);
                                     status = 200;
                                 } catch (IllegalArgumentException error) {
                                     body = "{\"error\":\"invalid-command\"}";
@@ -162,15 +191,8 @@ public final class TelemetryHttpServer {
                     output.write(headers.getBytes(StandardCharsets.US_ASCII));
                     output.write(bytes);
                     output.flush();
-                } catch (Exception ignored) {
-                    // Malformed loopback requests cannot take down the companion.
-                }
-            }
-        } catch (Exception error) {
-            Log.w(TAG, "Companion localhost listener stopped: " + error.getClass().getSimpleName());
-        } finally {
-            try { listener.close(); } catch (Exception ignored) {}
-            running = false;
+        } catch (Exception ignored) {
+            // Malformed loopback requests cannot take down the companion.
         }
     }
 }

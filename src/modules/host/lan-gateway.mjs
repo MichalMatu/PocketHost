@@ -104,7 +104,8 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
   if (requestPath?.startsWith('/api/v1/sites')) return 30000;
   // A direct user-triggered Shizuku command has its own bounded timeout,
   // independent of Android package and process telemetry.
-  if (method === 'POST' && route === '/api/v1/shizuku/remote-shell/run') return 20000;
+  if (method === 'POST' && (route === '/api/v1/shizuku/remote-shell/run' ||
+    route === '/api/v1/shizuku/action/run')) return 20000;
   // The local Companion may spend 3.5s checking Shizuku authorization plus
   // up to 15s reading packages. Preserve the UI's 25s request budget.
   // Never extend timeouts for commands, unrecognized paths or write methods.

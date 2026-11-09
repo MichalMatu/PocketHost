@@ -259,6 +259,7 @@ public final class PowerUserService extends IPowerUserService.Stub {
     public String runOwnerAction(String action, String target, String value) throws RemoteException {
         try {
             int uid = authorizedUid();
+            long beganAt = android.os.SystemClock.elapsedRealtime();
             String output;
             switch (action) {
                 case "launch":
@@ -267,6 +268,12 @@ public final class PowerUserService extends IPowerUserService.Stub {
                     break;
                 case "force-stop":
                     output = execute(4096, "/system/bin/am", "force-stop", requirePackage(target));
+                    break;
+                case "enable":
+                    output = execute(8192, "/system/bin/pm", "enable", "--user", "0", requirePackage(target));
+                    break;
+                case "disable":
+                    output = execute(8192, "/system/bin/pm", "disable-user", "--user", "0", requirePackage(target));
                     break;
                 case "uninstall":
                     output = execute(8192, "/system/bin/pm", "uninstall", "--user", "0", requirePackage(target));
@@ -280,7 +287,7 @@ public final class PowerUserService extends IPowerUserService.Stub {
                             requirePackage(target), requirePermission(value));
                     break;
                 case "process-stop":
-                    if (target == null || !target.matches("[1-9][0-9]{1,6}"))
+                    if (target == null || !target.matches("[1-9][0-9]{0,6}"))
                         throw new IllegalArgumentException("Invalid process PID");
                     output = execute(8192, "/system/bin/kill", "-TERM", target);
                     break;
@@ -313,9 +320,10 @@ public final class PowerUserService extends IPowerUserService.Stub {
                     throw new IllegalArgumentException("Unsupported operation");
             }
             if (("uninstall".equals(action) || "launch".equals(action) ||
+                    "enable".equals(action) || "disable".equals(action) ||
                     "service-start".equals(action) || "service-stop".equals(action)) &&
                     (output.contains("Failure [") || output.contains("No activities found") ||
-                     output.contains("Error:"))) {
+                     output.contains("Error:") || output.contains("Exception occurred"))) {
                 throw new IllegalStateException("Android command reported a failure");
             }
             JSONObject result = new JSONObject();
@@ -324,6 +332,10 @@ public final class PowerUserService extends IPowerUserService.Stub {
             result.put("mode", uid == 0 ? "root" : "adb");
             result.put("success", true);
             result.put("output", output.substring(0, Math.min(4096, output.length())));
+            result.put("stdout", output.substring(0, Math.min(4096, output.length())));
+            result.put("stderr", "");
+            result.put("exitCode", 0);
+            result.put("durationMs", Math.max(0, android.os.SystemClock.elapsedRealtime() - beganAt));
             return result.toString();
         } catch (Exception e) {
             // Shell errors and OS refusals are not successes.

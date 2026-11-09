@@ -254,6 +254,38 @@ public final class TelemetryForegroundService extends Service {
         }
     }
 
+
+    /** Direct browser owner action, serialized with shell; no phone confirmation. */
+    public static String runBrowserAction(String action, String target, String value) throws Exception {
+        if (action == null || !java.util.Set.of("launch", "force-stop", "enable", "disable",
+                "uninstall", "grant", "revoke", "process-stop", "service-start",
+                "service-stop", "brightness", "timeout").contains(action) ||
+                target == null || target.length() > 240 ||
+                value == null || value.length() > 240) {
+            throw new IllegalArgumentException("Invalid typed Android action");
+        }
+        TelemetryForegroundService owner = activeInstance;
+        if (owner == null || owner.destroyed || owner.source == null) {
+            throw new IllegalStateException("Shizuku is not connected or authorized");
+        }
+        if (!owner.shellBusy.compareAndSet(false, true)) {
+            throw new IllegalStateException("Another Android action is running");
+        }
+        try {
+            IPowerUserService remote = owner.source;
+            Future<String> result = owner.shellCommands.submit(
+                    () -> remote.runOwnerAction(action, target, value));
+            try {
+                return result.get(13, TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                result.cancel(true);
+                throw e;
+            }
+        } finally {
+            owner.shellBusy.set(false);
+        }
+    }
+
     @Override public IBinder onBind(Intent intent) { return null; }
 
     @Override public void onDestroy() {
