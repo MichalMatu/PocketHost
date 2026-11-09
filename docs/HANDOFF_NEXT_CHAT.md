@@ -24,18 +24,20 @@ protected services remained `run`. Exact private evidence:
 `pockethost-panel-mac-hardware-recovery-20261109-v1`
 (done/PASS). Do **not** stage/activate these services again blindly.
 
-**Current quality work:** prior S22 `check:structure` failed on
-unregistered `native`/`ops`/`shizuku` and host ESM contracts;
-`check:docs` failed on missing 2026-11-08/09 checkpoint index entries
-and one broken relative Shizuku link. Their source metadata, index and
-link have been corrected on `main`, with the root agent autostart
-policy clarified. A pinned S22 native quality task
+**Current quality work:** S22 task
 `pockethost-handoff-foundation-quality-s22-20261109-v1`
-targets `d2844917888a7b4345b361f362ec9740b2b73cf4`; check
-its result before submitting any repeat. It predates the final
-checkpoint/docs-only commits. Full exact-current-HEAD
-`check:all`, device reboot and long-lived watchdog hang/flap matrix
-remain OPEN until actual receipts are read.
+finished `failed/1` on `d284491`. Its **structure, boundaries,
+TypeScript and focused panel tests PASS**; Node had **180/182 PASS**
+(two documentation assertions), docs gate failed on missing
+`Scope/Forbidden/Gate` in Shizuku's agent instructions, ESLint
+reported two empty catches, Markdownlint reported spacing issues,
+and Prettier flagged 29 files. The missing Shizuku sections and
+empty catches are fixed on `main`. A new S22 QA task
+`pockethost-handoff-postfix-native-gates-20261109-v1`
+targets `f7eb90e9c50996e0f029acf7475793f81fabdb31`;
+read its result before duplicating work. Formatting, full
+exact-current-HEAD `check:all`, physical reboot and watchdog
+hang/flap matrix remain OPEN until actual results are recorded.
 
 **Next chat sequence:** (1) verify fresh `main` and local service
 state + both HTTP endpoints; (2) read pending task results; (3) close
