@@ -152,7 +152,10 @@ function validateMarker(raw: string, id: string): NodeProjectRecord {
  * separately verify provenance, source and effective ownership.
  */
 export class NodeProjectHost {
-  constructor(private readonly root = path.join(os.homedir(), 'PocketHost-NodeProjects')) {}
+  private readonly root: string;
+  constructor(root = path.join(os.homedir(), 'PocketHost-NodeProjects')) {
+    this.root = root;
+  }
 
   private projectPath(id: string): string {
     if (!PROJECT.test(id)) throw new RangeError('Invalid Node project ID');

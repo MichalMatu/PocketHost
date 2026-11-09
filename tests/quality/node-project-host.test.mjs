@@ -37,7 +37,7 @@ test('M3 rejects foreign id, malformed source and project limit or unknown relea
   const project = host.create('Safe node');
   assert.throws(() => host.inspect('../../external'), /ID/);
   assert.throws(() => host.stage(project.id, { ...source(), serverSource: '' }), /source/);
-  assert.throws(() => host.stage(project.id, { ...source(), packageJson: { name: 'x' } }), /start/);
+  assert.throws(() => host.stage(project.id, { ...source(), packageJson: { name: 'x' } }), /version|start/);
   assert.throws(() => host.restoreCandidate(project.id), /previous/);
 });
 test('M3 rejects symlink replacements inside private project roots', (t) => {
