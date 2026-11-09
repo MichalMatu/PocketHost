@@ -48,10 +48,10 @@ test('global observability cannot read the PhotoMap-specific runtime file', () =
   assert.ok(legacyStart > 0 && o1Start > legacyStart && o1End > o1Start);
   const legacy = vite.slice(legacyStart, o1Start);
   const general = vite.slice(o1Start, o1End);
-  assert.match(legacy, /request\\.url !== "\/" && request\\.url !== "\/events"/);
-  assert.match(legacy, /request\\.method !== "GET"/);
+  assert.match(legacy, /request\.url !== "\/" && request\.url !== "\/events"/);
+  assert.match(legacy, /request\.method !== "GET"/);
   assert.match(legacy, /readLegacyPhotoMapEvents/);
-  assert.match(legacy, /new ManagedPhotoMapRuntimeHost\\(\\)\\.readLogs\\(\\)/);
+  assert.match(legacy, /new ManagedPhotoMapRuntimeHost\(\)\.readLogs\(\)/);
   assert.doesNotMatch(general, /PhotoMapRuntimeHost|PhotoMapHost|readLegacyPhotoMapEvents|runtimeEventHistory/);
-  assert.match(general, /diagnostics = \\{ state: "unavailable"/);
+  assert.match(general, /diagnostics = \{ state: "unavailable"/);
 });
