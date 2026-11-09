@@ -73,7 +73,11 @@ Inventory and UI first. Add owned runtime and storage second. Add package manage
 
 ## Owner-approved private LAN exception — 2026-11-06
 
-The actual administration backend remains bound to `127.0.0.1:8787` and the owned demonstration to `127.0.0.1:18787`. A separately owned, manually launched gateway binds only an exact private phone IPv4 address and exposes `18878` (admin) and `18879` (GET/HEAD-only site). At the owner's explicit request, **no login is required** on the trusted home Wi-Fi: any connected host can operate the PocketHost demo. This is not safe for public WAN administration. Host/Origin/Fetch Metadata checks, process ownership and P3 intent enforcement remain mandatory; no autostart or router forwarding. See [ADR-0006](adr/0006-private-lan-access.md).
+The actual administration backend remains bound to `127.0.0.1:8787` and the owned demonstration to `127.0.0.1:18787`. A separately owned, manually launched gateway binds only an exact private phone IPv4 address and exposes `18878` (admin) and `18879` (GET/HEAD-only site). At the owner's explicit request, **no login is required** on the trusted home Wi-Fi: any connected host can operate the PocketHost demo. This is not safe for public WAN administration. Host/Origin/Fetch Metadata checks, process ownership and P3 intent enforcement remain mandatory; no standalone LAN gateway service autostart or router forwarding. The
+later [ADR-0014](adr/0014-termux-panel-supervision.md) explicitly
+permits the **PocketHost-owned DEV panel** to start through existing
+Termux runit; its in-process LAN gateway follows that session and still
+binds only the actual private Wi-Fi address.
 
 ## Generic managed runtime contract — source candidate
 
