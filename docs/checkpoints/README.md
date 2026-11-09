@@ -9,8 +9,16 @@ purpose: Index historical evidence without overloading the active documentation 
 
 Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
 
+## 2026-11-09
+
+- [Panel runit startup and recovery](2026-11-09-panel-runit-self-healing.md)
+- [Shizuku direct browser shell](2026-11-09-shizuku-direct-browser-shell.md)
+- [Shizuku MVP implementation](2026-11-09-shizuku-mvp-sprint.md)
+
 ## 2026-11-08
 
+- [Shizuku companion and browser shell](2026-11-08-shizuku-browser-remote-shell.md)
+- [Shizuku seven-module device sprint](2026-11-08-shizuku-seven-module-sprint.md)
 - [UX architecture: Termux-first navigation and single File Manager](2026-11-08-ux-architecture-main-menu.md)
 
 - [H3.4 API, Restic and ttyd physical follow-up](2026-11-08-h34-api-restic-ttyd-acceptance.md)
