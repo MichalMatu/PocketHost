@@ -29,6 +29,7 @@ the named files before any implementation. The observed
 GitHub source is **not proof of the current Samsung running SHA**.
 
 Read together with:
+
 - [M0 source/upstream audit](2026-11-09-m0-source-and-upstream-audit-readonly.md)
 - [Canonical roadmap](../ROADMAP.md)
 - [Target architecture](../TARGET_INFORMATION_ARCHITECTURE.md)
