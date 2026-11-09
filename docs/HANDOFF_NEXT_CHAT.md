@@ -32,12 +32,18 @@ TypeScript and focused panel tests PASS**; Node had **180/182 PASS**
 `Scope/Forbidden/Gate` in Shizuku's agent instructions, ESLint
 reported two empty catches, Markdownlint reported spacing issues,
 and Prettier flagged 29 files. The missing Shizuku sections and
-empty catches are fixed on `main`. A new S22 QA task
+empty catches are fixed on `main`. The follow-up S22 QA task
 `pockethost-handoff-postfix-native-gates-20261109-v1`
-targets `f7eb90e9c50996e0f029acf7475793f81fabdb31`;
-read its result before duplicating work. Formatting, full
-exact-current-HEAD `check:all`, physical reboot and watchdog
-hang/flap matrix remain OPEN until actual results are recorded.
+finished **done / exit 0 / PASS** for exact
+`f7eb90e9c50996e0f029acf7475793f81fabdb31`:
+structure, docs, boundaries, **182/182 Node tests**, ESLint,
+TypeScript, admin lint/build and **3/3 panel contracts** passed.
+Do not repeat these gates on that SHA. Formatting, Markdownlint,
+coverage, exact-current-HEAD `check:all`, physical reboot and
+watchdog hang/flap remain OPEN. The Mac direct LAN HTTP probe
+`pockethost-resume-mac-http-readonly-20261109-gpt6-v3`
+returned HTTP 200 on 2026-11-09; fresh S22 device state is
+tracked separately and is not implied by the Mac result.
 
 **Next chat sequence:** (1) verify fresh `main` and local service
 state + both HTTP endpoints; (2) read pending task results; (3) close

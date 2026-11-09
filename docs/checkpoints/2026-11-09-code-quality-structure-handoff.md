@@ -196,11 +196,16 @@ A separate, pinned follow-up native task
 `f7eb90e9c50996e0f029acf7475793f81fabdb31`.
 It reruns structure, docs, boundaries, all Node unit tests,
 ESLint, TypeScript, admin lint/build and panel contract.
-**Read the result** before changing any of these from
-OPEN to PASS. It does not waive Markdownlint, Prettier,
-code coverage or the final all-in-one gate. The 29-file
-formatting debt needs a separate narrowly reviewed batch,
-not an undocumented claim of green status.
+**Terminal result retrieved 2026-11-09:** `done`, exit `0`,
+`PASS` on exact `f7eb90e9c50996e0f029acf7475793f81fabdb31`.
+The isolated S22 QA checkout verified the expected Git origin,
+clean pre-run worktree and exact detached SHA. Structure, docs,
+boundaries, **182/182 Node tests**, ESLint, TypeScript, admin
+lint/build, and **3/3 runit panel contracts** all passed.
+The receipt is scoped to this SHA and those commands; it does
+**not** waive Markdownlint, Prettier, coverage, all-in-one G2,
+newer docs-only HEAD, or hardware tests. The 29-file formatting
+debt remains a distinct review batch.
 
 ## 4. Repository and operations consistency
 

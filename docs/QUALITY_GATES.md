@@ -17,8 +17,13 @@ first.
 The former `check:structure` and `check:docs` failures were traced
 to outdated manifest/host contract allowlists, missing checkpoint
 archive entries and a wrong Shizuku relative link. Their fixes
-were committed to `main` but must be confirmed by an exact-SHA
-Samsung native receipt before G0/G1 is marked PASS.
+were verified by the Samsung task
+`pockethost-handoff-postfix-native-gates-20261109-v1`
+(`done/0`, exact `f7eb90e9c50996e0f029acf7475793f81fabdb31`):
+structure, docs, boundaries, 182/182 Node tests, ESLint,
+TypeScript, admin lint/build, and 3/3 panel contracts PASS.
+**This is not yet full G1/G2:** Markdownlint, Prettier, coverage
+and the complete exact-current-HEAD `check:all` remain open.
 
 Physical PocketHost-only `runit` deployment **PASS**:
 loopback `8787` and private LAN `18878` HTTP 200; controlled
