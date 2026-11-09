@@ -122,9 +122,12 @@ describe("H3 strict read-only contracts", () => {
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
-  it("keeps a separate read-only external service inventory", async () => {
-    mount("services")
+  it("keeps foreign runit observations separate from Hosting site controls", async () => {
+    const calls = mount("services")
     await screen.findByText("ilestoi")
     expect(screen.getAllByText("External").length).toBeGreaterThan(0)
+    expect(screen.queryByText("Manage owned services")).toBeNull()
+    expect(screen.getByRole("link", { name: "Hosting → Websites" }).getAttribute("href")).toBe("/sites")
+    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
 })
