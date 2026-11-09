@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
-import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
-import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
+import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
@@ -40,23 +39,16 @@ const sectionTitles: Record<TermuxSection, string> = {
 
 export default function TermuxCenterPage({ section = "packages" }: { section?: TermuxSection }) {
   const [snapshot, setSnapshot] = React.useState<ObservabilitySnapshot | null>(null)
-  const [sites, setSites] = React.useState<FleetSite[] | null>(null)
   const [tools, setTools] = React.useState<H3Tools | null>(null)
   const [reading, setReading] = React.useState(false)
-  const [errors, setErrors] = React.useState({ snapshot: false, sites: false, tools: false })
+  const [errors, setErrors] = React.useState({ snapshot: false, tools: false })
   const [query, setQuery] = React.useState("")
-  const [selectedFiles, setSelectedFiles] = React.useState<{ site: string; items: H3Files } | null>(null)
-  const [detailError, setDetailError] = React.useState<string | null>(null)
-  const [detailsBusy, setDetailsBusy] = React.useState(false)
 
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setReading(true)
-    const [observed, owned, optional] = await Promise.allSettled([
+    const [observed, optional] = await Promise.allSettled([
       ["packages", "services"].includes(section)
         ? getData("/api/v1/observability", parseObservabilitySnapshot, signal)
-        : Promise.resolve(null),
-      section === "files"
-        ? getData("/api/v1/sites", parseFleetSites, signal)
         : Promise.resolve(null),
       ["backups", "terminal"].includes(section)
         ? getData("/api/v1/termux-tools", parseH3Tools, signal)
@@ -64,15 +56,11 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
     ])
     if (signal?.aborted) return
     setSnapshot(observed.status === "fulfilled" ? observed.value : null)
-    setSites(owned.status === "fulfilled" ? owned.value : null)
     setTools(optional.status === "fulfilled" ? optional.value : null)
     setErrors({
       snapshot: observed.status === "rejected",
-      sites: owned.status === "rejected",
       tools: optional.status === "rejected",
     })
-    setSelectedFiles(null)
-    setDetailError(null)
     setReading(false)
   }, [section])
 
@@ -83,21 +71,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
     })
     return () => controller.abort()
   }, [refresh])
-
-  const inspect = async (site: FleetSite) => {
-    if (detailsBusy || site.state === "unknown") return
-    setDetailsBusy(true)
-    setDetailError(null)
-    try {
-      const items = await getData("/api/v1/sites/" + site.id + "/files", parseH3Files)
-      setSelectedFiles({ site: site.id, items })
-    } catch {
-      setDetailError("This inventory cannot be read safely. No files were changed.")
-      setSelectedFiles(null)
-    } finally {
-      setDetailsBusy(false)
-    }
-  }
 
   const installed = snapshot?.packages.installed.filter(item =>
     (item.ecosystem + " " + item.name + " " + item.version).toLowerCase().includes(query.toLowerCase().trim()),
@@ -162,30 +135,9 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               </CardHeader>
               <CardContent className="space-y-4">
                 <TermuxFileExplorer />
-                <h3 className="text-sm font-medium">Hosted site assets · read-only inventory</h3>
-                {errors.sites && <p role="alert">Owned site inventory unavailable or disabled.</p>}
-                {sites?.length === 0 && <p>No managed static sites.</p>}
-                <div className="space-y-2">
-                  {sites?.map(site => <div key={site.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
-                    <div>
-                      <p className="font-medium">{site.name}</p>
-                      <p className="text-muted-foreground text-xs">{site.fileCount} files · {site.bytes} bytes · {site.state}</p>
-                    </div>
-                    <Button size="sm" variant="outline" disabled={detailsBusy || site.state === "unknown" || !site.activeRelease}
-                      onClick={() => void inspect(site)}>Inspect files</Button>
-                  </div>)}
-                </div>
-                {selectedFiles && <>
-                  <p className="text-sm font-medium">Active release assets ({selectedFiles.items.length})</p>
-                  <div className="max-h-80 overflow-auto rounded-md border">
-                    {selectedFiles.items.map(item => <div key={item.name} className="flex justify-between gap-3 border-b px-3 py-2 text-xs">
-                      <span className="break-all font-mono">{item.name}</span><span className="shrink-0">{item.bytes} B</span>
-                    </div>)}
-                    {selectedFiles.items.length === 0 && <p className="p-3">No active files.</p>}
-                  </div>
-                </>}
-                {detailError && <p role="alert">{detailError}</p>}
-                <a className="text-sm underline underline-offset-4" href="/sites">Open existing site upload and version manager</a>
+                <GuardNotice>
+                  Files inside a PocketHost-created website belong to <a className="underline underline-offset-4" href="/sites">Hosting → Websites</a>. This File Manager remains for Termux system paths.
+                </GuardNotice>
               </CardContent>
             </Card>
           </section>}
