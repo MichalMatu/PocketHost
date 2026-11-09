@@ -11,8 +11,7 @@ purpose: Record the M0 UI and service-boundary source sprint, immutable GitHub c
 
 The owner on 2026-11-09 **explicitly authorized** beginning code
 implementation from fresh `main`; this supersedes the earlier
-`NO-CODE HOLD` in the [pre-implementation checkpoint](
-2026-11-09-m0-preimplementation-readiness.md).
+`NO-CODE HOLD` in the [pre-implementation checkpoint](2026-11-09-m0-preimplementation-readiness.md).
 The second chat's already completed M0 navigation work and M1/M2
 pure contract drafts were preserved, not reimplemented.
 
@@ -89,11 +88,11 @@ This sprint published three new exact-source native QA
 tasks under the single `repository:pockethost` resource,
 never to the production checkout:
 
-| Target SHA | Task | Purpose |
-| --- | --- | --- |
-| `c6c1f4b31d442804a6b60ca295519cb724b15a73` | `pockethost-m0-ui-separation-native-s22-c6c1f4b3-20261109-v1` | System services/backups contracts, Node M0 negatives, lint/types/format |
-| `d4b6e6dc89ef5a9a4e83f367a671657372662ebb` | `pockethost-m0-nav-followup-native-s22-d4b6e6dc-20261109-v1` | Navigation and retained-route contract |
-| `15eb7fa50b4bbb85387bb65f84b8462f38a1a8f5` | `pockethost-m0-asset-relocation-native-s22-15eb7fa5-20261109-v1` | H2 asset inspector and Termux file separation UI, lint/types/format |
+| Target SHA                                 | Task                                                             | Purpose                                                                 |
+| ------------------------------------------ | ---------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `c6c1f4b31d442804a6b60ca295519cb724b15a73` | `pockethost-m0-ui-separation-native-s22-c6c1f4b3-20261109-v1`    | System services/backups contracts, Node M0 negatives, lint/types/format |
+| `d4b6e6dc89ef5a9a4e83f367a671657372662ebb` | `pockethost-m0-nav-followup-native-s22-d4b6e6dc-20261109-v1`     | Navigation and retained-route contract                                  |
+| `15eb7fa50b4bbb85387bb65f84b8462f38a1a8f5` | `pockethost-m0-asset-relocation-native-s22-15eb7fa5-20261109-v1` | H2 asset inspector and Termux file separation UI, lint/types/format     |
 
 **At publication their terminal results were not yet
 available; all three are QUEUED/UNKNOWN rather than PASS.**
@@ -107,8 +106,7 @@ the latest source must use the normal Samsung Termux
 agent restrictions in [quality gates](../QUALITY_GATES.md).
 
 The older actual live phone panel/H2/protected-service
-evidence in the [canonical handoff](
-2026-11-09-code-quality-structure-handoff.md)
+evidence in the [canonical handoff](2026-11-09-code-quality-structure-handoff.md)
 is historical and cannot be promoted to a current
 device status. No latest live sample was taken here.
 

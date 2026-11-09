@@ -1,7 +1,17 @@
 import { randomUUID } from 'node:crypto';
 import {
-  closeSync, constants, existsSync, fstatSync, fsyncSync, lstatSync, openSync,
-  readFileSync, realpathSync, renameSync, unlinkSync, writeFileSync,
+  closeSync,
+  constants,
+  existsSync,
+  fstatSync,
+  fsyncSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import type { HostingDeclarations } from '../../shared/hosting-platform.ts';
@@ -37,15 +47,26 @@ function directory(root: string): void {
 
 function regularFile(filename: string): void {
   const stat = lstatSync(filename);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > LIMIT ||
-      stat.uid !== currentUid() || (stat.mode & 0o077) !== 0) {
+  if (
+    !stat.isFile() ||
+    stat.isSymbolicLink() ||
+    stat.nlink !== 1 ||
+    stat.size > LIMIT ||
+    stat.uid !== currentUid() ||
+    (stat.mode & 0o077) !== 0
+  ) {
     throw new Error('Unsafe registry file');
   }
 }
 
 function validated(value: unknown): HostingDeclarations {
   const registry = createHostingRegistries(value);
-  return { schemaVersion: 1, modules: registry.modules(), services: registry.services(), projects: registry.projects() };
+  return {
+    schemaVersion: 1,
+    modules: registry.modules(),
+    services: registry.services(),
+    projects: registry.projects(),
+  };
 }
 
 function parse(contents: string): StoredDeclarations {
@@ -55,15 +76,21 @@ function parse(contents: string): StoredDeclarations {
     throw new Error('Invalid registry envelope');
   }
   const x = envelope as Record<string, unknown>;
-  if (Object.keys(x).length !== 4 ||
-      !['schemaVersion', 'owner', 'revision', 'declarations'].every((key) => Object.hasOwn(x, key)) ||
-      x.schemaVersion !== 1 || x.owner !== 'pockethost' ||
-      !Number.isSafeInteger(x.revision) || (x.revision as number) < 1 ||
-      (x.revision as number) >= Number.MAX_SAFE_INTEGER) {
+  if (
+    Object.keys(x).length !== 4 ||
+    !['schemaVersion', 'owner', 'revision', 'declarations'].every((key) => Object.hasOwn(x, key)) ||
+    x.schemaVersion !== 1 ||
+    x.owner !== 'pockethost' ||
+    !Number.isSafeInteger(x.revision) ||
+    (x.revision as number) < 1 ||
+    (x.revision as number) >= Number.MAX_SAFE_INTEGER
+  ) {
     throw new Error('Invalid registry ownership or revision');
   }
   return {
-    schemaVersion: 1, owner: 'pockethost', revision: x.revision as number,
+    schemaVersion: 1,
+    owner: 'pockethost',
+    revision: x.revision as number,
     declarations: validated(x.declarations),
   };
 }
@@ -84,8 +111,13 @@ export function createHostingRegistryStore(root: string) {
     const fd = openSync(target, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
       const stat = fstatSync(fd);
-      if (!stat.isFile() || stat.nlink !== 1 || stat.size > LIMIT ||
-          stat.uid !== currentUid() || (stat.mode & 0o077) !== 0) {
+      if (
+        !stat.isFile() ||
+        stat.nlink !== 1 ||
+        stat.size > LIMIT ||
+        stat.uid !== currentUid() ||
+        (stat.mode & 0o077) !== 0
+      ) {
         throw new Error('Unsafe registry file');
       }
       return parse(readFileSync(fd, 'utf8'));
@@ -96,8 +128,11 @@ export function createHostingRegistryStore(root: string) {
   return {
     read,
     save(declarations: unknown, expectedRevision: number): StoredDeclarations {
-      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 ||
-          expectedRevision >= Number.MAX_SAFE_INTEGER - 1) {
+      if (
+        !Number.isSafeInteger(expectedRevision) ||
+        expectedRevision < 0 ||
+        expectedRevision >= Number.MAX_SAFE_INTEGER - 1
+      ) {
         throw new Error('Invalid expected registry revision');
       }
       directory(root);
@@ -110,7 +145,10 @@ export function createHostingRegistryStore(root: string) {
           throw new Error('Stale registry revision');
         }
         const next: StoredDeclarations = {
-          schemaVersion: 1, owner: 'pockethost', revision: expectedRevision + 1, declarations: clean,
+          schemaVersion: 1,
+          owner: 'pockethost',
+          revision: expectedRevision + 1,
+          declarations: clean,
         };
         const data = JSON.stringify(next) + '\n';
         if (Buffer.byteLength(data) > LIMIT) throw new Error('Registry exceeds size limit');
@@ -135,7 +173,11 @@ export function createHostingRegistryStore(root: string) {
         return next;
       } finally {
         if (temp) {
-          try { unlinkSync(temp); } catch { /* preserve original error */ }
+          try {
+            unlinkSync(temp);
+          } catch {
+            /* preserve original error */
+          }
         }
         closeSync(fd);
         unlinkSync(lock);
