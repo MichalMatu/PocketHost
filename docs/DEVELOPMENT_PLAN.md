@@ -1,11 +1,27 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-07
+last_reviewed: 2026-11-09
 purpose: Implementation ownership and acceptance plan for Observability O1
 ---
 
 # PocketHost Development Plan
+
+## Current delivery priority — modular platform (2026-11-09)
+
+The [revised canonical roadmap](ROADMAP.md) now sets the delivery order:
+**shared module contracts and lifecycle -> SSH/Node modules -> Cloudflare
+and Python/PRoot modules -> Hosting orchestration -> one-by-one migration
+of IleStoi and Local Agent**. The older H2/H3/O1 implementation details
+below are preserved as historical acceptance and reusable components,
+not as a competing future feature sequence.
+
+Hosting may provision only **explicitly app-created projects**.
+Existing Termux workloads remain independently supervised until
+their new PocketHost configuration, data isolation, health/recovery,
+backups and rollback have passed actual device checks.
+No migration, password/key change, tunnel reconfiguration or new
+autostart is implied by these document updates.
 
 ## Active DEV sprint rhythm — 2026-11-08
 
