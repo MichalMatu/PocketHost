@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## Latest Samsung M0/M1 terminal receipts (2026-11-09)
+
+Samsung `pockethost-m0-ui-unretested-15files-0f5291d7-20261109-v2` finished `done/0`: 55/55 UI tests passed (14 files) at `0f5291d7`; prior focused 19/19 UI remain separate historical evidence. `pockethost-m1-targeted-uid-umask-ts-9fb7db93-20261109-v2` finished `done/0`: the permission negative and TypeScript passed at `9fb7db9`. The M1 ownership tests 3/3 at `22245f13` and rollback plan tests 3/3 at `4fa08631` passed with boundaries/types/lint; both *overall* native tasks failed only on Prettier. Read-only scan at `93cec35e`: structure PASS, docs index and Markdownlint FAIL, Prettier FAIL. Targeted source fixes follow; exact-final-source checks and physical G3 remain OPEN. No live services changed.
+
 ## START HERE — v1 registry rollback plan (source, QA open)
 
 The additional `4fa08631` source-only v1 rollback planner validates stored envelope ownership, version and revision, requires independently trusted SHA-256 fingerprints for both the current and earlier snapshots, and returns a bounded next-revision declaration plan. It never writes or migrates live registry files. Native focused task `pockethost-m1-rollback-planner-focused-4fa08631-20261109-v1` is published; its terminal result is not yet observed.
@@ -12,7 +16,6 @@ The additional `4fa08631` source-only v1 rollback planner validates stored envel
 ## START HERE — M0 canonical style and M1 ownership diagnostic (2026-11-09)
 
 Read [the latest source/QA checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md). The read-only Samsung report found four remaining Prettier warnings on `0f5291d7`; their exact diffs were applied at `9ca92cf0`. The new `22245f13` M1 pure service ownership consistency diagnostic and negative fixtures are source-only, not a runtime privilege or acceptance result. Await native reports for the targeted UID/umask repair, 15 UI files and new ownership tests. Full final-source G1/G2, M1 acceptance and physical G3 remain OPEN; preserve all active services.
-
 
 ## START HERE — M0 focused UI PASS, M1 targeted fixes (2026-11-09)
 

@@ -11,6 +11,9 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [M0/M1 recovered UI acceptance and targeted M1 repair](2026-11-09-m0-m1-native-focused-ui-pass-repairs.md)
+- [M0/M1 resumed native validation handoff](2026-11-09-m0-m1-resume-native-validation-handoff.md)
+
 - [M0 canonical formatting patches and M1 source-only ownership diagnostics](2026-11-09-m0-m1-ownership-and-canonical-style.md)
 
 - [Complete M0/M1 source, QA, safety and next-chat checkpoint](2026-11-09-m0-m1-complete-checkpoint-next-chat.md)

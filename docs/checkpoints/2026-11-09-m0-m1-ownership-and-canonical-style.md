@@ -35,6 +35,16 @@ Each task uses an isolated clean Samsung QA checkout. A published task is not a 
 
 The additional `4fa08631` source-only v1 rollback planner validates stored envelope ownership, version and revision, requires independently trusted SHA-256 fingerprints for both the current and earlier snapshots, and returns a bounded next-revision declaration plan. It never writes or migrates live registry files. Native focused task `pockethost-m1-rollback-planner-focused-4fa08631-20261109-v1` is published; its terminal result is not yet observed.
 
+## Later Samsung terminal evidence
+
+- `pockethost-m0-ui-unretested-15files-0f5291d7-20261109-v2`: `done/0`, **55/55 UI** in 14 files PASS at `0f5291d7`.
+- `pockethost-m1-targeted-uid-umask-ts-9fb7db93-20261109-v2`: `done/0`, targeted permission negative and TypeScript PASS at `9fb7db9`.
+- `pockethost-m1-ownership-contract-focused-22245f13-20261109-v1`: 3/3 focused tests and boundaries/types/lint PASS; Prettier FAIL, overall `failed/1`.
+- `pockethost-m1-rollback-planner-focused-4fa08631-20261109-v1`: 3/3 focused tests and boundaries/types/lint PASS; Prettier FAIL, overall `failed/1`.
+- `pockethost-m0-m1-final-source-format-docs-93cec35e-20261109-v1`: structure PASS; missing checkpoint links, 3 MD012 extra blank lines and 5 Prettier warnings. Later source updates address these findings, pending exact-source confirmation.
+
+No current-SHA full source G2 or physical G3 is inferred from historical receipts.
+
 ## Remaining gates and safe next actions
 
 - **G1:** Four known Prettier warnings patched; recheck whole source including newly added files and this documentation on final SHA.

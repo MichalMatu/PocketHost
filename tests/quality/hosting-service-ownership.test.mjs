@@ -85,19 +85,45 @@ test('M1 ownership consistency requires a complete independent identity match', 
 
 test('M1 refuses foreign registration, protected runit, target drift and forged owner marker', () => {
   for (const mutate of [
-    (x) => { x.registration.owner = 'external'; },
-    (x) => { x.registration.name = 'sshd'; },
-    (x) => { x.registration.canonicalTarget = '/tmp/../tmp/service'; },
-    (x) => { x.observation.name = 'sshd'; },
-    (x) => { x.observation.canonicalTarget = '/tmp/other'; },
-    (x) => { x.observation.protected = true; },
-    (x) => { x.observation.state = 'unknown'; },
-    (x) => { x.marker.owner = 'external'; },
-    (x) => { x.marker.projectId = 'external'; },
-    (x) => { x.marker.moduleId = 'python'; },
-    (x) => { x.marker.name = 'pockethost-other-api'; },
-    (x) => { x.marker.canonicalTarget = '/tmp/other'; },
-    (x) => { x.marker.instanceId = 'not-an-instance'; },
+    (x) => {
+      x.registration.owner = 'external';
+    },
+    (x) => {
+      x.registration.name = 'sshd';
+    },
+    (x) => {
+      x.registration.canonicalTarget = '/tmp/../tmp/service';
+    },
+    (x) => {
+      x.observation.name = 'sshd';
+    },
+    (x) => {
+      x.observation.canonicalTarget = '/tmp/other';
+    },
+    (x) => {
+      x.observation.protected = true;
+    },
+    (x) => {
+      x.observation.state = 'unknown';
+    },
+    (x) => {
+      x.marker.owner = 'external';
+    },
+    (x) => {
+      x.marker.projectId = 'external';
+    },
+    (x) => {
+      x.marker.moduleId = 'python';
+    },
+    (x) => {
+      x.marker.name = 'pockethost-other-api';
+    },
+    (x) => {
+      x.marker.canonicalTarget = '/tmp/other';
+    },
+    (x) => {
+      x.marker.instanceId = 'not-an-instance';
+    },
   ]) {
     const snapshot = evidence();
     mutate(snapshot);
@@ -107,14 +133,30 @@ test('M1 refuses foreign registration, protected runit, target drift and forged 
 
 test('M1 refuses PID reuse, start-tick drift and incomplete/unknown process evidence', () => {
   for (const mutate of [
-    (x) => { x.observedProcess = null; },
-    (x) => { x.observedProcess.pid = 54321; },
-    (x) => { x.observedProcess.startTicks = '9876544'; },
-    (x) => { x.observedProcess.executable = '/tmp/node'; },
-    (x) => { x.observedProcess.cwd = '/tmp/other'; },
-    (x) => { x.observedProcess.argvSha256 = 'b'.repeat(64); },
-    (x) => { x.marker.expectedProcess.argvSha256 = 'invalid'; },
-    (x) => { x.marker.expectedProcess.pid = 0; },
+    (x) => {
+      x.observedProcess = null;
+    },
+    (x) => {
+      x.observedProcess.pid = 54321;
+    },
+    (x) => {
+      x.observedProcess.startTicks = '9876544';
+    },
+    (x) => {
+      x.observedProcess.executable = '/tmp/node';
+    },
+    (x) => {
+      x.observedProcess.cwd = '/tmp/other';
+    },
+    (x) => {
+      x.observedProcess.argvSha256 = 'b'.repeat(64);
+    },
+    (x) => {
+      x.marker.expectedProcess.argvSha256 = 'invalid';
+    },
+    (x) => {
+      x.marker.expectedProcess.pid = 0;
+    },
   ]) {
     const snapshot = evidence();
     mutate(snapshot);

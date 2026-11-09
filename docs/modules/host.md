@@ -146,4 +146,3 @@ markers must be independently trusted, and any future host lifecycle
 adapter must re-attest the real process immediately before an action.
 No existing runit service or registry was read or modified for this source
 change. Native focused QA remains pending.
-

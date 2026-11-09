@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
+## Latest verified Samsung focused results (2026-11-09)
+
+On isolated QA checkouts: M0 UI `55/55` PASS at `0f5291d7`; M1 UID/umask negative and TypeScript PASS at `9fb7db9`; M1 ownership `3/3` PASS at `22245f13`; M1 rollback `3/3` PASS at `4fa08631`. The ownership and rollback tasks failed *overall* on formatting only. A `93cec35e` read-only scan found two absent checkpoint index links, three MD012 blank lines and five Prettier warnings. These source issues are patched in later commits; complete final-SHA G1/G2 and physical G3 remain OPEN.
+
 ## Additional v1 rollback planning source (2026-11-09)
 
 `4fa08631` adds explicit SHA-256 and expected-revision checks for an in-memory v1 rollback plan; no version-2 migration, real registry restore or owner-side effect is implemented. Focused native task is published with no terminal acceptance yet. G1/G2/M1 remain OPEN.
@@ -12,7 +16,6 @@ purpose: Current PocketHost source, hardware and release acceptance contract
 ## Latest M0/M1 source and native status (2026-11-09)
 
 Four exact canonical Prettier changes from the Samsung read-only receipt were applied through `9ca92cf0` after the nine previous patches. The new `22245f13` M1 ownership consistency checker is a read-only diagnostic and cannot authorize lifecycle operations. Three native tasks remain pending terminal receipts: UID/umask, remaining 15 UI files, and new M1 ownership-focused QA. No final-source formatting PASS, full UI PASS or physical G3 was claimed. See [the latest checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md).
-
 
 ## Most recent M0/M1 native focused evidence (2026-11-09)
 
