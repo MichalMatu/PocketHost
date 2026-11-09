@@ -76,7 +76,7 @@ public final class TelemetryHttpServer {
                     client.setSoTimeout(2500);
                     InputStream input = new BufferedInputStream(client.getInputStream());
                     String request = readLine(input, 512);
-                    if (request == null) continue;
+                    if (request == null) return;
                     OutputStream output = client.getOutputStream();
                     boolean statusRoute = request.matches("GET /status HTTP/1\\.[01]");
                     boolean appsRoute = request.matches("GET /apps HTTP/1\\.[01]");
