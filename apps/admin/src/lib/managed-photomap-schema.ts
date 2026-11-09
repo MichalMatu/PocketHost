@@ -36,6 +36,31 @@ export const managedPhotoMapProjectSchema = z.object({
   }).strict(),
 }).strict()
 
+const legacyRuntimeEvent = z.object({
+  timestamp: z.string().datetime({ offset: true }),
+  instanceId: z.literal("photomap-test"),
+  code: z.enum([
+    "manual-start-requested",
+    "manual-start-health-failed",
+    "manual-stop-completed",
+    "manual-stop-uncertain",
+  ]),
+}).strict()
+
+export const legacyPhotoMapEventsSchema = z.object({
+  state: z.enum(["ok", "unavailable"]),
+  events: z.array(legacyRuntimeEvent).max(20),
+}).strict().refine(
+  value => value.state === "ok" || value.events.length === 0,
+  "Unavailable diagnostics must not contain events",
+)
+
+export type LegacyPhotoMapEventResponse = z.infer<typeof legacyPhotoMapEventsSchema>
+
+export function parseLegacyPhotoMapEvents(input: unknown): LegacyPhotoMapEventResponse {
+  return legacyPhotoMapEventsSchema.parse(input)
+}
+
 export type ManagedPhotoMapProject = z.infer<typeof managedPhotoMapProjectSchema>
 export function parseManagedPhotoMapResponse(data: unknown): ManagedPhotoMapProject {
   return z.object({ project: managedPhotoMapProjectSchema }).strict().parse(data).project
