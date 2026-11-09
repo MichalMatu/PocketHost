@@ -161,6 +161,118 @@ that application managed by PocketHost later, it should be **deployed as
 a new, explicitly configured PocketHost project with a distinct owned runtime**
 through the same wizard, rather than adopting the existing process.
 
+## Migration decision — existing Termux workloads become app-created services
+
+Owner clarification (2026-11-09): IleStoi and Local Agent are **future
+migration candidates**, not permanent forbidden workloads. PocketHost must
+**not discover/adopt** existing running processes, but the owner intends to
+remove their separate Termux service registrations **after PocketHost is
+independently accepted**, and recreate them through PocketHost's explicit
+Create Project / Create Managed Service workflow.
+
+The distinction is between (a) prohibited automatic discovery/adoption
+and (b) explicitly **provisioning a new owned installation** from source,
+approved configuration, dependencies and preserved data. A new PocketHost
+service must have one owner and no competing production runit entry. The
+current services must not be removed until the replacement and rollback are
+both proven. Even after migration, hosted programs still physically execute
+inside Termux; what changes is the **configuration/lifecycle owner**, not
+Android's runtime environment.
+
+### Verified existing source contracts, not current live state
+
+| Component | Existing independent mechanism | Required preservation |
+| --- | --- | --- |
+| IleStoi / `wreckscanner` | `deploy/termux/wreckscanner.run` uses project-specific Python `.venv`, `server.py`, standard Termux `runit`, local port 8001 | Project-managed Python environment, explicitly selected persistent SQLite/media, exact health checks; never run two writers against production data |
+| IleStoi backup | `wreckscanner-backup.run` schedules Restic approximately daily with `flock`, hourly retry and weekly retention maintenance | Locking, backup credentials outside UI, proven restore and retention (7 daily, 8 weekly, 6 monthly) |
+| Cloudflare | `cloudflared.run` uses private `~/.cloudflared/config.yml` and Termux `runit` | One shared tunnel service, private credentials and explicit owned routing; do not duplicate or change the currently active tunnel by default |
+| IleStoi tunnel healthwatch | `ilestoi-healthwatch.py` tests backend ready 200, public 502/503/504/520-524/530 and outbound TCP; three failing checks at 180-second intervals; 30-minute restart cooldown; honors `down` marker | Express this as a reusable **service-specific recovery policy**, not a blanket network restart rule. Never restart the backend for only a tunnel failure |
+| Local Agent | Independent Termux:Boot `90-local-agent`, private `runsvdir`, app-private installation, Git task/result spools and `EMERGENCY_STOP` | Preserve exact private installation identity, durable claims/results, no-replay UNKNOWN semantics and out-of-band operator rollback; never start two consumers of one task namespace |
+| PocketHost panel | `pockethost-panel` and `pockethost-panel-watch` under standard Termux runit; 12-second HTTP health probes, three failures, 120-second cooldown and initial 50-second grace | Reuse proven runit supervision as the underlying adapter, not a second OS process manager |
+
+Sources: `MichalMatu/ilestoi/deploy/termux/*`,
+`MichalMatu/ilestoi/docs/TERMUX.md`,
+`MichalMatu/local-agent/platforms/android/local-agent/README.md`,
+`MichalMatu/local-agent/platforms/android/local-agent/termux_agent/*`,
+`MichalMatu/local-agent/deploy/termux/*`, and PocketHost
+`docs/adr/0014-termux-panel-supervision.md`.
+
+The IleStoi docs record a **2026-11-08 Cloudflare outage caused by a stale
+`down` marker and an invalid `--token-file` runner**. Live service entrypoint
+must be verified against the checked-in runner and config before any staged
+migration. The historical Local Agent's own Termux:Boot and independent
+`runsvdir` are deliberate safety boundaries, not duplicate PocketHost code.
+
+### Proposed reusable service control plane
+
+A single **PocketHost-managed Service Registry** for *explicitly provisioned*
+services should be the authoritative UI/API for status, last health results,
+Start/Stop/Restart/Enable, autostart, restart policy, dependency checks,
+backup policy, events and logs. Each service record references exactly one
+project or shared infrastructure component.
+
+Implement as separate layers:
+1. Application-supplied source/manifest parser and an immutable reviewed
+   **install plan**; detect `package.json` + lockfiles, `pyproject.toml`,
+   `requirements*.txt` and explicit service manifests; never scan
+   unrelated existing Termux projects.
+2. A `DependencyResolver` comparing required versions/constraints with
+   actual capabilities: `installed`, `missing`, `incompatible`,
+   `update-available`, or `unknown` (network/cache uncertainty).
+   Expose **Check / Install / Update** only for explicit per-project plans
+   with preflight, user approval, snapshots and post-install verification.
+   Separate shared Termux `pkg` changes from project-local `npm ci`/
+   Python venv/PRoot dependencies; no implicit global upgrade.
+3. A `SupervisorAdapter` using the installed Termux **runit**, plus
+   exact-owner markers and bounded process identity guards. Preserve
+   existing accepted service scripts as templates or verified plugins;
+   do not add another `runsvdir` for each PocketHost project.
+4. A `HealthPolicyEngine` with typed liveness, readiness, optional public
+   reachability, failure threshold, interval, startup grace, cooldown,
+   dependencies, explicit disabled/maintenance state and escalation.
+   Policy may request a restart only of its registered owned service,
+   and records reason, last action and suppressed attempts.
+5. A central view **Managed Services & Reliability** (with per-project
+   detailed screens) showing owner, service, auto-start, health,
+   dependency status and recovery history. This is one management plane,
+   not separate scripts issuing competing restarts.
+
+Do not turn one incident-specific healthwatch into a global default.
+IleStoi's tunnel policy and PocketHost's panel policy are intentionally
+different, and Local Agent's task-integrity fences cannot be replaced by
+an HTTP process health check.
+
+### Cutover stages — no active service removal yet
+
+1. **Read-only host preflight**: verify the active boot scripts, both
+   `runsvdir` trees, exact service run scripts/down markers, localhost
+   readiness, cloudflared ingress validity, source hashes and durable
+   Local Agent task state. Never print credentials.
+2. **Source-based staging**: Create an IleStoi project and Local Agent
+   service through PocketHost UI using approved repo manifests. Install
+   app-specific dependencies in new owned directories; perform tests with
+   disposable app data. Keep the original services running unchanged.
+3. **Controlled acceptance**: validate health, rollback, backup restore,
+   restart policy and no duplicate workers/processes; do not connect a
+   staging tunnel to production hostname or reuse live SQLite for a
+   simultaneous second writer.
+4. **One-at-a-time cutover**: external independent SSH/USB operator
+   controls the transition, atomically disables old service autostart
+   before enabling one replacement; validates end-to-end routing, backups
+   and restart after cutover, and retains reversible prior definitions.
+5. **Local Agent LAST**: Do not allow the Agent to stop/migrate its own
+   supervisor through a queued Agent command. Preserve the private
+   `EMERGENCY_STOP`, installed identity, claims/results, keys and transport;
+   use an independent operator channel and prove fresh real Git
+   task/result publication after switch. No duplicate polling under the
+   same installation ID.
+6. **Only after PASS**: retire the old corresponding Termux runit
+   registrations/boot hooks, not Termux itself, global packages,
+   original app code, backup archives or other services.
+
+No production service should be stopped, reconfigured, imported by
+discovery or removed just because this target architecture has been recorded.
+
 ## Hosting today versus target backend hosting
 
 The working H2 fleet accepts a bounded ZIP or browser-selected folder
