@@ -122,6 +122,14 @@ describe("H3 strict read-only contracts", () => {
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
+  it("keeps system backups distinct from immutable Hosting release history", async () => {
+    const calls = mount("backups")
+    await screen.findByText("Backup readiness")
+    expect(screen.getByRole("link", { name: "Hosting → Websites" }).getAttribute("href")).toBe("/sites")
+    expect(screen.queryByText("View release history")).toBeNull()
+    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
+  })
+
   it("keeps foreign runit observations separate from Hosting site controls", async () => {
     const calls = mount("services")
     await screen.findByText("ilestoi")
