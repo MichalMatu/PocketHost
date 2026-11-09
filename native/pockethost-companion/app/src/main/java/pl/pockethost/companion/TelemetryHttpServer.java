@@ -146,9 +146,13 @@ public final class TelemetryHttpServer {
                                                 inputBody.getString("target"),
                                                 inputBody.getString("value"));
                                     }
-                                    status = (runRoute &&
-                                            !new org.json.JSONObject(body).optBoolean("success", false))
-                                            ? 502 : 200;
+                                    if (body == null || body.isBlank()) {
+                                        body = "{\"error\":\"native-empty-action-result\"}";
+                                        status = 502;
+                                    } else {
+                                        status = new org.json.JSONObject(body).optBoolean("success", false)
+                                                ? 200 : 502;
+                                    }
                                 } catch (IllegalArgumentException error) {
                                     body = "{\"error\":\"invalid-command\"}";
                                     status = 400;
@@ -193,8 +197,10 @@ public final class TelemetryHttpServer {
                     output.write(headers.getBytes(StandardCharsets.US_ASCII));
                     output.write(bytes);
                     output.flush();
-        } catch (Exception ignored) {
-            // Malformed loopback requests cannot take down the companion.
+        } catch (Exception error) {
+            // Keep the loopback listener alive, but never hide unexplained disconnects.
+            // Log only the exception class, never raw commands or device data.
+            Log.w(TAG, "Native loopback request closed: " + error.getClass().getSimpleName());
         }
     }
 }

@@ -260,14 +260,15 @@ public final class PowerUserService extends IPowerUserService.Stub {
     }
 
     /**
-     * Called ONLY via native owner-visible Companion Binder.
-     * No method dispatch from the browser/HTTP bridge is provided.
+     * Shared owner action execution for Companion and direct private-LAN browser.
+     * The real Shizuku UID decides whether Android accepts the operation.
+     * Expected Android refusals return structured failures over Binder.
      */
     @Override
     public String runOwnerAction(String action, String target, String value) throws RemoteException {
+        long beganAt = android.os.SystemClock.elapsedRealtime();
         try {
             int uid = authorizedUid();
-            long beganAt = android.os.SystemClock.elapsedRealtime();
             String output;
             switch (action) {
                 case "launch":
@@ -346,10 +347,28 @@ public final class PowerUserService extends IPowerUserService.Stub {
             result.put("durationMs", Math.max(0, android.os.SystemClock.elapsedRealtime() - beganAt));
             return result.toString();
         } catch (Exception e) {
-            // Shell errors and OS refusals are not successes.
-            throw new RemoteException("Android refused operation: " + e.getClass().getSimpleName()
-                    + ": " + String.valueOf(e.getMessage()).substring(0, Math.min(120,
-                    String.valueOf(e.getMessage()).length())));
+            // Android refusals are normal outcomes, not broken Binder transactions.
+            // Returning an explicit failure envelope also works for the on-phone UI.
+            try {
+                String details = String.valueOf(e.getMessage());
+                JSONObject failure = new JSONObject();
+                failure.put("action", action == null ? "" : action);
+                failure.put("target", target == null ? "" : target.substring(0, Math.min(240, target.length())));
+                failure.put("mode", Os.getuid() == 0 ? "root" : Os.getuid() == 2000 ? "adb" : "none");
+                failure.put("success", false);
+                failure.put("error", "android-action-refused");
+                failure.put("detail", e.getClass().getSimpleName() + ": " +
+                        details.substring(0, Math.min(120, details.length())));
+                failure.put("output", "");
+                failure.put("stdout", "");
+                failure.put("stderr", "");
+                failure.put("exitCode", -1);
+                failure.put("durationMs", Math.max(0,
+                        android.os.SystemClock.elapsedRealtime() - beganAt));
+                return failure.toString();
+            } catch (Exception serializationFailure) {
+                throw new RemoteException("Android refusal result unavailable");
+            }
         }
     }
 

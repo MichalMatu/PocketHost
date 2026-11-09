@@ -264,6 +264,7 @@ public final class MainActivity extends Activity {
                 snapshot.put("connected", true);
                 snapshot.put("authorized", true);
                 snapshot.put("mode", uid == 0 ? "root" : "adb");
+                snapshot.put("uid", uid);
                 snapshot.put("observedAt", new java.util.Date().toInstant().toString());
                 snapshot.put("cpuPercent", json.opt("cpuPercent"));
                 snapshot.put("visibleProcesses", json.opt("visibleProcesses"));
