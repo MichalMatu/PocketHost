@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
+import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 
 const endpoint = "/api/v1/sites"
 const intent = "owned-sites"
@@ -54,6 +55,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [logs, setLogs] = React.useState<string[] | null>(null)
   const [versions, setVersions] = React.useState<FleetRelease[] | null>(null)
   const [versionsLoading, setVersionsLoading] = React.useState(false)
+  const [assets, setAssets] = React.useState<H3Files | null>(null)
+  const [assetsLoading, setAssetsLoading] = React.useState(false)
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
@@ -76,6 +79,21 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       .catch(cause => setError(cause instanceof Error ? cause.message : "Version inventory unavailable."))
       .finally(() => setVersionsLoading(false))
   }
+  const toggleAssets = () => {
+    if (assets !== null) { setAssets(null); return }
+    if (busy || assetsLoading || site.state === "unknown" || !site.activeRelease) return
+    setAssetsLoading(true)
+    setError(null)
+    void fetch(endpoint + "/" + site.id + "/files", {
+      method: "GET", credentials: "same-origin", cache: "no-store",
+    }).then(async response => {
+      if (!response.ok) throw new Error("Active site files are unavailable.")
+      setAssets(parseH3Files(await response.json()))
+    }).catch(cause => {
+      setAssets(null)
+      setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
+    }).finally(() => setAssetsLoading(false))
+  }
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
     if (site.state === "unknown" || busy) return
     const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
@@ -95,6 +113,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     try {
       await job()
       await onChange()
+      setAssets(null)
       if (versions !== null) await readVersions()
       setMessage(success)
     } catch (cause) {
@@ -217,10 +236,24 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             onClick={() => action("rollback")}><History /> Rollback</Button>
           <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
           <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
+          <Button variant="outline" disabled={busy || assetsLoading || site.state === "unknown" || !site.activeRelease}
+            onClick={toggleAssets}>
+            <FolderOpen /> {assets !== null ? "Hide assets" : assetsLoading ? "Reading assets…" : "Inspect assets"}
+          </Button>
           <Button variant="outline" disabled={busy || versionsLoading} onClick={toggleVersions}>
             <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Reading versions…" : "Manage versions"}
           </Button>
         </div>
+        {assets !== null && <section className="space-y-2 rounded-lg border p-4" aria-label={"Active assets of " + site.name}>
+          <h3 className="text-sm font-semibold">Active release assets ({assets.length})</h3>
+          <div className="max-h-72 overflow-auto">
+            {assets.map(item => <div key={item.name} className="flex justify-between gap-3 border-b py-2 text-xs">
+              <span className="break-all font-mono">{item.name}</span>
+              <span className="shrink-0">{item.bytes} B</span>
+            </div>)}
+            {assets.length === 0 && <p className="text-muted-foreground text-xs">No active files.</p>}
+          </div>
+        </section>}
         {versions !== null && <section className="space-y-3 rounded-lg border p-4" aria-label={"Saved versions of " + site.name}>
           <div>
             <h3 className="text-sm font-semibold">Saved releases</h3>
