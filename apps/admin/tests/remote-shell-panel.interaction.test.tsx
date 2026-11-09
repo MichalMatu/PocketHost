@@ -31,6 +31,26 @@ describe("direct Shizuku shell from private-LAN browser", () => {
     expect(screen.getByText(/Last execution: ADB/)).toBeTruthy()
   })
 
+  it("shows stdout stderr exit and timing on a real command failure and allows rerun", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: false, status: 502, json: async () => ({
+        action: "shell", success: false, mode: "adb",
+        output: "not found", stdout: "", stderr: "not found", exitCode: 127, durationMs: 42,
+      }),
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+    render(<RemoteShellPanel />)
+    const user = userEvent.setup()
+    await user.type(screen.getByLabelText("Android shell command"), "not_existing_command")
+    await user.click(screen.getByRole("button", { name: "Run on Samsung" }))
+    expect(await screen.findByText("Exit: 127")).toBeTruthy()
+    expect(screen.getByText("Duration: 42 ms")).toBeTruthy()
+    expect(screen.getByRole("alert")).toHaveProperty("textContent", "code 127")
+    expect(screen.getByText("stderr")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Run again" }))
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it("shows native refusals without pretending shell execution succeeded", async () => {
     const fetchMock = vi.fn()
     fetchMock.mockResolvedValue({
