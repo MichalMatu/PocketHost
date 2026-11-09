@@ -1,13 +1,33 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-07
+last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
 # Quality Gates
 
 ## Execution and evidence
+
+### Current 2026-11-09 source and host quality
+
+Read the [full 2026-11-09 code/structure/quality checkpoint]
+(checkpoints/2026-11-09-code-quality-structure-handoff.md) first.
+The former `check:structure` and `check:docs` failures were traced
+to outdated manifest/host contract allowlists, missing checkpoint
+archive entries and a wrong Shizuku relative link. Their fixes
+were committed to `main` but must be confirmed by an exact-SHA
+Samsung native receipt before G0/G1 is marked PASS.
+
+Physical PocketHost-only `runit` deployment **PASS**:
+loopback `8787` and private LAN `18878` HTTP 200; controlled
+`sv term` changed the exact panel PID from 15757 to 22800 and
+the Mac verified HTTP 200 with six protected services unchanged.
+Exact evidence:
+`pockethost-panel-activate-after-runsvdir-20261109-v1`,
+`pockethost-panel-mac-hardware-recovery-20261109-v1`.
+Real full-device reboot and hang/flap watchdog acceptance are OPEN.
+The newer source SHA must not inherit the earlier live-test result.
 
 **Current default is PocketHost DEV fast iteration (ADR-0012).** The
 owner-facing panel is DEV, not a customer production deployment.
