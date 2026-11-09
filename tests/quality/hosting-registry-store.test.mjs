@@ -3,7 +3,7 @@ import test from 'node:test';
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createHostingRegistryStore } from '../../src/modules/config/hosting-registry-store.ts';
+import { createHostingRegistryStore } from '../../src/modules/host/hosting-registry-store.ts';
 
 function declarations() {
   return {

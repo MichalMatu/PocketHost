@@ -5,7 +5,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import type { HostingDeclarations } from '../../shared/hosting-platform.ts';
-import { createHostingRegistries } from './hosting-registry.ts';
+import { createHostingRegistries } from '../../shared/hosting-registry.ts';
 
 const NAME = 'hosting-declarations.json';
 const LOCK = '.hosting-declarations.lock';
