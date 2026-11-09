@@ -129,7 +129,7 @@ auto-imported, adopted, restarted or migrated by discovery.
 | Full device reboot / Android force-stop recovery | **OPEN — never run/accepted** |
 | `npm run check:structure` at `2d9cab21` | **FAIL**: manifest omitted `native`, `ops`, `shizuku` and six host ESM/declaration files |
 | `npm run check:docs` at `7521ca5` | **FAIL**: five archive entries absent and one incorrect Shizuku relative link |
-| Later structure/docs source fixes | **Committed**, requires exact-new-SHA native pass before claiming green |
+| Later structure source fixes | **PASS** at d284491 (S22 receipt); docs headings fixed after this test |
 | Full `npm run check:all`, coverage, UI matrix on latest code | **OPEN**, older passing results do not transfer to newer SHA |
 | Shizuku P0/P1 advanced action matrix | **OPEN for current combined source**; earlier accepted direct shell remains historical evidence |
 | Native Companion matching current main | **OPEN** unless independently rebuilt/installed/tested |
@@ -154,13 +154,44 @@ auto-imported, adopted, restarted or migrated by discovery.
    `ops/termux/install-panel-services.sh` and added a negative
    regression assertion in `tests/quality/panel-autostart.test.mjs`.
 
-A bounded exact-SHA foundation/style check was sent to Samsung:
-`pockethost-handoff-foundation-quality-s22-20261109-v1`,
-source `d2844917888a7b4345b361f362ec9740b2b73cf4`.
-**Its terminal receipt must be read before changing the matrix to
-PASS/FAIL.** Because docs/agent-policy commits followed that SHA,
-a new final `main` full check is a separate task. No GitHub-hosted
-test or local-Mac test substitutes for the phone result.
+### Actual S22 quality receipt, not a projected gate
+
+The native Samsung task
+`pockethost-handoff-foundation-quality-s22-20261109-v1`
+finished **failed / exit 1** on exact source
+`d2844917888a7b4345b361f362ec9740b2b73cf4`.
+It independently ran the following stages on the isolated QA checkout:
+
+| Gate | Native result |
+| --- | --- |
+| Git origin, worktree cleanliness, detached commit | PASS |
+| `npm run check:structure` | **PASS** after manifest/host contract repairs |
+| `npm run check:docs` | FAIL: Shizuku `AGENTS.md` lacks three required headings |
+| `npm run check:boundaries` | **PASS** |
+| `npm test` | **180/182 PASS**; two documentation foundation assertions failed for the same three missing Shizuku headings |
+| `npm run markdownlint` | FAIL: multiple blank lines, list spacing and emphasis style in historical/current docs |
+| `npm run format:check` | FAIL: **29 files** need Prettier formatting |
+| `npm run lint` | FAIL: two `no-empty` catch blocks in `scripts/dev/ui-sync.mjs` |
+| `npm run typecheck` | **PASS** |
+| Focused panel contract | **3/3 PASS** |
+
+After this receipt, the required `## Scope`,
+`## Forbidden` and `## Gate` sections were added to
+`src/modules/shizuku/AGENTS.md`. Both DEV sync catch blocks
+now have explicit best-effort-cleanup comments, resolving the
+identified ESLint warning without changing their operational
+behavior. These repairs were **not part of the older tested SHA**.
+
+A separate, pinned follow-up native task
+`pockethost-handoff-postfix-native-gates-20261109-v1` targets
+`f7eb90e9c50996e0f029acf7475793f81fabdb31`.
+It reruns structure, docs, boundaries, all Node unit tests,
+ESLint, TypeScript, admin lint/build and panel contract.
+**Read the result** before changing any of these from
+OPEN to PASS. It does not waive Markdownlint, Prettier,
+code coverage or the final all-in-one gate. The 29-file
+formatting debt needs a separate narrowly reviewed batch,
+not an undocumented claim of green status.
 
 ## 4. Repository and operations consistency
 
