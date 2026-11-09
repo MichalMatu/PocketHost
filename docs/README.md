@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [M0 source and upstream reuse audit — no code changes, implementation gates open](checkpoints/2026-11-09-m0-source-and-upstream-audit-readonly.md)
+
 - [Complete 2026-11-09 code, quality, structure and next-chat checkpoint](checkpoints/2026-11-09-code-quality-structure-handoff.md)
 - [PocketHost-only Termux runit autostart and health-recovery decision](adr/0014-termux-panel-supervision.md)
 
