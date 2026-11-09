@@ -82,18 +82,13 @@ test('Shizuku GET-only inventory routes receive bounded native-aware LAN deadlin
   }
 });
 
-test('paired shell request/poll receive only narrow POST-only timeout exceptions', () => {
-  for (const route of [
-    '/api/v1/shizuku/remote-shell/submit',
-    '/api/v1/shizuku/remote-shell/poll',
-  ]) {
-    assert.equal(upstreamTimeoutMs(route, 'POST'), 8500);
-    assert.equal(upstreamTimeoutMs(route + '?invalid=1', 'POST'), 8500);
-    assert.equal(upstreamTimeoutMs(route, 'GET'), 5000);
-    assert.equal(upstreamTimeoutMs(route, 'DELETE'), 5000);
-  }
-  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/execute', 'POST'), 5000);
-  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/shell', 'POST'), 5000);
+test('direct Android shell has one POST-only LAN timeout exception', () => {
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/run', 'POST'), 20000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/run?request=1', 'POST'), 20000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/run', 'GET'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/run', 'DELETE'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/submit', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/shizuku/remote-shell/poll', 'POST'), 5000);
 });
 
 test('LAN remains exact RFC1918 address only; same subnet and no public bind', () => {
