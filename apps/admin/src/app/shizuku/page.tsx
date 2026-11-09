@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { RemoteShellPanel } from "./remote-shell-panel"
+import { AndroidActionButton } from "./android-action-button"
 import {
   parseShizukuStatus, parseShizukuApps, parseShizukuSystem, parseShizukuApp,
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
@@ -88,6 +89,12 @@ export default function ShizukuPage() {
   const [permissionPackageFilter, setPermissionPackageFilter] = React.useState<PackageFilter>("all")
   const [permissionAppPage, setPermissionAppPage] = React.useState(0)
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
+  const [selectedProcessPid, setSelectedProcessPid] = React.useState<number | null>(null)
+  const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("pid")
+  const [descending, setDescending] = React.useState(false)
+  const [brightnessDraft, setBrightnessDraft] = React.useState("")
+  const [timeoutDraft, setTimeoutDraft] = React.useState("")
+  const [cpuHistory, setCpuHistory] = React.useState<Array<{ time: string; value: number }>>([])
   const [servicePage, setServicePage] = React.useState(0)
   const [appPage, setAppPage] = React.useState(0)
   const [processPage, setProcessPage] = React.useState(0)
@@ -131,6 +138,10 @@ export default function ShizukuPage() {
       .then(nativeStatus => {
         if (signal.aborted) return
         setStatus(nativeStatus)
+        if (nativeStatus.cpuPercent != null) setCpuHistory(current => {
+          if (current.some(point => point.time === nativeStatus.observedAt)) return current
+          return [...current, { time: nativeStatus.observedAt, value: nativeStatus.cpuPercent! }].slice(-40)
+        })
         if (!nativeStatus.connected || !nativeStatus.authorized) return
 
         setAppsLoading(true)
@@ -166,7 +177,14 @@ export default function ShizukuPage() {
     item.name.toLowerCase().includes(processSearch.trim().toLowerCase()) ||
     item.user.toLowerCase().includes(processSearch.trim().toLowerCase()) ||
     String(item.pid).includes(processSearch.trim())
-  )
+  ).sort((a, b) => {
+    const order = sortProcessBy === "pid" ? a.pid - b.pid :
+      sortProcessBy === "rss" ? (a.rssKb ?? -1) - (b.rssKb ?? -1) :
+      sortProcessBy === "cpu" ? (a.cpuPercent ?? -1) - (b.cpuPercent ?? -1) :
+      String(a[sortProcessBy]).localeCompare(String(b[sortProcessBy]))
+    return descending ? -order : order
+  })
+  const selectedProcess = system?.processes.find(process => process.pid === selectedProcessPid)
   const shownServices = (system?.services.names ?? []).filter(item =>
     item.toLowerCase().includes(serviceSearch.trim().toLowerCase())
   )
@@ -354,10 +372,21 @@ export default function ShizukuPage() {
                     {selectedPackage && !detailLoading && !appDetail && (
                       <p role="status" className="text-muted-foreground text-sm">{detailError ? "App detail request failed. Select the app again to retry." : "Detailed metadata unavailable for this Android user."}</p>
                     )}
-                    <p className="text-muted-foreground text-sm">
-                      Launch, force-stop, uninstall and permission changes require confirmation
-                      inside PocketHost Companion on the Samsung.
-                    </p>
+                    {selectedPackage && appDetail && connected && (
+                      <div className="flex flex-wrap gap-2">
+                        <AndroidActionButton action="launch" target={selectedPackage} onSuccess={() => void selectPackage(selectedPackage)}>Launch</AndroidActionButton>
+                        <AndroidActionButton action="force-stop" target={selectedPackage}>Force stop</AndroidActionButton>
+                        <AndroidActionButton action={appDetail.enabled ? "disable" : "enable"} target={selectedPackage}
+                          onSuccess={() => { void selectPackage(selectedPackage); setRefreshKey(k => k + 1) }}>
+                          {appDetail.enabled ? "Disable" : "Enable"}
+                        </AndroidActionButton>
+                        <AndroidActionButton action="uninstall" target={selectedPackage}
+                          onSuccess={() => { setSelectedPackage(null); setAppDetail(null); setRefreshKey(k => k + 1) }}>
+                          Uninstall for user 0
+                        </AndroidActionButton>
+                      </div>
+                    )}
+                    <p className="text-muted-foreground text-xs">Direct browser actions run immediately with actual Shizuku permissions. Uninstall targets Android user 0.</p>
                     <p className="text-muted-foreground text-xs">
                       {shownApps.length} matching · {apps.packages.length} reported
                       {apps.truncated ? " · truncated" : ""}
@@ -373,6 +402,29 @@ export default function ShizukuPage() {
             <CardHeader><CardTitle>Android CPU & processes</CardTitle>
               <CardDescription>Real PID, owner, RSS and CPU (where Android reports it). No fabricated per-process CPU usage.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <label htmlFor="android-process-sort">Sort by</label>
+                <select id="android-process-sort" aria-label="Sort Android processes" className="bg-background rounded-md border px-3 py-2"
+                  value={sortProcessBy} onChange={e => { setSortProcessBy(e.target.value as typeof sortProcessBy); setProcessPage(0) }}>
+                  <option value="pid">PID</option><option value="name">Name</option>
+                  <option value="user">Owner</option><option value="rss">RSS</option><option value="cpu">CPU</option>
+                </select>
+                <Button size="sm" variant="outline" onClick={() => { setDescending(x => !x); setProcessPage(0) }}>
+                  {descending ? "Descending" : "Ascending"}
+                </Button>
+              </div>
+              <div className="rounded-lg border p-3">
+                <p className="text-sm font-medium">CPU history · current session</p>
+                {cpuHistory.length < 2 ? <p className="text-muted-foreground text-sm">Collecting samples…</p> :
+                  <svg viewBox="0 0 600 110" className="h-28 w-full" preserveAspectRatio="none"
+                    role="img" aria-label="Observed Android CPU history">
+                    <polyline fill="none" stroke="currentColor" strokeWidth="2"
+                      points={cpuHistory.map((point, i) =>
+                        (i * 600 / Math.max(1, cpuHistory.length - 1)) + "," + (100 - point.value)
+                      ).join(" ")} />
+                  </svg>}
+                <p className="text-muted-foreground text-xs">{cpuHistory.length} actual samples</p>
+              </div>
               <Input aria-label="Search Android processes" value={processSearch}
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
@@ -383,7 +435,11 @@ export default function ShizukuPage() {
                         <tr><th className="p-3">PID</th><th className="p-3">Process</th><th className="p-3">User</th><th className="p-3 text-right">RSS</th><th className="p-3 text-right">CPU</th></tr>
                       </thead><tbody>
                         {visibleProcesses.map(proc => <tr className="border-t" key={proc.pid}>
-                          <td className="p-3 font-mono">{proc.pid}</td>
+                          <td className="p-3 font-mono">
+                            <button type="button" className="underline underline-offset-2"
+                              aria-label={"Inspect process " + proc.pid}
+                              onClick={() => setSelectedProcessPid(proc.pid)}>{proc.pid}</button>
+                          </td>
                           <td className="max-w-80 break-all p-3">{proc.name}</td>
                           <td className="p-3">{proc.user}</td>
                           <td className="p-3 text-right" title="Resident memory (GiB)">{gib(proc.rssKb, 4)}</td>
@@ -399,7 +455,15 @@ export default function ShizukuPage() {
                       <Button size="sm" variant="outline" aria-label="Next processes" disabled={(processPage + 1) * PAGE_SIZE >= shownProcesses.length} onClick={() => setProcessPage(p => p + 1)}>Next</Button>
                     </div>
                   </div>
-                  <p className="text-muted-foreground text-xs">Individual process stop is available locally in Companion after confirmation.</p>
+                  {selectedProcess && (
+                    <div className="space-y-2 rounded-lg border p-3 text-sm">
+                      <p className="font-medium">Selected PID {selectedProcess.pid}</p>
+                      <p className="break-all">{selectedProcess.name} · {selectedProcess.user} · {gib(selectedProcess.rssKb, 4)}</p>
+                      <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
+                        onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID</AndroidActionButton>
+                    </div>
+                  )}
+                  <p className="text-muted-foreground text-xs">Per-process CPU is only shown if Android reports it.</p>
                   <LastSample observedAt={system.observedAt} />
                 </>}
             </CardContent>
@@ -508,6 +572,11 @@ export default function ShizukuPage() {
                             <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-3 text-sm last:border-b-0">
                               <span className="min-w-0 flex-1 break-all font-mono text-xs">{permission.name}</span>
                               <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
+                              {selectedPackage && connected && <AndroidActionButton
+                                action={permission.granted ? "revoke" : "grant"} target={selectedPackage}
+                                value={permission.name} onSuccess={() => void selectPackage(selectedPackage)}>
+                                {permission.granted ? "Revoke" : "Grant"}
+                              </AndroidActionButton>}
                             </div>
                           ))}
                           {!visiblePermissions.length && (
@@ -523,7 +592,7 @@ export default function ShizukuPage() {
                 <LastSample observedAt={apps?.observedAt} />
               </CardContent>
             </Card>
-            <NativeOwnerNotice specific="Grant or revoke a named runtime permission in Companion → Permissions. Android may deny that operation." />
+            <p className="text-muted-foreground text-xs">Grant and Revoke execute directly through Shizuku; real Android refusals remain visible.</p>
           </div>
         )}
         {section === "services" && (
@@ -536,6 +605,27 @@ export default function ShizukuPage() {
                   <p className="text-2xl font-semibold">{unavailable(system?.settings.brightness)}</p></div>
                 <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Airplane mode</p>
                   <p className="text-2xl font-semibold">{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</p></div>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="space-y-2 rounded-lg border p-3">
+                  <p className="text-sm font-medium">Set brightness (0–255)</p>
+                  <Input aria-label="Set screen brightness" type="number" min={0} max={255}
+                    value={brightnessDraft} placeholder={String(system?.settings.brightness ?? "128")}
+                    onChange={e => setBrightnessDraft(e.target.value)} />
+                  {brightnessDraft.trim() !== "" && connected &&
+                    <AndroidActionButton action="brightness" value={brightnessDraft}
+                      onSuccess={() => setRefreshKey(k => k + 1)}>Apply brightness</AndroidActionButton>}
+                </div>
+                <div className="space-y-2 rounded-lg border p-3">
+                  <p className="text-sm font-medium">Screen timeout (milliseconds)</p>
+                  <p className="text-muted-foreground text-xs">Current: {unavailable(system?.settings.screenTimeoutMs, " ms")}</p>
+                  <Input aria-label="Set screen timeout" type="number" min={15000} max={3600000}
+                    value={timeoutDraft} placeholder="60000"
+                    onChange={e => setTimeoutDraft(e.target.value)} />
+                  {timeoutDraft.trim() !== "" && connected &&
+                    <AndroidActionButton action="timeout" value={timeoutDraft}
+                      onSuccess={() => setRefreshKey(k => k + 1)}>Apply timeout</AndroidActionButton>}
+                </div>
               </div>
               <Input aria-label="Search Android services" value={serviceSearch}
                 onChange={e => { setServiceSearch(e.target.value); setServicePage(0) }}
@@ -574,12 +664,18 @@ export default function ShizukuPage() {
                     <div className="space-y-1 rounded-lg border p-3 text-sm">
                       <p className="font-medium">Selected Android component</p>
                       <p className="break-all font-mono text-xs">{selectedService}</p>
-                      <p className="text-muted-foreground text-xs">Inspect or change this exact component in PocketHost Companion on the phone. The list alone does not prove it is controllable.</p>
+                      <p className="text-muted-foreground text-xs">Android may refuse control of this observed service.</p>
+                      <div className="flex flex-wrap gap-2">
+                        <AndroidActionButton action="service-start" target={selectedService}
+                          onSuccess={() => setRefreshKey(k => k + 1)}>Start service</AndroidActionButton>
+                        <AndroidActionButton action="service-stop" target={selectedService}
+                          onSuccess={() => setRefreshKey(k => k + 1)}>Stop service</AndroidActionButton>
+                      </div>
                     </div>
                   )}
                 </>
               )}
-              <p className="text-muted-foreground text-xs">Start/stop services and adjust brightness or timeout only in Companion on the phone; the LAN dashboard is read-only.</p>
+              <p className="text-muted-foreground text-xs">These controls execute immediately through Shizuku. Actual Android refusals are shown.</p>
             </CardContent></Card>
           </div>
         )}
@@ -609,7 +705,7 @@ export default function ShizukuPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>Browser = Android diagnostics + Advanced Shell · Other Android changes = Companion on Samsung · ADB ≠ root</p>
+          <p>Browser = direct Shizuku diagnostics and actions · ADB ≠ root · Private LAN DEV</p>
           <Button size="sm" variant="outline" nativeButton={false} render={<Link to="/observability" />}>
             <Activity className="size-4" /> Termux monitoring
           </Button>
