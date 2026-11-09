@@ -31,9 +31,9 @@ write_service() {
   mkdir -p "$staging/log" "$PREFIX/var/log/sv/$name"
   : > "$staging/down"
   printf '%s\n' "#!$PREFIX/bin/sh" \
-    "exec $ROOT/ops/termux/panel-service.sh $action $ROOT" > "$staging/run"
+    "exec $PREFIX/bin/sh $ROOT/ops/termux/panel-service.sh $action $ROOT" > "$staging/run"
   printf '%s\n' "#!$PREFIX/bin/sh" \
-    "exec $ROOT/ops/termux/panel-service.sh check" > "$staging/check"
+    "exec $PREFIX/bin/sh $ROOT/ops/termux/panel-service.sh check" > "$staging/check"
   printf '%s\n' "#!$PREFIX/bin/sh" \
     "exec $PREFIX/bin/svlogd -tt $PREFIX/var/log/sv/$name" > "$staging/log/run"
   printf '%s\n' "$ROOT" > "$staging/owner-root"
