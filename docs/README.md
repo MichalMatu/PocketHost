@@ -6,6 +6,7 @@
 - [PocketHost-only Termux runit autostart and health-recovery decision](adr/0014-termux-panel-supervision.md)
 
 - [Target modular platform, reusable modules and Hosting orchestration](TARGET_INFORMATION_ARCHITECTURE.md)
+- [Upstream GitHub reuse matrix: Termux services, hosting panels, licensing and adoption gates](UPSTREAM_REUSE_STRATEGY.md)
 
 - [Shizuku power-user integration decision](adr/0013-shizuku-power-user.md)
 - [Shizuku Android capability module](modules/shizuku.md)
