@@ -80,6 +80,22 @@ failed on pre-existing source layout allowlist entries (`native`,
 `ops`, `shizuku` and several `.mjs` files). Do not classify the
 whole repository gate as PASS.
 
+## Controlled recovery — accepted on Samsung/Mac
+
+Task `pockethost-panel-mac-hardware-recovery-20261109-v1`
+finished `done`, remote `PASS`, direct Mac HTTP 200.
+
+The task verified that `pockethost-panel` was running under runit
+with its exact owner record and LAN HTTP 200, then sent a controlled
+`sv term` **only to that registered PocketHost service**.
+Runit replaced PID `15757` with PID `22800`; the panel and LAN
+both served HTTP 200 within the six-second observation bound.
+`pockethost-panel-watch` remained running and all six protected
+services retained their prior `run` states.
+
+This proves **process restart recovery**, not full Android reboot,
+forced-stop recovery, persistent 502/hang recovery, or Wi-Fi loss.
+
 ## Physical quality and deployment matrix
 
 | Gate | Status |
@@ -89,7 +105,8 @@ whole repository gate as PASS.
 | Stage services on actual Samsung with disabled markers | PASS |
 | Supervised start, HTTP 200 on loopback and private LAN | PASS |
 | Confirm protected external Termux services unchanged | PASS |
-| Verify healthwatch recovery on a controlled panel-only failure | OPEN |
+| Verify runit recovery after controlled panel-only termination | PASS — PID 15757 to 22800, Mac and S22 HTTP 200 |
+| Verify watchdog response to an HTTP hang/flapping failure | OPEN |
 | Reboot or Termux:Boot acceptance | OPEN |
 
 Do not mark panel deployment PASS until a same-host task result and actual
