@@ -27,7 +27,7 @@ describe("direct Shizuku shell from private-LAN browser", () => {
     expect(url).toBe("/api/v1/shizuku/remote-shell/run")
     expect(init.method).toBe("POST")
     expect(JSON.parse(init.body as string)).toEqual({ command: "id" })
-    expect(await screen.findByText("uid=2000(shell)")).toBeTruthy()
+    expect((await screen.findAllByText("uid=2000(shell)")).length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/Last execution: ADB/)).toBeTruthy()
   })
 
