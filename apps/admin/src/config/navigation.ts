@@ -25,9 +25,6 @@ export const navGroups = [
     items: [
       { title: "Websites", url: "/sites", icon: Globe2 },
       { title: "Deployments", url: "/deployments", icon: History },
-      { title: "Demo project", url: "/owned-site", icon: Globe2 },
-      { title: "Managed projects", url: "/managed-projects", icon: ServerCog },
-      { title: "Network access", url: "/settings/network", icon: Network },
     ],
   },
   {
@@ -37,6 +34,7 @@ export const navGroups = [
   {
     label: "Platform",
     items: [
+      { title: "Network access", url: "/settings/network", icon: Network },
       { title: "Logs & Diagnostics", url: "/runtime-logs", icon: ScrollText },
       { title: "Appearance", url: "/settings/appearance", icon: Settings },
     ],
