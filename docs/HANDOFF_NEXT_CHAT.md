@@ -7,7 +7,7 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 ## Latest Samsung M0/M1 terminal receipts (2026-11-09)
 
-Samsung `pockethost-m0-ui-unretested-15files-0f5291d7-20261109-v2` finished `done/0`: 55/55 UI tests passed (14 files) at `0f5291d7`; prior focused 19/19 UI remain separate historical evidence. `pockethost-m1-targeted-uid-umask-ts-9fb7db93-20261109-v2` finished `done/0`: the permission negative and TypeScript passed at `9fb7db9`. The M1 ownership tests 3/3 at `22245f13` and rollback plan tests 3/3 at `4fa08631` passed with boundaries/types/lint; both *overall* native tasks failed only on Prettier. Read-only scan at `93cec35e`: structure PASS, docs index and Markdownlint FAIL, Prettier FAIL. Targeted source fixes follow; exact-final-source checks and physical G3 remain OPEN. No live services changed.
+Samsung `pockethost-m0-ui-unretested-15files-0f5291d7-20261109-v2` finished `done/0`: 55/55 UI tests passed (14 files) at `0f5291d7`; prior focused 19/19 UI remain separate historical evidence. `pockethost-m1-targeted-uid-umask-ts-9fb7db93-20261109-v2` finished `done/0`: the permission negative and TypeScript passed at `9fb7db9`. The M1 ownership tests 3/3 at `22245f13` and rollback plan tests 3/3 at `4fa08631` passed with boundaries/types/lint; both overall native tasks failed only on Prettier. Read-only scan at `93cec35e`: structure PASS, docs index and Markdownlint FAIL, Prettier FAIL. Targeted source fixes follow; exact-final-source checks and physical G3 remain OPEN. No live services changed.
 
 ## START HERE — v1 registry rollback plan (source, QA open)
 
@@ -341,7 +341,7 @@ services. Real advanced actions must be clearly user-directed.
 
 Hardware evidence: Samsung SM-S906B on Android 16; Shizuku app installed;
 Mac ADB `dumpsys cpuinfo` returned 31% TOTAL in a spot check. The
-Shizuku _server_ and native PocketHost app authorization are not yet
+Shizuku server and native PocketHost app authorization are not yet
 confirmed. No claim that the new UI has a working Shizuku connection.
 
 ## Current working agreement — 2026-11-08
@@ -686,7 +686,7 @@ of this private-LAN development session.
 
 **Next-chat mission:** resolve the permitted
 mechanism for owner-verified H2.1 G3 deployment,
-preserving both existing sites _bit-for-bit_.
+preserving both existing sites bit-for-bit.
 If permitted, perform a guarded release with
 source/host/PID/owner checks and H2 fallback,
 then test version restore/rollback/archived GET

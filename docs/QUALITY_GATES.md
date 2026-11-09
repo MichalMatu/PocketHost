@@ -7,7 +7,7 @@ purpose: Current PocketHost source, hardware and release acceptance contract
 
 ## Latest verified Samsung focused results (2026-11-09)
 
-On isolated QA checkouts: M0 UI `55/55` PASS at `0f5291d7`; M1 UID/umask negative and TypeScript PASS at `9fb7db9`; M1 ownership `3/3` PASS at `22245f13`; M1 rollback `3/3` PASS at `4fa08631`. The ownership and rollback tasks failed *overall* on formatting only. A `93cec35e` read-only scan found two absent checkpoint index links, three MD012 blank lines and five Prettier warnings. These source issues are patched in later commits; complete final-SHA G1/G2 and physical G3 remain OPEN.
+On isolated QA checkouts: M0 UI `55/55` PASS at `0f5291d7`; M1 UID/umask negative and TypeScript PASS at `9fb7db9`; M1 ownership `3/3` PASS at `22245f13`; M1 rollback `3/3` PASS at `4fa08631`. The ownership and rollback tasks failed overall on formatting only. A `93cec35e` read-only scan found two absent checkpoint index links, three MD012 blank lines and five Prettier warnings. These source issues are patched in later commits; complete final-SHA G1/G2 and physical G3 remain OPEN.
 
 ## Additional v1 rollback planning source (2026-11-09)
 
@@ -257,7 +257,7 @@ At source `f0dd506c996f700d50421b0545816c641f348bc5`,
 Samsung task
 `pockethost-o1-502-git-fetch-repair-and-guarded-cutover-f0dd506-20261107-v2`
 returned terminal done/0 PASS after repairing the missing Git object
-in the _owned_ live checkout. `npm run check:all` passed,
+in the owned live checkout. `npm run check:all` passed,
 including 19/19 UI tests. The exact live source matched `f0dd506`;
 3/3 Observability LAN GETs returned 200 (5.71, 6.23, 5.80 seconds).
 Six protected services remained unchanged and PhotoMap 8010 closed.

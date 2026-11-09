@@ -79,13 +79,29 @@ test('M1 rollback refuses stale current state or forged backup digests', () => {
 
 test('M1 rollback rejects unknown versions, foreign owners and invalid declarations', () => {
   for (const mutate of [
-    (x) => { x.schemaVersion = 2; },
-    (x) => { delete x.schemaVersion; },
-    (x) => { x.owner = 'external'; },
-    (x) => { x.revision = Number.MAX_SAFE_INTEGER; },
-    (x) => { x.declarations.projects[0].origin = 'observed'; },
-    (x) => { x.declarations.projects[0].components[0].port = 80; },
-    (x) => { x.declarations.projects[0].components[0].secrets = [{ kind: 'secret-ref', id: 'sec-example', value: 'plaintext' }]; },
+    (x) => {
+      x.schemaVersion = 2;
+    },
+    (x) => {
+      delete x.schemaVersion;
+    },
+    (x) => {
+      x.owner = 'external';
+    },
+    (x) => {
+      x.revision = Number.MAX_SAFE_INTEGER;
+    },
+    (x) => {
+      x.declarations.projects[0].origin = 'observed';
+    },
+    (x) => {
+      x.declarations.projects[0].components[0].port = 80;
+    },
+    (x) => {
+      x.declarations.projects[0].components[0].secrets = [
+        { kind: 'secret-ref', id: 'sec-example', value: 'plaintext' },
+      ];
+    },
   ]) {
     const bad = envelope(2);
     mutate(bad);
