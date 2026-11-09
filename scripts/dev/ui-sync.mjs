@@ -41,8 +41,8 @@ fs.writeSync(lock, String(process.pid) + '\n');
 let stopped = false;
 
 function cleanExit() {
-  try { fs.closeSync(lock); } catch {}
-  try { fs.unlinkSync(lockPath); } catch {}
+  try { fs.closeSync(lock); } catch { /* Best-effort cleanup on exit. */ }
+  try { fs.unlinkSync(lockPath); } catch { /* The lock may already be gone. */ }
 }
 process.once('exit', cleanExit);
 process.once('SIGTERM', () => { stopped = true; });
