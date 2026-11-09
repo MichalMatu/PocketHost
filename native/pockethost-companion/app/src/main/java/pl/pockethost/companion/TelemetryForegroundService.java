@@ -17,6 +17,8 @@ import android.os.Looper;
 import android.util.Log;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -24,7 +26,8 @@ import rikka.shizuku.Shizuku;
 
 /**
  * Owner-enabled Android foreground service keeps the read-only Shizuku bridge
- * unfrozen when the app is no longer visible. No remote command interface.
+ * unfrozen when the app is no longer visible. A user-triggered shell
+ * operation can reuse this authorized Shizuku Binder from phone loopback.
  */
 public final class TelemetryForegroundService extends Service {
     public static final String ACTION_STOP = "pl.pockethost.companion.STOP_TELEMETRY";
@@ -35,10 +38,13 @@ public final class TelemetryForegroundService extends Service {
     private static final long APPS_REFRESH_MS = 120000L;
     private static final long SYSTEM_REFRESH_MS = 60000L;
     private static final String TAG = "PocketHostTelemetry";
+    private static volatile TelemetryForegroundService activeInstance;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final ExecutorService samples = Executors.newSingleThreadExecutor();
     private final ExecutorService inventories = Executors.newSingleThreadExecutor();
+    private final ExecutorService shellCommands = Executors.newSingleThreadExecutor();
+    private final AtomicBoolean shellBusy = new AtomicBoolean(false);
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final AtomicBoolean inventoryBusy = new AtomicBoolean(false);
     private volatile IPowerUserService source;
@@ -78,6 +84,7 @@ public final class TelemetryForegroundService extends Service {
 
     @Override public void onCreate() {
         super.onCreate();
+        activeInstance = this;
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(new NotificationChannel(CHANNEL,
                 "PocketHost Android telemetry", NotificationManager.IMPORTANCE_LOW));
@@ -211,10 +218,47 @@ public final class TelemetryForegroundService extends Service {
         });
     }
 
+    /**
+     * Owner-initiated browser Run action. This is intentionally direct:
+     * no pairing code and no secondary phone approval. Android's actual
+     * Shizuku UID and Binder authorization still define real capabilities.
+     * Executes via the same native service as local Advanced Shell.
+     */
+    public static String runBrowserShell(String command) throws Exception {
+        TelemetryForegroundService owner = activeInstance;
+        if (owner == null || owner.destroyed) {
+            throw new IllegalStateException("PocketHost Companion monitoring is not active");
+        }
+        if (command == null || command.isBlank() || command.length() > 240 ||
+                command.indexOf((char) 0) >= 0) {
+            throw new IllegalArgumentException("Invalid Android shell command (1..240 characters)");
+        }
+        IPowerUserService remote = owner.source;
+        if (remote == null) {
+            throw new IllegalStateException("Shizuku is not connected or authorized");
+        }
+        if (!owner.shellBusy.compareAndSet(false, true)) {
+            throw new IllegalStateException("A shell command is already running");
+        }
+        try {
+            Future<String> result = owner.shellCommands.submit(
+                    () -> remote.runOwnerAction("shell", command, ""));
+            try {
+                return result.get(13, TimeUnit.SECONDS);
+            } catch (java.util.concurrent.TimeoutException e) {
+                result.cancel(true);
+                throw e;
+            }
+        } finally {
+            owner.shellBusy.set(false);
+        }
+    }
+
     @Override public IBinder onBind(Intent intent) { return null; }
 
     @Override public void onDestroy() {
         destroyed = true;
+        if (activeInstance == this) activeInstance = null;
         handler.removeCallbacks(tick);
         Shizuku.removeBinderReceivedListener(binderListener);
         Shizuku.removeBinderDeadListener(binderDead);
@@ -224,6 +268,7 @@ public final class TelemetryForegroundService extends Service {
         }
         samples.shutdownNow();
         inventories.shutdownNow();
+        shellCommands.shutdownNow();
         super.onDestroy();
     }
 }
