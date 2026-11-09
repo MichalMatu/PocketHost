@@ -47,6 +47,10 @@ function withSites(initial: ReturnType<typeof project>[] = []) {
       sites = [site]
       return { ok: true, json: async () => ({ site }) }
     }
+    if (url === "/api/v1/sites/" + ID + "/files" && (!init?.method || init.method === "GET"))
+      return { ok: true, json: async () => ({ files: [
+        { name: "index.html", bytes: 120 }, { name: "css/main.css", bytes: 225 },
+      ] }) }
     if (url.endsWith("/health"))
       return { ok: true, json: async () => ({ healthy: true }) }
     if (url.endsWith("/logs"))
@@ -84,6 +88,19 @@ describe("H2 browser site-manager lifecycle", () => {
     await user.click(screen.getByRole("button", { name: /Read logs/ }))
     await screen.findByText(/PocketHost owned H2 site listening/)
     expect(fetchMock.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
+  })
+
+  it("inspects bounded active-release files inside Hosting without mutating processes", async () => {
+    const user = userEvent.setup()
+    const calls = withSites([project("stopped", true)])
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: "Inspect assets" }))
+    await screen.findByText("css/main.css")
+    expect(screen.getByRole("region", { name: "Active assets of My own site" })).toBeTruthy()
+    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites/" + ID + "/files")).toBe(true)
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Hide assets" }))
+    expect(screen.queryByText("css/main.css")).toBeNull()
   })
 
   it("renders real owned PID and asynchronous HTTP verification result", async () => {
