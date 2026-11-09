@@ -104,3 +104,19 @@ test('snapshot includes only allowlisted externally owned services and safe disk
   assert.equal(JSON.stringify(data).includes('secret'), false);
   assert.equal(JSON.stringify(data).includes('private/runit'), false);
 });
+
+test('legacy service aliases have generic display roles and confer no project ownership', () => {
+  assert.deepEqual(
+    SERVICE_CATALOG.map((service) => service.id),
+    ['ilestoi', 'tunnel', 'ssh', 'mqtt', 'healthwatch', 'local-agent'],
+  );
+  assert.equal(new Set(SERVICE_CATALOG.map((service) => service.runit)).size, 6);
+  assert.ok(SERVICE_CATALOG.every((service) =>
+    !/ilestoi|photomap|wreckscanner/i.test(service.label),
+  ));
+  assert.ok(SERVICE_CATALOG.every((service) =>
+    service.scope === 'system' || service.scope === 'local-agent',
+  ));
+  const snapshot = readHostSnapshot(() => 'unknown', () => '2026-11-09T12:00:00.000Z');
+  assert.ok(snapshot.services.every((service) => service.ownership === 'external'));
+});
