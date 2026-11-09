@@ -11,8 +11,9 @@ purpose: Current PocketHost source, hardware and release acceptance contract
 
 ### Current 2026-11-09 source and host quality
 
-Read the [full 2026-11-09 code/structure/quality checkpoint]
-(checkpoints/2026-11-09-code-quality-structure-handoff.md) first.
+Read the
+[full 2026-11-09 code/structure/quality checkpoint](checkpoints/2026-11-09-code-quality-structure-handoff.md)
+first.
 The former `check:structure` and `check:docs` failures were traced
 to outdated manifest/host contract allowlists, missing checkpoint
 archive entries and a wrong Shizuku relative link. Their fixes
