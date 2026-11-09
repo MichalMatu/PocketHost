@@ -7,6 +7,21 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Direct browser Shizuku shell — owner correction (2026-11-09)
+
+The owner rejected 10-digit pairing, phone approval and other product-level
+blockers. **These are removed from the source candidate.** Full direct
+power-user Run action takes precedence over the earlier paired-shell handoff.
+AGENTS.md and native Companion AGENTS.md now record functional-first DEV,
+security hardening only in a separate final phase. Existing private LAN-only
+binding remains; HTTP is unauthenticated, so never claim a secure release.
+See `docs/checkpoints/2026-11-09-shizuku-direct-browser-shell.md`.
+After source QA, build/install the exact Companion APK and perform a guarded
+PocketHost-only DEV restart and physical `id` command test. Do not claim
+hardware PASS from source commits. Supersedes the earlier paired-browser
+shell checkpoint and its acceptance steps.
+
+
 ## New source candidate — paired browser Shizuku shell (2026-11-08)
 
 Owner wants a real Advanced Shell in the desktop LAN browser. Implementation
