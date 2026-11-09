@@ -8,8 +8,8 @@ import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-fi
 import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
 import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
 import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
-import { runtimeEventHistory } from "../../src/shared/runtime-diagnostics.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
+import { readLegacyPhotoMapEvents } from "../../src/modules/host/photomap-legacy-events.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import { validateRemoteShellPayload } from "../../src/modules/host/remote-shell-contract.mjs"
@@ -401,7 +401,7 @@ function managedPhotoMapApi(): Plugin {
           response.end(JSON.stringify({ error: "forbidden" }))
           return
         }
-        if (request.url !== "/") {
+        if (request.url !== "/" && request.url !== "/events") {
           response.statusCode = 404
           response.end("{}")
           return
@@ -413,6 +413,12 @@ function managedPhotoMapApi(): Plugin {
           return
         }
         try {
+          if (request.url === "/events") {
+            const diagnostics = readLegacyPhotoMapEvents(() => new ManagedPhotoMapRuntimeHost().readLogs())
+            response.statusCode = 200
+            response.end(JSON.stringify(diagnostics))
+            return
+          }
           const project = new ManagedPhotoMapHost().inspect()
           response.statusCode = 200
           response.end(JSON.stringify({ project }))
@@ -468,16 +474,9 @@ function observabilityApi(): Plugin {
           ])
           const processes = readProcessInventory()
           const packages = readPackageInventory()
-          // Only the existing fixed, disabled PhotoMap TEST adapter reads its own
-          // bounded structured log. No PhotoMap start, stop or process probe.
-          let events: ReturnType<typeof runtimeEventHistory> = []
-          let diagnosticsState: "ok" | "unavailable" = "unavailable"
-          try {
-            events = runtimeEventHistory(new ManagedPhotoMapRuntimeHost().readLogs())
-            diagnosticsState = "ok"
-          } catch {
-            // Honest absent/permission/unsafe log state; never leak raw messages.
-          }
+          // M0: global O1 is product-neutral; P4 events remain accessible
+          // only through the explicit GET-only legacy PhotoMap endpoint.
+          const diagnostics = { state: "unavailable" as const, events: [] }
           const observedAt = new Date().toISOString()
           const payload = history.append({
             version: 1,
@@ -487,7 +486,7 @@ function observabilityApi(): Plugin {
             metrics,
             processes,
             packages,
-            diagnostics: { state: diagnosticsState, events },
+            diagnostics,
           })
           response.statusCode = 200
           response.end(JSON.stringify(payload))
