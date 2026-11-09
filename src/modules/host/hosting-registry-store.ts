@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
-  closeSync, existsSync, lstatSync, openSync, readFileSync, realpathSync,
-  renameSync, unlinkSync, writeFileSync,
+  closeSync, constants, existsSync, fstatSync, fsyncSync, lstatSync, openSync,
+  readFileSync, realpathSync, renameSync, unlinkSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import type { HostingDeclarations } from '../../shared/hosting-platform.ts';
@@ -24,11 +24,15 @@ function directory(root: string): void {
   if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(root) !== root) {
     throw new Error('Registry directory is not a canonical directory');
   }
+  if (stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
+    throw new Error('Registry directory must be owned and private');
+  }
 }
 
 function regularFile(filename: string): void {
   const stat = lstatSync(filename);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > LIMIT) {
+  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > LIMIT ||
+      stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
     throw new Error('Unsafe registry file');
   }
 }
@@ -48,7 +52,8 @@ function parse(contents: string): StoredDeclarations {
   if (Object.keys(x).length !== 4 ||
       !['schemaVersion', 'owner', 'revision', 'declarations'].every((key) => Object.hasOwn(x, key)) ||
       x.schemaVersion !== 1 || x.owner !== 'pockethost' ||
-      !Number.isSafeInteger(x.revision) || (x.revision as number) < 1) {
+      !Number.isSafeInteger(x.revision) || (x.revision as number) < 1 ||
+      (x.revision as number) >= Number.MAX_SAFE_INTEGER) {
     throw new Error('Invalid registry ownership or revision');
   }
   return {
@@ -70,12 +75,23 @@ export function createHostingRegistryStore(root: string) {
     directory(root);
     if (!existsSync(target)) return null;
     regularFile(target);
-    return parse(readFileSync(target, 'utf8'));
+    const fd = openSync(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+    try {
+      const stat = fstatSync(fd);
+      if (!stat.isFile() || stat.nlink !== 1 || stat.size > LIMIT ||
+          stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
+        throw new Error('Unsafe registry file');
+      }
+      return parse(readFileSync(fd, 'utf8'));
+    } finally {
+      closeSync(fd);
+    }
   }
   return {
     read,
     save(declarations: unknown, expectedRevision: number): StoredDeclarations {
-      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0) {
+      if (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 ||
+          expectedRevision >= Number.MAX_SAFE_INTEGER - 1) {
         throw new Error('Invalid expected registry revision');
       }
       directory(root);
@@ -93,11 +109,23 @@ export function createHostingRegistryStore(root: string) {
         const data = JSON.stringify(next) + '\n';
         if (Buffer.byteLength(data) > LIMIT) throw new Error('Registry exceeds size limit');
         temp = path.join(root, `.${randomUUID()}.registry.tmp`);
-        writeFileSync(temp, data, { flag: 'wx', mode: 0o600 });
+        const tempFd = openSync(temp, 'wx', 0o600);
+        try {
+          writeFileSync(tempFd, data);
+          fsyncSync(tempFd);
+        } finally {
+          closeSync(tempFd);
+        }
         directory(root);
         if (existsSync(target)) regularFile(target);
         renameSync(temp, target);
         temp = null;
+        const rootFd = openSync(root, constants.O_RDONLY);
+        try {
+          fsyncSync(rootFd);
+        } finally {
+          closeSync(rootFd);
+        }
         return next;
       } finally {
         if (temp) {

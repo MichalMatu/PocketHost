@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHostingRegistryStore } from '../../src/modules/host/hosting-registry-store.ts';
@@ -47,7 +47,7 @@ test('M1 store rejects invalid ownership, imports, secrets and linked paths', ()
   secret.projects[0].components[0].secrets = [{ kind: 'secret-ref', id: 'sec-example', value: 'plaintext' }];
   assert.throws(() => store.save(secret, 0), /Unknown registry field/);
   const target = path.join(root, 'hosting-declarations.json');
-  writeFileSync(target, JSON.stringify({ owner: 'external', schemaVersion: 1, revision: 1, declarations: declarations() }));
+  writeFileSync(target, JSON.stringify({ owner: 'external', schemaVersion: 1, revision: 1, declarations: declarations() }), { mode: 0o600 });
   assert.throws(() => store.read(), /Invalid registry ownership/);
   assert.throws(() => store.save(declarations(), 0), /Invalid registry ownership/);
   rmSync(target);
@@ -71,4 +71,34 @@ test('M1 store refuses missing directories and pre-existing concurrent lock', ()
   const linked = path.join(root, 'link');
   symlinkSync(nested, linked, 'dir');
   assert.throws(() => createHostingRegistryStore(linked).read(), /canonical directory/);
+}));
+
+test('M1 registry rejects non-private roots and declarations without positive file ownership', () => fixture((root) => {
+  const store = createHostingRegistryStore(root);
+  chmodSync(root, 0o755);
+  assert.throws(() => store.read(), /owned and private/);
+  assert.throws(() => store.save(declarations(), 0), /owned and private/);
+  chmodSync(root, 0o700);
+  const target = path.join(root, 'hosting-declarations.json');
+  writeFileSync(target, JSON.stringify({ owner: 'pockethost', schemaVersion: 1, revision: 1, declarations: declarations() }), { mode: 0o644 });
+  assert.throws(() => store.read(), /Unsafe registry file/);
+  assert.throws(() => store.save(declarations(), 1), /Unsafe registry file/);
+  chmodSync(target, 0o600);
+  assert.equal(store.read().revision, 1);
+}));
+
+test('M1 registry refuses silent legacy/future schema migration and revision overflow', () => fixture((root) => {
+  const target = path.join(root, 'hosting-declarations.json');
+  const store = createHostingRegistryStore(root);
+  for (const invalid of [
+    { owner: 'pockethost', revision: 1, declarations: declarations() },
+    { schemaVersion: 2, owner: 'pockethost', revision: 1, declarations: declarations() },
+    { schemaVersion: 1, owner: 'pockethost', revision: Number.MAX_SAFE_INTEGER, declarations: declarations() },
+  ]) {
+    writeFileSync(target, JSON.stringify(invalid), { mode: 0o600 });
+    assert.throws(() => store.read(), /Invalid registry ownership or revision/);
+  }
+  rmSync(target);
+  assert.throws(() => store.save(declarations(), Number.MAX_SAFE_INTEGER), /Invalid expected registry revision/);
+  assert.equal(store.read(), null);
 }));
