@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
-import { parseFleetReleases, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
+import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, parseH3Tools, type H3Files, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
@@ -46,7 +46,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const [errors, setErrors] = React.useState({ snapshot: false, sites: false, tools: false })
   const [query, setQuery] = React.useState("")
   const [selectedFiles, setSelectedFiles] = React.useState<{ site: string; items: H3Files } | null>(null)
-  const [selectedReleases, setSelectedReleases] = React.useState<{ site: string; items: FleetRelease[] } | null>(null)
   const [detailError, setDetailError] = React.useState<string | null>(null)
   const [detailsBusy, setDetailsBusy] = React.useState(false)
 
@@ -56,7 +55,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
       ["packages", "services"].includes(section)
         ? getData("/api/v1/observability", parseObservabilitySnapshot, signal)
         : Promise.resolve(null),
-      ["files", "backups"].includes(section)
+      section === "files"
         ? getData("/api/v1/sites", parseFleetSites, signal)
         : Promise.resolve(null),
       ["backups", "terminal"].includes(section)
@@ -73,7 +72,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
       tools: optional.status === "rejected",
     })
     setSelectedFiles(null)
-    setSelectedReleases(null)
     setDetailError(null)
     setReading(false)
   }, [section])
@@ -86,22 +84,16 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
     return () => controller.abort()
   }, [refresh])
 
-  const inspect = async (site: FleetSite, kind: "files" | "releases") => {
+  const inspect = async (site: FleetSite) => {
     if (detailsBusy || site.state === "unknown") return
     setDetailsBusy(true)
     setDetailError(null)
     try {
-      if (kind === "files") {
-        const items = await getData("/api/v1/sites/" + site.id + "/files", parseH3Files)
-        setSelectedFiles({ site: site.id, items })
-      } else {
-        const items = await getData("/api/v1/sites/" + site.id + "/releases", parseFleetReleases)
-        setSelectedReleases({ site: site.id, items })
-      }
+      const items = await getData("/api/v1/sites/" + site.id + "/files", parseH3Files)
+      setSelectedFiles({ site: site.id, items })
     } catch {
-      setDetailError("This inventory cannot be read safely. No files or releases were changed.")
-      if (kind === "files") setSelectedFiles(null)
-      else setSelectedReleases(null)
+      setDetailError("This inventory cannot be read safely. No files were changed.")
+      setSelectedFiles(null)
     } finally {
       setDetailsBusy(false)
     }
@@ -180,7 +172,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                       <p className="text-muted-foreground text-xs">{site.fileCount} files · {site.bytes} bytes · {site.state}</p>
                     </div>
                     <Button size="sm" variant="outline" disabled={detailsBusy || site.state === "unknown" || !site.activeRelease}
-                      onClick={() => void inspect(site, "files")}>Inspect files</Button>
+                      onClick={() => void inspect(site)}>Inspect files</Button>
                   </div>)}
                 </div>
                 {selectedFiles && <>
@@ -223,7 +215,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Archive className="size-5" /> Backup readiness</CardTitle>
-                <CardDescription>Optional Restic tool detection and existing immutable website release points.</CardDescription>
+                <CardDescription>Optional Restic tool detection and scoped Termux backup operations.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
@@ -231,23 +223,9 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                   <Badge variant="outline">Restic jobs: not configured</Badge>
                 </div>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
-                {errors.sites && <p role="alert">Existing site release inventory unavailable.</p>}
-                {sites?.map(site => <div key={site.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3">
-                  <div><p className="font-medium">{site.name}</p>
-                    <p className="text-muted-foreground text-xs">{site.releases} immutable releases · not an independent backup</p>
-                  </div>
-                  <Button variant="outline" size="sm" disabled={detailsBusy || site.state === "unknown" || site.releases === 0}
-                    onClick={() => void inspect(site, "releases")}>View release history</Button>
-                </div>)}
-                {selectedReleases && <div className="max-h-80 space-y-2 overflow-auto rounded-md border p-3">
-                  <p className="text-sm font-medium">Stored release points</p>
-                  {selectedReleases.items.map(release => <div key={release.id} className="flex flex-wrap justify-between gap-2 border-b py-2 text-xs">
-                    <span className="break-all font-mono">{release.id.slice(0, 14)}…</span>
-                    <span>{release.createdAt.slice(0, 10)} · {release.bytes} B</span>
-                    <span>{release.active ? "Active" : release.rollbackTarget ? "Rollback target" : "Archive"}</span>
-                  </div>)}
-                </div>}
-                {detailError && <p role="alert">{detailError}</p>}
+                <GuardNotice>
+                  Website versions and release rollback belong to <a href="/sites" className="underline underline-offset-4">Hosting → Websites</a>. A release is not an independent data backup.
+                </GuardNotice>
                 <WorkspaceBackupActions />
                 <ResticActions detected={restic?.state === "detected"} />
                 <FullTermuxBackups detected={restic?.state === "detected"} />
