@@ -1,9 +1,26 @@
 # Native Android Companion
 
-Small Android Java module outside the Node/Termux product build.
-Shizuku Binder permission is requested in the companion app by the
-device owner. Build/test on the authorized Mac and Samsung, not using
-GitHub Actions, Codex or Work. No background service or LAN port is
-created. Native privileged user service is reserved for direct
-owner-initiated actions; do not promise Shizuku is connected before
-physical authorization. This project is DEV; keep focused checks.
+PocketHost Companion is the owner's Android Shizuku backend. Real Binder
+authorization comes from Shizuku and Android, not an invented product gate.
+The owner explicitly requires **full direct power-user operations first**.
+
+**Advanced Shell**: pressing Run in the PocketHost private-LAN browser or
+inside the native Companion executes the exact typed command immediately
+via the authorized Shizuku UID. Do not add pairing codes, secondary phone
+confirmations, approval queues, credential challenges, arbitrary command
+allowlists or permanent read-only restrictions in the DEV phase.
+
+The foreground monitoring service already hosts an Android-loopback telemetry
+bridge and now also a bounded direct shell route. The bridge remains bound
+only to Android loopback; Termux forwards through the existing owner-private
+LAN gateway. ADB Shizuku is not root. Missing Shizuku authorization and real
+Android permission failures must be reported accurately.
+
+Security hardening, optional authentication and TLS belong to a separately
+planned final phase. The interim HTTP LAN shell is intentionally unencrypted
+and unauthenticated; do not call it secure or expose it to the public internet.
+Do not mutate unrelated Termux services or auto-execute commands on startup.
+
+Use GitHub Connector and authorized Local Agent workflows; no GitHub Actions,
+Codex or ChatGPT Work. Native Gradle/Android build uses the already authorized
+Mac toolchain and physical Samsung target. No unverified deployment claims.
