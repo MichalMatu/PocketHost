@@ -30,19 +30,33 @@ This file records the target. No current UI, running service, site data,
 configuration, listener, external repository, or package installation was
 changed merely by accepting this architecture decision.
 
-## Approved target top-level navigation
+## Approved target top-level navigation — revised modular direction
+
+The earlier five-area menu was accepted as an intermediate target.
+The owner's later 2026-11-09 decision supersedes its grouping:
+**PocketHost is a modular platform; Hosting orchestrates modules.**
 
 | Area | Target entries |
 | --- | --- |
-| **Termux — System** | Dashboard; Monitoring; Processes & Services; Packages; File Manager; Terminal; System Backups |
+| **Dashboard** | Cross-module health, service states, alerts |
 | **Hosting** | Overview; Projects; Deployments; Domains & Routing; Storage & Backups; Logs |
+| **Modules** | Node.js; Python / PRoot; SSH; Cloudflare; Databases (future) |
+| **Termux / System** | Monitoring; Processes & Services; Packages; File Manager; Terminal; System Backups |
 | **Android & Shizuku** | Applications; CPU & Processes; Permissions; Services; Advanced Shell; Hardware |
 | **Automation** | Agents; Tasks; API |
-| **Platform** | Network Access; Diagnostics; Settings; Appearance |
+| **Platform** | PocketHost Network Access; Diagnostics; Settings; Appearance |
 
-The labels and placement are accepted **as a target**, not a request to
-implement them immediately. Existing source still has the older
-System/Hosting/Automation/Platform/Examples navigation.
+**Modules are independently configurable and reusable**, including
+installation/update checks, module-specific configuration, runtime
+status and supervision where applicable. Hosting creates and manages
+projects by using these public module capabilities; it does not own a
+second Node installer, SSH key manager or `cloudflared` controller.
+SSH and Cloudflare have their own visible module pages, while
+Cloudflare's shared Termux process is supervised only once.
+
+This is **target architecture, not current UI implementation**.
+Existing source still has an older navigation model. For prioritized
+development and migration stages see [Roadmap](ROADMAP.md).
 
 The upstream example pages, historical demo and test project should not be
 first-class everyday navigation. Preserve their source and routes until
