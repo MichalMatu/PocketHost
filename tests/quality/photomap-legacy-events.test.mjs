@@ -15,27 +15,36 @@ test('legacy PhotoMap events are bounded, scoped to the fixed instance and conta
   const result = readLegacyPhotoMapEvents(() => lines);
   assert.equal(result.state, 'ok');
   assert.equal(result.events.length, 2);
-  assert.deepEqual(result.events.map((event) => event.instanceId), ['photomap-test', 'photomap-test']);
-  assert.deepEqual(result.events.map((event) => event.code), [
-    'manual-start-requested',
-    'manual-stop-completed',
-  ]);
+  assert.deepEqual(
+    result.events.map((event) => event.instanceId),
+    ['photomap-test', 'photomap-test'],
+  );
+  assert.deepEqual(
+    result.events.map((event) => event.code),
+    ['manual-start-requested', 'manual-stop-completed'],
+  );
   assert.equal(JSON.stringify(result).includes('TOP_SECRET'), false);
   assert.equal(JSON.stringify(result).includes('foreign-example'), false);
 });
 
 test('missing or unsafe PhotoMap logs fail closed without a fake success state', () => {
-  assert.deepEqual(readLegacyPhotoMapEvents(() => {
-    throw new Error('private filename /data/data/com.termux/secret');
-  }), { state: 'unavailable', events: [] });
-  assert.deepEqual(readLegacyPhotoMapEvents(() => []), { state: 'ok', events: [] });
+  assert.deepEqual(
+    readLegacyPhotoMapEvents(() => {
+      throw new Error('private filename /data/data/com.termux/secret');
+    }),
+    { state: 'unavailable', events: [] },
+  );
+  assert.deepEqual(
+    readLegacyPhotoMapEvents(() => []),
+    { state: 'ok', events: [] },
+  );
 });
 
 test('legacy PhotoMap events never become a process or package control surface', () => {
   const src = readLegacyPhotoMapEvents.toString();
   assert.doesNotMatch(src, /spawn\(|exec\(|kill\(|signal\(|start\(/);
-  const events = readLegacyPhotoMapEvents(
-    () => Array.from({ length: 80 }, () => formatRuntimeEvent('photomap-test', 'manual-stop-completed')),
+  const events = readLegacyPhotoMapEvents(() =>
+    Array.from({ length: 80 }, () => formatRuntimeEvent('photomap-test', 'manual-stop-completed')),
   );
   assert.ok(events.events.length <= 20);
 });
@@ -52,6 +61,9 @@ test('global observability cannot read the PhotoMap-specific runtime file', () =
   assert.match(legacy, /request\.method !== "GET"/);
   assert.match(legacy, /readLegacyPhotoMapEvents/);
   assert.match(legacy, /new ManagedPhotoMapRuntimeHost\(\)\.readLogs\(\)/);
-  assert.doesNotMatch(general, /PhotoMapRuntimeHost|PhotoMapHost|readLegacyPhotoMapEvents|runtimeEventHistory/);
+  assert.doesNotMatch(
+    general,
+    /PhotoMapRuntimeHost|PhotoMapHost|readLegacyPhotoMapEvents|runtimeEventHistory/,
+  );
   assert.match(general, /diagnostics = \{ state: "unavailable"/);
 });
