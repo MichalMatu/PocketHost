@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Loopback-only telemetry and a code-protected request inbox. No HTTP handler executes shell commands. */
+/** Android loopback telemetry and direct user-invoked Shizuku shell bridge. */
 public final class TelemetryHttpServer {
     public static final int PORT = 18791;
     private static final String TAG = "PocketHostTelemetry";
@@ -70,8 +70,7 @@ public final class TelemetryHttpServer {
                             "GET /app\\?package=([A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)+) HTTP/1\\.[01]")
                             .matcher(request);
                     boolean appDetailRoute = detailRequest.matches();
-                    boolean submitRoute = request.matches("POST /shell/submit HTTP/1\\.[01]");
-                    boolean pollRoute = request.matches("POST /shell/poll HTTP/1\\.[01]");
+                    boolean runRoute = request.matches("POST /shell/run HTTP/1\\.[01]");
                     int length = -1;
                     boolean json = false;
                     boolean invalid = false;
@@ -99,21 +98,43 @@ public final class TelemetryHttpServer {
                     if (invalid || !ended) {
                         body = "{\"error\":\"invalid-request\"}";
                         status = 400;
-                    } else if (submitRoute || pollRoute) {
-                        if (!json || length < 2 || length > 2048) {
-                            body = "{\"error\":\"invalid-request\"}";
+                    } else if (runRoute) {
+                        if (!json || length < 2 || length > 1024) {
+                            body = "{\"error\":\"invalid-command-request\"}";
                             status = 400;
                         } else {
-                            byte[] bytes = input.readNBytes(length);
-                            if (bytes.length != length) {
-                                body = "{\"error\":\"invalid-request\"}";
+                            byte[] payload = input.readNBytes(length);
+                            if (payload.length != length) {
+                                body = "{\"error\":\"incomplete-command-request\"}";
                                 status = 400;
                             } else {
-                                RemoteShellInbox.Reply response = RemoteShellInbox.handle(
-                                        submitRoute ? "submit" : "poll",
-                                        new String(bytes, StandardCharsets.UTF_8));
-                                body = response.body;
-                                status = response.status;
+                                try {
+                                    org.json.JSONObject inputBody = new org.json.JSONObject(
+                                            new String(payload, StandardCharsets.UTF_8));
+                                    if (inputBody.length() != 1 ||
+                                            !(inputBody.opt("command") instanceof String)) {
+                                        throw new IllegalArgumentException("Expected exact command string");
+                                    }
+                                    String command = inputBody.getString("command");
+                                    body = TelemetryForegroundService.runBrowserShell(command);
+                                    status = 200;
+                                } catch (IllegalArgumentException error) {
+                                    body = "{\"error\":\"invalid-command\"}";
+                                    status = 400;
+                                } catch (IllegalStateException error) {
+                                    body = "{\"error\":\"shizuku-not-ready-or-busy\"}";
+                                    status = 503;
+                                } catch (java.util.concurrent.TimeoutException error) {
+                                    body = "{\"error\":\"shell-timeout\"}";
+                                    status = 504;
+                                } catch (Exception error) {
+                                    org.json.JSONObject failure = new org.json.JSONObject();
+                                    failure.put("error", "android-shell-refused");
+                                    String details = String.valueOf(error.getMessage());
+                                    failure.put("detail", details.substring(0, Math.min(220, details.length())));
+                                    body = failure.toString();
+                                    status = 502;
+                                }
                             }
                         }
                     } else if (!statusRoute && !appsRoute && !systemRoute && !appDetailRoute) {
@@ -132,7 +153,7 @@ public final class TelemetryHttpServer {
                         }
                     }
                     byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
-                    String headers = "HTTP/1.1 " + status + (status == 200 || status == 202 ? " OK" : " Error") +
+                    String headers = "HTTP/1.1 " + status + (status == 200 ? " OK" : " Error") +
                             "\r\nContent-Type: application/json; charset=utf-8" +
                             "\r\nCache-Control: no-store" +
                             "\r\nX-Content-Type-Options: nosniff" +
