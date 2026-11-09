@@ -1,5 +1,5 @@
 ---
-status: in-progress
+status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-09
 purpose: Track the single PocketHost administration panel boot and self-healing implementation and physical acceptance
@@ -42,15 +42,53 @@ No second manager, cron job, Android receiver, or Termux:Boot hook is
 created. Termux:Boot already starts the existing
 `service-daemon/runsvdir`; new services are discovered there.
 
+## Diagnosed outage and accepted initial activation (2026-11-09)
+
+Samsung Termux runit is healthy: the existing service manager did not
+initially notice freshly staged PocketHost services in time for an
+immediate `sv-enable`. The installer returned
+`unable to open supervise/ok`, left both new services safely disabled,
+and did not change any existing services.
+
+Mac Local Agent verified S22 SSH (8022) was reachable but PocketHost
+LAN (18878/18879) was not listening. Later independent Mac SSH diagnostics
+proved `runsvdir` had adopted both registrations and created their
+`supervise/ok` FIFOs. A guarded retry of **activate only** then returned
+**PASS**:
+
+- `pockethost-panel` `run`, first verified PID 15757.
+- `pockethost-panel-watch` `run`, PID 16103.
+- `http://127.0.0.1:8787/shizuku` HTTP 200.
+- `http://192.168.0.100:18878/shizuku` HTTP 200.
+- All six protected services (sshd, cloudflared, wreckscanner,
+  mosquitto, ilestoi-healthwatch and termux-agent) remained `run`.
+
+Source `ops/termux/install-panel-services.sh` now waits for two
+supervise FIFOs and responsive `sv status` before enabling; the
+negative contract was extended to cover this regression. This later
+source change is committed but is not retroactively included in the
+already running panel checkout.
+
+Exact private host results:
+`pockethost-panel-native-guarded-runit-install-20261109-gpt6-v1`
+(initial safe HOLD), followed by Mac host task
+`pockethost-panel-activate-after-runsvdir-20261109-v1` (PASS).
+
+Samsung source gate on `2d9cab21` passed shell and Node syntax,
+3/3 focused negative tests, but the broad `check:structure` gate
+failed on pre-existing source layout allowlist entries (`native`,
+`ops`, `shizuku` and several `.mjs` files). Do not classify the
+whole repository gate as PASS.
+
 ## Physical quality and deployment matrix
 
 | Gate | Status |
 | --- | --- |
 | Source and documentation committed on PocketHost main | DONE |
-| Native shell/Node syntax and negative contract | OPEN |
-| Stage services on actual Samsung with disabled markers | OPEN |
-| Supervised start, HTTP 200 on loopback and private LAN | OPEN |
-| Confirm protected external Termux services unchanged | OPEN |
+| Native shell/Node syntax and negative contract | PASS at 2d9cab21 (3/3); later installer race fix needs retest |
+| Stage services on actual Samsung with disabled markers | PASS |
+| Supervised start, HTTP 200 on loopback and private LAN | PASS |
+| Confirm protected external Termux services unchanged | PASS |
 | Verify healthwatch recovery on a controlled panel-only failure | OPEN |
 | Reboot or Termux:Boot acceptance | OPEN |
 
