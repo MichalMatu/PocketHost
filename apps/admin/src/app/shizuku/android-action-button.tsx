@@ -13,7 +13,7 @@ type ActionResponse = {
   detail?: string
   durationMs?: number
 }
-export async function runAndroidAction(action: AndroidAction, target: string, value: string): Promise<ActionResponse> {
+async function runAndroidAction(action: AndroidAction, target: string, value: string): Promise<ActionResponse> {
   const response = await fetch("/api/v1/shizuku/action/run", {
     method: "POST", credentials: "same-origin", cache: "no-store",
     headers: { "Content-Type": "application/json" },
