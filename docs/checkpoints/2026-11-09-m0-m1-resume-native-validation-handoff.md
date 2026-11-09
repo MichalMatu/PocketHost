@@ -48,22 +48,22 @@ No second registry store was introduced. All new tests must run on Samsung befor
 
 Both requests address the verified exact Samsung installation and a clean isolated QA checkout; both use the `repository:pockethost` resource lease. They do not change the live panel or any managed/foreign site.
 
-| Task ID | Exact source | Scope | Status at checkpoint |
-| --- | --- | --- | --- |
-| `pockethost-m0-m1-focused-native-10731bca-20261109-v1` | `10731bca` | M1 schema/store negatives, module boundaries, affected three UI test files, root ESLint, TypeScript and changed-file Prettier check | PUBLISHED; terminal receipt UNKNOWN |
-| `pockethost-m0-format-diff-native-10731bca-20261109-v1` | `10731bca` | Read-only Prettier scan and unified diffs for formatting failures, with no checkout writes | PUBLISHED; terminal receipt UNKNOWN |
+| Task ID                                                 | Exact source | Scope                                                                                                                               | Status at checkpoint                |
+| ------------------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `pockethost-m0-m1-focused-native-10731bca-20261109-v1`  | `10731bca`   | M1 schema/store negatives, module boundaries, affected three UI test files, root ESLint, TypeScript and changed-file Prettier check | PUBLISHED; terminal receipt UNKNOWN |
+| `pockethost-m0-format-diff-native-10731bca-20261109-v1` | `10731bca`   | Read-only Prettier scan and unified diffs for formatting failures, with no checkout writes                                          | PUBLISHED; terminal receipt UNKNOWN |
 
 Task publication is not execution evidence. Do not restart queued tasks or infer PASS from absence of errors. Native task content and results remain in the private Local Agent repository, not in PocketHost.
 
 ## Quality and release gate ledger
 
-| Gate | State | Reason / needed evidence |
-| --- | --- | --- |
-| G0 foundation | OPEN on latest source | Prior structural and 196-node results accepted at earlier SHAs; new M1 tests and boundaries not yet terminal. |
-| G1 formatting/lint/type | OPEN | Known nine-file Prettier failure at `5bccbe2`; newer source needs targeted native results and canonical format repair. |
-| G2 full UI/source | OPEN | Full UI reported four failures at `5bccbe2`. Two causes repaired in source, the remaining failures and exact-final-SHA matrix not proven. |
-| M1 persistence | OPEN | Source changes made; exact-source native tests, positive owner contract, migration/recovery design still required. |
-| G3 physical / release | OPEN | No exact-current-SHA install, disposable owned-site lifecycle/rollback, reboot/watchdog or protected-service before/after acceptance. |
+| Gate                    | State                 | Reason / needed evidence                                                                                                                  |
+| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| G0 foundation           | OPEN on latest source | Prior structural and 196-node results accepted at earlier SHAs; new M1 tests and boundaries not yet terminal.                             |
+| G1 formatting/lint/type | OPEN                  | Known nine-file Prettier failure at `5bccbe2`; newer source needs targeted native results and canonical format repair.                    |
+| G2 full UI/source       | OPEN                  | Full UI reported four failures at `5bccbe2`. Two causes repaired in source, the remaining failures and exact-final-SHA matrix not proven. |
+| M1 persistence          | OPEN                  | Source changes made; exact-source native tests, positive owner contract, migration/recovery design still required.                        |
+| G3 physical / release   | OPEN                  | No exact-current-SHA install, disposable owned-site lifecycle/rollback, reboot/watchdog or protected-service before/after acceptance.     |
 
 Earlier PocketHost-only runit/private-LAN 200 and six protected services intact are **historical evidence**, not a new live check or permission to change services. No new physical health claims were made in this sprint.
 

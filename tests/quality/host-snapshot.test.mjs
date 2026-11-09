@@ -119,6 +119,10 @@ test('legacy service aliases have generic display roles and confer no project ow
       (service) => service.scope === 'system' || service.scope === 'local-agent',
     ),
   );
-  const snapshot = readHostSnapshot(() => 'unknown', () => '2026-11-09T12:00:00.000Z', () => null);
+  const snapshot = readHostSnapshot(
+    () => 'unknown',
+    () => '2026-11-09T12:00:00.000Z',
+    () => null,
+  );
   assert.ok(snapshot.services.every((service) => service.ownership === 'external'));
 });

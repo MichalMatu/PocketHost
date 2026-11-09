@@ -9,8 +9,7 @@ purpose: Record the independent legacy PhotoMap diagnostics source slice and nat
 
 ## Scope and source decisions
 
-Continues the [M0 UI/System separation sprint](
-2026-11-09-m0-implementation-ui-separation-sprint.md) and
+Continues the [M0 UI/System separation sprint](2026-11-09-m0-implementation-ui-separation-sprint.md) and
 [upstream-first roadmap](../ROADMAP.md). Work started from
 PocketHost `main@4cb4f640050649dfbcd6a10cd32db4e682e650e3`
 after checking the earlier native H2 UI receipt. Changes
@@ -51,14 +50,14 @@ in the background through general observability.
 
 ## Changed source and planned verification
 
-| Source area | Outcome |
-| --- | --- |
-| `src/modules/host/photomap-legacy-events.ts` | Fixed-instance, bounded pure sanitizer with fail-closed result |
-| `apps/admin/vite.config.ts` | Legacy GET events route; O1 no longer imports PhotoMap event data |
-| `apps/admin/src/lib/managed-photomap-schema.ts` | Event shape and code allowlist, unavailable/empty invariant |
-| `apps/admin/src/app/managed-projects/page.tsx` | Explicit read-only inspection UI |
-| `tests/quality/photomap-legacy-events.test.mjs` | Source boundary, zero effects, foreign/secret event and unavailable cases |
-| `apps/admin/tests/managed-projects.interaction.test.tsx` | User-triggered GET-only path and refusal of invalid data |
+| Source area                                              | Outcome                                                                   |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `src/modules/host/photomap-legacy-events.ts`             | Fixed-instance, bounded pure sanitizer with fail-closed result            |
+| `apps/admin/vite.config.ts`                              | Legacy GET events route; O1 no longer imports PhotoMap event data         |
+| `apps/admin/src/lib/managed-photomap-schema.ts`          | Event shape and code allowlist, unavailable/empty invariant               |
+| `apps/admin/src/app/managed-projects/page.tsx`           | Explicit read-only inspection UI                                          |
+| `tests/quality/photomap-legacy-events.test.mjs`          | Source boundary, zero effects, foreign/secret event and unavailable cases |
+| `apps/admin/tests/managed-projects.interaction.test.tsx` | User-triggered GET-only path and refusal of invalid data                  |
 
 The source test's endpoint regex was corrected in
 `2aaf78e962367f560595b28398c7f11737da082d`;

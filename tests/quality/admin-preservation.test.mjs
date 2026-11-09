@@ -93,14 +93,16 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
 
 test('M0 keeps observed external services in System, not the Hosting project catalog', () => {
   const systemGroup = navigation.split('label: "System",')[1]?.split('label: "Hosting",')[0] ?? '';
-  const hostingGroup = navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
+  const hostingGroup =
+    navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
   assert.match(systemGroup, /url: "\/host"/);
   assert.doesNotMatch(hostingGroup, /url: "\/host"/);
   assert.match(hostingGroup, /url: "\/sites"/);
   assert.match(hostingGroup, /url: "\/deployments"/);
   assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
   assert.doesNotMatch(hostingGroup, /url: "\/settings\/network"/);
-  const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Examples",')[0] ?? '';
+  const platformGroup =
+    navigation.split('label: "Platform",')[1]?.split('label: "Examples",')[0] ?? '';
   assert.match(platformGroup, /url: "\/settings\/network"/);
   assert.match(routes, /path: "\/host"/);
 });

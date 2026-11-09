@@ -32,8 +32,12 @@ function dependencyMap(value: unknown): Record<string, string> {
   if (Object.keys(source).length > 500) throw new Error('Dependency budget exceeded');
   const target: Record<string, string> = {};
   for (const [name, range] of Object.entries(source)) {
-    if (!/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/.test(name) ||
-        typeof range !== 'string' || range.length > 256 || !range.trim()) {
+    if (
+      !/^(?:@[a-z0-9._-]+\/)?[a-z0-9._-]+$/.test(name) ||
+      typeof range !== 'string' ||
+      range.length > 256 ||
+      !range.trim()
+    ) {
       throw new Error('Invalid dependency declaration');
     }
     target[name] = range;
@@ -49,8 +53,10 @@ function matchingDependencies(
   for (const key of ['dependencies', 'devDependencies', 'optionalDependencies']) {
     const expected = dependencyMap(packageManifest[key]);
     const locked = dependencyMap(lockRoot[key]);
-    if (Object.keys(expected).length !== Object.keys(locked).length ||
-        Object.entries(expected).some(([name, value]) => locked[name] !== value)) {
+    if (
+      Object.keys(expected).length !== Object.keys(locked).length ||
+      Object.entries(expected).some(([name, value]) => locked[name] !== value)
+    ) {
       throw new Error('package-lock root disagrees with package.json');
     }
     count += Object.keys(expected).length;
@@ -58,23 +64,32 @@ function matchingDependencies(
   return count;
 }
 
-export function planNodeDependencies(packageInput: unknown, lockInput: unknown): NodeDependencyPlan {
+export function planNodeDependencies(
+  packageInput: unknown,
+  lockInput: unknown,
+): NodeDependencyPlan {
   const pkg = record(packageInput);
   const lock = record(lockInput);
   const name = named(pkg.name, 'package name');
   const version = named(pkg.version, 'package version');
-  if (typeof lock.lockfileVersion !== 'number' ||
-      ![2, 3].includes(lock.lockfileVersion)) {
+  if (typeof lock.lockfileVersion !== 'number' || ![2, 3].includes(lock.lockfileVersion)) {
     throw new Error('npm lockfile v2 or v3 is required');
   }
   const packages = record(lock.packages);
   const root = record(packages['']);
-  if (lock.name !== name || lock.version !== version ||
-      root.name !== name || root.version !== version) {
+  if (
+    lock.name !== name ||
+    lock.version !== version ||
+    root.name !== name ||
+    root.version !== version
+  ) {
     throw new Error('Package identity differs from lockfile');
   }
-  if (pkg.packageManager !== undefined &&
-      (typeof pkg.packageManager !== 'string' || !/^npm@[0-9]+(?:\.[0-9]+){0,2}$/.test(pkg.packageManager))) {
+  if (
+    pkg.packageManager !== undefined &&
+    (typeof pkg.packageManager !== 'string' ||
+      !/^npm@[0-9]+(?:\.[0-9]+){0,2}$/.test(pkg.packageManager))
+  ) {
     throw new Error('Only an explicit npm package manager is supported');
   }
   const scripts = record(pkg.scripts);

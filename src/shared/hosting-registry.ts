@@ -71,8 +71,11 @@ export function createHostingRegistries(value: unknown, reservedPorts: ReadonlyA
     const name = id(item.id);
     if (modules.has(name)) throw new Error('Duplicate module ID');
     const capabilities = array(item.capabilities, 12);
-    if (!capabilities.length || new Set(capabilities).size !== capabilities.length ||
-        capabilities.some((cap) => !CAPABILITIES.has(cap as HostingCapability))) {
+    if (
+      !capabilities.length ||
+      new Set(capabilities).size !== capabilities.length ||
+      capabilities.some((cap) => !CAPABILITIES.has(cap as HostingCapability))
+    ) {
       throw new Error('Invalid module capability');
     }
     modules.set(name, {
@@ -95,14 +98,22 @@ export function createHostingRegistries(value: unknown, reservedPorts: ReadonlyA
     const projectId = id(item.projectId);
     const moduleId = id(item.moduleId);
     const unitName = item.name;
-    if (typeof unitName !== 'string' ||
-        unitName !== `pockethost-${projectId}-${serviceId}` ||
-        unitName.length > 128 ||
-        services.has(serviceId) || unitNames.has(unitName)) {
+    if (
+      typeof unitName !== 'string' ||
+      unitName !== `pockethost-${projectId}-${serviceId}` ||
+      unitName.length > 128 ||
+      services.has(serviceId) ||
+      unitNames.has(unitName)
+    ) {
       throw new Error('Unsafe or duplicate service declaration');
     }
     services.set(serviceId, {
-      schemaVersion: 1, id: serviceId, name: unitName, projectId, moduleId, state: 'planned',
+      schemaVersion: 1,
+      id: serviceId,
+      name: unitName,
+      projectId,
+      moduleId,
+      state: 'planned',
     });
     unitNames.add(unitName);
   }
@@ -142,8 +153,12 @@ export function createHostingRegistries(value: unknown, reservedPorts: ReadonlyA
       if (c.serviceId !== null) {
         const serviceId = id(c.serviceId);
         const service = services.get(serviceId);
-        if (!service || service.projectId !== projectId || service.moduleId !== moduleId ||
-            attachedServices.has(serviceId)) {
+        if (
+          !service ||
+          service.projectId !== projectId ||
+          service.moduleId !== moduleId ||
+          attachedServices.has(serviceId)
+        ) {
           throw new Error('Unowned or reused service binding');
         }
         attachedServices.add(serviceId);
@@ -157,7 +172,9 @@ export function createHostingRegistries(value: unknown, reservedPorts: ReadonlyA
         return { kind: 'secret-ref' as const, id: s.id };
       });
       return {
-        id: componentId, moduleId, moduleVersion: module.version,
+        id: componentId,
+        moduleId,
+        moduleVersion: module.version,
         role: c.role as 'frontend' | 'backend' | 'worker',
         port: ownedPort(c.port, taken),
         serviceId: c.serviceId as string | null,
@@ -165,7 +182,10 @@ export function createHostingRegistries(value: unknown, reservedPorts: ReadonlyA
       };
     });
     projects.set(projectId, {
-      schemaVersion: 1, id: projectId, origin: 'created-in-pockethost', components: validated,
+      schemaVersion: 1,
+      id: projectId,
+      origin: 'created-in-pockethost',
+      components: validated,
     });
   }
   if ([...services.keys()].some((serviceId) => !attachedServices.has(serviceId))) {

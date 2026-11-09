@@ -5,16 +5,22 @@ import { planNodeDependencies } from '../../src/modules/packages/node-dependency
 function fixture() {
   return {
     pkg: {
-      name: 'owned-node-demo', version: '1.0.0',
+      name: 'owned-node-demo',
+      version: '1.0.0',
       scripts: { start: 'node server.mjs', build: 'node scripts/build.mjs' },
       dependencies: { express: '^5.0.0' },
     },
     lock: {
-      name: 'owned-node-demo', version: '1.0.0', lockfileVersion: 3,
-      packages: { '': {
-        name: 'owned-node-demo', version: '1.0.0',
-        dependencies: { express: '^5.0.0' },
-      } },
+      name: 'owned-node-demo',
+      version: '1.0.0',
+      lockfileVersion: 3,
+      packages: {
+        '': {
+          name: 'owned-node-demo',
+          version: '1.0.0',
+          dependencies: { express: '^5.0.0' },
+        },
+      },
     },
   };
 }
@@ -34,18 +40,31 @@ test('M2 refuses missing lockfile, stale lock identity and mismatched dependency
   const { pkg, lock } = fixture();
   assert.throws(() => planNodeDependencies(pkg, {}), /lockfile/);
   assert.throws(() => planNodeDependencies(pkg, { ...lock, version: '2.0.0' }), /identity/);
-  assert.throws(() => planNodeDependencies(pkg, {
-    ...lock, packages: { '': { ...lock.packages[''], dependencies: { express: '^4.0.0' } } },
-  }), /disagrees/);
+  assert.throws(
+    () =>
+      planNodeDependencies(pkg, {
+        ...lock,
+        packages: { '': { ...lock.packages[''], dependencies: { express: '^4.0.0' } } },
+      }),
+    /disagrees/,
+  );
 });
 
 test('M2 refuses missing start, unsupported manager, invalid dependency declarations', () => {
   const { pkg, lock } = fixture();
   assert.throws(() => planNodeDependencies({ ...pkg, scripts: {} }, lock), /start script/);
   assert.throws(() => planNodeDependencies({ ...pkg, packageManager: 'pnpm@10.0.0' }, lock), /npm/);
-  assert.throws(() => planNodeDependencies({
-    ...pkg, dependencies: { 'bad/name!': 'latest' },
-  }, lock), /Invalid dependency/);
+  assert.throws(
+    () =>
+      planNodeDependencies(
+        {
+          ...pkg,
+          dependencies: { 'bad/name!': 'latest' },
+        },
+        lock,
+      ),
+    /Invalid dependency/,
+  );
 });
 
 test('M2 supports no-build one-package Node apps without inferring live ownership', () => {
