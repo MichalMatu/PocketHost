@@ -7,7 +7,6 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
-
 ## Latest M0 generic service catalog (source, QA still open)
 
 Read [M0 generic service aliases and PhotoMap QA repairs](checkpoints/2026-11-09-m0-generic-services-prehandoff.md).
@@ -19,7 +18,6 @@ error and test formatting are repaired in source. Native task
 was still pending at publication. Fetch fresh HEAD and consume that
 receipt before scheduling only the necessary final-source checks.
 
-
 ## Latest M0 PhotoMap decoupling (source, pending Samsung QA)
 
 Read [the M0 legacy PhotoMap diagnostics checkpoint](checkpoints/2026-11-09-m0-photomap-diagnostics-isolation.md).
@@ -28,7 +26,6 @@ GET-only PhotoMap API provides bounded events on explicit request.
 This does not deploy code or authorize PhotoMap launch. Read native QA
 result `pockethost-m0-photomap-final-native-s22-2aaf78e9-20261109-v1`
 before claiming acceptance. Check fresh main before additional changes.
-
 
 ## Latest M0 source slice — UI implemented, native acceptance open
 
