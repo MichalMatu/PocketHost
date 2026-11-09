@@ -2,26 +2,50 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-09
-purpose: Implementation ownership and acceptance plan for Observability O1
+purpose: Delivery priorities for modular PocketHost and historical acceptance plans
 ---
 
 # PocketHost Development Plan
 
 ## Current delivery priority — modular platform (2026-11-09)
 
-The [revised canonical roadmap](ROADMAP.md) now sets the delivery order:
-**shared module contracts and lifecycle -> SSH/Node modules -> Cloudflare
-and Python/PRoot modules -> Hosting orchestration -> one-by-one migration
-of IleStoi and Local Agent**. The older H2/H3/O1 implementation details
-below are preserved as historical acceptance and reusable components,
-not as a competing future feature sequence.
+The [canonical roadmap](ROADMAP.md) now prioritizes:
+**M0 legacy decoupling -> M1 registries + components[] + SecretRef
+-> M2 dependency plans + shared runit/health + backup/restore
+-> M3 early Node.js Hosting MVP -> M4 SSH/Cloudflare/Python modules
+-> M5 full multi-component orchestration -> M6 workload migration
+-> M7 advanced expansion.** Historic O1/H2/H3 work below is
+accepted evidence, not a competing delivery sequence.
 
-Hosting may provision only **explicitly app-created projects**.
+**First working slice (M3):** one user-supplied disposable Node.js
+project. Reuse H2 ownership and release/rollback infrastructure.
+Implement a minimal browser Create Project flow, manifest and lockfile
+inspection, project-local dependency plan, owned start/readiness,
+staged update and rollback. Do not wait for Cloudflare, PRoot or
+a complex multi-component wizard to validate the architecture.
+
+**Shared foundations (M1/M2):** `ModuleRegistry`,
+`ServiceRegistry`, `ProjectRegistry` and per-project
+`components[]`, with distinct declared vs observed states.
+One runit supervisor path, a separate policy evaluator for
+health and bounded recovery, non-plaintext secret references
+and a project-scoped backup/restore interface. Do not introduce
+another process daemon or replicate IleStoi, Local Agent and
+panel watchdog behavior as competing scripts.
+
+**Acceptance:** each owned service must have one verified owner,
+tested error/unknown behavior, actionable logs and no interference
+with unrelated services. Each dynamic release must have a source
+hash, readiness test, a previously working rollback target,
+and a separate plan for mutable data/schema changes. Before any
+IleStoi/Local Agent cutover require a successful disposable restore,
+reboot and Wi-Fi/Android background recovery checks, and an
+independent SSH/USB rollback route. Local Agent migrates last and
+may not perform its own queued shutdown/cutover.
+
 Existing Termux workloads remain independently supervised until
-their new PocketHost configuration, data isolation, health/recovery,
-backups and rollback have passed actual device checks.
-No migration, password/key change, tunnel reconfiguration or new
-autostart is implied by these document updates.
+each individually approved, verified switch. Documentation edits
+alone do not authorize service, key, package, tunnel or data changes.
 
 ## Active DEV sprint rhythm — 2026-11-08
 
