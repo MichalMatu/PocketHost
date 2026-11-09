@@ -249,5 +249,5 @@ Samsung UI/backend gate, native Android Gradle build/install, guarded
 PocketHost-only panel refresh and physical operation/denial matrix must be
 reported separately with actual terminal results. Do not declare full MVP
 PASS from source commits. See
-[Shizuku MVP sprint checkpoint](checkpoints/2026-11-09-shizuku-mvp-sprint.md).
+[Shizuku MVP sprint checkpoint](../checkpoints/2026-11-09-shizuku-mvp-sprint.md).
 
