@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [M0 source implementation: system/hosting boundaries and pending Samsung checks](2026-11-09-m0-implementation-ui-separation-sprint.md)
+
 - [Autonomous final sprint QA and M0-M3 handoff](2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
 
 - [M0 pre-implementation readiness and file-by-file acceptance plan](2026-11-09-m0-preimplementation-readiness.md)
