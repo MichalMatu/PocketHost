@@ -17,7 +17,7 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { planNodeDependencies, type NodeDependencyPlan } from '../packages/node-dependency-plan.ts';
+import { planNodeDependencies, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
 
 const PROJECT = /^node-[a-f0-9]{32}$/;
 const RELEASE = /^r-[a-f0-9]{32}$/;
