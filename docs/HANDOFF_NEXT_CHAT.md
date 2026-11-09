@@ -7,22 +7,28 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
-## Direct browser Shizuku shell — owner correction (2026-11-09)
+## Direct Advanced Shell — deployed and physically verified (2026-11-09)
 
-The owner rejected 10-digit pairing, phone approval and other product-level
-blockers. **These are removed from the source candidate.** Full direct
-power-user Run action takes precedence over the earlier paired-shell handoff.
-AGENTS.md and native Companion AGENTS.md now record functional-first DEV,
-security hardening only in a separate final phase. Existing private LAN-only
-binding remains; HTTP is unauthenticated, so never claim a secure release.
-See `docs/checkpoints/2026-11-09-shizuku-direct-browser-shell.md`.
-After source QA, build/install the exact Companion APK and perform a guarded
-PocketHost-only DEV restart and physical `id` command test. Do not claim
-hardware PASS from source commits. Supersedes the earlier paired-browser
-shell checkpoint and its acceptance steps.
+**READY FOR OWNER TEST.** Native Companion APK matching
+`PocketHost/main@186185680d74ffc1d44eaedeb6ee4702a1f6174e`
+was compiled and installed on the exact Samsung SM-S906B with prior APK
+saved for rollback. The owner-verified PocketHost DEV process alone was
+restarted to the same source SHA. Via private LAN browser route,
+`POST /api/v1/shizuku/remote-shell/run` executed actual `id` through
+Shizuku **ADB**, returned real `uid=` output, and passed end-to-end
+acceptance. Node contract 9/9, UI interactions 2/2, lint and Vite build PASS.
+All six unrelated protected Termux services retained prior states.
 
+URL: `http://192.168.0.100:18878/shizuku` → **Advanced shell**
+→ type `id` → **Run on Samsung**. **No pairing codes,
+extra phone approvals or command-category allowlists.**
+The current HTTP LAN shell has no user authentication/TLS; do not expose
+outside the owner-private LAN. Final security hardening is a separate
+product stage. The optional further invalid-command and legacy-route
+negative hardware matrix is still being checked. Exact evidence:
+`docs/checkpoints/2026-11-09-shizuku-direct-browser-shell.md`.
 
-## New source candidate — paired browser Shizuku shell (2026-11-08)
+## Historical superseded candidate — paired browser Shizuku shell (2026-11-08)
 
 Owner wants a real Advanced Shell in the desktop LAN browser. Implementation
 adds a 10-minute phone-armed pairing code, exact per-command approval
