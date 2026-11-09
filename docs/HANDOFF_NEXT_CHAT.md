@@ -7,6 +7,23 @@ purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## DEV panel supervision restored — 2026-11-09
+
+After an Android Termux interruption, the previously manual Vite panel
+was absent. Mac and S22 host diagnostics confirmed Termux, SSH and all
+six protected services were running while PocketHost LAN ports were
+closed. Two runit service directories had been staged but activation
+initially raced runsvdir supervision registration.
+
+After runsvdir adopted both directories, **PocketHost-only activation
+PASS**: the admin panel and its HTTP watchdog run under existing Termux
+runit, loopback `8787/shizuku` and private Wi-Fi
+`192.168.0.100:18878/shizuku` both returned HTTP 200, with protected
+services unchanged. The installer source now waits for service discovery.
+A controlled crash/restart and real reboot test remain separate gates.
+See [panel supervision checkpoint](checkpoints/2026-11-09-panel-runit-self-healing.md)
+and [ADR-0014](adr/0014-termux-panel-supervision.md).
+
 ## Android & Shizuku MVP — implementation sprint (2026-11-09)
 
 Owner priorities: P0 direct browser operations, Android apps and CPU/processes;
