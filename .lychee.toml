@@ -8,4 +8,4 @@ scheme = ["http", "https"]
 exclude_all_private = true
 cache = false
 # Private control transport is not publicly link-checkable.
-exclude = ['^https?://github\\.com/MichalMatu/local-agent(/|$)']
+exclude = ['^https?://github[.]com/MichalMatu/local-agent(/|$)']
