@@ -4,7 +4,7 @@
 
 - [PocketHost-only Termux runit autostart and health-recovery decision](adr/0014-termux-panel-supervision.md)
 
-- [Approved target menu and hosting/system responsibility map](TARGET_INFORMATION_ARCHITECTURE.md)
+- [Target modular platform, reusable modules and Hosting orchestration](TARGET_INFORMATION_ARCHITECTURE.md)
 
 - [Shizuku power-user integration decision](adr/0013-shizuku-power-user.md)
 - [Shizuku Android capability module](modules/shizuku.md)
@@ -22,7 +22,7 @@
 - [H3.4 Full Termux Administration source candidate](checkpoints/2026-11-07-h34-full-termux-source.md)
 - [H3 Termux Control Center foundation](checkpoints/2026-11-07-h3-termux-center-branch.md)
 
-- [Roadmap: H2 accepted, next H3 package CMS and H4 agent API](ROADMAP.md)
+- [Roadmap: modular platform, modules and phased hosting migration](ROADMAP.md)
 - [H2.1 archive manager source and release gates](checkpoints/2026-11-07-h21-release-manager-source.md)
 - [H2 accepted Samsung G2/G3 multi-site static hosting](checkpoints/2026-11-07-h2-static-hosting-source.md)
 - [H1 owned Hosting MVP checkpoint](checkpoints/2026-11-07-h1-hosting-mvp-source.md)
