@@ -1,11 +1,19 @@
 ---
-status: source-candidate
+status: superseded
 owner: shizuku
 last_reviewed: 2026-11-08
 purpose: Browser-to-phone confirmed remote shell bridge and acceptance dependencies
 ---
 
 # PocketHost — paired Shizuku remote shell from browser
+
+**Historical source candidate only; do not deploy.** Superseded by the
+2026-11-09 owner instruction for direct unpaired shell execution.
+The approved and physically tested live implementation is documented in
+[direct browser shell checkpoint](2026-11-09-shizuku-direct-browser-shell.md).
+The pairing code, phone-approval inbox, and submit/poll endpoints were
+removed from current source.
+
 
 ## Owner decision
 
