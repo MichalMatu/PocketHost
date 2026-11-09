@@ -112,6 +112,29 @@ evidence in the [canonical handoff](
 is historical and cannot be promoted to a current
 device status. No latest live sample was taken here.
 
+## Native QA result received after initial publication
+
+The exact-source Samsung receipt
+`pockethost-m0-ui-separation-native-s22-c6c1f4b3-20261109-v1`
+finished **failed / exit 1**, but its detailed checks show:
+
+- **PASS:** 13/13 scoped Node M0 and runit tests;
+  6/6 Termux-center UI tests; structure, docs,
+  module boundaries, TypeScript, admin ESLint
+  and root ESLint.
+- **OPEN:** the scoped Prettier check reported
+  `src/modules/config/hosting-registry.ts`
+  needing formatting. The two checked M0 UI
+  files did not fail that format check.
+- Exact QA checkout HEAD was `c6c1f4b31d442804a6b60ca295519cb724b15a73`
+  and remained clean. No deployed/live PASS
+  is implied by isolated source tests.
+
+Do not repeat this task or collapse the successful
+sub-gates into an overall PASS. The other M0 navigation
+and asset relocation receipts are independent and
+were still unconfirmed at this update.
+
 ## Remaining M0 work and concrete next safe steps
 
 1. **Consume native receipts first:** all three queued
