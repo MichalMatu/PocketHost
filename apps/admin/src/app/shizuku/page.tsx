@@ -11,12 +11,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { RemoteShellPanel } from "./remote-shell-panel"
 import { AndroidActionButton } from "./android-action-button"
+import { ShizukuDiagnosticsPanel } from "./diagnostics-panel"
 import {
   parseShizukuStatus, parseShizukuApps, parseShizukuSystem, parseShizukuApp,
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
 } from "@/lib/shizuku-schema"
 
-type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power"
+type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power" | "diagnostics"
 type PackageFilter = "all" | "user" | "system"
 const PAGE_SIZE = 80
 const PERMISSION_APP_PAGE_SIZE = 20
@@ -28,6 +29,7 @@ const sections = [
   { id: "services", label: "Services & settings", icon: Settings2 },
   { id: "shell", label: "Advanced shell", icon: Terminal },
   { id: "power", label: "Power & hardware", icon: Battery },
+  { id: "diagnostics", label: "Diagnostics", icon: Activity },
 ] as const
 
 async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
@@ -126,6 +128,40 @@ export default function ShizukuPage() {
       if (request === detailRequest.current) setDetailLoading(false)
     }
   }
+
+  React.useEffect(() => {
+    if (section !== "processes") return
+    const controller = new AbortController()
+    let busy = false
+    const poll = async () => {
+      if (busy || controller.signal.aborted) return
+      busy = true
+      try {
+        const statusSample = parseShizukuStatus(await readJson(
+          "/api/v1/shizuku/status", AbortSignal.any([controller.signal, AbortSignal.timeout(9000)],
+        )))
+        if (controller.signal.aborted) return
+        setStatus(statusSample)
+        if (statusSample.cpuPercent != null) setCpuHistory(current => {
+          if (current.some(point => point.time === statusSample.observedAt)) return current
+          return [...current, { time: statusSample.observedAt, value: statusSample.cpuPercent! }].slice(-40)
+        })
+        const systemSample = parseShizukuSystem(await readJson(
+          "/api/v1/shizuku/system", AbortSignal.any([controller.signal, AbortSignal.timeout(15000)],
+        )))
+        if (!controller.signal.aborted) {
+          setSystem(systemSample)
+          setSystemError(false)
+        }
+      } catch {
+        if (!controller.signal.aborted) setSystemError(true)
+      } finally {
+        busy = false
+      }
+    }
+    const interval = window.setInterval(() => { void poll() }, 15000)
+    return () => { controller.abort(); window.clearInterval(interval) }
+  }, [section])
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -680,6 +716,7 @@ export default function ShizukuPage() {
           </div>
         )}
         {section === "shell" && <RemoteShellPanel />}
+        {section === "diagnostics" && <ShizukuDiagnosticsPanel />}
         {section === "power" && (
           <Card><CardHeader><CardTitle>Power & hardware</CardTitle>
             <CardDescription>Real battery, temperature and Android RAM observations.</CardDescription>
