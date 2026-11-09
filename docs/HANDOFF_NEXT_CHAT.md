@@ -43,7 +43,6 @@ main. Check those receipts first, then perform only the missing affected
 Samsung tests of the final M1 source, including the boundary gate.
 M1 schema migration and physical positive ownership remain unfinished.
 
-
 ## Latest M0 QA handoff — source checks and Markdownlint repair
 
 Start from [M0 final source QA checkpoint](checkpoints/2026-11-09-m0-final-source-qa-handoff.md).
