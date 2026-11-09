@@ -8,6 +8,18 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
 
+## Latest M0 generic service catalog (source, QA still open)
+
+Read [M0 generic service aliases and PhotoMap QA repairs](checkpoints/2026-11-09-m0-generic-services-prehandoff.md).
+Host status retains its historical six external-only wire IDs with generic
+labels; the existing runit inventory remains authoritative for Termux
+service discovery and administration. The PhotoMap literal-ID TypeScript
+error and test formatting are repaired in source. Native task
+`pockethost-m0-observed-services-native-s22-affcf2d6-20261109-v1`
+was still pending at publication. Fetch fresh HEAD and consume that
+receipt before scheduling only the necessary final-source checks.
+
+
 ## Latest M0 PhotoMap decoupling (source, pending Samsung QA)
 
 Read [the M0 legacy PhotoMap diagnostics checkpoint](checkpoints/2026-11-09-m0-photomap-diagnostics-isolation.md).
