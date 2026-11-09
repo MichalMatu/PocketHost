@@ -1,0 +1,11 @@
+# Opt-in only: never run during normal FAST FLOW, builds or device operation.
+# Public HTTP(S) links in active PocketHost documentation only.
+no_progress = true
+max_concurrency = 4
+max_retries = 1
+timeout = 10
+scheme = ["http", "https"]
+exclude_all_private = true
+cache = false
+# Private control transport is not publicly link-checkable.
+exclude = ['^https?://github\\.com/MichalMatu/local-agent(/|$)']

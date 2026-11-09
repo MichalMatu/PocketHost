@@ -16,7 +16,7 @@
     "format:write": "prettier --write .",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "markdownlint": "markdownlint-cli2 \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/**/*.md\" \"src/**/AGENTS.md\" \"scripts/**/AGENTS.md\" \"tests/**/AGENTS.md\" \"apps/AGENTS.md\"",
+    "markdownlint": "markdownlint-cli2 \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/**/*.md\" \"src/**/AGENTS.md\" \"scripts/**/AGENTS.md\" \"tests/**/AGENTS.md\" \"apps/AGENTS.md\" \"native/**/AGENTS.md\" \"native/**/README.md\"",
     "test": "node --test tests/quality/*.test.mjs",
     "test:coverage": "node --test --experimental-test-coverage tests/quality/*.test.mjs",
     "test:coverage:gate": "node --test --experimental-test-coverage --test-coverage-lines=75 --test-coverage-branches=78 --test-coverage-functions=78 tests/quality/*.test.mjs",
@@ -34,7 +34,8 @@
     "dev:sync": "node scripts/dev/ui-sync.mjs --watch --interval-ms=8000",
     "dev:sync:once": "node scripts/dev/ui-sync.mjs --once",
     "dev:sync:test": "node --test tests/quality/dev-ui-sync.test.mjs",
-    "dev:changed": "node scripts/dev/changed-checks.mjs"
+    "dev:changed": "node scripts/dev/changed-checks.mjs",
+    "check:links:external": "lychee --config .lychee.toml \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/*.md\" \"docs/modules/*.md\" \"docs/adr/*.md\" \"native/**/*.md\""
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

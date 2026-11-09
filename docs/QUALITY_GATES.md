@@ -38,6 +38,21 @@ changes require manual impact review; the selector never claims full
 coverage automatically. Preserve dependencies and caches; avoid
 duplicate successful tests.
 
+## Optional external link review
+
+The local `check:docs` gate checks repository-relative Markdown links.
+For **public external HTTP(S) URLs**, `npm run check:links:external` uses
+Lychee with conservative network limits, private-address exclusion and a
+private GitHub transport-repo exclusion. Lychee is an **optional separately
+installed Termux binary**; this command does not install it. Run manually
+through the verified Samsung Local Agent at milestone/documentation review,
+not in `check`, `check:all`, `dev:changed` or an always-on watcher.
+A missing binary or public-site timeout is **UNVERIFIED**, not PASS;
+triage external failures without suppressing all other URLs.
+Auth-protected and historical checkpoint links are intentionally outside
+this routine external scan. Do not change service/network configuration
+for a link review.
+
 ## Defined gates
 
 - **G0 / foundation:** **npm run check:foundation** — structure,

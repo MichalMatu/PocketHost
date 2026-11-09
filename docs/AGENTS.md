@@ -18,6 +18,16 @@ roadmap or quality gates. Keep historical receipts in dated,
 indexed checkpoints; preserve verified evidence and exact SHAs.
 A git commit or request publication is not hardware PASS.
 
+## Reader intent (Diátaxis)
+
+Choose tutorial, how-to, reference or explanation by the reader's intended
+use, not by a mandatory directory name. Existing files stay where they are.
+Prefer linking to the canonical document over creating a second summary;
+guided tutorials are added only when an actual learner workflow needs one.
+Every new active document must be linked from docs/README.md and have a
+clear audience/purpose. Checkpoints are historical evidence, never the
+default how-to or live status source.
+
 ## Gate
 
 Every doc except docs/README.md and docs/AGENTS.md needs
