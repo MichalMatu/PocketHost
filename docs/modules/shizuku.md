@@ -185,3 +185,18 @@ confirmation can call the authorized Shizuku Binder service.
 The LAN has no TLS, so do not place secrets into shell commands.
 See [browser shell checkpoint](../checkpoints/2026-11-08-shizuku-browser-remote-shell.md).
 Physical build, Companion install, device and browser tests are OPEN.
+
+
+## Direct browser Advanced Shell — supersedes pairing (2026-11-09)
+
+Per the owner's explicit decision, no pairing code, phone approval queue or
+per-command native confirmation may block a direct user-initiated Run in the
+PocketHost browser. Android's real Shizuku UID and privileges remain authoritative.
+The browser calls fixed POST `/api/v1/shizuku/remote-shell/run`, forwarded
+through Termux to Android-loopback POST `/shell/run`. The foreground
+Companion invokes the Shizuku Binder and returns the actual result.
+Prior `submit`/`poll` and the temporary 10-digit pairing UI are retired.
+The LAN HTTP route is intentionally unauthenticated during functional DEV,
+not hardened or suitable for public exposure. See
+[direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
+The full Android/browser hardware acceptance remains OPEN until verified.
