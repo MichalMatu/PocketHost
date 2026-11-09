@@ -2,28 +2,11 @@ import { spawnSync } from 'node:child_process';
 import { statfsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { SERVICE_CATALOG, type ServiceScope } from './observed-service-catalog.ts';
 
-type ServiceScope = 'system' | 'local-agent';
-
-/** Every entry is externally owned. A successful probe confers no management rights. */
-export const SERVICE_CATALOG = [
-  { id: 'ilestoi', label: 'IleStoi.pl', runit: 'wreckscanner', scope: 'system' },
-  { id: 'tunnel', label: 'Cloudflare tunnel', runit: 'cloudflared', scope: 'system' },
-  { id: 'ssh', label: 'SSH server', runit: 'sshd', scope: 'system' },
-  { id: 'mqtt', label: 'MQTT broker', runit: 'mosquitto', scope: 'system' },
-  {
-    id: 'healthwatch',
-    label: 'IleStoi healthwatch',
-    runit: 'ilestoi-healthwatch',
-    scope: 'system',
-  },
-  { id: 'local-agent', label: 'Termux Local Agent', runit: 'termux-agent', scope: 'local-agent' },
-] as const satisfies ReadonlyArray<{
-  id: string;
-  label: string;
-  runit: string;
-  scope: ServiceScope;
-}>;
+// Preserve the public six-card API while keeping named units in a
+// compatibility-only catalog. Observing an external unit never grants control.
+export { SERVICE_CATALOG } from './observed-service-catalog.ts';
 
 export type ServiceState = 'running' | 'stopped' | 'unknown';
 
