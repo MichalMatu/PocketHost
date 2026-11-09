@@ -1,6 +1,7 @@
 # PocketHost Documentation Index
 
 ## Current work
+
 - [M0 final source QA: 196/196 Node, 18/18 focused and 18/18 UI; complete gate still open](checkpoints/2026-11-09-m0-final-source-qa-handoff.md)
 
 - [M0 external service catalog and PhotoMap QA repairs — final native gate open](checkpoints/2026-11-09-m0-generic-services-prehandoff.md)
