@@ -103,6 +103,10 @@ rules above; public/product releases retain independent physical gates.
 - Never modify, restart, stop, rebind, expose, migrate, or replace existing Termux services including IleStoi.pl and Local Agent without an explicitly authorized operation for the specific target.
 - Treat every discovered website or process as **externally owned** until PocketHost has an explicit ownership record; discovery is read-only.
 - Keep the native Companion bridge on Android loopback. The existing owner-authorized **private-LAN gateway** binds one exact private IPv4 interface. Its DEV Android & Shizuku console explicitly includes the owner-requested **direct Advanced Shell**, without pairing or repeated approvals. Do not add WAN/public exposure, new wild-card listeners, or access to unrelated Termux services. This supersedes earlier read-only-demo assumptions about the LAN panel.
+- No host-level filesystem scan outside agreed locations; no automatic package installation, tunnel creation, DNS modification, or process killing.
+- Development is manual from CLI: do not add autostart, boot receivers, persistent services or scheduled tasks in DEV.
+- Do not invoke GitHub Actions, Codex, or ChatGPT Work. GitHub Connector is for repository edits and private task transport. **All PocketHost development command execution, dependency installation, checks, tests, builds and compilation take place exclusively on the specifically addressed Termux phone through its installed Local Agent**. Do not run development commands on Mac or in a ChatGPT Linux sandbox. See `docs/LOCAL_AGENT_TERMUX.md`.
+- Before importing the full admin template, run the existing foundation gate **on Termux through Local Agent**. Preserve all 30+ existing upstream screens and routes in the first admin candidate; no feature adaptation or unused-page removal. The imported admin app lives under `apps/admin` and is treated as a pinned upstream baseline with its own package-level lint/build gate.
 
 ## Agent execution handoff
 
