@@ -7,6 +7,43 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Active M0 closure and M1 registry continuation — 2026-11-09
+
+M0 source task
+`pockethost-m0-post-docfix-fullqa-s22-05498852-20261109-v1`
+finished failed/1 on the exact clean S22 QA checkout: 196/196 Node
+tests passed, but five Markdownlint list/heading whitespace errors in
+three documentation files blocked all later checks. Three docs-only
+commits ending at `5bccbe2` corrected those five source errors; native
+acceptance is not inferred.
+
+Two remaining-gate tasks were independently queued against the same
+`5bccbe2` snapshot:
+`pockethost-m0-remaining-gates-s22-5bccbe2-20261109-v1` and
+`pockethost-m0-remaining-gates-s22-5bccbe2b-20261109-v1`.
+Before any new task, inspect both exact results and avoid repeating
+already successful gates. At this checkpoint, neither result had been
+observed. M0 full source PASS and fresh live H2/runit/Agent physical
+acceptance remain OPEN; do not touch working services for source QA.
+
+M1 has a single revisioned, explicit-declaration registry store.
+The earlier duplicate storage candidate was removed, and the one
+existing store was moved to `src/modules/host/hosting-registry-store.ts`.
+Pure validation now lives in `src/shared/hosting-registry.ts` with the
+original config entrypoint preserved. Source refactor:
+`99957605`; module documentation: `673ed9a4`.
+This only changes source and negative fixtures; no real service or
+website was registered, signalled, migrated or deployed.
+
+The original focused M1 source task
+`pockethost-m1-registry-store-focused-s22-01db6f2-20261109-v1`
+was still without a terminal receipt when inspected. Its pinned SHA
+precedes the module-boundary relocation, so it cannot certify the latest
+main. Check those receipts first, then perform only the missing affected
+Samsung tests of the final M1 source, including the boundary gate.
+M1 schema migration and physical positive ownership remain unfinished.
+
+
 ## Latest M0 QA handoff — source checks and Markdownlint repair
 
 Start from [M0 final source QA checkpoint](checkpoints/2026-11-09-m0-final-source-qa-handoff.md).
