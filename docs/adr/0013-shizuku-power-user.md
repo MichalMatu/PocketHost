@@ -53,16 +53,22 @@ The UI must communicate selected targets and consequences. A button
 must not silently perform unrelated actions. This is user intent,
 not an arbitrary rule banning advanced controls.
 
-## Connectivity and safety
+## Connectivity and security phase order — amended 2026-11-09
 
-The existing web panel on trusted LAN is currently **login-free**.
-Do not attach unrestricted privileged execution to that HTTP listener
-until the native bridge has a verified authorization boundary tied
-to the real owner. A locally authorized companion can expose privileged
-operations on demand. Do not broadcast privileged endpoints or
-credentials over the current LAN or execute hidden actions on other
-services. The correct answer is to implement the real privileged
-transport, not to prohibit features forever.
+The owner explicitly requires working Advanced Shell directly in the
+private-LAN browser, **without any pairing code, second confirmation on
+the phone, approval queue or product-level execution blocker**. The Run
+button is the user's requested action. The native Shizuku Binder and
+Android's actual shell/root UID remain the execution authority.
+
+Security hardening, owner identity, access policies and TLS are deferred
+to a separate final stage, after functional DEV acceptance. The interim
+login-free private-LAN HTTP shell is intentionally unauthenticated and
+unencrypted; document the exposure instead of pretending it is secure.
+Keep the existing exact private-LAN/Android-loopback binding and prevent
+public WAN exposure, unexpected autonomous execution and accidental changes
+to unrelated Termux services. Do not expand product restrictions merely
+because final-stage security controls have not yet been implemented.
 
 ## Execution order
 
