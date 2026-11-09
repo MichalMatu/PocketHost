@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
+## Latest M0/M1 source status (2026-11-09)
+
+See [complete M0/M1 QA and handoff checkpoint](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md). The S22 exact `5bccbe2` remaining-gate run passed Markdownlint, ESLint, TypeScript, coverage, admin lint and build, but failed Prettier in nine files and the full UI suite (four failures). Therefore M0 full source acceptance remains OPEN, not PASS. New M1 code also needs its own exact-SHA focused receipt; no later source inherits the prior PASS. All live/physical validation is separately OPEN.
+
 # Quality Gates
 
 ## Execution and evidence

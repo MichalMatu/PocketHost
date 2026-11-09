@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Canonical modular-platform roadmap; Hosting orchestrates reusable runtime and infrastructure modules
 ---
 
+## Active checkpoint for M0 → M1 (2026-11-09)
+
+[The complete M0/M1 checkpoint](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md) records the current source and exact Samsung QA receipts. M0 decoupling is implemented but Prettier/full UI and fresh device gates are OPEN. M1 declarative validation and a single revisioned host-owned store are implemented as source candidates without live activation; final M1 native and migration/positive-ownership acceptance are OPEN. M2 shared recovery and M3 Node Hosting remain distinct future stages.
+
 # PocketHost Roadmap
 
 ## Accepted target — modular PocketHost platform (2026-11-09)

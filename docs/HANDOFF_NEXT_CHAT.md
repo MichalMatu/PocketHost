@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## START HERE — M0/M1 full checkpoint (2026-11-09)
+
+Read [the complete M0/M1 checkpoint](checkpoints/2026-11-09-m0-m1-complete-checkpoint-next-chat.md) **before** historical notes below. The last prepared source snapshot was `2b5d300fd63e825305415a97d25ef1278860984e`; fetch fresh `main` before edits. The exact S22 M0 `5bccbe2` remaining-gate result has Markdownlint, root ESLint, TypeScript, coverage, admin lint and build **PASS**; Prettier (nine files) and the full UI suite (four failures) **OPEN**. Prior 196/196 Node, 18/18 host and 18/18 UI tests remain accepted historical evidence. Two other M0/M1 task results were still unpublished; source/physical gates are not final PASS. One host-owned declarative M1 store remains; no live service or release was changed by this documentation handoff.
+
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
 ## Active M0 closure and M1 registry continuation — 2026-11-09
