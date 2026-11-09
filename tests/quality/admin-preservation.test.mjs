@@ -7,6 +7,7 @@ import test from 'node:test';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = readFileSync(path.join(root, 'apps/admin/src/config/routes.tsx'), 'utf8');
 const html = readFileSync(path.join(root, 'apps/admin/index.html'), 'utf8');
+const navigation = readFileSync(path.join(root, 'apps/admin/src/config/navigation.ts'), 'utf8');
 
 const originalPaths = [
   '/',
@@ -88,4 +89,14 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
   assert.match(match[1], /width=device-width/);
   assert.doesNotMatch(match[1], /user-scalable\s*=\s*no/i);
   assert.doesNotMatch(match[1], /maximum-scale\s*=\s*1(?:\.0)?(?:,|$)/i);
+});
+
+test('M0 keeps observed external services in System, not the Hosting project catalog', () => {
+  const systemGroup = navigation.split('label: "System",')[1]?.split('label: "Hosting",')[0] ?? '';
+  const hostingGroup = navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
+  assert.match(systemGroup, /url: "\/host"/);
+  assert.doesNotMatch(hostingGroup, /url: "\/host"/);
+  assert.match(hostingGroup, /url: "\/sites"/);
+  assert.match(hostingGroup, /url: "\/deployments"/);
+  assert.match(routes, /path: "\/host"/);
 });

@@ -7,6 +7,12 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Latest autonomous sprint checkpoint and handoff
+
+Read [the autonomous quality, M0-M3 checkpoint](checkpoints/2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
+first. It contains later verified evidence and the safe QA reset task.
+Do not treat the old 182/182 matrix as complete G2 for new source.
+
 ## START HERE — full code/quality/structure checkpoint (2026-11-09)
 
 The canonical handoff is

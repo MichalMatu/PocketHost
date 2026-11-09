@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [Autonomous sprint QA and M0-M3 handoff](checkpoints/2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
+
 - [M0 implementation readiness — exact code/test impact map, no-code hold](checkpoints/2026-11-09-m0-preimplementation-readiness.md)
 
 - [M0 source and upstream reuse audit — no code changes, implementation gates open](checkpoints/2026-11-09-m0-source-and-upstream-audit-readonly.md)
