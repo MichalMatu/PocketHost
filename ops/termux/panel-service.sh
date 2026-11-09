@@ -28,7 +28,7 @@ case "${1:-}" in
     export POCKETHOST_LAN_AUTOSTART=1
     # Runit directly execs Vite; update only the verified prior PocketHost
     # owner markers to this same PID/start tick, never adopt a live outsider.
-    "$PREFIX/bin/node" "$root/ops/termux/panel-owner.mjs" "$root" "$" || exit 111
+    "$PREFIX/bin/node" "$root/ops/termux/panel-owner.mjs" "$root" "$$" || exit 111
     exec "$PREFIX/bin/node" "$root/apps/admin/node_modules/vite/bin/vite.js" \
       --host 127.0.0.1 --port 8787 --strictPort
     ;;
@@ -57,7 +57,7 @@ case "${1:-}" in
             now=$(date +%s)
             if [ "$failures" -ge 3 ] && [ $((now - last_restart)) -ge 120 ]; then
               # Only this fixed, registered runit service is signaled.
-              # No pkill, fuser, process-name scanning, or external services.
+              # No arbitrary PID signals, process discovery, or external services.
               if "$SV" term "$PANEL" >/dev/null 2>&1; then
                 printf '%s panel HTTP unhealthy; runit restart requested\n' "$(date -Is)"
                 last_restart=$now
