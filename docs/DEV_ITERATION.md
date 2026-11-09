@@ -1,194 +1,96 @@
 ---
-status: accepted
+status: active
 owner: ui
 last_reviewed: 2026-11-09
-purpose: Fast DEV-only change and PocketHost panel review loop
+purpose: Small, safe and cache-aware Samsung Local Agent development loop
 ---
 
-# PocketHost DEV — Fast Iteration Runbook
+# PocketHost DEV — Fast Flow
 
-## Working status
+## One normal iteration
 
-PocketHost is **DEV software**, served from Termux for its owner to
-review. The running LAN administration page is an **existing DEV panel**,
-not a customer production deployment. Do not set up a second preview
-panel simply to make a menu or CSS change.
+**Fresh main -> small coherent edit -> commit -> focused Samsung
+Local Agent check -> existing Vite HMR -> owner feedback.**
+Only the positively verified PocketHost DEV panel can be refreshed
+or restarted under its existing owner-approved runit policy.
+Do not create second preview servers, restart a service for CSS,
+reinstall dependencies per task or run full G2/G3 after each edit.
 
-Use the loop **edit -> commit to current main -> small, relevant Samsung
-check -> update existing PocketHost panel -> owner checks -> repeat**.
-Small iterations are measured in visible features, not exhaustive
-acceptance checklists. The owner has explicitly approved repeated
-PocketHost-only refreshes/restarts for this DEV loop.
+All development commands below run **exclusively on the verified
+Samsung Termux through Local Agent**, not on Mac, ChatGPT sandbox,
+GitHub Actions, Codex or Work. Reuse the exact checkout/host
+identity established during the session; recheck when it changes.
 
-## Change-aware Local Agent checks (2026-11-09)
+## Command selection
 
-Prefer one **exact revision range** over full tests per commit. On the
-verified clean Samsung Termux checkout, choose a previously verified base:
+| Intent                     | Command                                                    |
+| -------------------------- | ---------------------------------------------------------- |
+| Preview affected gates     | npm run dev:changed -- --base=<last-verified-sha>          |
+| Execute affected gates     | npm run dev:changed -- --base=<last-verified-sha> --run    |
+| Route preservation only    | npm run dev:quick                                          |
+| One interaction file       | npm run dev:ui -- tests/termux-center.interaction.test.tsx |
+| Existing Vite DEV panel    | npm run dev:panel                                          |
+| One GitHub UI sync         | npm run dev:sync:once                                      |
+| Manually opt-in UI watcher | npm run dev:sync                                           |
+| Validate watcher policy    | npm run dev:sync:test                                      |
+| Milestone full gate        | npm run dev:full                                           |
 
-```sh
-npm run dev:changed -- --base=<previous-verified-sha>
-npm run dev:changed -- --base=<previous-verified-sha> --run
-```
+The change selector reads an exact clean Git revision range and
+direct/transitive static imports to select affected Node and Vitest
+tests. Its local dependency map is cached under ignored .tmp/,
+keyed by HEAD. The default **previews only**; --run executes checks
+in the same checked-out environment. Unmapped code, deleted files,
+dependency/config and high-risk service changes require manual
+review; they are never implicitly accepted. Dynamic or indirect
+runtime wiring may need an additional focused test.
 
-The first command previews; the second runs **only through Local Agent**.
-The planner resolves direct/transitive local imports from changed source to
-Node or Vitest tests, plus special source-read route contracts. It does not
-run coverage or a full build by default. Unmapped, deleted and infrastructure
-changes produce MANUAL_REVIEW; supplement with the smallest required test
-instead of silently calling the batch PASS. Read the terminal result and
-the actual HEAD before deciding whether another run is necessary.
+## Cache and process budget
 
-Use persistent root TypeScript incremental metadata in
-`.tmp/root-typecheck.tsbuildinfo`, and the existing admin TypeScript
-build-info beneath `apps/admin/node_modules/.tmp/`. Keep the existing
-npm download cache and node_modules between tasks; do **not** run
-`npm ci` at every iteration. Install only if dependencies or the lockfile
-actually changed or the verified checkout lacks dependencies. No
-always-on pre-commit hooks, package install hooks, auto-builds or repeated
-Local Agent provisioning. A clean commit with only docs runs docs checks,
-changed Markdown lint/format, and **no phone panel restart**.
+- Preserve existing node_modules and npm cache. Run npm ci only when
+  the verified lockfile changed or required packages are missing;
+  no global pkg upgrade merely to test a source edit.
+- Root TypeScript incremental data stays in ignored
+  .tmp/root-typecheck.tsbuildinfo; admin TypeScript build info
+  remains in apps/admin/node_modules/.tmp/.
+- Reuse Vite HMR for TSX/CSS changes. Do not restart the panel for
+  docs; no repeated full build/coverage for a simple route.
+- Use one bounded Local Agent task with concise exit statuses,
+  redacted failure tails and exact SHA. Before another task, inspect
+  pending/terminal results. Reuse prior PASS only for the unchanged
+  tested scope and revision; no infinite retries or duplicate runs.
+- No mandatory pre-commit/post-commit hooks, auto-installs,
+  repo-wide formatter on every file, background test daemons or
+  extra physical smoke just to advance source edits.
 
-The selector cache is keyed by exact HEAD in ignored `.tmp/`; its plan
-is advisory, not hardware or runtime acceptance. Any high-impact
-ownership, network, filesystem or process-control change still requires
-its applicable negative tests and explicit manual impact review.
-Do not run any of these PocketHost commands in Mac, sandbox or CI.
+## UI watcher — limited and opt-in
 
-## Fast commands (run on Samsung Termux through Local Agent)
+One manually started npm run dev:sync watcher polls GitHub main
+about every eight seconds. It updates **only a clean, verified
+PocketHost checkout** with a matching owned panel PID/start ticks
+and cwd. The allowlist is apps/admin/src/**,
+apps/admin/tests/**, docs/** and root text docs. Changes to
+vite.config.ts, package manifests, backend, scripts, network,
+service controls or Agent files yield MANUAL_REVIEW; the watcher
+must not silently deploy them.
 
-| Action                           | Command                                                      |
-| -------------------------------- | ------------------------------------------------------------ |
-| Changed-source targeted checks   | `npm run dev:changed -- --base=<sha> [--run]`              |
-| Quick navigation/route contract  | `npm run dev:quick`                                          |
-| Focused UI interactions          | `npm run dev:ui -- tests/termux-center.interaction.test.tsx` |
-| Manual PocketHost Vite start     | `npm run dev:panel`                                          |
-| Start fast DEV UI GitHub watcher | `npm run dev:sync`                                           |
-| Check one GitHub UI update       | `npm run dev:sync:once`                                      |
-| Verify sync path guard           | `npm run dev:sync:test`                                      |
-| Final milestone or core change   | `npm run dev:full`                                           |
+CURRENT means no update; SYNCED reports an exact SHA;
+MANUAL_REVIEW requires human evaluation; HOLD is not a deployment.
+The watcher never runs tests, installs packages, kills/restarts
+services or creates WAN listeners. A separate explicit
+PocketHost-only restart is allowed when needed, after checking
+ownership and preserving a rollback SHA.
 
-For ordinary CSS/copy/menu work, the owner can directly inspect the
-updated DEV page; no compilation, full test suite, coverage or formal
-G3 acceptance after **every** minor change. Run a small targeted check
-when code behavior, routing or critical controls change. Full quality
-gates belong to a significant milestone closeout or risky backend change.
+## Safety and broader gates
 
-## Update the existing panel, not a second environment
+Preserve IleStoi, PhotoMap, Local Agent, SSH, Cloudflare, hosted
+sites, unrelated processes and data. No PID/name/port-only
+ownership inference, no silent service changes, no host-wide
+cleanup or other applications' autostart. H3.4 owner Termux
+capabilities and Shizuku Advanced Shell are explicit UI actions
+within actual OS privileges; they are not automatic QA hooks.
 
-1. Verify current GitHub `main`, exact Samsung Local Agent installation,
-   and the **PocketHost-owned** checkout and panel process identity.
-   Reuse verified identity evidence where unchanged; avoid repeating
-   comprehensive host preflight for each minor UI edit.
-2. Sync the accepted source to the existing PocketHost DEV checkout;
-   check the expected commit and any uncommitted modifications. Do not
-   touch other checkouts or services.
-3. If the existing Vite instance observes the changed UI files, use its
-   normal **HMR/browser refresh**; do not restart merely for a TSX/CSS edit.
-4. If a restart is actually required, stop **only** the exact verified
-   PocketHost-owned panel process and restart using its existing manual
-   launch configuration. Verify the same loopback/LAN origin is healthy.
-   Keep a known-good source SHA for rollback. Never stop a process based
-   solely on PID, port or name; verify recorded process start identity.
-5. The owner reviews `/system`, `/files` or another changed route.
-   Collect concrete feedback and perform the next small change.
-
-No extra authentication ceremony, per-change owner confirmation,
-artificially named production release, mandatory full G2/G3 matrix,
-new work branch, new QA environment, or duplicate backend is needed
-for a routine DEV-only panel iteration.
-
-## Non-negotiable boundaries
-
-PocketHost shares a Termux user with **other services and sites**.
-The DEV label is not permission to kill, reconfigure or restart them.
-Preserve Local Agent, IleStoi.pl, other hosted sites, their processes,
-data and independent ports. Keep administrative access limited to the
-existing trusted private LAN/loopback; do not create a WAN listener,
-disable security checks, install packages, enable autostart for other services or perform
-state migrations just to speed up UX work. The owner's later
-[panel-only runit exception](adr/0014-termux-panel-supervision.md)
-permits supervised PocketHost DEV panel startup and HTTP recovery. If a desired operation
-cannot be executed by the available tools, state the limitation
-instead of reporting a fictitious deployment.
-
-## When to slow down
-
-Use broader native gates and explicit review when changing host adapter
-commands, package operations, filesystem boundaries, service control,
-network exposure, persistent data migrations, or externally owned
-processes. Do not describe a device result as passed until its actual
-task receipt is available. Public/product release acceptance is separate
-from owner review of the DEV panel.
-
-## Fast GitHub to Samsung auto-sync (opt-in, 2026-11-08)
-
-Start **one** watcher with `npm run dev:sync` in the existing PocketHost DEV
-checkout while the existing Vite panel runs. Every eight seconds it fetches
-`origin/main` and, only when the checkout is clean and the panel's recorded
-PID/start-ticks/cwd match, updates the same working tree to that SHA.
-Vite then picks up changed frontend files through HMR. No new panel process,
-listener or service is created; there is no automatic runit/boot startup.
-The watcher is manually started for a DEV session and can be stopped with
-Ctrl+C (or Termux process management if started by the owner's Agent).
-
-The unattended allowlist is `apps/admin/src/**`, `apps/admin/tests/**`,
-`docs/**` and root text docs. Changes to `vite.config.ts`, package/dependency
-manifests, host adapters, network rules, service controls, scripts or other
-backend paths **pause automatic deployment** and return `MANUAL_REVIEW`.
-Any conflict, dirty worktree, unknown remote, PID reuse, failed Git fetch
-or interrupted checkout is a HOLD. The watcher never resets, kills processes,
-runs tests, starts terminals, installs packages or changes LAN settings.
-
-The first installation of this watcher is a one-time manual source sync by
-the verified Local Agent. Later small UI-only commits flow automatically to
-Vite, without another agent task or test matrix. Logs use JSON lines;
-`SYNCED` contains the exact deployed SHA, `CURRENT` is a no-op,
-`MANUAL_REVIEW` is not deployed, and `HOLD` means no verified update.
-Keep normal full checks for milestone closeout.
-
-## UX iteration — 2026-11-08
-
-Monitoring formats memory/storage in binary GiB for large values and reserves
-card space while loading. When system CPU counters are inaccessible on
-Android, the UI shows available Termux process observations (process count
-and cumulative CPU ticks) without misrepresenting them as system CPU
-utilization. The Access info dialog explains Android restrictions and
-Termux:API setup; it **never claims to grant system permissions**.
-
-## Owner default LAN availability (2026-11-08)
-
-The existing DEV PocketHost Vite session now automatically starts its
-private-subnet LAN gateway (ports 18878/18879) when the Vite HTTP listener
-starts. The browser can reach `/system`, `/dashboard` and `/shizuku`.
-The address is selected from real private interfaces, preferring
-`POCKETHOST_LAN_BIND` when it still belongs to the host and otherwise Wi-Fi.
-To opt out for a session set `POCKETHOST_LAN_AUTOSTART=0` before start.
-Only the PocketHost gateway is affected; this does not install a new
-Termux:Boot entry or start the panel after a complete phone reboot.
-Manual disable stays effective until the next PocketHost panel restart.
-
-The auto-start loop checks for the assigned Wi-Fi IP every eight seconds
-when the panel is running, allowing Android Wi-Fi to appear after Termux
-Boot. An explicit owner's **Disable** action suppresses automatic retries
-for that session. A new PocketHost process restores the default.
-
-## Session-local LAN self-healing (2026-11-08)
-
-The running PocketHost Vite process now checks the real HTTP health of
-**both owned gateway ports** (18878/18879) every eight seconds. The health
-probe returns an exact 204 acknowledgement and never reaches a backend
-mutation API. Two failures trigger only an owned gateway recycle.
-Exponential backoff (30 seconds to five minutes) prevents Wi-Fi flapping
-from causing repeated restarts. Two observations of a disappeared IP
-release the stale owner-bound listeners; the next retry may select the
-current Wi-Fi address. Only a verified Wi-Fi interface (or explicitly
-selected owner bind) is eligible for unattended LAN startup.
-
-The local-only `GET /api/v1/network-access` includes self-check state,
-last probe/recovery, failure count, recovery count and retry deadlines.
-A manual **Disable** suppresses healing and startup until a new Vite session.
-The self-check does **not** supervise Vite or restart the Termux app after
-Vite exits, nor does it repair home Wi-Fi latency. There is no new Termux
-Boot entry, runit service, cron job, process manager or public listener.
-A full-service watchdog requires a separately owned runtime policy,
-bounded restart budget and host acceptance before activation.
+Run larger native checks for host filesystem/process interfaces,
+persistent data, package actions, network exposure, authorization
+or major milestone closure. Separate current-source G1/G2 from
+physical G3; see [quality gates](QUALITY_GATES.md) and
+[Local Agent transport](LOCAL_AGENT_TERMUX.md).

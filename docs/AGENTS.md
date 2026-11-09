@@ -2,21 +2,40 @@
 
 ## Scope
 
-All `docs/` files, including module specifications, ADRs and checkpoints. Keep `docs/README.md` as a complete navigation index.
+Documentation, module specs, ADRs, checkpoints and navigation indexes.
+docs/START_HERE.md is the default small entrypoint (target under
+3 KB); docs/README.md is the **complete link index**, not a
+chronological session log. Read only the active section relevant
+to changed code.
 
 ## Forbidden
 
-No unreviewed assumptions presented as measurements. Do not invent live Termux state, physical test results, installed package lists, ports, credentials, or security assurances. Do not paste secrets or private file content. Avoid disconnected copies of the same architecture rules.
+Do not copy full test output, entire source trees, credentials,
+private host identifiers, repeated status histories, guessed
+physical state or duplicated architecture decisions into active
+docs. Do not prepend another "latest" section to the handoff,
+roadmap or quality gates. Keep historical receipts in dated,
+indexed checkpoints; preserve verified evidence and exact SHAs.
+A git commit or request publication is not hardware PASS.
 
 ## Gate
 
-Documents (except `docs/README.md` and `docs/AGENTS.md`) need YAML frontmatter fields `status`, `owner`, `last_reviewed`, `purpose`. New modules require a matching specification, `AGENTS.md` and manifest entry. ADRs record major changes. Every relative Markdown link must resolve. Run `npm run check:docs` and `npm run markdownlint` **on Termux through Local Agent** when tools are available. See `LOCAL_AGENT_TERMUX.md`; GitHub-side edits without an on-device task result are documentation publication, not a verified gate pass.
+Every doc except docs/README.md and docs/AGENTS.md needs
+frontmatter: status, owner, last_reviewed and purpose.
+New modules require a registered spec and scoped AGENTS.md.
+Relative links must resolve; record exact impact without
+creating irrelevant new checkpoints. For docs-only changes run
+docs link/index, changed Markdown lint and Prettier on Samsung
+Termux through Local Agent **when the executor is available**.
+Do not run app tests, builds or restart the panel for docs alone.
+If no native terminal result exists, mark UNVERIFIED.
 
 ## Context budget
 
-Keep docs/START_HERE.md concise (target under 3 KB); it is the default
-entrypoint, not another status chronicle. Store detailed terminal receipts
-in checkpoints, link them from indexes and avoid repeatedly prepending
-status reports to the 48 KB historical handoff or long quality gates.
-Prefer one canonical decision/receipt over competing duplicated summaries.
-Read only the relevant document section into Agent context.
+- Keep START_HERE under 3 KB, HANDOFF below roughly 5 KB and
+  other active files concise; split reusable details by topic.
+- One current status and one canonical reference per decision.
+  Historical checkpoints are opened **only by direct need**.
+- Prefer exact file paths/commit hashes to repeated evidence tables.
+  Don't archive a second duplicate of content still in Git
+  history unless a specific external retention requirement exists.

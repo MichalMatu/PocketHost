@@ -2,10 +2,15 @@
 status: accepted
 owner: core
 last_reviewed: 2026-11-09
-purpose: Define product intent and MVP exclusions
+purpose: Preserve initial MVP scope and current product distinction
 ---
 
 # Product and MVP
+
+The initial exclusions below are **historical**. Current power-user
+capabilities, the limited PocketHost panel runit exception and the
+modular platform target are defined by [root AGENTS](../AGENTS.md),
+[roadmap](ROADMAP.md) and [ADR-0014](adr/0014-termux-panel-supervision.md).
 
 ## Problem
 

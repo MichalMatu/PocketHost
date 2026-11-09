@@ -15,6 +15,17 @@ export function validateDocs(root = repositoryRoot) {
   if (!existsSync(archivePath)) return ['Missing docs/checkpoints/README.md'];
   const archiveIndex = readFileSync(archivePath, 'utf8');
   const excluded = new Set(['.git', 'node_modules', 'dist', 'build', 'coverage', '.tmp']);
+  // Budget only the agent's hot-path context, not historical evidence or ADRs.
+  const contextBudgetBytes = new Map([
+    ['AGENTS.md', 9 * 1024],
+    ['docs/START_HERE.md', 3 * 1024],
+    ['docs/README.md', 5 * 1024],
+    ['docs/HANDOFF_NEXT_CHAT.md', 6 * 1024],
+    ['docs/QUALITY_GATES.md', 8 * 1024],
+    ['docs/ROADMAP.md', 9 * 1024],
+    ['docs/DEVELOPMENT_PLAN.md', 6 * 1024],
+    ['docs/CODE_MAP.md', 6 * 1024],
+  ]);
   const mdFiles = [];
   function walk(dir, base = '') {
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -31,6 +42,10 @@ export function validateDocs(root = repositoryRoot) {
   for (const rel of mdFiles) {
     const full = path.join(root, rel);
     const content = readFileSync(full, 'utf8');
+    const maxBytes = contextBudgetBytes.get(rel);
+    if (maxBytes && Buffer.byteLength(content, 'utf8') > maxBytes) {
+      errors.push(`Context budget exceeded: ${rel} (${maxBytes} byte limit)`);
+    }
     if (!/^# /m.test(content)) errors.push(`Missing top-level heading: ${rel}`);
     if (rel.startsWith('docs/') && !['docs/README.md', 'docs/AGENTS.md'].includes(rel)) {
       const frontmatter = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(content);

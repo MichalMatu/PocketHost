@@ -58,6 +58,17 @@ test('structure rejects source artifacts in the wrong directory', (t) => {
   );
 });
 
+test('docs enforce compact active context without limiting archived evidence', (t) => {
+  const root = fixture(t);
+  const start = path.join(root, 'docs/START_HERE.md');
+  const handoff = path.join(root, 'docs/HANDOFF_NEXT_CHAT.md');
+  writeFileSync(start, readFileSync(start, 'utf8') + 'x'.repeat(4000));
+  writeFileSync(handoff, readFileSync(handoff, 'utf8') + 'y'.repeat(7000));
+  const failures = validateDocs(root).join('\n');
+  assert.match(failures, /Context budget exceeded: docs\/START_HERE\.md/);
+  assert.match(failures, /Context budget exceeded: docs\/HANDOFF_NEXT_CHAT\.md/);
+});
+
 test('docs reject missing frontmatter', (t) => {
   const root = fixture(t);
   const file = path.join(root, 'docs/PRODUCT.md');

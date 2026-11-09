@@ -2,10 +2,16 @@
 status: accepted
 owner: ui
 last_reviewed: 2026-11-05
-purpose: Set an enforceable design token and component style contract for the future GUI
+purpose: Design baseline and preservation rules for the existing admin UI
 ---
 
 # PocketHost Design System — Pre-implementation Contract
+
+This began as a **pre-import design decision**. The upstream admin
+is now present; preserve its actual component/style contracts rather
+than re-running tooling evaluation or template import each sprint.
+For current work see [code map](CODE_MAP.md) and
+[DEV checks](DEV_ITERATION.md).
 
 ## Selected direction
 

@@ -1,11 +1,16 @@
 ---
-status: in-progress
+status: historical-reference
 owner: ui
 last_reviewed: 2026-11-05
 purpose: Record the complete ShadcnStore admin template import and native start procedure
 ---
 
 # Admin Shell MVP — Full Template Before PocketHost Integration
+
+**Historical onboarding instructions.** The admin template has
+already been imported; do not re-import into the live checkout or
+reinstall dependencies for normal feature work. Use
+[current DEV flow](DEV_ITERATION.md) and [code map](CODE_MAP.md).
 
 ## Scope
 

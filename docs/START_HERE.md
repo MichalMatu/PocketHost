@@ -40,6 +40,7 @@ purpose: Small PocketHost context entrypoint; detailed evidence is linked, not p
 
 ## Where to look next
 
+- [Code and tests map](CODE_MAP.md)
 - [Fast checks, caching and DEV sync](DEV_ITERATION.md)
 - [Exact Local Agent transport, host verification](LOCAL_AGENT_TERMUX.md)
 - [Architecture/module boundaries](ARCHITECTURE.md)

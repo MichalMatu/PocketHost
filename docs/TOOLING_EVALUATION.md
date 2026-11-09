@@ -1,11 +1,16 @@
 ---
-status: accepted
+status: historical-reference
 owner: core
 last_reviewed: 2026-11-05
 purpose: Evaluate agentic quality tools and their Termux compatibility
 ---
 
 # Tooling Evaluation — Agentic Development on Termux
+
+**Historical research, not a default session input.** Use only
+when considering a new external tool. Current execution, caching
+and minimal QA are defined by [FAST FLOW](DEV_ITERATION.md),
+[Local Agent](LOCAL_AGENT_TERMUX.md) and [reuse matrix](UPSTREAM_REUSE_STRATEGY.md).
 
 ## Rule: execution happens on the phone
 

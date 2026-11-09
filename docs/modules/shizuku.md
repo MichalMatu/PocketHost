@@ -1,248 +1,75 @@
 ---
-status: source-candidate
+status: accepted-with-follow-up
 owner: shizuku
-last_reviewed: 2026-11-08
-purpose: Native Shizuku-backed Android power-user integration
+last_reviewed: 2026-11-09
+purpose: Current Android Companion/Shizuku boundaries, capabilities and acceptance
 ---
 
 # Shizuku Module
 
-This module is the foundation for broad Android power-user operations
-inside PocketHost. It is not a security-restricted demo or read-only
-end-state. The user chooses what to manage. Actual Android ADB/root
-capabilities and Shizuku's own authorization define the limits.
+## Architecture
 
-## Interfaces
+The owner-facing Android & Shizuku UI calls fixed typed APIs
+in PocketHost's existing Termux DEV panel. Termux forwards
+requests to the Android-loopback PocketHost Companion;
+the Companion uses its own authorized Shizuku Binder
+service under the **actual** ADB/root UID and Android
+permission rules. Browser JavaScript cannot obtain
+Binder privileges itself.
 
-- `src/shared/shizuku.ts`: initial typed session/privilege/capability
-  model; new capabilities are negotiated dynamically.
-- `/shizuku`: owner-facing UI hub, installed-app evidence,
-  native connection state and planned capability surfaces.
-- Future `PocketHost Companion`: Android app linking Shizuku SDK via
-  Binder, explicitly requesting Shizuku authorization from the user.
-- Future IPC: local type-safe bridge between companion and Termux,
-  with explicit operation target and result reporting.
+Key locations: apps/admin/src/app/shizuku/,
+apps/admin/tests/shizuku-*.interaction.test.tsx,
+src/shared/shizuku.ts, src/modules/host/shizuku-companion.mjs,
+and native/pockethost-companion/. Read relevant files
+individually, not a whole native/test tree.
 
-## Status and first device evidence
+## Owner-directed capabilities
 
-Samsung SM-S906B, Android 16; Shizuku app installed.
-Mac ADB `dumpsys cpuinfo` returned a genuine 31% TOTAL sample.
-No native PocketHost companion exists yet and Shizuku per-app
-authorization is **not verified**. The current hub does not
-claim service connection or execute privileged operations.
+- Session status, Shizuku authorization/mode, negotiated
+  capabilities and real UID/errors.
+- Android app inventory, labels, enabled state, app details
+  and permission flags; paginated/filterable user/system apps.
+- Process, CPU, RAM, battery/charging, service and device
+  setting observations; inaccessible metrics report unknown,
+  not zero. Large memory values use binary GiB.
+- Native owner operations, where actual Android permission
+  allows: app launch/stop/enable/disable/uninstall-for-user,
+  permission grant/revoke, PID TERM, service start/stop,
+  brightness/timeout and Advanced Shell.
+- Browser Advanced Shell Run directly forwards one explicit
+  command to Android loopback and returns actual stdout,
+  stderr, exit status or OS error, with bounded execution.
+  The old phone-pairing/approval queue was superseded by
+  the owner's 2026-11-09 direct-Run decision.
 
-## Incremental delivery
+**Do not reintroduce artificial pair codes, per-command
+native approval, command-category bans or simulated
+read-only results in the owner-private DEV panel.**
+Shizuku ADB is not root. Never auto-execute commands,
+fabricate permissions, claim remote administration is
+secure, open WAN access or modify unrelated services
+from test automation. See root AGENTS.md and
+[Shizuku owner decision](../adr/0013-shizuku-power-user.md).
 
-Implement real Shizuku connection state first; then true CPU/
-process telemetry and more extensive Android apps/packages,
-permissions, services, settings, backup, storage and advanced
-shell control. Avoid artificial feature bans, pretend grants
-and heavy tests for tiny UI changes. Preserve the existing DEV
-panel and the user's explicit intent for mutations.
+## Device evidence versus source
 
-[ADR-0013](../adr/0013-shizuku-power-user.md)
+Historical Samsung hardware acceptance of direct
+browser Advanced Shell at 186185680d74ffc1d44eaedeb6ee4702a1f6174e
+includes an actual Android shell UID via Shizuku ADB.
+It validates **that older revision and route only**,
+not all later package/service/permission controls.
 
-## UI boundary — 2026-11-08
+Later Android & Shizuku MVP source adds richer UI,
+application actions, permission selection, process
+samples, shell diagnostics and settings actions.
+Do not infer that this exact new APK is installed,
+all operations work or the latest GitHub main is
+running. A controlled native Android build/install,
+focused UI/backend tests, operation/denial matrix,
+and actual phone/browser acceptance remain separate.
 
-**Android & Shizuku** owns full-device CPU utilization and Android-wide
-process telemetry, separate from ordinary Termux monitoring. Its page
-has capability cards and will consume a typed local companion status
-endpoint when implemented. Connected/authorized state must come from
-real bridge evidence, not from a previous ADB diagnostic or an installed
-app package. Controls must execute actual owner-directed actions and
-report success or refusal; no placebo authorization button.
-
-## Native companion implementation — 2026-11-08
-
-Source: `native/pockethost-companion`. First Android Java Shizuku SDK
-client requests device-user permission, identifies real shell/root UID,
-binds a Shizuku `UserService` and reads a bounded native CPU `dumpsys
-cpuinfo` TOTAL sample plus visible-process count. Debug APK build and
-physical on-device authorization must be verified separately.
-The PocketHost browser still reports _companion unavailable_ until an
-owner-authorized local status IPC bridge exists; do not infer connected
-state from this source commit or from Shizuku Manager installation.
-
-## First local read-only web bridge (2026-11-08)
-
-The Companion app exports only a **Termux/shell UID-local read-only**
-ContentProvider at `content://pl.pockethost.companion.telemetry/status`.
-A foreground authorized Shizuku service samples full Android CPU and
-process count and publishes a short-lived typed snapshot (30-second TTL).
-PocketHost's loopback Vite endpoint `/api/v1/shizuku/status` reads this
-provider via the fixed Android `content read` CLI. The LAN gateway can
-forward read-only telemetry; it does NOT forward a Binder handle or generic
-ADB/root command execution. This is not the final always-on/control bridge.
-
-If Companion is backgrounded for 30 seconds, values expire: a user-visible
-Android foreground service for persistent sampling is a next-phase task.
-Only accept physical Android evidence and authorized Shizuku state, never
-infer privileges from installed package names.
-
-## Android 16 transport correction
-
-Samsung Android 16 prevents the Termux app from starting the Android
-`content` CLI (`app_process` inaccessible). The provider remains useful
-for ADB inspection, but the actual Termux backend uses a **fixed read-only
-HTTP status bridge on Android loopback 127.0.0.1:18791**. It is started by
-the Companion app, handles only `GET /status`, and shares no Binder handle,
-privileged shell or mutation API. The Vite server uses a fixed loopback
-fetch and its existing no-store / read-only status route. No Wi-Fi listener
-or background Android service was created.
-
-## Background telemetry fix — 2026-11-08
-
-Physical Mac→Samsung SSH evidence: while Companion was in the cached state,
-TCP connection to its Android loopback listener `127.0.0.1:18791`
-timed out although the port appeared to be listening. Reopening the
-Companion activity restored immediate HTTP 200 and a legitimate Shizuku
-sample of 19% CPU / 855 processes in ADB mode. Android cached-app
-freezing suspends app threads, so an invisible socket listener alone
-cannot maintain telemetry. The Android-native foreground service now
-retains sampling in the background with a visible notification and an
-explicit Stop control. This does not grant new privileges.
-
-This source change requires a **new APK build and physical re-test**.
-Existing LAN routes `/dashboard` and `/shizuku` were both HTTP 200
-at the last Mac SSH audit; deploy status of the new foreground service
-remains separate.
-
-## Next source slice — installed Android applications (2026-11-08)
-
-The native Shizuku UserService reads Android package names through fixed
-shell-privileged package-manager queries (all and third-party packages).
-The Companion foreground service caches a bounded 1024-entry inventory
-and refreshes it every two minutes. Only a fresh authorized session
-can expose the cached data via fixed loopback read-only \`GET /apps\`.
-PocketHost forwards the typed result to \`GET /api/v1/shizuku/apps\`
-and displays searchable user/system package names under Android & Shizuku.
-
-This is **source-only until a new APK, backend update and physical
-Samsung check confirm the exact revision**. No browser action installs,
-disables, grants or uninstalls Android applications. Privileged mutations
-require a separate owner-authenticated native execution boundary; the
-trusted LAN dashboard currently does not provide that boundary.
-
-## Seven-module power-user sprint — source candidate, 2026-11-08
-
-The native Companion now defines verified, user-initiated Shizuku operations.
-It requests a package identity, target PID, permission, Android service
-component, setting value or shell command on the **phone itself** and
-displays an explicit confirmation before a Binder call. Supported native
-operations include app launch/force-stop/uninstall-for-user, runtime
-permission grant/revoke, process TERM, service start/stop, brightness,
-screen timeout and advanced shell (bounded output and timeout).
-Android errors and ADB-vs-root limitations must be reported as failures.
-
-The fixed read-only foreground bridge additionally samples a bounded
-process inventory (PID, process, owner, RSS and CPU if supported),
-battery, RAM, device settings and Android services into a new
-\`GET /system\` endpoint, forwarded from loopback to
-\`GET /api/v1/shizuku/system\`. Browser pages use section navigation,
-search and typed availability. No browser-to-native privileged write
-route exists; current trusted LAN has no owner authentication.
-
-**Acceptance remains OPEN:** source compilation, exact-SHA native
-Termux tests, APK installation, Samsung Android 16 hardware observation,
-positive and negative permission/management operations on a disposable
-test package, and owner UX inspection must be recorded separately.
-Do not claim all Android service/permission operations work until the
-OS accepts them on the target device.
-
-## Charging and installed-application detail sprint — 2026-11-08
-
-The native battery reader differentiates actual Android battery \`status\`
-(Charging, Discharging, Not charging, Full) from the external power source
-(\`plugged\` or AC/USB/Wireless/Dock fallbacks). Unknown remains unknown.
-The Android web UI shows both fields rather than guessing that a 100%
-battery must be charging.
-
-Native PackageManager adds installed application labels and enabled flags
-to the existing authorized Shizuku inventory. A selected package has a
-read-only \`GET /app?package=...\` detail snapshot with real version,
-version code, target SDK, requested permission grant flags and an optional
-56x56 bounded PNG icon generated by Android. The browser exposes this
-through \`GET /api/v1/shizuku/app?package=...\` using the same
-local-only, origin-checked read-only gateway. The package must be in
-the current authorized Shizuku inventory.
-
-Memory values from \`/proc/meminfo\` and Android \`ps\` are reported in
-KiB; the UI now divides by 1024² and shows **GiB** (2 decimal digits for
-total/available RAM; 4 for per-process RSS so small processes remain visible).
-Native privileged mutations remain unavailable through the LAN gateway.
-
-## Paired browser shell source candidate (2026-11-08)
-
-The owner opted into entering Shizuku shell commands directly from the
-desktop browser. New source defines an ephemeral 10-digit phone pairing
-code, explicit phone approval for each exact command, a request-only
-Android loopback inbox and typed Termux proxy. Neither pairing nor
-browser submission executes a command; only the native foreground
-confirmation can call the authorized Shizuku Binder service.
-The LAN has no TLS, so do not place secrets into shell commands.
-See [browser shell checkpoint](../checkpoints/2026-11-08-shizuku-browser-remote-shell.md).
-Physical build, Companion install, device and browser tests are OPEN.
-
-## Direct browser Advanced Shell — supersedes pairing (2026-11-09)
-
-Per the owner's explicit decision, no pairing code, phone approval queue or
-per-command native confirmation may block a direct user-initiated Run in the
-PocketHost browser. Android's real Shizuku UID and privileges remain authoritative.
-The browser calls fixed POST `/api/v1/shizuku/remote-shell/run`, forwarded
-through Termux to Android-loopback POST `/shell/run`. The foreground
-Companion invokes the Shizuku Binder and returns the actual result.
-Prior `submit`/`poll` and the temporary 10-digit pairing UI are retired.
-The LAN HTTP route is intentionally unauthenticated during functional DEV,
-not hardened or suitable for public exposure. See
-[direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
-The full Android/browser hardware acceptance remains OPEN until verified.
-
-## Live direct Shizuku Advanced Shell — 2026-11-09
-
-Real Samsung SM-S906B hardware acceptance passed for the private-LAN
-Advanced Shell browser route. The signed native Companion APK was installed
-and the verified PocketHost-only DEV panel restarted from source
-`186185680d74ffc1d44eaedeb6ee4702a1f6174e`.
-A live desktop-equivalent LAN POST of `id` returned Android shell UID via
-Shizuku ADB (PASS). The old 10-digit pairing and phone confirmation
-were removed. The user can test at
-`http://192.168.0.100:18878/shizuku` → Advanced shell → Run on Samsung.
-Node 9/9, browser UI 2/2, lint, TypeScript, Vite and native Gradle builds
-passed. Unrelated Termux services retained all prior observed states.
-For evidence and pending final owner visual review, see
-[2026-11-09 direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
-
-## Permissions single-tab picker (source update 2026-11-09)
-
-The Permissions tab now embeds its own searchable, paginated installed-app
-picker with user/system filters. Choosing or changing an app reads its actual
-native permission details without sending the user to Applications. Errors
-can be retried in the same tab, and a selection made in Applications is still
-shared. The outdated read-only-browser notice is corrected to acknowledge
-the already accepted direct Advanced Shell.
-
-This is a UI-only source change. Its new interaction regression tests and
-physical Samsung browser refresh require their own execution receipt; do not
-interpret this commit as a live deployment or test PASS.
-
-## Android & Shizuku MVP — implementation sprint (2026-11-09)
-
-Owner priorities: P0 direct browser operations, Android apps and CPU/processes;
-P1 services/permissions/settings, Advanced Shell 2.0 and diagnostics. These
-capabilities are built on the existing private-LAN → Termux →
-Android-loopback Companion → Shizuku Binder path, with no pairing or
-second-phone confirmation. Actual Android ADB/root UID governs every action.
-
-Source includes app launch/stop/enable/disable/uninstall-for-user-0, named
-permission grants/revokes, PID TERM, service start/stop, brightness/timeout,
-fresher sampled process inventory, per-app process-name resource summaries,
-sortable processes and CPU session history, separate shell stdout/stderr,
-exit status, duration and command rerun, and a diagnostics view with the
-real Android UID, capability report and endpoint latency.
-
-The source is **not automatically installed or live**. The exact-source
-Samsung UI/backend gate, native Android Gradle build/install, guarded
-PocketHost-only panel refresh and physical operation/denial matrix must be
-reported separately with actual terminal results. Do not declare full MVP
-PASS from source commits. See
-[Shizuku MVP sprint checkpoint](../checkpoints/2026-11-09-shizuku-mvp-sprint.md).
+Historical implementation details and exact receipts:
+[direct shell](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md),
+[Android MVP](../checkpoints/2026-11-09-shizuku-mvp-sprint.md),
+[seven-module sprint](../checkpoints/2026-11-08-shizuku-seven-module-sprint.md),
+[companion shell history](../checkpoints/2026-11-08-shizuku-browser-remote-shell.md).

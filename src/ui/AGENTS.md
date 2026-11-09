@@ -2,16 +2,29 @@
 
 ## Scope
 
-Future manual-CLI-launched local dashboard. Must show discovered server details accurately with ownership markers. UI calls typed application ports.
+Browser/React presentation and typed PocketHost API clients.
+Preserve original upstream admin routes, components, assets
+and responsive desktop-first Android pinch zoom. Use existing
+layout tokens/components before adding style variants.
 
 ## Forbidden
 
-No shell execution, package installs, external service restarts or automatically opened public ports. No autostart.
-
-## Design contract
-
-Before changing UI read `../../docs/DESIGN_SYSTEM.md` and `../../docs/TOOLING_EVALUATION.md`. Use approved component primitives and variants; never invent one-off colors, font sizes, radii, margins or shadows within individual screens. The proposed React/Vite/TypeScript, Tailwind v4, shadcn/ui Base UI/base-nova UI, based on a reviewed ShadcnStore Vite admin shell must be validated on Termux before adoption. A missing variant is a reviewed design-system change, not a local override. Keep one desktop-first layout with native Android pinch zoom and horizontal pan; never disable zoom, duplicate the mobile UI, or intercept two-finger gestures. UI behavior must not have direct host command access.
+No direct OS or Termux shell execution inside UI code.
+Owner-triggered Advanced Shell uses the **typed existing
+private-LAN API and Android loopback Companion**, not a
+new arbitrary host-command endpoint. Never imply Android
+ADB is root, expose a public listener, automatically execute
+privileged actions or modify other Termux services.
+Do not introduce mandatory pairing/phone confirmation for
+the already owner-approved direct DEV Shizuku shell.
 
 ## Gate
 
-Accessibility, empty/error states, contrast, touch size, keyboard/focus order, browser tests and no destructive controls for external services. When installed, `@shadcn/lint` rules must reject restyling, raw colors, arbitrary values, inline styles, unknown classes and non-static classes outside reviewed exceptions. Test deliberate violations. Compare screenshots to approved mobile baselines using a **Termux-qualified** browser harness when available; otherwise mark visual QA unverified.
+For copy/CSS, use the existing Vite HMR and owner review;
+for interactive controls run affected Vitest files and
+accessibility/error states. No blanket UI suite, screenshot
+matrix or full build on each small edit. For changed routes,
+run the admin preservation contract. Only Samsung Termux
+Local Agent executes PocketHost tests or builds. Details:
+[DEV flow](../../docs/DEV_ITERATION.md) and
+[design system](../../docs/DESIGN_SYSTEM.md).

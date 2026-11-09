@@ -1,11 +1,18 @@
 ---
 status: accepted
 owner: core
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-09
 purpose: Record security invariants and deferred threats
 ---
 
 # Security Model
+
+Sections below document **incremental historical scope**. The
+owner-approved direct Shizuku DEV shell and PocketHost-only runit
+exception supersede older blanket read-only/no-autostart assertions.
+Current execution constraints are in [root AGENTS](../AGENTS.md)
+and the [quality gates](QUALITY_GATES.md); historical exceptions
+never authorize WAN exposure or action on externally owned services.
 
 ## Assets
 

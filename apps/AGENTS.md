@@ -2,12 +2,29 @@
 
 ## Scope
 
-All applications under `apps/`, initially the full, pinned ShadcnStore Vite dashboard imported into `apps/admin`. Preserve all upstream routes and component assets as requested. Feature adaptation follows later.
+The full pinned ShadcnStore Vite admin under apps/admin
+is preserved with upstream routes/assets and MIT notice.
+PocketHost-specific UI communicates through typed APIs,
+not direct Termux process operations.
 
 ## Forbidden
 
-No automatic device boot or Termux autostart. No host command execution from the UI. Do not integrate production IleStoi.pl or modify Local Agent. Never allow Vite to listen on a public interface: bind to 127.0.0.1 with a strict dedicated port. Do not disable Android pinch zoom.
+Never expose the Vite backend on WAN or wildcard
+interfaces. Use its dedicated loopback listener and
+the already owner-approved private-LAN gateway; retain
+Android pinch zoom. No unapproved external service
+adoption, GitHub Actions, package installation hooks or
+duplicate preview environment. The **only runit autostart
+exception** is the verified PocketHost DEV admin panel,
+not hosted sites or the Local Agent.
 
 ## Gate
 
-Read `../docs/DESIGN_SYSTEM.md` and `../docs/ADMIN_MVP.md`. Use Local Agent on Termux for imports, package installation, builds and launch. Preserve the upstream MIT license and pin its exact source SHA. Verify all routes were preserved. Root and app-specific quality gates are separate and both required for acceptance.
+For simple UI changes use Vite HMR and impacted tests only.
+Run focused Vitest/admin typecheck/lint on Samsung Termux
+through Local Agent; reserve full admin build and broad
+suite for meaningful milestones or host-risk changes.
+Keep upstream screens and license intact.
+See [code map](../docs/CODE_MAP.md),
+[fast flow](../docs/DEV_ITERATION.md) and
+[design system](../docs/DESIGN_SYSTEM.md).

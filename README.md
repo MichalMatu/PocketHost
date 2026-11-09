@@ -1,92 +1,40 @@
 # PocketHost
 
-PocketHost is an experimental **DEV Termux management panel**
-with hosting as one module. It includes a React admin UI,
-system monitoring, filesystem, packages, services and
-explicitly owned static sites. It is **not a public or
-customer production hosting service**.
+PocketHost is an experimental **Android Termux management console**
+with an owner-operated React/Vite DEV panel, system/host diagnostics,
+owned static Hosting, Termux administration and Android Shizuku
+integration. The longer-term target is a **modular platform** where
+Hosting composes reusable Node, Python, SSH, Cloudflare and other
+capabilities. Planned modules are not claims of deployed features.
 
-## Status (2026-11-07)
+## Current scope and safety
 
-- H2/H2.1: independent static-site hosting and
-  release history accepted with physical device
-  and owner browser evidence.
-- H3.4: named-root File Manager, scoped package
-  and runit controls, Restic backups, manual ttyd
-  terminal and a local typed Agent API are
-  implemented. Full native Samsung G2 and the
-  guarded panel-only G3 deployment passed.
-- The trusted-LAN panel is **not** authenticated production
-  administration. Public/WAN access and hosted-project autostart
-  remain prohibited; **only the PocketHost DEV admin** may now
-  autostart under owner-approved Termux runit (ADR-0014).
-  PhotoMap TEST execution stays disabled.
-- Hardware follow-ups remain open for Restic
-  recovery, ttyd HTTP/WebSocket operation,
-  real browser controls and service safety.
-- The general audit adds a fail-closed Restic
-  exit-status regression fix; its new source
-  needs separate exact-SHA Samsung G2 acceptance.
+The current private-LAN DEV panel is **not authenticated public
+administration**; never expose it on WAN. A direct owner-requested
+Shizuku Advanced Shell action uses actual Android permissions —
+ADB is not root. The sole owner-approved runit/watchdog autostart
+exception is for the **existing PocketHost DEV panel**. External
+Termux services, IleStoi, PhotoMap, Local Agent and hosted sites
+remain independent; discovery does not grant lifecycle ownership.
 
-Accepted H3.4 source: `cc9f47a1f7f71d7f6bdb715c98a226cf89c7d663`;
-`npm run check:all` passed on Samsung,
-including **45/45 admin UI tests**.
-The guarded installed panel source is
-`e1c11e723105025b0f24ecf8e70974beddc0c2b5`.
-A later physical smoke reached a successful
-File Manager round-trip but failed the
-Restic backup stage. See the
-[latest audit checkpoint](docs/checkpoints/2026-11-07-general-repository-audit-repair.md)
-for precise outstanding evidence.
+Historical source/device tests do not certify the latest main.
+Current-SHA G1/G2 and physical G3 can remain OPEN even when an older
+revision passed. Source work and panel deployment are separate.
 
-## Current DEV work mode (2026-11-08)
+## Development entrypoints
 
-Small change -> commit to `main` -> focused test if relevant ->
-Vite HMR / restart **only the PocketHost DEV panel** -> owner review.
-There is **no mandatory full audit or build for each small UX change**.
-Full checks run at milestone closeout or for high-risk host changes.
-Use `npm run dev:quick`, optional `npm run dev:ui -- <test-file>`,
-`npm run dev:panel` for manual start, and `npm run dev:full` for
-closeout. See [DEV runbook](docs/DEV_ITERATION.md) and
-[ADR-0012](docs/adr/0012-private-ui-rapid-review.md).
+- [Minimal context and present status](docs/START_HERE.md)
+- [Instructions for agents](AGENTS.md)
+- [Code map and affected tests](docs/CODE_MAP.md)
+- [Fast flow and cache-aware checks](docs/DEV_ITERATION.md)
+- [Samsung Termux Local Agent execution](docs/LOCAL_AGENT_TERMUX.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Quality gates](docs/QUALITY_GATES.md)
+- [Documentation index and historical evidence](docs/README.md)
 
-A PocketHost-only restart has standing owner approval, provided process
-ownership is verified. Other Termux services, sites, LAN security and
-data remain protected. No second preview environment is required.
-
-## Development rules
-
-Use only fresh `main`, GitHub Connector and
-the precisely verified Samsung Termux Local
-Agent for PocketHost code execution, tests
-and compilation. No GitHub Actions, Codex,
-Work, Mac/Linux fallback, new branches or
-force push. Never adopt or signal external
-processes or modify IleStoi.pl, original
-PhotoMap, Local Agent or foreign services.
-No unapproved package installs/upgrades, external or hosted-project
-autostart, public command access or unrelated automatic recovery.
-The sole admin-panel runit and watchdog exception is documented in
-[ADR-0014](docs/adr/0014-termux-panel-supervision.md).
-
-## Current 2026-11-09 checkpoint
-
-The verified Samsung admin panel and Mac browser endpoint returned
-HTTP 200; an owner-only runit restart recovered the panel in six
-seconds without changing any protected service. The live tested
-code and latest GitHub source are separate revisions. Source
-structure/QA repairs and outstanding formatting gates are tracked
-in the [complete quality and handoff checkpoint](docs/checkpoints/2026-11-09-code-quality-structure-handoff.md).
-The approved modular direction and upstream-first reuse strategy
-remain target architecture, not a claim of deployed features.
-
-## Continue
-
-Read [root rules](AGENTS.md),
-[handoff](docs/HANDOFF_NEXT_CHAT.md),
-[O1 roadmap](docs/ROADMAP.md),
-[architecture](docs/ARCHITECTURE.md),
-[quality gates](docs/QUALITY_GATES.md) and
-[Termux runbook](docs/LOCAL_AGENT_TERMUX.md).
-Historical evidence is in the
-[final QA checkpoint](docs/checkpoints/2026-11-07-final-native-qa-handoff.md).
+All PocketHost source commands, tests, builds and installs run only
+on the verified Samsung Termux via Local Agent. Source updates use
+fresh main and non-force commits. Normal UI changes use affected
+tests and Vite HMR; whole gates are for meaningful milestones
+or risky host changes. Do not restart unrelated services just to
+advance development.

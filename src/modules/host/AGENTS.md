@@ -2,23 +2,33 @@
 
 ## Scope
 
-The sole future adapter for Termux process and filesystem inspection, behind typed application ports. Specification: `../../../docs/modules/host.md`. Read-only allowlisted probes first.
+Only host adapter for Termux process/filesystem/runit,
+owned static-site lifecycle, private registry storage and
+Android Companion forwarding. Read the specific
+[host contract](../../../docs/modules/host.md) on demand.
 
 ## Forbidden
 
-No unrestricted shell input, arbitrary filesystem access, secret environment dumps or mutation of existing services. No service start/stop until a separate ownership and permission contract is approved.
+No scan outside explicitly approved roots, unknown-PID
+signalling, automatic package installs, credential dumps,
+service adoption or modification of external Termux
+workloads. Generic command execution is not an internal
+fallback. The owner-approved **direct Shizuku Advanced
+Shell** is a distinct explicit typed action through
+Android loopback, bounded by real Shizuku permissions,
+not a host-wide automatic arbitrary shell API.
+No WAN or wildcard listener.
 
 ## Gate
 
-Test allowlist rejection, timeouts, partial output and failed permissions. All other source modules must be prevented from importing OS/process primitives directly.
+Only act on exact verified target ownership; deny symlinks,
+traversal, stale version/owner, mismatched start ticks/cwd
+and foreign processes. Add focused positive and negative
+tests for changed operations, timeout/failed exits and
+rollback where relevant. Execute tests exclusively via
+verified Samsung Termux Local Agent. Do not repeat
+unaffected suites.
 
-## Owner-approved H3.4 branch exception
-
-The owner expressly authorized full Termux control without first
-building login. The host module may provide named-root file operations,
-registered runit lifecycle/autostart, fixed Restic commands and a
-single manual ttyd launcher on `127.0.0.1`. It must not expose
-arbitrary shell strings through the JSON API. ttyd is an interactive
-owner-requested terminal, not a command-injection primitive or a
-public network service. Preserve all external-service and H2
-production noninterference rules during QA and release.
+The existing **PocketHost DEV panel only** may autostart
+under owner-approved Termux runit; no hosted project or
+external service inherits that exception (ADR-0014).
