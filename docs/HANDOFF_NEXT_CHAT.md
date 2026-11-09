@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## START HERE — v1 registry rollback plan (source, QA open)
+
+The additional `4fa08631` source-only v1 rollback planner validates stored envelope ownership, version and revision, requires independently trusted SHA-256 fingerprints for both the current and earlier snapshots, and returns a bounded next-revision declaration plan. It never writes or migrates live registry files. Native focused task `pockethost-m1-rollback-planner-focused-4fa08631-20261109-v1` is published; its terminal result is not yet observed.
+
 ## START HERE — M0 canonical style and M1 ownership diagnostic (2026-11-09)
 
 Read [the latest source/QA checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md). The read-only Samsung report found four remaining Prettier warnings on `0f5291d7`; their exact diffs were applied at `9ca92cf0`. The new `22245f13` M1 pure service ownership consistency diagnostic and negative fixtures are source-only, not a runtime privilege or acceptance result. Await native reports for the targeted UID/umask repair, 15 UI files and new ownership tests. Full final-source G1/G2, M1 acceptance and physical G3 remain OPEN; preserve all active services.

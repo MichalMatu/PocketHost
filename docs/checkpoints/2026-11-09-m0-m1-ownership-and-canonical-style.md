@@ -31,6 +31,10 @@ The new `src/modules/host/hosting-service-ownership.ts` reuses the pure M1 regis
 
 Each task uses an isolated clean Samsung QA checkout. A published task is not a PASS, and a historical pass is not exact-current-SHA certification.
 
+## Source-only rollback planning extension
+
+The additional `4fa08631` source-only v1 rollback planner validates stored envelope ownership, version and revision, requires independently trusted SHA-256 fingerprints for both the current and earlier snapshots, and returns a bounded next-revision declaration plan. It never writes or migrates live registry files. Native focused task `pockethost-m1-rollback-planner-focused-4fa08631-20261109-v1` is published; its terminal result is not yet observed.
+
 ## Remaining gates and safe next actions
 
 - **G1:** Four known Prettier warnings patched; recheck whole source including newly added files and this documentation on final SHA.

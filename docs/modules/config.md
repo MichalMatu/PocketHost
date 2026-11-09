@@ -42,3 +42,13 @@ Never overwrite other applications settings, Termux global files or environment 
 Existing M1 tests cover malformed and duplicated identities, reserved ports,
 foreign observations, secret injection, stale storage revisions, symlinks and
 concurrent locks. Native focused results must be read before claiming PASS.
+
+## M1 explicit rollback planning — source only
+
+`src/modules/host/hosting-registry-recovery.ts` verifies a private v1
+snapshot and a strictly older backup, then checks expected revision and
+trusted SHA-256 fingerprints before producing a next-revision declaration
+plan. It neither reads nor writes actual registry files, and does not
+implement schema-v2 migration. A host-side backup provenance check and
+atomic audited restore are still required before live use. Native focused
+QA remains OPEN.
