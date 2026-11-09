@@ -6,43 +6,44 @@ import { RemoteShellPanel } from "@/app/shizuku/remote-shell-panel"
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe("phone-approved browser shell request", () => {
-  it("requires pairing code and command before any network submission", async () => {
-    const fetchMock = vi.fn(async (...args: unknown[]) => {
-      void args
-      return { ok: true, status: 202, json: async () => ({
-        id: "a".repeat(32), state: "pending",
-      }) }
+describe("direct Shizuku shell from private-LAN browser", () => {
+  it("executes the exact typed command on Run without pairing or phone approval", async () => {
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValue({
+      ok: true, status: 200, json: async () => ({
+        action: "shell", success: true, mode: "adb", output: "uid=2000(shell)",
+      }),
     })
     vi.stubGlobal("fetch", fetchMock)
     render(<RemoteShellPanel />)
     const user = userEvent.setup()
-    const send = screen.getByRole("button", { name: "Send for approval on Samsung" })
-    expect((send as HTMLButtonElement).disabled).toBe(true)
-    await user.type(screen.getByLabelText("Temporary pairing code"), "0123456789")
+    const run = screen.getByRole("button", { name: "Run on Samsung" })
+    expect((run as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.queryByLabelText("Temporary pairing code")).toBeNull()
     await user.type(screen.getByLabelText("Android shell command"), "id")
-    expect((send as HTMLButtonElement).disabled).toBe(false)
-    await user.click(send)
+    await user.click(run)
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    expect(url).toBe("/api/v1/shizuku/remote-shell/submit")
+    expect(url).toBe("/api/v1/shizuku/remote-shell/run")
     expect(init.method).toBe("POST")
-    expect(JSON.parse(init.body as string)).toEqual({ code: "0123456789", command: "id" })
-    expect(screen.getByText(/Awaiting approval in Companion on Samsung/)).toBeTruthy()
-    expect(screen.queryByText("Android result")).toBeNull()
+    expect(JSON.parse(init.body as string)).toEqual({ command: "id" })
+    expect(await screen.findByText("uid=2000(shell)")).toBeTruthy()
+    expect(screen.getByText(/Last execution: ADB/)).toBeTruthy()
   })
 
-  it("shows refusal and does not claim a shell command executed", async () => {
-    const fetchMock = vi.fn(async () => ({
-      ok: false, status: 403, json: async () => ({ error: "not-armed-or-unpaired" }),
-    }))
+  it("shows native refusals without pretending shell execution succeeded", async () => {
+    const fetchMock = vi.fn()
+    fetchMock.mockResolvedValue({
+      ok: false, status: 502, json: async () => ({
+        error: "android-shell-refused", detail: "Android refused operation",
+      }),
+    })
     vi.stubGlobal("fetch", fetchMock)
     render(<RemoteShellPanel />)
     const user = userEvent.setup()
-    await user.type(screen.getByLabelText("Temporary pairing code"), "9999999999")
     await user.type(screen.getByLabelText("Android shell command"), "id")
-    await user.click(screen.getByRole("button", { name: "Send for approval on Samsung" }))
-    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "not-armed-or-unpaired")
-    expect(screen.queryByText("Android result")).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Run on Samsung" }))
+    expect(await screen.findByRole("alert")).toHaveProperty("textContent", "Android refused operation")
+    expect(screen.queryByText("Android output")).toBeNull()
   })
 })
