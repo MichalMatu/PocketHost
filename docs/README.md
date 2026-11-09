@@ -97,5 +97,5 @@
 
 - [Checkpoint archive](checkpoints/README.md)
 
-The roadmap, handoff and quality gates are the
-active entrypoints. Preserve older test evidence.
+New sessions start with [Minimal Context](START_HERE.md). Open the roadmap,
+handoff and quality gates only for the relevant task. Preserve older evidence.

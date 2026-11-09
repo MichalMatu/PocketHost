@@ -7,7 +7,7 @@ purpose: Index historical evidence without overloading the active documentation 
 
 # PocketHost checkpoint archive
 
-Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
+Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [Minimal Context](../START_HERE.md). Read the [handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md) or [quality gates](../QUALITY_GATES.md) only for a specific question. Open historical checkpoints by exact relevance, not as default context.
 
 ## 2026-11-09
 
