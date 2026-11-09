@@ -110,6 +110,15 @@ This target is **not yet implemented**. See
 [module model](../MODULES.md) and
 [target information architecture](../TARGET_INFORMATION_ARCHITECTURE.md).
 
+**Upstream-first reuse:** the latest architecture additionally prefers
+official installed Termux CLI tools, including existing runit,
+Termux:Boot, pkg, Restic, cloudflared and optional ttyd/PRoot,
+behind narrow host adapters. The
+[upstream reuse strategy](../UPSTREAM_REUSE_STRATEGY.md) is
+evaluation guidance, **not authorization to install packages, copy
+licenses or migrate the running workloads**. Do not create a
+second supervisor or backup engine.
+
 Target contracts: `ModuleRegistry`, `ServiceRegistry`,
 `ProjectRegistry` with versioned `components[]`;
 shared `SupervisorAdapter`, `DependencyPlan`,
