@@ -16,10 +16,11 @@ customer production hosting service**.
   terminal and a local typed Agent API are
   implemented. Full native Samsung G2 and the
   guarded panel-only G3 deployment passed.
-- The live trusted-LAN panel is **not** a
-  production-grade authenticated management
-  service. Public access and autostart remain
-  prohibited. PhotoMap TEST execution is disabled.
+- The trusted-LAN panel is **not** authenticated production
+  administration. Public/WAN access and hosted-project autostart
+  remain prohibited; **only the PocketHost DEV admin** may now
+  autostart under owner-approved Termux runit (ADR-0014).
+  PhotoMap TEST execution stays disabled.
 - Hardware follow-ups remain open for Restic
   recovery, ttyd HTTP/WebSocket operation,
   real browser controls and service safety.
@@ -63,9 +64,21 @@ Work, Mac/Linux fallback, new branches or
 force push. Never adopt or signal external
 processes or modify IleStoi.pl, original
 PhotoMap, Local Agent or foreign services.
-No unapproved package installs/upgrades,
-autostart, public command access or
-automatic recovery.
+No unapproved package installs/upgrades, external or hosted-project
+autostart, public command access or unrelated automatic recovery.
+The sole admin-panel runit and watchdog exception is documented in
+[ADR-0014](docs/adr/0014-termux-panel-supervision.md).
+
+## Current 2026-11-09 checkpoint
+
+The verified Samsung admin panel and Mac browser endpoint returned
+HTTP 200; an owner-only runit restart recovered the panel in six
+seconds without changing any protected service. The live tested
+code and latest GitHub source are separate revisions. Source
+structure/QA repairs and outstanding formatting gates are tracked
+in the [complete quality and handoff checkpoint](docs/checkpoints/2026-11-09-code-quality-structure-handoff.md).
+The approved modular direction and upstream-first reuse strategy
+remain target architecture, not a claim of deployed features.
 
 ## Continue
 
