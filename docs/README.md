@@ -2,6 +2,7 @@
 
 ## Current work
 
+- [Complete 2026-11-09 code, quality, structure and next-chat checkpoint](checkpoints/2026-11-09-code-quality-structure-handoff.md)
 - [PocketHost-only Termux runit autostart and health-recovery decision](adr/0014-termux-panel-supervision.md)
 
 - [Target modular platform, reusable modules and Hosting orchestration](TARGET_INFORMATION_ARCHITECTURE.md)
