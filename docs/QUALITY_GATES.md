@@ -71,7 +71,10 @@ keyboard/ARIA/version-selection and failure-state evidence. PhotoMap requires
 separately approved controlled Start/health/Stop and whole-instance
 source/SQLite/media restore on disposable data. A PRoot child snapshot or
 process-group check alone is not an exhaustive orphan proof.
-No public administration, autostart or package mutations by default.
+No public administration or package mutations by default. The single
+PocketHost panel has a later [owner-approved runit autostart exception]
+(adr/0014-termux-panel-supervision.md); it requires separate native
+health/recovery evidence and does not autostart hosted sites or other services.
 
 ## General repository audit — new source gate pending
 
