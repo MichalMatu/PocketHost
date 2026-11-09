@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [Approved target menu and hosting/system responsibility map](TARGET_INFORMATION_ARCHITECTURE.md)
+
 - [Shizuku power-user integration decision](adr/0013-shizuku-power-user.md)
 - [Shizuku Android capability module](modules/shizuku.md)
 - [Shizuku seven-module native sprint checkpoint](checkpoints/2026-11-08-shizuku-seven-module-sprint.md)
