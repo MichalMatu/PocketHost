@@ -10,6 +10,7 @@ purpose: Index historical evidence without overloading the active documentation 
 Historical acceptance receipts are immutable evidence, not a list of tasks to rerun. For current work, begin with [the handoff](../HANDOFF_NEXT_CHAT.md), [development plan](../DEVELOPMENT_PLAN.md), and [quality gates](../QUALITY_GATES.md). Open a historical checkpoint only when the current handoff links to that specific result.
 
 ## 2026-11-09
+- [M0 source QA result and verified handoff state](2026-11-09-m0-final-source-qa-handoff.md)
 
 - [M0 read-only generic service aliases, QA repair status and handoff](2026-11-09-m0-generic-services-prehandoff.md)
 
