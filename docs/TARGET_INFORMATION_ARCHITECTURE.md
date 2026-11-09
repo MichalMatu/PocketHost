@@ -2,16 +2,17 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-09
-purpose: Approved target navigation and provisional hosting/system responsibility model
+purpose: Modular target navigation, ownership boundaries and staged service migration
 ---
 
 # PocketHost — Target Navigation and Hosting Boundaries
 
 ## Decision and implementation status
 
-On 2026-11-09 the owner approved the five-area menu as the target
-information architecture. A later clarification on the same day makes the
-**hosting isolation and application-first creation workflow mandatory**:
+On 2026-11-09 the owner first approved a five-area intermediate menu,
+then replaced it with a **modular platform** target: Hosting orchestrates
+reusable modules and shared managed services. The **hosting isolation
+and application-first creation workflow remain mandatory**:
 
 **PocketHost Hosting manages only projects explicitly created and configured
 through the PocketHost application. It does not discover, auto-import, adopt,
@@ -90,6 +91,37 @@ Old source evidence: `src/modules/host/host-snapshot.ts`,
 `apps/admin/vite.config.ts`, and
 `docs/checkpoints/2026-11-06-photomap-runit-autorestart-regression.md`.
 
+## Three-layer design — modules, services and projects
+
+**ModuleRegistry** describes a runtime or infrastructure capability:
+Node.js, Python/optional PRoot, SSH, Cloudflare or a later Database
+adapter. Modules have their own settings and UI, but do not receive
+permission to manage every process exposing their technology.
+
+**ServiceRegistry** describes one explicitly registered and verifiably
+owned process or shared daemon. Only this layer controls the one
+`runit` service definition, desired state, health/recovery policy
+and service logs. An observed `sshd`, `cloudflared`, PID or listener
+does **not** confer ownership; the old external instances remain
+untouched until a separately authorized cutover.
+
+**ProjectRegistry** contains user-created Hosting projects with
+versioned `components[]`. Each component references module
+capabilities, dependencies, local resources and a service identity
+where required. The manifest represents *desired configuration*;
+observed process state, uptime, errors and real package versions
+are separate records. Hosting never runs its own SSH or Cloudflare
+supervisor, and a single project may mix static and backend
+components.
+
+Shared **DependencyPlan**, **SupervisorAdapter**, **HealthPolicy**,
+**SecretRef**, **BackupPolicy** and source/build/release contracts are
+platform facilities. Reuse existing `runit`, H2 release handling,
+Restic tooling and negative ownership guards rather than duplicating
+watchdogs. Minimal secret references and backup/restore precede
+production routing/migration; advanced secret rotation can follow.
+The canonical M0–M7 acceptance sequence lives in [Roadmap](ROADMAP.md).
+
 ## Responsibility boundaries — system versus application
 
 **Termux — System** owns host-level operations: packages and toolchains,
@@ -104,12 +136,13 @@ releases, runtime, dependencies, ports, health, storage, logs, backups, and
 routing. A backend is not an uncontrolled shell command: it is a
 user-provisioned runtime with explicit identity and lifecycle.
 
-**Cloudflare:** The global `cloudflared` binary/process belongs to
-Termux/System. Hosting > Domains & Routing owns only the per-project route
-configuration that the user sets up through PocketHost. A site may reference
-a shared tunnel, but does not gain authority to restart or reconfigure
-existing external tunnel routes by that reference. No automatic import of
-pre-existing tunnel mappings.
+**Cloudflare:** Termux owns the installed binary/package; the dedicated
+Cloudflare module is the eventual controller of **one explicitly owned**
+shared `cloudflared` service and validated route profiles. Until
+its independently authorized cutover, the existing running tunnel is
+externally owned. Hosting > Domains & Routing requests a per-project
+binding through the Cloudflare module, never edits its config, secrets,
+DNS or process directly. No import of existing mappings as owned routes.
 
 **Packages:** System > Packages manages global Termux software. Hosting >
 Projects > Dependencies handles explicitly provisioned application-local
@@ -145,14 +178,20 @@ Each project should have:
 - `type`: static website, frontend + backend application, backend service,
   or a future explicitly supported runtime type;
 - `source`: ZIP/folder or an owner-chosen repository/target;
-- `components`: frontend, backend and optionally worker/process entries;
-- `runtime`: selected static/Node/Python/PRoot driver, separate local
-  dependencies, build settings, launch definition, environment references;
-- `ownership`: verified PocketHost instance identity, not a PID/port claim;
-- `releases`: staged version, active version, rollback capabilities;
+- `schemaVersion`: explicit manifest version and compatibility migration;
+- `components[]`: stable component IDs, frontend/backend/worker roles,
+  selected static/Node/Python/optional PRoot capability references,
+  app-local dependencies, build/start definitions and health settings;
+- `ownership`: verified PocketHost instance and per-service identity,
+  never PID/port or a discovered runit directory alone;
+- `releases`: source revision/hash, staged/active/previous versions,
+  readiness evidence and a safe rollback target;
 - `network`: owned local ports and explicit project domain/route mappings;
 - `storage`: immutable releases and separately managed writable DB/uploads;
-- `capabilities`: actual runtime/health/logs/backup/restore availability.
+- `secrets`: `SecretRef` values, never credential contents in manifests;
+- `backup`: data-source references and tested restore policy;
+- `capabilities`: actual runtime/health/logs/backup/restore availability,
+  independently observed and not assumed from a module selection.
 
 Recommended **Create Project** flow:
 1. Name the project and choose Static Website, Web App (Frontend + Backend),
@@ -161,11 +200,13 @@ Recommended **Create Project** flow:
 3. Detect the supplied *project structure* only within this explicit source,
    or ask the user to select frontend/backend directories and framework.
    Do not inspect unrelated Termux directories or existing live servers.
-4. Choose the supported runtime driver and app-local dependencies/build
+4. Choose a runtime module **per component** and app-local dependencies/build
    recipe, plus local endpoints and health path.
 5. Configure project-specific secrets references, persistent data,
    backups and restart policy; preview the exact resource changes.
-6. Stage and test the project's own deployment before Start/Publish.
+6. Stage an immutable release, verify its source hash and readiness, then
+   activate it with an explicit rollback path. Treat mutable DB migration
+   and data restore independently from code rollback.
 7. Optionally configure its domain/tunnel route, only for explicitly
    user-approved routes. Show health, logs, deployments and rollback in
    this one project view.
@@ -343,26 +384,30 @@ not features already provided by the current static fleet.
 7. Decouple `src/modules/host/lan-gateway.mjs` from legacy P3 and H2
    layout without changing current live links or tunnel routes prematurely.
 
-## Recommended staged migration (proposal, not authorization)
+## Staged delivery and migration (target only; not authorization)
 
-1. Preserve current working H2 static hosting and exact owned process
-   identities. Establish a baseline of currently owned H2/P3 resources.
-2. Clean the product menu and dedicated IleStoi/PhotoMap integrations,
-   keeping unrelated device services and source data untouched.
-3. Add an app-created **unified project registry** and retire redundant
-   legacy demo/PhotoMap API consumers behind compatibility checks.
-4. Make H2 static fleet the first driver in one **Create Project** flow,
-   preserving existing revisions, addresses and start/stop behavior.
-5. Separate HTTP API modules and host adapters; remove global Termux
-   operations from application-level controls without weakening guards.
-6. Add an isolated newly created Node backend project driver and a
-   complete local frontend + backend flow. Verify launch, restart,
-   rollback, logs, DB backups and port collision on a disposable app.
-7. Add Python/PRoot support and user-approved per-project routing later,
-   after native verification and recovery tests.
+The [canonical M0–M7 roadmap](ROADMAP.md) replaces the earlier
+Hosting-last delivery proposal:
 
-No automatic discovery, importing or adoption of existing external servers
-is part of this plan.
+- **M0–M2 (P0):** preserve H2; decouple named products; establish the
+  three registries, minimal secret references, reviewed dependency
+  plans, shared runit/health policy and backup/restore contracts.
+- **M3 (P0):** deliver an **early disposable Node.js Hosting project**
+  with the minimal Create Project flow, deployment, readiness,
+  failure handling and rollback. Do not wait for Cloudflare or Python.
+- **M4–M5 (P1):** add independent SSH/Cloudflare/Python modules;
+  expand the wizard to multiple components, routing and data recovery.
+- **M6 (P1):** re-provision IleStoi and Local Agent as explicitly
+  PocketHost-created managed services, one at a time, retaining
+  working independent originals and their rollback path until each
+  device acceptance gate passes. Local Agent migrates last via an
+  external SSH/USB operator.
+- **M7 (P2):** additional databases/runtimes and expanded security
+  and API surface.
+
+No automatic discovery, adoption, reconfiguration or deletion of
+existing Termux services is authorized by this roadmap.
+
 
 ## Still to verify before modifying source or running services
 
@@ -371,8 +416,10 @@ is part of this plan.
   detect or catalog any external Termux servers.
 - Whether the existing installed PocketHost panel still uses the historical
   demo/PhotoMap API routes before safely removing them.
-- Which frontend/backend runtimes the owner wants to support first.
-- The minimal app-first wizard UX and server configuration/health contract.
+- Node.js version and source/lockfile combination for the first disposable
+  backend test; the chosen runtime **order is Node first, Python next**.
+- The smallest app-first wizard and multi-component contract that can reuse
+  H2 without importing unrelated Termux processes.
 - Whether any changes to shared tunnel/domain mapping are explicitly
   authorized; **existing Cloudflare routes remain unchanged by default**.
 
