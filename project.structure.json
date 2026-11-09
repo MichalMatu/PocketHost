@@ -8,9 +8,18 @@
     "config",
     "diagnostics",
     "observability",
-    "ai"
+    "ai",
+    "shizuku"
   ],
-  "rootDirectories": ["apps", "docs", "src", "scripts", "tests"],
+  "rootDirectories": [
+    "apps",
+    "docs",
+    "src",
+    "scripts",
+    "tests",
+    "native",
+    "ops"
+  ],
   "requiredFiles": [
     "README.md",
     "AGENTS.md",
@@ -43,7 +52,19 @@
     "scripts/import-shadcnstore.mjs",
     "docs/ADMIN_MVP.md"
   ],
-  "documentationDirectories": ["docs", "docs/adr", "docs/checkpoints", "docs/modules"],
+  "documentationDirectories": [
+    "docs",
+    "docs/adr",
+    "docs/checkpoints",
+    "docs/modules"
+  ],
   "moduleRoot": "src/modules",
-  "excludedDirectories": [".git", "node_modules", "dist", "build", "coverage", ".tmp"]
+  "excludedDirectories": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".tmp"
+  ]
 }
