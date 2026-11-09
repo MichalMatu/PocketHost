@@ -12,7 +12,7 @@ import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
-import { PackageActions, SiteServiceActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
+import { PackageActions, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -56,7 +56,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
       ["packages", "services"].includes(section)
         ? getData("/api/v1/observability", parseObservabilitySnapshot, signal)
         : Promise.resolve(null),
-      ["files", "services", "backups"].includes(section)
+      ["files", "backups"].includes(section)
         ? getData("/api/v1/sites", parseFleetSites, signal)
         : Promise.resolve(null),
       ["backups", "terminal"].includes(section)
@@ -211,8 +211,10 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                   <div className="flex gap-2"><Badge variant="outline">External</Badge><State value={service.state} /></div>
                 </div>)}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
-                <SiteServiceActions sites={sites} reload={() => refresh()} />
                 <RunitServiceActions />
+                <GuardNotice>
+                  PocketHost-owned websites are managed in <a className="underline underline-offset-4" href="/sites">Hosting → Websites</a>, not in the system service inventory.
+                </GuardNotice>
               </CardContent>
             </Card>
           </section>}
