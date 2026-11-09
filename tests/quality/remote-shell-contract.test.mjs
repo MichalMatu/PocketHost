@@ -2,27 +2,24 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { validateRemoteShellPayload } from '../../src/modules/host/remote-shell-contract.mjs';
 
-const code = '0123456789';
-const id = 'a'.repeat(32);
-test('browser can only request a paired exact command or poll opaque id', () => {
-  assert.deepEqual(validateRemoteShellPayload('submit', { code, command: 'id' }),
-    { code, command: 'id' });
-  assert.deepEqual(validateRemoteShellPayload('poll', { code, id }), { code, id });
+test('direct Run forwards the exact power-user command without pairing', () => {
+  assert.deepEqual(validateRemoteShellPayload('run', { command: 'id' }), { command: 'id' });
+  assert.deepEqual(validateRemoteShellPayload('run', { command: 'echo hello && id' }),
+    { command: 'echo hello && id' });
 });
-test('browser command contract fails closed on invalid payloads', () => {
+
+test('shell transport rejects malformed requests but does not prohibit command categories', () => {
   for (const [action, body] of [
-    ['submit', { code: '', command: 'id' }],
-    ['submit', { code, command: '' }],
-    ['submit', { code, command: 'a'.repeat(241) }],
-    ['submit', { code, command: 'id\0whoami' }],
-    ['submit', { code, command: 'id', action: 'execute' }],
-    ['submit', { code, command: 'id', token: 'extra' }],
-    ['submit', { code, command: 42 }],
-    ['poll', { code, id: '1' }],
-    ['poll', { code, id, command: 'id' }],
-    ['poll', { code, id, secret: true }],
-    ['start', { code, command: 'id' }],
-    ['submit', null],
+    ['run', null],
+    ['run', {}],
+    ['run', { command: '' }],
+    ['run', { command: ' '.repeat(15) }],
+    ['run', { command: 'x'.repeat(241) }],
+    ['run', { command: 'id\0echo' }],
+    ['run', { command: 42 }],
+    ['run', { command: 'id', code: '1234567890' }],
+    ['submit', { command: 'id' }],
+    ['poll', { command: 'id' }],
   ]) {
     assert.throws(() => validateRemoteShellPayload(action, body));
   }
