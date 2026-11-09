@@ -14,7 +14,7 @@ This slice continues the [UI/source decoupling](2026-11-09-m0-implementation-ui-
 and [legacy PhotoMap diagnostics isolation](2026-11-09-m0-photomap-diagnostics-isolation.md).
 
 **Observed baseline:** `main@c4038240688a16ec9ecf0b0cc9248a53bf6f95cf`.
-**Last source commit for this slice:** `1451f9bd9bc27dc95447eeb6240693d32ab0c989`.
+**Last source commit for this slice:** `fd7d99809ef72b10e89873b946461cb6c5ab3709`.
 Always fetch the current `main` before further work; source can advance
 in parallel. This is a GitHub-source checkpoint, **not** a claim that
 the phone's active panel has been updated.
@@ -72,8 +72,9 @@ ESLint and admin ESLint **PASS**. TypeScript/build still failed
 on the same literal-instance type issue, and Prettier identified
 the same two files. The type issue was fixed by commit
 `e203910809284a87e8e261bc4a50d136f2609081`;
-formatting of the test file was then fixed by
-`1451f9bd9bc27dc95447eeb6240693d32ab0c989`.
+formatting of the PhotoMap test file was then fixed by
+`1451f9bd9bc27dc95447eeb6240693d32ab0c989`, and the
+additional service-catalog test formatting by `fd7d99809ef72b10e89873b946461cb6c5ab3709`.
 
 **Most recent M0 source QA:** the unique task
 `pockethost-m0-observed-services-native-s22-affcf2d6-20261109-v1`
@@ -81,7 +82,7 @@ tests the service catalog, PhotoMap events, legacy consumers,
 Node/UI, types/build, lint and changed-file format on
 `affcf2d697324395bfaaeaa3760978e8fe022256`.
 At publication, its terminal result was not yet available.
-The formatter repair `1451f9bd` occurred after that
+The formatter repairs `1451f9bd` and `fd7d9980` occurred after that
 source snapshot; even if the older task passes other gates,
 it cannot certify this final HEAD.
 
