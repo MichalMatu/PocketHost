@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [M0 read-only generic service aliases, QA repair status and handoff](2026-11-09-m0-generic-services-prehandoff.md)
+
 - [M0 PhotoMap legacy read-only events isolated; source QA hold](2026-11-09-m0-photomap-diagnostics-isolation.md)
 
 - [M0 source implementation: system/hosting boundaries and pending Samsung checks](2026-11-09-m0-implementation-ui-separation-sprint.md)
