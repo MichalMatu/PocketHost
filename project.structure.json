@@ -26,6 +26,7 @@
     ".prettierignore",
     ".prettierrc.json",
     ".markdownlint.jsonc",
+    ".lychee.toml",
     "docs/README.md",
     "docs/AGENTS.md",
     "docs/PRODUCT.md",
