@@ -69,8 +69,10 @@ The DEV label is not permission to kill, reconfigure or restart them.
 Preserve Local Agent, IleStoi.pl, other hosted sites, their processes,
 data and independent ports. Keep administrative access limited to the
 existing trusted private LAN/loopback; do not create a WAN listener,
-disable security checks, install packages, enable autostart or perform
-state migrations just to speed up UX work. If a desired operation
+disable security checks, install packages, enable autostart for other services or perform
+state migrations just to speed up UX work. The owner's later
+[panel-only runit exception](adr/0014-termux-panel-supervision.md)
+permits supervised PocketHost DEV panel startup and HTTP recovery. If a desired operation
 cannot be executed by the available tools, state the limitation
 instead of reporting a fictitious deployment.
 
