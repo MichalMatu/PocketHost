@@ -11,6 +11,12 @@ const NAME = 'hosting-declarations.json';
 const LOCK = '.hosting-declarations.lock';
 const LIMIT = 256 * 1024;
 
+function currentUid(): number {
+  const getuid = process.getuid;
+  if (typeof getuid !== 'function') throw new Error('Registry ownership requires a host UID');
+  return getuid();
+}
+
 interface StoredDeclarations {
   schemaVersion: 1;
   owner: 'pockethost';
@@ -24,7 +30,7 @@ function directory(root: string): void {
   if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(root) !== root) {
     throw new Error('Registry directory is not a canonical directory');
   }
-  if (stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
+  if (stat.uid !== currentUid() || (stat.mode & 0o077) !== 0) {
     throw new Error('Registry directory must be owned and private');
   }
 }
@@ -32,7 +38,7 @@ function directory(root: string): void {
 function regularFile(filename: string): void {
   const stat = lstatSync(filename);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 || stat.size > LIMIT ||
-      stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
+      stat.uid !== currentUid() || (stat.mode & 0o077) !== 0) {
     throw new Error('Unsafe registry file');
   }
 }
@@ -79,7 +85,7 @@ export function createHostingRegistryStore(root: string) {
     try {
       const stat = fstatSync(fd);
       if (!stat.isFile() || stat.nlink !== 1 || stat.size > LIMIT ||
-          stat.uid !== process.getuid() || (stat.mode & 0o077) !== 0) {
+          stat.uid !== currentUid() || (stat.mode & 0o077) !== 0) {
         throw new Error('Unsafe registry file');
       }
       return parse(readFileSync(fd, 'utf8'));

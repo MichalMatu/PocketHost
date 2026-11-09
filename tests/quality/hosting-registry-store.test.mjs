@@ -81,6 +81,8 @@ test('M1 registry rejects non-private roots and declarations without positive fi
   chmodSync(root, 0o700);
   const target = path.join(root, 'hosting-declarations.json');
   writeFileSync(target, JSON.stringify({ owner: 'pockethost', schemaVersion: 1, revision: 1, declarations: declarations() }), { mode: 0o644 });
+  // Termux can enforce umask 077; make the negative permission fixture deterministic.
+  chmodSync(target, 0o644);
   assert.throws(() => store.read(), /Unsafe registry file/);
   assert.throws(() => store.save(declarations(), 1), /Unsafe registry file/);
   chmodSync(target, 0o600);
