@@ -1,11 +1,55 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-07
-purpose: H3.4 live G3 PASS with remaining physical Termux and browser acceptance
+last_reviewed: 2026-11-09
+purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
+
+## START HERE — full code/quality/structure checkpoint (2026-11-09)
+
+The canonical handoff is
+[2026-11-09 code, quality, structure and next-chat checkpoint](checkpoints/2026-11-09-code-quality-structure-handoff.md).
+Read it before using the historical notes below. The current GitHub
+`main` may have advanced beyond its pre-publication snapshot; always
+fetch HEAD anew.
+
+**Verified live:** S22 PocketHost admin `8787/shizuku` and private
+LAN/Mac `192.168.0.100:18878/shizuku` returned 200;
+`pockethost-panel` and `pockethost-panel-watch` run under existing
+Termux runit. The Mac/SSH controlled **panel-only** restart test passed:
+PID 15757 → 22800, HTTP 200 recovered within six seconds; all six
+protected services remained `run`. Exact private evidence:
+`pockethost-panel-mac-hardware-recovery-20261109-v1`
+(done/PASS). Do **not** stage/activate these services again blindly.
+
+**Current quality work:** prior S22 `check:structure` failed on
+unregistered `native`/`ops`/`shizuku` and host ESM contracts;
+`check:docs` failed on missing 2026-11-08/09 checkpoint index entries
+and one broken relative Shizuku link. Their source metadata, index and
+link have been corrected on `main`, with the root agent autostart
+policy clarified. A pinned S22 native quality task
+`pockethost-handoff-foundation-quality-s22-20261109-v1`
+targets `d2844917888a7b4345b361f362ec9740b2b73cf4`; check
+its result before submitting any repeat. It predates the final
+checkpoint/docs-only commits. Full exact-current-HEAD
+`check:all`, device reboot and long-lived watchdog hang/flap matrix
+remain OPEN until actual receipts are read.
+
+**Next chat sequence:** (1) verify fresh `main` and local service
+state + both HTTP endpoints; (2) read pending task results; (3) close
+G0/G1/G2 structural/docs/style/test failures on S22 **without changing
+other services**; (4) validate the installed runsvdir race fix,
+owner markers and rollback source; (5) separate full reboot and
+Shizuku hardware work; (6) continue product roadmap M0 → M1/M2 →
+first user-created Node.js Hosting MVP M3.
+
+Stay on `main` and use GitHub Connector plus the designated Termux
+Local Agent. Mac Local Agent may inspect SSH/network/ADB but is not a
+replacement for native S22 code QA. Do not run GitHub Actions or
+unapproved external-service migration.
+
 
 ## DEV panel supervision restored — 2026-11-09
 
@@ -20,7 +64,7 @@ PASS**: the admin panel and its HTTP watchdog run under existing Termux
 runit, loopback `8787/shizuku` and private Wi-Fi
 `192.168.0.100:18878/shizuku` both returned HTTP 200, with protected
 services unchanged. The installer source now waits for service discovery.
-A controlled crash/restart and real reboot test remain separate gates.
+The controlled panel-only restart/HTTP recovery test has since **PASS** (PID 15757 to 22800); real phone reboot and watchdog hang/flap testing remain separate OPEN gates.
 See [panel supervision checkpoint](checkpoints/2026-11-09-panel-runit-self-healing.md)
 and [ADR-0014](adr/0014-termux-panel-supervision.md).
 
