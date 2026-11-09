@@ -26,6 +26,9 @@ case "${1:-}" in
     # This process owns only PocketHost's loopback Vite server. The existing
     # Vite integration restores its Wi-Fi LAN gateway when the network returns.
     export POCKETHOST_LAN_AUTOSTART=1
+    # Runit directly execs Vite; update only the verified prior PocketHost
+    # owner markers to this same PID/start tick, never adopt a live outsider.
+    "$PREFIX/bin/node" "$root/ops/termux/panel-owner.mjs" "$root" "$" || exit 111
     exec "$PREFIX/bin/node" "$root/apps/admin/node_modules/vite/bin/vite.js" \
       --host 127.0.0.1 --port 8787 --strictPort
     ;;
