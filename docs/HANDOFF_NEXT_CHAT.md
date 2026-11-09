@@ -7,6 +7,16 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+
+## Latest M0 source slice — UI implemented, native acceptance open
+
+Read [M0 implementation and QA checkpoint](checkpoints/2026-11-09-m0-implementation-ui-separation-sprint.md)
+before repeating or extending M0 work. The earlier no-code hold was
+superseded by explicit owner authorization. Do not reissue existing
+Samsung QA task IDs or treat queued tests as PASS. Old Demo/PhotoMap
+API remains compatible; H2 Hosting and protected Termux services were
+not deliberately mutated. Fetch fresh main and actual QA receipts.
+
 ## Latest autonomous sprint checkpoint and handoff
 
 Read [the autonomous quality, M0-M3 checkpoint](checkpoints/2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
