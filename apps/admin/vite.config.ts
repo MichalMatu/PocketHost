@@ -632,11 +632,11 @@ function shizukuCompanionApi(): Plugin {
  * An exact command is executed only after a separate owner confirmation
  * inside the Android Companion activity. No credentials are persisted here.
  */
-function remoteShellInboxApi(): Plugin {
+function remoteShellApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
   return {
-    name: "pockethost-paired-remote-shell-inbox",
+    name: "pockethost-direct-android-shell",
     apply: "serve",
     configureServer(server) {
       server.middlewares.use("/api/v1/shizuku/remote-shell", async (request, response) => {
@@ -650,13 +650,12 @@ function remoteShellInboxApi(): Plugin {
         if (!hosts.has(request.headers.host ?? "") ||
             !origins.has(request.headers.origin ?? "") ||
             request.headers["sec-fetch-site"] === "cross-site" ||
-            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1") ||
-            request.headers["x-pockethost-intent"] !== "remote-shell-request") {
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")) {
           response.statusCode = 403
           response.end(JSON.stringify({ error: "remote-shell-not-authorized" }))
           return
         }
-        if (request.method !== "POST" || (route !== "/submit" && route !== "/poll")) {
+        if (request.method !== "POST" || route !== "/run") {
           response.statusCode = 405
           response.setHeader("Allow", "POST")
           response.end(JSON.stringify({ error: "remote-shell-route-rejected" }))
@@ -682,16 +681,16 @@ function remoteShellInboxApi(): Plugin {
             chunks.push(buffer)
           }
           const envelope = validateRemoteShellPayload(
-            route.slice(1) as "submit" | "poll",
+            "run",
             JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown,
           )
-          const native = await fetch("http://127.0.0.1:18791/shell/" + route.slice(1), {
+          const native = await fetch("http://127.0.0.1:18791/shell/run", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(envelope),
             redirect: "error",
             cache: "no-store",
-            signal: AbortSignal.timeout(7000),
+            signal: AbortSignal.timeout(16000),
           })
           const raw = await native.text()
           if (raw.length > 8192) throw new RangeError("Native response too large")
@@ -700,7 +699,7 @@ function remoteShellInboxApi(): Plugin {
         } catch (error) {
           response.statusCode = error instanceof SyntaxError || error instanceof RangeError ? 400 : 503
           response.end(JSON.stringify({
-            error: response.statusCode === 400 ? "invalid-remote-shell-body" : "native-shell-inbox-unavailable",
+            error: response.statusCode === 400 ? "invalid-shell-command" : "native-shizuku-shell-unavailable",
           }))
         }
       })
@@ -1126,7 +1125,7 @@ function termuxAdminApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellInboxApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",
     port: 8787,
