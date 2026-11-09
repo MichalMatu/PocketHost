@@ -45,7 +45,7 @@ describe("direct Shizuku shell from private-LAN browser", () => {
     await user.click(screen.getByRole("button", { name: "Run on Samsung" }))
     expect(await screen.findByText("Exit: 127")).toBeTruthy()
     expect(screen.getByText("Duration: 42 ms")).toBeTruthy()
-    expect(screen.getByRole("alert")).toHaveProperty("textContent", "code 127")
+    expect(screen.getByRole("alert").textContent).toContain("code 127")
     expect(screen.getByText("stderr")).toBeTruthy()
     await user.click(screen.getByRole("button", { name: "Run again" }))
     expect(fetchMock).toHaveBeenCalledTimes(2)

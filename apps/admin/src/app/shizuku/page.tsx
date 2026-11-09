@@ -55,21 +55,6 @@ function LastSample({ observedAt }: { observedAt?: string }) {
   </span>
 }
 
-function NativeOwnerNotice({ specific }: { specific: string }) {
-  return <Card>
-    <CardContent className="space-y-2 py-4 text-sm">
-      <p className="flex items-center gap-2 font-medium">
-        <ShieldCheck className="size-4" /> Owner-approved Android actions
-      </p>
-      <p className="text-muted-foreground">
-        {specific} App, process, service and permission changes currently use
-        PocketHost Companion on Samsung. Advanced Shell runs directly from this
-        private-LAN browser.
-      </p>
-    </CardContent>
-  </Card>
-}
-
 export default function ShizukuPage() {
   const [status, setStatus] = React.useState<ShizukuStatus | null>(null)
   const [apps, setApps] = React.useState<ShizukuApps | null>(null)
@@ -221,6 +206,13 @@ export default function ShizukuPage() {
     return descending ? -order : order
   })
   const selectedProcess = system?.processes.find(process => process.pid === selectedProcessPid)
+  const appProcesses = selectedPackage ? (system?.processes ?? []).filter(process =>
+    process.name === selectedPackage || process.name.startsWith(selectedPackage + ":")
+  ) : []
+  const appRssKb = appProcesses.some(process => process.rssKb != null) ?
+    appProcesses.reduce((sum, process) => sum + (process.rssKb ?? 0), 0) : null
+  const appCpuPercent = appProcesses.some(process => process.cpuPercent != null) ?
+    appProcesses.reduce((sum, process) => sum + (process.cpuPercent ?? 0), 0) : null
   const shownServices = (system?.services.names ?? []).filter(item =>
     item.toLowerCase().includes(serviceSearch.trim().toLowerCase())
   )
@@ -394,6 +386,11 @@ export default function ShizukuPage() {
                           <dt className="text-muted-foreground">Target SDK</dt><dd>{appDetail.targetSdk}</dd>
                           <dt className="text-muted-foreground">Enabled</dt><dd>{appDetail.enabled ? "Yes" : "No"}</dd>
                         </dl>
+                        <div className="space-y-1 rounded-md border p-3 text-sm">
+                          <p className="font-medium">Matching Android processes ({appProcesses.length})</p>
+                          <p className="text-muted-foreground text-xs">Name-based match, not Android usage attribution.</p>
+                          <p>RSS: {gib(appRssKb, 4)} · CPU: {unavailable(appCpuPercent, "%")}</p>
+                        </div>
                         <p className="text-sm font-medium">Requested permissions ({appDetail.permissions.length})</p>
                         <div className="max-h-48 overflow-auto rounded-md border">
                           {appDetail.permissions.map(p => <div key={p.name}

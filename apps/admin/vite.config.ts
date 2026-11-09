@@ -698,7 +698,9 @@ function remoteShellApi(): Plugin {
           response.statusCode = native.status
           response.end(raw)
         } catch (error) {
-          response.statusCode = error instanceof SyntaxError || error instanceof RangeError ? 400 : 503
+          response.statusCode = error instanceof SyntaxError || error instanceof RangeError ||
+            (error instanceof Error && (error.message === "invalid-shell-command" ||
+              error.message === "invalid-remote-shell-request")) ? 400 : 503
           response.end(JSON.stringify({
             error: response.statusCode === 400 ? "invalid-shell-command" : "native-shizuku-shell-unavailable",
           }))
