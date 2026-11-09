@@ -44,8 +44,8 @@ describe("system dashboard stable metrics layout", () => {
     await within(metrics).findByText("v26.4.0")
     expect(metrics.getAttribute("aria-busy")).toBe("false")
     expect(within(metrics).queryAllByLabelText("Loading")).toHaveLength(0)
-    expect(within(metrics).getByText("2,312 MiB")).toBeTruthy()
-    expect(within(metrics).getByText("120,093 MiB")).toBeTruthy()
+    expect(within(metrics).getByText("2.3 GiB")).toBeTruthy()
+    expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
     expect(within(metrics).getByText("6")).toBeTruthy()
   })
 

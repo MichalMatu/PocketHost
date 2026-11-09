@@ -79,6 +79,29 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(fetchMock.mock.calls.some(call => call[1]?.method === "PUT")).toBe(false)
   })
 
+  it("starts only the selected PocketHost-owned site through Hosting with explicit intent", async () => {
+    const user = userEvent.setup()
+    let current = project("stopped", true)
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [current] }) }
+      if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
+        current = project("running", true)
+        return { ok: true, json: async () => ({ site: current }) }
+      }
+      return { ok: false, status: 404, json: async () => ({ error: "not-found" }) }
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<SitesPage />)
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /^Start$/ }))
+    await screen.findByText("Start completed.")
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+    expect(screen.getByRole("button", { name: /Stop/ })).toBeTruthy()
+  })
+
   it("with uncertain process identity blocks all writes while retaining read-only logs", async () => {
     const user = userEvent.setup()
     const fetchMock = withSites([project("unknown", true)])
