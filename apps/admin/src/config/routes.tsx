@@ -31,6 +31,7 @@ export const routes: RouteObject[] = [
   { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
   { path: "/sites", lazy: page(() => import("@/app/sites/page")) },
   { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
+  { path: "/projects", lazy: page(() => import("@/app/projects/page")) },
   { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
   // P4: explicit, read-only catalog for imported PhotoMap TEST
   { path: "/managed-projects", lazy: page(() => import("@/app/managed-projects/page")) },

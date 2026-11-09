@@ -23,6 +23,7 @@ import { OwnedDemoHost } from "../../src/modules/host/owned-site-host.ts"
 import { ManagedPhotoMapHost } from "../../src/modules/host/managed-photomap-host.ts"
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
+import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
 
@@ -378,6 +379,121 @@ function ownedSiteFleetApi(): Plugin {
  * P4: a strictly read-only catalog for one verified imported project.
  * This does not enable PhotoMap launch, package mutations or rollback.
  */
+
+/** M3 source-only Node project wizard API: no process manager or implicit execution. */
+function nodeProjectApi(): Plugin {
+  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
+  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
+  async function readJson(request: IncomingMessage, limit: number): Promise<unknown> {
+    if (request.headers["content-encoding"]) throw new RangeError("Compressed payload refused")
+    const claimed = request.headers["content-length"]
+    if (claimed && (!/^\d+$/.test(claimed) || Number(claimed) > limit)) throw new RangeError("Payload too large")
+    request.setTimeout(20000, () => request.destroy())
+    const chunks: Buffer[] = []
+    let total = 0
+    for await (const chunk of request) {
+      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+      total += bytes.length
+      if (total > limit) throw new RangeError("Payload too large")
+      chunks.push(bytes)
+    }
+    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown
+  }
+  return {
+    name: "pockethost-owned-node-projects-dev",
+    apply: "serve",
+    configureServer(server) {
+      // A separate opt-in is required even when static H2 is enabled.
+      const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
+        process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1"
+      const host = enabled ? new NodeProjectHost() : null
+      let pending: Promise<void> = Promise.resolve()
+      function serial<T>(fn: () => T): Promise<T> {
+        const action = pending.then(fn, fn)
+        pending = action.then(() => undefined, () => undefined)
+        return action
+      }
+      server.middlewares.use("/api/v1/node-projects", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        const origin = request.headers.origin
+        const remote = request.socket.remoteAddress
+        if (!hosts.has(request.headers.host ?? "") ||
+            (origin && !origins.has(origin)) ||
+            request.headers["sec-fetch-site"] === "cross-site" ||
+            (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")) {
+          response.statusCode = 403
+          response.end('{"error":"forbidden"}')
+          return
+        }
+        if (!host) {
+          response.statusCode = 404
+          response.end('{"error":"node-projects-disabled"}')
+          return
+        }
+        const route = request.url?.split("?")[0] ?? ""
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate))?$/.exec(route)
+        const id = match?.[1]
+        const op = match?.[2]
+        if (request.method === "GET") {
+          try {
+            const data = route === "/" ? { projects: host.list() } :
+              id && !op ? { project: host.inspect(id) } :
+              id && op === "releases" ? { releases: host.candidates(id) } : null
+            if (!data) response.statusCode = 404
+            else response.statusCode = 200
+            response.end(JSON.stringify(data ?? { error: "not-found" }))
+          } catch {
+            response.statusCode = 409
+            response.end('{"error":"node-project-state-unavailable"}')
+          }
+          return
+        }
+        const create = request.method === "POST" && route === "/"
+        const stage = request.method === "POST" && !!id && op === "stage"
+        const restore = request.method === "POST" && !!id && op === "restore-candidate"
+        if (!create && !stage && !restore) {
+          response.statusCode = 404
+          response.end('{"error":"not-found"}')
+          return
+        }
+        if (!origin || !origins.has(origin) ||
+            request.headers["x-pockethost-intent"] !== "owned-node-project") {
+          response.statusCode = 403
+          response.end('{"error":"mutation-not-authorized"}')
+          return
+        }
+        try {
+          const result = await serial(async () => {
+            if (restore) {
+              if (request.headers["transfer-encoding"] !== undefined ||
+                  ![undefined, "0"].includes(request.headers["content-length"])) {
+                throw new RangeError("Body not permitted on candidate restore")
+              }
+              return { project: host.restoreCandidate(id!) }
+            }
+            const input = await readJson(request, stage ? 340 * 1024 : 1024)
+            if (create) {
+              if (!input || typeof input !== "object" || Array.isArray(input) ||
+                  Object.keys(input).join(",") !== "name") throw new RangeError("Invalid project")
+              return { project: host.create((input as { name: unknown }).name) }
+            }
+            return host.stage(id!, input)
+          })
+          response.statusCode = create ? 201 : 200
+          response.end(JSON.stringify(result))
+        } catch (error) {
+          response.statusCode = error instanceof RangeError || error instanceof SyntaxError ? 400 : 409
+          response.end(JSON.stringify({ error: response.statusCode === 400 ?
+            "invalid-node-project-input" : "node-project-operation-refused" }))
+        }
+      })
+    },
+  }
+}
+
 function managedPhotoMapApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
@@ -1204,7 +1320,7 @@ function termuxAdminApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
     androidActionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",

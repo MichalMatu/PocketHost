@@ -24,6 +24,7 @@ export const navGroups = [
     label: "Hosting",
     items: [
       { title: "Websites", url: "/sites", icon: Globe2 },
+      { title: "Projects", url: "/projects", icon: FolderOpen },
       { title: "Deployments", url: "/deployments", icon: History },
     ],
   },
