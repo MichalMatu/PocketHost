@@ -5,10 +5,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 function source(version = '1.0.0') {
-  return { packageJson: { name: 'pocket-node-test', version, scripts: { start: 'node server.mjs' } },
-    packageLock: { name: 'pocket-node-test', version, lockfileVersion: 3,
-      packages: { '': { name: 'pocket-node-test', version } } },
-    serverSource: "import http from 'node:http';\nhttp.createServer((_,r)=>r.end('ok')).listen(0,'127.0.0.1');" };
+  return {
+    packageJson: { name: 'pocket-node-test', version, scripts: { start: 'node server.mjs' } },
+    packageLock: {
+      name: 'pocket-node-test',
+      version,
+      lockfileVersion: 3,
+      packages: { '': { name: 'pocket-node-test', version } },
+    },
+    serverSource:
+      "import http from 'node:http';\nhttp.createServer((_,r)=>r.end('ok')).listen(0,'127.0.0.1');",
+  };
 }
 function setup(t) {
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-node-'));
@@ -37,7 +44,10 @@ test('M3 rejects foreign id, malformed source and project limit or unknown relea
   const project = host.create('Safe node');
   assert.throws(() => host.inspect('../../external'), /ID/);
   assert.throws(() => host.stage(project.id, { ...source(), serverSource: '' }), /source/);
-  assert.throws(() => host.stage(project.id, { ...source(), packageJson: { name: 'x' } }), /version|start/);
+  assert.throws(
+    () => host.stage(project.id, { ...source(), packageJson: { name: 'x' } }),
+    /version|start/,
+  );
   assert.throws(() => host.restoreCandidate(project.id), /previous/);
 });
 test('M3 rejects symlink replacements inside private project roots', (t) => {

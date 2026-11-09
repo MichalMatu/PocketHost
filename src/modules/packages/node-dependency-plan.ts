@@ -110,7 +110,6 @@ export function planNodeDependencies(
   };
 }
 
-
 /** Installed versions are probe results, not permission to install or execute. */
 export interface NodeToolchainProbe {
   node: string | null;
@@ -119,7 +118,12 @@ export interface NodeToolchainProbe {
 export function reviewNodeToolchain(
   plan: NodeDependencyPlan,
   tools: NodeToolchainProbe,
-): { status: 'blocked' | 'review-required'; missingTools: string[]; conflicts: string[]; approved: false } {
+): {
+  status: 'blocked' | 'review-required';
+  missingTools: string[];
+  conflicts: string[];
+  approved: false;
+} {
   const missingTools: string[] = [];
   const conflicts: string[] = [];
   for (const name of ['node', 'npm'] as const) {
@@ -132,9 +136,17 @@ export function reviewNodeToolchain(
   }
   const nodeVersion = tools.node ? Number(tools.node.replace(/^v/, '').split('.')[0]) : null;
   if (nodeVersion !== null && nodeVersion < 22) conflicts.push('node-requires-22-or-newer');
-  if (plan.lockfileVersion === 3 && tools.npm && Number(tools.npm.replace(/^v/, '').split('.')[0]) < 7) {
+  if (
+    plan.lockfileVersion === 3 &&
+    tools.npm &&
+    Number(tools.npm.replace(/^v/, '').split('.')[0]) < 7
+  ) {
     conflicts.push('lockfile-requires-npm-7-or-newer');
   }
-  return { status: missingTools.length || conflicts.length ? 'blocked' : 'review-required',
-    missingTools, conflicts, approved: false };
+  return {
+    status: missingTools.length || conflicts.length ? 'blocked' : 'review-required',
+    missingTools,
+    conflicts,
+    approved: false,
+  };
 }
