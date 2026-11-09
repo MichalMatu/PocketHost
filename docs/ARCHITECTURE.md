@@ -1,7 +1,7 @@
 ---
 status: accepted
 owner: core
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-09
 purpose: Describe high level architecture and trust boundaries
 ---
 
@@ -24,6 +24,39 @@ Local browser (loopback or private LAN gateway)
 ```
 
 Termux remains an independently maintained application; PocketHost is an additional project launched from CLI. A native Android shell can later reuse the control plane.
+
+## Target platform composition — approved 2026-11-09
+
+The existing layered model above describes the initial source.
+The accepted target adds three separately owned concepts:
+
+```text
+PocketHost UI
+  |-- Modules: Node.js / Python / SSH / Cloudflare / Database later
+  |-- Hosting: explicit ProjectRegistry with components[]
+  |-- Managed services: ServiceRegistry with one verified owner each
+  |
+  +-- Shared typed contracts: dependencies, secrets references,
+      source/build/release, health policy, backup and diagnostics
+      |
+      Host adapter -> existing Termux runit, tools and owned data
+```
+
+`ModuleRegistry` advertises runtime/infrastructure capabilities.
+The Hosting orchestrator binds these capabilities to the projects
+created inside PocketHost; it never discovers external Termux
+processes as Hosting projects. The shared `SupervisorAdapter`
+uses the installed runit rather than a new process manager.
+Health-triggered recovery is a separate bounded policy and never
+silently overrides a manual disable. `SecretRef` and scoped backup
+contracts precede migrations of stateful services.
+
+The early M3 vertical slice is a disposable Node project using
+existing H2 static ownership, staging and release principles.
+Full multi-component workflows and public routing follow after
+that works. IleStoi and Local Agent remain external until their
+own approved cutover; Local Agent is last. See [roadmap](ROADMAP.md)
+and [target IA](TARGET_INFORMATION_ARCHITECTURE.md).
 
 ## Android-native power-user expansion (2026-11-08)
 
