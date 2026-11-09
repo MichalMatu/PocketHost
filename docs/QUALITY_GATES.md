@@ -62,6 +62,26 @@ A normal owner-approved restart of **only** the verified PocketHost DEV
 panel is not a G3 customer production release. Protect other processes
 and data and accurately label what has or has not been tested.
 
+## Upstream reuse and license gate — planned, not yet executed
+
+Before adding an external dependency or copying code, document the
+candidate in the [upstream reuse matrix](UPSTREAM_REUSE_STRATEGY.md):
+repository/tag or actual Termux package version, SPDX/license and
+notice obligations, why existing PocketHost/H2 or owner-project code
+does not already cover the feature, and the smallest selected adapter.
+Sources with no verified license are **inspiration only**. GPL
+Termux CLI packages must not be silently copied into the codebase;
+permissive sources still need attribution and compatible terms.
+
+For a new host-facing adapter, add a scoped native test for argument
+and path handling, owner identity, interrupted operation, service
+disable state, port collision, secret redaction and rollback as
+applicable. Validate real command flags and ABI on the Samsung
+Termux Local Agent before labelling a dependency supported.
+Official upstream docs are not physical acceptance evidence.
+Do not make every cosmetic UI edit run this gate; it applies to
+new external code, host execution and meaningful release changes.
+
 ## G0 — foundation and safety
 
 `npm run check:foundation` checks the manifest, document links/frontmatter,
