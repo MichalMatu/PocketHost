@@ -4,6 +4,7 @@ import android.os.RemoteException;
 import android.system.Os;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.Set;
 import java.util.ArrayList;
@@ -321,8 +322,8 @@ public final class PowerUserService extends IPowerUserService.Stub {
                 case "shell":
                     if (target == null || target.isBlank() || target.length() > 240)
                         throw new IllegalArgumentException("Shell command length exceeded");
-                    output = execute(16384, "/system/bin/sh", "-c", target);
-                    break;
+                    return executeShellStructured(uid, target);
+
                 default:
                     throw new IllegalArgumentException("Unsupported operation");
             }
@@ -418,6 +419,55 @@ public final class PowerUserService extends IPowerUserService.Stub {
             }
         }
         return result;
+    }
+
+
+    /**
+     * Shell 2.0: unlike the legacy sampler, keep stdout/stderr separate and
+     * return actual exit code and elapsed duration even when exit is nonzero.
+     * This is one explicitly requested command, never a background shell.
+     */
+    private static String executeShellStructured(int uid, String command) throws Exception {
+        long started = android.os.SystemClock.elapsedRealtime();
+        Process process = new ProcessBuilder("/system/bin/sh", "-c", command).start();
+        ExecutorService readers = Executors.newFixedThreadPool(2);
+        try {
+            Future<String> stdout = readers.submit(() -> readStreamBounded(process.getInputStream(), 8192));
+            Future<String> stderr = readers.submit(() -> readStreamBounded(process.getErrorStream(), 8192));
+            if (!process.waitFor(8, TimeUnit.SECONDS)) {
+                process.destroyForcibly();
+                throw new IllegalStateException("Shell command timed out");
+            }
+            String out = stdout.get(2, TimeUnit.SECONDS);
+            String err = stderr.get(2, TimeUnit.SECONDS);
+            int exitCode = process.exitValue();
+            JSONObject result = new JSONObject();
+            result.put("action", "shell");
+            result.put("target", command);
+            result.put("mode", uid == 0 ? "root" : "adb");
+            result.put("success", exitCode == 0);
+            result.put("stdout", out);
+            result.put("stderr", err);
+            result.put("output", (out + err).substring(0, Math.min(4096, out.length() + err.length())));
+            result.put("exitCode", exitCode);
+            result.put("durationMs", Math.max(0, android.os.SystemClock.elapsedRealtime() - started));
+            return result.toString();
+        } finally {
+            process.destroyForcibly();
+            readers.shutdownNow();
+        }
+    }
+
+    private static String readStreamBounded(InputStream stream, int limit) throws Exception {
+        StringBuilder result = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(stream))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                result.append(line).append('\n');
+                if (result.length() > limit) result.delete(0, result.length() - limit);
+            }
+        }
+        return result.toString();
     }
 
     private static String execute(int limit, String... argv) throws Exception {

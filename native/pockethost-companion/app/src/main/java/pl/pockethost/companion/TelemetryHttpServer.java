@@ -146,7 +146,9 @@ public final class TelemetryHttpServer {
                                                 inputBody.getString("target"),
                                                 inputBody.getString("value"));
                                     }
-                                    status = 200;
+                                    status = (runRoute &&
+                                            !new org.json.JSONObject(body).optBoolean("success", false))
+                                            ? 502 : 200;
                                 } catch (IllegalArgumentException error) {
                                     body = "{\"error\":\"invalid-command\"}";
                                     status = 400;
