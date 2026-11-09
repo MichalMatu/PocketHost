@@ -1,4 +1,4 @@
 export declare function validateRemoteShellPayload(
-  action: 'submit' | 'poll',
+  action: 'run',
   body: unknown,
-): { code: string; command: string } | { code: string; id: string };
+): { command: string };
