@@ -42,7 +42,13 @@ PocketHost uses the **existing Android Termux installation and its installed Loc
 
 Do not run PocketHost code, package installation, lint, TypeScript checks or test suites on Mac, ChatGPT Linux sandbox, Codex, ChatGPT Work or GitHub Actions. Prior sandbox results are historical foundation evidence and do not establish Termux acceptance. Documentation-only repository edits can be published without execution, but remain marked **not tested on Termux** until a real terminal result is obtained.
 
-**No PocketHost autostart during DEV**: no boot receivers, runit registration, persistent application service, scheduled launch or automatic server startup. PocketHost is launched and stopped explicitly from the Termux command line. This rule does **not** authorize changes to the separately existing Local Agent service.
+**Owner exception (2026-11-09):** the single PocketHost DEV admin panel may
+be registered under the **existing** Termux runit manager, with a bounded
+panel-only HTTP watchdog and no second Termux:Boot hook. The no-autostart
+rule continues to apply to hosted applications, external services and
+other PocketHost instances. The Local Agent service retains its separate
+lifecycle and must not be modified by this change. See
+[ADR-0014](adr/0014-termux-panel-supervision.md).
 
 ## Existing Local Agent capability
 
