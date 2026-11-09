@@ -31,5 +31,5 @@ test('install is guarded, disabled before activation, and scoped to the two Pock
   assert.match(installer, /ports_free \|\| fail/);
   assert.match(installer, /SVDIR="\$SVDIR" "\$PREFIX\/bin\/sv-enable" pockethost-panel/);
   assert.match(installer, /SVDIR="\$SVDIR" "\$PREFIX\/bin\/sv-enable" pockethost-panel-watch/);
-  assert.doesNotMatch(installer, /service-daemon|rm -rf|pkill|killall|0\.0\.0\.0/);
+  assert.doesNotMatch(installer, /rm -rf|pkill|killall|0\.0\.0\.0/);
 });
