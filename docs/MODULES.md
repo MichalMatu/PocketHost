@@ -33,8 +33,7 @@ The 2026-11-09 [roadmap](ROADMAP.md) distinguishes three layers:
   dependencies, network, secrets and releases.
 
 **Upstream-first boundary:** assess official Termux CLI utilities
-and preexisting owner code via the [reuse matrix](
-UPSTREAM_REUSE_STRATEGY.md). A thin host adapter is preferable
+and preexisting owner code via the [reuse matrix](UPSTREAM_REUSE_STRATEGY.md). A thin host adapter is preferable
 to importing another process supervisor, cloudflared controller or
 backup implementation. Track pinned versions and licensing.
 

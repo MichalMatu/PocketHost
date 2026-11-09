@@ -31,14 +31,16 @@ export function parseCompanionStatus(raw) {
       throw new Error('invalid-companion-metric');
     }
   }
-  if (value.uid !== undefined &&
-      (value.uid !== null && value.uid !== 0 && value.uid !== 2000)) {
+  if (value.uid !== undefined && value.uid !== null && value.uid !== 0 && value.uid !== 2000) {
     throw new Error('invalid-companion-uid');
   }
   if ((value.connected || value.authorized) && value.mode === 'none') {
     throw new Error('invalid-companion-privilege');
   }
-  if (!value.authorized && (value.cpuPercent !== null || value.visibleProcesses !== null || value.uid != null)) {
+  if (
+    !value.authorized &&
+    (value.cpuPercent !== null || value.visibleProcesses !== null || value.uid != null)
+  ) {
     throw new Error('unauthorized-companion-telemetry');
   }
   const capabilities = value.capabilities.map((cap) => {

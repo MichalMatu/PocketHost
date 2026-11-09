@@ -54,7 +54,15 @@ test('full 32-route upstream admin shell remains available beside seventeen Pock
   assert.ok(allPaths.includes('/observability'));
   assert.ok(allPaths.includes('/shizuku'));
   assert.ok(allPaths.includes('/termux'));
-  for (const route of ['/system', '/packages', '/files', '/services', '/backups', '/terminal', '/agents']) {
+  for (const route of [
+    '/system',
+    '/packages',
+    '/files',
+    '/services',
+    '/backups',
+    '/terminal',
+    '/agents',
+  ]) {
     assert.ok(allPaths.includes(route), 'missing first-class Termux module: ' + route);
   }
   assert.ok(allPaths.includes('/settings/network'));

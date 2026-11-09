@@ -63,7 +63,7 @@ is needed. This first DEV version does not claim always-on telemetry.
 
 On Android 16, the Termux app UID cannot execute `/system/bin/content`
 because `app_process` is restricted. The supported initial transport is
-`http://127.0.0.1:18791/status`, bound *only* to Android loopback by
+`http://127.0.0.1:18791/status`, bound _only_ to Android loopback by
 PocketHost Companion, read-only, short-lived, and without any actions.
 Termux can retrieve it directly; the existing browser panel proxies only
 typed telemetry. The provider remains for Android ADB-level diagnosis.

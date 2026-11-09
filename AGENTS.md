@@ -38,7 +38,7 @@ path; a browser alone does not receive Shizuku Binder privileges. Begin
 with the Shizuku UI hub and typed capability contracts. See
 [ADR-0013](docs/adr/0013-shizuku-power-user.md) and
 [Shizuku module](docs/modules/shizuku.md). This decision supersedes
-earlier *product-scope* assumptions that the project must stay read-only
+earlier _product-scope_ assumptions that the project must stay read-only
 forever, not Android permissions or tool execution boundaries.
 
 ## Power-user UX — no artificial blockers (owner decision 2026-11-09)

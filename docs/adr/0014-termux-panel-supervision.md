@@ -19,7 +19,7 @@ Reuse the existing Termux:Boot `00-services` and its ordinary
 
 - `pockethost-panel`: directly supervised Vite Node process, fixed
   `127.0.0.1:8787`, restart on process exit.
-- `pockethost-panel-watch`: probe the *local panel HTTP* every 12 seconds,
+- `pockethost-panel-watch`: probe the _local panel HTTP_ every 12 seconds,
   with a 50-second initial grace period. Only after three consecutive
   failures and at least a 120-second cooldown may it request `sv term`
   on that exact registered PocketHost panel service.

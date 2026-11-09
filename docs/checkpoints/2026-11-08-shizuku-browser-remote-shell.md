@@ -14,7 +14,6 @@ The approved and physically tested live implementation is documented in
 The pairing code, phone-approval inbox, and submit/poll endpoints were
 removed from current source.
 
-
 ## Owner decision
 
 The owner wants to submit and read Android Shizuku shell commands from a

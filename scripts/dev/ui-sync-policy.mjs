@@ -15,14 +15,19 @@ export function classifyUiChanges(paths) {
 
 export function isPocketHostOrigin(origin) {
   if (typeof origin !== 'string') return false;
-  return /^(?:https:\/\/(?:[^@\s/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)MichalMatu\/PocketHost(?:\.git)?\/?$/.test(origin.trim());
+  return /^(?:https:\/\/(?:[^@\s/]+@)?github\.com\/|git@github\.com:|ssh:\/\/git@github\.com\/)MichalMatu\/PocketHost(?:\.git)?\/?$/.test(
+    origin.trim(),
+  );
 }
 
 export function procStartTicks(stat) {
   if (typeof stat !== 'string') return null;
   const end = stat.lastIndexOf(')');
   if (end < 0 || stat[end + 1] !== ' ') return null;
-  const fields = stat.slice(end + 2).trim().split(/\s+/);
+  const fields = stat
+    .slice(end + 2)
+    .trim()
+    .split(/\s+/);
   // Linux /proc/<pid>/stat field 22; offset 19 after comm.
   return /^\d+$/.test(fields[19] ?? '') ? fields[19] : null;
 }

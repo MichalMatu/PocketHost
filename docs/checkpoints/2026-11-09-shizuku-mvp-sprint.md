@@ -52,14 +52,14 @@ is a release SHA.
 - [x] Fresh source HEAD, relevant AGENTS and existing physical evidence reviewed
 - [x] P0/P1 source implementation and Node/Vitest regression coverage added
 - [x] Targeted Samsung first-pass backend contract: **16/16 PASS** at
-  `0b8aaa2`; original UI batch: **12/13 PASS**; failed assertion checked exact
-  string equality instead of substring (test repair in later source)
+      `0b8aaa2`; original UI batch: **12/13 PASS**; failed assertion checked exact
+      string equality instead of substring (test repair in later source)
 - [ ] Exact current `main` Samsung Node and UI suite, lint, TypeScript and Vite build
 - [ ] Native Companion compile from exact current source, signed APK verification
 - [ ] Guarded install of only the matching Companion on the exact Samsung
 - [ ] Guarded PocketHost-only DEV refresh and LAN positive/negative API tests
 - [ ] Harmless `id`, `whoami`, shell nonzero exit/stdout/stderr/timing
-- [ ] Application inventory, package details and safe *refusal* tests on nonexistent target
+- [ ] Application inventory, package details and safe _refusal_ tests on nonexistent target
 - [ ] Verify CPU/history/PID/read-only service, permission and setting snapshots
 - [ ] Optional actual mutation matrix only on an explicitly disposable test target;
       do not act on unrelated real apps, services, processes or user settings

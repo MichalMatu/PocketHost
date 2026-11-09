@@ -13,8 +13,7 @@ purpose: Delivery priorities for modular PocketHost and historical acceptance pl
 existing PocketHost/owner code with official Termux tools, then
 external maintained repositories. Prefer a typed adapter to
 `runit`, `cloudflared`, Restic, `proot-distro` and native package
-managers over copying engines. The [upstream reuse matrix](
-UPSTREAM_REUSE_STRATEGY.md) records licenses, exact interfaces,
+managers over copying engines. The [upstream reuse matrix](UPSTREAM_REUSE_STRATEGY.md) records licenses, exact interfaces,
 unsupported integrations and source-provenance requirements.
 The first M3 Node Hosting MVP remains the priority. No large
 open-source panel is imported wholesale.
@@ -67,7 +66,6 @@ milestone closeout or before high-impact host changes. This active
 [DEV workflow](DEV_ITERATION.md) supersedes older per-slice
 full-acceptance language in historical plans; it does not waive
 foreign-service protection or trusted-LAN restrictions.
-
 
 The [roadmap](ROADMAP.md) is the canonical milestone sequence.
 This plan defines how to deliver the next vertical slices.

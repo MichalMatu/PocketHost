@@ -4,22 +4,36 @@ import { validateAndroidActionPayload } from '../../src/modules/host/android-act
 
 test('typed Android actions preserve real owner target and value', () => {
   const approved = [
-    ['launch', 'com.example.app', ''], ['force-stop', 'com.example.app', ''],
-    ['enable', 'com.example.app', ''], ['disable', 'com.example.app', ''],
-    ['uninstall', 'com.example.app', ''], ['grant', 'com.example.app', 'android.permission.CAMERA'],
+    ['launch', 'com.example.app', ''],
+    ['force-stop', 'com.example.app', ''],
+    ['enable', 'com.example.app', ''],
+    ['disable', 'com.example.app', ''],
+    ['uninstall', 'com.example.app', ''],
+    ['grant', 'com.example.app', 'android.permission.CAMERA'],
     ['revoke', 'com.example.app', 'android.permission.CAMERA'],
-    ['process-stop', '1', ''], ['process-stop', '99999', ''],
-    ['service-start', 'com.example/.Worker', ''], ['service-stop', 'com.example/.Worker', ''],
-    ['brightness', '', '0'], ['brightness', '', '255'],
-    ['timeout', '', '15000'], ['timeout', '', '3600000'],
+    ['process-stop', '1', ''],
+    ['process-stop', '99999', ''],
+    ['service-start', 'com.example/.Worker', ''],
+    ['service-stop', 'com.example/.Worker', ''],
+    ['brightness', '', '0'],
+    ['brightness', '', '255'],
+    ['timeout', '', '15000'],
+    ['timeout', '', '3600000'],
   ];
   for (const [action, target, value] of approved) {
-    assert.deepEqual(validateAndroidActionPayload({ action, target, value }), { action, target, value });
+    assert.deepEqual(validateAndroidActionPayload({ action, target, value }), {
+      action,
+      target,
+      value,
+    });
   }
 });
 test('typed Android bridge rejects malformed or command-injected envelopes, not shell categories', () => {
   const invalid = [
-    null, [], {}, { action: 'shell', target: 'id', value: '' },
+    null,
+    [],
+    {},
+    { action: 'shell', target: 'id', value: '' },
     { action: 'launch', target: 'com.example.app', value: '', extra: true },
     { action: 'launch', target: 'com.example.app;echo hi', value: '' },
     { action: 'launch', target: 'com.example.app', value: 'other' },

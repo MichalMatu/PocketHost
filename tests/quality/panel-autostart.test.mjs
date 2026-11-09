@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const service = readFileSync(new URL('../../ops/termux/panel-service.sh', import.meta.url), 'utf8');
-const installer = readFileSync(new URL('../../ops/termux/install-panel-services.sh', import.meta.url), 'utf8');
+const installer = readFileSync(
+  new URL('../../ops/termux/install-panel-services.sh', import.meta.url),
+  'utf8',
+);
 
 test('panel runit service owns the loopback DEV panel without a second Node launcher', () => {
   assert.match(service, /exec "\$PREFIX\/bin\/node"/);

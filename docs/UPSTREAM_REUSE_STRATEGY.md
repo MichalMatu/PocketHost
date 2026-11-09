@@ -32,16 +32,16 @@ without a focused Samsung Termux compatibility and ownership gate.
 
 ## A — Reuse installed upstream utilities through official interfaces
 
-| Upstream and license | What PocketHost should reuse | Implementation boundary / acceptance |
-| --- | --- | --- |
-| [termux/termux-services](https://github.com/termux/termux-services) — GPL-3.0 | Installed `runit`, `service-daemon`, `sv status/up/down`, `sv-enable`/`sv-disable`, `down` marker, standard service logs | Build **one verified-owner** `SupervisorAdapter`; never embed/copy upstream scripts or add a parallel watchdog daemon. Existing external runit services remain protected |
-| [termux/termux-boot](https://github.com/termux/termux-boot) — GPLv3 per README | Existing `~/.termux/boot` entrypoint and documented boot order | Integrate module autostart into one known launch strategy; no competing boot handlers; reboot and OEM battery/Doze validation required |
-| [termux/termux-packages](https://github.com/termux/termux-packages) — mixed/no single SPDX declaration | Official Termux package recipes and installed `pkg`/`apt`/`dpkg-query` utilities | Use **runtime installed-version probes** and package plans. Do not copy package recipes wholesale, use Debian/Ubuntu assumptions, or run global upgrades as a side effect of deploy |
-| [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared) — Apache-2.0 | Existing binary, locally managed tunnel config; `tunnel ingress validate` and `tunnel ingress rule` | Cloudflare module edits **staged config only after explicit action**; preserve the current externally owned tunnel and never start a duplicate. Hosting only requests route bindings |
-| [restic/restic](https://github.com/restic/restic) — BSD-2-Clause | Existing encrypted backup/snapshot/check/restore commands | Reuse a single typed Restic adapter with exact exit-status checks, credentials outside logs, retention locks, and a disposable restore acceptance. Do not invent a second archive-based backup product |
-| [termux/proot-distro](https://github.com/termux/proot-distro) — GPL-3.0 | Installed CLI lifecycle, `run` and container backup/restore where actually supported | Optional Python/PRoot adapter; **not** a Docker daemon or secure kernel/container boundary. Check Termux ABI, process descendants, mounts, data and actual target support |
-| [tsl0922/ttyd](https://github.com/tsl0922/ttyd) — MIT | Optional packaged browser terminal / WebSocket front end | Reuse binary only **if it works on the actual Samsung**. PocketHost H3.4 recorded native ttyd SIGSEGV in prior tests: leave this path BLOCKED until a new minimal one-session physical check. Never expose terminal publicly |
-| [termux/termux-api](https://github.com/termux/termux-api) — GPLv3 per README | Installed Android command helpers for capabilities actually available to Termux | Optional low-privilege companion only; do not duplicate native Shizuku privilege transport or presume API permissions, app signature or root |
+| Upstream and license                                                                                   | What PocketHost should reuse                                                                                             | Implementation boundary / acceptance                                                                                                                                                                                         |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [termux/termux-services](https://github.com/termux/termux-services) — GPL-3.0                          | Installed `runit`, `service-daemon`, `sv status/up/down`, `sv-enable`/`sv-disable`, `down` marker, standard service logs | Build **one verified-owner** `SupervisorAdapter`; never embed/copy upstream scripts or add a parallel watchdog daemon. Existing external runit services remain protected                                                     |
+| [termux/termux-boot](https://github.com/termux/termux-boot) — GPLv3 per README                         | Existing `~/.termux/boot` entrypoint and documented boot order                                                           | Integrate module autostart into one known launch strategy; no competing boot handlers; reboot and OEM battery/Doze validation required                                                                                       |
+| [termux/termux-packages](https://github.com/termux/termux-packages) — mixed/no single SPDX declaration | Official Termux package recipes and installed `pkg`/`apt`/`dpkg-query` utilities                                         | Use **runtime installed-version probes** and package plans. Do not copy package recipes wholesale, use Debian/Ubuntu assumptions, or run global upgrades as a side effect of deploy                                          |
+| [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared) — Apache-2.0                       | Existing binary, locally managed tunnel config; `tunnel ingress validate` and `tunnel ingress rule`                      | Cloudflare module edits **staged config only after explicit action**; preserve the current externally owned tunnel and never start a duplicate. Hosting only requests route bindings                                         |
+| [restic/restic](https://github.com/restic/restic) — BSD-2-Clause                                       | Existing encrypted backup/snapshot/check/restore commands                                                                | Reuse a single typed Restic adapter with exact exit-status checks, credentials outside logs, retention locks, and a disposable restore acceptance. Do not invent a second archive-based backup product                       |
+| [termux/proot-distro](https://github.com/termux/proot-distro) — GPL-3.0                                | Installed CLI lifecycle, `run` and container backup/restore where actually supported                                     | Optional Python/PRoot adapter; **not** a Docker daemon or secure kernel/container boundary. Check Termux ABI, process descendants, mounts, data and actual target support                                                    |
+| [tsl0922/ttyd](https://github.com/tsl0922/ttyd) — MIT                                                  | Optional packaged browser terminal / WebSocket front end                                                                 | Reuse binary only **if it works on the actual Samsung**. PocketHost H3.4 recorded native ttyd SIGSEGV in prior tests: leave this path BLOCKED until a new minimal one-session physical check. Never expose terminal publicly |
+| [termux/termux-api](https://github.com/termux/termux-api) — GPLv3 per README                           | Installed Android command helpers for capabilities actually available to Termux                                          | Optional low-privilege companion only; do not duplicate native Shizuku privilege transport or presume API permissions, app signature or root                                                                                 |
 
 **Licensing stance:** GPL external utilities installed and run via
 their provided CLI are distinct from copying GPL source into
@@ -54,16 +54,16 @@ a root `LICENSE` (the imported admin has its own upstream notice).
 
 ## B — Take narrow design patterns; do not transplant whole platforms
 
-| Upstream and license | Reusable design | Why no direct wholesale copy |
-| --- | --- | --- |
-| [piku/piku](https://github.com/piku/piku) — MIT | Minimal Heroku-like create/deploy, `Procfile` process roles, per-app environment/dependencies, release steps, low-resource simplicity | Python/Linux/nginx/uWSGI-oriented; implement only compatible semantics in PocketHost JS/TS, backed by Termux runit |
+| Upstream and license                                                                            | Reusable design                                                                                                                                  | Why no direct wholesale copy                                                                                                                                                                                                                 |
+| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [piku/piku](https://github.com/piku/piku) — MIT                                                 | Minimal Heroku-like create/deploy, `Procfile` process roles, per-app environment/dependencies, release steps, low-resource simplicity            | Python/Linux/nginx/uWSGI-oriented; implement only compatible semantics in PocketHost JS/TS, backed by Termux runit                                                                                                                           |
 | [himalayladha/termux-hosting-panel](https://github.com/himalayladha/termux-hosting-panel) — MIT | Real Termux-specific Node/Python/static project templates, separated control/data planes, Cloudflare configuration UX and package/status screens | Relatively new/small project; code inspection found direct shell-command string construction in backup handling and string-prefix filesystem checks. **Do not copy controllers or security checks** without independent test and remediation |
-| [inchei/tdash](https://github.com/inchei/tdash) — GPL-3.0 | Compact runit health/status display and truthful Android permission/missing-counter fallback; bounded refresh approach | Source copying would trigger GPL analysis; very small/new project. Learn UI/probe patterns only; preserve PocketHost's Shizuku and host adapter separation |
-| [coollabsio/coolify](https://github.com/coollabsio/coolify) — Apache-2.0 | Project/source/release UX, environment variables, backup status, reusable service templates and deployment events | Requires Docker infrastructure on supported Linux; **not** a Termux installation or backend dependency. Use only a deliberately small subset of UX/process concepts |
-| [dokku/dokku](https://github.com/dokku/dokku) — MIT | Minimal deployment lifecycle and plug-in concepts | Docker-powered Linux PaaS, inappropriate as a new Android/Termux process supervisor |
-| [elkom14a/terwo](https://github.com/elkom14a/terwo) — license not declared in GitHub metadata | Simple local-web-panel workflow for Node/PHP/static/Go server startup | Treat as **ideas only**: absent verified redistribution permission, do not copy source |
+| [inchei/tdash](https://github.com/inchei/tdash) — GPL-3.0                                       | Compact runit health/status display and truthful Android permission/missing-counter fallback; bounded refresh approach                           | Source copying would trigger GPL analysis; very small/new project. Learn UI/probe patterns only; preserve PocketHost's Shizuku and host adapter separation                                                                                   |
+| [coollabsio/coolify](https://github.com/coollabsio/coolify) — Apache-2.0                        | Project/source/release UX, environment variables, backup status, reusable service templates and deployment events                                | Requires Docker infrastructure on supported Linux; **not** a Termux installation or backend dependency. Use only a deliberately small subset of UX/process concepts                                                                          |
+| [dokku/dokku](https://github.com/dokku/dokku) — MIT                                             | Minimal deployment lifecycle and plug-in concepts                                                                                                | Docker-powered Linux PaaS, inappropriate as a new Android/Termux process supervisor                                                                                                                                                          |
+| [elkom14a/terwo](https://github.com/elkom14a/terwo) — license not declared in GitHub metadata   | Simple local-web-panel workflow for Node/PHP/static/Go server startup                                                                            | Treat as **ideas only**: absent verified redistribution permission, do not copy source                                                                                                                                                       |
 
-These projects are *references*, not accepted upstream dependencies.
+These projects are _references_, not accepted upstream dependencies.
 Prefer a maintained official Termux package or previously verified
 PocketHost implementation over a small unproven server dashboard.
 Treat copy-paste from tutorials and source snippets as code import
@@ -71,14 +71,14 @@ subject to the same license, sandboxing and security checks.
 
 ## C — Existing PocketHost and owner projects come first
 
-| Capability | Reuse already available | Avoid |
-| --- | --- | --- |
-| Static apps | PocketHost H2 `SiteFleetHost`, file validation, immutable releases, rollback and owner markers | Rewriting static hosting to match a third-party dashboard |
-| Process identity | PocketHost typed managed runtime registry and exact-owner PID/start-ticks/argv guards | Approving a process based on port/name or untrusted service directory |
-| Termux package status | Current `dpkg-query`/`apt-cache` inventory and existing H3 administration | A second package manager or unreviewed global `pkg upgrade` |
-| Admin panel recovery | PocketHost-owned panel runit service/watch policy | Changing external `sshd` or `cloudflared` as collateral damage |
-| IleStoi | Existing `wreckscanner.run`, healthwatch origin/public/internet decision logic, lock-aware Restic backup | Blind public-error restarts, replacement of production data, competing SQLite writers |
-| Local Agent | Immutable bundle, durable claims and UNKNOWN/no-replay, separate private runit/boot and emergency stop | Duplicate Git consumer or an Agent job that terminates its own executor |
+| Capability            | Reuse already available                                                                                  | Avoid                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Static apps           | PocketHost H2 `SiteFleetHost`, file validation, immutable releases, rollback and owner markers           | Rewriting static hosting to match a third-party dashboard                             |
+| Process identity      | PocketHost typed managed runtime registry and exact-owner PID/start-ticks/argv guards                    | Approving a process based on port/name or untrusted service directory                 |
+| Termux package status | Current `dpkg-query`/`apt-cache` inventory and existing H3 administration                                | A second package manager or unreviewed global `pkg upgrade`                           |
+| Admin panel recovery  | PocketHost-owned panel runit service/watch policy                                                        | Changing external `sshd` or `cloudflared` as collateral damage                        |
+| IleStoi               | Existing `wreckscanner.run`, healthwatch origin/public/internet decision logic, lock-aware Restic backup | Blind public-error restarts, replacement of production data, competing SQLite writers |
+| Local Agent           | Immutable bundle, durable claims and UNKNOWN/no-replay, separate private runit/boot and emergency stop   | Duplicate Git consumer or an Agent job that terminates its own executor               |
 
 **Most reusable code is already in these three owner repositories.**
 M0 must inspect them and map their tested behavior into PocketHost
@@ -88,8 +88,8 @@ their currently running processes.
 ## Proposed minimal vertical slices / upstream-first work items
 
 1. **R0 (M0):** make an inventory table of every planned feature:
-   *existing PocketHost implementation* -> *existing owner project*
-   -> *official Termux/third-party CLI* -> *new PocketHost glue*.
+   _existing PocketHost implementation_ -> _existing owner project_
+   -> _official Termux/third-party CLI_ -> _new PocketHost glue_.
    Record upstream repository, exact revision/package version,
    SPDX/license, whether code or executable is reused, security
    boundary, native availability, maintenance check and tests.
@@ -121,6 +121,7 @@ their currently running processes.
 ## Adoption checklist and stop conditions
 
 Before any imported source or CLI integration:
+
 - Pin an **exact tag/commit or verified installed package version**;
   note license/NOTICE obligations and obtain compatibility review.
   For a repo with **no confirmed license**, do not copy its code.

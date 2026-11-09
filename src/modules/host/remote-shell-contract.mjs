@@ -6,11 +6,14 @@ export function validateRemoteShellPayload(action, body) {
   if (action !== 'run' || !body || typeof body !== 'object' || Array.isArray(body)) {
     throw new Error('invalid-remote-shell-request');
   }
-  if (Object.keys(body).length !== 1 ||
-      !Object.prototype.hasOwnProperty.call(body, 'command') ||
-      typeof body.command !== 'string' ||
-      !body.command.trim() || body.command.length > 240 ||
-      body.command.includes('\0')) {
+  if (
+    Object.keys(body).length !== 1 ||
+    !Object.prototype.hasOwnProperty.call(body, 'command') ||
+    typeof body.command !== 'string' ||
+    !body.command.trim() ||
+    body.command.length > 240 ||
+    body.command.includes('\0')
+  ) {
     throw new Error('invalid-shell-command');
   }
   return { command: body.command };

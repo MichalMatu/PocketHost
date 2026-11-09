@@ -14,19 +14,25 @@ const watch = args.includes('--watch');
 const dryRun = args.includes('--dry-run');
 const configuredInterval = args.find((arg) => arg.startsWith('--interval-ms='));
 const ms = configuredInterval ? Number(configuredInterval.split('=')[1]) : 8000;
-if (args.some((arg) => !['--watch', '--once', '--dry-run'].includes(arg) &&
-  !arg.startsWith('--interval-ms='))) {
+if (
+  args.some(
+    (arg) => !['--watch', '--once', '--dry-run'].includes(arg) && !arg.startsWith('--interval-ms='),
+  )
+) {
   throw new Error('Only --once, --watch, --dry-run, --interval-ms are supported');
 }
 if (!Number.isSafeInteger(ms) || ms < 5000 || ms > 120000) {
   throw new Error('Poll interval must be 5000..120000 ms');
 }
 if (args.includes('--once') && watch) throw new Error('Choose --watch or --once');
-const ownerFile = process.env.POCKETHOST_DEV_PANEL_RECORD ||
+const ownerFile =
+  process.env.POCKETHOST_DEV_PANEL_RECORD ||
   path.join(path.dirname(root), 'PocketHost-P3-Preview-20261106.json');
 // A live DEV checkout can be a Git worktree: its .git is a pointer file.
 const gitDirInfo = spawnSync('git', ['rev-parse', '--absolute-git-dir'], {
-  cwd: root, encoding: 'utf8', timeout: 10000,
+  cwd: root,
+  encoding: 'utf8',
+  timeout: 10000,
 });
 if (gitDirInfo.error || gitDirInfo.status !== 0 || !gitDirInfo.stdout.trim()) {
   throw new Error('Require a verified PocketHost Git checkout');
@@ -41,16 +47,31 @@ fs.writeSync(lock, String(process.pid) + '\n');
 let stopped = false;
 
 function cleanExit() {
-  try { fs.closeSync(lock); } catch { /* Best-effort cleanup on exit. */ }
-  try { fs.unlinkSync(lockPath); } catch { /* The lock may already be gone. */ }
+  try {
+    fs.closeSync(lock);
+  } catch {
+    /* Best-effort cleanup on exit. */
+  }
+  try {
+    fs.unlinkSync(lockPath);
+  } catch {
+    /* The lock may already be gone. */
+  }
 }
 process.once('exit', cleanExit);
-process.once('SIGTERM', () => { stopped = true; });
-process.once('SIGINT', () => { stopped = true; });
+process.once('SIGTERM', () => {
+  stopped = true;
+});
+process.once('SIGINT', () => {
+  stopped = true;
+});
 
 function git(...argv) {
   const result = spawnSync('git', argv, {
-    cwd: root, encoding: 'utf8', timeout: 50000, maxBuffer: 1024 * 1024,
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 50000,
+    maxBuffer: 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
   if (result.error || result.status !== 0) {
@@ -62,14 +83,21 @@ function git(...argv) {
 function assertOwnedPanel() {
   if (fs.lstatSync(ownerFile).isSymbolicLink()) throw new Error('Owner record is linked');
   const owner = JSON.parse(fs.readFileSync(ownerFile, 'utf8'));
-  if (owner.cwd !== path.join(root, 'apps/admin') || owner.port !== 8787 ||
-    !Number.isSafeInteger(owner.pid) || owner.pid <= 1 || typeof owner.startTicks !== 'string') {
+  if (
+    owner.cwd !== path.join(root, 'apps/admin') ||
+    owner.port !== 8787 ||
+    !Number.isSafeInteger(owner.pid) ||
+    owner.pid <= 1 ||
+    typeof owner.startTicks !== 'string'
+  ) {
     throw new Error('PocketHost panel owner record mismatch');
   }
   const proc = '/proc/' + owner.pid;
   const stat = fs.readFileSync(proc + '/stat', 'utf8');
-  if (procStartTicks(stat) !== owner.startTicks ||
-    fs.realpathSync(proc + '/cwd') !== path.join(root, 'apps/admin')) {
+  if (
+    procStartTicks(stat) !== owner.startTicks ||
+    fs.realpathSync(proc + '/cwd') !== path.join(root, 'apps/admin')
+  ) {
     throw new Error('PocketHost panel process identity changed');
   }
 }
@@ -89,7 +117,9 @@ function sync() {
   if (before === target) return { state: 'CURRENT', sha: before };
   git('merge-base', '--is-ancestor', before, target);
   const diff = spawnSync('git', ['diff', '--name-only', '--no-renames', '-z', before, target], {
-    cwd: root, encoding: 'utf8', timeout: 10000,
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 10000,
   });
   if (diff.status !== 0 || diff.error) throw new Error('Cannot inspect source delta');
   const files = diff.stdout.split('\0').filter(Boolean);
@@ -104,7 +134,9 @@ function sync() {
   }
   for (const file of files) {
     const entry = spawnSync('git', ['ls-tree', '-z', target, '--', file], {
-      cwd: root, encoding: 'utf8', timeout: 10000,
+      cwd: root,
+      encoding: 'utf8',
+      timeout: 10000,
     });
     if (entry.status !== 0 || entry.error || entry.stdout.startsWith('120000 ')) {
       throw new Error('Unsupported linked or unreadable UI change');
@@ -120,9 +152,13 @@ function sync() {
 }
 
 function emit(result) {
-  process.stdout.write(JSON.stringify({
-    at: new Date().toISOString(), type: 'pockethost-dev-ui-sync', ...result,
-  }) + '\n');
+  process.stdout.write(
+    JSON.stringify({
+      at: new Date().toISOString(),
+      type: 'pockethost-dev-ui-sync',
+      ...result,
+    }) + '\n',
+  );
 }
 async function main() {
   let lastFailure = '';

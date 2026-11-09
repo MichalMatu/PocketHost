@@ -42,7 +42,7 @@ R0/M0 input, **not** authorization to import other hosting panels.
 
 The target top-level menu is **Dashboard; Hosting; Modules; Termux/System;
 Android & Shizuku; Automation; Platform**. SSH and Cloudflare have
-their own pages under Modules. Hosting can *use* a shared Cloudflare
+their own pages under Modules. Hosting can _use_ a shared Cloudflare
 route or runtime without owning or duplicating its service process.
 The [target navigation document](TARGET_INFORMATION_ARCHITECTURE.md)
 defines the full menu; current source navigation is transitional.
@@ -283,7 +283,6 @@ reported separately with actual terminal results. Do not declare full MVP
 PASS from source commits. See
 [Shizuku MVP sprint checkpoint](checkpoints/2026-11-09-shizuku-mvp-sprint.md).
 
-
 ## New product direction: Shizuku power-user integration — 2026-11-08
 
 The owner wants **full available Android control** from within PocketHost,
@@ -291,10 +290,11 @@ not an artificially restricted monitoring-only application.
 The installed Shizuku manager and authorized Mac ADB have been
 observed on Samsung Android 16; Mac ADB returned a genuine
 `dumpsys cpuinfo` total (31% in a one-time sample).
-This is *not* a live PocketHost Shizuku bridge.
+This is _not_ a live PocketHost Shizuku bridge.
 
 The first implementation slice is `/shizuku` in the UI and a shared
 typed capability model. Work evolves incrementally:
+
 1. Real service-running/ADB-vs-root mode/authorization status, native
    Shizuku client companion and first CPU/process readings.
 2. Installed apps, permissions, Android process/service diagnostics,
@@ -312,7 +312,6 @@ hidden actions. The owner authorizes development of these capabilities,
 not silent execution of destructive operations on unrelated processes.
 [ADR-0013](adr/0013-shizuku-power-user.md) and
 [Shizuku module](modules/shizuku.md) are the canonical spec.
-
 
 ## UX/Architecture — Termux-first source candidate
 

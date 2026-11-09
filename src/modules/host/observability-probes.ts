@@ -100,8 +100,12 @@ export function parseTermuxBatteryPercent(
     if (!json || typeof json !== 'object' || Array.isArray(json))
       return missing('unavailable', now);
     const percentage = (json as { percentage?: unknown }).percentage;
-    if (typeof percentage !== 'number' || !Number.isInteger(percentage) ||
-        percentage < 0 || percentage > 100)
+    if (
+      typeof percentage !== 'number' ||
+      !Number.isInteger(percentage) ||
+      percentage < 0 ||
+      percentage > 100
+    )
       return missing('unavailable', now);
     return { state: 'ok', value: percentage, observedAt: now };
   } catch {

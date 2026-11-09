@@ -98,16 +98,16 @@ forced-stop recovery, persistent 502/hang recovery, or Wi-Fi loss.
 
 ## Physical quality and deployment matrix
 
-| Gate | Status |
-| --- | --- |
-| Source and documentation committed on PocketHost main | DONE |
-| Native shell/Node syntax and negative contract | PASS at 2d9cab21 (3/3); later installer race fix needs retest |
-| Stage services on actual Samsung with disabled markers | PASS |
-| Supervised start, HTTP 200 on loopback and private LAN | PASS |
-| Confirm protected external Termux services unchanged | PASS |
-| Verify runit recovery after controlled panel-only termination | PASS — PID 15757 to 22800, Mac and S22 HTTP 200 |
-| Verify watchdog response to an HTTP hang/flapping failure | OPEN |
-| Reboot or Termux:Boot acceptance | OPEN |
+| Gate                                                          | Status                                                        |
+| ------------------------------------------------------------- | ------------------------------------------------------------- |
+| Source and documentation committed on PocketHost main         | DONE                                                          |
+| Native shell/Node syntax and negative contract                | PASS at 2d9cab21 (3/3); later installer race fix needs retest |
+| Stage services on actual Samsung with disabled markers        | PASS                                                          |
+| Supervised start, HTTP 200 on loopback and private LAN        | PASS                                                          |
+| Confirm protected external Termux services unchanged          | PASS                                                          |
+| Verify runit recovery after controlled panel-only termination | PASS — PID 15757 to 22800, Mac and S22 HTTP 200               |
+| Verify watchdog response to an HTTP hang/flapping failure     | OPEN                                                          |
+| Reboot or Termux:Boot acceptance                              | OPEN                                                          |
 
 Do not mark panel deployment PASS until a same-host task result and actual
 HTTP/status samples verify it. Preserve the earlier checkout as rollback

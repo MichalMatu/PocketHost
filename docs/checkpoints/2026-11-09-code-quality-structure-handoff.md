@@ -129,21 +129,21 @@ auto-imported, adopted, restarted or migrated by discovery.
 
 ## 3. Code and quality evidence (truthful matrix)
 
-| Area | Result and exact scope |
-| --- | --- |
-| PocketHost runit shell/Node syntax | PASS on native S22, `2d9cab21`; repeated at `7521ca5` |
-| Panel runit negative tests | **3/3 PASS**, native S22 at `2d9cab21` and `7521ca5` |
-| Physical `runit` activation, protected-service invariant | **PASS** for installed panel, recorded above |
-| Controlled panel-only restart + Mac HTTP | **PASS** with old/new PIDs `15757`/`22800`, HTTP 200 |
-| Full device reboot / Android force-stop recovery | **OPEN — never run/accepted** |
-| `npm run check:structure` at `2d9cab21` | **FAIL**: manifest omitted `native`, `ops`, `shizuku` and six host ESM/declaration files |
-| `npm run check:docs` at `7521ca5` | **FAIL**: five archive entries absent and one incorrect Shizuku relative link |
-| Later structure source fixes | **PASS** at d284491 (S22 receipt); docs headings fixed after this test |
-| Full `npm run check:all`, coverage, UI matrix on latest code | **OPEN**, older passing results do not transfer to newer SHA |
-| Shizuku P0/P1 advanced action matrix | **OPEN for current combined source**; earlier accepted direct shell remains historical evidence |
-| Native Companion matching current main | **OPEN** unless independently rebuilt/installed/tested |
-| H3.4 Restic/ttyd physical regression and owned project data restore | **OPEN** per previous independent checkpoints |
-| UI full target navigation and Node Hosting MVP | **DESIGN**, not a deployed feature |
+| Area                                                                | Result and exact scope                                                                          |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| PocketHost runit shell/Node syntax                                  | PASS on native S22, `2d9cab21`; repeated at `7521ca5`                                           |
+| Panel runit negative tests                                          | **3/3 PASS**, native S22 at `2d9cab21` and `7521ca5`                                            |
+| Physical `runit` activation, protected-service invariant            | **PASS** for installed panel, recorded above                                                    |
+| Controlled panel-only restart + Mac HTTP                            | **PASS** with old/new PIDs `15757`/`22800`, HTTP 200                                            |
+| Full device reboot / Android force-stop recovery                    | **OPEN — never run/accepted**                                                                   |
+| `npm run check:structure` at `2d9cab21`                             | **FAIL**: manifest omitted `native`, `ops`, `shizuku` and six host ESM/declaration files        |
+| `npm run check:docs` at `7521ca5`                                   | **FAIL**: five archive entries absent and one incorrect Shizuku relative link                   |
+| Later structure source fixes                                        | **PASS** at d284491 (S22 receipt); docs headings fixed after this test                          |
+| Full `npm run check:all`, coverage, UI matrix on latest code        | **OPEN**, older passing results do not transfer to newer SHA                                    |
+| Shizuku P0/P1 advanced action matrix                                | **OPEN for current combined source**; earlier accepted direct shell remains historical evidence |
+| Native Companion matching current main                              | **OPEN** unless independently rebuilt/installed/tested                                          |
+| H3.4 Restic/ttyd physical regression and owned project data restore | **OPEN** per previous independent checkpoints                                                   |
+| UI full target navigation and Node Hosting MVP                      | **DESIGN**, not a deployed feature                                                              |
 
 **Changes committed in this checkpoint preparation:**
 
@@ -171,18 +171,18 @@ finished **failed / exit 1** on exact source
 `d2844917888a7b4345b361f362ec9740b2b73cf4`.
 It independently ran the following stages on the isolated QA checkout:
 
-| Gate | Native result |
-| --- | --- |
-| Git origin, worktree cleanliness, detached commit | PASS |
-| `npm run check:structure` | **PASS** after manifest/host contract repairs |
-| `npm run check:docs` | FAIL: Shizuku `AGENTS.md` lacks three required headings |
-| `npm run check:boundaries` | **PASS** |
-| `npm test` | **180/182 PASS**; two documentation foundation assertions failed for the same three missing Shizuku headings |
-| `npm run markdownlint` | FAIL: multiple blank lines, list spacing and emphasis style in historical/current docs |
-| `npm run format:check` | FAIL: **29 files** need Prettier formatting |
-| `npm run lint` | FAIL: two `no-empty` catch blocks in `scripts/dev/ui-sync.mjs` |
-| `npm run typecheck` | **PASS** |
-| Focused panel contract | **3/3 PASS** |
+| Gate                                              | Native result                                                                                                |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Git origin, worktree cleanliness, detached commit | PASS                                                                                                         |
+| `npm run check:structure`                         | **PASS** after manifest/host contract repairs                                                                |
+| `npm run check:docs`                              | FAIL: Shizuku `AGENTS.md` lacks three required headings                                                      |
+| `npm run check:boundaries`                        | **PASS**                                                                                                     |
+| `npm test`                                        | **180/182 PASS**; two documentation foundation assertions failed for the same three missing Shizuku headings |
+| `npm run markdownlint`                            | FAIL: multiple blank lines, list spacing and emphasis style in historical/current docs                       |
+| `npm run format:check`                            | FAIL: **29 files** need Prettier formatting                                                                  |
+| `npm run lint`                                    | FAIL: two `no-empty` catch blocks in `scripts/dev/ui-sync.mjs`                                               |
+| `npm run typecheck`                               | **PASS**                                                                                                     |
+| Focused panel contract                            | **3/3 PASS**                                                                                                 |
 
 After this receipt, the required `## Scope`,
 `## Forbidden` and `## Gate` sections were added to
@@ -242,6 +242,7 @@ permit background service start after a manual force-stop.
 ## 5. Remaining risks, ranked and closed-vs-open decisions
 
 **P0 / first action next chat:**
+
 1. Read fresh `PocketHost/main`, actual live and QA HEADs,
    git cleanliness, `sv status` for the two PocketHost services,
    two HTTP endpoints from S22 **and Mac**, plus six protected
@@ -257,25 +258,19 @@ permit background service start after a manual force-stop.
    do not blindly overwrite the live code. Make rollback source,
    owner marker PID/start ticks and service states explicit.
 
-**P1 / before reliability closure:**
-5. Test owner-specific local HTTP watchdog fault and cooldown without
-   disrupting external services; then **full phone reboot / Termux:Boot**
-   and late-Wi-Fi startup (scheduled with the user if needed).
-6. Test browser pages and legitimate positive/negative Shizuku
-   operations against **exact installed Companion**, not source alone.
-   Do not mutate unrelated Android apps, phone settings or processes.
-7. Close historical independent Restic/ttyd/browser release holds only
-   in their own scoped sprints if still relevant.
+**P1 / before reliability closure:** 5. Test owner-specific local HTTP watchdog fault and cooldown without
+disrupting external services; then **full phone reboot / Termux:Boot**
+and late-Wi-Fi startup (scheduled with the user if needed). 6. Test browser pages and legitimate positive/negative Shizuku
+operations against **exact installed Companion**, not source alone.
+Do not mutate unrelated Android apps, phone settings or processes. 7. Close historical independent Restic/ttyd/browser release holds only
+in their own scoped sprints if still relevant.
 
-**Next product sprint (M0 then M1/M2/M3):**
-8. Audit and decouple IleStoi/PhotoMap hard-coded UI/backend
-   integrations while preserving active sites/data/tunnels.
-9. Implement minimal registries and `components[]` on the existing
-   H2 runtime, one shared ownership/health/recovery contract.
-10. Deliver one user-created, disposable **Node.js Hosting MVP**
-    with pinned dependencies, readiness, release and rollback. Add
-    SSH/Cloudflare/Python modules in M4, full orchestration in M5;
-    no automatic migration of existing external workloads.
+**Next product sprint (M0 then M1/M2/M3):** 8. Audit and decouple IleStoi/PhotoMap hard-coded UI/backend
+integrations while preserving active sites/data/tunnels. 9. Implement minimal registries and `components[]` on the existing
+H2 runtime, one shared ownership/health/recovery contract. 10. Deliver one user-created, disposable **Node.js Hosting MVP**
+with pinned dependencies, readiness, release and rollback. Add
+SSH/Cloudflare/Python modules in M4, full orchestration in M5;
+no automatic migration of existing external workloads.
 
 No current evidence authorizes external service migration, live
 production backup edits, global OS package updates, or exposing the

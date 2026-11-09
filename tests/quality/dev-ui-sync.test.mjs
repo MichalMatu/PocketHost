@@ -1,18 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { classifyUiChanges, isSafeUiPath, isPocketHostOrigin, procStartTicks } from '../../scripts/dev/ui-sync-policy.mjs';
+import {
+  classifyUiChanges,
+  isSafeUiPath,
+  isPocketHostOrigin,
+  procStartTicks,
+} from '../../scripts/dev/ui-sync-policy.mjs';
 
 test('accept only UI assets, tests and documents for unattended HMR', () => {
-  assert.equal(classifyUiChanges([
-    'apps/admin/src/app/termux/system-page.tsx',
-    'apps/admin/src/config/navigation.ts',
-    'apps/admin/tests/system-dashboard.interaction.test.tsx',
-    'docs/DEV_ITERATION.md',
-  ]).allowed, true);
+  assert.equal(
+    classifyUiChanges([
+      'apps/admin/src/app/termux/system-page.tsx',
+      'apps/admin/src/config/navigation.ts',
+      'apps/admin/tests/system-dashboard.interaction.test.tsx',
+      'docs/DEV_ITERATION.md',
+    ]).allowed,
+    true,
+  );
   for (const file of [
-    'apps/admin/vite.config.ts', 'src/modules/host/lan-gateway.mjs',
-    'package.json', 'scripts/dev/ui-sync.mjs', '.github/workflows/release.yml',
-    'apps/admin/src/../vite.config.ts', '/etc/passwd', 'apps/admin/src\\bad.ts',
+    'apps/admin/vite.config.ts',
+    'src/modules/host/lan-gateway.mjs',
+    'package.json',
+    'scripts/dev/ui-sync.mjs',
+    '.github/workflows/release.yml',
+    'apps/admin/src/../vite.config.ts',
+    '/etc/passwd',
+    'apps/admin/src\\bad.ts',
   ]) {
     assert.equal(isSafeUiPath(file), false, file);
   }

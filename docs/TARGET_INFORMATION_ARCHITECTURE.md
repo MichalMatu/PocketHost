@@ -37,15 +37,15 @@ The earlier five-area menu was accepted as an intermediate target.
 The owner's later 2026-11-09 decision supersedes its grouping:
 **PocketHost is a modular platform; Hosting orchestrates modules.**
 
-| Area | Target entries |
-| --- | --- |
-| **Dashboard** | Cross-module health, service states, alerts |
-| **Hosting** | Overview; Projects; Deployments; Domains & Routing; Storage & Backups; Logs |
-| **Modules** | Node.js; Python / PRoot; SSH; Cloudflare; Databases (future) |
-| **Termux / System** | Monitoring; Processes & Services; Packages; File Manager; Terminal; System Backups |
-| **Android & Shizuku** | Applications; CPU & Processes; Permissions; Services; Advanced Shell; Hardware |
-| **Automation** | Agents; Tasks; API |
-| **Platform** | PocketHost Network Access; Diagnostics; Settings; Appearance |
+| Area                  | Target entries                                                                     |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| **Dashboard**         | Cross-module health, service states, alerts                                        |
+| **Hosting**           | Overview; Projects; Deployments; Domains & Routing; Storage & Backups; Logs        |
+| **Modules**           | Node.js; Python / PRoot; SSH; Cloudflare; Databases (future)                       |
+| **Termux / System**   | Monitoring; Processes & Services; Packages; File Manager; Terminal; System Backups |
+| **Android & Shizuku** | Applications; CPU & Processes; Permissions; Services; Advanced Shell; Hardware     |
+| **Automation**        | Agents; Tasks; API                                                                 |
+| **Platform**          | PocketHost Network Access; Diagnostics; Settings; Appearance                       |
 
 **Modules are independently configurable and reusable**, including
 installation/update checks, module-specific configuration, runtime
@@ -69,14 +69,14 @@ The following describes code that exists today and must be retired, adapted,
 or retained. This is **not** a requirement to detect or import the named
 projects in future hosting.
 
-| Existing object | Current PocketHost code / historical evidence | Target |
-| --- | --- | --- |
-| IleStoi / `wreckscanner` | Named read-only entry in `src/modules/host/host-snapshot.ts` | Remove its explicit product integration, label and special-case catalog entry; preserve the separate live Termux service |
+| Existing object                 | Current PocketHost code / historical evidence                                                                               | Target                                                                                                                                                            |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| IleStoi / `wreckscanner`        | Named read-only entry in `src/modules/host/host-snapshot.ts`                                                                | Remove its explicit product integration, label and special-case catalog entry; preserve the separate live Termux service                                          |
 | PhotoMap TEST / `photomap-test` | Separate, historically stopped Samsung import, read-only `/managed-projects` endpoint and dedicated PRoot runtime candidate | Remove dedicated PocketHost product integration and runtime adapter from active application architecture; do not launch/modify original or staged sources or data |
-| PhotoMap production | Separate Raspberry Pi deployment in previous checkpoints | Entirely out of PocketHost scope |
-| H2 static site fleet | `SiteFleetHost`, user-created ZIP/folder sites, owned local HTTP server, releases and rollback | **Keep and generalize** as the static runtime adapter |
-| P3 `pockethost-demo` | Older separate test server and fixed two-version deployment API | Retire redundant navigation/API carefully; preserve files and running process until exact ownership and migration are reviewed |
-| `cloudflared` | Named monitored Termux runit service | Remove app-specific Cloudflare assumptions; system-level tool status may be shown generically, with routing configured only by explicit user action |
+| PhotoMap production             | Separate Raspberry Pi deployment in previous checkpoints                                                                    | Entirely out of PocketHost scope                                                                                                                                  |
+| H2 static site fleet            | `SiteFleetHost`, user-created ZIP/folder sites, owned local HTTP server, releases and rollback                              | **Keep and generalize** as the static runtime adapter                                                                                                             |
+| P3 `pockethost-demo`            | Older separate test server and fixed two-version deployment API                                                             | Retire redundant navigation/API carefully; preserve files and running process until exact ownership and migration are reviewed                                    |
+| `cloudflared`                   | Named monitored Termux runit service                                                                                        | Remove app-specific Cloudflare assumptions; system-level tool status may be shown generically, with routing configured only by explicit user action               |
 
 The 2026-11-06 Samsung records confirm a **stopped PhotoMap TEST import**;
 they do not establish its real-time state today. Decoupling is about removing
@@ -108,7 +108,7 @@ untouched until a separately authorized cutover.
 **ProjectRegistry** contains user-created Hosting projects with
 versioned `components[]`. Each component references module
 capabilities, dependencies, local resources and a service identity
-where required. The manifest represents *desired configuration*;
+where required. The manifest represents _desired configuration_;
 observed process state, uptime, errors and real package versions
 are separate records. Hosting never runs its own SSH or Cloudflare
 supervisor, and a single project may mix static and backend
@@ -121,8 +121,7 @@ Restic tooling and negative ownership guards rather than duplicating
 watchdogs. Minimal secret references and backup/restore precede
 production routing/migration; advanced secret rotation can follow.
 The canonical M0–M7 acceptance sequence lives in [Roadmap](ROADMAP.md). Before
-implementing a module, apply the [upstream-first review](
-UPSTREAM_REUSE_STRATEGY.md): official Termux tools and existing
+implementing a module, apply the [upstream-first review](UPSTREAM_REUSE_STRATEGY.md): official Termux tools and existing
 owner projects precede custom lifecycle/backup/tunnel implementations.
 An external panel's UI or process code is not an authorization to
 adopt live Termux services.
@@ -180,6 +179,7 @@ Only explicit **Create Project** operations produce a Hosting catalog entry.
 Do not add an import-existing-running-service or scan-ports feature.
 
 Each project should have:
+
 - `type`: static website, frontend + backend application, backend service,
   or a future explicitly supported runtime type;
 - `source`: ZIP/folder or an owner-chosen repository/target;
@@ -199,10 +199,11 @@ Each project should have:
   independently observed and not assumed from a module selection.
 
 Recommended **Create Project** flow:
+
 1. Name the project and choose Static Website, Web App (Frontend + Backend),
    or Backend/API.
 2. Supply source (ZIP/folder initially; optional repository later).
-3. Detect the supplied *project structure* only within this explicit source,
+3. Detect the supplied _project structure_ only within this explicit source,
    or ask the user to select frontend/backend directories and framework.
    Do not inspect unrelated Termux directories or existing live servers.
 4. Choose a runtime module **per component** and app-local dependencies/build
@@ -241,14 +242,14 @@ Android's runtime environment.
 
 ### Verified existing source contracts, not current live state
 
-| Component | Existing independent mechanism | Required preservation |
-| --- | --- | --- |
-| IleStoi / `wreckscanner` | `deploy/termux/wreckscanner.run` uses project-specific Python `.venv`, `server.py`, standard Termux `runit`, local port 8001 | Project-managed Python environment, explicitly selected persistent SQLite/media, exact health checks; never run two writers against production data |
-| IleStoi backup | `wreckscanner-backup.run` schedules Restic approximately daily with `flock`, hourly retry and weekly retention maintenance | Locking, backup credentials outside UI, proven restore and retention (7 daily, 8 weekly, 6 monthly) |
-| Cloudflare | `cloudflared.run` uses private `~/.cloudflared/config.yml` and Termux `runit` | One shared tunnel service, private credentials and explicit owned routing; do not duplicate or change the currently active tunnel by default |
-| IleStoi tunnel healthwatch | `ilestoi-healthwatch.py` tests backend ready 200, public 502/503/504/520-524/530 and outbound TCP; three failing checks at 180-second intervals; 30-minute restart cooldown; honors `down` marker | Express this as a reusable **service-specific recovery policy**, not a blanket network restart rule. Never restart the backend for only a tunnel failure |
-| Local Agent | Independent Termux:Boot `90-local-agent`, private `runsvdir`, app-private installation, Git task/result spools and `EMERGENCY_STOP` | Preserve exact private installation identity, durable claims/results, no-replay UNKNOWN semantics and out-of-band operator rollback; never start two consumers of one task namespace |
-| PocketHost panel | `pockethost-panel` and `pockethost-panel-watch` under standard Termux runit; 12-second HTTP health probes, three failures, 120-second cooldown and initial 50-second grace | Reuse proven runit supervision as the underlying adapter, not a second OS process manager |
+| Component                  | Existing independent mechanism                                                                                                                                                                    | Required preservation                                                                                                                                                                |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| IleStoi / `wreckscanner`   | `deploy/termux/wreckscanner.run` uses project-specific Python `.venv`, `server.py`, standard Termux `runit`, local port 8001                                                                      | Project-managed Python environment, explicitly selected persistent SQLite/media, exact health checks; never run two writers against production data                                  |
+| IleStoi backup             | `wreckscanner-backup.run` schedules Restic approximately daily with `flock`, hourly retry and weekly retention maintenance                                                                        | Locking, backup credentials outside UI, proven restore and retention (7 daily, 8 weekly, 6 monthly)                                                                                  |
+| Cloudflare                 | `cloudflared.run` uses private `~/.cloudflared/config.yml` and Termux `runit`                                                                                                                     | One shared tunnel service, private credentials and explicit owned routing; do not duplicate or change the currently active tunnel by default                                         |
+| IleStoi tunnel healthwatch | `ilestoi-healthwatch.py` tests backend ready 200, public 502/503/504/520-524/530 and outbound TCP; three failing checks at 180-second intervals; 30-minute restart cooldown; honors `down` marker | Express this as a reusable **service-specific recovery policy**, not a blanket network restart rule. Never restart the backend for only a tunnel failure                             |
+| Local Agent                | Independent Termux:Boot `90-local-agent`, private `runsvdir`, app-private installation, Git task/result spools and `EMERGENCY_STOP`                                                               | Preserve exact private installation identity, durable claims/results, no-replay UNKNOWN semantics and out-of-band operator rollback; never start two consumers of one task namespace |
+| PocketHost panel           | `pockethost-panel` and `pockethost-panel-watch` under standard Termux runit; 12-second HTTP health probes, three failures, 120-second cooldown and initial 50-second grace                        | Reuse proven runit supervision as the underlying adapter, not a second OS process manager                                                                                            |
 
 Sources: `MichalMatu/ilestoi/deploy/termux/*`,
 `MichalMatu/ilestoi/docs/TERMUX.md`,
@@ -265,13 +266,14 @@ migration. The historical Local Agent's own Termux:Boot and independent
 
 ### Proposed reusable service control plane
 
-A single **PocketHost-managed Service Registry** for *explicitly provisioned*
+A single **PocketHost-managed Service Registry** for _explicitly provisioned_
 services should be the authoritative UI/API for status, last health results,
 Start/Stop/Restart/Enable, autostart, restart policy, dependency checks,
 backup policy, events and logs. Each service record references exactly one
 project or shared infrastructure component.
 
 Implement as separate layers:
+
 1. Application-supplied source/manifest parser and an immutable reviewed
    **install plan**; detect `package.json` + lockfiles, `pyproject.toml`,
    `requirements*.txt` and explicit service manifests; never scan
@@ -412,7 +414,6 @@ Hosting-last delivery proposal:
 
 No automatic discovery, adoption, reconfiguration or deletion of
 existing Termux services is authorized by this roadmap.
-
 
 ## Still to verify before modifying source or running services
 

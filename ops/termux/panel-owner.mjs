@@ -4,8 +4,15 @@
  */
 import { spawnSync } from 'node:child_process';
 import {
-  closeSync, existsSync, fsyncSync, lstatSync, openSync, readFileSync,
-  renameSync, unlinkSync, writeFileSync,
+  closeSync,
+  existsSync,
+  fsyncSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 
@@ -22,7 +29,10 @@ function requireCondition(value, reason) {
 
 function statTicks(pidValue) {
   const stat = readFileSync('/proc/' + pidValue + '/stat', 'utf8');
-  return stat.slice(stat.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
+  return stat
+    .slice(stat.lastIndexOf(')') + 2)
+    .trim()
+    .split(/\s+/)[19];
 }
 
 function readOwner(file) {
@@ -60,33 +70,60 @@ function oldOwnerIsGone(oldPid) {
 
 function main() {
   requireCondition(Number.isSafeInteger(pid) && pid > 1, 'invalid service PID');
-  requireCondition(root?.startsWith(home + '/Projects/PocketHost-'), 'checkout path not authorized');
+  requireCondition(
+    root?.startsWith(home + '/Projects/PocketHost-'),
+    'checkout path not authorized',
+  );
   requireCondition(!lstatSync(root).isSymbolicLink(), 'checkout is a link');
   requireCondition(statTicks(pid)?.length > 0, 'new service identity missing');
-  const source = spawnSync('/data/data/com.termux/files/usr/bin/git', ['-C', root, 'rev-parse', 'HEAD'], {
-    encoding: 'utf8', timeout: 10000,
-  });
-  requireCondition(source.status === 0 && /^[0-9a-f]{40}$/.test(source.stdout.trim()), 'source SHA missing');
+  const source = spawnSync(
+    '/data/data/com.termux/files/usr/bin/git',
+    ['-C', root, 'rev-parse', 'HEAD'],
+    {
+      encoding: 'utf8',
+      timeout: 10000,
+    },
+  );
+  requireCondition(
+    source.status === 0 && /^[0-9a-f]{40}$/.test(source.stdout.trim()),
+    'source SHA missing',
+  );
   const sha = source.stdout.trim();
   const marker = readOwner(ownerFile);
   const gateway = readOwner(gatewayFile);
   requireCondition(
-    marker.cwd === admin && marker.port === 8787 &&
-    gateway.owner === 'PocketHost' && gateway.cwd === admin &&
-    gateway.adminPort === 18878 && gateway.sitePort === 18879 &&
-    marker.pid === gateway.pid && marker.startTicks === gateway.startTicks,
+    marker.cwd === admin &&
+      marker.port === 8787 &&
+      gateway.owner === 'PocketHost' &&
+      gateway.cwd === admin &&
+      gateway.adminPort === 18878 &&
+      gateway.sitePort === 18879 &&
+      marker.pid === gateway.pid &&
+      marker.startTicks === gateway.startTicks,
     'owner markers do not describe the same PocketHost DEV panel',
   );
-  requireCondition(Number.isSafeInteger(marker.pid) && marker.pid > 1 &&
-    oldOwnerIsGone(marker.pid), 'previous owner still running or ambiguous');
+  requireCondition(
+    Number.isSafeInteger(marker.pid) && marker.pid > 1 && oldOwnerIsGone(marker.pid),
+    'previous owner still running or ambiguous',
+  );
   const ticks = statTicks(pid);
   writeOwner(ownerFile, {
-    ...marker, pid, startTicks: ticks, sourceSha: sha, managedBy: 'termux-runit/pockethost-panel',
+    ...marker,
+    pid,
+    startTicks: ticks,
+    sourceSha: sha,
+    managedBy: 'termux-runit/pockethost-panel',
   });
   writeOwner(gatewayFile, {
-    ...gateway, pid, startTicks: ticks, sourceSha: sha, managedBy: 'termux-runit/pockethost-panel',
+    ...gateway,
+    pid,
+    startTicks: ticks,
+    sourceSha: sha,
+    managedBy: 'termux-runit/pockethost-panel',
   });
-  process.stdout.write(JSON.stringify({ owner: 'PocketHost', sourceSha: sha, pid, managedBy: 'runit' }) + '\n');
+  process.stdout.write(
+    JSON.stringify({ owner: 'PocketHost', sourceSha: sha, pid, managedBy: 'runit' }) + '\n',
+  );
 }
 
 main();

@@ -4,8 +4,9 @@ import { validateRemoteShellPayload } from '../../src/modules/host/remote-shell-
 
 test('direct Run forwards the exact power-user command without pairing', () => {
   assert.deepEqual(validateRemoteShellPayload('run', { command: 'id' }), { command: 'id' });
-  assert.deepEqual(validateRemoteShellPayload('run', { command: 'echo hello && id' }),
-    { command: 'echo hello && id' });
+  assert.deepEqual(validateRemoteShellPayload('run', { command: 'echo hello && id' }), {
+    command: 'echo hello && id',
+  });
 });
 
 test('shell transport rejects malformed requests but does not prohibit command categories', () => {

@@ -19,6 +19,7 @@ Cloudflare routes, query live phone processes, or start a new
 Local Agent task. No native or live PASS is claimed here.
 
 Frozen inspected source:
+
 - PocketHost `main@4a52abef3d33bd1c9664fe2a0484ea18de738109`;
   its live Samsung checkout may be a **different SHA**.
 - IleStoi `main@ea1b300351d6519ba387d08cb22d6aea2b204d2c`.
@@ -44,8 +45,7 @@ Product authority: [roadmap](../ROADMAP.md),
   [H2 checkpoint](2026-11-07-h2-static-hosting-source.md).
   This does **not** certify the current `main` source.
 - The separate
-  [code/quality/hardware checkpoint](
-  2026-11-09-code-quality-structure-handoff.md)
+  [code/quality/hardware checkpoint](2026-11-09-code-quality-structure-handoff.md)
   records a panel-only `runit` recovery, local/LAN HTTP 200
   and preservation of six protected services on 2026-11-09.
   It explicitly leaves full-phone reboot, Android force-stop,
@@ -56,23 +56,23 @@ Product authority: [roadmap](../ROADMAP.md),
 
 ## Actual code inventory and M0 preservation decisions
 
-| Current capability | Confirmed code or contract | M0 decision / missing work |
-| --- | --- | --- |
-| User-created static sites | `src/modules/host/site-fleet-host.ts`, `src/modules/sites/site-bundle.ts`, `site-fleet-server.mjs`, `site-fleet-proxy.mjs`, `apps/admin/src/app/sites/page.tsx`; bounded uploads, immutable revisions, exact PID/start-ticks, loopback and rollback | **KEEP as-is during M0.** Do not rewrite it or switch its existing direct-child lifecycle to runit merely to match the future Node module |
-| Older single demo | `src/modules/host/owned-site-host.ts`, `apps/admin/src/app/owned-site/page.tsx`, `apps/admin/src/app/deployments/page.tsx`, dedicated `/api/v1/owned-site` routes | Historical separate P3 project and API remain active source dependencies. De-duplicate only after all UI consumers/owned records/rollback links have compatibility coverage |
-| PhotoMap TEST catalog | `src/modules/host/managed-photomap-host.ts`, `apps/admin/src/app/managed-projects/page.tsx`, `/api/v1/managed-photomap` | Named source coupling remains. It is an intentionally stopped/read-only candidate; preserve imported files and any original externally run service. Remove UI/API references only in coordinated future source work |
-| PhotoMap PRoot runtime | `photomap-runtime-host.ts`, `photomap-runtime-plan.ts`, `src/modules/runtime/photomap-runtime.ts`, imported by `apps/admin/vite.config.ts` | Generic process guards are reusable; hard-coded fixed PhotoMap identity, PRoot settings, ports and data are **not** a generic Python module |
-| Monitored external services | `src/modules/host/host-snapshot.ts` has named `SERVICE_CATALOG` for IleStoi, Cloudflare, SSH, MQTT, healthwatch and Local Agent | Replace named *product* monitoring with generic OS/runit observation in later code; keep external ownership and guardrails. Do **not** grant a Hosting project ID from observation |
-| Runit administration | `src/modules/host/termux-service-admin.ts`: explicit target registration, protected names, verified target path, bounded logs, fixed CLI actions; `tests/quality/h3-runit-service.test.mjs` | **KEEP protection and OS-admin distinction.** Its registration of an *existing nonprotected runit unit* is a user-directed Termux administration feature, **not** permission to auto-adopt it as a Hosting project |
-| Panel self-recovery | `ops/termux/install-panel-services.sh`, `panel-service.sh`, ADR-0014 use existing `service-daemon`/`runit` plus fixed panel-only watcher | Keep these working scripts and their independent recovery semantics. Do not create a second Termux supervisor or infer service ownership by port |
-| Typed generic runtime | `src/modules/runtime/managed-runtime-registry.ts`, `managed-runtime.ts`, `src/modules/host/managed-process-supervisor.ts` | Reuse explicit registry, process guards, stop/readiness helpers; snapshot policy currently requires `autostart === false`. Future module service autostart needs a reviewed extension, **not** a blanket boolean flip |
-| Termux package tools | `termux-package-catalog.ts`, `observability-probes.ts`, `termux-admin.ts` | Reuse `dpkg-query`, `apt-cache`, reviewed `apt` operations; add scoped app-local Node/Python dependencies later. Do not implement another apt or allow app deploy to run global `pkg upgrade` |
-| Restic / file management | `termux-restic-admin.ts`, `termux-admin.ts`, `termux-file-roots.ts` | Reuse bounded CLI adapter, snapshots/staged restore; current H3 scopes do **not** prove backup/recovery for future project DB/uploads. M2 must define project-specific restore and concurrency locks |
-| LAN and hosted previews | `lan-gateway.mjs` and `site-fleet-proxy.mjs`: current owner-approved private LAN admin and GET-only H2 preview | Preserve exact URL/bind/port behavior until migration is tested; do not expose an unauthenticated administrative LAN endpoint through Cloudflare |
-| API composition | `apps/admin/vite.config.ts` (~1,226 lines at audit SHA) imports P3, PhotoMap, H2, Termux, Shizuku and LAN handlers | **Highest-value decoupling target**: split composition behind stable API/typed adapters later, *without* deleting working endpoints before callers are migrated |
-| Navigation/duplicate UI | `apps/admin/src/config/navigation.ts`, `routes.tsx`, `termux/page.tsx`, `termux/admin-actions.tsx`; System shows H2 site lifecycle, Hosting exposes H2+demo+PhotoMap routes | Separate generic Termux Processes/Services from Hosting Projects, preserve old deep links until compatibility checks. Menu restructuring alone is **not** an ownership or backend migration |
-| Android & Shizuku | Native companion / Shizuku transport and dedicated UI/routes | Independent Android privilege domain. M0 Hosting refactoring must not change native Binder paths or privilege policy |
-| Automation / Agent | `termux-agent-contract.ts`, Agent panel and external Local Agent repo | Consume existing explicit Agent task/result contracts later; no duplicate Git poller, Agent reinstallation or self-cutover |
+| Current capability          | Confirmed code or contract                                                                                                                                                                                                                          | M0 decision / missing work                                                                                                                                                                                            |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| User-created static sites   | `src/modules/host/site-fleet-host.ts`, `src/modules/sites/site-bundle.ts`, `site-fleet-server.mjs`, `site-fleet-proxy.mjs`, `apps/admin/src/app/sites/page.tsx`; bounded uploads, immutable revisions, exact PID/start-ticks, loopback and rollback | **KEEP as-is during M0.** Do not rewrite it or switch its existing direct-child lifecycle to runit merely to match the future Node module                                                                             |
+| Older single demo           | `src/modules/host/owned-site-host.ts`, `apps/admin/src/app/owned-site/page.tsx`, `apps/admin/src/app/deployments/page.tsx`, dedicated `/api/v1/owned-site` routes                                                                                   | Historical separate P3 project and API remain active source dependencies. De-duplicate only after all UI consumers/owned records/rollback links have compatibility coverage                                           |
+| PhotoMap TEST catalog       | `src/modules/host/managed-photomap-host.ts`, `apps/admin/src/app/managed-projects/page.tsx`, `/api/v1/managed-photomap`                                                                                                                             | Named source coupling remains. It is an intentionally stopped/read-only candidate; preserve imported files and any original externally run service. Remove UI/API references only in coordinated future source work   |
+| PhotoMap PRoot runtime      | `photomap-runtime-host.ts`, `photomap-runtime-plan.ts`, `src/modules/runtime/photomap-runtime.ts`, imported by `apps/admin/vite.config.ts`                                                                                                          | Generic process guards are reusable; hard-coded fixed PhotoMap identity, PRoot settings, ports and data are **not** a generic Python module                                                                           |
+| Monitored external services | `src/modules/host/host-snapshot.ts` has named `SERVICE_CATALOG` for IleStoi, Cloudflare, SSH, MQTT, healthwatch and Local Agent                                                                                                                     | Replace named _product_ monitoring with generic OS/runit observation in later code; keep external ownership and guardrails. Do **not** grant a Hosting project ID from observation                                    |
+| Runit administration        | `src/modules/host/termux-service-admin.ts`: explicit target registration, protected names, verified target path, bounded logs, fixed CLI actions; `tests/quality/h3-runit-service.test.mjs`                                                         | **KEEP protection and OS-admin distinction.** Its registration of an _existing nonprotected runit unit_ is a user-directed Termux administration feature, **not** permission to auto-adopt it as a Hosting project    |
+| Panel self-recovery         | `ops/termux/install-panel-services.sh`, `panel-service.sh`, ADR-0014 use existing `service-daemon`/`runit` plus fixed panel-only watcher                                                                                                            | Keep these working scripts and their independent recovery semantics. Do not create a second Termux supervisor or infer service ownership by port                                                                      |
+| Typed generic runtime       | `src/modules/runtime/managed-runtime-registry.ts`, `managed-runtime.ts`, `src/modules/host/managed-process-supervisor.ts`                                                                                                                           | Reuse explicit registry, process guards, stop/readiness helpers; snapshot policy currently requires `autostart === false`. Future module service autostart needs a reviewed extension, **not** a blanket boolean flip |
+| Termux package tools        | `termux-package-catalog.ts`, `observability-probes.ts`, `termux-admin.ts`                                                                                                                                                                           | Reuse `dpkg-query`, `apt-cache`, reviewed `apt` operations; add scoped app-local Node/Python dependencies later. Do not implement another apt or allow app deploy to run global `pkg upgrade`                         |
+| Restic / file management    | `termux-restic-admin.ts`, `termux-admin.ts`, `termux-file-roots.ts`                                                                                                                                                                                 | Reuse bounded CLI adapter, snapshots/staged restore; current H3 scopes do **not** prove backup/recovery for future project DB/uploads. M2 must define project-specific restore and concurrency locks                  |
+| LAN and hosted previews     | `lan-gateway.mjs` and `site-fleet-proxy.mjs`: current owner-approved private LAN admin and GET-only H2 preview                                                                                                                                      | Preserve exact URL/bind/port behavior until migration is tested; do not expose an unauthenticated administrative LAN endpoint through Cloudflare                                                                      |
+| API composition             | `apps/admin/vite.config.ts` (~1,226 lines at audit SHA) imports P3, PhotoMap, H2, Termux, Shizuku and LAN handlers                                                                                                                                  | **Highest-value decoupling target**: split composition behind stable API/typed adapters later, _without_ deleting working endpoints before callers are migrated                                                       |
+| Navigation/duplicate UI     | `apps/admin/src/config/navigation.ts`, `routes.tsx`, `termux/page.tsx`, `termux/admin-actions.tsx`; System shows H2 site lifecycle, Hosting exposes H2+demo+PhotoMap routes                                                                         | Separate generic Termux Processes/Services from Hosting Projects, preserve old deep links until compatibility checks. Menu restructuring alone is **not** an ownership or backend migration                           |
+| Android & Shizuku           | Native companion / Shizuku transport and dedicated UI/routes                                                                                                                                                                                        | Independent Android privilege domain. M0 Hosting refactoring must not change native Binder paths or privilege policy                                                                                                  |
+| Automation / Agent          | `termux-agent-contract.ts`, Agent panel and external Local Agent repo                                                                                                                                                                               | Consume existing explicit Agent task/result contracts later; no duplicate Git poller, Agent reinstallation or self-cutover                                                                                            |
 
 The existing `tests/quality/site-fleet-host.test.mjs` contains
 foreign-port, forged-PID, owner-marker and symlink negative cases;
@@ -85,20 +85,20 @@ Priority: **existing PocketHost -> existing owner project -> installed
 official Termux/CLI -> narrow third-party design -> new adapter glue**.
 Never copy a complete dashboard/supervisor to accelerate M0.
 
-| Planned capability | Source to reuse | Needed PocketHost glue | Decision / stop condition |
-| --- | --- | --- | --- |
-| Static frontend, releases and rollback | H2 SiteFleetHost, site-bundle parser, owner/port guards | Registry binding and stable Hosting project facade | **REUSE FIRST**; never substitute a new static engine |
-| New Node app (M3) | Termux Node/npm, project `package.json` + lockfile, `npm ci`; H2 staging/release | Owned Node component launch, health, logs, sealed dependency plan and runit registration | **Thin native adapter**; pilot before broad wizard |
-| Python app (M4) | Termux Python `venv`, native pip/lock-compatible requirements; optionally `termux/proot-distro` | Per-project interpreter/environment, paths, lifecycle and failure reporting | **Opt-in PRoot** only after native descendant/orphan gate |
-| SSH | Existing Termux `sshd` + authenticated keys and runit control | Module configuration/status, safe key-reference UI, rollback of config | **Do not replace sshd** or change currently working keys/port during M0 |
-| Cloudflare | Existing `cloudflared` CLI + IleStoi named tunnel runner and conditional public/origin policy | Single shared module, explicit route references and staged ingress validation | **Do not duplicate tunnel** or treat external service reference as control right |
-| Service autostart and liveness | `termux/termux-services` runit, `termux/termux-boot`, PocketHost panel scripts | Verified service ownership and policy-specific health evaluator | **No second daemon**; preserve manual `down` and OEM Android limits |
-| Backup and restore | Restic CLI, `termux-restic-admin.ts`, IleStoi backup with `flock`/retention | Project-scoped source/restore manifests, data locking and tested recovery | **Do not equate code rollback to database restore** |
-| Host packages | Termux `pkg`/`apt`/`dpkg-query`, current H3 package handlers | Install/update previews, compatibility and per-runtime scope | **No custom package manager** or automatic global upgrades |
-| Shell/terminal | Existing H3 terminal adapter, optional `ttyd` external CLI | Private LAN route and ownership checks | **HOLD**: historical native ttyd SIGSEGV, do not assume installing the tool resolves it |
-| Hosting UX and process roles | H2 UI, selected `piku/piku` Procfile/release concepts, optional `himalayladha/termux-hosting-panel` layout ideas | Minimal project wizard, component contracts | **Patterns only**; never copy lower-reviewed command/path security or whole panel |
-| Android capabilities | Existing PocketHost companion/Shizuku and optional installed Termux:API | Explicit independent capability bridge | **No duplicate privilege transport** |
-| Agent service migration | Local Agent private runit boot, durable claim/UNKNOWN/no-replay/STOP | New explicit managed service config, externally operated handover | **Last target**, no queued self-shutdown, no concurrent consumer |
+| Planned capability                     | Source to reuse                                                                                                  | Needed PocketHost glue                                                                   | Decision / stop condition                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Static frontend, releases and rollback | H2 SiteFleetHost, site-bundle parser, owner/port guards                                                          | Registry binding and stable Hosting project facade                                       | **REUSE FIRST**; never substitute a new static engine                                   |
+| New Node app (M3)                      | Termux Node/npm, project `package.json` + lockfile, `npm ci`; H2 staging/release                                 | Owned Node component launch, health, logs, sealed dependency plan and runit registration | **Thin native adapter**; pilot before broad wizard                                      |
+| Python app (M4)                        | Termux Python `venv`, native pip/lock-compatible requirements; optionally `termux/proot-distro`                  | Per-project interpreter/environment, paths, lifecycle and failure reporting              | **Opt-in PRoot** only after native descendant/orphan gate                               |
+| SSH                                    | Existing Termux `sshd` + authenticated keys and runit control                                                    | Module configuration/status, safe key-reference UI, rollback of config                   | **Do not replace sshd** or change currently working keys/port during M0                 |
+| Cloudflare                             | Existing `cloudflared` CLI + IleStoi named tunnel runner and conditional public/origin policy                    | Single shared module, explicit route references and staged ingress validation            | **Do not duplicate tunnel** or treat external service reference as control right        |
+| Service autostart and liveness         | `termux/termux-services` runit, `termux/termux-boot`, PocketHost panel scripts                                   | Verified service ownership and policy-specific health evaluator                          | **No second daemon**; preserve manual `down` and OEM Android limits                     |
+| Backup and restore                     | Restic CLI, `termux-restic-admin.ts`, IleStoi backup with `flock`/retention                                      | Project-scoped source/restore manifests, data locking and tested recovery                | **Do not equate code rollback to database restore**                                     |
+| Host packages                          | Termux `pkg`/`apt`/`dpkg-query`, current H3 package handlers                                                     | Install/update previews, compatibility and per-runtime scope                             | **No custom package manager** or automatic global upgrades                              |
+| Shell/terminal                         | Existing H3 terminal adapter, optional `ttyd` external CLI                                                       | Private LAN route and ownership checks                                                   | **HOLD**: historical native ttyd SIGSEGV, do not assume installing the tool resolves it |
+| Hosting UX and process roles           | H2 UI, selected `piku/piku` Procfile/release concepts, optional `himalayladha/termux-hosting-panel` layout ideas | Minimal project wizard, component contracts                                              | **Patterns only**; never copy lower-reviewed command/path security or whole panel       |
+| Android capabilities                   | Existing PocketHost companion/Shizuku and optional installed Termux:API                                          | Explicit independent capability bridge                                                   | **No duplicate privilege transport**                                                    |
+| Agent service migration                | Local Agent private runit boot, durable claim/UNKNOWN/no-replay/STOP                                             | New explicit managed service config, externally operated handover                        | **Last target**, no queued self-shutdown, no concurrent consumer                        |
 
 External source/licensing references and caveats:
 [upstream reuse strategy](../UPSTREAM_REUSE_STRATEGY.md),
@@ -122,6 +122,7 @@ a new license.
 ### Existing owner project special constraints
 
 IleStoi at the audited commit:
+
 - `deploy/termux/00-services.sh` uses existing standard Termux
   `service-daemon`; honors `down` markers and starts the known
   services. PocketHost panel runit uses the same manager.
@@ -137,6 +138,7 @@ IleStoi at the audited commit:
   writer, compatible data restore and retention.
 
 Local Agent at the audited commit:
+
 - Private `runit` directory and boot hook are independent of
   ordinary system runit; `run.example` invokes a pinned bundle
   through `python3 -B -m termux_agent ... serve`.
@@ -166,7 +168,7 @@ Ordered to minimize regression; **none performed here**:
    and tests are migrated. Distinguish generic System service
    inventory from PocketHost-created Hosting catalog.
 3. **Named observation cleanup:** remove named IleStoi/PhotoMap
-   *product cards* from the future generic Hosting interface,
+   _product cards_ from the future generic Hosting interface,
    not their external runit units. Keep positive ownership and
    the existing protected names through transition.
 4. **API composition:** separate the old PhotoMap read-only
@@ -194,16 +196,16 @@ the whole hardware suite for a documentation-only edit.
 
 ## M0 acceptance ledger
 
-| Work item | Status | Evidence / next action |
-| --- | --- | --- |
-| Fresh main and source/AGENTS inspection | **DONE — source snapshot** | GitHub read-only `4a52abe`; no phone invocation |
-| Current ownership and external-code coupling inventory | **DONE — source analysis** | Code paths and affected UI/API above |
-| Upstream reuse/licensing decision R0 | **DONE — planning** | Capability table, links, adoption gates above |
-| Identify safe decoupling sequence | **DONE — plan** | Ordered backlog above; code unmodified |
-| Remove product-specific source integration | **OPEN — deferred by owner** | Another chat is actively editing code; no overlapping write authorized |
-| Verify new M0 `main` is still H2-compatible | **OPEN** | Native Samsung exact-source QA and browser checks only after implementation |
-| Revalidate protected services, site data and panel | **OPEN — not measured here** | Compare physical device pre/post when code changes are deployed |
-| Mark full M0 gate PASS | **NOT YET** | Requires all relevant source changes and accepted evidence |
+| Work item                                              | Status                       | Evidence / next action                                                      |
+| ------------------------------------------------------ | ---------------------------- | --------------------------------------------------------------------------- |
+| Fresh main and source/AGENTS inspection                | **DONE — source snapshot**   | GitHub read-only `4a52abe`; no phone invocation                             |
+| Current ownership and external-code coupling inventory | **DONE — source analysis**   | Code paths and affected UI/API above                                        |
+| Upstream reuse/licensing decision R0                   | **DONE — planning**          | Capability table, links, adoption gates above                               |
+| Identify safe decoupling sequence                      | **DONE — plan**              | Ordered backlog above; code unmodified                                      |
+| Remove product-specific source integration             | **OPEN — deferred by owner** | Another chat is actively editing code; no overlapping write authorized      |
+| Verify new M0 `main` is still H2-compatible            | **OPEN**                     | Native Samsung exact-source QA and browser checks only after implementation |
+| Revalidate protected services, site data and panel     | **OPEN — not measured here** | Compare physical device pre/post when code changes are deployed             |
+| Mark full M0 gate PASS                                 | **NOT YET**                  | Requires all relevant source changes and accepted evidence                  |
 
 **Handoff:** Implement the decoupling only in the separate active
 code chat, using fresh HEAD. This audit is the M0 source map

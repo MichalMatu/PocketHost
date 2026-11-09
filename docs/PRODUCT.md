@@ -52,9 +52,8 @@ the first dynamic milestone (M3) is a disposable Node.js app created
 through PocketHost, using existing process/release contracts and
 official Termux tools. SSH, Cloudflare, Python/PRoot and later
 databases are independent reusable modules. The
-[canonical roadmap](ROADMAP.md) and [reuse matrix](
-UPSTREAM_REUSE_STRATEGY.md) override the initial-MVP exclusions
-below for *future planned development*, not for automatic activation
+[canonical roadmap](ROADMAP.md) and [reuse matrix](UPSTREAM_REUSE_STRATEGY.md) override the initial-MVP exclusions
+below for _future planned development_, not for automatic activation
 of existing services.
 
 ## Historical initial-MVP exclusions

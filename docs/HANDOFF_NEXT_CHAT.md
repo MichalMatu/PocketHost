@@ -58,7 +58,6 @@ Local Agent. Mac Local Agent may inspect SSH/network/ADB but is not a
 replacement for native S22 code QA. Do not run GitHub Actions or
 unapproved external-service migration.
 
-
 ## DEV panel supervision restored — 2026-11-09
 
 After an Android Termux interruption, the previously manual Vite panel
@@ -98,8 +97,6 @@ reported separately with actual terminal results. Do not declare full MVP
 PASS from source commits. See
 [Shizuku MVP sprint checkpoint](checkpoints/2026-11-09-shizuku-mvp-sprint.md).
 
-
-
 ## Direct Advanced Shell — deployed and physically verified (2026-11-09)
 
 **READY FOR OWNER TEST.** Native Companion APK matching
@@ -133,7 +130,6 @@ execution PASS before native build, Samsung deployment and a positive
 Protected Termux services and the currently accepted read-only panel
 must remain untouched during preliminary QA.
 
-
 ## Follow-up source: charging, application identities and GiB (2026-11-08)
 
 Battery charging states are derived from Android status and actual power-source
@@ -141,7 +137,6 @@ flags; package labels, version, SDK, requested permissions and optional native
 icons have a fixed read-only web detail path. Android RAM/RSS displays GiB.
 Source-only until the corresponding signed Companion is installed and live
 read-only endpoint checks succeed. Keep owner mutations on the phone only.
-
 
 ## Seven-area Shizuku hardware update — 2026-11-08
 
@@ -164,8 +159,6 @@ the login-free LAN. Any unverified Android operation must remain OPEN.
 Owner hardware test, current APK deployment and exact-source QA are
 separate from Git publication. Preserve all protected Termux services.
 
-
-
 ## Current source slice: Shizuku Android application inventory
 
 After the accepted CPU bridge at main 00010ada, the next source slice
@@ -176,7 +169,6 @@ MUST be built and checked on their authorized device environment before
 claiming Samsung PASS. No privileged app mutation was enabled.
 The LAN dashboard is currently login-free: do not forward privileged
 Shizuku actions over it before a separate real owner authorization channel.
-
 
 ## Current Shizuku CPU transport finding — 2026-11-08
 
@@ -194,8 +186,6 @@ native process active with a notification; Android build/install/test
 of this change remains the next immediate step. Do not duplicate
 the existing Shizuku browser backend or the LAN autostart implementation.
 
-
-
 ## DEV LAN restart and Shizuku bridge (2026-11-08)
 
 Owner requested LAN port 18878 accessible by default after PocketHost panel
@@ -209,7 +199,6 @@ physical end-to-end verification are required; a commit alone does not
 activate these backend changes. No complete-phone reboot autostart was
 added.
 
-
 ## Native Shizuku companion source — 2026-11-08
 
 New source `native/pockethost-companion` is an Android Java app with
@@ -222,7 +211,6 @@ Build the native app on the authorized Mac only, install/debug on
 the identified Samsung, and obtain real user Shizuku authorization.
 Then implement the local authenticated browser-status bridge.
 No full PocketHost build or duplicate QA matrix for this native slice.
-
 
 ## Monitoring ownership split — 2026-11-08
 
@@ -249,7 +237,7 @@ services. Real advanced actions must be clearly user-directed.
 
 Hardware evidence: Samsung SM-S906B on Android 16; Shizuku app installed;
 Mac ADB `dumpsys cpuinfo` returned 31% TOTAL in a spot check. The
-Shizuku *server* and native PocketHost app authorization are not yet
+Shizuku _server_ and native PocketHost app authorization are not yet
 confirmed. No claim that the new UI has a working Shizuku connection.
 
 ## Current working agreement — 2026-11-08
@@ -304,8 +292,7 @@ for exact receipts before further action.
 
 ## Latest 2026-11-08 API and hardware follow-up
 
-Read [H3.4 API and native diagnostic checkpoint](
-checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
+Read [H3.4 API and native diagnostic checkpoint](checkpoints/2026-11-08-h34-api-restic-ttyd-acceptance.md)
 before retrying anything.
 
 - The existing live H3.4 panel remains on
@@ -793,7 +780,6 @@ be confused with the three successful HTTP probes.
 A subsequent documentation-only commit may move `main` beyond the
 application-tested source SHA. Record its own docs/check results;
 do not claim the old full QA applies to modified application code.
-
 
 ## PocketHost LAN outage recovery (2026-11-08)
 

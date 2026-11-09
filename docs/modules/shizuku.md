@@ -59,7 +59,7 @@ client requests device-user permission, identifies real shell/root UID,
 binds a Shizuku `UserService` and reads a bounded native CPU `dumpsys
 cpuinfo` TOTAL sample plus visible-process count. Debug APK build and
 physical on-device authorization must be verified separately.
-The PocketHost browser still reports *companion unavailable* until an
+The PocketHost browser still reports _companion unavailable_ until an
 owner-authorized local status IPC bridge exists; do not infer connected
 state from this source commit or from Shizuku Manager installation.
 
@@ -107,7 +107,6 @@ Existing LAN routes `/dashboard` and `/shizuku` were both HTTP 200
 at the last Mac SSH audit; deploy status of the new foreground service
 remains separate.
 
-
 ## Next source slice — installed Android applications (2026-11-08)
 
 The native Shizuku UserService reads Android package names through fixed
@@ -123,7 +122,6 @@ Samsung check confirm the exact revision**. No browser action installs,
 disables, grants or uninstalls Android applications. Privileged mutations
 require a separate owner-authenticated native execution boundary; the
 trusted LAN dashboard currently does not provide that boundary.
-
 
 ## Seven-module power-user sprint — source candidate, 2026-11-08
 
@@ -150,7 +148,6 @@ positive and negative permission/management operations on a disposable
 test package, and owner UX inspection must be recorded separately.
 Do not claim all Android service/permission operations work until the
 OS accepts them on the target device.
-
 
 ## Charging and installed-application detail sprint — 2026-11-08
 
@@ -185,7 +182,6 @@ confirmation can call the authorized Shizuku Binder service.
 The LAN has no TLS, so do not place secrets into shell commands.
 See [browser shell checkpoint](../checkpoints/2026-11-08-shizuku-browser-remote-shell.md).
 Physical build, Companion install, device and browser tests are OPEN.
-
 
 ## Direct browser Advanced Shell — supersedes pairing (2026-11-09)
 
@@ -250,4 +246,3 @@ PocketHost-only panel refresh and physical operation/denial matrix must be
 reported separately with actual terminal results. Do not declare full MVP
 PASS from source commits. See
 [Shizuku MVP sprint checkpoint](../checkpoints/2026-11-09-shizuku-mvp-sprint.md).
-
