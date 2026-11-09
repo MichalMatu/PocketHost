@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [M0 implementation readiness — exact code/test impact map, no-code hold](checkpoints/2026-11-09-m0-preimplementation-readiness.md)
+
 - [M0 source and upstream reuse audit — no code changes, implementation gates open](checkpoints/2026-11-09-m0-source-and-upstream-audit-readonly.md)
 
 - [Complete 2026-11-09 code, quality, structure and next-chat checkpoint](checkpoints/2026-11-09-code-quality-structure-handoff.md)
