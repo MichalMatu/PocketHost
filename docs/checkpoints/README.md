@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [M0 pre-implementation readiness and file-by-file acceptance plan](2026-11-09-m0-preimplementation-readiness.md)
+
 - [M0 read-only source audit, reuse decisions and deferred decoupling gates](2026-11-09-m0-source-and-upstream-audit-readonly.md)
 
 - [Complete code, quality, structure and next-chat handoff](2026-11-09-code-quality-structure-handoff.md)
