@@ -52,3 +52,17 @@ plan. It neither reads nor writes actual registry files, and does not
 implement schema-v2 migration. A host-side backup provenance check and
 atomic audited restore are still required before live use. Native focused
 QA remains OPEN.
+
+## M1 explicit v1 restore adapter — disabled in production
+
+`src/modules/host/hosting-registry-restore.ts` composes the validated rollback
+plan with the single private store. A host-side caller must independently
+verify the source of the backup and supply its SHA-256; the adapter requires
+an existing owner-checked registry and writes only through the store's
+exclusive lock and revision compare-and-swap. Restoring an earlier snapshot
+creates a **new** revision, never rewinds history or adopts a service.
+
+This is **source-only** and has no live UI/API route or production registry
+binding. The new disposable fixture tests and final-SHA Samsung acceptance
+must pass before any use. Real service ownership attestation and schema-v2
+migration remain separate gates.
