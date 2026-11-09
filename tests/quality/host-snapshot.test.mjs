@@ -111,12 +111,14 @@ test('legacy service aliases have generic display roles and confer no project ow
     ['ilestoi', 'tunnel', 'ssh', 'mqtt', 'healthwatch', 'local-agent'],
   );
   assert.equal(new Set(SERVICE_CATALOG.map((service) => service.runit)).size, 6);
-  assert.ok(SERVICE_CATALOG.every((service) =>
-    !/ilestoi|photomap|wreckscanner/i.test(service.label),
-  ));
-  assert.ok(SERVICE_CATALOG.every((service) =>
-    service.scope === 'system' || service.scope === 'local-agent',
-  ));
+  assert.ok(
+    SERVICE_CATALOG.every((service) => !/ilestoi|photomap|wreckscanner/i.test(service.label)),
+  );
+  assert.ok(
+    SERVICE_CATALOG.every(
+      (service) => service.scope === 'system' || service.scope === 'local-agent',
+    ),
+  );
   const snapshot = readHostSnapshot(() => 'unknown', () => '2026-11-09T12:00:00.000Z', () => null);
   assert.ok(snapshot.services.every((service) => service.ownership === 'external'));
 });
