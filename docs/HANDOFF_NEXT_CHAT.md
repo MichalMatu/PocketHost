@@ -7,6 +7,15 @@ purpose: Resume from code/quality/structure checkpoint and verified S22 runit re
 
 # PocketHost — DEV fast iteration; historical H3.4 release evidence
 
+## Latest M0 QA handoff — source checks and Markdownlint repair
+
+Start from [M0 final source QA checkpoint](checkpoints/2026-11-09-m0-final-source-qa-handoff.md).
+Samsung S22 exact-source QA at `c97132c6` passed 196 Node tests, 18 scoped
+host/PhotoMap tests and 18 UI tests, but the full pipeline stopped on three
+MD012 extra blank lines. These were fixed in docs commit `118d3996`.
+Formal full quality PASS and live H2/device acceptance remain OPEN; fetch
+fresh main and consume native receipts before extending code.
+
 ## Latest M0 generic service catalog (source, QA still open)
 
 Read [M0 generic service aliases and PhotoMap QA repairs](checkpoints/2026-11-09-m0-generic-services-prehandoff.md).
