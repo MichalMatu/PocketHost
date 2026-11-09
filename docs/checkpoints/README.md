@@ -11,6 +11,7 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [Complete code, quality, structure and next-chat handoff](2026-11-09-code-quality-structure-handoff.md)
 - [Panel runit startup and recovery](2026-11-09-panel-runit-self-healing.md)
 - [Shizuku direct browser shell](2026-11-09-shizuku-direct-browser-shell.md)
 - [Shizuku MVP implementation](2026-11-09-shizuku-mvp-sprint.md)
