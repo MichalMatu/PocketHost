@@ -41,6 +41,32 @@ with the Shizuku UI hub and typed capability contracts. See
 earlier *product-scope* assumptions that the project must stay read-only
 forever, not Android permissions or tool execution boundaries.
 
+## Power-user UX — no artificial blockers (owner decision 2026-11-09)
+
+**Build working capabilities first. Security hardening, credential management,
+pairing, approval workflows and optional access policies are a separate final
+phase**, not prerequisites or permanent obstacles in ordinary PocketHost DEV.
+For an explicitly user-triggered Advanced Shell command in the owner-controlled
+private-LAN panel, do **not** require a pairing code, QR challenge, repeated
+phone confirmation, per-command approval dialogue or special product token.
+The user's direct Run action is the intent to execute. Return actual Android
+Shizuku ADB/root output or a genuine OS error; do not replace it with a
+read-only placeholder.
+
+Do not add arbitrary command allowlists, command-category bans, permission
+grants or extra verification rituals to a power-user operation. The requested
+operation remains limited by the **real** Android UID, available Shizuku
+authorization, bounded program execution and the explicit target selected
+by the owner. Never pretend ADB is root.
+
+Postpone UX-facing security hardening until functional acceptance; design the
+transport so authorization/TLS can be added without rewriting the feature.
+This is **not** permission to expand the server to WAN, remove private-network
+binding, execute commands automatically, leak secrets or modify unrelated
+Termux services. Do not claim an unauthenticated HTTP shell is secure; document
+that exposure as an explicit DEV-only risk. Preserve the owner-directed
+no-autostart and process-ownership rules below.
+
 ## Active working mode — rapid DEV iterations (owner decision 2026-11-08)
 
 PocketHost is a **development-only Termux control panel**, not a commercial
