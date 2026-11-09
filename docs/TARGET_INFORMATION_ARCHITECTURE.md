@@ -120,7 +120,12 @@ platform facilities. Reuse existing `runit`, H2 release handling,
 Restic tooling and negative ownership guards rather than duplicating
 watchdogs. Minimal secret references and backup/restore precede
 production routing/migration; advanced secret rotation can follow.
-The canonical M0–M7 acceptance sequence lives in [Roadmap](ROADMAP.md).
+The canonical M0–M7 acceptance sequence lives in [Roadmap](ROADMAP.md). Before
+implementing a module, apply the [upstream-first review](
+UPSTREAM_REUSE_STRATEGY.md): official Termux tools and existing
+owner projects precede custom lifecycle/backup/tunnel implementations.
+An external panel's UI or process code is not an authorization to
+adopt live Termux services.
 
 ## Responsibility boundaries — system versus application
 
