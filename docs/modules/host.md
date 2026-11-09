@@ -119,3 +119,14 @@ Samsung H2 source G2 and two real-site ZIP/folder
 LAN G3 passed at `750c4b3`; PhotoMap was not
 started and all six protected services remained
 running. See [H2 checkpoint](../checkpoints/2026-11-07-h2-static-hosting-source.md).
+
+## M1 declarative registry file adapter — source candidate
+
+The `hosting-registry-store.ts` file adapter is deliberately host-owned.
+It stores only explicitly validated, versioned Hosting declarations in a
+caller-supplied canonical private directory, using bounded atomic replacement
+and exclusive locking. Validation is a pure shared contract, not a second
+supervisor. An observed runit service or port is never auto-registered.
+The refactored source still needs exact-SHA Samsung validation. No existing
+H2 release directory, external service, or live panel is touched by this
+source-only addition.
