@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [M0 implementation sprint: Hosting/System UI separation; native QA OPEN](checkpoints/2026-11-09-m0-implementation-ui-separation-sprint.md)
+
 - [Autonomous sprint QA and M0-M3 handoff](checkpoints/2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
 
 - [M0 implementation readiness — exact code/test impact map, no-code hold](checkpoints/2026-11-09-m0-preimplementation-readiness.md)
