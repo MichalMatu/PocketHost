@@ -10,157 +10,221 @@ purpose: Canonical modular-platform roadmap; Hosting orchestrates reusable runti
 ## Accepted target — modular PocketHost platform (2026-11-09)
 
 **PocketHost = modular platform; Hosting = orchestrator of modules.**
-The owner selected this as the target architecture, superseding the
-earlier Hosting-first or flat Termux-service design for **future work**.
-This is an **approved direction, not implemented functionality**.
-Historic H1/H2/H3/O1/Shizuku source and acceptance records below stay
-intact; any older "next milestone" labels are historical and do not
-override the delivery order in this section.
+This is the approved **target**, not a claim of deployed functionality.
+Existing H1/H2/H3/O1/Shizuku results below remain historical evidence;
+older "next milestone" labels do not override the sequence here.
 
-### Navigation and responsibility
+### Three distinct layers
 
-- **Dashboard:** aggregate health, alerts and active PocketHost resources.
-- **Hosting:** user-created projects, deploy/release history, local routes,
-  project backups and logs. It **consumes modules**, not private copies
-  of their process, package, SSH or tunnel implementations.
-- **Modules:** independent visible Node.js, Python/PRoot, SSH, Cloudflare
-  and, later, Database modules. Every module has its own configuration,
-  availability/status, install/update workflow, runtime controls where
-  applicable, diagnostics and capability contract.
-- **Termux / System:** host packages, files, generic processes/services,
-  terminal, system-level backups and resource observability.
-- **Android & Shizuku:** device-level apps, processes, permissions and
-  privileged operations according to actual Android capabilities.
-- **Automation:** agents, tasks and their explicit service bindings.
-- **Platform:** access to the PocketHost control plane, diagnostics,
-  general settings and appearance.
+1. **Modules:** Node.js, Python (optional PRoot), SSH, Cloudflare and
+   later Databases. Each has its own UI, configuration, real capabilities,
+   dependency inspection and diagnostics. A module is not necessarily a
+   persistent service: Node/Python are runtime providers; SSH and
+   Cloudflare also expose infrastructure endpoints.
+2. **Managed services:** individual, explicitly registered processes
+   (including application components or shared `sshd`/`cloudflared`)
+   with a single verified lifecycle owner, a desired state, an observed
+   state, logs and a policy. These are controlled through **one existing
+   Termux `runit` supervisor path**, not parallel process managers.
+3. **Hosting projects:** only projects the user creates through PocketHost.
+   A project consists of `components[]` (static frontend, Node backend,
+   Python worker, etc.), explicit module references, owned releases,
+   persistent data and optional route bindings. Hosting consumes module
+   capabilities; it does not reimplement them.
 
-The modules menu is **a new target**, not a claim that the approved
-2026-11-09 five-group menu or corresponding routes already contain it.
-The exact menu layout may evolve, but independent modules and a
-Hosting orchestrator are the settled direction.
+The target top-level menu is **Dashboard; Hosting; Modules; Termux/System;
+Android & Shizuku; Automation; Platform**. SSH and Cloudflare have
+their own pages under Modules. Hosting can *use* a shared Cloudflare
+route or runtime without owning or duplicating its service process.
+The [target navigation document](TARGET_INFORMATION_ARCHITECTURE.md)
+defines the full menu; current source navigation is transitional.
 
-Module identities and boundaries:
+### Required registries and shared platform facilities
 
-| Module | Owns | Consumed by |
-| --- | --- | --- |
-| Node.js | Node/npm runtime versions, app-local dependencies, launch capability and runtime diagnostics | Hosting for Node frontend/backends; Automation where needed |
-| Python / PRoot | Python versions/venvs, requirements, optional isolated PRoot environment and executable launch contract | Hosting for Python services; Automation for Agent runtimes |
-| SSH | Termux `sshd` service, port, server configuration, authorized public keys, status/logs, autostart and recovery | Platform remote access; workflows requiring an SSH endpoint |
-| Cloudflare | One reusable `cloudflared` runtime, tunnel profiles, validated ingress, health/recovery and private credential references | Hosting domain bindings and any future explicitly configured consumers |
-| Databases (later) | Project-scoped engine provisioning, lifecycle, data volumes, backup/restore and diagnostics | Hosting and other explicitly authorized projects |
-| Shared services | Exact-owner supervision, dependency/version inspection, configuration validation, events, health policies, restart cooldowns, backups and secrets references | All modules, with a **single lifecycle owner** for every service |
+- **`ModuleRegistry`:** stable module IDs, supported capability
+  versions, availability and configuration schema.
+- **`ServiceRegistry`:** immutable service ID, verified PocketHost
+  owner identity, module/component references, runit registration and
+  desired/observed lifecycle states. No lifecycle right is inferred
+  from process name, PID, port, existing runit directory or discovery.
+- **`ProjectRegistry`:** user-created project and `components[]`,
+  release pointers, persistent storage, route IDs, `SecretRef` and
+  service references. Declarative intent and live runtime observations
+  are stored separately. All new manifests carry `schemaVersion`.
 
-**SSH public-key authentication and browser passkeys are different
-technologies.** Audit existing SSH/key handling before adding or
-renaming UI controls; do not imply that WebAuthn/passkeys or a
-key manager is already implemented.
+Use narrow typed contracts (e.g. `ModuleCapability`,
+`DependencyPlan`, `ComponentRuntime`, `ServiceLifecycle`,
+`HealthPolicy`, `SecretRef`, `BackupPolicy`); evolve the existing
+`sites`, `runtime`, `host` and shared adapters instead of building
+another framework. No arbitrary plugin execution or feature-to-feature
+internal imports. Existing Termux service administration remains
+separate from permission to manage a PocketHost-owned service.
 
-A module may expose Termux-global package prerequisites, but may
-install/update them only after a separate user-reviewed system
-operation. App-local `npm ci`, Python venvs and project dependencies
-belong to the module's project-scoped runtime plan. Module APIs use
-typed contracts in `shared` and one host execution boundary; do not
-copy runit, watchdog or Cloudflare logic into each feature.
+Shared platform facilities, **not duplicate implementations per module**:
 
-### Delivery sequence — build on accepted code, not a rewrite
+- **Dependencies:** inspect only explicitly selected source/manifests
+  (`package.json` + lockfile, Python requirements/pyproject and
+  supported service declarations). `Check` is read-only;
+  `Install`/`Update` first preview an exact, reviewed plan.
+  Global `pkg` updates are independent from app-local `npm ci`,
+  venv/locked Python dependencies and optional PRoot environments.
+- **Reliability:** one `SupervisorAdapter` delegates lifecycle to
+  verified Termux runit ownership. A separate shared health-policy
+  evaluator handles process exit vs readiness, startup grace,
+  failure thresholds, cooldown, max recovery actions, manual `down`
+  markers and diagnostic history. Never restart a tunnel because
+  any arbitrary public HTTP request failed. No new competing daemon.
+- **Secrets:** a minimal secret-reference contract, private
+  on-device configuration/permissions and redacted diagnostics
+  exist **before Cloudflare or dynamic production data**. Public
+  keys and WebAuthn passkeys are different from private SSH keys.
+  More advanced rotation/access policies may follow in M7.
+- **Backup:** one backup/restore contract, with project-scoped
+  data sources and adapters such as the existing Restic tooling.
+  Releases are not backups; backup integrity and disposable restore
+  must be demonstrated before migrating mutable workloads.
+  Lock backup and retention/prune jobs against overlapping work.
+- **Source/build/deploy:** isolated staging, pinned source/revision,
+  dependency plan, build artifact integrity, readiness gate,
+  atomic active-release pointer/route activation where supported,
+  and a known rollback target. Application data and schema
+  migrations are **not** rolled back merely by swapping code.
 
-1. **M0 — Baseline and decoupling (first):** audit the current
-   H2 static fleet, P3 demo, H3 Termux admin, installed panel
-   supervisor and host adapters. Preserve existing user sites,
-   release history, boot scripts and independent external services.
-   Remove hard-coded IleStoi/PhotoMap product integration from
-   PocketHost views and future adapters without deleting their
-   original data or switching production processes. Establish
-   explicit project/module ownership; no port or process scanning
-   to populate Hosting.
-2. **M1 — Common module contracts and catalog:** define an
-   app-created module registry and reusable `ModuleCapability`,
-   `DependencyPlan`, `ServiceLifecycle`, `HealthPolicy`,
-   `ConfigSnapshot` and `BackupPolicy` interfaces. Provide
-   status states including installed/missing/incompatible/unknown
-   and service disabled/stopped/running/degraded. Adapt existing
-   generic runtime registry and exact-owner supervisor instead
-   of introducing a competing process manager.
-3. **M2 — Shared dependencies and supervision:** read manifests
-   from an **explicitly supplied** project or module source,
-   e.g. `package.json` plus lockfile, `requirements.txt`,
-   `pyproject.toml` and an explicit PocketHost service manifest.
-   Compare requirements to the real installed environment;
-   implement **Check / Install / Update** with a preview of
-   changes, separate system vs app-local operations, failure
-   reporting and post-install verification. Reuse Termux
-   `runit` for owned processes. Centralize configurable
-   liveness/readiness checks, startup grace, failure threshold,
-   cooldown, manual disable, autostart and recovery history.
-   Different services may require **different** health rules.
-4. **M3 — First visible modules (SSH and Node.js):** SSH gets
-   a dedicated configuration/status screen using existing
-   `sshd` and carefully scoped key-management facilities.
-   Node.js gets version/dependency checks, runtime settings,
-   per-project start/stop/logs and a disposable backend service
-   acceptance case. Keep SSH's existing independent endpoint
-   available during development.
-5. **M4 — Cloudflare and Python/PRoot modules:** show configured
-   tunnel profiles, origin-to-project routes and runtime health
-   without copying credentials into Hosting. Preserve the
-   working Cloudflare ingress and its explicit disable marker;
-   do not create a second tunnel or rewrite DNS on discovery.
-   Python/PRoot provides scoped environment, package checks
-   and runtime lifecycle on disposable data; never rebrand
-   PhotoMap's fixed adapter as the generic Python driver.
-6. **M5 — Hosting orchestration:** one **Create Project** flow:
-   source ZIP/folder or chosen repo -> detect manifests inside
-   that source -> select runtime modules -> check dependencies
-   -> configure health/restart/data/backup -> stage/verify
-   -> start/publish -> optionally bind a Cloudflare route.
-   Preserve and reuse H2's working static upload, immutable
-   releases, safe rollback and process ownership. Add Node
-   frontend + backend, then Python; support multiple components
-   without multiple conflicting supervisors.
-7. **M6 — Explicit service migration (after functional PASS):**
-   create new PocketHost-managed IleStoi, its backup policy,
-   shared Cloudflare service/route and eventually Local Agent
-   using the same workflows. Do **not** discover/adopt the live
-   Termux services automatically. Stage separately, preserve
-   SQLite/media/secrets/Restic and independent rollback, prove
-   no simultaneous database writers or duplicate Agent Git
-   consumers. Cut over **one service at a time** through an
-   independent SSH/USB operator; **Local Agent last** and never
-   using its own queued task to stop itself. Retire old
-   service definitions/boot hooks only after verified cutover.
-8. **M7 — Expansion and product hardening:** database drivers,
-   additional runtime stacks, templated module installation,
-   security/authentication for wider access and expanded
-   automation/API. Never equate a private HTTP DEV panel with
-   an internet-safe administrative endpoint.
+### Delivery roadmap with acceptance gates
 
-### Acceptance and non-goals
+**P0 = required for the first reliable dynamic project;
+P1 = integrations and migration preparation;
+P2 = later expansion.** Complete small end-to-end slices on Samsung,
+not a large framework with no runnable project.
 
-- **Per module:** config/schema validation; actual installed/runtime
-  state; scoped dependency check; owned start/stop/autostart where
-  relevant; fault and recovery history; truthful unsupported states;
-  target-specific negative tests for unrelated-process interference.
-- **Per hosted project:** source-based provisioning; successful
-  network readiness; launch/restart; immutable release and rollback;
-  correct module bindings; backup **and tested restore** for mutable
-  data; no unexpected port conflict or existing-service takeover.
-- **Per migrated workload:** working old service before switching,
-  independent access and rollback, one active owner at a time,
-  verified health after cutover and actual boot/recovery testing.
-- **Explicit exclusions:** no automatic Termux server discovery as
-  Hosting projects, no silent migration, no blanket global
-  `pkg upgrade`, no blanket restart-on-failure policy and no
-  production service deletion before replacement acceptance.
+1. **M0 — P0 / baseline and decoupling.** Inventory H2 static sites,
+   P3 demo, admin control plane and actual registered services.
+   Remove product-specific IleStoi/PhotoMap knowledge from new
+   Hosting interfaces; retain existing deny guards while replacing
+   them with positive ownership. Preserve all live external
+   services, existing H2 sites/releases and their network routes.
+   **Done when:** H2 static Create/Start/Publish/Rollback still works,
+   no foreign lifecycle action becomes available and no live
+   production process or data is modified by this cleanup.
 
-The existing IleStoi watchdog's conditional Cloudflare recovery,
-Local Agent's durable UNKNOWN/no-replay task safeguards and
-PocketHost panel's independent HTTP watchdog are **different policies**
-to preserve as reusable configurations, **not** scripts to duplicate.
-See the [target architecture and migration inventory](
-TARGET_INFORMATION_ARCHITECTURE.md) and [development plan](
-DEVELOPMENT_PLAN.md) for implementation boundaries.
+2. **M1 — P0 / identity and component contracts.** Introduce
+   `ModuleRegistry`, `ServiceRegistry`, `ProjectRegistry`,
+   versioned `components[]`, typed capability references and
+   minimal `SecretRef`. Reuse the verified H2 owner identity
+   and runtime registry, without inferring ownership from discovery.
+   **Done when:** registry persistence/migration, duplicate IDs,
+   stale identities, port collisions and unauthorized lifecycle
+   attempts are covered by focused negative tests.
 
+3. **M2 — P0 / shared execution and recovery foundations.**
+   Build minimal manifest inspection and reviewed dependency plans;
+   shared runit lifecycle adapter, health policy/events and
+   scoped backup/restore contracts. Preserve per-workload policies:
+   IleStoi public+origin+internet tunnel recovery, PocketHost panel
+   watchdog and Local Agent UNKNOWN/no-replay are **not the same**
+   restart rule. Wire small working facilities before adding
+   abstraction points for unimplemented runtimes.
+   **Done when:** owned process exit/health failure can be
+   distinguished, cooldown and manual disable are honored,
+   unowned processes are untouched, dependency changes are
+   previewed, and a disposable backup+restore succeeds.
+
+4. **M3 — P0 / early real Hosting MVP on Node.js.** Add a minimal
+   `Create Project` path for one explicitly supplied Node source
+   using the new component model; retain the existing H2 static
+   path. Implement `package.json` + lockfile inspection,
+   project-local `npm ci`, build/start, owned port, readiness,
+   logs, versioned staged release and rollback. Keep controls
+   local/private; **do not wait for SSH/Cloudflare/Python modules**
+   or a fully featured wizard to prove Hosting.
+   **Done when:** a disposable Node app is created from scratch
+   in the browser, started, updated, failed safely, rolled back
+   and restored after a controlled crash without touching H2,
+   IleStoi, Local Agent or their ports.
+
+5. **M4 — P1 / reusable infrastructure and second runtime.**
+   Build distinct SSH and Cloudflare module pages plus a Python
+   venv runtime module. SSH provides configuration, public-key
+   management and independently healthy emergency access;
+   never break existing `sshd` to test a new control panel.
+   Cloudflare represents shared tunnel profiles, origin/ingress
+   validation, routes and secret references with **one** process
+   owner; showing an external existing tunnel does not authorize
+   modifying it. Python dependencies and lifecycle run on
+   a disposable, separately owned application. PRoot remains
+   opt-in and subject to descendant/orphan acceptance.
+   **Done when:** Node and Python adapters share contracts,
+   module health differentiates external outage from origin
+   failure, and SSH plus current production tunnel remain
+   unaffected unless explicitly cut over.
+
+6. **M5 — P1 / complete Hosting orchestration.** Expand the
+   wizard to source ZIP/folder/explicit repo -> detect contained
+   manifests -> configure multiple `components[]` -> dependency
+   review -> secrets/storage/health/backup -> stage/test ->
+   publish -> optional Cloudflare route. Keep H2 static UX
+   as the fast path and immutable release model as its base.
+   Add an integrated Node frontend+backend scenario, then
+   Python workers/optional PRoot. Use a coordinated release
+   plan for components; no direct Hosting writes into
+   Cloudflare/SSH internals.
+   **Done when:** multi-component start/update/rollback, routing
+   validation, port conflict, persistent data restore and
+   failure injection pass on disposable project fixtures.
+   Schema/data migrations require compatibility or an
+   independently tested recovery plan before publish.
+
+7. **M6 — P1 / explicitly staged workload migration.** Recreate
+   IleStoi (including its independent backup and health policy),
+   then appropriate shared Cloudflare bindings, and **Local
+   Agent last**, by provisioning new PocketHost-owned services
+   rather than adopting running Termux processes. PhotoMap is
+   optional as a fresh test project, never a required takeover.
+   During staged tests use separate ports and copied data.
+   **Done when:** verified independent SSH/USB rollback is
+   available; a final data sync avoids concurrent SQLite writers;
+   exactly one Cloudflare service owner and one Local Agent
+   queue consumer exist; reboot, Wi-Fi loss/return, process
+   crash, Android background suspension and service recovery
+   pass on the actual phone. The Agent may never stop or
+   replace itself through its queued task. Retire old boot/runit
+   registrations only **after** each target passes.
+
+8. **M7 — P2 / expansion and external-access hardening.**
+   Additional database/runtime adapters, optional advanced
+   secret rotation, scheduled operations, authenticated API,
+   and hardened administration beyond the trusted private LAN.
+   Production WAN/public administration is never enabled
+   merely because M3 works.
+
+### Cross-cutting verification and non-goals
+
+- **Per module:** schema/config validation, real installed state,
+  truthful unsupported state, dependency plan preview and explicit
+  target identity; diagnostic output never leaks credentials.
+- **Per service:** one owner, correct runit registration,
+  process/start-identity checks, restart-loop protection and
+  durable manual disable; unknown identity is not actionable.
+- **Per release:** source/revision hash, staging, readiness, atomic
+  activation where possible, retained prior release, log trace
+  and tested rollback. Verify mutable data separately.
+- **Per phone:** tested power/boot behavior, recovery after
+  Termux/Android suspend, LAN versus origin/tunnel failures,
+  disk pressure, backup/restore and safe remote SSH recovery.
+  Never infer device PASS from a GitHub commit.
+- **Explicit exclusions:** no automatic discovery/adoption of
+  running Termux websites as Hosting projects; no unreviewed
+  global package upgrades; no duplicate `cloudflared`;
+  no second task consumer; no blanket health-failure restart;
+  no premature shutdown of external services.
+- **Security boundary:** the existing private-LAN HTTP DEV
+  control panel is not safe for Internet exposure. Changes
+  to SSH, secrets, DNS, external services or public ingress
+  require a specific reviewed owner action.
+
+See [target architecture](TARGET_INFORMATION_ARCHITECTURE.md),
+[module contracts](MODULES.md) and
+[implementation plan](DEVELOPMENT_PLAN.md).
 
 ## Android & Shizuku MVP — implementation sprint (2026-11-09)
 
