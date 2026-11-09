@@ -64,8 +64,11 @@ transport so authorization/TLS can be added without rewriting the feature.
 This is **not** permission to expand the server to WAN, remove private-network
 binding, execute commands automatically, leak secrets or modify unrelated
 Termux services. Do not claim an unauthenticated HTTP shell is secure; document
-that exposure as an explicit DEV-only risk. Preserve the owner-directed
-no-autostart and process-ownership rules below.
+that exposure as an explicit DEV-only risk. Preserve process-ownership rules below. The owner-approved 2026-11-09
+exception authorizes **only the PocketHost DEV administration panel** to
+use existing Termux runit autostart and bounded self-healing. It does not
+authorize automatic startup or signaling of external services or hosted
+applications. See [ADR-0014](docs/adr/0014-termux-panel-supervision.md).
 
 ## Active working mode — rapid DEV iterations (owner decision 2026-11-08)
 
