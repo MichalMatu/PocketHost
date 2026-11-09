@@ -137,6 +137,86 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
+  it("chooses and changes the permissions app entirely inside Permissions", async () => {
+    const fetcher = mount(async url => {
+      if (url.endsWith("/status")) return status
+      if (url.endsWith("/apps")) return apps
+      if (url.endsWith("/system")) return system
+      if (url.includes("/app?package=")) {
+        const packageName = decodeURIComponent(url.split("package=")[1])
+        return {
+          version: 1, source: "android-companion", packageName,
+          label: packageName.endsWith("app0") ? "Example 0" : "Example 1",
+          versionName: "1.0", versionCode: 1, targetSdk: 35,
+          enabled: true, system: false,
+          permissions: [{
+            name: packageName.endsWith("app0") ? "android.permission.CAMERA" : "android.permission.RECORD_AUDIO",
+            granted: packageName.endsWith("app0"),
+          }],
+        }
+      }
+      throw new Error("unexpected route: " + url)
+    })
+    const user = userEvent.setup()
+    await screen.findByText("Example 0")
+    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
+    expect(screen.getByRole("textbox", { name: "Search applications for permissions" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Choose application" })).toBeNull()
+
+    await user.click(screen.getByRole("button", {
+      name: "Inspect permissions for Example 0 (com.example.app0)",
+    }))
+    expect(await screen.findByText("android.permission.CAMERA")).toBeTruthy()
+    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByText("1 granted")).toBeTruthy()
+
+    fireEvent.change(screen.getByRole("textbox", { name: "Search applications for permissions" }), {
+      target: { value: "com.example.app1" },
+    })
+    await user.click(screen.getByRole("button", {
+      name: "Inspect permissions for Example 1 (com.example.app1)",
+    }))
+    expect(await screen.findByText("android.permission.RECORD_AUDIO")).toBeTruthy()
+    expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
+    expect(screen.getByText("1 not granted")).toBeTruthy()
+    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
+    expect(fetcher.mock.calls.some(call => String(call[0]).includes("/app?package=com.example.app1"))).toBe(true)
+  })
+
+  it("paginates the permissions app picker and retries detail errors in place", async () => {
+    let attempts = 0
+    mount(async url => {
+      if (url.endsWith("/status")) return status
+      if (url.endsWith("/apps")) return apps
+      if (url.endsWith("/system")) return system
+      if (url.includes("/app?package=")) {
+        attempts++
+        if (attempts === 1) throw new Error("temporary failure")
+        return {
+          version: 1, source: "android-companion", packageName: "com.example.app20",
+          label: "Example 20", versionName: "1.0", versionCode: 1, targetSdk: 35,
+          enabled: true, system: false,
+          permissions: [{ name: "android.permission.CAMERA", granted: true }],
+        }
+      }
+      throw new Error("unexpected route: " + url)
+    })
+    const user = userEvent.setup()
+    await screen.findByText("Example 0")
+    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
+    expect(screen.getByText(/of 175/)).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Inspect permissions for Example 20 (com.example.app20)" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Next permission applications" }))
+    await user.click(screen.getByRole("button", {
+      name: "Inspect permissions for Example 20 (com.example.app20)",
+    }))
+    expect(await screen.findByText("Permissions could not be read. Retry here or select another app.")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Retry permissions" }))
+    expect(await screen.findByText("android.permission.CAMERA")).toBeTruthy()
+    expect(attempts).toBe(2)
+    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
+  })
+
   it("isolates inventory failure without hiding real Shizuku connection", async () => {
     mount(async url => {
       if (url.endsWith("/status")) return status

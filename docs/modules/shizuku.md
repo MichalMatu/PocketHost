@@ -215,3 +215,16 @@ Node 9/9, browser UI 2/2, lint, TypeScript, Vite and native Gradle builds
 passed. Unrelated Termux services retained all prior observed states.
 For evidence and pending final owner visual review, see
 [2026-11-09 direct shell checkpoint](../checkpoints/2026-11-09-shizuku-direct-browser-shell.md).
+
+## Permissions single-tab picker (source update 2026-11-09)
+
+The Permissions tab now embeds its own searchable, paginated installed-app
+picker with user/system filters. Choosing or changing an app reads its actual
+native permission details without sending the user to Applications. Errors
+can be retried in the same tab, and a selection made in Applications is still
+shared. The outdated read-only-browser notice is corrected to acknowledge
+the already accepted direct Advanced Shell.
+
+This is a UI-only source change. Its new interaction regression tests and
+physical Samsung browser refresh require their own execution receipt; do not
+interpret this commit as a live deployment or test PASS.

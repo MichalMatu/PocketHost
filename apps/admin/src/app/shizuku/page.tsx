@@ -18,6 +18,7 @@ import {
 type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power"
 type PackageFilter = "all" | "user" | "system"
 const PAGE_SIZE = 80
+const PERMISSION_APP_PAGE_SIZE = 20
 
 const sections = [
   { id: "applications", label: "Applications", icon: AppWindow },
@@ -58,9 +59,9 @@ function NativeOwnerNotice({ specific }: { specific: string }) {
         <ShieldCheck className="size-4" /> Owner-approved Android actions
       </p>
       <p className="text-muted-foreground">
-        {specific} To change the phone, open the PocketHost Companion on your Samsung and
-        approve the exact action there. Commands and mutations are never forwarded
-        through this login-free LAN dashboard.
+        {specific} App, process, service and permission changes currently use
+        PocketHost Companion on Samsung. Advanced Shell runs directly from this
+        private-LAN browser.
       </p>
     </CardContent>
   </Card>
@@ -83,6 +84,9 @@ export default function ShizukuPage() {
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
   const [permissionSearch, setPermissionSearch] = React.useState("")
+  const [permissionAppSearch, setPermissionAppSearch] = React.useState("")
+  const [permissionPackageFilter, setPermissionPackageFilter] = React.useState<PackageFilter>("all")
+  const [permissionAppPage, setPermissionAppPage] = React.useState(0)
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
   const [servicePage, setServicePage] = React.useState(0)
   const [appPage, setAppPage] = React.useState(0)
@@ -170,6 +174,16 @@ export default function ShizukuPage() {
   const visibleApps = shownApps.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE)
   const visibleProcesses = shownProcesses.slice(processPage * PAGE_SIZE, (processPage + 1) * PAGE_SIZE)
   const visibleServices = shownServices.slice(servicePage * PAGE_SIZE, (servicePage + 1) * PAGE_SIZE)
+  const permissionApps = (apps?.packages ?? []).filter(item =>
+    (permissionPackageFilter === "all" ||
+      (permissionPackageFilter === "system" ? item.system : !item.system)) &&
+    (item.packageName.toLowerCase().includes(permissionAppSearch.trim().toLowerCase()) ||
+      item.label.toLowerCase().includes(permissionAppSearch.trim().toLowerCase()))
+  )
+  const visiblePermissionApps = permissionApps.slice(
+    permissionAppPage * PERMISSION_APP_PAGE_SIZE,
+    (permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE,
+  )
   const visiblePermissions = (appDetail?.permissions ?? []).filter(permission =>
     permission.name.toLowerCase().includes(permissionSearch.trim().toLowerCase())
   )
@@ -396,28 +410,88 @@ export default function ShizukuPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Android app permissions</CardTitle>
-                <CardDescription>Observed requested permissions for the selected app. A reported grant is not an assertion that Android will permit changing it.</CardDescription>
+                <CardDescription>Choose an app and inspect its actual requested permission grants here. A reported grant does not guarantee Android will allow changing it.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3">
-                {!selectedPackage ? (
-                  <div className="space-y-3">
-                    <p className="text-muted-foreground text-sm">Select an installed application to inspect its actual permission grants.</p>
-                    <Button variant="outline" onClick={() => setSection("applications")}>Choose application</Button>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
+                  <div className="min-w-0 space-y-3">
+                    <p className="text-sm font-medium">Applications</p>
+                    <div className="relative">
+                      <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
+                      <Input aria-label="Search applications for permissions" className="pl-9"
+                        value={permissionAppSearch}
+                        onChange={event => { setPermissionAppSearch(event.target.value); setPermissionAppPage(0) }}
+                        placeholder="Find application or package..." />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {(["all", "user", "system"] as const).map(filter => (
+                        <Button size="sm" key={filter}
+                          variant={permissionPackageFilter === filter ? "default" : "outline"}
+                          onClick={() => { setPermissionPackageFilter(filter); setPermissionAppPage(0) }}>
+                          {filter === "all" ? "All" : filter === "user" ? "User" : "System"}
+                        </Button>
+                      ))}
+                    </div>
+                    {!apps ? <p role="status" className="text-muted-foreground text-sm">
+                      {appsLoading ? "Loading Android applications…" :
+                        appsError ? "Application inventory request failed. Try Refresh." :
+                          "Package inventory unavailable or not authorized."}
+                    </p> : (
+                      <>
+                        <div className="max-h-[360px] overflow-y-auto rounded-lg border">
+                          {visiblePermissionApps.map(item => (
+                            <button key={item.packageName} type="button"
+                              aria-label={"Inspect permissions for " + item.label + " (" + item.packageName + ")"}
+                              aria-pressed={selectedPackage === item.packageName}
+                              className={"flex w-full items-center justify-between gap-2 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
+                                (selectedPackage === item.packageName ? "bg-muted" : "")}
+                              onClick={() => { setPermissionSearch(""); void selectPackage(item.packageName) }}>
+                              <span className="min-w-0 space-y-1">
+                                <span className="block font-medium break-words">{item.label || item.packageName}</span>
+                                <span className="block font-mono text-muted-foreground text-xs break-all">{item.packageName}</span>
+                              </span>
+                              <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
+                            </button>
+                          ))}
+                          {permissionApps.length === 0 && (
+                            <p className="p-3 text-sm text-muted-foreground">No matching applications.</p>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span>
+                            {permissionApps.length ? permissionAppPage * PERMISSION_APP_PAGE_SIZE + 1 : 0}–
+                            {Math.min((permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE, permissionApps.length)} of {permissionApps.length}
+                            {apps.truncated ? " · inventory truncated" : ""}
+                          </span>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" aria-label="Previous permission applications"
+                              disabled={permissionAppPage === 0}
+                              onClick={() => setPermissionAppPage(p => p - 1)}>Previous</Button>
+                            <Button size="sm" variant="outline" aria-label="Next permission applications"
+                              disabled={(permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE >= permissionApps.length}
+                              onClick={() => setPermissionAppPage(p => p + 1)}>Next</Button>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0 space-y-3 rounded-lg border p-4">
+                    <p className="text-sm font-medium">Selected application permissions</p>
+                    {selectedPackage ? (
                       <div className="min-w-0">
                         <p className="font-medium break-words">{appDetail?.label || selectedPackage}</p>
                         <p className="font-mono text-muted-foreground text-xs break-all">{selectedPackage}</p>
                       </div>
-                      <Button size="sm" variant="outline" onClick={() => setSection("applications")}>Change app</Button>
-                    </div>
+                    ) : <p className="text-muted-foreground text-sm">Select an application from the list to inspect its permissions.</p>}
                     {detailLoading && <p role="status" className="text-muted-foreground text-sm">Reading app permissions…</p>}
-                    {!detailLoading && !appDetail && (
-                      <p role="status" className="text-muted-foreground text-sm">
-                        {detailError ? "Permissions could not be read. Return to Applications and select the app again." : "No verified app details available."}
-                      </p>
+                    {selectedPackage && !detailLoading && !appDetail && (
+                      <div className="space-y-2">
+                        <p role="status" className="text-muted-foreground text-sm">
+                          {detailError ? "Permissions could not be read. Retry here or select another app." : "No verified app details available."}
+                        </p>
+                        <Button size="sm" variant="outline"
+                          onClick={() => { void selectPackage(selectedPackage) }}>Retry permissions</Button>
+                      </div>
                     )}
                     {appDetail && (
                       <>
@@ -444,8 +518,9 @@ export default function ShizukuPage() {
                         </div>
                       </>
                     )}
-                  </>
-                )}
+                  </div>
+                </div>
+                <LastSample observedAt={apps?.observedAt} />
               </CardContent>
             </Card>
             <NativeOwnerNotice specific="Grant or revoke a named runtime permission in Companion → Permissions. Android may deny that operation." />
@@ -534,7 +609,7 @@ export default function ShizukuPage() {
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>Browser = read-only diagnostics · Companion on Samsung = confirmed privileged actions · ADB ≠ root</p>
+          <p>Browser = Android diagnostics + Advanced Shell · Other Android changes = Companion on Samsung · ADB ≠ root</p>
           <Button size="sm" variant="outline" nativeButton={false} render={<Link to="/observability" />}>
             <Activity className="size-4" /> Termux monitoring
           </Button>
