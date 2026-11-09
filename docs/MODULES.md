@@ -1,8 +1,8 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-07
-purpose: Define module ownership and contracts for Observability
+last_reviewed: 2026-11-09
+purpose: Define current module boundaries and target modular platform contracts
 ---
 
 # Module Boundaries
@@ -17,6 +17,34 @@ Use explicit contracts in `src/shared` and
 a composition boundary. Only `host` executes
 Termux process/filesystem operations. The UI
 has no direct OS or shell access.
+
+## Approved target: modules, managed services, Hosting
+
+The 2026-11-09 [roadmap](ROADMAP.md) distinguishes three layers:
+
+- **`ModuleRegistry`:** Node.js, Python/PRoot, SSH, Cloudflare and
+  later databases, each exposing versioned capabilities, module UI
+  and configuration. A module is **not** a project.
+- **`ServiceRegistry`:** exactly one explicit lifecycle owner
+  per runit service. The host adapter checks ownership; observation
+  of a port/name/PID does not permit starting or stopping it.
+- **`ProjectRegistry`:** only app-created Hosting projects, with
+  versioned `components[]` referencing runtime modules, services,
+  dependencies, network, secrets and releases.
+
+Shared contracts include `DependencyPlan`, `ServiceLifecycle`,
+`HealthPolicy`, `SecretRef` and `BackupPolicy`. Their concrete
+execution remains behind the existing Termux `host` adapter.
+The shared `SupervisorAdapter` delegates to runit, and the
+health evaluator triggers bounded owner-specific recovery only.
+Do **not** add an independent supervisor per module.
+
+Start with a one-component **Node.js Hosting project at M3**,
+then separate SSH/Cloudflare/Python integrations at M4 and
+complete multi-component orchestration at M5. Reuse current
+H2 static hosting and existing runit policies; no automatic
+takeover of IleStoi or Local Agent. No new source module or
+manifest is claimed to exist by this architecture decision.
 
 ## New power-user integration
 
