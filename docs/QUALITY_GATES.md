@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
+## Most recent M0/M1 native focused evidence (2026-11-09)
+
+At `10731bca`, Samsung PASS: structure, module boundaries, root lint and **19/19 targeted UI**. M1 registry: 8/9, with one Android `umask` fixture failure; TypeScript: three optional-UID errors. Commit `9fb7db9` fixes these two source issues, with only targeted negative-test and TypeScript QA requested. Twelve Prettier warnings were observed on the earlier code SHA; corrected canonical diff inspection and final-source G1/G2 remain OPEN. See [latest checkpoint](checkpoints/2026-11-09-m0-m1-native-focused-ui-pass-repairs.md). No live migration or physical release was attempted.
+
 ## M0/M1 focused source follow-up (2026-11-09)
 
 [Latest resumed checkpoint](checkpoints/2026-11-09-m0-m1-resume-native-validation-handoff.md) records the targeted UI test corrections (`4754b535`) and M1 registry hardening (`10731bca`). Native focused testing and read-only Prettier-diff tasks were published, **not yet accepted**. Do not reuse prior 196/18/18 PASS as exact-current-HEAD certification. The inherited Prettier nine-file warning and four full-UI failures remain OPEN until verified repaired. M1 rejects silent legacy/future schema migration; no migration or physical ownership acceptance occurred. **G0/G1/G2 and G3 remain OPEN** on latest source.

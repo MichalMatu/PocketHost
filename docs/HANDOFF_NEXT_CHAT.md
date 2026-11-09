@@ -5,6 +5,10 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## START HERE — M0 focused UI PASS, M1 targeted fixes (2026-11-09)
+
+Read [the latest focused native M0/M1 checkpoint](checkpoints/2026-11-09-m0-m1-native-focused-ui-pass-repairs.md) first. Samsung verified **19/19 focused UI PASS**, structure, boundaries and root lint at `10731bca`. M1 persistence was **8/9**, and TypeScript had three optional-UID errors; both causes were repaired at `9fb7db9` with a targeted Samsung task queued. Full formatting still OPEN; canonical Prettier diff retry queued. Never infer source gate completion or modify live services from these queued results.
+
 ## START HERE — M0/M1 resumed source and native QA checkpoint (2026-11-09)
 
 Read [the latest M0/M1 resume checkpoint](checkpoints/2026-11-09-m0-m1-resume-native-validation-handoff.md) **before** the previous checkpoint below. Source repair commits: `4754b535` (M0 UI test relocation/units) and `10731bca` (M1 private ownership, fsync and negative migration guards). Two new exact-source Samsung requests were published for focused tests and read-only Prettier diffs; their **terminal results were not yet observed**. Three prior tasks also remain without observed receipts. Never repeat accepted 196/18/18 tests or mislabel queued work as PASS. M0 source G0/G1/G2 and M1 native acceptance remain OPEN; physical G3 also OPEN. No live service, registry migration, website or Agent was changed.
