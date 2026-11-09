@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [M0 PhotoMap diagnostics isolated from system Observability — native QA pending](checkpoints/2026-11-09-m0-photomap-diagnostics-isolation.md)
+
 - [M0 implementation sprint: Hosting/System UI separation; native QA OPEN](checkpoints/2026-11-09-m0-implementation-ui-separation-sprint.md)
 
 - [Autonomous sprint QA and M0-M3 handoff](checkpoints/2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
