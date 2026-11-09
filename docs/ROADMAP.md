@@ -14,6 +14,14 @@ This is the approved **target**, not a claim of deployed functionality.
 Existing H1/H2/H3/O1/Shizuku results below remain historical evidence;
 older "next milestone" labels do not override the sequence here.
 
+**Upstream-first implementation rule:** before writing or copying a new
+feature, review existing PocketHost/H2, IleStoi/Local Agent and official
+Termux CLI packages. Favor small typed adapters over rewriting
+process supervision, tunnels, packages and backups. The
+[GitHub reuse matrix](UPSTREAM_REUSE_STRATEGY.md) identifies actual
+projects, licenses, caveats and adoption gates. It is a required
+R0/M0 input, **not** authorization to import other hosting panels.
+
 ### Three distinct layers
 
 1. **Modules:** Node.js, Python (optional PRoot), SSH, Cloudflare and
@@ -97,7 +105,7 @@ P1 = integrations and migration preparation;
 P2 = later expansion.** Complete small end-to-end slices on Samsung,
 not a large framework with no runnable project.
 
-1. **M0 — P0 / baseline and decoupling.** Inventory H2 static sites,
+1. **M0 — P0 / baseline, upstream audit and decoupling.** Inventory H2 static sites,
    P3 demo, admin control plane and actual registered services.
    Remove product-specific IleStoi/PhotoMap knowledge from new
    Hosting interfaces; retain existing deny guards while replacing
@@ -106,6 +114,10 @@ not a large framework with no runnable project.
    **Done when:** H2 static Create/Start/Publish/Rollback still works,
    no foreign lifecycle action becomes available and no live
    production process or data is modified by this cleanup.
+   **Reuse gate R0:** record for every planned capability its
+   existing owner implementation, official CLI alternative, chosen
+   upstream/version/license and the minimum missing glue. Do not
+   copy unlicensed source or introduce an unneeded second engine.
 
 2. **M1 — P0 / identity and component contracts.** Introduce
    `ModuleRegistry`, `ServiceRegistry`, `ProjectRegistry`,
@@ -119,7 +131,10 @@ not a large framework with no runnable project.
 3. **M2 — P0 / shared execution and recovery foundations.**
    Build minimal manifest inspection and reviewed dependency plans;
    shared runit lifecycle adapter, health policy/events and
-   scoped backup/restore contracts. Preserve per-workload policies:
+   scoped backup/restore contracts. Reuse installed Termux
+   `termux-services`/`runit`, `pkg`, `npm ci` and Restic,
+   rather than introducing new supervisors, installers or backup
+   programs. Preserve per-workload policies:
    IleStoi public+origin+internet tunnel recovery, PocketHost panel
    watchdog and Local Agent UNKNOWN/no-replay are **not the same**
    restart rule. Wire small working facilities before adding
@@ -144,7 +159,9 @@ not a large framework with no runnable project.
 
 5. **M4 — P1 / reusable infrastructure and second runtime.**
    Build distinct SSH and Cloudflare module pages plus a Python
-   venv runtime module. SSH provides configuration, public-key
+   venv runtime module. Prefer installed `sshd`, `cloudflared`
+   validation commands and optional `proot-distro` CLI.
+   SSH provides configuration, public-key
    management and independently healthy emergency access;
    never break existing `sshd` to test a new control panel.
    Cloudflare represents shared tunnel profiles, origin/ingress
@@ -196,6 +213,24 @@ not a large framework with no runnable project.
    and hardened administration beyond the trusted private LAN.
    Production WAN/public administration is never enabled
    merely because M3 works.
+
+### Upstream adoption and anti-duplication gate
+
+Before any external code import or CLI integration, record the
+upstream repository and pinned version, exact SPDX/license/NOTICE
+obligations, Termux/Android compatibility, capability ownership,
+negative-test coverage and real Samsung acceptance. Distinguish
+**design inspiration**, **installed external CLI**, **source copied**
+and **tested deployment**. GPL Termux utilities are external tools,
+not snippets to paste into PocketHost; permissive source licenses
+also require provenance. Code without an established license is
+examples-only. See [reuse plan](UPSTREAM_REUSE_STRATEGY.md).
+
+**Avoid:** Docker/systemd/PM2 competing with existing `runit`,
+rewriting `cloudflared` or Restic, transplanting entire dashboards,
+or bypassing existing H2 ownership and path safeguards. The native
+`ttyd` SIGSEGV issue remains OPEN; no terminal feature can be
+declared accepted solely because upstream provides a binary.
 
 ### Cross-cutting verification and non-goals
 
