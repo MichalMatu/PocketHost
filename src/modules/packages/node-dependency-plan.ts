@@ -109,3 +109,32 @@ export function planNodeDependencies(
     },
   };
 }
+
+
+/** Installed versions are probe results, not permission to install or execute. */
+export interface NodeToolchainProbe {
+  node: string | null;
+  npm: string | null;
+}
+export function reviewNodeToolchain(
+  plan: NodeDependencyPlan,
+  tools: NodeToolchainProbe,
+): { status: 'blocked' | 'review-required'; missingTools: string[]; conflicts: string[]; approved: false } {
+  const missingTools: string[] = [];
+  const conflicts: string[] = [];
+  for (const name of ['node', 'npm'] as const) {
+    const found = tools[name];
+    if (found === null) {
+      missingTools.push(name);
+    } else if (!/^v?\d+\.\d+\.\d+$/.test(found)) {
+      throw new Error('Invalid installed tool version');
+    }
+  }
+  const nodeVersion = tools.node ? Number(tools.node.replace(/^v/, '').split('.')[0]) : null;
+  if (nodeVersion !== null && nodeVersion < 22) conflicts.push('node-requires-22-or-newer');
+  if (plan.lockfileVersion === 3 && tools.npm && Number(tools.npm.replace(/^v/, '').split('.')[0]) < 7) {
+    conflicts.push('lockfile-requires-npm-7-or-newer');
+  }
+  return { status: missingTools.length || conflicts.length ? 'blocked' : 'review-required',
+    missingTools, conflicts, approved: false };
+}
