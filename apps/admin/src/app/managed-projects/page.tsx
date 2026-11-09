@@ -6,7 +6,9 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { parseOwnedProject, type OwnedProject } from "@/lib/owned-project-schema"
 import {
   parseManagedPhotoMapResponse,
+  parseLegacyPhotoMapEvents,
   type ManagedPhotoMapProject,
+  type LegacyPhotoMapEventResponse,
 } from "@/lib/managed-photomap-schema"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -43,6 +45,9 @@ export default function ManagedProjectsPage() {
   const [ownedError, setOwnedError] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(false)
+  const [legacyEvents, setLegacyEvents] = React.useState<LegacyPhotoMapEventResponse | null>(null)
+  const [eventsLoading, setEventsLoading] = React.useState(false)
+  const [eventsError, setEventsError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -77,6 +82,24 @@ export default function ManagedProjectsPage() {
       setError("Cannot read managed project state.")
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function inspectEvents() {
+    if (eventsLoading) return
+    setEventsLoading(true)
+    setEventsError(null)
+    try {
+      const response = await fetch("/api/v1/managed-photomap/events", {
+        method: "GET", cache: "no-store", credentials: "same-origin",
+      })
+      if (!response.ok) throw new Error("Legacy runtime diagnostics unavailable")
+      setLegacyEvents(parseLegacyPhotoMapEvents(await response.json()))
+    } catch {
+      setLegacyEvents(null)
+      setEventsError("Legacy runtime event inventory unavailable; no processes were changed.")
+    } finally {
+      setEventsLoading(false)
     }
   }
 
@@ -192,6 +215,31 @@ export default function ManagedProjectsPage() {
                     </div>
                   </div>
                 )}
+                <div className="space-y-3 rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="font-medium">Legacy runtime events</p>
+                      <p className="text-muted-foreground text-xs">
+                        Read-only PhotoMap TEST records, separate from system monitoring.
+                      </p>
+                    </div>
+                    <Button variant="outline" disabled={eventsLoading}
+                      onClick={() => void inspectEvents()}>
+                      {eventsLoading ? "Reading events…" : "Inspect events"}
+                    </Button>
+                  </div>
+                  {eventsError && <p role="alert">{eventsError}</p>}
+                  {legacyEvents?.state === "unavailable" && <p>Events unavailable in this session.</p>}
+                  {legacyEvents?.state === "ok" && (legacyEvents.events.length === 0
+                    ? <p>No structured runtime events.</p>
+                    : <ol className="max-h-48 space-y-1 overflow-auto text-xs">
+                      {legacyEvents.events.map((event, index) => <li key={event.timestamp + index}
+                        className="flex flex-wrap justify-between gap-2 border-b py-1">
+                        <span>{event.code}</span>
+                        <time>{event.timestamp}</time>
+                      </li>)}
+                    </ol>)}
+                </div>
                 <p>Project start / stop: <strong>{project.capabilities.startStop ? "available" : "not enabled"}</strong>.</p>
                 <p>Project-scoped package updates: <strong>{project.capabilities.packages ? "available" : "not enabled"}</strong>.</p>
                 <p>Full-instance rollback: <strong>{project.capabilities.rollback ? "available" : "not enabled"}</strong>.</p>
