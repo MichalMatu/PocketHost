@@ -2,6 +2,8 @@
 
 ## Current work
 
+- [PocketHost-only Termux runit autostart and health-recovery decision](adr/0014-termux-panel-supervision.md)
+
 - [Approved target menu and hosting/system responsibility map](TARGET_INFORMATION_ARCHITECTURE.md)
 
 - [Shizuku power-user integration decision](adr/0013-shizuku-power-user.md)
