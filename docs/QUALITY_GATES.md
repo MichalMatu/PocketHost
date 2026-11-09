@@ -5,6 +5,11 @@ last_reviewed: 2026-11-09
 purpose: Current PocketHost source, hardware and release acceptance contract
 ---
 
+## Latest M0/M1 source and native status (2026-11-09)
+
+Four exact canonical Prettier changes from the Samsung read-only receipt were applied through `9ca92cf0` after the nine previous patches. The new `22245f13` M1 ownership consistency checker is a read-only diagnostic and cannot authorize lifecycle operations. Three native tasks remain pending terminal receipts: UID/umask, remaining 15 UI files, and new M1 ownership-focused QA. No final-source formatting PASS, full UI PASS or physical G3 was claimed. See [the latest checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md).
+
+
 ## Most recent M0/M1 native focused evidence (2026-11-09)
 
 At `10731bca`, Samsung PASS: structure, module boundaries, root lint and **19/19 targeted UI**. M1 registry: 8/9, with one Android `umask` fixture failure; TypeScript: three optional-UID errors. Commit `9fb7db9` fixes these two source issues, with only targeted negative-test and TypeScript QA requested. Twelve Prettier warnings were observed on the earlier code SHA; corrected canonical diff inspection and final-source G1/G2 remain OPEN. See [latest checkpoint](checkpoints/2026-11-09-m0-m1-native-focused-ui-pass-repairs.md). No live migration or physical release was attempted.

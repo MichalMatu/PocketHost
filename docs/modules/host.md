@@ -130,3 +130,20 @@ supervisor. An observed runit service or port is never auto-registered.
 The refactored source still needs exact-SHA Samsung validation. No existing
 H2 release directory, external service, or live panel is touched by this
 source-only addition.
+
+## M1 positive ownership diagnostic — source only
+
+`hosting-service-ownership.ts` adds a pure consistency policy over a
+validated M1 service declaration and externally collected host observations.
+It requires the same private registry revision, explicit named runit
+registration, identical canonical service target, non-protected running
+observation, exact owner marker, and a match against PID, process start
+ticks, executable, cwd and argv digest. Missing, stale or conflicting
+fields return `unverified`.
+
+The result is **not** permission to operate the service: probes and owner
+markers must be independently trusted, and any future host lifecycle
+adapter must re-attest the real process immediately before an action.
+No existing runit service or registry was read or modified for this source
+change. Native focused QA remains pending.
+

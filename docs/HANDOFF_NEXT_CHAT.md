@@ -5,6 +5,11 @@ last_reviewed: 2026-11-09
 purpose: Resume from code/quality/structure checkpoint and verified S22 runit recovery without duplicating open QA
 ---
 
+## START HERE — M0 canonical style and M1 ownership diagnostic (2026-11-09)
+
+Read [the latest source/QA checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md). The read-only Samsung report found four remaining Prettier warnings on `0f5291d7`; their exact diffs were applied at `9ca92cf0`. The new `22245f13` M1 pure service ownership consistency diagnostic and negative fixtures are source-only, not a runtime privilege or acceptance result. Await native reports for the targeted UID/umask repair, 15 UI files and new ownership tests. Full final-source G1/G2, M1 acceptance and physical G3 remain OPEN; preserve all active services.
+
+
 ## START HERE — M0 focused UI PASS, M1 targeted fixes (2026-11-09)
 
 Read [the latest focused native M0/M1 checkpoint](checkpoints/2026-11-09-m0-m1-native-focused-ui-pass-repairs.md) first. Samsung verified **19/19 focused UI PASS**, structure, boundaries and root lint at `10731bca`. M1 persistence was **8/9**, and TypeScript had three optional-UID errors; both causes were repaired at `9fb7db9` with a targeted Samsung task queued. Full formatting still OPEN; canonical Prettier diff retry queued. Never infer source gate completion or modify live services from these queued results.

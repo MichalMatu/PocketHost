@@ -11,6 +11,8 @@ Historical acceptance receipts are immutable evidence, not a list of tasks to re
 
 ## 2026-11-09
 
+- [M0 canonical formatting patches and M1 source-only ownership diagnostics](2026-11-09-m0-m1-ownership-and-canonical-style.md)
+
 - [Complete M0/M1 source, QA, safety and next-chat checkpoint](2026-11-09-m0-m1-complete-checkpoint-next-chat.md)
 
 - [M0 source QA result and verified handoff state](2026-11-09-m0-final-source-qa-handoff.md)
