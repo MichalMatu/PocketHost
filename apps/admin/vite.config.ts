@@ -439,6 +439,15 @@ function nodeProjectApi(): Plugin {
           response.end('{"error":"node-projects-disabled"}')
           return
         }
+        // Even with an explicit DEV opt-in, never accept Node source/host
+        // mutations through the existing LAN gateway. Its upstream socket
+        // appears to be loopback, but the true caller is on the LAN.
+        if (request.method !== "GET" &&
+            request.headers["x-pockethost-lan-proxy"] === "1") {
+          response.statusCode = 403
+          response.end('{"error":"local-node-mutations-only"}')
+          return
+        }
         const route = request.url?.split("?")[0] ?? ""
         const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback|check-build))?$/.exec(route)
         const id = match?.[1]

@@ -78,12 +78,16 @@ function rejected(response, status) {
   response.end();
 }
 
-function upstreamHeaders(request, internalPort) {
+export function upstreamHeaders(request, internalPort) {
   const headers = { ...request.headers };
   delete headers.authorization;
   delete headers['proxy-authorization'];
   // Agent-intent is accepted only from Termux loopback, not spoofed over LAN.
   delete headers['x-pockethost-agent-intent'];
+  // The upstream sees loopback as the peer. Always mark LAN-originated
+  // requests so an opt-in DEV API cannot mistake them for local approvals.
+  delete headers['x-pockethost-lan-proxy'];
+  headers['x-pockethost-lan-proxy'] = '1';
   delete headers['x-forwarded-for'];
   delete headers.forwarded;
   headers.host = '127.0.0.1:' + internalPort;

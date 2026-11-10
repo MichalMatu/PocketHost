@@ -6,6 +6,7 @@ import {
   ownLanInterface,
   sameSubnet,
   upstreamTimeoutMs,
+  upstreamHeaders,
 } from '../../src/modules/host/lan-gateway.mjs';
 
 const bind = '127.0.0.1';
@@ -247,4 +248,20 @@ test('LAN site gateway remains read-only GET and HEAD and rejects foreign origin
     await close(gateway);
     await close(backend);
   }
+});
+
+test('Node Hosting mutations are marked as LAN-origin even after Host/Origin rewrite', () => {
+  const result = upstreamHeaders({
+    headers: {
+      host: '192.168.1.20:18878',
+      origin: 'http://192.168.1.20:18878',
+      'x-pockethost-lan-proxy': '0',
+      'x-pockethost-intent': 'owned-node-project',
+      authorization: 'Bearer secret',
+    },
+  }, 8787);
+  assert.equal(result['x-pockethost-lan-proxy'], '1');
+  assert.equal(result.host, '127.0.0.1:8787');
+  assert.equal(result.origin, 'http://127.0.0.1:8787');
+  assert.equal(result.authorization, undefined);
 });
