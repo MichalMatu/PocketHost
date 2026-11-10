@@ -15,6 +15,7 @@ const reading = <T extends z.ZodTypeAny>(value: T) =>
 const count = z.number().int().nonnegative()
 const cpu = z.number().finite().min(0).max(100)
 const process = z.object({
+  name: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._+:-]{0,23}$/).nullable(),
   pid: count.positive(),
   ppid: count,
   startTicks: z.string().regex(/^\d+$/).max(40),
