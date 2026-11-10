@@ -52,6 +52,13 @@ function processMiB(value: number | null) {
   return (value / 1024).toFixed(value < 1024 ? 2 : 1) + " MiB"
 }
 
+function friendlyTimeout(ms: number | null | undefined) {
+  if (ms == null) return "Unavailable"
+  if (ms >= 60000 && ms % 60000 === 0) return ms / 60000 + " min"
+  if (ms % 1000 === 0) return ms / 1000 + " sec"
+  return ms + " ms"
+}
+
 function LastSample({ observedAt }: { observedAt?: string }) {
   return <span className="text-muted-foreground text-xs">
     {observedAt ? "Sample: " + new Date(observedAt).toLocaleTimeString() : "No verified reading"}
@@ -178,7 +185,7 @@ export default function ShizukuPage() {
     appProcesses.reduce((sum, process) => sum + (process.cpuPercent ?? 0), 0) : null
   const shownServices = (system?.services.names ?? []).filter(item =>
     item.toLowerCase().includes(serviceSearch.trim().toLowerCase())
-  )
+  ).sort((a, b) => a.localeCompare(b))
   // Bound DOM work on Android: never render the full 1024/1200 item inventory.
   const visibleApps = shownApps.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE)
   const visibleProcesses = shownProcesses.slice(processPage * PAGE_SIZE, (processPage + 1) * PAGE_SIZE)
@@ -369,7 +376,12 @@ export default function ShizukuPage() {
                       </div>
                     )}
                     {selectedPackage && !detailLoading && !appDetail && (
-                      <p role="status" className="text-muted-foreground text-sm">{detailError ? "App detail request failed. Select the app again to retry." : "Detailed metadata unavailable for this Android user."}</p>
+                      <div className="space-y-2">
+                        <p role="status" className="text-muted-foreground text-sm">
+                          {detailError ? "App detail request failed. Retry or choose another app." : "Detailed metadata unavailable for this Android user."}
+                        </p>
+                        <Button size="sm" variant="outline" onClick={() => void selectPackage(selectedPackage)}>Retry app details</Button>
+                      </div>
                     )}
                     {selectedPackage && appDetail && connected && (
                       <div className="flex flex-wrap gap-2">
@@ -478,20 +490,26 @@ export default function ShizukuPage() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-2 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Set brightness (0–255)</p>
-                  <Input aria-label="Set screen brightness" type="number" min={0} max={255}
-                    value={brightnessDraft} placeholder={String(system?.settings.brightness ?? "128")}
-                    onChange={e => setBrightnessDraft(e.target.value)} />
+                  <p className="text-sm font-medium">Set brightness · {brightnessDraft !== "" ? brightnessDraft : (system?.settings.brightness ?? "—")} / 255</p>
+                  <input type="range" aria-label="Set screen brightness" min={0} max={255} step={1}
+                     className="w-full accent-foreground"
+                     value={brightnessDraft || String(system?.settings.brightness ?? 128)}
+                     onChange={e => setBrightnessDraft(e.target.value)} />
                   {brightnessDraft.trim() !== "" && connected &&
                     <AndroidActionButton action="brightness" value={brightnessDraft}
                       onSuccess={() => setRefreshKey(k => k + 1)}>Apply brightness</AndroidActionButton>}
                 </div>
                 <div className="space-y-2 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Screen timeout (milliseconds)</p>
-                  <p className="text-muted-foreground text-xs">Current: {unavailable(system?.settings.screenTimeoutMs, " ms")}</p>
-                  <Input aria-label="Set screen timeout" type="number" min={15000} max={3600000}
-                    value={timeoutDraft} placeholder="60000"
-                    onChange={e => setTimeoutDraft(e.target.value)} />
+                  <p className="text-sm font-medium">Screen timeout</p>
+                  <p className="text-muted-foreground text-xs">Current: {friendlyTimeout(system?.settings.screenTimeoutMs)}</p>
+                  <select aria-label="Set screen timeout" className="bg-background w-full rounded-md border px-3 py-2 text-sm"
+                     value={timeoutDraft} onChange={e => setTimeoutDraft(e.target.value)}>
+                     <option value="">Choose a timeout</option>
+                     <option value="15000">15 sec</option><option value="30000">30 sec</option>
+                     <option value="60000">1 min</option><option value="120000">2 min</option>
+                     <option value="300000">5 min</option><option value="600000">10 min</option>
+                     <option value="1800000">30 min</option><option value="3600000">60 min</option>
+                   </select>
                   {timeoutDraft.trim() !== "" && connected &&
                     <AndroidActionButton action="timeout" value={timeoutDraft}
                       onSuccess={() => setRefreshKey(k => k + 1)}>Apply timeout</AndroidActionButton>}
@@ -508,7 +526,7 @@ export default function ShizukuPage() {
               ) : (
                 <>
                   <p className="text-muted-foreground text-xs">
-                    {system.services.names.length} observed components · state unknown{system.services.truncated ? " · capped at 256" : ""}
+                    {system.services.names.length} observed · {shownServices.length} matching · runtime state unknown{system.services.truncated ? " · capped at 256" : ""}
                   </p>
                   <div className="max-h-72 overflow-y-auto rounded-lg border">
                     {visibleServices.map(service => (
@@ -516,7 +534,10 @@ export default function ShizukuPage() {
                         aria-pressed={selectedService === service}
                         className={"block w-full border-b p-3 text-left font-mono text-xs break-all last:border-b-0 hover:bg-muted/60 " +
                           (selectedService === service ? "bg-muted" : "")}
-                        onClick={() => setSelectedService(service)}>{service}</button>
+                        onClick={() => setSelectedService(service)}>
+                           <span className="block font-medium">{service.split("/")[0]}</span>
+                           <span className="block font-mono text-xs text-muted-foreground">{service.slice(service.indexOf("/") + 1)}</span>
+                         </button>
                     ))}
                     {!shownServices.length && <p className="p-3 text-muted-foreground text-sm">No matching services in the observed sample.</p>}
                   </div>
