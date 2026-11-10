@@ -15,7 +15,7 @@ import { parseDashboardHistory, type DashboardHistoryEvent, type DashboardHistor
 import { formatTrafficMbps, trafficMbps } from "@/lib/network-traffic"
 
 const POLL_MS = 15_000
-const MAX_SAMPLES = 1680 // 1,440 server points plus bounded 15-second in-tab readings
+const MAX_SAMPLES = 1680 // 24h full-resolution, 7d hourly archive and bounded in-tab readings
 
 type Sample = {
   observedAt: string
@@ -129,7 +129,7 @@ function mergeHistory(previous: Sample[], stored: DashboardHistoryPoint[]): Samp
     .slice(-MAX_SAMPLES)
 }
 
-async function getSavedHistory(signal: AbortSignal, range: "1h" | "24h") {
+async function getSavedHistory(signal: AbortSignal, range: "1h" | "24h" | "7d") {
   const response = await fetch("/api/v1/dashboard/history?range=" + range, {
     credentials: "same-origin", cache: "no-store",
     signal: AbortSignal.any([signal, AbortSignal.timeout(4500)]),
@@ -181,7 +181,7 @@ export default function SystemPage() {
   const [internet, setInternet] = React.useState<InternetConnectivity | null>(null)
   const [samples, setSamples] = React.useState<Sample[]>([])
   const [historyState, setHistoryState] = React.useState<"loading" | "ok" | "unavailable">("loading")
-  const [historyRange, setHistoryRange] = React.useState<"1h" | "24h">("1h")
+  const [historyRange, setHistoryRange] = React.useState<"1h" | "24h" | "7d">("1h")
   const [recentEvents, setRecentEvents] = React.useState<DashboardHistoryEvent[]>([])
   const [loading, setLoading] = React.useState(true)
   const [sampledAt, setSampledAt] = React.useState<string | null>(null)
@@ -240,7 +240,7 @@ export default function SystemPage() {
       if (controller.signal.aborted) return
       setHistoryState(history.state)
       if (history.state === "ok") {
-        const cutoff = Date.now() - (historyRange === "24h" ? 86400000 : 3600000)
+        const cutoff = Date.now() - (historyRange === "7d" ? 604800000 : historyRange === "24h" ? 86400000 : 3600000)
         setSamples(previous => mergeHistory(
           previous.filter(item => Date.parse(item.observedAt) >= cutoff), history.samples))
         setRecentEvents(history.events ?? [])
@@ -260,6 +260,17 @@ export default function SystemPage() {
   const batteryTempC = collectedFresh ? lastCollected?.batteryTempC ?? null : null
   const dnsMs = collectedFresh ? lastCollected?.dnsMs ?? null : null
   const dnsFailed = collectedFresh ? lastCollected?.dnsFailed ?? null : null
+  const alerts: string[] = []
+  if (batteryPercent !== null && batteryCharging === false && batteryPercent <= 20)
+    alerts.push("Low battery · " + batteryPercent + "%")
+  const storageAvailable = host?.runtime.storage?.availableMiB ?? null
+  if (storageAvailable != null && storageAvailable <= 512)
+    alerts.push("Low Termux storage · " + Math.round(storageAvailable) + " MiB left")
+  if (host?.services.some(service => service.state === "stopped"))
+    alerts.push("Observed service stopped · see Services")
+  if (host?.services.some(service => service.state === "unknown"))
+    alerts.push("Some service states unknown")
+  if (internet?.state === "unreachable") alerts.push("Internet TCP probe failed")
 
   const trafficSamples = samples.map((sample, i) => ({
     ...sample, ...trafficMbps(i ? samples[i - 1]! : null, sample),
@@ -340,11 +351,17 @@ export default function SystemPage() {
           </Card>
         </div>
 
+        <div role="status" aria-label="Active health alerts"
+          className="text-muted-foreground flex min-h-6 flex-wrap gap-x-4 gap-y-1 text-xs">
+          {alerts.length ? alerts.map(item => <span key={item}>{item}</span>) : "No active health alerts from currently available sources."}
+        </div>
+
         <div className="flex min-h-8 items-center justify-between gap-3">
-          <span className="text-muted-foreground text-xs">Recorded history · local on-device buffer</span>
+          <span className="text-muted-foreground text-xs">Recorded history · last 24 h full detail, 7 d hourly checkpoints</span>
           <div className="flex gap-1" role="group" aria-label="History window">
             <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("1h")}>1 hour</Button>
             <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("24h")}>24 hours</Button>
+            <Button variant={historyRange === "7d" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("7d")}>7 days</Button>
           </div>
         </div>
 
@@ -386,7 +403,7 @@ export default function SystemPage() {
                 <span>CPU: {cpu === null ? "Unavailable" : cpu.toFixed(1) + "%"} · Android Bridge</span>
                 <span>RAM: {ramUsedPercent(host) === null ? "Unavailable" : ramUsedPercent(host) + "%"} · Termux / system-wide</span>
                 <span>{historyState === "ok"
-          ? "Server history: up to 24 h · showing " + (historyRange === "24h" ? "24 h" : "last 1 h") + ", including while this tab was closed."
+          ? "Server history: 24 h full resolution and up to 7 d hourly · showing " + (historyRange === "7d" ? "7 d" : historyRange === "24h" ? "24 h" : "last 1 h") + ", including while this tab was closed."
           : historyState === "unavailable"
             ? "Server history unavailable · showing only live tab measurements."
             : "Loading server history…"}
@@ -547,7 +564,7 @@ export default function SystemPage() {
           <Card>
             <CardHeader>
               <CardTitle>Recent system events</CardTitle>
-              <CardDescription>Only verified state transitions · saved locally for up to 24 h</CardDescription>
+              <CardDescription>Source-verified transitions and completed owned operations · saved locally up to 7 days</CardDescription>
             </CardHeader>
             <CardContent className="min-h-[240px]">
               {recentEvents.length ? (

@@ -7,6 +7,9 @@ const event = z.object({
     "service-unavailable", "service-restored",
     "internet-down", "internet-restored", "dns-down", "dns-restored",
     "bridge-down", "bridge-restored", "system-rebooted",
+    "battery-low", "battery-recovered", "storage-low", "storage-recovered",
+    "collector-started", "owned-release-published", "owned-release-rolled-back",
+    "owned-backup-created", "owned-backup-restored", "owned-service-restarted",
   ]),
   service: z.enum(["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"]).nullable(),
 }).strict()
@@ -43,9 +46,9 @@ const history = z.object({
   source: z.literal("pockethost-collector"),
   state: z.enum(["ok", "unavailable"]),
   intervalSeconds: z.literal(60),
-  retentionHours: z.literal(24),
-  samples: z.array(point).max(1440),
-  events: z.array(event).max(80).optional(),
+  retentionHours: z.union([z.literal(24), z.literal(168)]),
+  samples: z.array(point).max(1608),
+  events: z.array(event).max(280).optional(),
 }).strict()
 
 export type DashboardHistory = z.infer<typeof history>
