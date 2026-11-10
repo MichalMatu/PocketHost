@@ -1,5 +1,3 @@
-import * as React from "react"
-
 export type HistoryRange = "1h" | "24h" | "7d"
 
 export type TooltipFields = Record<string, {
