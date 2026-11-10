@@ -119,7 +119,8 @@ test('native TrafficStats rejects forged counters and leaves unsupported values 
     observedAt: new Date().toISOString(), rxBytes: 0, txBytes: 1234,
   } };
   assert.deepEqual(parseCompanionStatus(JSON.stringify(good)), good);
-  assert.deepEqual(parseCompanionStatus(JSON.stringify(sample())), sample(), 'old Companion is compatible');
+  const legacy = sample();
+  assert.deepEqual(parseCompanionStatus(JSON.stringify(legacy)), legacy, 'old Companion is compatible');
   for (const bad of [
     { ...good, network: { ...good.network, rxBytes: -1 } },
     { ...good, network: { ...good.network, txBytes: 2.5 } },
