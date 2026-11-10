@@ -1,4 +1,4 @@
-import { readdirSync, existsSync } from 'node:fs';
+import { readdirSync, existsSync, lstatSync, openSync, closeSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
@@ -47,7 +47,11 @@ export class NodeProjectBackupHost {
         if (!allowed.has(entry.name) || entry.isSymbolicLink()) {
           throw new Error('Unexpected entry in private Node backup scope');
         }
-        if (directories.has(entry.name) ? !entry.isDirectory() : !entry.isFile()) {
+        const stat = lstatSync(path.join(folder, entry.name));
+        if (stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 ||
+          (directories.has(entry.name)
+            ? !entry.isDirectory()
+            : !entry.isFile() || stat.nlink !== 1)) {
           throw new Error('Invalid owned Node backup entry');
         }
       }
@@ -79,9 +83,18 @@ export class NodeProjectBackupHost {
   ): Promise<{ output: string }> {
     if (approved !== true) throw new Error('Explicit Node backup approval required');
     this.requireCreatedProjects();
-    const result = await this.restic.backup(run);
-    if (result.exit !== 0) throw new Error('Owned Node Restic backup failed');
-    return { output: result.output };
+    // The same exclusive lock is used by Node runtime deploy/stop.
+    // A crash leaves the lock in place for manual owner reconciliation.
+    const lock = path.join(this.root, '.node-ports.lock');
+    const fd = openSync(lock, 'wx', 0o600);
+    closeSync(fd);
+    try {
+      const result = await this.restic.backup(run);
+      if (result.exit !== 0) throw new Error('Owned Node Restic backup failed');
+      return { output: result.output };
+    } finally {
+      rmSync(lock);
+    }
   }
   async snapshots(run: Exec = executeFixed) {
     return this.restic.snapshots(run);

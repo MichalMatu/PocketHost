@@ -580,9 +580,17 @@ export class NodeRunitHost {
   async stop(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned stop required');
     const { folder } = this.context(id);
+    const globalLock = path.join(this.projectRoot, '.node-ports.lock');
+    const globalFd = openSync(globalLock, 'wx', 0o600);
+    closeSync(globalFd);
     const lock = path.join(folder, '.node-runtime.lock');
-    const fd = openSync(lock, 'wx', 0o600);
-    closeSync(fd);
+    try {
+      const fd = openSync(lock, 'wx', 0o600);
+      closeSync(fd);
+    } catch (error) {
+      rmSync(globalLock, { force: true });
+      throw error;
+    }
     try {
       const state = this.record(id);
       if (!state) throw new Error('No owned Node unit to stop');
@@ -592,7 +600,10 @@ export class NodeRunitHost {
       if (state.activeRelease) this.history(state, 'stop', state.activeRelease);
       this.writeState(id, state);
       return this.status(id);
-    } finally { rmSync(lock, { force: true }); }
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(globalLock, { force: true });
+    }
   }
   logs(id: string): { lines: string[] } {
     const state = this.record(id);

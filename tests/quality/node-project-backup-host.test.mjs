@@ -74,3 +74,14 @@ test('M2 Node Restic refuses foreign source and pending deployment entries befor
   await assert.rejects(host.backup(true, run), /Unexpected entry|deployment in progress/);
   assert.equal(called.length, 0);
 });
+
+test('M2 Node Restic enforces a shared exclusive runtime/backup lock', async (t) => {
+  const { root, host, projects } = setup(t);
+  projects.create('Safe root');
+  const calls = [];
+  const run = async () => { calls.push('unexpected'); return { exit: 0, output: '' }; };
+  const lock = path.join(root, '.node-ports.lock');
+  writeFileSync(lock, '', { mode: 0o600 });
+  await assert.rejects(host.backup(true, run), /Unexpected entry|deployment in progress/);
+  assert.deepEqual(calls, []);
+});
