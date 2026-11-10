@@ -10,6 +10,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { formatMemory } from "@/lib/format-memory"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
+import { parseInternetConnectivity, type InternetConnectivity } from "@/lib/internet-connectivity-schema"
 
 const POLL_MS = 15_000
 const MAX_SAMPLES = 120 // 30 min of in-tab samples, never claimed as durable history
@@ -19,6 +20,8 @@ type Sample = {
   cpu: number | null
   ram: number | null
   apiMs: number | null
+  internetMs: number | null
+  internetFailed: boolean | null
   bridgeMs: number | null
   bridgeOnline: boolean | null
 }
@@ -29,7 +32,7 @@ const resourcesConfig = {
 } satisfies ChartConfig
 
 const latencyConfig = {
-  apiMs: { label: "Panel API response", color: "var(--chart-3)" },
+  internetMs: { label: "Internet TCP handshake", color: "var(--chart-3)" },
 } satisfies ChartConfig
 
 const bridgeConfig = {
@@ -62,6 +65,15 @@ async function getBridge(signal: AbortSignal) {
   if (!response.ok) throw new Error("bridge-unavailable")
   const bridge = parseShizukuStatus(await response.json() as unknown)
   return { bridge, bridgeMs: Math.max(0, Math.round(performance.now() - began)) }
+}
+
+async function getInternet(signal: AbortSignal) {
+  const response = await fetch("/api/v1/internet-connectivity", {
+    credentials: "same-origin", cache: "no-store",
+    signal: AbortSignal.any([signal, AbortSignal.timeout(4500)]),
+  })
+  if (!response.ok) throw new Error("internet-probe-unavailable")
+  return parseInternetConnectivity(await response.json() as unknown)
 }
 
 function metricValue(value: string | null, loading: boolean) {
@@ -104,6 +116,7 @@ function ramUsedPercent(host: HostSnapshot | null) {
 export default function SystemPage() {
   const [host, setHost] = React.useState<HostSnapshot | null>(null)
   const [bridge, setBridge] = React.useState<ShizukuStatus | null>(null)
+  const [internet, setInternet] = React.useState<InternetConnectivity | null>(null)
   const [samples, setSamples] = React.useState<Sample[]>([])
   const [loading, setLoading] = React.useState(true)
   const [sampledAt, setSampledAt] = React.useState<string | null>(null)
@@ -116,21 +129,25 @@ export default function SystemPage() {
     async function poll() {
       if (busy || controller.signal.aborted) return
       busy = true
-      const [hostResult, bridgeResult] = await Promise.all([
+      const [hostResult, bridgeResult, internetResult] = await Promise.all([
         getHost(controller.signal).catch(() => null),
         getBridge(controller.signal).catch(() => null),
+        getInternet(controller.signal).catch(() => null),
       ])
       if (!controller.signal.aborted) {
         const nextHost = hostResult?.host ?? null
         const now = new Date().toISOString()
         setHost(nextHost)
         setBridge(bridgeResult?.bridge ?? null)
+        setInternet(internetResult)
         setSampledAt(now)
         setSamples(previous => [...previous, {
           observedAt: now,
           cpu: freshCpu(bridgeResult?.bridge ?? null),
           ram: ramUsedPercent(nextHost),
           apiMs: hostResult?.apiMs ?? null,
+          internetMs: internetResult?.latencyMs ?? null,
+          internetFailed: internetResult?.state === "unreachable" ? true : internetResult ? false : null,
           bridgeMs: bridgeResult?.bridgeMs ?? null,
           bridgeOnline: bridgeResult?.bridge.connected ?? null,
         }].slice(-MAX_SAMPLES))
@@ -220,26 +237,28 @@ export default function SystemPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />PocketHost API response</CardTitle>
-              <CardDescription>Actual browser-to-panel HTTP response duration, in milliseconds — not Internet ping</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Internet connectivity · Termux TCP</CardTitle>
+              <CardDescription>Fixed TCP handshake to 1.1.1.1:443 · not ICMP ping, download speed or RX/TX</CardDescription>
             </CardHeader>
             <CardContent>
-              {samples.some(sample => sample.apiMs !== null) ? (
+              {samples.some(sample => sample.internetMs !== null) ? (
                 <ChartContainer config={latencyConfig} className="aspect-auto h-[190px] min-w-0 w-full">
                   <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                    <Line type="monotone" dataKey="apiMs" stroke="var(--color-apiMs)" strokeWidth={2}
+                    <Line type="monotone" dataKey="internetMs" stroke="var(--color-apiMs)" strokeWidth={2}
                       dot={samples.length < 3} connectNulls={false} />
                   </LineChart>
                 </ChartContainer>
               ) : <p className="text-muted-foreground py-12 text-center text-sm">
-                No successful PocketHost API request yet.
+                No successful Internet TCP connection measured yet.
               </p>}
               <p className="text-muted-foreground pt-2 text-xs">
-                Actual LAN / Internet latency probes will be a separate backend measurement.
+                {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "Probe unavailable"}
+                {" · "}{samples.filter(sample => sample.internetFailed === true).length} failed samples
+                {" · "}Panel API {samples.at(-1)?.apiMs ?? "—"} ms
               </p>
             </CardContent>
           </Card>

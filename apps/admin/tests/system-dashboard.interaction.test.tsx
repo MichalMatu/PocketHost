@@ -41,6 +41,12 @@ const bridgeFixture = () => ({
   cpuPercent: 22.5, visibleProcesses: 550, capabilities: [],
 })
 
+const internetFixture = () => ({
+  version: 1, source: "termux", method: "tcp-handshake",
+  target: "1.1.1.1:443", observedAt: new Date().toISOString(),
+  state: "reachable", latencyMs: 14.2,
+})
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
@@ -50,7 +56,7 @@ describe("PocketHost real-data dashboard", () => {
   it("shows only live Termux and authorized Android metrics, never demo runtime or module tiles", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
       ok: true,
-      json: async () => url.includes("shizuku") ? bridgeFixture() : hostFixture,
+      json: async () => url.includes("shizuku") ? bridgeFixture() : url.includes("internet-connectivity") ? internetFixture() : hostFixture,
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
@@ -60,6 +66,8 @@ describe("PocketHost real-data dashboard", () => {
     expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
     expect(within(metrics).getByText("6 / 6")).toBeTruthy()
     expect(screen.getByText("Live system resources")).toBeTruthy()
+    expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
+    expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
     expect(screen.getByText("Android Bridge connectivity")).toBeTruthy()
     expect(screen.getByText("Connected · authorized")).toBeTruthy()
     expect(screen.queryByText("Node runtime")).toBeNull()
@@ -74,7 +82,7 @@ describe("PocketHost real-data dashboard", () => {
       ok: true,
       json: async () => url.includes("shizuku")
         ? { ...bridgeFixture(), authorized: false, connected: false, mode: "none", cpuPercent: null, visibleProcesses: null, uid: null }
-        : hostFixture,
+        : url.includes("internet-connectivity") ? internetFixture() : hostFixture,
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
@@ -92,7 +100,7 @@ describe("PocketHost real-data dashboard", () => {
     const metrics = screen.getByTestId("system-metrics")
     await within(metrics).findAllByText("Unavailable")
     expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
-    expect(screen.getByText("No successful PocketHost API request yet.")).toBeTruthy()
+    expect(screen.getByText("No successful Internet TCP connection measured yet.")).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
     expect(screen.queryAllByTestId("live-chart")).toHaveLength(0)
   })

@@ -28,6 +28,7 @@ import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
 import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backup-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
+import { probeInternetConnectivity, allowsInternetProbeRequest } from "../../src/modules/host/internet-connectivity.ts"
 
 /** DEV-only, loopback-only read-only API. There are no mutation endpoints. */
 function termuxReadOnlyApi(): Plugin {
@@ -1404,9 +1405,54 @@ function termuxAdminApi(): Plugin {
   }
 }
 
+/** Fixed endpoint, read-only, on-demand; no network discovery or background scan. */
+function internetConnectivityApi(): Plugin {
+  let cached: Awaited<ReturnType<typeof probeInternetConnectivity>> | null = null
+  let cachedAt = 0
+  let pending: Promise<Awaited<ReturnType<typeof probeInternetConnectivity>>> | null = null
+  function read() {
+    if (cached && Date.now() - cachedAt < 12000) return Promise.resolve(cached)
+    if (pending) return pending
+    pending = probeInternetConnectivity().then(value => {
+      cached = value
+      cachedAt = Date.now()
+      return value
+    }).finally(() => { pending = null })
+    return pending
+  }
+  return {
+    name: "pockethost-internet-connectivity",
+    apply: "serve",
+    configureServer(server) {
+      server.middlewares.use("/api/v1/internet-connectivity", async (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!allowsInternetProbeRequest({
+          host: request.headers.host, origin: request.headers.origin,
+          remote: request.socket.remoteAddress,
+          fetchSite: request.headers["sec-fetch-site"],
+          method: request.method, route: request.url,
+        })) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        try {
+          response.end(JSON.stringify(await read()))
+        } catch {
+          response.statusCode = 503
+          response.end(JSON.stringify({ error: "probe-unavailable" }))
+        }
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), internetConnectivityApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
     androidActionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",
