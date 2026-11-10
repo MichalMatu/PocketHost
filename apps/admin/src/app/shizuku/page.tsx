@@ -398,8 +398,8 @@ export default function ShizukuPage() {
         )}
         {section === "processes" && (
           <Card>
-            <CardHeader><CardTitle>Android CPU & processes</CardTitle>
-              <CardDescription>Device-wide process snapshot. Missing CPU readings are not interpreted as zero.</CardDescription>
+            <CardHeader><CardTitle>Android processes</CardTitle>
+              <CardDescription>Android-wide snapshot: PID, owner, RAM and CPU only when reported.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <label htmlFor="android-process-sort">Sort by</label>
@@ -411,18 +411,6 @@ export default function ShizukuPage() {
                 <Button size="sm" variant="outline" onClick={() => { setDescending(x => !x); setProcessPage(0) }}>
                   {descending ? "Descending" : "Ascending"}
                 </Button>
-              </div>
-              <div className="rounded-lg border p-3">
-                <p className="text-sm font-medium">CPU history · current session</p>
-                {cpuHistory.length < 2 ? <p className="text-muted-foreground text-sm">Collecting samples…</p> :
-                  <svg viewBox="0 0 600 110" className="h-28 w-full" preserveAspectRatio="none"
-                    role="img" aria-label="Observed Android CPU history">
-                    <polyline fill="none" stroke="currentColor" strokeWidth="2"
-                      points={cpuHistory.map((point, i) =>
-                        (i * 600 / Math.max(1, cpuHistory.length - 1)) + "," + (100 - point.value)
-                      ).join(" ")} />
-                  </svg>}
-                <p className="text-muted-foreground text-xs">{cpuHistory.length} actual samples</p>
               </div>
               <Input aria-label="Search Android processes" value={processSearch}
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
@@ -477,136 +465,10 @@ export default function ShizukuPage() {
             </CardContent>
           </Card>
         )}
-        {section === "permissions" && (
-          <div className="space-y-3">
-            <Card>
-              <CardHeader>
-                <CardTitle>Android app permissions</CardTitle>
-                <CardDescription>Select an app to inspect or change requested permissions. Android may refuse individual changes.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
-                  <div className="min-w-0 space-y-3">
-                    <p className="text-sm font-medium">Applications</p>
-                    <div className="relative">
-                      <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
-                      <Input aria-label="Search applications for permissions" className="pl-9"
-                        value={permissionAppSearch}
-                        onChange={event => { setPermissionAppSearch(event.target.value); setPermissionAppPage(0) }}
-                        placeholder="Find application or package..." />
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {(["all", "user", "system"] as const).map(filter => (
-                        <Button size="sm" key={filter}
-                          variant={permissionPackageFilter === filter ? "default" : "outline"}
-                          onClick={() => { setPermissionPackageFilter(filter); setPermissionAppPage(0) }}>
-                          {filter === "all" ? "All" : filter === "user" ? "User" : "System"}
-                        </Button>
-                      ))}
-                    </div>
-                    {!apps ? <p role="status" className="text-muted-foreground text-sm">
-                      {appsLoading ? "Loading Android applications…" :
-                        appsError ? "Application inventory request failed. Try Refresh." :
-                          "Package inventory unavailable or not authorized."}
-                    </p> : (
-                      <>
-                        <div className="max-h-[260px] overflow-y-auto rounded-lg border">
-                          {visiblePermissionApps.map(item => (
-                            <button key={item.packageName} type="button"
-                              aria-label={"Inspect permissions for " + item.label + " (" + item.packageName + ")"}
-                              aria-pressed={selectedPackage === item.packageName}
-                              className={"flex w-full items-center justify-between gap-2 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
-                                (selectedPackage === item.packageName ? "bg-muted" : "")}
-                              onClick={() => { setPermissionSearch(""); void selectPackage(item.packageName) }}>
-                              <span className="min-w-0 space-y-1">
-                                <span className="block font-medium break-words">{item.label || item.packageName}</span>
-                                <span className="block font-mono text-muted-foreground text-xs break-all">{item.packageName}</span>
-                              </span>
-                              <Badge variant="outline">{item.system ? "System" : "User"}</Badge>
-                            </button>
-                          ))}
-                          {permissionApps.length === 0 && (
-                            <p className="p-3 text-sm text-muted-foreground">No matching applications.</p>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-                          <span>
-                            {permissionApps.length ? permissionAppPage * PERMISSION_APP_PAGE_SIZE + 1 : 0}–
-                            {Math.min((permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE, permissionApps.length)} of {permissionApps.length}
-                            {apps.truncated ? " · inventory truncated" : ""}
-                          </span>
-                          <div className="flex gap-1">
-                            <Button size="sm" variant="outline" aria-label="Previous permission applications"
-                              disabled={permissionAppPage === 0}
-                              onClick={() => setPermissionAppPage(p => p - 1)}>Previous</Button>
-                            <Button size="sm" variant="outline" aria-label="Next permission applications"
-                              disabled={(permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE >= permissionApps.length}
-                              onClick={() => setPermissionAppPage(p => p + 1)}>Next</Button>
-                          </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                  <div className="min-w-0 space-y-3 rounded-lg border p-4">
-                    <p className="text-sm font-medium">Selected application permissions</p>
-                    {selectedPackage ? (
-                      <div className="min-w-0">
-                        <p className="font-medium break-words">{appDetail?.label || selectedPackage}</p>
-                        <p className="font-mono text-muted-foreground text-xs break-all">{selectedPackage}</p>
-                      </div>
-                    ) : <p className="text-muted-foreground text-sm">Select an application from the list to inspect its permissions.</p>}
-                    {detailLoading && <p role="status" className="text-muted-foreground text-sm">Reading app permissions…</p>}
-                    {selectedPackage && !detailLoading && !appDetail && (
-                      <div className="space-y-2">
-                        <p role="status" className="text-muted-foreground text-sm">
-                          {detailError ? "Permissions could not be read. Retry here or select another app." : "No verified app details available."}
-                        </p>
-                        <Button size="sm" variant="outline"
-                          onClick={() => { void selectPackage(selectedPackage) }}>Retry permissions</Button>
-                      </div>
-                    )}
-                    {appDetail && (
-                      <>
-                        <div className="flex flex-wrap gap-2 text-sm">
-                          <Badge variant="outline">{appDetail.permissions.length} requested</Badge>
-                          <Badge variant="outline">{appDetail.permissions.filter(permission => permission.granted).length} granted</Badge>
-                          <Badge variant="outline">{appDetail.permissions.filter(permission => !permission.granted).length} not granted</Badge>
-                        </div>
-                        <Input aria-label="Search Android permissions" value={permissionSearch}
-                          onChange={event => setPermissionSearch(event.target.value)}
-                          placeholder="Filter permission name…" />
-                        <div className="max-h-96 overflow-y-auto rounded-lg border">
-                          {visiblePermissions.map(permission => (
-                            <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-3 text-sm last:border-b-0">
-                              <span className="min-w-0 flex-1 break-all font-mono text-xs">{permission.name}</span>
-                              <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
-                              {selectedPackage && connected && <AndroidActionButton
-                                action={permission.granted ? "revoke" : "grant"} target={selectedPackage}
-                                value={permission.name} onSuccess={() => void selectPackage(selectedPackage)}>
-                                {permission.granted ? "Revoke" : "Grant"}
-                              </AndroidActionButton>}
-                            </div>
-                          ))}
-                          {!visiblePermissions.length && (
-                            <p className="p-3 text-sm text-muted-foreground">
-                              {appDetail.permissions.length ? "No permissions match this filter." : "Android reported no requested permissions."}
-                            </p>
-                          )}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <LastSample observedAt={apps?.observedAt} />
-              </CardContent>
-            </Card>
-            <p className="text-muted-foreground text-xs">Grant and Revoke execute directly through Shizuku; real Android refusals remain visible.</p>
-          </div>
-        )}
         {section === "services" && (
           <div className="space-y-3">
-            <Card><CardHeader><CardTitle>Services & Android settings</CardTitle>
-              <CardDescription>Android settings and observed service components; runtime states are not reported.</CardDescription>
+            <Card><CardHeader><CardTitle>Android services & display settings</CardTitle>
+              <CardDescription>Observed service components; runtime running/stopped states are not reported.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Screen brightness</p>
@@ -688,10 +550,9 @@ export default function ShizukuPage() {
           </div>
         )}
         {section === "shell" && <RemoteShellPanel />}
-        {section === "diagnostics" && <ShizukuDiagnosticsPanel />}
         {section === "power" && (
-          <Card><CardHeader><CardTitle>Power & hardware</CardTitle>
-            <CardDescription>Real battery, temperature and Android RAM observations.</CardDescription>
+          <div className="space-y-3"><Card><CardHeader><CardTitle>Android device</CardTitle>
+            <CardDescription>Android battery, temperature and memory. Historical trends remain on Dashboard.</CardDescription>
           </CardHeader><CardContent className="space-y-3">
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {[
@@ -709,6 +570,10 @@ export default function ShizukuPage() {
             <LastSample observedAt={system?.observedAt} />
             {!system && <p className="text-muted-foreground text-sm">Android hardware sample unavailable.</p>}
           </CardContent></Card>
+          <details className="rounded-lg border p-3" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
+            <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics · on demand</summary>
+            {diagnosticsOpen && <div className="mt-3"><ShizukuDiagnosticsPanel /></div>}
+          </details></div>
         )}
 
         </div>
