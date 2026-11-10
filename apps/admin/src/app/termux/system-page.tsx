@@ -6,7 +6,8 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
+import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart"
+import { DashboardTooltip, historyTime, type TooltipFields } from "./dashboard-tooltip"
 import { formatMemory } from "@/lib/format-memory"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
@@ -62,6 +63,23 @@ const powerConfig = {
   storageUsedPercent: { label: "Storage used", color: "var(--primary)" },
 } satisfies ChartConfig
 
+const tooltipFields = {
+  resources: {
+    cpu: { label: "Android CPU", unit: "%", decimals: 1 },
+    ram: { label: "RAM used", unit: "%", decimals: 1 },
+  },
+  internet: { internetMs: { label: "TCP handshake", unit: "ms", decimals: 1 } },
+  traffic: {
+    networkRxMbps: { label: "RX", unit: "Mb/s", decimals: 3 },
+    networkTxMbps: { label: "TX", unit: "Mb/s", decimals: 3 },
+  },
+  bridge: { bridgeMs: { label: "Bridge response", unit: "ms", decimals: 1 } },
+  power: {
+    batteryPercent: { label: "Battery", unit: "%", decimals: 1 },
+    storageUsedPercent: { label: "Storage used", unit: "%", decimals: 1 },
+  },
+} satisfies Record<string, TooltipFields>
+
 function clock(value: string | number) {
   return new Date(value).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
 }
@@ -70,15 +88,6 @@ function uptime(seconds: number | null) {
   if (seconds === null || !Number.isFinite(seconds)) return "Unavailable"
   const hours = Math.floor(seconds / 3600)
   return Math.floor(hours / 24) + "d " + (hours % 24) + "h"
-}
-
-type HistoryRange = "1h" | "24h" | "7d"
-
-function historyTime(value: string | number, range: HistoryRange, detailed = false) {
-  const date = new Date(value)
-  if (!Number.isFinite(date.getTime())) return "—"
-  if (range === "1h") return detailed ? clock(value) : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
-  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
 }
 
 function latencySummary(values: (number | null)[]) {
@@ -411,7 +420,7 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
+                    <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.resources} />} />
                     <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
                       strokeOpacity={0.55} fill="url(#pockethost-cpu-fill)" strokeWidth={1.5}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -448,7 +457,7 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
+                    <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.internet} />} />
                     <Area type="monotone" dataKey="internetMs" stroke="var(--color-internetMs)"
                       fill="url(#pockethost-tcp-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -484,7 +493,7 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " Mb/s"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={label => historyTime(Number(label), historyRange, true)} />} />
+                    <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.traffic} />} />
                     <Area dataKey="networkRxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkRxMbps)"
                       fill="url(#pockethost-traffic-fill)" strokeWidth={1.5} dot={false} activeDot={false} isAnimationActive={false} />
                     <Area dataKey="networkTxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkTxMbps)"
@@ -522,7 +531,7 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
+                    <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.bridge} />} />
                     <Area type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)"
                       fill="url(#pockethost-bridge-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -553,7 +562,7 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
+                    <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.power} />} />
                     <Area dataKey="batteryPercent" type="monotone" stroke="var(--color-batteryPercent)"
                       fill="url(#pockethost-power-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
