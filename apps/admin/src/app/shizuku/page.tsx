@@ -1,6 +1,6 @@
 import * as React from "react"
 import {
-  AppWindow, Battery, Cpu, RefreshCw, Settings2,
+  AppWindow, Cpu, RefreshCw, Settings2,
   ShieldCheck, Smartphone, Terminal, Search, ExternalLink,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -16,7 +16,7 @@ import {
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
 } from "@/lib/shizuku-schema"
 
-type Section = "applications" | "processes" | "services" | "power" | "shell"
+type Section = "applications" | "processes" | "services" | "shell"
 type PackageFilter = "all" | "user" | "system"
 const PAGE_SIZE = 80
 
@@ -24,7 +24,6 @@ const sections = [
   { id: "applications", label: "Apps & permissions", icon: AppWindow },
   { id: "processes", label: "Android processes", icon: Cpu },
   { id: "services", label: "Android services", icon: Settings2 },
-  { id: "power", label: "Device", icon: Battery },
   { id: "shell", label: "Android shell", icon: Terminal },
 ] as const
 
@@ -40,23 +39,11 @@ function unavailable(value: string | number | null | undefined, suffix = "") {
   return value == null ? "Unavailable" : String(value) + suffix
 }
 
-/** Android meminfo / ps report KiB; display real binary gigabytes. */
-function gib(value: number | null, precision = 2) {
-  return value == null ? "Unavailable" : (value / (1024 * 1024)).toFixed(precision) + " GiB"
-}
-
 /** Android process RSS is in KiB; show process-scale values in MiB. */
 function processMiB(value: number | null) {
   if (value == null) return "Unavailable"
   if (value === 0) return "0 MiB"
   return (value / 1024).toFixed(value < 1024 ? 2 : 1) + " MiB"
-}
-
-function friendlyTimeout(ms: number | null | undefined) {
-  if (ms == null) return "Unavailable"
-  if (ms >= 60000 && ms % 60000 === 0) return ms / 60000 + " min"
-  if (ms % 1000 === 0) return ms / 1000 + " sec"
-  return ms + " ms"
 }
 
 function LastSample({ observedAt }: { observedAt?: string }) {
@@ -88,8 +75,6 @@ export default function ShizukuPage() {
   const [selectedProcessPid, setSelectedProcessPid] = React.useState<number | null>(null)
   const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("rss")
   const [descending, setDescending] = React.useState(true)
-  const [brightnessDraft, setBrightnessDraft] = React.useState("")
-  const [timeoutDraft, setTimeoutDraft] = React.useState("")
   const [servicePage, setServicePage] = React.useState(0)
   const [appPage, setAppPage] = React.useState(0)
   const [processPage, setProcessPage] = React.useState(0)
@@ -158,7 +143,7 @@ export default function ShizukuPage() {
     return () => controller.abort()
   }, [refreshKey])
 
-  const connected = status?.connected === true && status.authorized === true
+  const connected = !loading && status?.connected === true && status.authorized === true
   const shownApps = (apps?.packages ?? []).filter(item =>
     (packageFilter === "all" || (packageFilter === "system" ? item.system : !item.system)) &&
     (item.packageName.toLowerCase().includes(appSearch.trim().toLowerCase()) ||
@@ -205,22 +190,9 @@ export default function ShizukuPage() {
           </div>
           <Button variant="outline" size="sm" disabled={loading}
             onClick={() => {
-              detailRequest.current++
-              setAppDetail(null)
-              setSelectedPackage(null)
-              setDetailError(false)
-              setDetailLoading(false)
-              setApps(null)
-              setSystem(null)
-              setStatus(null)
+              // Preserve last inventory while refreshing; actions disabled until status verifies.
               setAppsError(false)
               setSystemError(false)
-              setAppsLoading(false)
-              setSystemLoading(false)
-              setSelectedService(null)
-              setServicePage(0)
-              setAppPage(0)
-              setProcessPage(0)
               setLoading(true)
               setRefreshKey(k => k + 1)
             }}>
@@ -233,7 +205,7 @@ export default function ShizukuPage() {
             <CardHeader><CardTitle>Native connection required</CardTitle>
               <CardDescription>These pages never invent privileged Android data.</CardDescription>
             </CardHeader><CardContent className="text-sm text-muted-foreground">
-              Start Shizuku, authorize PocketHost Companion on the phone, then refresh the dashboard.
+              Start Shizuku, authorize PocketHost Companion on the phone, then refresh this page.
               <a className="ml-2 inline-flex items-center gap-1 underline underline-offset-4"
                 href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
                 Setup guide <ExternalLink className="size-3" />
@@ -265,7 +237,7 @@ export default function ShizukuPage() {
           })}
         </div>
 
-        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section}>
+        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section} className="min-h-[500px]">
         {section === "applications" && (
           <Card>
             <CardHeader><CardTitle>Android apps & permissions</CardTitle>
@@ -286,7 +258,7 @@ export default function ShizukuPage() {
               </div>
               {!apps ? <p role="status" className="text-muted-foreground text-sm">{appsLoading ? "Loading Android applications…" : appsError ? "Application inventory request failed. Try Refresh." : "Package inventory unavailable or not authorized."}</p> :
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
-                  <div className="max-h-[440px] overflow-y-auto rounded-lg border">
+                  <div className="h-[65vh] min-h-[440px] max-h-[900px] overflow-y-auto rounded-lg border">
                     {visibleApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
@@ -428,7 +400,7 @@ export default function ShizukuPage() {
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
-                  <div className="relative max-h-[460px] overflow-auto rounded-lg border">
+                  <div className="relative h-[65vh] min-h-[440px] max-h-[900px] overflow-auto rounded-lg border">
                     <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-0 text-left text-sm" aria-label="Android processes">
                       <thead><tr>
                         <th scope="col" className="sticky top-0 z-20 w-20 border-b bg-background p-3">PID</th>
@@ -479,42 +451,10 @@ export default function ShizukuPage() {
         )}
         {section === "services" && (
           <div className="space-y-3">
-            <Card><CardHeader><CardTitle>Android services & display settings</CardTitle>
-              <CardDescription>Observed service components; runtime running/stopped states are not reported.</CardDescription>
+            <Card><CardHeader><CardTitle>Android services</CardTitle>
+              <CardDescription>Observed Android components only; runtime running/stopped states are not established.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Screen brightness</p>
-                  <p className="text-2xl font-semibold">{unavailable(system?.settings.brightness)}</p></div>
-                <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Airplane mode</p>
-                  <p className="text-2xl font-semibold">{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</p></div>
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-2 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Set brightness · {brightnessDraft !== "" ? brightnessDraft : (system?.settings.brightness ?? "—")} / 255</p>
-                  <input type="range" aria-label="Set screen brightness" min={0} max={255} step={1}
-                     className="w-full accent-foreground"
-                     value={brightnessDraft || String(system?.settings.brightness ?? 128)}
-                     onChange={e => setBrightnessDraft(e.target.value)} />
-                  {brightnessDraft.trim() !== "" && connected &&
-                    <AndroidActionButton action="brightness" value={brightnessDraft}
-                      onSuccess={() => setRefreshKey(k => k + 1)}>Apply brightness</AndroidActionButton>}
-                </div>
-                <div className="space-y-2 rounded-lg border p-3">
-                  <p className="text-sm font-medium">Screen timeout</p>
-                  <p className="text-muted-foreground text-xs">Current: {friendlyTimeout(system?.settings.screenTimeoutMs)}</p>
-                  <select aria-label="Set screen timeout" className="bg-background w-full rounded-md border px-3 py-2 text-sm"
-                     value={timeoutDraft} onChange={e => setTimeoutDraft(e.target.value)}>
-                     <option value="">Choose a timeout</option>
-                     <option value="15000">15 sec</option><option value="30000">30 sec</option>
-                     <option value="60000">1 min</option><option value="120000">2 min</option>
-                     <option value="300000">5 min</option><option value="600000">10 min</option>
-                     <option value="1800000">30 min</option><option value="3600000">60 min</option>
-                   </select>
-                  {timeoutDraft.trim() !== "" && connected &&
-                    <AndroidActionButton action="timeout" value={timeoutDraft}
-                      onSuccess={() => setRefreshKey(k => k + 1)}>Apply timeout</AndroidActionButton>}
-                </div>
-              </div>
+              <p className="text-muted-foreground text-sm">Screen controls have moved to <a className="underline underline-offset-4" href="/phone-settings">Phone Settings</a>.</p>
               <Input aria-label="Search Android services" value={serviceSearch}
                 onChange={e => { setServiceSearch(e.target.value); setServicePage(0) }}
                 placeholder="Search service component..." />
@@ -528,7 +468,7 @@ export default function ShizukuPage() {
                   <p className="text-muted-foreground text-xs">
                     {system.services.names.length} observed · {shownServices.length} matching · runtime state unknown{system.services.truncated ? " · capped at 256" : ""}
                   </p>
-                  <div className="max-h-72 overflow-y-auto rounded-lg border">
+                  <div className="h-[65vh] min-h-[440px] max-h-[900px] overflow-y-auto rounded-lg border">
                     {visibleServices.map(service => (
                       <button type="button" key={service}
                         aria-pressed={selectedService === service}
@@ -571,31 +511,10 @@ export default function ShizukuPage() {
           </div>
         )}
         {section === "shell" && <RemoteShellPanel />}
-        {section === "power" && (
-          <div className="space-y-3"><Card><CardHeader><CardTitle>Android device</CardTitle>
-            <CardDescription>Android battery, temperature and memory. Historical trends remain on Dashboard.</CardDescription>
-          </CardHeader><CardContent className="space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-              {[
-                ["Battery level", unavailable(system?.power.batteryLevel, "%")],
-                ["Charging", system?.power.chargingState ? ({ charging: "Charging", discharging: "Discharging", full: "Full", "not-charging": "Not charging", unknown: "Unavailable" } as const)[system.power.chargingState] : system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
-                ["External power", system?.power.powerConnected == null ? "Unavailable" : system.power.powerConnected ? "Connected" : "Disconnected"],
-                ["Battery temperature", unavailable(system?.power.batteryTemperatureC, " °C")],
-                ["Available Android RAM", gib(system?.power.memoryAvailableKb ?? null)],
-              ].map(([label, value]) => <div className="rounded-lg border p-3" key={label}>
-                <p className="text-muted-foreground text-xs">{label}</p>
-                <p className="mt-1 text-lg font-semibold">{value}</p>
-              </div>)}
-            </div>
-            <p className="text-muted-foreground text-sm">Total system RAM: {gib(system?.power.memoryTotalKb ?? null)}</p>
-            <LastSample observedAt={system?.observedAt} />
-            {!system && <p className="text-muted-foreground text-sm">Android hardware sample unavailable.</p>}
-          </CardContent></Card>
-          <details className="rounded-lg border p-3" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
-            <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics · on demand</summary>
-            {diagnosticsOpen && <div className="mt-3"><ShizukuDiagnosticsPanel /></div>}
-          </details></div>
-        )}
+        <details className="rounded-lg border p-3" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
+          <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics · on demand</summary>
+          {diagnosticsOpen && <div className="mt-3"><ShizukuDiagnosticsPanel /></div>}
+        </details>
 
         </div>
 
