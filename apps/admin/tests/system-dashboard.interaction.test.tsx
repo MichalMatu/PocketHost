@@ -60,13 +60,13 @@ describe("PocketHost real-data dashboard", () => {
     expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
     expect(within(metrics).getByText("6 / 6")).toBeTruthy()
     expect(screen.getByText("Live system resources")).toBeTruthy()
-    expect(screen.getByText("Network traffic · RX / TX")).toBeTruthy()
-    expect(screen.getByText("Not available yet")).toBeTruthy()
+    expect(screen.getByText("Android Bridge connectivity")).toBeTruthy()
+    expect(screen.getByText("Connected · authorized")).toBeTruthy()
     expect(screen.queryByText("Node runtime")).toBeNull()
     expect(screen.queryByText("v26.13.0")).toBeNull()
     expect(screen.queryByText("File Manager")).toBeNull()
     expect(screen.queryByText("Packages")).toBeNull()
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(2)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
   })
 
   it("keeps unknown / inaccessible Android CPU explicitly unavailable", async () => {
@@ -81,8 +81,9 @@ describe("PocketHost real-data dashboard", () => {
     await within(metrics).findByText("6 / 6")
     expect(within(metrics).getByText("Unavailable")).toBeTruthy()
     expect(screen.getByText("Android Bridge: disconnected or unauthorized")).toBeTruthy()
+    expect(screen.getByText("Disconnected · last status received")).toBeTruthy()
     expect(screen.queryByText("0.0%")).toBeNull()
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(2)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
   })
 
   it("reports genuine API and bridge unavailability without fabricated samples", async () => {
@@ -92,7 +93,7 @@ describe("PocketHost real-data dashboard", () => {
     await within(metrics).findAllByText("Unavailable")
     expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
     expect(screen.getByText("No successful PocketHost API request yet.")).toBeTruthy()
-    expect(screen.getByText("Not available yet")).toBeTruthy()
+    expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
     expect(screen.queryAllByTestId("live-chart")).toHaveLength(0)
   })
 })

@@ -19,6 +19,8 @@ type Sample = {
   cpu: number | null
   ram: number | null
   apiMs: number | null
+  bridgeMs: number | null
+  bridgeOnline: boolean | null
 }
 
 const resourcesConfig = {
@@ -28,6 +30,10 @@ const resourcesConfig = {
 
 const latencyConfig = {
   apiMs: { label: "Panel API response", color: "var(--chart-3)" },
+} satisfies ChartConfig
+
+const bridgeConfig = {
+  bridgeMs: { label: "Bridge status API response", color: "var(--chart-4)" },
 } satisfies ChartConfig
 
 function clock(value: string | number) {
@@ -47,13 +53,15 @@ async function getHost(signal: AbortSignal) {
 }
 
 async function getBridge(signal: AbortSignal) {
+  const began = performance.now()
   const response = await fetch("/api/v1/shizuku/status", {
     credentials: "same-origin",
     cache: "no-store",
     signal: AbortSignal.any([signal, AbortSignal.timeout(9000)]),
   })
   if (!response.ok) throw new Error("bridge-unavailable")
-  return parseShizukuStatus(await response.json() as unknown)
+  const bridge = parseShizukuStatus(await response.json() as unknown)
+  return { bridge, bridgeMs: Math.max(0, Math.round(performance.now() - began)) }
 }
 
 function metricValue(value: string | null, loading: boolean) {
@@ -116,13 +124,15 @@ export default function SystemPage() {
         const nextHost = hostResult?.host ?? null
         const now = new Date().toISOString()
         setHost(nextHost)
-        setBridge(bridgeResult)
+        setBridge(bridgeResult?.bridge ?? null)
         setSampledAt(now)
         setSamples(previous => [...previous, {
           observedAt: now,
-          cpu: freshCpu(bridgeResult),
+          cpu: freshCpu(bridgeResult?.bridge ?? null),
           ram: ramUsedPercent(nextHost),
           apiMs: hostResult?.apiMs ?? null,
+          bridgeMs: bridgeResult?.bridgeMs ?? null,
+          bridgeOnline: bridgeResult?.bridge.connected ?? null,
         }].slice(-MAX_SAMPLES))
         setLoading(false)
       }
@@ -146,6 +156,9 @@ export default function SystemPage() {
   const bridgeState = bridge?.connected && bridge.authorized
     ? cpu === null ? "Android Bridge: CPU sample unavailable" : "Android Bridge: authorized"
     : "Android Bridge: disconnected or unauthorized"
+  const bridgeHealth = !bridge ? "Bridge status API unavailable"
+    : bridge.connected ? bridge.authorized ? "Connected · authorized" : "Connected · authorization required"
+    : "Disconnected · last status received"
 
   return (
     <BaseLayout title="Dashboard" description="Live status of PocketHost, Termux and the Android Bridge">
@@ -182,11 +195,11 @@ export default function SystemPage() {
             </CardHeader>
             <CardContent>
               {samples.some(sample => sample.cpu !== null || sample.ram !== null) ? (
-                <ChartContainer config={resourcesConfig} className="aspect-auto h-[260px] w-full">
-                  <AreaChart data={samples}>
+                <ChartContainer config={resourcesConfig} className="aspect-auto h-[260px] min-w-0 w-full">
+                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickFormatter={clock} />
-                    <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={35} tickFormatter={value => value + "%"} />
+                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
                       fill="var(--color-cpu)" fillOpacity={0.12} strokeWidth={2} dot={samples.length < 3} />
@@ -212,11 +225,11 @@ export default function SystemPage() {
             </CardHeader>
             <CardContent>
               {samples.some(sample => sample.apiMs !== null) ? (
-                <ChartContainer config={latencyConfig} className="aspect-auto h-[190px] w-full">
-                  <LineChart data={samples}>
+                <ChartContainer config={latencyConfig} className="aspect-auto h-[190px] min-w-0 w-full">
+                  <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickFormatter={clock} />
-                    <YAxis width={35} tickLine={false} axisLine={false} tickFormatter={value => value + "ms"} />
+                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Line type="monotone" dataKey="apiMs" stroke="var(--color-apiMs)" strokeWidth={2}
                       dot={samples.length < 3} connectNulls={false} />
@@ -233,20 +246,29 @@ export default function SystemPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Network traffic · RX / TX</CardTitle>
-              <CardDescription>Full-device traffic requires a verified native Android Bridge source</CardDescription>
+              <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android Bridge connectivity</CardTitle>
+              <CardDescription>Live response time of the existing Bridge status API · not Internet ping or RX/TX</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex min-h-[190px] flex-col items-center justify-center gap-3 text-center">
-                <Wifi className="text-muted-foreground size-7" />
-                <p className="font-medium">Not available yet</p>
-                <p className="text-muted-foreground max-w-sm text-sm">
-                  Samsung denies Termux access to device RX/TX counters. Bridge network statistics
-                  require a separate Android permission and measurement accuracy check.
-                </p>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                No simulated traffic or background network scanning.
+            <CardContent className="min-w-0">
+              {samples.some(sample => sample.bridgeMs !== null) ? (
+                <ChartContainer config={bridgeConfig} className="aspect-auto h-[190px] min-w-0 w-full">
+                  <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <Line type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)" strokeWidth={2}
+                      dot={samples.length < 3} connectNulls={false} />
+                  </LineChart>
+                </ChartContainer>
+              ) : <p className="text-muted-foreground py-12 text-center text-sm">
+                No successful Bridge status API request yet.
+              </p>}
+              <p className="text-muted-foreground flex flex-wrap items-center gap-2 pt-2 text-xs">
+                <span>{bridgeHealth}</span><span>·</span><span>{samples.filter(sample => sample.bridgeOnline === false).length} disconnected samples</span>
+              </p>
+              <p className="text-muted-foreground pt-1 text-xs">
+                Full-device RX/TX requires verified Android NetworkStats permission and native Bridge integration.
               </p>
             </CardContent>
           </Card>
