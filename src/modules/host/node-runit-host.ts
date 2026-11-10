@@ -205,13 +205,26 @@ export class NodeRunitHost {
       digest(privateText(path.join(service, 'run'))) !== m.runDigest)
       throw new Error('Node runit service identity changed');
     const down = path.join(service, 'down');
-    if (!absent(down)) privateText(down, 64);
+    if (absent(down)) throw new Error('Owned Node unit must remain manually disabled');
+    privateText(down, 64);
     const listing = this.admin.list(() => 'unknown');
     if (!listing.some((entry) => entry.name === unit && entry.registered && !entry.protected))
       throw new Error('Node unit is not in verified runit registry');
   }
+  private unitState(id: string): 'running' | 'down' | 'unknown' {
+    const { service } = this.context(id);
+    const result = spawnSync(PREFIX + '/bin/sv', ['status', service], {
+      shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
+    });
+    if (result.error || result.status !== 0) return 'unknown';
+    if (result.stdout.startsWith('down:')) return 'down';
+    if (result.stdout.startsWith('run:')) return 'running';
+    return 'unknown';
+  }
   private observe(id: string, release: string): ProcessProof | 'down' | 'unknown' {
     const { service } = this.context(id);
+    const running = this.unitState(id);
+    if (running !== 'running') return running === 'down' ? 'down' : 'unknown';
     const result = spawnSync(PREFIX + '/bin/sv', ['status', service], {
       shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
     });
@@ -290,7 +303,8 @@ export class NodeRunitHost {
     if (!state) return { state: 'not-provisioned', port: null,
       activeRelease: null, lastGoodRelease: null, desired: 'stopped', history: [] };
     const current = state.activeRelease
-      ? this.observe(id, state.activeRelease) : 'down';
+      ? this.observe(id, state.activeRelease)
+      : this.unitState(id) === 'down' ? 'down' : 'unknown';
     const matches = current !== 'down' && current !== 'unknown' &&
       state.process?.pid === current.pid && state.process.ticks === current.ticks;
     return {
@@ -325,7 +339,10 @@ export class NodeRunitHost {
     throw new Error('Node runtime failed exact-owner readiness');
   }
   private async halt(id: string, state: RuntimeRecord): Promise<void> {
-    if (!state.activeRelease) return;
+    if (!state.activeRelease) {
+      if (this.unitState(id) !== 'down') throw new Error('Unattributed runit process: stop refused');
+      return;
+    }
     const process = this.observe(id, state.activeRelease);
     if (process === 'unknown' || (process !== 'down' &&
       (!state.process || state.process.pid !== process.pid ||
