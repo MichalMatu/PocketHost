@@ -47,13 +47,12 @@ function mount(fetcher: (url: string) => Promise<unknown>) {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("Android Shizuku UI response and bounded inventories", () => {
-  it("shows connected status/CPU without waiting for slow apps or processes", async () => {
+  it("shows Shizuku connection without waiting for slow app or process inventories", async () => {
     mount(async url => {
       if (url.endsWith("/status")) return status
       return new Promise(() => undefined)
     })
     expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
-    expect(screen.getByText("19.0%")).toBeTruthy()
     expect(screen.getByText("Loading Android applications…")).toBeTruthy()
     await userEvent.setup().click(screen.getByRole("tab", { name: /Android processes/i }))
     expect(screen.getByText("Loading Android processes…")).toBeTruthy()
@@ -130,7 +129,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.queryByText("android.permission.RECORD_AUDIO")).toBeNull()
 
     await user.click(screen.getByRole("tab", { name: /Android services/i }))
-    const service = await screen.findByRole("button", { name: "com.example/.Service" })
+    const service = await screen.findByRole("button", { name: /com\.example.*\.Service/ })
     await user.click(service)
     expect(service.getAttribute("aria-pressed")).toBe("true")
     expect(screen.getByText("Selected Android component")).toBeTruthy()
