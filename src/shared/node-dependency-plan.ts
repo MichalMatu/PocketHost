@@ -5,6 +5,13 @@ export interface NodeDependencyPlan {
   readonly packageVersion: string;
   readonly lockfileVersion: 2 | 3;
   readonly dependencyCount: number;
+  readonly requiredNodeMajor: number;
+  readonly lockReview: {
+    readonly lockedPackages: number;
+    readonly missingDirectEntries: readonly string[];
+    readonly unreviewedSources: readonly string[];
+    readonly installScripts: readonly string[];
+  };
   readonly commands: {
     readonly install: readonly ['npm', 'ci'];
     readonly build: readonly ['npm', 'run', 'build'] | null;
@@ -64,6 +71,76 @@ function matchingDependencies(
   return count;
 }
 
+
+function lockEntryPath(name: string): boolean {
+  if (name.length > 240 || name.startsWith('/') || name.includes('\\') ||
+    name.includes('\0') || name.includes('..')) return false;
+  const parts = name.split('/');
+  let index = 0;
+  while (index < parts.length) {
+    if (parts[index++] !== 'node_modules') return false;
+    const packageName = parts[index++];
+    if (!packageName) return false;
+    if (packageName.startsWith('@')) {
+      if (!/^@[a-z0-9._-]+$/.test(packageName) ||
+        !/^[a-z0-9._-]+$/.test(parts[index++] ?? '')) return false;
+    } else if (!/^[a-z0-9._-]+$/.test(packageName)) {
+      return false;
+    }
+  }
+  return true;
+}
+function reviewLockfile(
+  packages: Record<string, unknown>,
+  root: Record<string, unknown>,
+): NodeDependencyPlan['lockReview'] {
+  const names = Object.keys(packages);
+  if (names.length > 501) throw new Error('Lockfile package budget exceeded');
+  const direct = new Set<string>();
+  for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
+    for (const name of Object.keys(dependencyMap(root[field]))) direct.add(name);
+  }
+  const missingDirectEntries = [...direct].filter((name) =>
+    !Object.hasOwn(packages, 'node_modules/' + name)).sort();
+  const unreviewedSources: string[] = [];
+  const installScripts: string[] = [];
+  for (const [name, input] of Object.entries(packages)) {
+    if (name === '') continue;
+    if (!lockEntryPath(name)) {
+      unreviewedSources.push(name.slice(0, 160));
+      continue;
+    }
+    const entry = record(input);
+    if (entry.hasInstallScript === true) installScripts.push(name);
+    const resolved = entry.resolved;
+    const integrity = entry.integrity;
+    if (entry.link === true || typeof resolved !== 'string' ||
+      !resolved.startsWith('https://registry.npmjs.org/') ||
+      typeof integrity !== 'string' ||
+      !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(integrity)) {
+      unreviewedSources.push(name);
+    }
+  }
+  return {
+    lockedPackages: names.length - 1,
+    missingDirectEntries,
+    unreviewedSources,
+    installScripts,
+  };
+}
+function nodeEngineMajor(value: unknown): number {
+  if (value === undefined) return 22;
+  const engines = record(value);
+  const range = engines.node;
+  if (range === undefined) return 22;
+  if (typeof range !== 'string') throw new Error('Invalid Node engine range');
+  const match = /^>=([0-9]{1,3})(?:\.[0-9]{1,3}){0,2}$/.exec(range);
+  if (!match) throw new Error('Node engine range requires explicit >=major');
+  const required = Number(match[1]);
+  if (required < 1 || required > 100) throw new Error('Invalid Node engine major');
+  return Math.max(22, required);
+}
+
 export function planNodeDependencies(
   packageInput: unknown,
   lockInput: unknown,
@@ -96,12 +173,16 @@ export function planNodeDependencies(
   named(scripts.start, 'start script');
   if (scripts.build !== undefined) named(scripts.build, 'build script');
   const dependencyCount = matchingDependencies(pkg, root);
+  const lockReview = reviewLockfile(packages, root);
+  const requiredNodeMajor = nodeEngineMajor(pkg.engines);
   return {
     status: 'review-required',
     packageName: name,
     packageVersion: version,
     lockfileVersion: lock.lockfileVersion as 2 | 3,
     dependencyCount,
+    lockReview,
+    requiredNodeMajor,
     commands: {
       install: ['npm', 'ci'],
       build: scripts.build === undefined ? null : ['npm', 'run', 'build'],
@@ -135,7 +216,8 @@ export function reviewNodeToolchain(
     }
   }
   const nodeVersion = tools.node ? Number(tools.node.replace(/^v/, '').split('.')[0]) : null;
-  if (nodeVersion !== null && nodeVersion < 22) conflicts.push('node-requires-22-or-newer');
+  if (nodeVersion !== null && nodeVersion < plan.requiredNodeMajor)
+    conflicts.push('node-requires-' + plan.requiredNodeMajor + '-or-newer');
   if (
     plan.lockfileVersion === 3 &&
     tools.npm &&

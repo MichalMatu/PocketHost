@@ -33,6 +33,7 @@ type RuntimePlan = {
   nodeVersion: string | null
   npmVersion: string | null
   conflicts: string[]
+  dependencyIssues?: string[]
   dependencyCount: number | null
   allowed: boolean
   reason: string
@@ -240,8 +241,11 @@ export default function ProjectsPage() {
               <CardDescription>Review the execution plan and authorize a one-shot local runit operation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm">Plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
-              {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0) &&
-                <p role="alert" className="text-sm text-destructive">{[...plan.missingTools, ...plan.conflicts].join(", ")}</p>}
+              {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
+                  (plan.dependencyIssues?.length ?? 0) > 0) &&
+                <p role="alert" className="text-sm text-destructive">{[
+                  ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
+                ].join(", ")}</p>}
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
                   onChange={event => setApproved(event.target.checked)} />

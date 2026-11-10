@@ -74,3 +74,46 @@ test('M2 supports no-build one-package Node apps without inferring live ownershi
   assert.equal(plan.packageName, 'owned-node-demo');
   assert.equal(Object.hasOwn(plan, 'service'), false);
 });
+
+test('M2 lock review detects missing direct packages and forbids unproven package sources', () => {
+  const { pkg, lock } = fixture();
+  const plan = planNodeDependencies(pkg, lock);
+  assert.deepEqual(plan.lockReview.missingDirectEntries, ['express']);
+  assert.equal(plan.lockReview.lockedPackages, 0);
+  const resolved = planNodeDependencies(pkg, {
+    ...lock,
+    packages: {
+      ...lock.packages,
+      'node_modules/express': {
+        version: '5.0.0',
+        resolved: 'https://registry.npmjs.org/express/-/express-5.0.0.tgz',
+        integrity: 'sha512-AAAA',
+      },
+    },
+  });
+  assert.deepEqual(resolved.lockReview.missingDirectEntries, []);
+  assert.deepEqual(resolved.lockReview.unreviewedSources, []);
+  const suspect = planNodeDependencies(pkg, {
+    ...lock,
+    packages: {
+      ...lock.packages,
+      'node_modules/express': {
+        resolved: 'file:../../foreign',
+        integrity: 'sha512-AAAA',
+        hasInstallScript: true,
+      },
+    },
+  });
+  assert.deepEqual(suspect.lockReview.unreviewedSources, ['node_modules/express']);
+  assert.deepEqual(suspect.lockReview.installScripts, ['node_modules/express']);
+});
+test('M2 lock review flags path tricks and unsupported engine declarations', () => {
+  const { pkg, lock } = fixture();
+  const unsafe = planNodeDependencies(pkg, {
+    ...lock,
+    packages: { ...lock.packages, '../outsider': { version: '1.0.0' } },
+  });
+  assert.deepEqual(unsafe.lockReview.unreviewedSources, ['../outsider']);
+  assert.throws(() => planNodeDependencies({ ...pkg, engines: { node: '^22' } }, lock),
+    /engine range/);
+});

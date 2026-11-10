@@ -41,3 +41,10 @@ test('M2 toolchain preview refuses unsupported or impossible installed versions'
   ]);
   assert.throws(() => reviewNodeToolchain(plan, { node: 'evil', npm: '10.0.0' }), /version/);
 });
+
+test('M2 declared Node engine constraint is checked against installed major', () => {
+  const plan = planNodeDependencies({ ...pkg, engines: { node: '>=24' } }, lock);
+  assert.equal(plan.requiredNodeMajor, 24);
+  assert.deepEqual(reviewNodeToolchain(plan, { node: 'v22.1.0', npm: '10.0.0' }).conflicts,
+    ['node-requires-24-or-newer']);
+});

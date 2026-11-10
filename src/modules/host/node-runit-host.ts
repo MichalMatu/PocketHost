@@ -311,13 +311,15 @@ export class NodeRunitHost {
   preview(id: string): {
     release: string | null; port: number | null; missingTools: string[];
     nodeVersion: string | null; npmVersion: string | null;
-    conflicts: string[]; dependencyCount: number | null; allowed: boolean; reason: string;
+    conflicts: string[]; dependencyCount: number | null; allowed: boolean;
+    dependencyIssues: string[]; reason: string;
   } {
     const project = this.projects.inspect(id);
     const state = this.record(id);
     const release = project.candidateRelease;
     if (!release) return { release: null, port: state?.port ?? null,
-      missingTools: [], conflicts: [], nodeVersion: null, npmVersion: null,
+      missingTools: [], conflicts: [], dependencyIssues: [],
+      nodeVersion: null, npmVersion: null,
       dependencyCount: null, allowed: false,
       reason: 'stage-source-first' };
     const candidate = this.projects.candidates(id).find((entry) => entry.id === release);
@@ -325,15 +327,22 @@ export class NodeRunitHost {
     const { dependencyPlan: plan, sourceIntegrity } = candidate;
     if (sourceIntegrity !== 'verified') {
       return { release, port: state?.port ?? null, nodeVersion: null, npmVersion: null,
-        missingTools: [], conflicts: [], dependencyCount: plan.dependencyCount,
+        missingTools: [], conflicts: [], dependencyIssues: [],
+        dependencyCount: plan.dependencyCount,
         allowed: false, reason: 'source-must-be-re-staged' };
     }
     const tools = this.toolchain(plan);
     const { nodeVersion, npmVersion } = tools;
     const clean = plan.dependencyCount === 0 && plan.commands.build === null;
+    const dependencyIssues = [
+      ...plan.lockReview.missingDirectEntries.map((name) => 'missing-lock:' + name),
+      ...plan.lockReview.unreviewedSources.map((name) => 'source-review:' + name),
+      ...plan.lockReview.installScripts.map((name) => 'install-script:' + name),
+    ];
     return {
       release, port: state?.port ?? null, missingTools: tools.missingTools,
-      nodeVersion, npmVersion, conflicts: tools.conflicts, dependencyCount: plan.dependencyCount,
+      nodeVersion, npmVersion, conflicts: tools.conflicts, dependencyIssues,
+      dependencyCount: plan.dependencyCount,
       allowed: tools.status !== 'blocked' && clean,
       reason: tools.status === 'blocked' ? 'missing-or-unsupported-toolchain' :
         clean ? 'ready-for-explicit-local-deploy' : 'dependencies-or-build-need-separate-approval',
