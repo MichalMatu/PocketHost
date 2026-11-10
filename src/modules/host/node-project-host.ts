@@ -230,6 +230,19 @@ export class NodeProjectHost {
     this.root = root;
   }
 
+  /** Same exclusive project root lock as runit lifecycle and scoped Restic. */
+  private mutation<T>(action: () => T): T {
+    ownedDirectory(this.root);
+    const lock = path.join(this.root, '.node-ports.lock');
+    const fd = openSync(lock, 'wx', 0o600);
+    closeSync(fd);
+    try {
+      return action();
+    } finally {
+      rmSync(lock);
+    }
+  }
+
   private projectPath(id: string): string {
     if (!PROJECT.test(id)) throw new RangeError('Invalid Node project ID');
     const folder = path.join(this.root, id);
@@ -274,26 +287,29 @@ export class NodeProjectHost {
     const title = safeName(name);
     if (!existsSync(this.root)) mkdirSync(this.root, { mode: 0o700 });
     ownedDirectory(this.root);
-    if (this.list().length >= MAX_PROJECTS) throw new RangeError('Node project limit reached');
-    const id = 'node-' + identifier();
-    const folder = path.join(this.root, id);
-    mkdirSync(folder, { mode: 0o700 });
-    mkdirSync(path.join(folder, 'releases'), { mode: 0o700 });
-    const marker: NodeProjectRecord = {
-      schema: 1,
-      owner: 'pockethost-node',
-      id,
-      name: title,
-      createdAt: new Date().toISOString(),
-      candidateRelease: null,
-      previousCandidate: null,
-      history: [],
-    };
-    writeAtomic(folder, MARKER, JSON.stringify(marker) + '\n');
-    return this.summary(marker);
+    return this.mutation(() => {
+      if (this.list().length >= MAX_PROJECTS) throw new RangeError('Node project limit reached');
+      const id = 'node-' + identifier();
+      const folder = path.join(this.root, id);
+      mkdirSync(folder, { mode: 0o700 });
+      mkdirSync(path.join(folder, 'releases'), { mode: 0o700 });
+      const marker: NodeProjectRecord = {
+        schema: 1,
+        owner: 'pockethost-node',
+        id,
+        name: title,
+        createdAt: new Date().toISOString(),
+        candidateRelease: null,
+        previousCandidate: null,
+        history: [],
+      };
+      writeAtomic(folder, MARKER, JSON.stringify(marker) + '\n');
+      return this.summary(marker);
+    });
   }
   stage(id: string, input: unknown): { project: NodeProjectSummary; plan: NodeDependencyPlan } {
     const source = cleanSource(input);
+    return this.mutation(() => {
     const marker = this.record(id);
     const releases = path.join(this.projectPath(id), 'releases');
     if (
@@ -336,6 +352,7 @@ export class NodeProjectHost {
     } finally {
       if (existsSync(stage)) rmSync(stage, { recursive: true });
     }
+    });
   }
   candidates(id: string): NodeCandidateRelease[] {
     const marker = this.record(id);
@@ -412,6 +429,7 @@ export class NodeProjectHost {
   }
 
   restoreCandidate(id: string): NodeProjectSummary {
+    return this.mutation(() => {
     const marker = this.record(id);
     if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
     const old = marker.candidateRelease;
@@ -428,5 +446,6 @@ export class NodeProjectHost {
     });
     writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
     return this.summary(marker);
+    });
   }
 }

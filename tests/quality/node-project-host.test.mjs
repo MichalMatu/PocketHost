@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, readFileSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
@@ -94,4 +94,19 @@ test('M3 existing legacy candidate remains visible but requires fresh staging', 
   assert.equal(host.candidates(project.id)[0].sourceIntegrity, 'verified');
   rmSync(path.join(root, project.id, 'releases', release, '.pockethost-node-source.json'));
   assert.equal(host.candidates(project.id)[0].sourceIntegrity, 'legacy-needs-restaging');
+});
+
+test('M3 source staging and candidate restore respect shared active deploy/backup lock', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Locked project');
+  const first = host.stage(project.id, source()).project;
+  const second = host.stage(project.id, source('1.0.1')).project;
+  assert.notEqual(first.candidateRelease, second.candidateRelease);
+  const lock = path.join(root, '.node-ports.lock');
+  writeFileSync(lock, '', { mode: 0o600 });
+  assert.throws(() => host.stage(project.id, source('1.0.2')), /EEXIST/);
+  assert.throws(() => host.restoreCandidate(project.id), /EEXIST/);
+  assert.throws(() => host.create('Blocked new project'), /EEXIST/);
+  rmSync(lock);
+  assert.equal(host.restoreCandidate(project.id).candidateRelease, first.candidateRelease);
 });
