@@ -46,11 +46,12 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside seventeen PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 17);
+  assert.equal(allPaths.length, originalPaths.length + 18);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
   }
+  assert.ok(allPaths.includes('/examples/dashboard'));
   assert.ok(allPaths.includes('/host'));
   assert.ok(allPaths.includes('/observability'));
   assert.ok(allPaths.includes('/shizuku'));
@@ -105,4 +106,13 @@ test('M0 keeps observed external services in System, not the Hosting project cat
     navigation.split('label: "Platform",')[1]?.split('label: "Examples",')[0] ?? '';
   assert.match(platformGroup, /url: "\/settings\/network"/);
   assert.match(routes, /path: "\/host"/);
+});
+
+test('PocketHost dashboard is home and upstream charts stay available under examples', () => {
+  assert.match(routes, /path: "\/", element: <Navigate to="\/dashboard" replace \/>/);
+  assert.match(routes, /path: "\/system", element: <Navigate to="\/dashboard" replace \/>/);
+  assert.match(routes, /path: "\/dashboard", lazy: page\(\(\) => import\("@\/app\/termux\/system-page"\)\)/);
+  assert.match(routes, /path: "\/examples\/dashboard", lazy: page\(\(\) => import\("@\/app\/dashboard\/page"\)\)/);
+  assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
+  assert.match(navigation, /title: "Framework dashboard", url: "\/examples\/dashboard"/);
 });

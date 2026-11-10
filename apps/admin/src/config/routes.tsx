@@ -12,15 +12,15 @@ function page(load: () => Promise<{ default: ComponentType }>) {
 
 export const routes: RouteObject[] = [
   // Use relative path "dashboard" instead of "/dashboard" for basename compatibility
-  { path: "/", element: <Navigate to="/system" replace /> },
+  { path: "/", element: <Navigate to="/dashboard" replace /> },
   // Landing Page
   { path: "/landing", lazy: page(() => import("@/app/landing/page")) },
   // PocketHost read-only status (all original upstream routes remain untouched)
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
   { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
   { path: "/shizuku", lazy: page(() => import("@/app/shizuku/page")) },
-  { path: "/termux", element: <Navigate to="/system" replace /> },
-  { path: "/system", lazy: page(() => import("@/app/termux/system-page")) },
+  { path: "/termux", element: <Navigate to="/dashboard" replace /> },
+  { path: "/system", element: <Navigate to="/dashboard" replace /> },
   { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
   { path: "/files", lazy: page(() => import("@/app/termux/files-page")) },
   { path: "/services", lazy: page(() => import("@/app/termux/services-page")) },
@@ -35,8 +35,9 @@ export const routes: RouteObject[] = [
   { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
   // P4: explicit, read-only catalog for imported PhotoMap TEST
   { path: "/managed-projects", lazy: page(() => import("@/app/managed-projects/page")) },
-  // Dashboard Routes
-  { path: "/dashboard", lazy: page(() => import("@/app/dashboard/page")) },
+  // PocketHost home dashboard, with the original upstream charts kept as an example.
+  { path: "/dashboard", lazy: page(() => import("@/app/termux/system-page")) },
+  { path: "/examples/dashboard", lazy: page(() => import("@/app/dashboard/page")) },
   { path: "/dashboard-2", lazy: page(() => import("@/app/dashboard-2/page")) },
   // Application Routes
   { path: "/mail", lazy: page(() => import("@/app/mail/page")) },

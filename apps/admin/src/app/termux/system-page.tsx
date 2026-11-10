@@ -55,7 +55,7 @@ export default function SystemPage() {
   }, [refreshCount])
 
   return (
-    <BaseLayout title="System dashboard" description="Termux management with hosting as one module">
+    <BaseLayout title="Dashboard" description="Termux management with hosting as one module">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">

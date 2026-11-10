@@ -9,7 +9,7 @@ export const navGroups = [
   {
     label: "System",
     items: [
-      { title: "Dashboard", url: "/system", icon: LayoutDashboard },
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Monitoring", url: "/observability", icon: Activity },
       { title: "Observed host inventory", url: "/host", icon: ServerCog },
       { title: "Android & Shizuku", url: "/shizuku", icon: Smartphone },
@@ -46,7 +46,7 @@ export const navGroups = [
       {
         title: "Dashboard examples", url: "#", icon: LayoutTemplate,
         items: [
-          { title: "Dashboard 1", url: "/dashboard" },
+          { title: "Framework dashboard", url: "/examples/dashboard" },
           { title: "Dashboard 2", url: "/dashboard-2" },
         ],
       },
