@@ -15,6 +15,7 @@ import android.net.Uri;
 import android.os.Binder;
 import android.os.ParcelFileDescriptor;
 import android.os.Process;
+import android.net.TrafficStats;
 import android.content.SharedPreferences;
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
@@ -45,6 +46,26 @@ public final class TelemetryProvider extends ContentProvider {
         return false;
     }
 
+    /** Android totals count all interfaces since boot; unsupported is not zero. */
+    private static JSONObject attachNetwork(JSONObject status) throws Exception {
+        JSONObject network = new JSONObject();
+        network.put("source", "android-trafficstats");
+        network.put("scope", "all-interfaces-since-boot");
+        network.put("observedAt", java.time.Instant.now().toString());
+        long rx = TrafficStats.UNSUPPORTED;
+        long tx = TrafficStats.UNSUPPORTED;
+        try {
+            rx = TrafficStats.getTotalRxBytes();
+            tx = TrafficStats.getTotalTxBytes();
+        } catch (SecurityException ignored) {
+            // Permission limits are represented by null, not a false zero.
+        }
+        network.put("rxBytes", rx >= 0 ? rx : JSONObject.NULL);
+        network.put("txBytes", tx >= 0 ? tx : JSONObject.NULL);
+        status.put("network", network);
+        return status;
+    }
+
     static JSONObject status(android.content.Context context) throws Exception {
         SharedPreferences state = context.getSharedPreferences(PREFS, 0);
         long when = state.getLong("observedAtMs", 0);
@@ -56,7 +77,7 @@ public final class TelemetryProvider extends ContentProvider {
                 JSONObject value = new JSONObject(raw);
                 if ("android-companion".equals(value.optString("source")) &&
                         value.optInt("version") == 1) {
-                    return value;
+                    return attachNetwork(value);
                 }
             }
         }
@@ -70,7 +91,7 @@ public final class TelemetryProvider extends ContentProvider {
         disconnected.put("cpuPercent", JSONObject.NULL);
         disconnected.put("visibleProcesses", JSONObject.NULL);
         disconnected.put("capabilities", new JSONArray());
-        return disconnected;
+        return attachNetwork(disconnected);
     }
 
     /** Only recently authorized native readings may be served to the local dashboard. */

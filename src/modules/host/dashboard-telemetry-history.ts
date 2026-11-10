@@ -17,7 +17,7 @@ const WINDOW_MS = 24 * 60 * 60 * 1000;
 const FIELDS = ['observedAt', 'cpu', 'ram', 'internetMs', 'internetFailed', 'bridgeMs',
   'bridgeOnline', 'servicesRunning', 'servicesTotal', 'storageAvailableMiB', 'systemUptimeSeconds'] as const;
 const EXTRA_FIELDS = ['batteryPercent', 'batteryCharging', 'batteryTempC', 'dnsMs', 'dnsFailed',
-  'storageUsedPercent', 'serviceStates'] as const;
+  'storageUsedPercent', 'serviceStates', 'networkRxBytes', 'networkTxBytes', 'networkObservedAt'] as const;
 const SERVICE_IDS = ['ilestoi', 'tunnel', 'ssh', 'mqtt', 'healthwatch', 'local-agent'] as const;
 type ServiceId = typeof SERVICE_IDS[number];
 type ServiceState = 'running' | 'stopped' | 'unknown';
@@ -50,6 +50,9 @@ export type DashboardTelemetryPoint = {
   dnsFailed?: boolean | null;
   storageUsedPercent?: number | null;
   serviceStates?: ServiceStates | null;
+  networkRxBytes?: number | null;
+  networkTxBytes?: number | null;
+  networkObservedAt?: string | null;
 };
 
 function validNumber(v: unknown, max: number): v is number {
@@ -87,6 +90,21 @@ export function validateDashboardPoint(value: unknown, now = Date.now(), allowHi
   if (Object.hasOwn(v, 'dnsFailed') && ![null,true,false].includes(v.dnsFailed as boolean | null)) return false;
   if (v.dnsFailed === true && v.dnsMs != null) return false;
   if (Object.hasOwn(v, 'storageUsedPercent') && !validOptional(v.storageUsedPercent, 100)) return false;
+  const networkFields = ['networkRxBytes', 'networkTxBytes', 'networkObservedAt'] as const;
+  if (networkFields.some(k => Object.hasOwn(v, k))) {
+    if (!networkFields.every(k => Object.hasOwn(v, k)) ||
+      !validOptional(v.networkRxBytes, Number.MAX_SAFE_INTEGER) ||
+      !validOptional(v.networkTxBytes, Number.MAX_SAFE_INTEGER)) return false;
+    if (v.networkObservedAt === null) {
+      if (v.networkRxBytes !== null || v.networkTxBytes !== null) return false;
+    } else {
+      const netAt = typeof v.networkObservedAt === 'string' ? Date.parse(v.networkObservedAt) : NaN;
+      if (!Number.isFinite(netAt) || typeof v.networkObservedAt !== 'string' ||
+        v.networkObservedAt.length > 35 || netAt > now + MAX_FUTURE_MS ||
+        (!allowHistorical && netAt < now - 120000) ||
+        netAt > at + MAX_FUTURE_MS || at - netAt > 120000) return false;
+    }
+  }
   if (Object.hasOwn(v, 'serviceStates') && v.serviceStates !== null) {
     const states = v.serviceStates;
     if (!states || typeof states !== 'object' || Array.isArray(states)) return false;
@@ -339,6 +357,10 @@ export async function observeDashboardTelemetry(
   const total = host?.runtime.totalMemoryMiB ?? 0;
   const ram = total > 0
     ? Math.round(1000 * (total - host!.runtime.freeMemoryMiB) / total) / 10 : null;
+  const network = bridge?.network;
+  const networkAt = network ? Date.parse(network.observedAt) : NaN;
+  const freshNetwork = network && Number.isFinite(networkAt) && networkAt <= now() + MAX_FUTURE_MS &&
+    now() - networkAt <= 120000;
   const battery = batteryResult.status === 'fulfilled' ? batteryResult.value : null;
   const dns = dnsResult.status === 'fulfilled' ? dnsResult.value : null;
   const storage = host?.runtime.storage;
@@ -358,6 +380,9 @@ export async function observeDashboardTelemetry(
     dnsFailed: dns?.dnsFailed ?? null,
     storageUsedPercent,
     serviceStates,
+    networkRxBytes: freshNetwork ? network.rxBytes : null,
+    networkTxBytes: freshNetwork ? network.txBytes : null,
+    networkObservedAt: freshNetwork ? network.observedAt : null,
     internetMs: internet?.state === 'reachable' ? internet.latencyMs : null,
     internetFailed: internet ? internet.state === 'unreachable' : null,
     bridgeMs, bridgeOnline: bridge ? bridge.connected : null,

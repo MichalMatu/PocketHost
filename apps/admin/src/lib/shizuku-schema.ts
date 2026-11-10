@@ -8,6 +8,14 @@ const capability = z.object({
   description: z.string().max(220),
 }).strict()
 
+const androidNetwork = z.object({
+  source: z.literal("android-trafficstats"),
+  scope: z.literal("all-interfaces-since-boot"),
+  observedAt: z.string().datetime({ offset: true }),
+  rxBytes: z.number().int().nonnegative().safe().nullable(),
+  txBytes: z.number().int().nonnegative().safe().nullable(),
+}).strict()
+
 export const shizukuStatusSchema = z.object({
   version: z.literal(1),
   source: z.literal("android-companion"),
@@ -18,6 +26,7 @@ export const shizukuStatusSchema = z.object({
   observedAt: z.string().datetime({ offset: true }),
   cpuPercent: z.number().finite().min(0).max(100).nullable(),
   visibleProcesses: z.number().int().nonnegative().nullable(),
+  network: androidNetwork.optional(),
   capabilities: z.array(capability).max(96),
 }).strict()
 export type ShizukuStatus = z.infer<typeof shizukuStatusSchema>

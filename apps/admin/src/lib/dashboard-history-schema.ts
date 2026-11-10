@@ -33,6 +33,9 @@ const point = z.object({
   dnsFailed: z.boolean().nullable().optional(),
   storageUsedPercent: z.number().min(0).max(100).nullable().optional(),
   serviceStates: serviceStates.nullable().optional(),
+  networkRxBytes: z.number().int().nonnegative().safe().nullable().optional(),
+  networkTxBytes: z.number().int().nonnegative().safe().nullable().optional(),
+  networkObservedAt: z.string().datetime({ offset: true }).nullable().optional(),
 }).strict()
 
 const history = z.object({
