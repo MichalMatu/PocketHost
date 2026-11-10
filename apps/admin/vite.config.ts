@@ -24,6 +24,7 @@ import { ManagedPhotoMapHost } from "../../src/modules/host/managed-photomap-hos
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
+import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
 
@@ -407,6 +408,8 @@ function nodeProjectApi(): Plugin {
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
         process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1"
       const host = enabled ? new NodeProjectHost() : null
+      const runtime = enabled ? new NodeRunitHost() : null
+      const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
         const action = pending.then(fn, fn)
@@ -434,14 +437,17 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET") {
           try {
             const data = route === "/" ? { projects: host.list() } :
               id && !op ? { project: host.inspect(id) } :
-              id && op === "releases" ? { releases: host.candidates(id) } : null
+              id && op === "releases" ? { releases: host.candidates(id) } :
+              id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
+              id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
+              id && op === "logs" ? { logs: runtime!.logs(id) } : null
             if (!data) response.statusCode = 404
             else response.statusCode = 200
             response.end(JSON.stringify(data ?? { error: "not-found" }))
@@ -454,7 +460,9 @@ function nodeProjectApi(): Plugin {
         const create = request.method === "POST" && route === "/"
         const stage = request.method === "POST" && !!id && op === "stage"
         const restore = request.method === "POST" && !!id && op === "restore-candidate"
-        if (!create && !stage && !restore) {
+        const deploy = request.method === "POST" && !!id && op === "deploy"
+        const stop = request.method === "POST" && !!id && op === "stop"
+        if (!create && !stage && !restore && !deploy && !stop) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -467,6 +475,22 @@ function nodeProjectApi(): Plugin {
         }
         try {
           const result = await serial(async () => {
+            if (deploy || stop) {
+              if (!executionEnabled) throw new Error("Node runtime activation disabled")
+              const requestBody = await readJson(request, 1024)
+              if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody))
+                throw new RangeError("Invalid runtime approval")
+              const body = requestBody as Record<string, unknown>
+              if (deploy) {
+                if (Object.keys(body).sort().join(",") !== "approved,release" ||
+                    body.approved !== true || typeof body.release !== "string")
+                  throw new RangeError("Missing explicit release approval")
+                return { runtime: await runtime!.deploy(id!, body.release, true) }
+              }
+              if (Object.keys(body).join(",") !== "approved" || body.approved !== true)
+                throw new RangeError("Missing explicit stop approval")
+              return { runtime: await runtime!.stop(id!, true) }
+            }
             if (restore) {
               if (request.headers["transfer-encoding"] !== undefined ||
                   ![undefined, "0"].includes(request.headers["content-length"])) {
