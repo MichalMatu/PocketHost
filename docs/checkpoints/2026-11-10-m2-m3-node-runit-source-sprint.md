@@ -10,7 +10,7 @@ purpose: Single M2/M3 Node runit sprint checkpoint and exact Samsung acceptance 
 ## Source result
 
 Base: `9a7d2f459fcee2412d8edfd918ac3782f8e7bf3b`.
-Latest source commit before this checkpoint: `4533e78eb0c1db3c2df77020c5d9979ed95e8800`.
+Latest source commit before this checkpoint update: `a8720829ae0f7346b2f73767778e8775125bd8ff`.
 
 - Reused the existing TermuxServiceAdmin and installed upstream runit.
   No replacement supervisor, system package installation, foreign-service
@@ -27,9 +27,19 @@ Latest source commit before this checkpoint: `4533e78eb0c1db3c2df77020c5d9979ed9
   Declarations never authorize runtime ownership.
 - Exposed HealthPolicy read-only decisions respecting manual stop, retries
   and cooldown; no automatic project restart was enabled.
+- Extended DependencyPlan to detect missing direct lock entries, unreviewed
+  non-registry package sources, lifecycle install scripts and explicit Node
+  engine minimum. No dependency installation or build was attempted.
+- Reused ResticWorkspaceAdmin for an independently scoped encrypted Node
+  repository, with explicit approval gates and staging-only restore.
+  Refused unexpected files, symlinks, in-flight source/deploy actions and
+  snapshots of transient locks. Existing H3/system Restic defaults remain.
+- Source create, stage, restore, runtime start/stop and backup coordinate on
+  the same private exclusive mutation lock; crash-stale locks fail closed.
 - Wired Projects, Deployments and Runtime Logs screens to bounded Node APIs,
-  including plan, Node/npm versions, approval, active rollback, journal and
-  logs. Retained H1 demo, H2 static hosting and existing panel routes.
+  including plan, Node/npm versions, approval, active rollback, journal,
+  logs, registry projection and read-only Restic status. Retained H1 demo,
+  H2 static hosting and existing panel routes.
 - Added focused Node negative/source-integrity/registry and React API/page
   tests. Their presence in Git is **not** a passing test result.
 
@@ -66,8 +76,9 @@ zero-dependency disposable release: ownership, once/start, local
 readiness, Stop, failed update recovery and rollback. Keep runtime
 feature flag off until those safeguards are accepted.
 
-Controlled npm dependency installation/build and scoped project
-Restic backup/restore are still open. M4 Python/SSH/Cloudflare and M5
-multi-component hosting are deferred while M2/M3 runtime acceptance is
-open. Rough source-progress estimates: M2 ~40%, M3 ~50%, M4 0%, M5 0%;
-**none are accepted device milestones**.
+Controlled npm dependency installation/build and **physical** scoped
+Restic backup/restore acceptance remain open. The source-only Restic
+adapter is not a verified physical backup. M4 Python/SSH/Cloudflare
+and M5 multi-component hosting are deferred while M2/M3 runtime
+acceptance is open. Rough source-progress estimates: M2 ~50%, M3 ~55%,
+M4 0%, M5 0%; **none are accepted device milestones**.
