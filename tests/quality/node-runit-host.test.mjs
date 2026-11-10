@@ -126,3 +126,14 @@ test('M3 rollback cannot manage a project without prior verified healthy release
   await assert.rejects(host.deploy(project.id, staged.candidateRelease, true, true),
     /prior good/);
 });
+
+test('M3 syntax check is explicitly non-executing and rejects unavailable release', (t) => {
+  const { projects, project, host } = fixture(t);
+  assert.throws(() => host.checkBuild(project.id, 'r-' + '0'.repeat(32)),
+    /admission/);
+  const staged = projects.stage(project.id, source).project;
+  const checked = host.checkBuild(project.id, staged.candidateRelease);
+  assert.equal(checked.release, staged.candidateRelease);
+  assert.equal(checked.executed, false);
+  assert.equal(checked.status, 'syntax-valid');
+});

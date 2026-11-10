@@ -439,7 +439,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback|check-build))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET") {
@@ -467,7 +467,8 @@ function nodeProjectApi(): Plugin {
         const deploy = request.method === "POST" && !!id && op === "deploy"
         const stop = request.method === "POST" && !!id && op === "stop"
         const rollback = request.method === "POST" && !!id && op === "rollback"
-        if (!create && !stage && !restore && !deploy && !stop && !rollback) {
+        const checkBuild = request.method === "POST" && !!id && op === "check-build"
+        if (!create && !stage && !restore && !deploy && !stop && !rollback && !checkBuild) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -480,6 +481,16 @@ function nodeProjectApi(): Plugin {
         }
         try {
           const result = await serial(async () => {
+            if (checkBuild) {
+              const input = await readJson(request, 1024)
+              if (!input || typeof input !== "object" || Array.isArray(input) ||
+                  Object.keys(input).join(",") !== "release" ||
+                  typeof (input as Record<string, unknown>).release !== "string")
+                throw new RangeError("Invalid source syntax check")
+              return { buildCheck: runtime!.checkBuild(
+                id!, (input as { release: string }).release,
+              ) }
+            }
             if (deploy || stop || rollback) {
               if (!executionEnabled) throw new Error("Node runtime activation disabled")
               const requestBody = await readJson(request, 1024)

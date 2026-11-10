@@ -348,6 +348,32 @@ export class NodeRunitHost {
         clean ? 'ready-for-explicit-local-deploy' : 'dependencies-or-build-need-separate-approval',
     };
   }
+  /** Fixed native syntax validation; reads a proven release but never executes its source. */
+  checkBuild(id: string, release: string): {
+    release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
+  } {
+    const plan = this.preview(id);
+    if (!plan.allowed || plan.release !== release || !RELEASE.test(release)) {
+      throw new Error('Node source admission or toolchain unavailable');
+    }
+    const source = this.projects.release(id, release);
+    const result = spawnSync(
+      PREFIX + '/bin/node',
+      ['--check', path.join(source.folder, 'server.mjs')],
+      {
+        cwd: source.folder, encoding: 'utf8', shell: false,
+        timeout: 3000, maxBuffer: 4096,
+        env: { ...process.env, NODE_OPTIONS: undefined },
+      },
+    );
+    // This is deliberately not npm run build: no package scripts or source execution.
+    if (result.error) throw new Error('Node syntax verification unavailable');
+    return {
+      release,
+      status: result.status === 0 ? 'syntax-valid' : 'syntax-invalid',
+      executed: false,
+    };
+  }
   status(id: string): { state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
     port: number | null; activeRelease: string | null; lastGoodRelease: string | null;
     previousGoodRelease: string | null;

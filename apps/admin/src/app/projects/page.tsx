@@ -105,6 +105,9 @@ export default function ProjectsPage() {
   const [executionEnabled, setExecutionEnabled] = React.useState(false)
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
+  const [buildCheck, setBuildCheck] = React.useState<{
+    release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
+  } | null>(null)
   const [backupStatus, setBackupStatus] = React.useState<{
     initialized: boolean; repositoryPresent: boolean; keyPresent: boolean
   } | null>(null)
@@ -245,7 +248,7 @@ export default function ProjectsPage() {
               if (!validProject(data.project)) throw new Error("Invalid stage response")
               await refresh()
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-              setApproved(false)
+              setApproved(false); setBuildCheck(null)
               setMessage("Source candidate staged. Review the execution plan before deploying.")
             })}>Validate and stage source</Button>
             <Button variant="outline" disabled={busy || !selected.previousCandidate}
@@ -277,6 +280,19 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
+                <Button disabled={busy || !plan?.allowed || !selected.candidateRelease}
+                  variant="outline" onClick={() => action(async () => {
+                    const result = await getJson(api + "/" + selected.id + "/check-build",
+                      "POST", { release: selected.candidateRelease })
+                    const report = result.buildCheck as Record<string, unknown> | undefined
+                    if (!report || report.release !== selected.candidateRelease ||
+                      !["syntax-valid", "syntax-invalid"].includes(String(report.status)) ||
+                      report.executed !== false) throw new Error("Invalid source check result")
+                    setBuildCheck(report as {
+                      release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
+                    })
+                    setMessage("Node syntax check completed without executing project source.")
+                  })}>Check Node build syntax</Button>
                 <Button disabled={busy || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     await getJson(api + "/" + selected.id + "/deploy", "POST",
@@ -305,6 +321,9 @@ export default function ProjectsPage() {
                   setLogLines(logs.lines); setMessage("Bounded runit logs loaded.")
                 })}>View logs</Button>
               </div>
+              {buildCheck && <p className="text-muted-foreground text-xs" role="status">
+                Candidate syntax: {buildCheck.status} · No project code executed.
+              </p>}
               {!executionEnabled && <p className="text-xs text-muted-foreground">
                 Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
               </p>}
