@@ -342,17 +342,33 @@ export class NodeRunitHost {
     if (!plan.allowed || plan.release !== release || !RELEASE.test(release))
       throw new Error('Dependency/toolchain plan not authorized');
     const { folder } = this.context(id);
+    const globalLock = path.join(this.projectRoot, '.node-ports.lock');
+    const globalFd = openSync(globalLock, 'wx', 0o600);
+    closeSync(globalFd);
     const lock = path.join(folder, '.node-runtime.lock');
-    const fd = openSync(lock, 'wx', 0o600);
-    closeSync(fd);
+    try {
+      const fd = openSync(lock, 'wx', 0o600);
+      closeSync(fd);
+    } catch (error) {
+      rmSync(globalLock, { force: true });
+      throw error;
+    }
     try {
       let state = this.record(id);
       if (!state) {
-        // No port may be reserved by discovery or name alone.
-        for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
-          if (await portFree(port)) { state = await this.initialize(id, port, release); break; }
+        const reservations = new Set<number>();
+        for (const otherProject of this.projects.list()) {
+          if (otherProject.id === id) continue;
+          const other = this.record(otherProject.id);
+          if (other) reservations.add(other.port);
         }
-        if (!state) throw new Error('No free loopback Node port');
+        for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
+          if (!reservations.has(port) && await portFree(port)) {
+            state = await this.initialize(id, port, release);
+            break;
+          }
+        }
+        if (!state) throw new Error('No unreserved loopback Node port');
       }
       if (state.activeRelease) await this.halt(id, state);
       else if (!await portFree(state.port)) throw new Error('Owned port not free');
@@ -382,6 +398,8 @@ export class NodeRunitHost {
           if (result.result?.exit !== 0) throw new Error('Failed start cleanup refused');
         }
         if (prior) {
+          for (let n = 0; n < 40 && !await portFree(state.port); n++) await pause();
+          if (!await portFree(state.port)) throw new Error('Failed release still occupies port');
           this.script(id, prior, state.port);
           const result = await this.admin.apply('once', state.unit);
           if (result.result?.exit !== 0) throw new Error('Rollback start refused');
@@ -396,18 +414,27 @@ export class NodeRunitHost {
         throw error;
       }
       return this.status(id);
-    } finally { rmSync(lock, { force: true }); }
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(globalLock, { force: true });
+    }
   }
   async stop(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned stop required');
-    const state = this.record(id);
-    if (!state) throw new Error('No owned Node unit to stop');
-    await this.halt(id, state);
-    state.process = null;
-    state.desired = 'stopped';
-    if (state.activeRelease) this.history(state, 'stop', state.activeRelease);
-    this.writeState(id, state);
-    return this.status(id);
+    const { folder } = this.context(id);
+    const lock = path.join(folder, '.node-runtime.lock');
+    const fd = openSync(lock, 'wx', 0o600);
+    closeSync(fd);
+    try {
+      const state = this.record(id);
+      if (!state) throw new Error('No owned Node unit to stop');
+      await this.halt(id, state);
+      state.process = null;
+      state.desired = 'stopped';
+      if (state.activeRelease) this.history(state, 'stop', state.activeRelease);
+      this.writeState(id, state);
+      return this.status(id);
+    } finally { rmSync(lock, { force: true }); }
   }
   logs(id: string): { lines: string[] } {
     const state = this.record(id);
