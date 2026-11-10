@@ -33,6 +33,7 @@ Don't invent parallel documents just to fill all four categories.
 - [Architecture boundaries](ARCHITECTURE.md)
 - [Module dependencies](MODULES.md)
 - [Target navigation and migration](TARGET_INFORMATION_ARCHITECTURE.md)
+- [Dashboard telemetry, services and buffering](DASHBOARD_TELEMETRY_MAP.md)
 
 ## Reference — use for a specific decision
 
