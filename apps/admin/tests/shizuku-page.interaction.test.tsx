@@ -228,4 +228,55 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     await userEvent.setup().click(screen.getByRole("tab", { name: /Power & hardware/i }))
     await waitFor(() => expect(screen.getByText(/Total system RAM:/)).toBeTruthy())
   })
+
+  it("protects PID 1 in the UI and shows real process RSS in MiB", async () => {
+    const sampleSystem = { ...system, processes: [
+      { ...system.processes[0], pid: 1, name: "init", user: "root", rssKb: 0 },
+      ...system.processes.slice(1),
+    ] }
+    mount(async url => url.endsWith("/status") ? status :
+      url.endsWith("/apps") ? apps : sampleSystem)
+    const user = userEvent.setup()
+    await screen.findByText("Example 0")
+    await user.click(screen.getByRole("tab", { name: /CPU & processes/i }))
+    const table = await screen.findByRole("table", { name: "Android processes" })
+    expect(table.querySelector("thead th")?.className).toContain("sticky")
+    expect(screen.getByText("0 MiB")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Inspect process 1" }))
+    expect(screen.getByText(/PID 1 is Android init/)).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Send TERM to PID 1" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Inspect process 101" }))
+    expect(screen.getByRole("button", { name: "Send TERM to PID 101" })).toBeTruthy()
+  })
+
+  it("uses Applications as the entrypoint for selected permissions without duplicating grants", async () => {
+    const detail = {
+      version: 1, source: "android-companion", packageName: "com.example.app0",
+      label: "Example 0", versionName: "1.0", versionCode: 1, targetSdk: 35,
+      enabled: true, system: false,
+      permissions: [{ name: "android.permission.CAMERA", granted: true }],
+    }
+    mount(async url => url.endsWith("/status") ? status :
+      url.endsWith("/apps") ? apps : url.endsWith("/system") ? system : detail)
+    const user = userEvent.setup()
+    await user.click(await screen.findByText("Example 0"))
+    await screen.findByText("Manage permissions")
+    expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Manage permissions" }))
+    expect(screen.getByRole("tab", { name: /^Permissions$/ }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
+  })
+
+  it("prioritizes user apps while retaining system apps under All", async () => {
+    const mixed = { ...apps, packages: [
+      { ...apps.packages[0], system: true },
+      ...apps.packages.slice(1),
+    ] }
+    mount(async url => url.endsWith("/status") ? status :
+      url.endsWith("/apps") ? mixed : system)
+    await screen.findByText("Example 1")
+    expect(screen.queryByText("Example 0")).toBeNull()
+    await userEvent.setup().click(screen.getByRole("button", { name: "All" }))
+    expect(screen.getByText("Example 0")).toBeTruthy()
+  })
 })
