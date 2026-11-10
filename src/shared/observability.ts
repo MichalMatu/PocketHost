@@ -6,6 +6,8 @@ export interface Reading<T> {
   observedAt: string;
 }
 export interface ProcessObservation {
+  /** Short, validated /proc/PID/status Name; never argv or an untrusted path. */
+  name: string | null;
   pid: number;
   ppid: number;
   startTicks: string;
