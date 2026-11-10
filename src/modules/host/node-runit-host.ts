@@ -124,7 +124,10 @@ function portFree(port: number): Promise<boolean> {
     s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
   });
 }
-function ready(port: number, nonce: string): Promise<boolean> {
+/** Fixed loopback-only readiness probe; a foreign HTTP 200 never attests the release. */
+export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<boolean> {
+  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 ||
+    !/^[a-f0-9]{48}$/.test(nonce)) throw new RangeError('Unsafe Node readiness probe');
   return new Promise((resolve) => {
     const request = http.get({
       hostname: '127.0.0.1', port, path: '/__pockethost/ready', timeout: 600,
@@ -339,7 +342,7 @@ export class NodeRunitHost {
   private async settle(id: string, release: string, port: number, nonce: string): Promise<ProcessProof> {
     for (let n = 0; n < 40; n++) {
       const proof = this.observe(id, release);
-      if (proof !== 'down' && proof !== 'unknown' && await ready(port, nonce)) {
+      if (proof !== 'down' && proof !== 'unknown' && await probeOwnedNodeReadiness(port, nonce)) {
         const after = this.observe(id, release);
         if (after !== 'down' && after !== 'unknown' &&
           after.pid === proof.pid && after.ticks === proof.ticks) return proof;

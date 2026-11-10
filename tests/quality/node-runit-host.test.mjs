@@ -3,8 +3,9 @@ import test from 'node:test';
 import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeRunitHost } from '../../src/modules/host/node-runit-host.ts';
+import { NodeRunitHost, probeOwnedNodeReadiness } from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
 
 function fixture(t) {
@@ -61,4 +62,29 @@ test('M2 existing runit refuses unregistered one-shot and protected service', as
   const admin = new TermuxServiceAdmin(serviceRoot, path.join(home, 'registry.json'));
   await assert.rejects(admin.apply('once', 'cloudflared'), /Protected/);
   await assert.rejects(admin.apply('once', 'unknown-unit'), /unavailable/);
+});
+
+test('M3 readiness requires exact loopback nonce, not an arbitrary HTTP 200', async (t) => {
+  const nonce = 'c'.repeat(48);
+  const server = createServer((req, res) => {
+    if (req.url === '/__pockethost/ready') {
+      res.writeHead(200, { 'X-PocketHost-Ready': nonce });
+      res.end('ready');
+      return;
+    }
+    res.writeHead(200);
+    res.end('foreign page');
+  });
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  const port = address.port;
+  assert.equal(await probeOwnedNodeReadiness(port, nonce), true);
+  assert.equal(await probeOwnedNodeReadiness(port, 'd'.repeat(48)), false);
+  assert.throws(() => probeOwnedNodeReadiness(0, nonce), /Unsafe/);
+  assert.throws(() => probeOwnedNodeReadiness(port, 'invalid'), /Unsafe/);
 });
