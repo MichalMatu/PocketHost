@@ -1,7 +1,7 @@
 import { readdirSync, existsSync, lstatSync, openSync, closeSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { NodeProjectHost } from './node-project-host.ts';
+import { NodeProjectHost, type NodeProjectSummary } from './node-project-host.ts';
 import { WorkspaceFiles, type Exec, executeFixed } from './termux-admin.ts';
 import { ResticWorkspaceAdmin } from './termux-restic-admin.ts';
 
@@ -31,14 +31,13 @@ export class NodeProjectBackupHost {
   status(): { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean } {
     return this.restic.status();
   }
-  private requireCreatedProjects(): void {
-    const projects = this.projects.list();
+  private inspectScope(root: string, projects: readonly NodeProjectSummary[]): void {
     if (projects.length === 0) {
       throw new Error('At least one explicitly created PocketHost Node project is required');
     }
     // Scope is exact, not the whole Termux HOME or a directory containing
     // an unrelated application. Refuse in-flight deployments and foreign files.
-    if (!path.isAbsolute(this.root) || this.root.includes('..')) {
+    if (!path.isAbsolute(root) || root.includes('..')) {
       throw new Error('Unsafe Node backup source root');
     }
     const projectIds = new Set(projects.map((project) => project.id));
@@ -56,13 +55,13 @@ export class NodeProjectBackupHost {
         }
       }
     };
-    exact(this.root, projectIds, projectIds);
+    exact(root, projectIds, projectIds);
     const marker = new Set(['.pockethost-node.json', '.pockethost-node-runtime.json', 'releases']);
     const releaseFiles = new Set([
       'package.json', 'package-lock.json', 'server.mjs', '.pockethost-node-source.json',
     ]);
     for (const project of projects) {
-      const folder = path.join(this.root, project.id);
+      const folder = path.join(root, project.id);
       exact(folder, marker, new Set(['releases']));
       const releases = path.join(folder, 'releases');
       for (const item of readdirSync(releases, { withFileTypes: true })) {
@@ -74,9 +73,27 @@ export class NodeProjectBackupHost {
         exact(dir, releaseFiles, new Set());
       }
     }
-    if (existsSync(path.join(this.root, '.node-ports.lock'))) {
+    if (existsSync(path.join(root, '.node-ports.lock'))) {
       throw new Error('Node deployment in progress: backup refused');
     }
+  }
+  private requireCreatedProjects(): void {
+    this.inspectScope(this.root, this.projects.list());
+  }
+  private inspectRestored(root: string): number {
+    const restored = new NodeProjectHost(root);
+    const projects = restored.list();
+    this.inspectScope(root, projects);
+    for (const project of projects) {
+      const releases = restored.candidates(project.id);
+      for (const candidate of releases) {
+        if (candidate.sourceIntegrity !== 'verified') {
+          throw new Error('Restored Node source lacks verified digest');
+        }
+        restored.release(project.id, candidate.id);
+      }
+    }
+    return projects.length;
   }
   async backup(
     approved: boolean, run: Exec = executeFixed,
@@ -101,9 +118,19 @@ export class NodeProjectBackupHost {
   }
   async restoreToStaging(
     snapshot: string, approved: boolean, run: Exec = executeFixed,
-  ): Promise<{ restoredTo: string }> {
+  ): Promise<{ restoredTo: string; verifiedProjects: number }> {
     if (approved !== true) throw new Error('Explicit Node restore approval required');
-    return this.restic.restoreToStaging(snapshot, run);
+    const restored = await this.restic.restoreToStaging(snapshot, run);
+    // The repo snapshots exactly the private project root basename.
+    // Never apply the contents to a live source directory or runit unit.
+    const entries = readdirSync(restored.restoredTo);
+    if (entries.length !== 1 || entries[0] !== path.basename(this.root)) {
+      throw new Error('Unexpected restored Node scope structure');
+    }
+    const verifiedProjects = this.inspectRestored(
+      path.join(restored.restoredTo, path.basename(this.root)),
+    );
+    return { restoredTo: restored.restoredTo, verifiedProjects };
   }
   async check(run: Exec = executeFixed) {
     return this.restic.check(run);

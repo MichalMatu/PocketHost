@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, cpSync, symlinkSync, writeFileSync, existsSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectBackupHost } from '../../src/modules/host/node-project-backup-host.ts';
@@ -49,6 +49,7 @@ test('M2 Node Restic uses a separate scoped repository and restores to staging o
     if (args.includes('restore')) {
       const destination = args[args.indexOf('--target') + 1];
       mkdirSync(destination, { recursive: true, mode: 0o700 });
+      cpSync(root, path.join(destination, path.basename(root)), { recursive: true });
     }
     return { exit: 0, output: 'ok' };
   };
@@ -61,6 +62,7 @@ test('M2 Node Restic uses a separate scoped repository and restores to staging o
     !call.args.includes('prefix') && !call.args.includes('all')));
   const restored = await host.restoreToStaging(snapshot, true, run);
   assert.ok(restored.restoredTo.startsWith(path.join(state, 'restores') + path.sep));
+  assert.equal(restored.verifiedProjects, 1);
   assert.equal(projects.inspect(project.id).activeRelease, null);
 });
 
@@ -86,4 +88,33 @@ test('M2 Node Restic enforces a shared exclusive runtime/backup lock', async (t)
   writeFileSync(lock, '', { mode: 0o600 });
   await assert.rejects(host.backup(true, run), /Unexpected entry|deployment in progress/);
   assert.deepEqual(calls, []);
+});
+
+test('M2 restored Node scope refuses symlink insertion instead of importing external data', async (t) => {
+  const { root, state, host, projects } = setup(t);
+  const project = projects.create('Restic tamper');
+  const snapshot = 'd'.repeat(64);
+  const run = async (_binary, args, _opts) => {
+    if (args.includes('init')) {
+      mkdirSync(path.join(state, 'repo'), { recursive: true, mode: 0o700 });
+      writeFileSync(path.join(state, 'repo', 'config'), '{}', { mode: 0o600 });
+    }
+    if (args.includes('snapshots')) {
+      return { exit: 0, output: JSON.stringify([{
+        id: snapshot, time: '2026-11-10T12:00:00Z', paths: [root],
+      }]) };
+    }
+    if (args.includes('restore')) {
+      const destination = args[args.indexOf('--target') + 1];
+      mkdirSync(destination, { recursive: true, mode: 0o700 });
+      const restored = path.join(destination, path.basename(root));
+      cpSync(root, restored, { recursive: true });
+      symlinkSync('/dev/null', path.join(restored, project.id, 'foreign'));
+    }
+    return { exit: 0, output: 'ok' };
+  };
+  await host.backup(true, run);
+  await assert.rejects(host.restoreToStaging(snapshot, true, run),
+    /Unexpected entry/);
+  assert.equal(projects.inspect(project.id).activeRelease, null);
 });
