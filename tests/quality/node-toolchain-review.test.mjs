@@ -48,3 +48,23 @@ test('M2 declared Node engine constraint is checked against installed major', ()
   assert.deepEqual(reviewNodeToolchain(plan, { node: 'v22.1.0', npm: '10.0.0' }).conflicts,
     ['node-requires-24-or-newer']);
 });
+
+test('M2 toolchain compares declared minor/patch requirements and npm manager minimum', () => {
+  const packageWithPins = {
+    ...pkg, engines: { node: '>=22.17.1' }, packageManager: 'npm@10.5.2',
+  };
+  const plan = planNodeDependencies(packageWithPins, lock);
+  assert.equal(plan.requiredNodeVersion, '22.17.1');
+  assert.equal(plan.requiredNpmVersion, '10.5.2');
+  assert.deepEqual(
+    reviewNodeToolchain(plan, { node: 'v22.17.0', npm: '10.5.2' }).conflicts,
+    ['node-requires-22.17.1-or-newer'],
+  );
+  assert.deepEqual(
+    reviewNodeToolchain(plan, { node: 'v22.17.1', npm: '10.5.1' }).conflicts,
+    ['npm-requires-10.5.2-or-newer'],
+  );
+  assert.equal(reviewNodeToolchain(plan, {
+    node: 'v22.17.1', npm: '10.5.2',
+  }).status, 'review-required');
+});

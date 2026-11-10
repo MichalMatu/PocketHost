@@ -6,6 +6,8 @@ export interface NodeDependencyPlan {
   readonly lockfileVersion: 2 | 3;
   readonly dependencyCount: number;
   readonly requiredNodeMajor: number;
+  readonly requiredNodeVersion: string;
+  readonly requiredNpmVersion: string | null;
   readonly lockReview: {
     readonly lockedPackages: number;
     readonly missingDirectEntries: readonly string[];
@@ -128,18 +130,39 @@ function reviewLockfile(
     installScripts,
   };
 }
-function nodeEngineMajor(value: unknown): number {
-  if (value === undefined) return 22;
+function normalizedVersion(value: string): string {
+  const match = /^(0|[1-9][0-9]{0,2})(?:\.(0|[1-9][0-9]{0,2}))?(?:\.(0|[1-9][0-9]{0,2}))?$/.exec(value);
+  if (!match) throw new Error('Invalid explicit tool version');
+  const parts = [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)];
+  if (parts.some((part) => part > 1000)) throw new Error('Unsupported tool version');
+  return parts.join('.');
+}
+function compareVersions(a: string, b: string): number {
+  const left = a.replace(/^v/, '').split('.').map(Number);
+  const right = b.replace(/^v/, '').split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const diff = (left[i] ?? 0) - (right[i] ?? 0);
+    if (diff) return diff;
+  }
+  return 0;
+}
+function nodeEngineRequirement(value: unknown): string {
+  if (value === undefined) return '22.0.0';
   const engines = record(value);
   const range = engines.node;
-  if (range === undefined) return 22;
-  if (typeof range !== 'string') throw new Error('Invalid Node engine range');
-  const match = /^>=([0-9]{1,3})(?:\.[0-9]{1,3}){0,2}$/.exec(range);
-  if (!match) throw new Error('Node engine range requires explicit >=major');
-  const required = Number(match[1]);
-  if (required < 1 || required > 100) throw new Error('Invalid Node engine major');
-  return Math.max(22, required);
+  if (range === undefined) return '22.0.0';
+  if (typeof range !== 'string' || !range.startsWith('>='))
+    throw new Error('Node engine range requires explicit >=major');
+  const version = normalizedVersion(range.slice(2));
+  return compareVersions(version, '22.0.0') < 0 ? '22.0.0' : version;
 }
+function npmVersionRequirement(value: unknown): string | null {
+  if (value === undefined) return null;
+  if (typeof value !== 'string' || !value.startsWith('npm@'))
+    throw new Error('Only an explicit npm package manager is supported');
+  return normalizedVersion(value.slice(4));
+}
+
 
 export function planNodeDependencies(
   packageInput: unknown,
@@ -162,19 +185,14 @@ export function planNodeDependencies(
   ) {
     throw new Error('Package identity differs from lockfile');
   }
-  if (
-    pkg.packageManager !== undefined &&
-    (typeof pkg.packageManager !== 'string' ||
-      !/^npm@[0-9]+(?:\.[0-9]+){0,2}$/.test(pkg.packageManager))
-  ) {
-    throw new Error('Only an explicit npm package manager is supported');
-  }
+  const requiredNpmVersion = npmVersionRequirement(pkg.packageManager);
   const scripts = record(pkg.scripts);
   named(scripts.start, 'start script');
   if (scripts.build !== undefined) named(scripts.build, 'build script');
   const dependencyCount = matchingDependencies(pkg, root);
   const lockReview = reviewLockfile(packages, root);
-  const requiredNodeMajor = nodeEngineMajor(pkg.engines);
+  const requiredNodeVersion = nodeEngineRequirement(pkg.engines);
+  const requiredNodeMajor = Number(requiredNodeVersion.split('.')[0]);
   return {
     status: 'review-required',
     packageName: name,
@@ -183,6 +201,8 @@ export function planNodeDependencies(
     dependencyCount,
     lockReview,
     requiredNodeMajor,
+    requiredNodeVersion,
+    requiredNpmVersion,
     commands: {
       install: ['npm', 'ci'],
       build: scripts.build === undefined ? null : ['npm', 'run', 'build'],
@@ -215,9 +235,14 @@ export function reviewNodeToolchain(
       throw new Error('Invalid installed tool version');
     }
   }
-  const nodeVersion = tools.node ? Number(tools.node.replace(/^v/, '').split('.')[0]) : null;
-  if (nodeVersion !== null && nodeVersion < plan.requiredNodeMajor)
-    conflicts.push('node-requires-' + plan.requiredNodeMajor + '-or-newer');
+  if (tools.node && compareVersions(tools.node, plan.requiredNodeVersion) < 0) {
+    const required = plan.requiredNodeVersion.replace(/(?:\.0){1,2}$/, '');
+    conflicts.push('node-requires-' + required + '-or-newer');
+  }
+  if (tools.npm && plan.requiredNpmVersion &&
+      compareVersions(tools.npm, plan.requiredNpmVersion) < 0) {
+    conflicts.push('npm-requires-' + plan.requiredNpmVersion + '-or-newer');
+  }
   if (
     plan.lockfileVersion === 3 &&
     tools.npm &&
