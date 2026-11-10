@@ -10,6 +10,12 @@ const endpoints = [
   { name: "Android system", url: "/api/v1/shizuku/system", parse: parseShizukuSystem, timeout: 15000 },
 ] as const
 
+function localSample(value: string | undefined) {
+  if (!value) return "Unavailable"
+  const date = new Date(value)
+  return Number.isFinite(date.getTime()) ? date.toLocaleString() : "Unavailable"
+}
+
 export function ShizukuDiagnosticsPanel() {
   const [status, setStatus] = React.useState<ShizukuStatus | null>(null)
   const [probes, setProbes] = React.useState<Record<string, Probe>>({})
@@ -65,15 +71,15 @@ export function ShizukuDiagnosticsPanel() {
           {loading ? "Checking…" : "Run diagnostics"}
         </Button>
       </div>
-      <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
         {[
-          ["Connection", status?.connected && status.authorized ? "Connected and authorized" : "Not authorized"],
+          ["Connection", !status ? "Not checked" : status.connected && status.authorized ? "Connected and authorized" : "Not authorized"],
           ["Shizuku mode", status?.mode?.toUpperCase() ?? "Unknown"],
           ["Real Android UID", status?.uid == null ? "Not reported" : String(status.uid)],
-          ["Last verified sample", status?.observedAt ?? "Unavailable"],
+          ["Last verified sample", localSample(status?.observedAt)],
           ["Companion source", status?.source ?? "Unavailable"],
-          ["Observed capabilities", String(status?.capabilities?.length ?? 0)],
-        ].map(([label, value]) => <div key={label} className="rounded-lg border p-3">
+          ["Observed capabilities", status ? String(status.capabilities.length) : "Unavailable"],
+        ].map(([label, value]) => <div key={label} className="rounded-lg border p-2.5">
           <dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-words font-medium">{value}</dd>
         </div>)}
       </dl>
@@ -81,7 +87,7 @@ export function ShizukuDiagnosticsPanel() {
         <p className="font-medium text-sm">API round trips</p>
         {endpoints.map(endpoint => {
           const observation = probes[endpoint.name]
-          return <div key={endpoint.name} className="flex flex-wrap justify-between gap-2 rounded-md border p-3 text-sm">
+          return <div key={endpoint.name} className="flex flex-wrap justify-between gap-2 rounded-md border px-3 py-2 text-sm">
             <span>{endpoint.name}</span>
             <span role="status" className="text-muted-foreground">
               {observation ? observation.message +
@@ -91,15 +97,17 @@ export function ShizukuDiagnosticsPanel() {
           </div>
         })}
       </div>
-      <div className="space-y-2">
-        <p className="font-medium text-sm">Reported native capabilities</p>
-        {status?.capabilities?.length ? status.capabilities.map(capability => (
-          <div key={capability.id} className="rounded-md border p-3 text-sm">
-            <p className="font-medium">{capability.title} · {capability.available ? "Available" : "Unavailable"}</p>
-            <p className="text-muted-foreground text-xs">{capability.description}</p>
-          </div>
-        )) : <p className="text-muted-foreground text-sm">No authorized capability report.</p>}
-      </div>
+      <details className="rounded-lg border p-3">
+        <summary className="cursor-pointer text-sm font-medium">Native capabilities ({status?.capabilities?.length ?? 0})</summary>
+        <div className="mt-3 space-y-2">
+          {status?.capabilities?.length ? status.capabilities.map(capability => (
+            <div key={capability.id} className="rounded-md border px-3 py-2 text-sm">
+              <p className="font-medium">{capability.title} · {capability.available ? "Available" : "Unavailable"}</p>
+              <p className="text-muted-foreground text-xs">{capability.description}</p>
+            </div>
+          )) : <p className="text-muted-foreground text-sm">No authorized capability report.</p>}
+        </div>
+      </details>
     </CardContent>
   </Card>
 }
