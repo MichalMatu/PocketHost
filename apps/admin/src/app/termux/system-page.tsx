@@ -72,6 +72,22 @@ function uptime(seconds: number | null) {
   return Math.floor(hours / 24) + "d " + (hours % 24) + "h"
 }
 
+type HistoryRange = "1h" | "24h" | "7d"
+
+function historyTime(value: string | number, range: HistoryRange, detailed = false) {
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return "—"
+  if (range === "1h") return detailed ? clock(value) : date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+  return date.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+}
+
+function latencySummary(values: (number | null)[]) {
+  const valid = values.filter((value): value is number => value !== null && Number.isFinite(value)).sort((a, b) => a - b)
+  if (!valid.length) return "No latency readings"
+  const median = valid[Math.floor((valid.length - 1) / 2)]!
+  return "Median " + Math.round(median) + " ms · peak " + Math.round(valid[valid.length - 1]!) + " ms"
+}
+
 async function getHost(signal: AbortSignal) {
   const began = performance.now()
   const response = await fetch("/api/v1/host/snapshot", {
@@ -255,12 +271,17 @@ export default function SystemPage() {
     sample.batteryPercent !== undefined || sample.dnsFailed !== undefined) ?? null
   const collectedFresh = lastCollected !== null &&
     Date.now() - Date.parse(lastCollected.observedAt) <= 150000
+  const collectorLabel = historyState === "loading" ? "Collector: checking"
+    : historyState === "unavailable" ? "Collector: unavailable"
+    : !lastCollected ? "Collector: no samples"
+    : collectedFresh ? "Collector: current" : "Collector: stale"
   const batteryPercent = collectedFresh ? lastCollected?.batteryPercent ?? null : null
   const batteryCharging = collectedFresh ? lastCollected?.batteryCharging ?? null : null
   const batteryTempC = collectedFresh ? lastCollected?.batteryTempC ?? null : null
   const dnsMs = collectedFresh ? lastCollected?.dnsMs ?? null : null
   const dnsFailed = collectedFresh ? lastCollected?.dnsFailed ?? null : null
   const alerts: string[] = []
+  if (historyState === "ok" && !collectedFresh) alerts.push("Collector history is stale")
   if (batteryPercent !== null && batteryCharging === false && batteryPercent <= 20)
     alerts.push("Low battery · " + batteryPercent + "%")
   const storageAvailable = host?.runtime.storage?.availableMiB ?? null
@@ -272,7 +293,8 @@ export default function SystemPage() {
     alerts.push("Some service states unknown")
   if (internet?.state === "unreachable") alerts.push("Internet TCP probe failed")
 
-  const trafficSamples = samples.map((sample, i) => ({
+  const chartSamples = samples.map(sample => ({ ...sample, timestamp: Date.parse(sample.observedAt) }))
+  const trafficSamples = chartSamples.map((sample, i) => ({
     ...sample, ...trafficMbps(i ? samples[i - 1]! : null, sample),
   }))
   const lastTraffic = [...trafficSamples].reverse().find(sample =>
@@ -296,15 +318,16 @@ export default function SystemPage() {
     : "Disconnected · last status received"
 
   return (
-    <BaseLayout title="Dashboard" description="Live status of PocketHost, Termux and the Android Bridge">
+    <BaseLayout title="Dashboard" description="Live health of the Android host and services">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">DEV · Private LAN</Badge>
             <Badge variant="outline" className="min-w-36 justify-center">{host ? "Termux online" : "Termux unavailable"}</Badge>
             <span className="text-muted-foreground min-w-40 text-xs tabular-nums" aria-live="polite">
-              {sampledAt ? "Last checked " + clock(sampledAt) : "Checking live sources"}
+              {sampledAt ? "Checked " + clock(sampledAt) : "Checking live sources"}
             </span>
+            <span className="text-muted-foreground text-xs" aria-live="polite">{collectorLabel}</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => setGeneration(value => value + 1)}>
             <RefreshCw className="size-4" />Refresh
@@ -317,7 +340,7 @@ export default function SystemPage() {
           <SummaryCard title="Available RAM" value={host ? formatMemory(host.runtime.freeMemoryMiB) : null}
             icon={Activity} loading={active} detail={host ? "of " + formatMemory(host.runtime.totalMemoryMiB) + " · system-wide" : "Termux measurement unavailable"} />
           <SummaryCard title="Termux storage" value={host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null}
-            icon={HardDrive} loading={active} detail="Available space on Termux home filesystem" />
+            icon={HardDrive} loading={active} detail="Free on the Termux home filesystem" />
           <SummaryCard title="Observed services" value={servicesRunning === null ? null : servicesRunning + " / " + host!.services.length}
             icon={ServerCog} loading={active} detail={serviceUnknown ? "Some service states unknown · read-only" : "Running external services · read-only"} />
         </div>
@@ -338,7 +361,7 @@ export default function SystemPage() {
               <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
               <CardTitle className="text-lg tabular-nums">{uptime(host?.runtime.systemUptimeSeconds ?? null)}</CardTitle>
             </CardHeader>
-            <CardContent className="text-muted-foreground min-h-5 text-xs">Android system uptime · Termux</CardContent>
+            <CardContent className="text-muted-foreground min-h-5 text-xs">Since device boot</CardContent>
           </Card>
           <Card className="min-h-28">
             <CardHeader className="gap-1">
@@ -353,11 +376,11 @@ export default function SystemPage() {
 
         <div role="status" aria-label="Active health alerts"
           className="text-muted-foreground flex min-h-6 flex-wrap gap-x-4 gap-y-1 text-xs">
-          {alerts.length ? alerts.map(item => <span key={item}>{item}</span>) : "No active health alerts from currently available sources."}
+          {alerts.length ? alerts.map(item => <span key={item}>{item}</span>) : "No alerts in available readings."}
         </div>
 
         <div className="flex min-h-8 items-center justify-between gap-3">
-          <span className="text-muted-foreground text-xs">Recorded history · last 24 h full detail, 7 d hourly checkpoints</span>
+          <span className="text-muted-foreground text-xs">History · 24 h detailed, 7 d hourly</span>
           <div className="flex gap-1" role="group" aria-label="History window">
             <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("1h")}>1 hour</Button>
             <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("24h")}>24 hours</Button>
@@ -369,12 +392,12 @@ export default function SystemPage() {
           <Card className="min-w-0 xl:col-span-2">
             <CardHeader>
               <CardTitle>Live system resources</CardTitle>
-              <CardDescription>Real Android Bridge CPU and system RAM · server sampling every 60 seconds, with additional in-tab readings</CardDescription>
+              <CardDescription>Android CPU and system RAM · percent used</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[260px] min-w-0 w-full" data-testid="resources-chart-slot">
                 <ChartContainer config={resourcesConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
+                  <AreaChart data={chartSamples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
                     <defs>
                       <linearGradient id="pockethost-cpu-fill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-cpu)" stopOpacity={0.07} />
@@ -386,9 +409,9 @@ export default function SystemPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
                     <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
                       strokeOpacity={0.55} fill="url(#pockethost-cpu-fill)" strokeWidth={1.5}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -399,15 +422,10 @@ export default function SystemPage() {
                 </ChartContainer>
                 {!samples.some(sample => sample.cpu !== null || sample.ram !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-sm">Waiting for permitted Android / Termux resource readings.</p>}
               </div>
-              <div className="text-muted-foreground flex min-h-10 flex-wrap items-start gap-x-4 gap-y-1 pt-2 text-xs tabular-nums">
-                <span>CPU: {cpu === null ? "Unavailable" : cpu.toFixed(1) + "%"} · Android Bridge</span>
-                <span>RAM: {ramUsedPercent(host) === null ? "Unavailable" : ramUsedPercent(host) + "%"} · Termux / system-wide</span>
-                <span>{historyState === "ok"
-          ? "Server history: 24 h full resolution and up to 7 d hourly · showing " + (historyRange === "7d" ? "7 d" : historyRange === "24h" ? "24 h" : "last 1 h") + ", including while this tab was closed."
-          : historyState === "unavailable"
-            ? "Server history unavailable · showing only live tab measurements."
-            : "Loading server history…"}
-        </span>
+              <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 pt-2 text-xs">
+                <span>CPU · Android</span>
+                <span>RAM used · system-wide</span>
+                {historyState !== "ok" && <span>{historyState === "unavailable" ? "Saved history unavailable" : "Loading saved history…"}</span>}
               </div>
             </CardContent>
           </Card>
@@ -415,12 +433,12 @@ export default function SystemPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Internet connectivity · Termux TCP</CardTitle>
-              <CardDescription>Fixed TCP handshake to 1.1.1.1:443 · not ICMP ping, download speed or RX/TX</CardDescription>
+              <CardDescription>TCP handshake to 1.1.1.1:443</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[190px] min-w-0 w-full" data-testid="internet-chart-slot">
                 <ChartContainer config={latencyConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                  <AreaChart data={chartSamples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <defs>
                       <linearGradient id="pockethost-tcp-fill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-internetMs)" stopOpacity={0.16} />
@@ -428,9 +446,9 @@ export default function SystemPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
                     <Area type="monotone" dataKey="internetMs" stroke="var(--color-internetMs)"
                       fill="url(#pockethost-tcp-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -439,10 +457,10 @@ export default function SystemPage() {
                 {!samples.some(sample => sample.internetMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Internet TCP connection measured yet.</p>}
               </div>
               <p className="text-muted-foreground min-h-10 pt-2 text-xs tabular-nums">
-                {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "Probe unavailable"}
-                {" · "}{samples.filter(sample => sample.internetFailed === false).length} valid readings
-                {" · "}{samples.filter(sample => sample.internetFailed === true).length} TCP failures
-                {" · "}{samples.filter(sample => sample.internetFailed === null).length} API errors
+                {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "TCP probe unavailable"}
+                {" · "}{latencySummary(samples.map(sample => sample.internetMs))}
+                {" · "}{samples.filter(sample => sample.internetFailed === true).length} failures
+                {" · "}{samples.filter(sample => sample.internetFailed === null).length} unavailable
                 {" · "}Panel API {samples.at(-1)?.apiMs ?? "—"} ms
               </p>
             </CardContent>
@@ -451,7 +469,7 @@ export default function SystemPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android network · RX / TX</CardTitle>
-              <CardDescription>Native TrafficStats · all interfaces since boot · sampled transfer, not an Internet speed test</CardDescription>
+              <CardDescription>Android TrafficStats · sampled RX/TX, all interfaces</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[190px] min-w-0 w-full" data-testid="traffic-chart-slot">
@@ -464,9 +482,9 @@ export default function SystemPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " Mb/s"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={label => clock(String(label))} />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={label => historyTime(Number(label), historyRange, true)} />} />
                     <Area dataKey="networkRxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkRxMbps)"
                       fill="url(#pockethost-traffic-fill)" strokeWidth={1.5} dot={false} activeDot={false} isAnimationActive={false} />
                     <Area dataKey="networkTxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkTxMbps)"
@@ -489,12 +507,12 @@ export default function SystemPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android Bridge connectivity</CardTitle>
-              <CardDescription>Live response time of the existing Bridge status API · not Internet ping or RX/TX</CardDescription>
+              <CardDescription>Bridge status API response time</CardDescription>
             </CardHeader>
             <CardContent className="min-w-0">
               <div className="relative h-[190px] min-w-0 w-full" data-testid="bridge-chart-slot">
                 <ChartContainer config={bridgeConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                  <AreaChart data={chartSamples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <defs>
                       <linearGradient id="pockethost-bridge-fill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-bridgeMs)" stopOpacity={0.16} />
@@ -502,9 +520,9 @@ export default function SystemPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
                     <Area type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)"
                       fill="url(#pockethost-bridge-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -515,20 +533,17 @@ export default function SystemPage() {
               <p className="text-muted-foreground flex min-h-9 flex-wrap items-center gap-2 pt-2 text-xs tabular-nums">
                 <span>{bridgeHealth}</span><span>·</span><span>{samples.filter(sample => sample.bridgeOnline === false).length} disconnected samples</span>
               </p>
-              <p className="text-muted-foreground min-h-8 pt-1 text-xs">
-                The RX/TX chart requires an updated Companion APK and two real readings. Missing readings remain unavailable.
-              </p>
             </CardContent>
           </Card>
                   <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Battery className="size-4" />Power & storage</CardTitle>
-              <CardDescription>Actual Termux:API battery and Termux-home storage used · only when measured</CardDescription>
+              <CardDescription>Battery and Termux storage · percent</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[190px] min-w-0 w-full" data-testid="power-chart-slot">
                 <ChartContainer config={powerConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
+                  <AreaChart data={chartSamples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
                     <defs>
                       <linearGradient id="pockethost-power-fill" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor="var(--color-batteryPercent)" stopOpacity={0.14} />
@@ -536,9 +551,9 @@ export default function SystemPage() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid vertical={false} />
-                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
-                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => historyTime(Number(label), historyRange, true)} />} />
                     <Area dataKey="batteryPercent" type="monotone" stroke="var(--color-batteryPercent)"
                       fill="url(#pockethost-power-fill)" strokeWidth={1.5} connectNulls={false}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -552,21 +567,15 @@ export default function SystemPage() {
                     Waiting for permitted power or storage readings.
                   </p>}
               </div>
-              <p className="text-muted-foreground min-h-10 pt-2 text-xs">
-                Battery: {batteryPercent === null ? "Unavailable" : batteryPercent + "%"}
-                {" · "}Storage used: {host?.runtime.storage && host.runtime.storage.totalMiB > 0
-                  ? (100 * (host.runtime.storage.totalMiB - host.runtime.storage.availableMiB) / host.runtime.storage.totalMiB).toFixed(1) + "%"
-                  : "Unavailable"}
-              </p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="xl:col-span-2">
             <CardHeader>
               <CardTitle>Recent system events</CardTitle>
-              <CardDescription>Source-verified transitions and completed owned operations · saved locally up to 7 days</CardDescription>
+              <CardDescription>Verified changes and owned actions · retained up to 7 days</CardDescription>
             </CardHeader>
-            <CardContent className="min-h-[240px]">
+            <CardContent>
               {recentEvents.length ? (
                 <ul className="space-y-2 text-sm" aria-label="Recent system events">
                   {[...recentEvents].reverse().slice(0, 7).map(event => (
@@ -589,7 +598,7 @@ export default function SystemPage() {
         <p className="text-muted-foreground text-xs">
           Read-only device observations. For details open <Link to="/observability" className="underline">Termux monitoring</Link>
           {" or "}<Link to="/shizuku" className="underline">Android & Shizuku</Link>.
-          Measurements may become unavailable if permissions change or the native Bridge stops.
+          Unavailable sources and gaps are shown explicitly; detailed diagnostics remain in their respective sections.
         </p>
       </div>
     </BaseLayout>
