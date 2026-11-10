@@ -1,7 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
-  existsSync,
   lstatSync,
   mkdirSync,
   openSync,
@@ -150,13 +149,19 @@ function stored(raw: string, id: string): RuntimeRecord {
  * Never touch a discovered service, even if its name looks like PocketHost.
  */
 export class NodeRunitHost {
+  private readonly projectRoot: string;
+  private readonly serviceRoot: string;
+  private readonly logRoot: string;
   private readonly projects: NodeProjectHost;
   private readonly admin: TermuxServiceAdmin;
   constructor(
-    private readonly projectRoot = path.join(os.homedir(), 'PocketHost-NodeProjects'),
-    private readonly serviceRoot = path.join(PREFIX, 'var', 'service'),
-    private readonly logRoot = path.join(PREFIX, 'var', 'log', 'sv'),
+    projectRoot = path.join(os.homedir(), 'PocketHost-NodeProjects'),
+    serviceRoot = path.join(PREFIX, 'var', 'service'),
+    logRoot = path.join(PREFIX, 'var', 'log', 'sv'),
   ) {
+    this.projectRoot = projectRoot;
+    this.serviceRoot = serviceRoot;
+    this.logRoot = logRoot;
     this.projects = new NodeProjectHost(projectRoot);
     this.admin = new TermuxServiceAdmin(serviceRoot);
   }
@@ -197,7 +202,7 @@ export class NodeRunitHost {
     if (!listing.some((entry) => entry.name === unit && entry.registered && !entry.protected))
       throw new Error('Node unit is not in verified runit registry');
   }
-  private observe(id: string, release: string, port: number): ProcessProof | 'down' | 'unknown' {
+  private observe(id: string, release: string): ProcessProof | 'down' | 'unknown' {
     const { service } = this.context(id);
     const result = spawnSync(PREFIX + '/bin/sv', ['status', service], {
       shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
@@ -276,7 +281,7 @@ export class NodeRunitHost {
     if (!state) return { state: 'not-provisioned', port: null,
       activeRelease: null, lastGoodRelease: null, desired: 'stopped', history: [] };
     const current = state.activeRelease
-      ? this.observe(id, state.activeRelease, state.port) : 'down';
+      ? this.observe(id, state.activeRelease) : 'down';
     const matches = current !== 'down' && current !== 'unknown' &&
       state.process?.pid === current.pid && state.process.ticks === current.ticks;
     return {
@@ -288,9 +293,9 @@ export class NodeRunitHost {
   }
   private async settle(id: string, release: string, port: number): Promise<ProcessProof> {
     for (let n = 0; n < 40; n++) {
-      const proof = this.observe(id, release, port);
+      const proof = this.observe(id, release);
       if (proof !== 'down' && proof !== 'unknown' && await ready(port)) {
-        const after = this.observe(id, release, port);
+        const after = this.observe(id, release);
         if (after !== 'down' && after !== 'unknown' &&
           after.pid === proof.pid && after.ticks === proof.ticks) return proof;
       }
@@ -300,7 +305,7 @@ export class NodeRunitHost {
   }
   private async halt(id: string, state: RuntimeRecord): Promise<void> {
     if (!state.activeRelease) return;
-    const process = this.observe(id, state.activeRelease, state.port);
+    const process = this.observe(id, state.activeRelease);
     if (process === 'unknown' || (process !== 'down' &&
       (!state.process || state.process.pid !== process.pid ||
         state.process.ticks !== process.ticks)))
@@ -308,7 +313,7 @@ export class NodeRunitHost {
     const result = await this.admin.apply('stop', state.unit);
     if (result.result?.exit !== 0) throw new Error('Runit stop rejected');
     for (let i = 0; i < 40; i++) {
-      if (this.observe(id, state.activeRelease, state.port) === 'down' &&
+      if (this.observe(id, state.activeRelease) === 'down' &&
         await portFree(state.port)) return;
       await pause();
     }
