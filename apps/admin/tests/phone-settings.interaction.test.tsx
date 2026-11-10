@@ -46,9 +46,9 @@ afterEach(() => vi.unstubAllGlobals())
 describe("dedicated Phone Settings", () => {
   it("shows saved display values, clear scope and deliberate brightness actions", async () => {
     const calls = mount()
-    const slider = await screen.findByRole("slider", { name: "Set screen brightness" })
+    await screen.findByText(/Saved time until screen sleeps: 10 min/)
+    const slider = screen.getByRole("slider", { name: "Set screen brightness" })
     expect(slider.getAttribute("value")).toBe("154")
-    expect(screen.getByText("10 min")).toBeTruthy()
     expect(screen.getByText(/Adaptive brightness may override/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Save brightness" })).toBeNull()
 
@@ -58,7 +58,7 @@ describe("dedicated Phone Settings", () => {
     await waitFor(() => expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1))
     const post = calls.mock.calls.find(call => call[1]?.method === "POST")
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ action: "brightness", target: "", value: "7" })
-    expect(screen.getByText("Phone Settings")).toBeTruthy()
+    expect(screen.getByText("Display & screen")).toBeTruthy()
   })
 
   it("does not offer settings writes on unauthorized Shizuku", async () => {
