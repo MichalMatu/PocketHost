@@ -52,10 +52,10 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       if (url.endsWith("/status")) return status
       return new Promise(() => undefined)
     })
-    expect(await screen.findByText("Connected")).toBeTruthy()
+    expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
     expect(screen.getByText("19.0%")).toBeTruthy()
     expect(screen.getByText("Loading Android applications…")).toBeTruthy()
-    await userEvent.setup().click(screen.getByRole("tab", { name: /CPU & processes/i }))
+    await userEvent.setup().click(screen.getByRole("tab", { name: /Android processes/i }))
     expect(screen.getByText("Loading Android processes…")).toBeTruthy()
   })
 
@@ -73,7 +73,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByText("1–1 of 1")).toBeTruthy()
     expect(screen.getByText("Example 174")).toBeTruthy()
 
-    await user.click(screen.getByRole("tab", { name: /CPU & processes/i }))
+    await user.click(screen.getByRole("tab", { name: /Android processes/i }))
     await screen.findByText(/Showing 1–80 of 175/)
     expect(screen.queryByText("app80")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Next processes" }))
@@ -90,14 +90,14 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     })
     const user = userEvent.setup()
     await screen.findByText("Example 0")
-    const tab = screen.getByRole("tab", { name: /Applications/i })
+    const tab = screen.getByRole("tab", { name: /Apps & permissions/i })
     tab.focus()
     await user.keyboard("{ArrowRight}")
-    expect(screen.getByRole("tab", { name: /CPU & processes/i }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByRole("tab", { name: /Android processes/i }).getAttribute("aria-selected")).toBe("true")
     await user.keyboard("{Home}")
-    expect(screen.getByRole("tab", { name: /Applications/i }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByRole("tab", { name: /Apps & permissions/i }).getAttribute("aria-selected")).toBe("true")
     await user.click(screen.getByText("Example 0"))
-    expect(await screen.findByText("App detail request failed. Select the app again to retry.")).toBeTruthy()
+    expect(await screen.findByText("App detail request failed. Retry or choose another app.")).toBeTruthy()
   })
 
   it("shows real app permission grants and selectable observed Android service", async () => {
@@ -121,7 +121,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     await screen.findByText("Example 0")
     await user.click(screen.getByText("Example 0"))
     await screen.findByText("Version code")
-    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
+    await user.click(screen.getByRole("button", { name: "Manage permissions" }))
     expect(screen.getByText("2 requested")).toBeTruthy()
     expect(screen.getByText("1 granted")).toBeTruthy()
     expect(screen.getByText("1 not granted")).toBeTruthy()
@@ -129,7 +129,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     fireEvent.change(screen.getByRole("textbox", { name: "Search Android permissions" }), { target: { value: "CAMERA" } })
     expect(screen.queryByText("android.permission.RECORD_AUDIO")).toBeNull()
 
-    await user.click(screen.getByRole("tab", { name: /Services & settings/i }))
+    await user.click(screen.getByRole("tab", { name: /Android services/i }))
     const service = await screen.findByRole("button", { name: "com.example/.Service" })
     await user.click(service)
     expect(service.getAttribute("aria-pressed")).toBe("true")
@@ -137,8 +137,8 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
-  it("chooses and changes the permissions app entirely inside Permissions", async () => {
-    const fetcher = mount(async url => {
+  it("changes selected apps and inspects permissions without a second application picker", async () => {
+    const calls = mount(async url => {
       if (url.endsWith("/status")) return status
       if (url.endsWith("/apps")) return apps
       if (url.endsWith("/system")) return system
@@ -149,43 +149,30 @@ describe("Android Shizuku UI response and bounded inventories", () => {
           label: packageName.endsWith("app0") ? "Example 0" : "Example 1",
           versionName: "1.0", versionCode: 1, targetSdk: 35,
           enabled: true, system: false,
-          permissions: [{
-            name: packageName.endsWith("app0") ? "android.permission.CAMERA" : "android.permission.RECORD_AUDIO",
-            granted: packageName.endsWith("app0"),
-          }],
+          permissions: [{ name: packageName.endsWith("app0") ?
+            "android.permission.CAMERA" : "android.permission.RECORD_AUDIO",
+            granted: packageName.endsWith("app0") }],
         }
       }
-      throw new Error("unexpected route: " + url)
+      throw new Error("Unexpected route")
     })
     const user = userEvent.setup()
-    await screen.findByText("Example 0")
-    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
-    expect(screen.getByRole("textbox", { name: "Search applications for permissions" })).toBeTruthy()
-    expect(screen.queryByRole("button", { name: "Choose application" })).toBeNull()
-
-    await user.click(screen.getByRole("button", {
-      name: "Inspect permissions for Example 0 (com.example.app0)",
-    }))
-    expect(await screen.findByText("android.permission.CAMERA")).toBeTruthy()
-    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
-    expect(screen.getByText("1 granted")).toBeTruthy()
-
-    fireEvent.change(screen.getByRole("textbox", { name: "Search applications for permissions" }), {
-      target: { value: "com.example.app1" },
-    })
-    await user.click(screen.getByRole("button", {
-      name: "Inspect permissions for Example 1 (com.example.app1)",
-    }))
-    expect(await screen.findByText("android.permission.RECORD_AUDIO")).toBeTruthy()
+    await user.click(await screen.findByText("Example 0"))
+    await screen.findByText("Version code")
+    await user.click(screen.getByRole("button", { name: "Manage permissions" }))
+    expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Permissions (1)" }).getAttribute("aria-pressed")).toBe("true")
+    await user.click(screen.getByText("Example 1"))
+    await screen.findByText("Version code")
     expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
-    expect(screen.getByText("1 not granted")).toBeTruthy()
-    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
-    expect(fetcher.mock.calls.some(call => String(call[0]).includes("/app?package=com.example.app1"))).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Permissions (1)" }))
+    expect(screen.getByText("android.permission.RECORD_AUDIO")).toBeTruthy()
+    expect(calls.mock.calls.some(call => String(call[0]).includes("/app?package=com.example.app1"))).toBe(true)
   })
 
-  it("paginates the permissions app picker and retries detail errors in place", async () => {
+  it("retries an app detail request without refreshing the full Android inventory", async () => {
     let attempts = 0
-    mount(async url => {
+    const calls = mount(async url => {
       if (url.endsWith("/status")) return status
       if (url.endsWith("/apps")) return apps
       if (url.endsWith("/system")) return system
@@ -199,22 +186,15 @@ describe("Android Shizuku UI response and bounded inventories", () => {
           permissions: [{ name: "android.permission.CAMERA", granted: true }],
         }
       }
-      throw new Error("unexpected route: " + url)
+      throw new Error("unexpected route")
     })
     const user = userEvent.setup()
-    await screen.findByText("Example 0")
-    await user.click(screen.getByRole("tab", { name: /^Permissions$/i }))
-    expect(screen.getByText(/of 175/)).toBeTruthy()
-    expect(screen.queryByRole("button", { name: "Inspect permissions for Example 20 (com.example.app20)" })).toBeNull()
-    await user.click(screen.getByRole("button", { name: "Next permission applications" }))
-    await user.click(screen.getByRole("button", {
-      name: "Inspect permissions for Example 20 (com.example.app20)",
-    }))
-    expect(await screen.findByText("Permissions could not be read. Retry here or select another app.")).toBeTruthy()
-    await user.click(screen.getByRole("button", { name: "Retry permissions" }))
-    expect(await screen.findByText("android.permission.CAMERA")).toBeTruthy()
+    await user.click(await screen.findByText("Example 20"))
+    expect(await screen.findByText("App detail request failed. Retry or choose another app.")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Retry app details" }))
+    expect(await screen.findByText("Version code")).toBeTruthy()
     expect(attempts).toBe(2)
-    expect(screen.getByRole("tab", { name: /^Permissions$/i }).getAttribute("aria-selected")).toBe("true")
+    expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/apps"))).toHaveLength(1)
   })
 
   it("isolates inventory failure without hiding real Shizuku connection", async () => {
@@ -223,9 +203,9 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       if (url.endsWith("/system")) return system
       throw new Error("inventory unavailable")
     })
-    expect(await screen.findByText("Connected")).toBeTruthy()
+    expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
     expect(await screen.findByText("Application inventory request failed. Try Refresh.")).toBeTruthy()
-    await userEvent.setup().click(screen.getByRole("tab", { name: /Power & hardware/i }))
+    await userEvent.setup().click(screen.getByRole("tab", { name: /Device/i }))
     await waitFor(() => expect(screen.getByText(/Total system RAM:/)).toBeTruthy())
   })
 
@@ -238,7 +218,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       url.endsWith("/apps") ? apps : sampleSystem)
     const user = userEvent.setup()
     await screen.findByText("Example 0")
-    await user.click(screen.getByRole("tab", { name: /CPU & processes/i }))
+    await user.click(screen.getByRole("tab", { name: /Android processes/i }))
     const table = await screen.findByRole("table", { name: "Android processes" })
     expect(table.querySelector("thead th")?.className).toContain("sticky")
     expect(screen.getByText("0 MiB")).toBeTruthy()
@@ -260,10 +240,10 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       url.endsWith("/apps") ? apps : url.endsWith("/system") ? system : detail)
     const user = userEvent.setup()
     await user.click(await screen.findByText("Example 0"))
-    await screen.findByText("Manage permissions")
+    await screen.findByRole("button", { name: "Manage permissions" })
     expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Manage permissions" }))
-    expect(screen.getByRole("tab", { name: /^Permissions$/ }).getAttribute("aria-selected")).toBe("true")
+    expect(screen.getByRole("button", { name: "Permissions (1)" }).getAttribute("aria-pressed")).toBe("true")
     expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
   })
 
@@ -278,5 +258,23 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.queryByText("Example 0")).toBeNull()
     await userEvent.setup().click(screen.getByRole("button", { name: "All" }))
     expect(screen.getByText("Example 0")).toBeTruthy()
+  })
+
+  it("does not probe diagnostics until expanded, and exposes display presets", async () => {
+    const calls = mount(async url => url.endsWith("/status") ? status :
+      url.endsWith("/apps") ? apps : system)
+    const user = userEvent.setup()
+    await screen.findByText("Example 0")
+    await user.click(screen.getByRole("tab", { name: /^Device$/ }))
+    expect(screen.getByText(/Advanced Shizuku diagnostics · on demand/)).toBeTruthy()
+    expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(1)
+    await user.click(screen.getByText(/Advanced Shizuku diagnostics · on demand/))
+    await waitFor(() => expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2))
+    await user.click(screen.getByRole("tab", { name: /^Android services$/ }))
+    expect(screen.getByRole("slider", { name: "Set screen brightness" })).toBeTruthy()
+    fireEvent.change(screen.getByRole("slider", { name: "Set screen brightness" }), { target: { value: "120" } })
+    expect(screen.getByRole("button", { name: "Apply brightness" })).toBeTruthy()
+    fireEvent.change(screen.getByRole("combobox", { name: "Set screen timeout" }), { target: { value: "120000" } })
+    expect(screen.getByRole("button", { name: "Apply timeout" })).toBeTruthy()
   })
 })
