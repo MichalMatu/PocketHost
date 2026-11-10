@@ -18,16 +18,18 @@ vi.mock("recharts", () => ({
   CartesianGrid: () => null,
   XAxis: () => null,
   YAxis: () => null,
-  Area: () => null,
-  Line: ({ dataKey, stroke, dot, connectNulls, isAnimationActive }: {
+  Area: ({ dataKey, stroke, fill, dot, activeDot, connectNulls, isAnimationActive }: {
     dataKey: string
     stroke: string
-    dot: boolean | { r: number }
+    fill: string
+    dot: boolean
+    activeDot: boolean
     connectNulls: boolean
     isAnimationActive: boolean
-  }) => <span data-testid={`chart-line-${dataKey}`} data-stroke={stroke}
-    data-dot={typeof dot === "object" ? "always" : String(dot)}
+  }) => <span data-testid={`chart-area-${dataKey}`} data-stroke={stroke}
+    data-fill={fill} data-dot={String(dot)} data-active-dot={String(activeDot)}
     data-connect-nulls={String(connectNulls)} data-animation={String(isAnimationActive)} />,
+  Line: () => null,
 }))
 
 const hostFixture = {
@@ -76,11 +78,19 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Live system resources")).toBeTruthy()
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
-    const tcpLine = screen.getByTestId("chart-line-internetMs")
-    expect(tcpLine.getAttribute("data-stroke")).toBe("var(--color-internetMs)")
-    expect(tcpLine.getAttribute("data-dot")).toBe("always")
-    expect(tcpLine.getAttribute("data-connect-nulls")).toBe("false")
-    expect(tcpLine.getAttribute("data-animation")).toBe("false")
+    for (const [metric, fill] of [
+      ["cpu", "pockethost-cpu-fill"],
+      ["ram", "pockethost-ram-fill"],
+      ["internetMs", "pockethost-tcp-fill"],
+      ["bridgeMs", "pockethost-bridge-fill"],
+    ]) {
+      const area = screen.getByTestId(`chart-area-${metric}`)
+      expect(area.getAttribute("data-stroke")).toBe(`var(--color-${metric})`)
+      expect(area.getAttribute("data-fill")).toBe(`url(#${fill})`)
+      expect(area.getAttribute("data-dot")).toBe("false")
+      expect(area.getAttribute("data-active-dot")).toBe("false")
+      expect(area.getAttribute("data-animation")).toBe("false")
+    }
     expect(screen.getByText(/1 valid readings/)).toBeTruthy()
     expect(screen.getByText(/0 API errors/)).toBeTruthy()
     expect(screen.getByText("Android Bridge connectivity")).toBeTruthy()

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Activity, Cpu, HardDrive, RefreshCw, ServerCog, Wifi } from "lucide-react"
-import { Area, AreaChart, CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts"
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -26,17 +26,18 @@ type Sample = {
   bridgeOnline: boolean | null
 }
 
+// Match the original ShadcnStore dashboard: theme-neutral primary, soft area fills.
 const resourcesConfig = {
-  cpu: { label: "Android CPU", color: "var(--chart-1)" },
-  ram: { label: "RAM used", color: "var(--chart-2)" },
+  cpu: { label: "Android CPU", color: "var(--primary)" },
+  ram: { label: "RAM used", color: "var(--primary)" },
 } satisfies ChartConfig
 
 const latencyConfig = {
-  internetMs: { label: "Internet TCP handshake", color: "var(--chart-3)" },
+  internetMs: { label: "Internet TCP handshake", color: "var(--primary)" },
 } satisfies ChartConfig
 
 const bridgeConfig = {
-  bridgeMs: { label: "Bridge status API response", color: "var(--chart-4)" },
+  bridgeMs: { label: "Bridge status API response", color: "var(--primary)" },
 } satisfies ChartConfig
 
 function clock(value: string | number) {
@@ -214,14 +215,26 @@ export default function SystemPage() {
               <div className="relative h-[260px] min-w-0 w-full" data-testid="resources-chart-slot">
                 <ChartContainer config={resourcesConfig} className="aspect-auto h-full min-w-0 w-full">
                   <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
+                    <defs>
+                      <linearGradient id="pockethost-cpu-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-cpu)" stopOpacity={0.07} />
+                        <stop offset="95%" stopColor="var(--color-cpu)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="pockethost-ram-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-ram)" stopOpacity={0.16} />
+                        <stop offset="95%" stopColor="var(--color-ram)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
                     <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
-                      fill="var(--color-cpu)" fillOpacity={0.12} strokeWidth={2} dot={samples.length < 3} isAnimationActive={false} />
+                      strokeOpacity={0.55} fill="url(#pockethost-cpu-fill)" strokeWidth={1.5}
+                      dot={false} activeDot={false} isAnimationActive={false} />
                     <Area dataKey="ram" type="monotone" connectNulls={false} stroke="var(--color-ram)"
-                      fill="var(--color-ram)" fillOpacity={0.10} strokeWidth={2} dot={samples.length < 3} isAnimationActive={false} />
+                      strokeOpacity={0.95} fill="url(#pockethost-ram-fill)" strokeWidth={1.5}
+                      dot={false} activeDot={false} isAnimationActive={false} />
                   </AreaChart>
                 </ChartContainer>
                 {!samples.some(sample => sample.cpu !== null || sample.ram !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-sm">Waiting for permitted Android / Termux resource readings.</p>}
@@ -242,14 +255,21 @@ export default function SystemPage() {
             <CardContent>
               <div className="relative h-[190px] min-w-0 w-full" data-testid="internet-chart-slot">
                 <ChartContainer config={latencyConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                    <defs>
+                      <linearGradient id="pockethost-tcp-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-internetMs)" stopOpacity={0.16} />
+                        <stop offset="95%" stopColor="var(--color-internetMs)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
-                    <Line type="monotone" dataKey="internetMs" stroke="var(--color-internetMs)" strokeWidth={2}
-                      dot={{ r: 2.5 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
-                  </LineChart>
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <Area type="monotone" dataKey="internetMs" stroke="var(--color-internetMs)"
+                      fill="url(#pockethost-tcp-fill)" strokeWidth={1.5} connectNulls={false}
+                      dot={false} activeDot={false} isAnimationActive={false} />
+                  </AreaChart>
                 </ChartContainer>
                 {!samples.some(sample => sample.internetMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Internet TCP connection measured yet.</p>}
               </div>
@@ -271,14 +291,21 @@ export default function SystemPage() {
             <CardContent className="min-w-0">
               <div className="relative h-[190px] min-w-0 w-full" data-testid="bridge-chart-slot">
                 <ChartContainer config={bridgeConfig} className="aspect-auto h-full min-w-0 w-full">
-                  <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                    <defs>
+                      <linearGradient id="pockethost-bridge-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-bridgeMs)" stopOpacity={0.16} />
+                        <stop offset="95%" stopColor="var(--color-bridgeMs)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                    <Line type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)" strokeWidth={2}
-                      dot={samples.length < 3} connectNulls={false} isAnimationActive={false} />
-                  </LineChart>
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <Area type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)"
+                      fill="url(#pockethost-bridge-fill)" strokeWidth={1.5} connectNulls={false}
+                      dot={false} activeDot={false} isAnimationActive={false} />
+                  </AreaChart>
                 </ChartContainer>
                 {!samples.some(sample => sample.bridgeMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Bridge status API request yet.</p>}
               </div>
