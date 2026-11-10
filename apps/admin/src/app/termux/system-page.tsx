@@ -12,6 +12,7 @@ import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
 import { parseInternetConnectivity, type InternetConnectivity } from "@/lib/internet-connectivity-schema"
 import { parseDashboardHistory, type DashboardHistoryEvent, type DashboardHistoryPoint } from "@/lib/dashboard-history-schema"
+import { formatTrafficMbps, trafficMbps } from "@/lib/network-traffic"
 
 const POLL_MS = 15_000
 const MAX_SAMPLES = 1680 // 1,440 server points plus bounded 15-second in-tab readings
@@ -32,6 +33,9 @@ type Sample = {
   dnsFailed?: boolean | null
   storageUsedPercent?: number | null
   systemUptimeSeconds?: number | null
+  networkRxBytes?: number | null
+  networkTxBytes?: number | null
+  networkObservedAt?: string | null
 }
 
 // Match the original ShadcnStore dashboard: theme-neutral primary, soft area fills.
@@ -46,6 +50,11 @@ const latencyConfig = {
 
 const bridgeConfig = {
   bridgeMs: { label: "Bridge status API response", color: "var(--primary)" },
+} satisfies ChartConfig
+
+const trafficConfig = {
+  networkRxMbps: { label: "RX", color: "var(--primary)" },
+  networkTxMbps: { label: "TX", color: "var(--primary)" },
 } satisfies ChartConfig
 
 const powerConfig = {
@@ -110,6 +119,9 @@ function mergeHistory(previous: Sample[], stored: DashboardHistoryPoint[]): Samp
     dnsFailed: item.dnsFailed ?? null,
     storageUsedPercent: item.storageUsedPercent ?? null,
     systemUptimeSeconds: item.systemUptimeSeconds,
+    networkRxBytes: item.networkRxBytes ?? null,
+    networkTxBytes: item.networkTxBytes ?? null,
+    networkObservedAt: item.networkObservedAt ?? null,
   })
   for (const item of previous) merged.set(item.observedAt, item)
   return [...merged.values()]
@@ -203,6 +215,9 @@ export default function SystemPage() {
           internetFailed: internetResult?.state === "unreachable" ? true : internetResult ? false : null,
           bridgeMs: bridgeResult?.bridgeMs ?? null,
           bridgeOnline: bridgeResult?.bridge.connected ?? null,
+          networkRxBytes: bridgeResult?.bridge.network?.rxBytes ?? null,
+          networkTxBytes: bridgeResult?.bridge.network?.txBytes ?? null,
+          networkObservedAt: bridgeResult?.bridge.network?.observedAt ?? null,
         }].slice(-MAX_SAMPLES))
         setLoading(false)
       }
@@ -245,6 +260,18 @@ export default function SystemPage() {
   const batteryTempC = collectedFresh ? lastCollected?.batteryTempC ?? null : null
   const dnsMs = collectedFresh ? lastCollected?.dnsMs ?? null : null
   const dnsFailed = collectedFresh ? lastCollected?.dnsFailed ?? null : null
+
+  const trafficSamples = samples.map((sample, i) => ({
+    ...sample, ...trafficMbps(i ? samples[i - 1]! : null, sample),
+  }))
+  const lastTraffic = [...trafficSamples].reverse().find(sample =>
+    sample.networkRxMbps !== null || sample.networkTxMbps !== null)
+  const trafficFresh = lastTraffic?.networkObservedAt
+    ? Date.now() - Date.parse(lastTraffic.networkObservedAt) >= 0 &&
+      Date.now() - Date.parse(lastTraffic.networkObservedAt) <= 150000
+    : false
+  const rxMbps = trafficFresh ? lastTraffic?.networkRxMbps ?? null : null
+  const txMbps = trafficFresh ? lastTraffic?.networkTxMbps ?? null : null
 
   const cpu = freshCpu(bridge)
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
@@ -406,6 +433,44 @@ export default function SystemPage() {
 
           <Card>
             <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android network · RX / TX</CardTitle>
+              <CardDescription>Native TrafficStats · all interfaces since boot · sampled transfer, not an Internet speed test</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative h-[190px] min-w-0 w-full" data-testid="traffic-chart-slot">
+                <ChartContainer config={trafficConfig} className="aspect-auto h-full min-w-0 w-full">
+                  <AreaChart data={trafficSamples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
+                    <defs>
+                      <linearGradient id="pockethost-traffic-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-networkRxMbps)" stopOpacity={0.12} />
+                        <stop offset="95%" stopColor="var(--color-networkRxMbps)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " Mb/s"} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={label => clock(String(label))} />} />
+                    <Area dataKey="networkRxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkRxMbps)"
+                      fill="url(#pockethost-traffic-fill)" strokeWidth={1.5} dot={false} activeDot={false} isAnimationActive={false} />
+                    <Area dataKey="networkTxMbps" type="monotone" connectNulls={false} stroke="var(--color-networkTxMbps)"
+                      strokeOpacity={0.45} fill="transparent" strokeWidth={1.25} dot={false} activeDot={false} isAnimationActive={false} />
+                  </AreaChart>
+                </ChartContainer>
+                {!trafficSamples.some(sample => sample.networkRxMbps !== null || sample.networkTxMbps !== null) &&
+                  <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">
+                    Waiting for two supported Android network counter readings.
+                  </p>}
+              </div>
+              <p className="text-muted-foreground min-h-9 pt-2 text-xs tabular-nums" aria-label="Android transfer rates">
+                RX: {formatTrafficMbps(rxMbps)} · TX: {formatTrafficMbps(txMbps)}
+                {" · "}{trafficFresh && lastTraffic?.networkObservedAt
+                  ? "Measured " + clock(lastTraffic.networkObservedAt) : "Native source unavailable or stale"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android Bridge connectivity</CardTitle>
               <CardDescription>Live response time of the existing Bridge status API · not Internet ping or RX/TX</CardDescription>
             </CardHeader>
@@ -434,7 +499,7 @@ export default function SystemPage() {
                 <span>{bridgeHealth}</span><span>·</span><span>{samples.filter(sample => sample.bridgeOnline === false).length} disconnected samples</span>
               </p>
               <p className="text-muted-foreground min-h-8 pt-1 text-xs">
-                Full-device RX/TX requires verified Android NetworkStats permission and native Bridge integration.
+                The RX/TX chart requires an updated Companion APK and two real readings. Missing readings remain unavailable.
               </p>
             </CardContent>
           </Card>
