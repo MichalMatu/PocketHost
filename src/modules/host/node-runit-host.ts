@@ -281,13 +281,15 @@ export class NodeRunitHost {
   }
   preview(id: string): {
     release: string | null; port: number | null; missingTools: string[];
+    nodeVersion: string | null; npmVersion: string | null;
     conflicts: string[]; dependencyCount: number | null; allowed: boolean; reason: string;
   } {
     const project = this.projects.inspect(id);
     const state = this.record(id);
     const release = project.candidateRelease;
     if (!release) return { release: null, port: state?.port ?? null,
-      missingTools: [], conflicts: [], dependencyCount: null, allowed: false,
+      missingTools: [], conflicts: [], nodeVersion: null, npmVersion: null,
+      dependencyCount: null, allowed: false,
       reason: 'stage-source-first' };
     const { plan } = this.projects.release(id, release);
     const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
@@ -296,14 +298,13 @@ export class NodeRunitHost {
     const npm = spawnSync(PREFIX + '/bin/npm', ['--version'], {
       encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
     });
-    const tools = reviewNodeToolchain(plan, {
-      node: node.status === 0 ? node.stdout.trim() : null,
-      npm: npm.status === 0 ? npm.stdout.trim() : null,
-    });
+    const nodeVersion = node.status === 0 ? node.stdout.trim() : null;
+    const npmVersion = npm.status === 0 ? npm.stdout.trim() : null;
+    const tools = reviewNodeToolchain(plan, { node: nodeVersion, npm: npmVersion });
     const clean = plan.dependencyCount === 0 && plan.commands.build === null;
     return {
       release, port: state?.port ?? null, missingTools: tools.missingTools,
-      conflicts: tools.conflicts, dependencyCount: plan.dependencyCount,
+      nodeVersion, npmVersion, conflicts: tools.conflicts, dependencyCount: plan.dependencyCount,
       allowed: tools.status !== 'blocked' && clean,
       reason: tools.status === 'blocked' ? 'missing-or-unsupported-toolchain' :
         clean ? 'ready-for-explicit-local-deploy' : 'dependencies-or-build-need-separate-approval',
