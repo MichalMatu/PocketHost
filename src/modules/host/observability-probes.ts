@@ -195,6 +195,12 @@ export function parseProcessStat(
   return { pid: expectedPid, ppid, startTicks: ticks, cpuTicks: utime + stime };
 }
 
+/** Only the bounded status Name field; never /proc/stat comm, argv or command line. */
+export function parseProcessName(status: string): string | null {
+  const name = /^Name:[ \t]*([^\r\n]*)$/m.exec(status)?.[1]?.trim();
+  return name && /^[A-Za-z0-9][A-Za-z0-9._+:-]{0,23}$/.test(name) ? name : null;
+}
+
 export function parseProcessRss(status: string): number | null {
   const match = /^VmRSS:\s*(\d+)\s+kB\s*$/m.exec(status);
   if (!match) return null;
@@ -240,12 +246,15 @@ export function readProcessInventory(
       const stat = parseProcessStat(read(`${PROC}/${pid}/stat`), pid);
       if (!stat) continue;
       let rss: number | null = null;
+      let name: string | null = null;
       try {
-        rss = parseProcessRss(read(`${PROC}/${pid}/status`));
+        const status = read(`${PROC}/${pid}/status`);
+        rss = parseProcessRss(status);
+        name = parseProcessName(status);
       } catch {
-        // Android can restrict /proc/PID/status independently.
+        // Android can restrict /proc/PID/status independently. Never infer a name from argv.
       }
-      processes.push({ ...stat, rssMiB: rss, ownership: pid === selfPid ? 'self' : 'unverified' });
+      processes.push({ ...stat, name, rssMiB: rss, ownership: pid === selfPid ? 'self' : 'unverified' });
     } catch (error) {
       if (reason(error) === 'permission-denied') denied = true;
     }
