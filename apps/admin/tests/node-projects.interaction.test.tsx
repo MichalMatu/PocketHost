@@ -76,6 +76,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await screen.findByText(/Modules: 1 · Services: 0 · Projects: 1/)
   await user.click(screen.getByRole("button", { name: "Inspect Node backups" }))
   await screen.findByText(/Scoped Node Restic: not initialized/)
+  expect(screen.getByRole("button", { name: "Create Node backup" }).hasAttribute("disabled")).toBe(true)
+  expect(screen.getByRole("button", { name: "Restore Node snapshot to staging" }).hasAttribute("disabled")).toBe(true)
 
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
   await user.click(screen.getByRole("button", { name: "Check Node build syntax" }))

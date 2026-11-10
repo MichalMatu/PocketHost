@@ -412,6 +412,7 @@ function nodeProjectApi(): Plugin {
       const runtime = enabled ? new NodeRunitHost() : null
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
+      const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
         const action = pending.then(fn, fn)
@@ -446,7 +447,10 @@ function nodeProjectApi(): Plugin {
           try {
             const data = route === "/" ? { projects: host.list() } :
               route === "/registry" ? { registries: runtime!.registryProjection() } :
-              route === "/backup" ? { backup: nodeBackup!.status() } :
+              route === "/backup" ? { backup: nodeBackup!.status(), backupsEnabled: backupEnabled } :
+              route === "/backup/snapshots" ? {
+                snapshots: await nodeBackup!.snapshots(),
+              } :
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
@@ -468,7 +472,10 @@ function nodeProjectApi(): Plugin {
         const stop = request.method === "POST" && !!id && op === "stop"
         const rollback = request.method === "POST" && !!id && op === "rollback"
         const checkBuild = request.method === "POST" && !!id && op === "check-build"
-        if (!create && !stage && !restore && !deploy && !stop && !rollback && !checkBuild) {
+        const createBackup = request.method === "POST" && route === "/backup/create"
+        const restoreBackup = request.method === "POST" && route === "/backup/restore"
+        if (!create && !stage && !restore && !deploy && !stop && !rollback &&
+            !checkBuild && !createBackup && !restoreBackup) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -481,6 +488,26 @@ function nodeProjectApi(): Plugin {
         }
         try {
           const result = await serial(async () => {
+            if (createBackup || restoreBackup) {
+              if (!backupEnabled) throw new Error("Node backup mutations disabled")
+              const requestBody = await readJson(request, 1024)
+              if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody))
+                throw new RangeError("Invalid backup authorization")
+              const input = requestBody as Record<string, unknown>
+              if (createBackup) {
+                if (Object.keys(input).join(",") !== "approved" || input.approved !== true)
+                  throw new RangeError("Explicit scoped backup authorization required")
+                await nodeBackup!.backup(true)
+                return { backupCreated: true, backup: nodeBackup!.status() }
+              }
+              if (Object.keys(input).sort().join(",") !== "approved,snapshot" ||
+                  input.approved !== true || typeof input.snapshot !== "string" ||
+                  !/^[a-f0-9]{64}$/.test(input.snapshot))
+                throw new RangeError("Explicit snapshot restore authorization required")
+              const result = await nodeBackup!.restoreToStaging(input.snapshot, true)
+              // Return a count, never the private Android filesystem path.
+              return { restoredToStaging: true, verifiedProjects: result.verifiedProjects }
+            }
             if (checkBuild) {
               const input = await readJson(request, 1024)
               if (!input || typeof input !== "object" || Array.isArray(input) ||
