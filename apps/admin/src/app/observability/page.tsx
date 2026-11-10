@@ -150,9 +150,6 @@ export default function ObservabilityPage() {
     (process.name ?? "").toLowerCase().includes(query.trim().toLowerCase()) ||
     process.ownership.includes(query.trim().toLowerCase())
   )), order)
-  const sampleAge = snapshot ? Date.now() - Date.parse(snapshot.observedAt) : null
-  const snapshotFresh = sampleAge !== null && Number.isFinite(sampleAge) &&
-    sampleAge >= 0 && sampleAge < 150_000 && !error
   const processesOk = snapshot?.processes.state === "ok"
 
   return (
@@ -163,7 +160,7 @@ export default function ObservabilityPage() {
             <Badge variant="outline"><ShieldCheck className="size-3" />Read only · on demand</Badge>
             <AccessInfoDialog />
             {snapshot && <span className="text-muted-foreground text-xs tabular-nums">
-              {snapshotFresh ? "Observed " : "Last observation (not live) "}{seenAt(snapshot.observedAt)}
+              Last observation (not live) · {seenAt(snapshot.observedAt)}
             </span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
