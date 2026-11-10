@@ -11,6 +11,8 @@ These dated files are historical **exact-SHA evidence**, not instructions to rer
 
 ## 2026-11-09
 
+- [M2/M3 Node source candidate and Samsung focused acceptance](2026-11-09-m2-m3-node-source-sprint.md)
+
 - [M0/M1 recovered UI acceptance and targeted M1 repair](2026-11-09-m0-m1-native-focused-ui-pass-repairs.md)
 - [M0/M1 resumed native validation handoff](2026-11-09-m0-m1-resume-native-validation-handoff.md)
 

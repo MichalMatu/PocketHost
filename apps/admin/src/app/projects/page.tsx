@@ -16,6 +16,23 @@ type Project = {
   deploymentCount: number
   createdAt: string
 }
+type RuntimeState = {
+  state: "not-provisioned" | "running" | "stopped" | "unknown"
+  port: number | null
+  desired: "running" | "stopped"
+  activeRelease: string | null
+  lastGoodRelease: string | null
+  history: { at: string; action: string; release: string }[]
+}
+type RuntimePlan = {
+  release: string | null
+  port: number | null
+  missingTools: string[]
+  conflicts: string[]
+  dependencyCount: number | null
+  allowed: boolean
+  reason: string
+}
 type Candidate = {
   id: string
   active: false
@@ -73,6 +90,11 @@ export default function ProjectsPage() {
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
   const [releases, setReleases] = React.useState<Candidate[]>([])
+  const [runtime, setRuntime] = React.useState<RuntimeState | null>(null)
+  const [plan, setPlan] = React.useState<RuntimePlan | null>(null)
+  const [executionEnabled, setExecutionEnabled] = React.useState(false)
+  const [approved, setApproved] = React.useState(false)
+  const [logLines, setLogLines] = React.useState<string[]>([])
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
@@ -86,6 +108,15 @@ export default function ProjectsPage() {
     const data = await getJson(api + "/" + id + "/releases")
     if (!Array.isArray(data.releases)) throw new Error("Invalid release inventory")
     setReleases(data.releases as Candidate[])
+  }, [])
+  const loadRuntime = React.useCallback(async (id: string) => {
+    const [status, preview] = await Promise.all([
+      getJson(api + "/" + id + "/runtime"), getJson(api + "/" + id + "/plan"),
+    ])
+    if (!status.runtime || !preview.plan) throw new Error("Invalid Node runtime report")
+    setRuntime(status.runtime as RuntimeState)
+    setPlan(preview.plan as RuntimePlan)
+    setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
   }, [])
   React.useEffect(() => {
     let live = true
@@ -113,8 +144,9 @@ export default function ProjectsPage() {
           <Button disabled={busy || name.trim().length < 2} onClick={() => action(async () => {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
-            setSelectedId(data.project.id); setName("")
-            await refresh(); setReleases([])
+            setSelectedId(data.project.id); setName(""); setApproved(false)
+            setRuntime(null); setPlan(null); setLogLines([])
+            await refresh(); setReleases([]); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
           <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
@@ -129,15 +161,17 @@ export default function ProjectsPage() {
           <div className="flex flex-wrap gap-2">{projects.map(project =>
             <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
               disabled={busy} onClick={() => action(async () => {
-                setSelectedId(project.id); await loadReleases(project.id)
+                setSelectedId(project.id); setApproved(false)
+                setRuntime(null); setPlan(null); setLogLines([])
+                await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
         </CardContent>
       </Card>
       {selected && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
-          <CardDescription>Source: {selected.state} · Runtime: not provisioned · Active release: none</CardDescription></CardHeader>
+          <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">A source candidate is not a live deployment. Installation, build, port allocation, runit start, readiness and publish require separate verified host operations.</p>
+          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; no public routes or automatic startup.</p>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
               value={manifest} onChange={event => setManifest(event.target.value)} /></label>
@@ -155,17 +189,71 @@ export default function ProjectsPage() {
                 serverSource: source,
               })
               if (!validProject(data.project)) throw new Error("Invalid stage response")
-              await refresh(); await loadReleases(selected.id)
-              setMessage("Source candidate staged. Dependencies need review before execution.")
+              await refresh()
+              await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
+              setApproved(false)
+              setMessage("Source candidate staged. Review the execution plan before deploying.")
             })}>Validate and stage source</Button>
             <Button variant="outline" disabled={busy || !selected.previousCandidate}
               onClick={() => action(async () => {
                 const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST")
                 if (!validProject(data.project)) throw new Error("Invalid restore response")
-                await refresh(); await loadReleases(selected.id)
+                await refresh()
+                await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
+                setApproved(false)
                 setMessage("Previous source candidate restored. No live process was changed.")
               })}>Restore previous candidate</Button>
           </div>
+          <Card>
+            <CardHeader><CardTitle>Node deployment</CardTitle>
+              <CardDescription>Review the execution plan and authorize a one-shot local runit operation.</CardDescription></CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm">Plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"}</p>
+              {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0) &&
+                <p role="alert" className="text-sm text-destructive">{[...plan.missingTools, ...plan.conflicts].join(", ")}</p>}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
+                  onChange={event => setApproved(event.target.checked)} />
+                I authorize this project's staged Node source to run on this Termux host.
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <Button disabled={busy} variant="outline" onClick={() => action(async () => {
+                  await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
+                })}>Review plan</Button>
+                <Button disabled={busy || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
+                  onClick={() => action(async () => {
+                    await getJson(api + "/" + selected.id + "/deploy", "POST",
+                      { approved: true, release: selected.candidateRelease })
+                    await loadRuntime(selected.id); setApproved(false)
+                    setMessage("Owned Node release started and readiness verified by host.")
+                  })}>Deploy selected release</Button>
+                <Button variant="outline" disabled={busy || !approved || !executionEnabled || runtime?.state !== "running"}
+                  onClick={() => action(async () => {
+                    await getJson(api + "/" + selected.id + "/stop", "POST", { approved: true })
+                    await loadRuntime(selected.id); setApproved(false)
+                    setMessage("Owned Node service stopped.")
+                  })}>Stop owned service</Button>
+                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+                  const response = await getJson(api + "/" + selected.id + "/logs")
+                  const logs = response.logs as { lines?: unknown } | undefined
+                  if (!Array.isArray(logs?.lines) || !logs.lines.every(x => typeof x === "string"))
+                    throw new Error("Invalid bounded service logs")
+                  setLogLines(logs.lines); setMessage("Bounded runit logs loaded.")
+                })}>View logs</Button>
+              </div>
+              {!executionEnabled && <p className="text-xs text-muted-foreground">
+                Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
+              </p>}
+              <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
+              {runtime?.history?.length ? <div className="space-y-1 text-xs">
+                {runtime.history.slice(-8).reverse().map((event, i) =>
+                  <p key={event.at + i}>{event.at} · {event.action} · {event.release}</p>)}
+              </div> : null}
+              {logLines.length > 0 && <pre aria-label="Node runit logs" className="max-h-52 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
+                {logLines.join("\n")}
+              </pre>}
+            </CardContent>
+          </Card>
           <p className="text-sm">Current candidate: {selected.candidateRelease ?? "none"} · Previous: {selected.previousCandidate ?? "none"}</p>
           <div aria-label="Source candidates" className="space-y-2 text-sm">
             {releases.map(release => <div key={release.id} className="rounded-md border p-3">

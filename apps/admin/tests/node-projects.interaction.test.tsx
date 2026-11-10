@@ -35,6 +35,15 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         dependencyPlan: { packageName: "my-node-site", packageVersion: "1.0.0", dependencyCount: 0, status: "review-required" } }]
       return { ok: true, json: async () => ({ project }) }
     }
+    if (path === "/api/v1/node-projects/" + ID + "/runtime" && !options?.method)
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", port: null, desired: "stopped", activeRelease: null,
+        lastGoodRelease: null, history: [] }, executionEnabled: false }) }
+    if (path === "/api/v1/node-projects/" + ID + "/plan" && !options?.method)
+      return { ok: true, json: async () => ({ plan: {
+        release: RELEASE, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy"
+      }, executionEnabled: false }) }
     if (path === "/api/v1/node-projects/" + ID + "/releases" && !options?.method)
       return { ok: true, json: async () => ({ releases }) }
     return { ok: false, status: 404 }
@@ -46,7 +55,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await user.click(screen.getByRole("button", { name: "Create project" }))
   await screen.findByText("Private Node project created.")
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
-  await screen.findByText("Source candidate staged. Dependencies need review before execution.")
-  expect(screen.getByText(/Runtime: not provisioned/)).toBeTruthy()
+  await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
+  expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
+  expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
   expect(calls.mock.calls.some(call => String(call[0]).includes("/start"))).toBe(false)
 })
