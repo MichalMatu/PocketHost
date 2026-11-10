@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import userEvent from "@testing-library/user-event"
 import { ShizukuDiagnosticsPanel } from "@/app/shizuku/diagnostics-panel"
 
 afterEach(() => vi.unstubAllGlobals())
@@ -35,6 +36,9 @@ describe("Shizuku native diagnostics", () => {
     render(<ShizukuDiagnosticsPanel />)
     expect(await screen.findByText("2000")).toBeTruthy()
     expect(await screen.findByText(/3/)).toBeTruthy()
-    expect(await screen.findByText(/Shizuku Binder operation available/)).toBeTruthy()
+    expect(screen.getByText(/Native capabilities \(1\)/)).toBeTruthy()
+    await userEvent.setup().click(screen.getByText(/Native capabilities \(1\)/))
+    expect(screen.getByText(/Shizuku Binder operation available/)).toBeTruthy()
+    expect(screen.queryByText(sample.observedAt)).toBeNull()
   })
 })
