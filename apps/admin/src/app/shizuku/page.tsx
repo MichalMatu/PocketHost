@@ -1,6 +1,6 @@
 import * as React from "react"
 import {
-  Activity, AppWindow, Battery, Cpu, LockKeyhole, RefreshCw, Settings2,
+  AppWindow, Battery, Cpu, RefreshCw, Settings2,
   ShieldCheck, Smartphone, Terminal, Search, ExternalLink,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -16,19 +16,16 @@ import {
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
 } from "@/lib/shizuku-schema"
 
-type Section = "applications" | "processes" | "permissions" | "services" | "shell" | "power" | "diagnostics"
+type Section = "applications" | "processes" | "services" | "power" | "shell"
 type PackageFilter = "all" | "user" | "system"
 const PAGE_SIZE = 80
-const PERMISSION_APP_PAGE_SIZE = 20
 
 const sections = [
-  { id: "applications", label: "Applications", icon: AppWindow },
-  { id: "processes", label: "CPU & processes", icon: Cpu },
-  { id: "permissions", label: "Permissions", icon: LockKeyhole },
-  { id: "services", label: "Services & settings", icon: Settings2 },
-  { id: "shell", label: "Advanced shell", icon: Terminal },
-  { id: "power", label: "Power & hardware", icon: Battery },
-  { id: "diagnostics", label: "Diagnostics", icon: Activity },
+  { id: "applications", label: "Apps & permissions", icon: AppWindow },
+  { id: "processes", label: "Android processes", icon: Cpu },
+  { id: "services", label: "Android services", icon: Settings2 },
+  { id: "power", label: "Device", icon: Battery },
+  { id: "shell", label: "Android shell", icon: Terminal },
 ] as const
 
 async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
@@ -78,16 +75,14 @@ export default function ShizukuPage() {
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
   const [permissionSearch, setPermissionSearch] = React.useState("")
-  const [permissionAppSearch, setPermissionAppSearch] = React.useState("")
-  const [permissionPackageFilter, setPermissionPackageFilter] = React.useState<PackageFilter>("user")
-  const [permissionAppPage, setPermissionAppPage] = React.useState(0)
+  const [appView, setAppView] = React.useState<"details" | "permissions">("details")
+  const [diagnosticsOpen, setDiagnosticsOpen] = React.useState(false)
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
   const [selectedProcessPid, setSelectedProcessPid] = React.useState<number | null>(null)
   const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("rss")
   const [descending, setDescending] = React.useState(true)
   const [brightnessDraft, setBrightnessDraft] = React.useState("")
   const [timeoutDraft, setTimeoutDraft] = React.useState("")
-  const [cpuHistory, setCpuHistory] = React.useState<Array<{ time: string; value: number }>>([])
   const [servicePage, setServicePage] = React.useState(0)
   const [appPage, setAppPage] = React.useState(0)
   const [processPage, setProcessPage] = React.useState(0)
@@ -121,40 +116,6 @@ export default function ShizukuPage() {
   }
 
   React.useEffect(() => {
-    if (section !== "processes") return
-    const controller = new AbortController()
-    let busy = false
-    const poll = async () => {
-      if (busy || controller.signal.aborted) return
-      busy = true
-      try {
-        const statusSample = parseShizukuStatus(await readJson(
-          "/api/v1/shizuku/status", AbortSignal.any([controller.signal, AbortSignal.timeout(9000)],
-        )))
-        if (controller.signal.aborted) return
-        setStatus(statusSample)
-        if (statusSample.cpuPercent != null) setCpuHistory(current => {
-          if (current.some(point => point.time === statusSample.observedAt)) return current
-          return [...current, { time: statusSample.observedAt, value: statusSample.cpuPercent! }].slice(-40)
-        })
-        const systemSample = parseShizukuSystem(await readJson(
-          "/api/v1/shizuku/system", AbortSignal.any([controller.signal, AbortSignal.timeout(15000)],
-        )))
-        if (!controller.signal.aborted) {
-          setSystem(systemSample)
-          setSystemError(false)
-        }
-      } catch {
-        if (!controller.signal.aborted) setSystemError(true)
-      } finally {
-        busy = false
-      }
-    }
-    const interval = window.setInterval(() => { void poll() }, 15000)
-    return () => { controller.abort(); window.clearInterval(interval) }
-  }, [section])
-
-  React.useEffect(() => {
     const controller = new AbortController()
     const signal = controller.signal
     // CPU/session status is independent of potentially slow package and process scans.
@@ -165,10 +126,6 @@ export default function ShizukuPage() {
       .then(nativeStatus => {
         if (signal.aborted) return
         setStatus(nativeStatus)
-        if (nativeStatus.cpuPercent != null) setCpuHistory(current => {
-          if (current.some(point => point.time === nativeStatus.observedAt)) return current
-          return [...current, { time: nativeStatus.observedAt, value: nativeStatus.cpuPercent! }].slice(-40)
-        })
         if (!nativeStatus.connected || !nativeStatus.authorized) return
 
         setAppsLoading(true)
@@ -226,16 +183,6 @@ export default function ShizukuPage() {
   const visibleApps = shownApps.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE)
   const visibleProcesses = shownProcesses.slice(processPage * PAGE_SIZE, (processPage + 1) * PAGE_SIZE)
   const visibleServices = shownServices.slice(servicePage * PAGE_SIZE, (servicePage + 1) * PAGE_SIZE)
-  const permissionApps = (apps?.packages ?? []).filter(item =>
-    (permissionPackageFilter === "all" ||
-      (permissionPackageFilter === "system" ? item.system : !item.system)) &&
-    (item.packageName.toLowerCase().includes(permissionAppSearch.trim().toLowerCase()) ||
-      item.label.toLowerCase().includes(permissionAppSearch.trim().toLowerCase()))
-  )
-  const visiblePermissionApps = permissionApps.slice(
-    permissionAppPage * PERMISSION_APP_PAGE_SIZE,
-    (permissionAppPage + 1) * PERMISSION_APP_PAGE_SIZE,
-  )
   const visiblePermissions = (appDetail?.permissions ?? []).filter(permission =>
     permission.name.toLowerCase().includes(permissionSearch.trim().toLowerCase())
   )
@@ -245,8 +192,8 @@ export default function ShizukuPage() {
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="outline"><Smartphone className="size-3" /> Samsung Android</Badge>
-            <Badge variant="outline"><ShieldCheck className="size-3" /> {connected ? "Shizuku " + status.mode : "Not connected"}</Badge>
+            <Badge variant="outline"><Smartphone className="size-3" /> Android device</Badge>
+            <Badge variant="outline"><ShieldCheck className="size-3" /> {connected ? "Connected · " + status.mode.toUpperCase() + (status.uid == null ? "" : " · UID " + status.uid) : "Shizuku unavailable"}</Badge>
             <LastSample observedAt={status?.observedAt} />
           </div>
           <Button variant="outline" size="sm" disabled={loading}
@@ -272,24 +219,6 @@ export default function ShizukuPage() {
             }}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <Card><CardHeader>
-            <CardDescription>Connection</CardDescription>
-            <CardTitle>{loading ? "Checking…" : connected ? "Connected" : "Unavailable"}</CardTitle>
-          </CardHeader><CardContent className="text-muted-foreground text-xs">
-            {connected ? "Authorized native " + status.mode.toUpperCase() + " service" : "Open Companion and authorize Shizuku"}
-          </CardContent></Card>
-          <Card><CardHeader><CardDescription>Android CPU</CardDescription>
-            <CardTitle>{connected && status?.cpuPercent != null ? status.cpuPercent.toFixed(1) + "%" : "—"}</CardTitle>
-          </CardHeader><CardContent className="text-muted-foreground text-xs">Full-device observed utilization</CardContent></Card>
-          <Card><CardHeader><CardDescription>Visible processes</CardDescription>
-            <CardTitle>{connected ? unavailable(status?.visibleProcesses) : "—"}</CardTitle>
-          </CardHeader><CardContent className="text-muted-foreground text-xs">Android-wide process count</CardContent></Card>
-          <Card><CardHeader><CardDescription>Installed packages</CardDescription>
-            <CardTitle>{apps ? apps.packages.length + (apps.truncated ? "+" : "") : "—"}</CardTitle>
-          </CardHeader><CardContent className="text-muted-foreground text-xs">Companion inventory, maximum 1024 entries</CardContent></Card>
         </div>
 
         {!connected && !loading && (
@@ -332,8 +261,8 @@ export default function ShizukuPage() {
         <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section}>
         {section === "applications" && (
           <Card>
-            <CardHeader><CardTitle>Android applications</CardTitle>
-              <CardDescription>Search actual Android app names or package IDs. Select an app for version, SDK and permission details. Changes run only on the phone in Companion.</CardDescription>
+            <CardHeader><CardTitle>Android apps & permissions</CardTitle>
+              <CardDescription>Choose an app to inspect details, manage requested permissions or perform available Android actions.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap items-center gap-2">
@@ -354,7 +283,7 @@ export default function ShizukuPage() {
                     {visibleApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
-                      onClick={() => { void selectPackage(item.packageName) }}>
+                      onClick={() => { setAppView("details"); setPermissionSearch(""); void selectPackage(item.packageName) }}>
                       <span className="min-w-0 space-y-1">
                         <span className="block text-sm font-medium break-words">{item.label || item.packageName}</span>
                         <span className="block font-mono text-muted-foreground text-xs break-all">{item.packageName}</span>
@@ -386,6 +315,15 @@ export default function ShizukuPage() {
                             <AppWindow aria-hidden="true" className="size-8 text-muted-foreground" />}
                           <p className="font-medium break-words">{appDetail.label || appDetail.packageName}</p>
                         </div>
+                        <div className="flex flex-wrap gap-2" role="group" aria-label="Application detail view">
+                          <Button size="sm" variant={appView === "details" ? "default" : "outline"}
+                            aria-pressed={appView === "details"} onClick={() => setAppView("details")}>Details</Button>
+                          <Button size="sm" variant={appView === "permissions" ? "default" : "outline"}
+                            aria-pressed={appView === "permissions"} onClick={() => setAppView("permissions")}>
+                            Permissions ({appDetail.permissions.length})
+                          </Button>
+                        </div>
+                        {appView === "details" ? <>
                         <dl className="grid grid-cols-2 gap-2 text-sm">
                           <dt className="text-muted-foreground">Version</dt><dd className="break-all">{appDetail.versionName || "Unknown"}</dd>
                           <dt className="text-muted-foreground">Version code</dt><dd>{appDetail.versionCode}</dd>
@@ -399,8 +337,35 @@ export default function ShizukuPage() {
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
                           <span>{appDetail.permissions.length} requested permissions</span>
-                          <Button size="sm" variant="outline" onClick={() => setSection("permissions")}>Manage permissions</Button>
+                          <Button size="sm" variant="outline" onClick={() => setAppView("permissions")}>Manage permissions</Button>
                         </div>
+                        </> : <>
+                          <div className="flex flex-wrap gap-2 text-xs">
+                            <Badge variant="outline">{appDetail.permissions.length} requested</Badge>
+                            <Badge variant="outline">{appDetail.permissions.filter(permission => permission.granted).length} granted</Badge>
+                            <Badge variant="outline">{appDetail.permissions.filter(permission => !permission.granted).length} not granted</Badge>
+                          </div>
+                          <Input aria-label="Search Android permissions" value={permissionSearch}
+                            onChange={event => setPermissionSearch(event.target.value)}
+                            placeholder="Filter permission name…" />
+                          <div className="max-h-72 overflow-y-auto rounded-lg border">
+                            {visiblePermissions.map(permission => (
+                              <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-2 text-sm last:border-b-0">
+                                <span className="min-w-0 flex-1 break-all font-mono text-xs">{permission.name}</span>
+                                <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
+                                {selectedPackage && connected && <AndroidActionButton
+                                  action={permission.granted ? "revoke" : "grant"} target={selectedPackage}
+                                  value={permission.name} onSuccess={() => void selectPackage(selectedPackage)}>
+                                  {permission.granted ? "Revoke" : "Grant"}
+                                </AndroidActionButton>}
+                              </div>
+                            ))}
+                            {!visiblePermissions.length && <p className="p-3 text-muted-foreground text-sm">
+                              {appDetail.permissions.length ? "No permissions match this filter." : "Android reported no requested permissions."}
+                            </p>}
+                          </div>
+                          <p className="text-muted-foreground text-xs">Grant and Revoke are explicit Shizuku requests. Android may refuse individual changes.</p>
+                        </>}
                       </div>
                     )}
                     {selectedPackage && !detailLoading && !appDetail && (
