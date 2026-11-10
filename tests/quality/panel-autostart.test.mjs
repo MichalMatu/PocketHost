@@ -39,3 +39,48 @@ test('install is guarded, disabled before activation, and scoped to the two Pock
   assert.match(installer, /SVDIR="\$SVDIR" "\$PREFIX\/bin\/sv-enable" pockethost-panel-watch/);
   assert.doesNotMatch(installer, /rm -rf|pkill|killall|0\.0\.0\.0/);
 });
+
+
+test('guarded runit deployment accepts only the exact supervised Node/Vite panel identity', async () => {
+  const { assertPanelRunitIdentity } = await import('../../ops/termux/refresh-panel.mjs');
+  const root = '/data/data/com.termux/files/home/Projects/PocketHost-MVP';
+  const head = 'a'.repeat(40);
+  const pid = 22800;
+  const ticks = '12345678';
+  const cwd = root + '/apps/admin';
+  const manager = 'termux-runit/pockethost-panel';
+  const owner = { pid, startTicks: ticks, cwd, sourceSha: head, managedBy: manager, port: 8787 };
+  const gateway = {
+    owner: 'PocketHost', pid, startTicks: ticks, cwd, sourceSha: head,
+    managedBy: manager, adminPort: 18878, sitePort: 18879,
+  };
+  const argv = [
+    '/data/data/com.termux/files/usr/bin/node',
+    cwd + '/node_modules/vite/bin/vite.js',
+    '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+  ];
+  const e = { root, head, pid, ticks, cwd, owner, gateway, argv, servicePid: pid, processUid: 10520, expectedUid: 10520 };
+  assert.equal(assertPanelRunitIdentity(e), true);
+  for (const changed of [
+    { servicePid: 99 },
+    { ticks: '999' },
+    { cwd: '/tmp/foreign' },
+    { processUid: 0 },
+    { argv: ['/data/data/com.termux/files/usr/bin/npm', 'dev'] },
+    { owner: { ...owner, sourceSha: 'b'.repeat(40) } },
+    { gateway: { ...gateway, managedBy: 'manual' } },
+  ]) {
+    assert.throws(() => assertPanelRunitIdentity({ ...e, ...changed }));
+  }
+});
+
+test('panel refresh only signals its owned runit service and refuses foreign process adoption', () => {
+  const rollout = readFileSync(new URL('../../ops/termux/refresh-panel.mjs', import.meta.url), 'utf8');
+  assert.match(rollout, /inspect\(root, oldSha\)/);
+  assert.match(rollout, /supervise\/pid/);
+  assert.match(rollout, /\\['down', service\\]/);
+  assert.match(rollout, /\\['up', service\\]/);
+  assert.match(rollout, /rollback = 'PASS'/);
+  assert.match(rollout, /FETCH_HEAD/);
+  assert.doesNotMatch(rollout, /killall|pkill|SIGKILL|--force|0\.0\.0\.0/);
+});
