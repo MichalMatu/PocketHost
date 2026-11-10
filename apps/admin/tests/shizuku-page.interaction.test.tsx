@@ -232,7 +232,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
   it("protects PID 1 in the UI and shows real process RSS in MiB", async () => {
     const sampleSystem = { ...system, processes: [
       { ...system.processes[0], pid: 1, name: "init", user: "root", rssKb: 0 },
-      ...system.processes.slice(1),
+      system.processes[1],
     ] }
     mount(async url => url.endsWith("/status") ? status :
       url.endsWith("/apps") ? apps : sampleSystem)
