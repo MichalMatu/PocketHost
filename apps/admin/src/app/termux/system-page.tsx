@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Activity, Cpu, HardDrive, RefreshCw, ServerCog, Wifi } from "lucide-react"
+import { Activity, Battery, Clock3, Cpu, HardDrive, RefreshCw, ServerCog, Wifi } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -11,10 +11,10 @@ import { formatMemory } from "@/lib/format-memory"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
 import { parseInternetConnectivity, type InternetConnectivity } from "@/lib/internet-connectivity-schema"
-import { parseDashboardHistory, type DashboardHistoryPoint } from "@/lib/dashboard-history-schema"
+import { parseDashboardHistory, type DashboardHistoryEvent, type DashboardHistoryPoint } from "@/lib/dashboard-history-schema"
 
 const POLL_MS = 15_000
-const MAX_SAMPLES = 240 // bounded 1h browser view; 24h history is retained on the PocketHost host
+const MAX_SAMPLES = 1680 // 1,440 server points plus bounded 15-second in-tab readings
 
 type Sample = {
   observedAt: string
@@ -25,6 +25,13 @@ type Sample = {
   internetFailed: boolean | null
   bridgeMs: number | null
   bridgeOnline: boolean | null
+  batteryPercent?: number | null
+  batteryCharging?: boolean | null
+  batteryTempC?: number | null
+  dnsMs?: number | null
+  dnsFailed?: boolean | null
+  storageUsedPercent?: number | null
+  systemUptimeSeconds?: number | null
 }
 
 // Match the original ShadcnStore dashboard: theme-neutral primary, soft area fills.
@@ -41,8 +48,19 @@ const bridgeConfig = {
   bridgeMs: { label: "Bridge status API response", color: "var(--primary)" },
 } satisfies ChartConfig
 
+const powerConfig = {
+  batteryPercent: { label: "Battery", color: "var(--primary)" },
+  storageUsedPercent: { label: "Storage used", color: "var(--primary)" },
+} satisfies ChartConfig
+
 function clock(value: string | number) {
   return new Date(value).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
+}
+
+function uptime(seconds: number | null) {
+  if (seconds === null || !Number.isFinite(seconds)) return "Unavailable"
+  const hours = Math.floor(seconds / 3600)
+  return Math.floor(hours / 24) + "d " + (hours % 24) + "h"
 }
 
 async function getHost(signal: AbortSignal) {
@@ -85,6 +103,13 @@ function mergeHistory(previous: Sample[], stored: DashboardHistoryPoint[]): Samp
     cpu: item.cpu, ram: item.ram, internetMs: item.internetMs,
     internetFailed: item.internetFailed, bridgeMs: item.bridgeMs,
     bridgeOnline: item.bridgeOnline, apiMs: null,
+    batteryPercent: item.batteryPercent ?? null,
+    batteryCharging: item.batteryCharging ?? null,
+    batteryTempC: item.batteryTempC ?? null,
+    dnsMs: item.dnsMs ?? null,
+    dnsFailed: item.dnsFailed ?? null,
+    storageUsedPercent: item.storageUsedPercent ?? null,
+    systemUptimeSeconds: item.systemUptimeSeconds,
   })
   for (const item of previous) merged.set(item.observedAt, item)
   return [...merged.values()]
@@ -92,8 +117,8 @@ function mergeHistory(previous: Sample[], stored: DashboardHistoryPoint[]): Samp
     .slice(-MAX_SAMPLES)
 }
 
-async function getSavedHistory(signal: AbortSignal) {
-  const response = await fetch("/api/v1/dashboard/history?range=1h", {
+async function getSavedHistory(signal: AbortSignal, range: "1h" | "24h") {
+  const response = await fetch("/api/v1/dashboard/history?range=" + range, {
     credentials: "same-origin", cache: "no-store",
     signal: AbortSignal.any([signal, AbortSignal.timeout(4500)]),
   })
@@ -144,6 +169,8 @@ export default function SystemPage() {
   const [internet, setInternet] = React.useState<InternetConnectivity | null>(null)
   const [samples, setSamples] = React.useState<Sample[]>([])
   const [historyState, setHistoryState] = React.useState<"loading" | "ok" | "unavailable">("loading")
+  const [historyRange, setHistoryRange] = React.useState<"1h" | "24h">("1h")
+  const [recentEvents, setRecentEvents] = React.useState<DashboardHistoryEvent[]>([])
   const [loading, setLoading] = React.useState(true)
   const [sampledAt, setSampledAt] = React.useState<string | null>(null)
   const [generation, setGeneration] = React.useState(0)
@@ -182,13 +209,6 @@ export default function SystemPage() {
       busy = false
     }
 
-    void getSavedHistory(controller.signal).then(history => {
-      if (controller.signal.aborted) return
-      setHistoryState(history.state)
-      if (history.state === "ok") setSamples(previous => mergeHistory(previous, history.samples))
-    }).catch(() => {
-      if (!controller.signal.aborted) setHistoryState("unavailable")
-    })
     void poll()
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "hidden") void poll()
@@ -198,6 +218,33 @@ export default function SystemPage() {
       window.clearInterval(timer)
     }
   }, [generation])
+
+  React.useEffect(() => {
+    const controller = new AbortController()
+    void getSavedHistory(controller.signal, historyRange).then(history => {
+      if (controller.signal.aborted) return
+      setHistoryState(history.state)
+      if (history.state === "ok") {
+        const cutoff = Date.now() - (historyRange === "24h" ? 86400000 : 3600000)
+        setSamples(previous => mergeHistory(
+          previous.filter(item => Date.parse(item.observedAt) >= cutoff), history.samples))
+        setRecentEvents(history.events ?? [])
+      }
+    }).catch(() => {
+      if (!controller.signal.aborted) setHistoryState("unavailable")
+    })
+    return () => controller.abort()
+  }, [generation, historyRange])
+
+  const lastCollected = [...samples].reverse().find(sample =>
+    sample.batteryPercent !== undefined || sample.dnsFailed !== undefined) ?? null
+  const collectedFresh = lastCollected !== null &&
+    Date.now() - Date.parse(lastCollected.observedAt) <= 150000
+  const batteryPercent = collectedFresh ? lastCollected?.batteryPercent ?? null : null
+  const batteryCharging = collectedFresh ? lastCollected?.batteryCharging ?? null : null
+  const batteryTempC = collectedFresh ? lastCollected?.batteryTempC ?? null : null
+  const dnsMs = collectedFresh ? lastCollected?.dnsMs ?? null : null
+  const dnsFailed = collectedFresh ? lastCollected?.dnsFailed ?? null : null
 
   const cpu = freshCpu(bridge)
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
@@ -237,11 +284,48 @@ export default function SystemPage() {
             icon={ServerCog} loading={active} detail={serviceUnknown ? "Some service states unknown · read-only" : "Running external services · read-only"} />
         </div>
 
+        <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
+          <Card className="min-h-28">
+            <CardHeader className="gap-1">
+              <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API</CardDescription>
+              <CardTitle className="text-lg tabular-nums">{batteryPercent === null ? "Unavailable" : batteryPercent + "%"}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground min-h-5 text-xs">
+              {batteryCharging === true ? "Charging" : batteryCharging === false ? "Not charging" : "Charge state unavailable"}
+              {" · "}{batteryTempC === null ? "Temperature unavailable" : batteryTempC.toFixed(1) + "°C"}
+            </CardContent>
+          </Card>
+          <Card className="min-h-28">
+            <CardHeader className="gap-1">
+              <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
+              <CardTitle className="text-lg tabular-nums">{uptime(host?.runtime.systemUptimeSeconds ?? null)}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground min-h-5 text-xs">Android system uptime · Termux</CardContent>
+          </Card>
+          <Card className="min-h-28">
+            <CardHeader className="gap-1">
+              <CardDescription className="flex items-center gap-2"><Wifi className="size-4" />DNS · Termux</CardDescription>
+              <CardTitle className="text-lg tabular-nums">{dnsMs === null ? "Unavailable" : dnsMs.toFixed(1) + " ms"}</CardTitle>
+            </CardHeader>
+            <CardContent className="text-muted-foreground min-h-5 text-xs">
+              {dnsFailed === true ? "Fixed DNS lookup failed" : dnsFailed === false ? "Fixed DNS lookup successful" : "No recent DNS sample"}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="flex min-h-8 items-center justify-between gap-3">
+          <span className="text-muted-foreground text-xs">Recorded history · local on-device buffer</span>
+          <div className="flex gap-1" role="group" aria-label="History window">
+            <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("1h")}>1 hour</Button>
+            <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("24h")}>24 hours</Button>
+          </div>
+        </div>
+
         <div className="grid min-w-0 gap-4 xl:grid-cols-2">
           <Card className="min-w-0 xl:col-span-2">
             <CardHeader>
               <CardTitle>Live system resources</CardTitle>
-              <CardDescription>Real Android Bridge CPU and Termux RAM usage (%) · sampled every 15 seconds while this tab is open</CardDescription>
+              <CardDescription>Real Android Bridge CPU and system RAM · server sampling every 60 seconds, with additional in-tab readings</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[260px] min-w-0 w-full" data-testid="resources-chart-slot">
@@ -275,7 +359,7 @@ export default function SystemPage() {
                 <span>CPU: {cpu === null ? "Unavailable" : cpu.toFixed(1) + "%"} · Android Bridge</span>
                 <span>RAM: {ramUsedPercent(host) === null ? "Unavailable" : ramUsedPercent(host) + "%"} · Termux / system-wide</span>
                 <span>{historyState === "ok"
-          ? "Server history: up to 24 h · showing last 1 h, including while this tab was closed."
+          ? "Server history: up to 24 h · showing " + (historyRange === "24h" ? "24 h" : "last 1 h") + ", including while this tab was closed."
           : historyState === "unavailable"
             ? "Server history unavailable · showing only live tab measurements."
             : "Loading server history…"}
@@ -352,6 +436,70 @@ export default function SystemPage() {
               <p className="text-muted-foreground min-h-8 pt-1 text-xs">
                 Full-device RX/TX requires verified Android NetworkStats permission and native Bridge integration.
               </p>
+            </CardContent>
+          </Card>
+                  <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Battery className="size-4" />Power & storage</CardTitle>
+              <CardDescription>Actual Termux:API battery and Termux-home storage used · only when measured</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative h-[190px] min-w-0 w-full" data-testid="power-chart-slot">
+                <ChartContainer config={powerConfig} className="aspect-auto h-full min-w-0 w-full">
+                  <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
+                    <defs>
+                      <linearGradient id="pockethost-power-fill" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="var(--color-batteryPercent)" stopOpacity={0.14} />
+                        <stop offset="95%" stopColor="var(--color-batteryPercent)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid vertical={false} />
+                    <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
+                    <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
+                    <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <Area dataKey="batteryPercent" type="monotone" stroke="var(--color-batteryPercent)"
+                      fill="url(#pockethost-power-fill)" strokeWidth={1.5} connectNulls={false}
+                      dot={false} activeDot={false} isAnimationActive={false} />
+                    <Area dataKey="storageUsedPercent" type="monotone" stroke="var(--color-storageUsedPercent)"
+                      strokeOpacity={0.45} fill="transparent" strokeWidth={1.25} connectNulls={false}
+                      dot={false} activeDot={false} isAnimationActive={false} />
+                  </AreaChart>
+                </ChartContainer>
+                {!samples.some(sample => sample.batteryPercent != null || sample.storageUsedPercent != null) &&
+                  <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">
+                    Waiting for permitted power or storage readings.
+                  </p>}
+              </div>
+              <p className="text-muted-foreground min-h-10 pt-2 text-xs">
+                Battery: {batteryPercent === null ? "Unavailable" : batteryPercent + "%"}
+                {" · "}Storage used: {host?.runtime.storage && host.runtime.storage.totalMiB > 0
+                  ? (100 * (host.runtime.storage.totalMiB - host.runtime.storage.availableMiB) / host.runtime.storage.totalMiB).toFixed(1) + "%"
+                  : "Unavailable"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Recent system events</CardTitle>
+              <CardDescription>Only verified state transitions · saved locally for up to 24 h</CardDescription>
+            </CardHeader>
+            <CardContent className="min-h-[240px]">
+              {recentEvents.length ? (
+                <ul className="space-y-2 text-sm" aria-label="Recent system events">
+                  {[...recentEvents].reverse().slice(0, 7).map(event => (
+                    <li key={event.observedAt + event.code + event.service}
+                      className="flex items-center justify-between gap-4 border-b border-border/50 pb-2">
+                      <span>{event.code.replaceAll("-", " ")}{event.service ? " · " + event.service : ""}</span>
+                      <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{clock(event.observedAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  {historyState === "ok" ? "No recorded state changes in this window." : "Event history unavailable."}
+                </p>
+              )}
             </CardContent>
           </Card>
         </div>
