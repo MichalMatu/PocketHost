@@ -11,9 +11,12 @@ import { probeInternetConnectivity } from './internet-connectivity.ts';
 
 export const DASHBOARD_INTERVAL_MS = 60_000;
 export const DASHBOARD_MAX_POINTS = 1440;
+export const DASHBOARD_HOURLY_POINTS = 168;
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_FUTURE_MS = 60_000;
 const WINDOW_MS = 24 * 60 * 60 * 1000;
+const ARCHIVE_MS = 7 * WINDOW_MS;
+const HOUR_MS = 60 * 60 * 1000;
 const FIELDS = ['observedAt', 'cpu', 'ram', 'internetMs', 'internetFailed', 'bridgeMs',
   'bridgeOnline', 'servicesRunning', 'servicesTotal', 'storageAvailableMiB', 'systemUptimeSeconds'] as const;
 const EXTRA_FIELDS = ['batteryPercent', 'batteryCharging', 'batteryTempC', 'dnsMs', 'dnsFailed',
@@ -24,11 +27,17 @@ type ServiceState = 'running' | 'stopped' | 'unknown';
 type ServiceStates = Partial<Record<ServiceId, ServiceState>>;
 export type DashboardEventCode =
   'service-unavailable' | 'service-restored' | 'internet-down' | 'internet-restored' |
-  'dns-down' | 'dns-restored' | 'bridge-down' | 'bridge-restored' | 'system-rebooted';
+  'dns-down' | 'dns-restored' | 'bridge-down' | 'bridge-restored' | 'system-rebooted' |
+  'battery-low' | 'battery-recovered' | 'storage-low' | 'storage-recovered' |
+  'collector-started' | 'owned-release-published' | 'owned-release-rolled-back' |
+  'owned-backup-created' | 'owned-backup-restored' | 'owned-service-restarted';
 export type DashboardEvent = { observedAt: string; code: DashboardEventCode; service: ServiceId | null };
 const EVENT_CODES = new Set<DashboardEventCode>([
   'service-unavailable','service-restored','internet-down','internet-restored',
   'dns-down','dns-restored','bridge-down','bridge-restored','system-rebooted',
+  'battery-low','battery-recovered','storage-low','storage-recovered',
+  'collector-started','owned-release-published','owned-release-rolled-back',
+  'owned-backup-created','owned-backup-restored','owned-service-restarted',
 ]);
 
 export type DashboardTelemetryPoint = {
@@ -148,6 +157,23 @@ function deriveEvents(previous: DashboardTelemetryPoint, current: DashboardTelem
     if (before === false && after === true) events.push(make(down));
     if (before === true && after === false) events.push(make(up));
   }
+  // Trigger only on real transitions, with hysteresis against threshold chatter.
+  const batteryWasLow = previous.batteryPercent != null && previous.batteryPercent <= 20 &&
+    previous.batteryCharging === false;
+  const batteryNowLow = current.batteryPercent != null && current.batteryPercent <= 20 &&
+    current.batteryCharging === false;
+  if (!batteryWasLow && batteryNowLow && previous.batteryPercent != null &&
+    (previous.batteryPercent > 20 || previous.batteryCharging === true))
+    events.push(make('battery-low'));
+  if (batteryWasLow && (current.batteryCharging === true ||
+    (current.batteryPercent != null && current.batteryPercent >= 25)))
+    events.push(make('battery-recovered'));
+  if (previous.storageAvailableMiB != null && current.storageAvailableMiB != null) {
+    if (previous.storageAvailableMiB > 512 && current.storageAvailableMiB <= 512)
+      events.push(make('storage-low'));
+    if (previous.storageAvailableMiB <= 512 && current.storageAvailableMiB >= 768)
+      events.push(make('storage-recovered'));
+  }
   if (previous.bridgeOnline === true && current.bridgeOnline === false) events.push(make('bridge-down'));
   if (previous.bridgeOnline === false && current.bridgeOnline === true) events.push(make('bridge-restored'));
   if (previous.systemUptimeSeconds !== null && current.systemUptimeSeconds !== null &&
@@ -173,13 +199,13 @@ function privateFile(file: string): boolean {
   }
 }
 
-export function parseDashboardHistoryRoute(url: string): '1h' | '24h' | null {
+export function parseDashboardHistoryRoute(url: string): '1h' | '24h' | '7d' | null {
   try {
     const target = new URL(url, 'http://127.0.0.1');
     if (target.pathname !== '/' || target.searchParams.size > 1 ||
       (target.searchParams.size === 1 && !target.searchParams.has('range'))) return null;
     const range = target.searchParams.get('range') ?? '1h';
-    return range === '1h' || range === '24h' ? range : null;
+    return range === '1h' || range === '24h' || range === '7d' ? range : null;
   } catch {
     return null;
   }
@@ -188,6 +214,7 @@ export function parseDashboardHistoryRoute(url: string): '1h' | '24h' | null {
 /** Host-owned bounded history. Invalid on-disk state is never overwritten automatically. */
 export class DashboardHistoryStore {
   private points: DashboardTelemetryPoint[] = [];
+  private archive: DashboardTelemetryPoint[] = [];
   private events: DashboardEvent[] = [];
   private lastSavedAt = 0;
   private readState: 'ok' | 'unavailable' = 'ok';
@@ -205,7 +232,7 @@ export class DashboardHistoryStore {
       if (privateFile(file)) {
         const value: unknown = JSON.parse(readFileSync(file, 'utf8'));
         if (!value || typeof value !== 'object' || Array.isArray(value) ||
-          !['points|version', 'events|points|version'].includes(Object.keys(value).sort().join('|')) ||
+          !['points|version', 'events|points|version', 'archive|events|points|version'].includes(Object.keys(value).sort().join('|')) ||
           (value as { version?: unknown }).version !== 1 ||
           !Array.isArray((value as { points?: unknown }).points) ||
           (value as { points: unknown[] }).points.length > DASHBOARD_MAX_POINTS) {
@@ -217,11 +244,19 @@ export class DashboardHistoryStore {
         this.points = (loaded as DashboardTelemetryPoint[]).filter(p =>
           Date.parse(p.observedAt) >= this.now() - WINDOW_MS,
         );
+        const archive = (value as { archive?: unknown }).archive ?? [];
+        if (!Array.isArray(archive) || archive.length > DASHBOARD_HOURLY_POINTS ||
+          !archive.every(a => validateDashboardPoint(a, this.now(), true))) {
+          throw new Error('Invalid hourly history');
+        }
+        this.archive = (archive as DashboardTelemetryPoint[]).filter(p =>
+          Date.parse(p.observedAt) >= this.now() - ARCHIVE_MS &&
+          Date.parse(p.observedAt) < this.now() - WINDOW_MS);
         const events = (value as { events?: unknown }).events ?? [];
-        if (!Array.isArray(events) || events.length > 80 ||
+        if (!Array.isArray(events) || events.length > 280 ||
           !events.every(e => validEvent(e, this.now(), true))) throw new Error('Invalid history events');
         this.events = (events as DashboardEvent[]).filter(e =>
-          Date.parse(e.observedAt) >= this.now() - WINDOW_MS);
+          Date.parse(e.observedAt) >= this.now() - ARCHIVE_MS);
       }
     } catch {
       this.readState = 'unavailable';
@@ -237,13 +272,37 @@ export class DashboardHistoryStore {
     const previous = this.points.at(-1);
     if (previous) this.events.push(...deriveEvents(previous, point));
     this.events = this.events.filter(item =>
-      Date.parse(item.observedAt) >= this.now() - WINDOW_MS).slice(-60);
-    this.points = [...this.points, point]
-      .filter(item => Date.parse(item.observedAt) >= this.now() - WINDOW_MS)
+      Date.parse(item.observedAt) >= this.now() - ARCHIVE_MS).slice(-280);
+    const combined = [...this.points, point];
+    // Archive one real hourly checkpoint when full-resolution data ages out.
+    // Never fabricate points for a sleep gap or invent an average.
+    for (const item of combined.filter(p =>
+      Date.parse(p.observedAt) < this.now() - WINDOW_MS)) {
+      const hour = Math.floor(Date.parse(item.observedAt) / HOUR_MS);
+      const last = this.archive.at(-1);
+      if (last && Math.floor(Date.parse(last.observedAt) / HOUR_MS) === hour)
+        this.archive[this.archive.length - 1] = item;
+      else this.archive.push(item);
+    }
+    this.archive = this.archive.filter(item => Date.parse(item.observedAt) >= this.now() - ARCHIVE_MS)
+      .slice(-DASHBOARD_HOURLY_POINTS);
+    this.points = combined.filter(item => Date.parse(item.observedAt) >= this.now() - WINDOW_MS)
       .slice(-DASHBOARD_MAX_POINTS);
     if (this.lastSavedAt === 0 || this.now() - this.lastSavedAt >= 5 * DASHBOARD_INTERVAL_MS)
       this.flush();
     return true;
+  }
+
+  /** Discrete, bounded event after successful PocketHost-owned operations. */
+  recordEvent(code: DashboardEventCode): boolean {
+    if (this.readState !== 'ok' || !EVENT_CODES.has(code) || code.startsWith('service-')) return false;
+    const event: DashboardEvent = { observedAt: new Date(this.now()).toISOString(), code, service: null };
+    if (!validEvent(event, this.now())) return false;
+    this.events.push(event);
+    this.events = this.events.filter(item => Date.parse(item.observedAt) >= this.now() - ARCHIVE_MS)
+      .slice(-280);
+    this.flush();
+    return this.readState === 'ok';
   }
 
   flush(): void {
@@ -253,7 +312,7 @@ export class DashboardHistoryStore {
       privateParent(this.file);
       privateFile(this.file);
       temporary = path.join(path.dirname(this.file), '.dashboard-history-' + randomUUID());
-      const content = JSON.stringify({ version: 1, points: this.points, events: this.events }) + '\n';
+      const content = JSON.stringify({ version: 1, points: this.points, archive: this.archive, events: this.events }) + '\n';
       if (Buffer.byteLength(content) > MAX_FILE_BYTES) throw new Error('Dashboard history cap exceeded');
       writeFileSync(temporary, content, { encoding: 'utf8', flag: 'wx', mode: 0o600 });
       renameSync(temporary, this.file);
@@ -266,12 +325,14 @@ export class DashboardHistoryStore {
     }
   }
 
-  history(range: '1h' | '24h' = '1h') {
-    const since = this.now() - (range === '24h' ? WINDOW_MS : 60 * 60 * 1000);
+  history(range: '1h' | '24h' | '7d' = '1h') {
+    const since = this.now() - (range === '7d' ? ARCHIVE_MS :
+      range === '24h' ? WINDOW_MS : 60 * 60 * 1000);
     return {
       version: 1 as const, source: 'pockethost-collector' as const,
-      state: this.readState, intervalSeconds: 60 as const, retentionHours: 24 as const,
-      samples: this.points.filter(p => Date.parse(p.observedAt) >= since).map(p => ({ ...p })),
+      state: this.readState, intervalSeconds: 60 as const, retentionHours: 168 as const,
+      samples: [...(range === '7d' ? this.archive : []), ...this.points]
+        .filter(p => Date.parse(p.observedAt) >= since).map(p => ({ ...p })),
       events: this.events.filter(e => Date.parse(e.observedAt) >= since).map(e => ({ ...e })),
     };
   }
@@ -394,6 +455,18 @@ export async function observeDashboardTelemetry(
 }
 
 /** Reuse the already runit-owned DEV panel; no new service or process. */
+// The event sink is attached only by the existing owned Vite panel process.
+let ownedEventStore: DashboardHistoryStore | null = null;
+export type OwnedDashboardEventCode = Extract<DashboardEventCode,
+  'owned-release-published' | 'owned-release-rolled-back' |
+  'owned-backup-created' | 'owned-backup-restored' | 'owned-service-restarted'>;
+export function attachDashboardOwnedEvents(store: DashboardHistoryStore | null): void {
+  ownedEventStore = store;
+}
+export function reportDashboardOwnedEvent(code: OwnedDashboardEventCode): void {
+  ownedEventStore?.recordEvent(code);
+}
+
 export class DashboardTelemetryRecorder {
   readonly store: DashboardHistoryStore;
   private timer: ReturnType<typeof setInterval> | null = null;
@@ -409,6 +482,7 @@ export class DashboardTelemetryRecorder {
   }
   start(): void {
     if (this.timer) return;
+    this.store.recordEvent('collector-started');
     void this.sample();
     this.timer = setInterval(() => { void this.sample(); }, DASHBOARD_INTERVAL_MS);
     this.timer.unref?.();
