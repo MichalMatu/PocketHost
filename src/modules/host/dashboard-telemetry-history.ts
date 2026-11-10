@@ -90,11 +90,15 @@ export class DashboardHistoryStore {
   private points: DashboardTelemetryPoint[] = [];
   private lastSavedAt = 0;
   private readState: 'ok' | 'unavailable' = 'ok';
+  private readonly file: string;
+  private readonly now: () => number;
 
   constructor(
-    private readonly file = path.join(os.homedir(), '.local/state/pockethost/dashboard-telemetry-v1.json'),
-    private readonly now: () => number = Date.now,
+    file = path.join(os.homedir(), '.local/state/pockethost/dashboard-telemetry-v1.json'),
+    now: () => number = Date.now,
   ) {
+    this.file = file;
+    this.now = now;
     try {
       privateParent(file);
       if (privateFile(file)) {
