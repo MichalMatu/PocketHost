@@ -24,6 +24,7 @@ type RuntimeState = {
   lastGoodRelease: string | null
   previousGoodRelease: string | null
   history: { at: string; action: string; release: string }[]
+  healthDecision?: { action: string; reason: string; nextEligibleAtMs: number | null }
 }
 type RuntimePlan = {
   release: string | null
@@ -260,6 +261,9 @@ export default function ProjectsPage() {
                 Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
               </p>}
               <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Previous good: {runtime?.previousGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
+              <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
+                No automatic restart is authorized.
+              </p>
               {runtime?.history?.length ? <div className="space-y-1 text-xs">
                 {runtime.history.slice(-8).reverse().map((event, i) =>
                   <p key={event.at + i}>{event.at} · {event.action} · {event.release}</p>)}

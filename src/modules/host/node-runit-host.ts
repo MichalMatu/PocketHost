@@ -22,6 +22,7 @@ import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import { reviewNodeToolchain, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
+import { evaluateHealthPolicy, type HealthDecision } from '../../shared/hosting-health-policy.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const FIRST_PORT = 19300;
@@ -344,22 +345,46 @@ export class NodeRunitHost {
   status(id: string): { state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
     port: number | null; activeRelease: string | null; lastGoodRelease: string | null;
     previousGoodRelease: string | null;
-    desired: 'stopped' | 'running'; history: RuntimeRecord['history'] } {
+    desired: 'stopped' | 'running'; history: RuntimeRecord['history'];
+    healthDecision: HealthDecision } {
     const state = this.record(id);
     if (!state) return { state: 'not-provisioned', port: null,
       activeRelease: null, lastGoodRelease: null, previousGoodRelease: null,
-      desired: 'stopped', history: [] };
+      desired: 'stopped', history: [],
+      healthDecision: { action: 'none', reason: 'not-provisioned', nextEligibleAtMs: null } };
     const current = state.activeRelease
       ? this.observe(id, state.activeRelease)
       : this.unitState(id) === 'down' ? 'down' : 'unknown';
     const matches = current !== 'down' && current !== 'unknown' &&
       state.process?.pid === current.pid && state.process.ticks === current.ticks;
+    const observed = current === 'down' ? 'stopped' : matches ? 'running' : 'unknown';
+    const nowMs = Date.now();
+    let attempts = 0;
+    for (const event of [...state.history].reverse()) {
+      if (event.action !== 'failed') break;
+      attempts++;
+    }
+    const lastFailure = [...state.history].reverse().find((event) => event.action === 'failed');
+    const healthDecision = evaluateHealthPolicy(
+      { readinessTimeoutMs: 10000, cooldownMs: 30000, maxAttempts: 3 },
+      {
+        desired: state.desired,
+        observed,
+        ready: null, // PID ownership is not an HTTP readiness signal.
+        requestedAtMs: null,
+        lastAttemptAtMs: lastFailure ? Math.min(nowMs, Date.parse(lastFailure.at)) : null,
+        attempts,
+        nowMs,
+        owned: true, // The exact runit registry/marker was re-attested by record().
+        manuallyDisabled: state.desired === 'stopped',
+      },
+    );
     return {
       state: current === 'down' ? 'stopped' : matches ? 'running' : 'unknown',
       port: state.port, activeRelease: state.activeRelease,
       lastGoodRelease: state.lastGoodRelease,
       previousGoodRelease: state.previousGoodRelease ?? null, desired: state.desired,
-      history: state.history,
+      history: state.history, healthDecision,
     };
   }
   /** New runit directories are discovered asynchronously by the installed service-daemon. */

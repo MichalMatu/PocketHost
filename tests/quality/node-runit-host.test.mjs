@@ -35,6 +35,8 @@ test('M3 source validation and runtime inspection remain inert before explicit a
   const { projects, project, host, serviceRoot } = fixture(t);
   const initial = host.status(project.id);
   assert.equal(initial.state, 'not-provisioned');
+  assert.equal(initial.healthDecision.action, 'none');
+  assert.equal(initial.healthDecision.reason, 'not-provisioned');
   assert.equal(host.preview(project.id).reason, 'stage-source-first');
   const staged = projects.stage(project.id, source).project;
   assert.equal(projects.release(project.id, staged.candidateRelease).plan.dependencyCount, 0);
