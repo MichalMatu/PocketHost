@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Activity, Info, RefreshCw, ShieldCheck } from "lucide-react"
+import { Activity, ChevronDown, ChevronRight, Info, RefreshCw, ShieldCheck } from "lucide-react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -85,7 +85,7 @@ function DiagnosticSource({ name, scope, state, observedAt }: {
 function PendingPanels() {
   return (
     <div className="grid gap-4 xl:grid-cols-2" aria-busy="true">
-      {["Process diagnostics", "Telemetry sources", "Diagnostic events"].map(title => (
+      {["Process diagnostics", "Telemetry sources"].map(title => (
         <Card key={title}>
           <CardHeader><CardTitle>{title}</CardTitle></CardHeader>
           <CardContent className="space-y-3" aria-label="Loading">
@@ -111,7 +111,8 @@ export default function ObservabilityPage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const [query, setQuery] = React.useState("")
-  const [order, setOrder] = React.useState<ProcessOrder>("cpu")
+  const [order, setOrder] = React.useState<ProcessOrder>("ram")
+  const [expandedProcess, setExpandedProcess] = React.useState<string | null>(null)
 
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setLoading(true)
@@ -146,6 +147,7 @@ export default function ObservabilityPage() {
   const filteredProcesses = sortProcesses(processList.filter(process => (
     String(process.pid).includes(query.trim()) ||
     String(process.ppid).includes(query.trim()) ||
+    (process.name ?? "").toLowerCase().includes(query.trim().toLowerCase()) ||
     process.ownership.includes(query.trim().toLowerCase())
   )), order)
   const sampleAge = snapshot ? Date.now() - Date.parse(snapshot.observedAt) : null
@@ -189,7 +191,7 @@ export default function ObservabilityPage() {
                   <span>{snapshot.processes.truncated ? "Inventory truncated at 96 entries" : "Partial Android process visibility"}</span>
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <Input aria-label="Filter processes" placeholder="Filter PID, PPID or identity…" value={query} onChange={event => setQuery(event.target.value)} className="max-w-64" />
+                  <Input aria-label="Filter processes" placeholder="Filter name, PID or identity…" value={query} onChange={event => setQuery(event.target.value)} className="max-w-64" />
                   <div role="group" aria-label="Process sort" className="flex flex-wrap gap-1">
                     <Button size="sm" variant={order === "cpu" ? "secondary" : "outline"} aria-pressed={order === "cpu"} onClick={() => setOrder("cpu")}>CPU ticks</Button>
                     <Button size="sm" variant={order === "ram" ? "secondary" : "outline"} aria-pressed={order === "ram"} onClick={() => setOrder("ram")}>Process RAM</Button>
@@ -197,27 +199,48 @@ export default function ObservabilityPage() {
                   </div>
                 </div>
                 {processesOk && processList.length > 0 ? (
-                  <div className="max-h-[440px] overflow-auto rounded-md border">
+                  <div className="max-h-[320px] overflow-auto rounded-md border">
                     <table className="w-full min-w-[640px] text-left text-xs" aria-label="Termux-visible process details">
-                      <thead className="sticky top-0 bg-background text-muted-foreground">
+                      <thead className="sticky top-0 z-10 bg-background text-muted-foreground">
                         <tr className="border-b">
-                          <th scope="col" className="p-3">PID / PPID</th>
-                          <th scope="col" className="p-3 text-right">CPU ticks (total)</th>
+                          <th scope="col" className="p-3">Process</th>
+                          <th scope="col" className="p-3">PID</th>
                           <th scope="col" className="p-3 text-right">Resident RAM</th>
                           <th scope="col" className="p-3">Identity</th>
-                          <th scope="col" className="p-3">Start ticks</th>
+                          <th scope="col" className="p-3 text-right">Details</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredProcesses.map(process => (
-                          <tr key={process.pid + ":" + process.startTicks} className="border-b border-border/50 last:border-b-0">
-                            <td className="p-3 tabular-nums">{process.pid} / {process.ppid}</td>
-                            <td className="p-3 text-right tabular-nums">{process.cpuTicks.toLocaleString()}</td>
-                            <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : process.rssMiB + " MiB"}</td>
-                            <td className="p-3">{process.ownership}</td>
-                            <td className="p-3 tabular-nums">{process.startTicks}</td>
-                          </tr>
-                        ))}
+                        {filteredProcesses.map(process => {
+                          const identity = process.pid + ":" + process.startTicks
+                          const expanded = expandedProcess === identity
+                          return <React.Fragment key={identity}>
+                            <tr className="border-b border-border/50">
+                              <td className="p-3 font-medium">{process.name ?? "Unknown"}</td>
+                              <td className="p-3 tabular-nums">{process.pid}</td>
+                              <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : process.rssMiB + " MiB"}</td>
+                              <td className="p-3">{process.ownership}</td>
+                              <td className="p-3 text-right">
+                                <Button size="sm" variant="ghost" aria-label={`Process details for PID ${process.pid}`}
+                                  aria-expanded={expanded} onClick={() => setExpandedProcess(expanded ? null : identity)}>
+                                  {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
+                                  {expanded ? "Hide" : "Details"}
+                                </Button>
+                              </td>
+                            </tr>
+                            {expanded && <tr className="border-b border-border/50 bg-muted/30">
+                              <td colSpan={5} className="p-3">
+                                <dl className="grid gap-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                                  <div><dt className="text-muted-foreground">Parent PID</dt><dd className="font-mono tabular-nums">{process.ppid}</dd></div>
+                                  <div><dt className="text-muted-foreground">CPU ticks (lifetime total)</dt><dd className="font-mono tabular-nums">{process.cpuTicks.toLocaleString()}</dd></div>
+                                  <div><dt className="text-muted-foreground">Start ticks</dt><dd className="font-mono tabular-nums">{process.startTicks}</dd></div>
+                                  <div><dt className="text-muted-foreground">Name source</dt><dd>{process.name ? "/proc/PID/status" : "Unavailable"}</dd></div>
+                                </dl>
+                                <p className="mt-3 text-muted-foreground">Cumulative ticks are not current CPU %. Identity is observational and never grants control.</p>
+                              </td>
+                            </tr>}
+                          </React.Fragment>
+                        })}
                       </tbody>
                     </table>
                     {filteredProcesses.length === 0 && <p className="p-3 text-sm text-muted-foreground">No processes match this filter.</p>}
@@ -231,7 +254,7 @@ export default function ObservabilityPage() {
               </CardContent>
             </Card>
 
-            <Card className="min-w-0">
+            <Card className={snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length ? "min-w-0" : "min-w-0 xl:col-span-2"}>
               <CardHeader>
                 <CardTitle>Telemetry sources</CardTitle>
                 <CardDescription>Termux access states only · current values and trends remain on Dashboard</CardDescription>
@@ -247,12 +270,20 @@ export default function ObservabilityPage() {
                   state={snapshot.processes.state} observedAt={snapshot.processes.observedAt} />
                 <DiagnosticSource name="Package inventory probe" scope="Metadata status only; manage in Packages & Software"
                   state={snapshot.packages.state} observedAt={snapshot.packages.observedAt} />
-                <DiagnosticSource name="Diagnostic event feed" scope="Permitted structured events, no foreign logs"
-                  state={snapshot.diagnostics.state} observedAt={snapshot.observedAt} />
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border/50 pt-3 text-sm">
+                  <span className="text-muted-foreground">
+                    {snapshot.diagnostics.state !== "ok"
+                      ? "Host diagnostic event stream is not connected yet."
+                      : snapshot.diagnostics.events.length === 0
+                        ? "No structured diagnostic events in this observation."
+                        : snapshot.diagnostics.events.length + " structured diagnostic events available."}
+                  </span>
+                  <Link to="/runtime-logs" className="font-medium underline underline-offset-4">Logs & Diagnostics</Link>
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="min-w-0">
+            {snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length > 0 && <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Diagnostic events</CardTitle>
                 <CardDescription>Structured runtime observations · not the Dashboard health timeline</CardDescription>
@@ -271,7 +302,7 @@ export default function ObservabilityPage() {
                   </ul>
                 ) : <p className="text-muted-foreground text-sm">No permitted diagnostic events in this snapshot.</p>}
               </CardContent>
-            </Card>
+            </Card>}
           </div>
         )}
         <p className="text-muted-foreground text-xs">
