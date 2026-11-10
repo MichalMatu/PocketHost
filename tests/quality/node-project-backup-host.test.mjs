@@ -94,7 +94,7 @@ test('M2 restored Node scope refuses symlink insertion instead of importing exte
   const { root, state, host, projects } = setup(t);
   const project = projects.create('Restic tamper');
   const snapshot = 'd'.repeat(64);
-  const run = async (_binary, args, _opts) => {
+  const run = async (_binary, args) => {
     if (args.includes('init')) {
       mkdirSync(path.join(state, 'repo'), { recursive: true, mode: 0o700 });
       writeFileSync(path.join(state, 'repo', 'config'), '{}', { mode: 0o600 });
