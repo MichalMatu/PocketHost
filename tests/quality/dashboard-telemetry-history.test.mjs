@@ -5,6 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   DASHBOARD_MAX_POINTS, DashboardHistoryStore, validateDashboardPoint, observeDashboardTelemetry,
+  parseDashboardHistoryRoute,
 } from '../../src/modules/host/dashboard-telemetry-history.ts';
 
 const initial = Date.parse('2026-11-10T12:00:00.000Z');
@@ -105,4 +106,27 @@ test('native failures remain null; no autonomous privilege or foreign-service ac
   assert.equal(result.servicesRunning, 1);
   assert.equal(result.servicesTotal, 2);
   assert.equal(validateDashboardPoint(result, initial), true);
+});
+
+test('bounded history endpoint route has no arbitrary targets, methods, or extra parameters', () => {
+  assert.equal(parseDashboardHistoryRoute('/'), '1h');
+  assert.equal(parseDashboardHistoryRoute('/?range=1h'), '1h');
+  assert.equal(parseDashboardHistoryRoute('/?range=24h'), '24h');
+  for (const target of ['/other', '/?range=7d', '/?range=1h&range=24h',
+    '/?path=/etc/passwd', '/?range=24h&host=evil', '%%wrong']) {
+    assert.equal(parseDashboardHistoryRoute(target), null);
+  }
+});
+
+test('valid expired file can be discarded on startup without losing future collections', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    writeFileSync(file, JSON.stringify({ version: 1, points: [point(initial)] }));
+    const today = initial + 3 * 86400000;
+    const store = new DashboardHistoryStore(file, () => today);
+    assert.equal(store.history().state, 'ok');
+    assert.equal(store.history('24h').samples.length, 0);
+    assert.equal(store.append(point(today)), true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

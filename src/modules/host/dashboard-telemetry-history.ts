@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
+import { lstatSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { readHostSnapshot } from './host-snapshot.ts';
@@ -34,12 +34,12 @@ function validNumber(v: unknown, max: number): v is number {
 function validOptional(v: unknown, max: number): boolean {
   return v === null || validNumber(v, max);
 }
-export function validateDashboardPoint(value: unknown, now = Date.now()): value is DashboardTelemetryPoint {
+export function validateDashboardPoint(value: unknown, now = Date.now(), allowHistorical = false): value is DashboardTelemetryPoint {
   if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string, unknown>;
   if (Object.keys(v).sort().join('|') !== [...FIELDS].sort().join('|')) return false;
   const at = typeof v.observedAt === 'string' ? Date.parse(v.observedAt) : NaN;
-  if (!Number.isFinite(at) || at < now - WINDOW_MS || at > now + MAX_FUTURE_MS ||
+  if (!Number.isFinite(at) || (!allowHistorical && at < now - WINDOW_MS) || at > now + MAX_FUTURE_MS ||
     typeof v.observedAt !== 'string' || v.observedAt.length > 35) return false;
   if (!validOptional(v.cpu, 100) || !validOptional(v.ram, 100) ||
     !validOptional(v.internetMs, 15000) || !validOptional(v.bridgeMs, 15000) ||
@@ -61,11 +61,28 @@ function privateParent(file: string): void {
   const stat = lstatSync(folder);
   if (stat.isSymbolicLink() || !stat.isDirectory()) throw new Error('Unsafe dashboard state directory');
 }
-function privateFile(file: string): void {
-  if (!existsSync(file)) return;
-  const stat = lstatSync(file);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_FILE_BYTES)
-    throw new Error('Unsafe dashboard history file');
+function privateFile(file: string): boolean {
+  try {
+    const stat = lstatSync(file);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_FILE_BYTES)
+      throw new Error('Unsafe dashboard history file');
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
+export function parseDashboardHistoryRoute(url: string): '1h' | '24h' | null {
+  try {
+    const target = new URL(url, 'http://127.0.0.1');
+    if (target.pathname !== '/' || target.searchParams.size > 1 ||
+      (target.searchParams.size === 1 && !target.searchParams.has('range'))) return null;
+    const range = target.searchParams.get('range') ?? '1h';
+    return range === '1h' || range === '24h' ? range : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Host-owned bounded history. Invalid on-disk state is never overwritten automatically. */
@@ -80,8 +97,7 @@ export class DashboardHistoryStore {
   ) {
     try {
       privateParent(file);
-      privateFile(file);
-      if (existsSync(file)) {
+      if (privateFile(file)) {
         const value: unknown = JSON.parse(readFileSync(file, 'utf8'));
         if (!value || typeof value !== 'object' || Array.isArray(value) ||
           Object.keys(value).sort().join('|') !== 'points|version' ||
@@ -91,7 +107,7 @@ export class DashboardHistoryStore {
           throw new Error('Invalid history document');
         }
         const loaded = (value as { points: unknown[] }).points;
-        if (!loaded.every((p) => validateDashboardPoint(p, this.now())))
+        if (!loaded.every((p) => validateDashboardPoint(p, this.now(), true)))
           throw new Error('Invalid history sample');
         this.points = (loaded as DashboardTelemetryPoint[]).filter(p =>
           Date.parse(p.observedAt) >= this.now() - WINDOW_MS,
@@ -155,11 +171,14 @@ export async function observeDashboardTelemetry(
   const at = new Date(now()).toISOString();
   let host: ReturnType<typeof readHostSnapshot> | null = null;
   try { host = readHost(); } catch { /* no fabricated values */ }
-  const started = performance.now();
-  const [bridgeResult, internetResult] = await Promise.allSettled([readBridge(), readInternet()]);
-  const bridgeMs = bridgeResult.status === 'fulfilled'
-    ? Math.max(0, Math.round(performance.now() - started)) : null;
-  const bridge = bridgeResult.status === 'fulfilled' ? bridgeResult.value : null;
+  const measuredBridge = async () => {
+    const started = performance.now();
+    const status = await readBridge();
+    return { status, ms: Math.max(0, Math.round(performance.now() - started)) };
+  };
+  const [bridgeResult, internetResult] = await Promise.allSettled([measuredBridge(), readInternet()]);
+  const bridgeMs = bridgeResult.status === 'fulfilled' ? bridgeResult.value.ms : null;
+  const bridge = bridgeResult.status === 'fulfilled' ? bridgeResult.value.status : null;
   const internet = internetResult.status === 'fulfilled' ? internetResult.value : null;
   const cpuAge = bridge ? now() - Date.parse(bridge.observedAt) : Infinity;
   const cpu = bridge?.connected && bridge?.authorized && typeof bridge?.cpuPercent === 'number'

@@ -29,6 +29,7 @@ import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backu
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
 import { probeInternetConnectivity, allowsInternetProbeRequest } from "../../src/modules/host/internet-connectivity.ts"
+import { DashboardTelemetryRecorder, parseDashboardHistoryRoute } from "../../src/modules/host/dashboard-telemetry-history.ts"
 
 /** DEV-only, loopback-only read-only API. There are no mutation endpoints. */
 function termuxReadOnlyApi(): Plugin {
@@ -1450,9 +1451,47 @@ function internetConnectivityApi(): Plugin {
   }
 }
 
+/** Owner-approved 60s read-only sampler in the existing DEV panel process. */
+function dashboardTelemetryApi(): Plugin {
+  return {
+    name: "pockethost-dashboard-history",
+    apply: "serve",
+    configureServer(server) {
+      const recorder = new DashboardTelemetryRecorder()
+      recorder.start()
+      server.httpServer?.once("close", () => recorder.stop())
+
+      server.middlewares.use("/api/v1/dashboard/history", (request, response) => {
+        response.setHeader("Cache-Control", "no-store")
+        response.setHeader("X-Content-Type-Options", "nosniff")
+        response.setHeader("Content-Security-Policy", "default-src 'none'")
+        response.setHeader("Content-Type", "application/json; charset=utf-8")
+        if (!allowsInternetProbeRequest({
+          host: request.headers.host, origin: request.headers.origin,
+          remote: request.socket.remoteAddress,
+          fetchSite: request.headers["sec-fetch-site"],
+          method: request.method, route: "/",
+        })) {
+          response.statusCode = 403
+          response.end(JSON.stringify({ error: "forbidden" }))
+          return
+        }
+        const range = parseDashboardHistoryRoute(request.url ?? "/")
+        if (!range) {
+          response.statusCode = 404
+          response.end(JSON.stringify({ error: "invalid-history-range" }))
+          return
+        }
+        response.statusCode = 200
+        response.end(JSON.stringify(recorder.store.history(range)))
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), internetConnectivityApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), internetConnectivityApi(), dashboardTelemetryApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
     androidActionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",
