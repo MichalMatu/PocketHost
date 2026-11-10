@@ -4,6 +4,7 @@ import {
   cpuPercentage,
   parseProcessStat,
   parseProcessRss,
+  parseProcessName,
   readBatteryPercent,
   parseTermuxBatteryPercent,
   readNetworkBytes,
@@ -83,6 +84,12 @@ test('process stat identity requires exact PID/start ticks and hides argv/comm',
   assert.equal(parsed?.cpuTicks, 150);
   assert.equal(parseProcessStat(stat(41, 1), 42), null);
   assert.equal(parseProcessRss('Name: hidden\nVmRSS: 2048 kB\n'), 2);
+  assert.equal(parseProcessName('Name:\tnode\nVmRSS:\t2048 kB\n'), 'node');
+  assert.equal(parseProcessName('Name:\tpython3\n'), 'python3');
+  assert.equal(parseProcessName('Name:\t../../../secret\n'), null);
+  assert.equal(parseProcessName('Name:\tname with spaces\n'), null);
+  assert.equal(parseProcessName('Name:\tAAAAAAAAAAAAAAAAAAAAAAAAA\n'), null);
+  assert.equal(parseProcessName('VmRSS:\t1024 kB\n'), null);
   assert.equal(
     sameProcessIdentity({ pid: 41, startTicks: '420' }, { pid: 41, startTicks: '421' }),
     false,
@@ -92,8 +99,8 @@ test('partial process view marks only own process as self, never grants foreign 
   const files = new Map([
     ['/proc/41/stat', stat(41, 1)],
     ['/proc/42/stat', stat(42, 41)],
-    ['/proc/41/status', 'VmRSS: 2048 kB'],
-    ['/proc/42/status', 'VmRSS: 1024 kB'],
+    ['/proc/41/status', 'Name:\tnode\nVmRSS: 2048 kB'],
+    ['/proc/42/status', 'Name:\tpython3\nVmRSS: 1024 kB'],
   ]);
   const read = (p) => {
     if (!files.has(p)) throw { code: 'EACCES' };
@@ -106,6 +113,7 @@ test('partial process view marks only own process as self, never grants foreign 
     result.processes.map((p) => p.ownership),
     ['unverified', 'self'],
   );
+  assert.deepEqual(result.processes.map((p) => p.name), ['node', 'python3']);
   assert.equal(JSON.stringify(result).includes('nested'), false);
   assert.equal(
     readProcessInventory(
