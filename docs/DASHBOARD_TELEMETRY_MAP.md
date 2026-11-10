@@ -136,3 +136,32 @@ existing archived hours, a same-hour replacement, and persistence across
 a second restart. This repair requires separate exact-SHA Termux acceptance
 and a PocketHost-only panel refresh; previous physical receipts apply to
 `bf7a640` only.
+
+### Dashboard presentation re-audit (2026-11-10; new UI awaiting Samsung QA)
+
+| First-screen display | Source and scope | Duplicate audit |
+| --- | --- | --- |
+| Android CPU and CPU history | Authorized Companion, recent CPU sample | One number and one trend; remove repeated CPU value below graph |
+| Free system RAM and RAM-used trend | Termux host snapshot, same device RAM | Complementary units (GiB versus percent), not independent sensors |
+| Free Termux-home storage and storage-used trend | Same mounted filesystem | Same capacity measure in GiB / percent; avoid repeated footer values |
+| External services (running / total) and events | Fixed read-only inventory + recorded transitions | Current state versus incidents; never adopt services |
+| Battery, charging, temperature and battery history | Termux:API when fresh | Real absent readings stay unavailable; avoid repeated numeric footer |
+| Uptime | Device/system uptime from host | Single status, no redundant uptime chart |
+| DNS lookup | Fixed Termux DNS probe | Current status only; do not confuse with TCP or RX/TX |
+| TCP handshake | Fixed 1.1.1.1:443 | Endpoint connectivity and latency, not Internet download speed |
+| Android RX/TX | Native all-interface TrafficStats | Transfer rate, not TCP latency; real zero differs from unavailable |
+| Bridge API latency | Measured status API response | Internal Bridge responsiveness, not the Internet endpoint |
+| Recent events | Whitelisted locally persisted event codes | A compact time-scoped list, not a second full monitoring screen |
+
+The UI candidate plots timestamps as actual elapsed time (rather than equal
+category spacing), labels date as well as time for 24h/7d views, shows both
+median and peak TCP latency without silently clipping outliers, and exposes
+collector freshness beside the refresh control. These are UI-source changes
+until exact-SHA Samsung validation and owned-panel HMR/deployment receipts.
+
+**Highest-value missing operational signal:** last successfully verified
+PocketHost-owned backup with age and explicit failure/unavailable state,
+ideally alongside owned site's HTTP health. Service-running alone does not
+prove a hosted site is usable or recoverable. Pull this only from typed,
+ownership-verified PocketHost records; do not infer backups from unrelated
+files or claim that an observed external service is hosted by PocketHost.
