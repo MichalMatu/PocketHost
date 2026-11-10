@@ -120,6 +120,18 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.queryByText("Diagnostic events")).toBeNull()
   })
 
+  it("marks a missing or unsafe process name Unknown without inventing an executable", async () => {
+    const fixture = sample()
+    fixture.processes.processes[0]!.name = null
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => fixture })))
+    render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
+    const table = await screen.findByRole("table", { name: "Termux-visible process details" })
+    expect(within(table).getByText("Unknown")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Process details for PID 220" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Process details for PID 220" }))
+    expect(within(table).getByText("Unavailable")).toBeTruthy()
+  })
+
   it("shows a real endpoint failure instead of fake empty monitoring", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })))
     render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
