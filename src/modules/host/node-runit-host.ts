@@ -1,6 +1,8 @@
 import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
+  constants,
+  fstatSync,
   lstatSync,
   mkdirSync,
   openSync,
@@ -67,7 +69,15 @@ function privateText(filename: string, max = 16384): string {
   const s = lstatSync(filename);
   if (!s.isFile() || s.isSymbolicLink() || s.nlink !== 1 || s.uid !== process.getuid?.() ||
     (s.mode & 0o077) !== 0 || s.size > max) throw new Error('Untrusted Node runtime file');
-  return readFileSync(filename, 'utf8');
+  const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
+  try {
+    const current = fstatSync(fd);
+    if (!current.isFile() || current.nlink !== 1 || current.ino !== s.ino ||
+      current.dev !== s.dev || current.uid !== s.uid ||
+      (current.mode & 0o077) !== 0 || current.size > max)
+      throw new Error('Node runtime file changed during verification');
+    return readFileSync(fd, 'utf8');
+  } finally { closeSync(fd); }
 }
 function absent(name: string): boolean {
   try { lstatSync(name); return false; }
