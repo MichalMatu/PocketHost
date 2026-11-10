@@ -5,7 +5,7 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   DASHBOARD_MAX_POINTS, DashboardHistoryStore, validateDashboardPoint, observeDashboardTelemetry,
-  parseDashboardHistoryRoute,
+  parseDashboardHistoryRoute, parseDashboardBattery, probeDashboardDns,
 } from '../../src/modules/host/dashboard-telemetry-history.ts';
 
 const initial = Date.parse('2026-11-10T12:00:00.000Z');
@@ -97,6 +97,8 @@ test('native failures remain null; no autonomous privilege or foreign-service ac
     fakeHost, async () => { throw Error('denied'); },
     async () => ({ state: 'unreachable', latencyMs: null }),
     () => initial,
+    async () => ({ batteryPercent: null, batteryCharging: null, batteryTempC: null }),
+    async () => ({ dnsMs: null, dnsFailed: null }),
   );
   assert.equal(result.cpu, null);
   assert.equal(result.ram, 80);
@@ -128,5 +130,65 @@ test('valid expired file can be discarded on startup without losing future colle
     assert.equal(store.history().state, 'ok');
     assert.equal(store.history('24h').samples.length, 0);
     assert.equal(store.append(point(today)), true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+
+test('Termux battery parser admits only bounded real percent, charge status and temperature', () => {
+  assert.deepEqual(parseDashboardBattery('{"percentage":82,"status":"CHARGING","temperature":32.4}'),
+    { batteryPercent: 82, batteryCharging: true, batteryTempC: 32.4 });
+  assert.deepEqual(parseDashboardBattery('{"percentage":45,"status":"DISCHARGING","temperature":180}'),
+    { batteryPercent: 45, batteryCharging: false, batteryTempC: null });
+  for (const raw of ['{}', 'not-json', '[]', '{"percentage":-3}', '{"percentage":"88"}']) {
+    assert.equal(parseDashboardBattery(raw).batteryPercent, null);
+  }
+});
+
+test('DNS measures valid response and reports failures without retaining an IP', async () => {
+  let t = 100;
+  assert.deepEqual(await probeDashboardDns(async () => '192.0.2.1', () => (t += 10)),
+    { dnsMs: 10, dnsFailed: false });
+  assert.deepEqual(await probeDashboardDns(async () => { throw Error('lookup refused'); }),
+    { dnsMs: null, dnsFailed: true });
+});
+
+test('external service, TCP and DNS events persist across restarts, without granting ownership', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    writeFileSync(file, JSON.stringify({ version: 1, points: [point(initial - 60000, {
+      serviceStates: { ssh: 'running' }, dnsMs: 20, dnsFailed: false,
+    })] }));
+    const store = new DashboardHistoryStore(file, () => initial);
+    assert.equal(store.append(point(initial, {
+      serviceStates: { ssh: 'stopped' }, dnsMs: null, dnsFailed: true,
+      internetMs: null, internetFailed: true,
+    })), true);
+    store.flush();
+    const loaded = new DashboardHistoryStore(file, () => initial);
+    assert.deepEqual(loaded.history('24h').events.map(e => e.code).sort(),
+      ['dns-down', 'internet-down', 'service-unavailable']);
+    assert.equal(loaded.history('24h').events.find(e =>
+      e.code === 'service-unavailable')?.service, 'ssh');
+    assert.equal(loaded.append(point(initial + 60000, {
+      serviceStates: { ssh: 'running' },
+    })), true);
+    assert.equal(loaded.history('24h').events.some(e => e.code === 'service-restored'), true);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('expired state-change events age out safely on restart', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    writeFileSync(file, JSON.stringify({
+      version: 1, points: [point(initial)],
+      events: [{ observedAt: new Date(initial).toISOString(), code: 'bridge-down', service: null }],
+    }));
+    const next = initial + 3 * 86400000;
+    const store = new DashboardHistoryStore(file, () => next);
+    assert.equal(store.history().state, 'ok');
+    assert.equal(store.history().events.length, 0);
+    assert.equal(store.append(point(next)), true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

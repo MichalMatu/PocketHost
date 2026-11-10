@@ -98,12 +98,13 @@ export function validateDashboardPoint(value: unknown, now = Date.now(), allowHi
   return true;
 }
 
-function validEvent(value: unknown, now: number): value is DashboardEvent {
+function validEvent(value: unknown, now: number, allowHistorical = false): value is DashboardEvent {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const v = value as Record<string,unknown>;
   if (Object.keys(v).sort().join('|') !== 'code|observedAt|service') return false;
   const time = typeof v.observedAt === 'string' ? Date.parse(v.observedAt) : NaN;
-  return Number.isFinite(time) && time >= now - WINDOW_MS && time <= now + MAX_FUTURE_MS &&
+  return Number.isFinite(time) && (allowHistorical || time >= now - WINDOW_MS) &&
+    time <= now + MAX_FUTURE_MS &&
     typeof v.observedAt === 'string' && v.observedAt.length <= 35 &&
     EVENT_CODES.has(v.code as DashboardEventCode) &&
     (v.service === null || (SERVICE_IDS as readonly string[]).includes(String(v.service))) &&
@@ -200,8 +201,9 @@ export class DashboardHistoryStore {
         );
         const events = (value as { events?: unknown }).events ?? [];
         if (!Array.isArray(events) || events.length > 80 ||
-          !events.every(e => validEvent(e, this.now()))) throw new Error('Invalid history events');
-        this.events = events as DashboardEvent[];
+          !events.every(e => validEvent(e, this.now(), true))) throw new Error('Invalid history events');
+        this.events = (events as DashboardEvent[]).filter(e =>
+          Date.parse(e.observedAt) >= this.now() - WINDOW_MS);
       }
     } catch {
       this.readState = 'unavailable';
@@ -267,7 +269,8 @@ export function parseDashboardBattery(raw: string): DashboardBattery {
     const data: unknown = JSON.parse(raw);
     if (!data || typeof data !== 'object' || Array.isArray(data)) return missing;
     const v = data as Record<string, unknown>;
-    const percent = Number.isInteger(v.percentage) && validNumber(v.percentage, 100) ? v.percentage : null;
+    const percent = typeof v.percentage === 'number' && Number.isInteger(v.percentage) &&
+      validNumber(v.percentage, 100) ? v.percentage : null;
     const status = v.status;
     const charging = status === 'CHARGING' || status === 'FULL' ? true :
       status === 'DISCHARGING' || status === 'NOT_CHARGING' ? false : null;

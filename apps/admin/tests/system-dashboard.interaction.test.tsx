@@ -91,6 +91,10 @@ describe("PocketHost real-data dashboard", () => {
     expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
     expect(within(metrics).getByText("6 / 6")).toBeTruthy()
     expect(screen.getByText("Live system resources")).toBeTruthy()
+    expect(screen.getByText("Recent system events")).toBeTruthy()
+    expect(screen.getByText("Power & storage")).toBeTruthy()
+    expect(screen.getByText("Device uptime")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "24 hours" })).toBeTruthy()
     await screen.findByText(/Server history: up to 24 h/)
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
@@ -99,6 +103,7 @@ describe("PocketHost real-data dashboard", () => {
       ["ram", "pockethost-ram-fill"],
       ["internetMs", "pockethost-tcp-fill"],
       ["bridgeMs", "pockethost-bridge-fill"],
+      ["batteryPercent", "pockethost-power-fill"],
     ]) {
       const area = screen.getByTestId(`chart-area-${metric}`)
       expect(area.getAttribute("data-stroke")).toBe(`var(--color-${metric})`)
@@ -115,10 +120,11 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.queryByText("v26.13.0")).toBeNull()
     expect(screen.queryByText("File Manager")).toBeNull()
     expect(screen.queryByText("Packages")).toBeNull()
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(4)
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
     expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
+    expect(screen.getByTestId("power-chart-slot").className).toContain("h-[190px]")
   })
 
   it("keeps unknown / inaccessible Android CPU explicitly unavailable", async () => {
@@ -136,7 +142,7 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Android Bridge: disconnected or unauthorized")).toBeTruthy()
     expect(screen.getByText("Disconnected · last status received")).toBeTruthy()
     expect(screen.queryByText("0.0%")).toBeNull()
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(4)
   })
 
   it("reports genuine API and bridge unavailability without fabricated samples", async () => {
@@ -150,9 +156,10 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText(/0 TCP failures/)).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
     await screen.findByText(/Server history unavailable/)
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(4)
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
     expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
+    expect(screen.getByTestId("power-chart-slot").className).toContain("h-[190px]")
   })
 })
