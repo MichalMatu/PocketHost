@@ -5,7 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeRunitHost, probeOwnedNodeReadiness } from '../../src/modules/host/node-runit-host.ts';
+import {
+  NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort,
+} from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
 
 function fixture(t) {
@@ -87,4 +89,19 @@ test('M3 readiness requires exact loopback nonce, not an arbitrary HTTP 200', as
   assert.equal(await probeOwnedNodeReadiness(port, 'd'.repeat(48)), false);
   assert.throws(() => probeOwnedNodeReadiness(0, nonce), /Unsafe/);
   assert.throws(() => probeOwnedNodeReadiness(port, 'invalid'), /Unsafe/);
+});
+
+test('M2 port planner rejects conflicts and never adopts already-reserved Node port', async () => {
+  const touched = [];
+  const port = await selectUnreservedNodePort(new Set([19300, 19302]), async (candidate) => {
+    touched.push(candidate);
+    return candidate !== 19301;
+  });
+  assert.equal(port, 19303);
+  assert.deepEqual(touched, [19301, 19303]);
+  await assert.rejects(
+    selectUnreservedNodePort(new Set(Array.from({ length: 32 }, (_, i) => 19300 + i)),
+      async () => { throw new Error('Reserved port was probed'); }),
+    /No unreserved/,
+  );
 });

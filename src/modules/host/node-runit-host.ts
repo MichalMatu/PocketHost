@@ -124,6 +124,16 @@ function portFree(port: number): Promise<boolean> {
     s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
   });
 }
+/** Reserve only currently unused, unregistered loopback ports in the fixed Node pool. */
+export async function selectUnreservedNodePort(
+  reserved: ReadonlySet<number>,
+  free: (port: number) => Promise<boolean>,
+): Promise<number> {
+  for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
+    if (!reserved.has(port) && await free(port)) return port;
+  }
+  throw new Error('No unreserved loopback Node port');
+}
 /** Fixed loopback-only readiness probe; a foreign HTTP 200 never attests the release. */
 export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<boolean> {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 ||
@@ -420,13 +430,8 @@ export class NodeRunitHost {
           const other = this.record(otherProject.id);
           if (other) reservations.add(other.port);
         }
-        for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
-          if (!reservations.has(port) && await portFree(port)) {
-            state = await this.initialize(id, port, release);
-            break;
-          }
-        }
-        if (!state) throw new Error('No unreserved loopback Node port');
+        const port = await selectUnreservedNodePort(reservations, portFree);
+        state = await this.initialize(id, port, release);
       }
       if (state.activeRelease) await this.halt(id, state);
       else if (!await portFree(state.port)) throw new Error('Owned port not free');
