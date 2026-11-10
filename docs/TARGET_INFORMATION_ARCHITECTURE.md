@@ -1,7 +1,7 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-09
+last_reviewed: 2026-11-10
 purpose: Approved navigation and ownership boundary for future modular PocketHost
 ---
 
@@ -37,6 +37,44 @@ authorize production PhotoMap control.
 
 The old five-area UI proposal is superseded by this module-first
 target. Keep route compatibility and test navigation when migrating.
+
+## Approved Dashboard layout — 2026-11-10
+
+The initial screen is **`/dashboard`**, a cross-module **health and
+trends overview**, not another grid of links to the sidebar. The
+legacy `/system` redirects to it. The unchanged upstream example
+charts/table belong only to `/examples/dashboard`; their fake
+revenue, customer and visitor data must never appear as real
+PocketHost measurements.
+
+| Region | Target content |
+| ------ | -------------- |
+| Top status | Device/host reachability, CPU only with real authorized source, RAM, healthy/degraded services, last sample time |
+| Main trend | Verified Android-Bridge RX/TX if available; until then actual LAN/Internet connectivity latency, failures and reachability |
+| Supporting charts | RAM, real CPU when available, battery/charging, Termux storage; truthful data-source labels |
+| Recent events | Bounded, redacted failures, service/release events and warnings; distinguish zero events from missing telemetry |
+| Detailed screens | Monitoring, Android & Shizuku, Services, Network, Packages and Hosting retain drill-down controls |
+
+**Remove** nine large duplicate module navigation cards, the prominent
+Node version tile and repeated warnings. Node.js version belongs in
+**Packages & Software / Runtimes**; surface only a concrete runtime
+compatibility warning on the Dashboard. Keep a compact refresh/freshness
+indicator and an unobtrusive DEV/private-LAN status.
+
+Reuse existing ShadcnStore/Recharts, responsive layout and pinch
+zoom; never fill charts with template/demo numbers. While visible,
+the dashboard may sample every 5–10 s under resource limits.
+Persisted 1 h / 24 h trends and automatic background recording
+remain planned, not deployed. Reuse the authorized Companion
+foreground service rather than adding a hidden startup process.
+
+**Implementation sequence:** remove duplicate cards and render
+actual available status/latency; integrate typed Android Bridge
+CPU/battery where already authorized; introduce bounded local
+history; then qualify `NetworkStatsManager` permissions and RX/TX
+fidelity on the real Samsung before displaying network traffic.
+
+Single approved source/data flow: [Architecture](ARCHITECTURE.md).
 
 ## Architecture boundaries
 

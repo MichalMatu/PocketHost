@@ -1,7 +1,7 @@
 ---
 status: proposed
 owner: observability
-last_reviewed: 2026-11-07
+last_reviewed: 2026-11-10
 purpose: Define the new read-only aggregation and history module
 ---
 
@@ -58,6 +58,34 @@ services and PhotoMap port 8010. See
 [ADR-0010](../adr/0010-read-only-observability.md)
 and [the roadmap](../ROADMAP.md).
 
+## Accepted cross-source telemetry direction — 2026-11-10
+
+The target **single PocketHost Android app** integrates the
+existing Android Companion/Bridge and optional authorized Shizuku.
+It reuses the existing Termux Node.js host and `observability`
+aggregator; this is not a second monitoring daemon or a declaration
+that a unified Android application is installed.
+
+The main Dashboard may render real read-only Android CPU,
+battery and other permitted Bridge metrics alongside Termux RAM,
+storage, visible processes and runit observations. The source,
+device/Termux scope, timestamp, unit and `ok` / `stale` /
+`unavailable` / `permission-denied` state must remain visible
+or recoverable. No inaccessible value silently becomes zero.
+
+On the current Samsung the Termux UID is denied access to
+`/proc/net/dev` and `/sys/class/net/*/statistics/*`.
+The native `NetworkStatsManager` route is **planned**, subject
+to separate permissions and device acceptance; it is not a
+real-time throughput feed until accuracy is proven. Bounded
+network reachability and latency from Termux are a valid
+first trend. A future SQLite store needs sampling and retention
+limits; no durable 24 h history is claimed today.
+
+Canonical architecture: [ARCHITECTURE](../ARCHITECTURE.md).
+Approved first-screen composition:
+[TARGET_INFORMATION_ARCHITECTURE](../TARGET_INFORMATION_ARCHITECTURE.md).
+
 ## Physical Samsung battery source — 2026-11-08
 
 Samsung Android denies reading `/sys/class/power_supply/battery/capacity`
@@ -85,6 +113,7 @@ A process CPU tick counter is cumulative, never equivalent to current CPU %.
 The old blank CPU history view is removed from normal monitoring.
 
 Full Android CPU, Android-wide process/service observation and power-user
-controls live in **Android & Shizuku**, where the privileged Android
-companion must genuinely connect and obtain authorization. Merely having
-Shizuku Manager installed is insufficient for live privileged telemetry.
+controls originate from the authorized **Android Companion & Shizuku**
+subsystem. Detailed controls stay in **Android & Shizuku**; the future
+main Dashboard may display its verified read-only telemetry with
+source and freshness. Shizuku Manager alone is insufficient.
