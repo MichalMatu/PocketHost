@@ -9,6 +9,7 @@ import {
   NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort,
 } from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
+import { nodeHostingUnitName } from '../../src/shared/node-hosting-projection.ts';
 
 function fixture(t) {
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-runit-'));
@@ -53,7 +54,7 @@ test('M3 source validation and runtime inspection remain inert before explicit a
 test('M3 cannot adopt preexisting service directory or symlink', (t) => {
   const { project, projects, host, serviceRoot, home } = fixture(t);
   projects.stage(project.id, source);
-  const target = path.join(serviceRoot, 'pockethost-node-' + project.id.slice(5));
+  const target = path.join(serviceRoot, nodeHostingUnitName(project.id));
   mkdirSync(target);
   assert.throws(() => host.preview(project.id), /collision/);
   rmSync(target, { recursive: true });

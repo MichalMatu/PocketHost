@@ -443,6 +443,7 @@ function nodeProjectApi(): Plugin {
         if (request.method === "GET") {
           try {
             const data = route === "/" ? { projects: host.list() } :
+              route === "/registry" ? { registries: runtime!.registryProjection() } :
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :

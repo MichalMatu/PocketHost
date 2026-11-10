@@ -23,6 +23,8 @@ import { NodeProjectHost } from './node-project-host.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import { reviewNodeToolchain, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
 import { evaluateHealthPolicy, type HealthDecision } from '../../shared/hosting-health-policy.ts';
+import { nodeHostingUnitName as unitName, projectNodeHostingDeclarations } from '../../shared/node-hosting-projection.ts';
+import { createHostingRegistries } from '../../shared/hosting-registry.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const FIRST_PORT = 19300;
@@ -58,10 +60,6 @@ type UnitRecord = {
   readinessNonce: string;
 };
 
-function unitName(id: string): string {
-  if (!ID.test(id)) throw new RangeError('Invalid owned Node identity');
-  return 'pockethost-node-' + id.slice(5);
-}
 function checkedDirectory(folder: string): void {
   const s = lstatSync(folder);
   if (!s.isDirectory() || s.isSymbolicLink() || realpathSync(folder) !== folder ||
@@ -592,5 +590,17 @@ export class NodeRunitHost {
     const state = this.record(id);
     if (!state) return { lines: [] };
     return this.admin.logs(state.unit);
+  }
+  registryProjection() {
+    const entries = this.projects.list().map((project) => {
+      const status = this.status(project.id);
+      return {
+        id: project.id, kind: project.kind, port: status.port,
+        registered: status.state !== 'not-provisioned',
+      };
+    });
+    const declarations = projectNodeHostingDeclarations(entries);
+    createHostingRegistries(declarations); // Reject collisions; does not confer process authority.
+    return declarations;
   }
 }
