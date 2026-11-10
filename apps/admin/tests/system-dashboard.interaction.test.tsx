@@ -75,6 +75,9 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.queryByText("File Manager")).toBeNull()
     expect(screen.queryByText("Packages")).toBeNull()
     expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
+    expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
+    expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
   })
 
   it("keeps unknown / inaccessible Android CPU explicitly unavailable", async () => {
@@ -102,6 +105,9 @@ describe("PocketHost real-data dashboard", () => {
     expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
     expect(screen.getByText("No successful Internet TCP connection measured yet.")).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
-    expect(screen.queryAllByTestId("live-chart")).toHaveLength(0)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
+    expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
+    expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
   })
 })

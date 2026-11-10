@@ -78,8 +78,8 @@ async function getInternet(signal: AbortSignal) {
 
 function metricValue(value: string | null, loading: boolean) {
   return loading
-    ? <span aria-label="Loading" className="block h-7 w-28 max-w-full animate-pulse rounded bg-muted" />
-    : value ?? "Unavailable"
+    ? <span aria-label="Loading" className="block h-8 w-28 max-w-full animate-pulse rounded bg-muted" />
+    : <span className="block min-h-8 truncate leading-8">{value ?? "Unavailable"}</span>
 }
 
 function SummaryCard({ title, value, detail, icon: Icon, loading }: {
@@ -90,14 +90,14 @@ function SummaryCard({ title, value, detail, icon: Icon, loading }: {
   loading: boolean
 }) {
   return (
-    <Card className="min-h-36">
+    <Card className="min-h-40 min-w-0">
       <CardHeader className="gap-1">
         <CardDescription className="flex items-center gap-2">
           <Icon className="size-4" />{title}
         </CardDescription>
         <CardTitle className="text-2xl tabular-nums">{metricValue(value, loading)}</CardTitle>
       </CardHeader>
-      <CardContent className="text-muted-foreground text-xs">{detail}</CardContent>
+      <CardContent className="text-muted-foreground min-h-10 text-xs">{detail}</CardContent>
     </Card>
   )
 }
@@ -180,11 +180,11 @@ export default function SystemPage() {
   return (
     <BaseLayout title="Dashboard" description="Live status of PocketHost, Termux and the Android Bridge">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">DEV · Private LAN</Badge>
-            <Badge variant="outline">{host ? "Termux online" : "Termux unavailable"}</Badge>
-            <span className="text-muted-foreground text-xs" aria-live="polite">
+            <Badge variant="outline" className="min-w-36 justify-center">{host ? "Termux online" : "Termux unavailable"}</Badge>
+            <span className="text-muted-foreground min-w-40 text-xs tabular-nums" aria-live="polite">
               {sampledAt ? "Last checked " + clock(sampledAt) : "Checking live sources"}
             </span>
           </div>
@@ -204,30 +204,29 @@ export default function SystemPage() {
             icon={ServerCog} loading={active} detail={serviceUnknown ? "Some service states unknown · read-only" : "Running external services · read-only"} />
         </div>
 
-        <div className="grid gap-4 xl:grid-cols-2">
-          <Card className="xl:col-span-2">
+        <div className="grid min-w-0 gap-4 xl:grid-cols-2">
+          <Card className="min-w-0 xl:col-span-2">
             <CardHeader>
               <CardTitle>Live system resources</CardTitle>
               <CardDescription>Real Android Bridge CPU and Termux RAM usage (%) · sampled every 15 seconds while this tab is open</CardDescription>
             </CardHeader>
             <CardContent>
-              {samples.some(sample => sample.cpu !== null || sample.ram !== null) ? (
-                <ChartContainer config={resourcesConfig} className="aspect-auto h-[260px] min-w-0 w-full">
+              <div className="relative h-[260px] min-w-0 w-full" data-testid="resources-chart-slot">
+                <ChartContainer config={resourcesConfig} className="aspect-auto h-full min-w-0 w-full">
                   <AreaChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 10 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
-                      fill="var(--color-cpu)" fillOpacity={0.12} strokeWidth={2} dot={samples.length < 3} />
+                      fill="var(--color-cpu)" fillOpacity={0.12} strokeWidth={2} dot={samples.length < 3} isAnimationActive={false} />
                     <Area dataKey="ram" type="monotone" connectNulls={false} stroke="var(--color-ram)"
-                      fill="var(--color-ram)" fillOpacity={0.10} strokeWidth={2} dot={samples.length < 3} />
+                      fill="var(--color-ram)" fillOpacity={0.10} strokeWidth={2} dot={samples.length < 3} isAnimationActive={false} />
                   </AreaChart>
                 </ChartContainer>
-              ) : <p className="text-muted-foreground py-12 text-center text-sm">
-                Waiting for permitted Android / Termux resource readings.
-              </p>}
-              <div className="text-muted-foreground flex flex-wrap gap-4 pt-2 text-xs">
+                {!samples.some(sample => sample.cpu !== null || sample.ram !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-sm">Waiting for permitted Android / Termux resource readings.</p>}
+              </div>
+              <div className="text-muted-foreground flex min-h-10 flex-wrap items-start gap-x-4 gap-y-1 pt-2 text-xs tabular-nums">
                 <span>CPU: {cpu === null ? "Unavailable" : cpu.toFixed(1) + "%"} · Android Bridge</span>
                 <span>RAM: {ramUsedPercent(host) === null ? "Unavailable" : ramUsedPercent(host) + "%"} · Termux / system-wide</span>
                 <span>History is limited to this open tab (max. 30 min).</span>
@@ -241,21 +240,20 @@ export default function SystemPage() {
               <CardDescription>Fixed TCP handshake to 1.1.1.1:443 · not ICMP ping, download speed or RX/TX</CardDescription>
             </CardHeader>
             <CardContent>
-              {samples.some(sample => sample.internetMs !== null) ? (
-                <ChartContainer config={latencyConfig} className="aspect-auto h-[190px] min-w-0 w-full">
+              <div className="relative h-[190px] min-w-0 w-full" data-testid="internet-chart-slot">
+                <ChartContainer config={latencyConfig} className="aspect-auto h-full min-w-0 w-full">
                   <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Line type="monotone" dataKey="internetMs" stroke="var(--color-apiMs)" strokeWidth={2}
-                      dot={samples.length < 3} connectNulls={false} />
+                      dot={samples.length < 3} connectNulls={false} isAnimationActive={false} />
                   </LineChart>
                 </ChartContainer>
-              ) : <p className="text-muted-foreground py-12 text-center text-sm">
-                No successful Internet TCP connection measured yet.
-              </p>}
-              <p className="text-muted-foreground pt-2 text-xs">
+                {!samples.some(sample => sample.internetMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Internet TCP connection measured yet.</p>}
+              </div>
+              <p className="text-muted-foreground min-h-10 pt-2 text-xs tabular-nums">
                 {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "Probe unavailable"}
                 {" · "}{samples.filter(sample => sample.internetFailed === true).length} failed samples
                 {" · "}Panel API {samples.at(-1)?.apiMs ?? "—"} ms
@@ -269,24 +267,23 @@ export default function SystemPage() {
               <CardDescription>Live response time of the existing Bridge status API · not Internet ping or RX/TX</CardDescription>
             </CardHeader>
             <CardContent className="min-w-0">
-              {samples.some(sample => sample.bridgeMs !== null) ? (
-                <ChartContainer config={bridgeConfig} className="aspect-auto h-[190px] min-w-0 w-full">
+              <div className="relative h-[190px] min-w-0 w-full" data-testid="bridge-chart-slot">
+                <ChartContainer config={bridgeConfig} className="aspect-auto h-full min-w-0 w-full">
                   <LineChart data={samples} margin={{ top: 12, right: 20, bottom: 10, left: 12 }}>
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
                     <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
                     <Line type="monotone" dataKey="bridgeMs" stroke="var(--color-bridgeMs)" strokeWidth={2}
-                      dot={samples.length < 3} connectNulls={false} />
+                      dot={samples.length < 3} connectNulls={false} isAnimationActive={false} />
                   </LineChart>
                 </ChartContainer>
-              ) : <p className="text-muted-foreground py-12 text-center text-sm">
-                No successful Bridge status API request yet.
-              </p>}
-              <p className="text-muted-foreground flex flex-wrap items-center gap-2 pt-2 text-xs">
+                {!samples.some(sample => sample.bridgeMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Bridge status API request yet.</p>}
+              </div>
+              <p className="text-muted-foreground flex min-h-9 flex-wrap items-center gap-2 pt-2 text-xs tabular-nums">
                 <span>{bridgeHealth}</span><span>·</span><span>{samples.filter(sample => sample.bridgeOnline === false).length} disconnected samples</span>
               </p>
-              <p className="text-muted-foreground pt-1 text-xs">
+              <p className="text-muted-foreground min-h-8 pt-1 text-xs">
                 Full-device RX/TX requires verified Android NetworkStats permission and native Bridge integration.
               </p>
             </CardContent>
