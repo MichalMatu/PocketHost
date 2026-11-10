@@ -168,10 +168,10 @@ describe("PocketHost real-data dashboard", () => {
     await within(metrics).findAllByText("Unavailable")
     expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
     expect(screen.getByText("No successful Internet TCP connection measured yet.")).toBeTruthy()
-    expect(screen.getByText(/1 API errors/)).toBeTruthy()
-    expect(screen.getByText(/0 TCP failures/)).toBeTruthy()
+    expect(screen.getByText(/1 unavailable/)).toBeTruthy()
+    expect(screen.getByText(/0 failures/)).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
-    await screen.findByText(/Server history unavailable/)
+    await screen.findByText(/Saved history unavailable/)
     expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
     for (const axis of screen.getAllByTestId("history-time-axis")) {
       expect(axis.getAttribute("data-key")).toBe("timestamp")
