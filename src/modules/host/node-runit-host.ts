@@ -100,11 +100,23 @@ function quote(input: string): string {
 function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
-function runScript(folder: string, port: number, readinessNonce: string): string {
+/** A clean env blocks accidental inheritance of PocketHost admin credentials. */
+export function runScript(folder: string, port: number, readinessNonce: string): string {
+  if (!path.isAbsolute(folder) || !Number.isSafeInteger(port) ||
+    port < FIRST_PORT || port >= FIRST_PORT + PORT_COUNT ||
+    !/^[a-f0-9]{48}$/.test(readinessNonce)) {
+    throw new RangeError('Invalid owned Node process launch');
+  }
   return '#!' + PREFIX + '/bin/sh\nset -eu\ncd ' + quote(folder) +
-    '\nexport PORT=' + quote(String(port)) +
-    '\nexport POCKETHOST_READINESS_NONCE=' + quote(readinessNonce) +
-    '\nexec ' + quote(PREFIX + '/bin/node') + ' ' + quote(path.join(folder, 'server.mjs')) + '\n';
+    '\nexec ' + quote(PREFIX + '/bin/env') + ' -i' +
+    ' PATH=' + quote(PREFIX + '/bin') +
+    ' HOME=' + quote(folder) +
+    ' TMPDIR=' + quote(PREFIX + '/tmp') +
+    ' NODE_ENV=' + quote('production') +
+    ' PORT=' + quote(String(port)) +
+    ' POCKETHOST_READINESS_NONCE=' + quote(readinessNonce) +
+    ' ' + quote(PREFIX + '/bin/node') +
+    ' ' + quote(path.join(folder, 'server.mjs')) + '\n';
 }
 function observedTicks(pid: number): string | null {
   try {

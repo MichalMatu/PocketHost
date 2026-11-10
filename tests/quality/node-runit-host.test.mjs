@@ -6,7 +6,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 import {
-  NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort,
+  NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort, runScript,
 } from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
 import { nodeHostingUnitName } from '../../src/shared/node-hosting-projection.ts';
@@ -136,4 +136,16 @@ test('M3 syntax check is explicitly non-executing and rejects unavailable releas
   assert.equal(checked.release, staged.candidateRelease);
   assert.equal(checked.executed, false);
   assert.equal(checked.status, 'syntax-valid');
+});
+
+test('M3 runit launch drops inherited admin environment and validates fixed loopback port', () => {
+  const folder = '/data/data/com.termux/files/home/PocketHost-NodeProjects/node-' + 'c'.repeat(32) + '/releases/r-' + 'd'.repeat(32);
+  const script = runScript(folder, 19301, 'e'.repeat(48));
+  assert.match(script, /env' -i/);
+  assert.match(script, /PATH=/);
+  assert.match(script, /NODE_ENV=/);
+  assert.doesNotMatch(script, /export PORT/);
+  assert.doesNotMatch(script, /NODE_OPTIONS=/);
+  assert.throws(() => runScript(folder, 8000, 'e'.repeat(48)), /launch/);
+  assert.throws(() => runScript(folder, 19301, 'bad'), /launch/);
 });
