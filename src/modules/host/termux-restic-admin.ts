@@ -28,13 +28,16 @@ export interface ResticSnapshot {
 export class ResticWorkspaceAdmin {
   private readonly files: WorkspaceFiles;
   private readonly state: string;
+  private readonly backupTag: 'pockethost-h3' | 'pockethost-node';
 
   constructor(
     files: WorkspaceFiles,
     state = path.join(os.homedir(), '.local', 'state', 'pockethost', 'h3-restic'),
+    backupTag: 'pockethost-h3' | 'pockethost-node' = 'pockethost-h3',
   ) {
     this.files = files;
     this.state = state;
+    this.backupTag = backupTag;
   }
 
   private prepare(createKey = false): { repository: string; passwordFile: string } {
@@ -114,7 +117,7 @@ export class ResticWorkspaceAdmin {
     const source = this.files.root;
     // Relative source avoids inaccessible Android ancestor xattrs (/data/data).
     return this.restic(
-      ['backup', '--tag', 'pockethost-h3', '--', path.basename(source)],
+      ['backup', '--tag', this.backupTag, '--', path.basename(source)],
       run,
       600000,
       false,
@@ -125,7 +128,7 @@ export class ResticWorkspaceAdmin {
   async snapshots(run: Exec = executeFixed): Promise<ResticSnapshot[]> {
     const { repository } = this.prepare();
     if (!this.isInitialized(repository)) throw new Error('Restic repository not initialized');
-    const result = await this.restic(['snapshots', '--json', '--tag', 'pockethost-h3'], run, 40000);
+    const result = await this.restic(['snapshots', '--json', '--tag', this.backupTag], run, 40000);
     const data: unknown = JSON.parse(result.output.trim());
     if (!Array.isArray(data) || data.length > 2000)
       throw new Error('Invalid Restic snapshot inventory');
