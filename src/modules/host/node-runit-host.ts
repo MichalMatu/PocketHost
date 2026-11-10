@@ -377,13 +377,9 @@ export class NodeRunitHost {
     };
   }
   /** Fixed native syntax validation; reads a proven release but never executes its source. */
-  checkBuild(id: string, release: string): {
+  private checkReleaseSyntax(id: string, release: string): {
     release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
   } {
-    const plan = this.preview(id);
-    if (!plan.allowed || plan.release !== release || !RELEASE.test(release)) {
-      throw new Error('Node source admission or toolchain unavailable');
-    }
     const source = this.projects.release(id, release);
     const result = spawnSync(
       PREFIX + '/bin/node',
@@ -401,6 +397,15 @@ export class NodeRunitHost {
       status: result.status === 0 ? 'syntax-valid' : 'syntax-invalid',
       executed: false,
     };
+  }
+  checkBuild(id: string, release: string): {
+    release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
+  } {
+    const plan = this.preview(id);
+    if (!plan.allowed || plan.release !== release || !RELEASE.test(release)) {
+      throw new Error('Node source admission or toolchain unavailable');
+    }
+    return this.checkReleaseSyntax(id, release);
   }
   status(id: string): { state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
     port: number | null; activeRelease: string | null; lastGoodRelease: string | null;
@@ -548,6 +553,11 @@ export class NodeRunitHost {
         throw new Error('Node source candidate changed during admission');
       }
       this.projects.release(id, release); // Re-attest under the exclusive runtime lock.
+      // Fail a malformed candidate *before* stopping the last working service.
+      // Node --check parses source without executing it or installing packages.
+      if (this.checkReleaseSyntax(id, release).status !== 'syntax-valid') {
+        throw new Error('Node release syntax invalid: existing service retained');
+      }
       let state = this.record(id);
       if (rollback && state?.previousGoodRelease !== release) {
         throw new Error('Rollback target changed during admission');

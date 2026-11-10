@@ -160,3 +160,15 @@ test('M3 owned log supervisor cannot be redirected through an arbitrary run comm
   mkdirSync(service);
   assert.throws(() => host.preview(project.id), /collision/);
 });
+
+test('M3 invalid Node syntax is detected without start or service registration', async (t) => {
+  const { projects, project, host, serviceRoot } = fixture(t);
+  const invalid = { ...source, serverSource: 'function bad( {' };
+  const staged = projects.stage(project.id, invalid).project;
+  const result = host.checkBuild(project.id, staged.candidateRelease);
+  assert.deepEqual(result, {
+    release: staged.candidateRelease, status: 'syntax-invalid', executed: false,
+  });
+  assert.equal(host.status(project.id).state, 'not-provisioned');
+  assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});
