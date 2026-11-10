@@ -168,7 +168,7 @@ export function readNetworkBytes(
 export function parseProcessStat(
   raw: string,
   expectedPid: number,
-): Omit<ProcessObservation, 'ownership' | 'rssMiB'> | null {
+): Omit<ProcessObservation, 'ownership' | 'rssMiB' | 'name'> | null {
   const close = raw.lastIndexOf(') ');
   if (close < 0 || !Number.isSafeInteger(expectedPid) || expectedPid < 1) return null;
   if (raw.slice(0, raw.indexOf(' ')) !== String(expectedPid)) return null;
