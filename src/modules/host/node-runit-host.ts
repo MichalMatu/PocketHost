@@ -298,8 +298,15 @@ export class NodeRunitHost {
     missingTools: string[];
     conflicts: string[];
   } {
-    const tools = this.toolchain(plan);
-    const { nodeVersion, npmVersion } = tools;
+    const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
+      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
+    });
+    const npm = spawnSync(PREFIX + '/bin/npm', ['--version'], {
+      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
+    });
+    const nodeVersion = node.status === 0 ? node.stdout.trim() : null;
+    const npmVersion = npm.status === 0 ? npm.stdout.trim() : null;
+    const tools = reviewNodeToolchain(plan, { node: nodeVersion, npm: npmVersion });
     return { nodeVersion, npmVersion, status: tools.status,
       missingTools: tools.missingTools, conflicts: tools.conflicts };
   }
@@ -323,15 +330,8 @@ export class NodeRunitHost {
         missingTools: [], conflicts: [], dependencyCount: plan.dependencyCount,
         allowed: false, reason: 'source-must-be-re-staged' };
     }
-    const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
-      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
-    });
-    const npm = spawnSync(PREFIX + '/bin/npm', ['--version'], {
-      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
-    });
-    const nodeVersion = node.status === 0 ? node.stdout.trim() : null;
-    const npmVersion = npm.status === 0 ? npm.stdout.trim() : null;
-    const tools = reviewNodeToolchain(plan, { node: nodeVersion, npm: npmVersion });
+    const tools = this.toolchain(plan);
+    const { nodeVersion, npmVersion } = tools;
     const clean = plan.dependencyCount === 0 && plan.commands.build === null;
     return {
       release, port: state?.port ?? null, missingTools: tools.missingTools,
