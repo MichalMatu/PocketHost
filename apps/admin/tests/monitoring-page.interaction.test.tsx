@@ -64,6 +64,8 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.getByRole("table", { name: "Termux-visible process details" })).toBeTruthy()
     const table = screen.getByRole("table", { name: "Termux-visible process details" })
     expect(within(table).getAllByRole("row")[1]?.textContent).toContain("node")
+    expect(table.textContent).toContain("Ownership unknown")
+    expect(table.textContent).toContain("Observer process")
     expect(screen.queryByText("CPU ticks (lifetime total)")).toBeNull()
     fireEvent.click(screen.getByRole("button", { name: "Process details for PID 110" }))
     expect(screen.getByText("CPU ticks (lifetime total)")).toBeTruthy()
@@ -101,7 +103,7 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(2)
     expect(table.textContent).toContain("python3")
     expect(table.textContent).not.toContain("node")
-    expect(screen.getByText(/cumulative since each process started/)).toBeTruthy()
+    expect(screen.getByText("Termux-visible processes · partial Android inventory")).toBeTruthy()
   })
 
   it("keeps permission failures and missing process inventory explicitly unavailable", async () => {
