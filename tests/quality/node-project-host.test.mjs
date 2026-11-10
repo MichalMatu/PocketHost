@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, readFileSync, symlinkSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
@@ -66,4 +66,23 @@ test('M3 refuses untrusted release directory and never executes user source', (t
   rmSync(folder, { recursive: true });
   symlinkSync(os.tmpdir(), folder);
   assert.throws(() => host.inspect(project.id), /Unsafe/);
+});
+
+test('M3 re-attests staged source hashes and refuses changed release files', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Hashed node');
+  const staged = host.stage(project.id, source()).project;
+  const release = staged.candidateRelease;
+  assert.equal(host.release(project.id, release).plan.dependencyCount, 0);
+  const file = path.join(root, project.id, 'releases', release, 'server.mjs');
+  writeFileSync(file, 'console.log("modified")');
+  assert.throws(() => host.release(project.id, release), /digest mismatch/);
+});
+test('M3 legacy source lacking proof cannot run without re-staging', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Legacy node');
+  const staged = host.stage(project.id, source()).project;
+  rmSync(path.join(root, project.id, 'releases', staged.candidateRelease, '.pockethost-node-source.json'));
+  assert.equal(host.candidates(project.id).length, 1);
+  assert.throws(() => host.release(project.id, staged.candidateRelease), /ENOENT|source/);
 });

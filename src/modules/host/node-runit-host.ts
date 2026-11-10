@@ -436,10 +436,16 @@ export class NodeRunitHost {
       if (state.activeRelease) await this.halt(id, state);
       else if (!await portFree(state.port)) throw new Error('Owned port not free');
       await this.awaitSupervisor(id);
+      if (this.unitState(id) !== 'down') {
+        throw new Error('Unattributed runit process: deployment refused');
+      }
       const prior = state.lastGoodRelease;
       const nonce = randomBytes(24).toString('hex');
       this.script(id, release, state.port, nonce);
       state.readinessNonce = nonce;
+      // Persist the new unit digest/nonce before invoking runit. On a crash,
+      // recovery fails closed rather than interpreting stale markers as owners.
+      this.writeState(id, state);
       try {
         const result = await this.admin.apply('once', state.unit);
         if (result.result?.exit !== 0) throw new Error('Runit one-shot start rejected');
@@ -457,7 +463,7 @@ export class NodeRunitHost {
         state.activeRelease = null;
         this.writeState(id, state);
         // Do not signal an unknown process; retain evidence and refuse adoption.
-        const observed = this.observe(id, release, state.port);
+        const observed = this.observe(id, release);
         if (observed !== 'down') {
           if (observed === 'unknown') throw new Error('Failed start identity unknown; manual review required');
           const result = await this.admin.apply('stop', state.unit);
@@ -469,6 +475,7 @@ export class NodeRunitHost {
           const restoreNonce = randomBytes(24).toString('hex');
           this.script(id, prior, state.port, restoreNonce);
           state.readinessNonce = restoreNonce;
+          this.writeState(id, state);
           const result = await this.admin.apply('once', state.unit);
           if (result.result?.exit !== 0) throw new Error('Rollback start refused');
           const proof = await this.settle(id, prior, state.port, restoreNonce);

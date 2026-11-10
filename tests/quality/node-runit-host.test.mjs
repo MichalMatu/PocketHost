@@ -105,3 +105,12 @@ test('M2 port planner rejects conflicts and never adopts already-reserved Node p
     /No unreserved/,
   );
 });
+
+test('M3 staging refuses tampered source before any runit command', async (t) => {
+  const { projects, project, root, host } = fixture(t);
+  const staged = projects.stage(project.id, source).project;
+  const file = path.join(root, project.id, 'releases', staged.candidateRelease, 'server.mjs');
+  (await import('node:fs')).writeFileSync(file, 'console.log("changed")');
+  assert.throws(() => host.preview(project.id), /digest mismatch/);
+  assert.equal(host.status(project.id).state, 'not-provisioned');
+});

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import {
   closeSync,
   constants,
@@ -25,6 +25,10 @@ const MAX_PROJECTS = 8;
 const MAX_RELEASES = 12;
 const MAX_INPUT = 320 * 1024;
 const MARKER = '.pockethost-node.json';
+const RELEASE_PROOF = '.pockethost-node-source.json';
+function digest(contents: string): string {
+  return createHash('sha256').update(contents).digest('hex');
+}
 
 interface NodeProjectRecord {
   schema: 1;
@@ -307,6 +311,14 @@ export class NodeProjectHost {
       ] as const) {
         writeFileSync(path.join(stage, name), content, { flag: 'wx', mode: 0o600 });
       }
+      writeFileSync(path.join(stage, RELEASE_PROOF), JSON.stringify({
+        schema: 1,
+        owner: 'pockethost-node-source',
+        id: release,
+        manifestDigest: digest(source.manifest),
+        lockDigest: digest(source.lock),
+        sourceDigest: digest(source.source),
+      }) + '\n', { flag: 'wx', mode: 0o600 });
       ownedDirectory(stage);
       renameSync(stage, path.join(releases, release));
       const previous = marker.candidateRelease;
@@ -359,10 +371,28 @@ export class NodeProjectHost {
     const projectFolder = this.projectPath(id);
     const folder = path.join(projectFolder, 'releases', releaseId);
     ownedDirectory(folder);
-    const manifest = JSON.parse(privateFile(path.join(folder, 'package.json')));
-    const lockfile = JSON.parse(privateFile(path.join(folder, 'package-lock.json')));
+    const manifestText = privateFile(path.join(folder, 'package.json'));
+    const lockText = privateFile(path.join(folder, 'package-lock.json'));
+    const sourceText = privateFile(path.join(folder, 'server.mjs'), 64 * 1024);
+    // The source proof is generated at staging time. Older unproven candidates
+    // remain inspectable, but must be re-staged before runtime execution.
+    const rawProof: unknown = JSON.parse(privateFile(path.join(folder, RELEASE_PROOF), 1024));
+    if (!rawProof || typeof rawProof !== 'object' || Array.isArray(rawProof))
+      throw new Error('Missing verified Node release source');
+    const proof = rawProof as Record<string, unknown>;
+    if (
+      Object.keys(proof).sort().join(',') !==
+        'id,lockDigest,manifestDigest,owner,schema,sourceDigest' ||
+      proof.schema !== 1 ||
+      proof.owner !== 'pockethost-node-source' ||
+      proof.id !== releaseId ||
+      proof.manifestDigest !== digest(manifestText) ||
+      proof.lockDigest !== digest(lockText) ||
+      proof.sourceDigest !== digest(sourceText)
+    ) throw new Error('Node release source digest mismatch');
+    const manifest = JSON.parse(manifestText);
+    const lockfile = JSON.parse(lockText);
     const plan = planNodeDependencies(manifest, lockfile);
-    privateFile(path.join(folder, 'server.mjs'), 64 * 1024);
     if ((manifest as { scripts?: { start?: unknown } }).scripts?.start !== 'node server.mjs') {
       throw new Error('Unsupported Node release entrypoint');
     }
