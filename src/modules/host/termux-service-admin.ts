@@ -36,7 +36,7 @@ interface Registration {
   addedAt: string;
 }
 export type ServiceOperation =
-  'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'enable' | 'disable';
+  'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
 export interface TermuxService {
   name: string;
   registered: boolean;
@@ -260,7 +260,7 @@ export class TermuxServiceAdmin {
   ): Promise<{ changed: boolean; result?: HostCommandResult }> {
     valid(name);
     if (
-      !['register', 'unregister', 'start', 'stop', 'restart', 'enable', 'disable'].includes(
+      !['register', 'unregister', 'start', 'stop', 'restart', 'once', 'enable', 'disable'].includes(
         operation,
       )
     )
@@ -289,7 +289,7 @@ export class TermuxServiceAdmin {
       );
       return { changed: true, result };
     }
-    const command = operation === 'start' ? 'up' : operation === 'stop' ? 'down' : 'restart';
+    const command = operation === 'start' ? 'up' : operation === 'stop' ? 'down' : operation === 'once' ? 'once' : 'restart';
     const result = await run(
       path.join(PREFIX, 'bin', 'sv'),
       [command, path.join(this.serviceRoot, name)],

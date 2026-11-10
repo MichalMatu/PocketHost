@@ -347,6 +347,28 @@ export class NodeProjectHost {
         };
       });
   }
+  /** Re-attest source and immutable release files immediately before a host operation. */
+  release(id: string, releaseId: string): {
+    project: NodeProjectSummary;
+    folder: string;
+    projectFolder: string;
+    plan: NodeDependencyPlan;
+  } {
+    if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release');
+    const marker = this.record(id);
+    const projectFolder = this.projectPath(id);
+    const folder = path.join(projectFolder, 'releases', releaseId);
+    ownedDirectory(folder);
+    const manifest = JSON.parse(privateFile(path.join(folder, 'package.json')));
+    const lockfile = JSON.parse(privateFile(path.join(folder, 'package-lock.json')));
+    const plan = planNodeDependencies(manifest, lockfile);
+    privateFile(path.join(folder, 'server.mjs'), 64 * 1024);
+    if ((manifest as { scripts?: { start?: unknown } }).scripts?.start !== 'node server.mjs') {
+      throw new Error('Unsupported Node release entrypoint');
+    }
+    return { project: this.summary(marker), folder, projectFolder, plan };
+  }
+
   restoreCandidate(id: string): NodeProjectSummary {
     const marker = this.record(id);
     if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
