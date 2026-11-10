@@ -286,7 +286,7 @@ export default function ProjectsPage() {
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
-      </p>
+      </p>}
       <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
         <CardContent>
