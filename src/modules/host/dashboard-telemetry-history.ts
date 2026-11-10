@@ -249,9 +249,23 @@ export class DashboardHistoryStore {
           !archive.every(a => validateDashboardPoint(a, this.now(), true))) {
           throw new Error('Invalid hourly history');
         }
-        this.archive = (archive as DashboardTelemetryPoint[]).filter(p =>
-          Date.parse(p.observedAt) >= this.now() - ARCHIVE_MS &&
-          Date.parse(p.observedAt) < this.now() - WINDOW_MS);
+        // A long phone sleep or stopped panel can leave full-resolution points
+        // older than 24 h in the last saved file. Downsample those genuine
+        // points on reload rather than silently discarding the 7-day history.
+        const older = [...(archive as DashboardTelemetryPoint[]),
+          ...(loaded as DashboardTelemetryPoint[])]
+          .filter(p => Date.parse(p.observedAt) >= this.now() - ARCHIVE_MS &&
+            Date.parse(p.observedAt) < this.now() - WINDOW_MS)
+          .sort((a, b) => Date.parse(a.observedAt) - Date.parse(b.observedAt));
+        this.archive = [];
+        for (const item of older) {
+          const hour = Math.floor(Date.parse(item.observedAt) / HOUR_MS);
+          const last = this.archive.at(-1);
+          if (last && Math.floor(Date.parse(last.observedAt) / HOUR_MS) === hour)
+            this.archive[this.archive.length - 1] = item;
+          else this.archive.push(item);
+        }
+        this.archive = this.archive.slice(-DASHBOARD_HOURLY_POINTS);
         const events = (value as { events?: unknown }).events ?? [];
         if (!Array.isArray(events) || events.length > 280 ||
           !events.every(e => validEvent(e, this.now(), true))) throw new Error('Invalid history events');

@@ -25,7 +25,8 @@ The example Dashboard under `/examples/dashboard` is visual reference only.
 | P1 | Restarts/outages, first failure and last recovery | Changes in admitted service state, Bridge state and connectivity samples | Bounded recent events with timestamps |
 | P1 | Panel/Bridge latency and unavailable samples | Existing API requests and Companion status adapter | Secondary latency and failure trend |
 | P1 | Free space trend and low-storage warning | Termux home filesystem snapshot; no other filesystem scans | One small trend, warning before critical threshold |
-| P2 | Actual device RX/TX rate, interface, Wi-Fi/mobile split | **Not available** to Termux on this Samsung; native Android NetworkStats needs permission/accuracy validation | **Do not display** until confirmed by Bridge |
+| P0 | Actual device RX/TX rate (all interfaces combined) | Native Android Companion TrafficStats, confirmed on Samsung S22+ | Rate trend with fresh observed timestamps, no invented zero |
+| P2 | Separate Wi-Fi/mobile network totals and per-interface accounting | Not yet provided by current Android TrafficStats contract | Keep unavailable pending NetworkStatsManager permission/accuracy qualification |
 | P2 | Per-process CPU, logs, package versions, terminal and host inventory | Existing detail modules; partial permission-constrained process visibility | Drill-down only, except specific actionable alerts |
 | P2 | Project uptime, published revision, backup failures | PocketHost-owned project and backup records, only where ownership is proven | Small Hosting health summary after typed integration |
 
@@ -60,14 +61,15 @@ the separate Services inventory; discovering them does **not** grant control.
    Never auto-start the Shizuku foreground service; use only readings
    already authorized and fresh. A phone sleep or terminated panel can
    interrupt sampling; never backfill fake points.
-3. Keep a bounded last-24-hour ring buffer (up to **1,440 points**) in
-   RAM and persist it to a private, atomic, mode-0600 local file under the
+3. Keep a bounded last-24-hour ring buffer (up to **1,440 points**) and
+   genuine hourly checkpoints up to **7 days** (at most 168) in RAM and
+   persist them to a private, atomic, mode-0600 local file under the
    PocketHost-owned state directory. Validate timestamps and types on
    reload; reject symlinks, corrupt/oversized persistence, or rollback
    attempts. This modest file is an interim implementation, not a new
    database. Future high-cardinality telemetry can move to SQLite.
 4. Expose only a fixed, same-origin **GET** history endpoint, supporting
-   `1h` or `24h`; no user-selected IP/port, commands, file paths or
+   `1h`, `24h`, or `7d`; no user-selected IP/port, commands, file paths or
    arbitrary service IDs. Browser loads the historical window immediately
    on navigation, merges live updates and does not own the historical
    retention.
@@ -99,15 +101,15 @@ Related: [architecture](ARCHITECTURE.md),
 [target Dashboard](TARGET_INFORMATION_ARCHITECTURE.md),
 [observability module](modules/observability.md).
 
-## Implemented source delta (2026-11-10, device re-acceptance pending)
+## Implemented and device-accepted telemetry (2026-11-10)
 
 - Native Companion status now offers Android `TrafficStats.getTotalRxBytes/getTotalTxBytes`
   totals with explicit `all-interfaces-since-boot` scope, observation time and
   `null` on unsupported access. Two monotonic observations at most five
   minutes apart derive sampled RX/TX Mb/s. No old APK value becomes zero.
-  Native APK installation and physical source fidelity on the Samsung are
-  still **UNVERIFIED**; per-interface Wi-Fi/mobile and NetworkStatsManager
-  accounting are outside this source slice.
+  Signed native APK installation and live sampled totals are **PASS** on
+  Samsung S22+ (8.56-second physical double sample); separate per-interface
+  Wi-Fi/mobile and NetworkStatsManager accounting remain outside scope.
 - History retains full-resolution 60-second observations up to 24 h and,
   once old points have actually aged out, one genuine checkpoint per hour
   up to 7 days. A sleeping/terminated collector leaves gaps. Existing
@@ -117,6 +119,20 @@ Related: [architecture](ARCHITECTURE.md),
   collector starts, and successful PocketHost-owned backup/release actions.
   No foreign service is adopted and no automatic action is triggered.
 - Selection is `1h`, `24h`, `7d` through the fixed same-origin endpoint.
-  Acceptance still requires exact-SHA Samsung focused tests and a deliberate
-  PocketHost-only restart/sleep observation, plus a separately built native
-  Companion APK and real RX/TX validation.
+  Exact-SHA Samsung tests passed (20/20 Node, impacted UI, both TypeScript
+  checks). PocketHost-only panel restart retained 83 previous samples,
+  the refreshed endpoints returned HTTP 200, and protected services were
+  unchanged. A real screen-off/on check retained all 87 historical samples
+  and added a new measurement. An extended multi-day physical sleep
+  observation remains separate from the deterministic retention test.
+
+### Seven-day reload repair (source candidate; pending Samsung check)
+
+After a panel suspension lasting more than 24 hours, reload now folds the
+actual older persisted samples into hourly archive checkpoints before
+dropping them from the live daily ring. The archive does not interpolate
+missing minutes. The focused regression covers 50 hours without collection,
+existing archived hours, a same-hour replacement, and persistence across
+a second restart. This repair requires separate exact-SHA Termux acceptance
+and a PocketHost-only panel refresh; previous physical receipts apply to
+`bf7a640` only.

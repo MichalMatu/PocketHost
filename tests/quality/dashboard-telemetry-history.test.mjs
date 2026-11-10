@@ -258,3 +258,29 @@ test('collector and successful owned events are durable, bounded and never chang
       ['collector-started', 'owned-backup-created', 'owned-release-published']);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('long suspend across 24h rollover preserves actual old samples in 7d hourly archive', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    const now = initial + 50 * 3600000;
+    const old = point(initial);
+    const sameHour = point(initial + 10 * 60000, { batteryPercent: 71 });
+    const stillDaily = point(initial + 26 * 3600000);
+    const archived = point(initial - 2 * 3600000);
+    writeFileSync(file, JSON.stringify({
+      version: 1, points: [old, sameHour, stillDaily],
+      archive: [archived], events: [],
+    }));
+    const restored = new DashboardHistoryStore(file, () => now);
+    assert.equal(restored.history('24h').samples.length, 1);
+    assert.deepEqual(restored.history('7d').samples.map(p => p.observedAt),
+      [archived.observedAt, sameHour.observedAt, stillDaily.observedAt]);
+    assert.equal(restored.history('7d').samples.some(p =>
+      p.observedAt === new Date(initial + 60000).toISOString()), false, 'no fabricated sleep samples');
+    restored.flush();
+    const reopened = new DashboardHistoryStore(file, () => now);
+    assert.deepEqual(reopened.history('7d').samples, restored.history('7d').samples);
+    assert.equal(reopened.append(point(now)), true, 'sampling resumes after long sleep');
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
