@@ -3,7 +3,7 @@ import { Activity, ChevronDown, ChevronRight, Info, RefreshCw, ShieldCheck } fro
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -171,7 +171,7 @@ export default function ObservabilityPage() {
             </span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/dashboard" />}>Dashboard trends</Button>
+            <Link to="/dashboard" className={buttonVariants({ variant: "outline", size: "sm" })}>Dashboard trends</Link>
             <Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}>
               <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
             </Button>
