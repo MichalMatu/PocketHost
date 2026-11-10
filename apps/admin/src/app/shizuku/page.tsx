@@ -397,14 +397,9 @@ export default function ShizukuPage() {
                           <p className="text-muted-foreground text-xs">Name-based match, not Android usage attribution.</p>
                           <p>RSS: {processMiB(appRssKb)} · CPU: {unavailable(appCpuPercent, "%")}</p>
                         </div>
-                        <p className="text-sm font-medium">Requested permissions ({appDetail.permissions.length})</p>
-                        <div className="max-h-48 overflow-auto rounded-md border">
-                          {appDetail.permissions.map(p => <div key={p.name}
-                            className="flex items-start justify-between gap-2 border-b p-2 text-xs last:border-b-0">
-                            <span className="break-all">{p.name}</span>
-                            <Badge variant="outline">{p.granted ? "Granted" : "Not granted"}</Badge>
-                          </div>)}
-                          {appDetail.permissions.length === 0 && <p className="p-2 text-xs text-muted-foreground">No requested permissions reported.</p>}
+                        <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
+                          <span>{appDetail.permissions.length} requested permissions</span>
+                          <Button size="sm" variant="outline" onClick={() => setSection("permissions")}>Manage permissions</Button>
                         </div>
                       </div>
                     )}
@@ -502,8 +497,13 @@ export default function ShizukuPage() {
                     <div className="space-y-2 rounded-lg border p-3 text-sm">
                       <p className="font-medium">Selected PID {selectedProcess.pid}</p>
                       <p className="break-all">{selectedProcess.name} · {selectedProcess.user} · {processMiB(selectedProcess.rssKb)}</p>
-                      <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
-                        onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID</AndroidActionButton>
+                      {selectedProcess.pid === 1
+                        ? <p role="status" className="text-destructive text-xs">PID 1 is Android init. TERM is not offered for this critical process.</p>
+                        : <>
+                            <p className="text-muted-foreground text-xs">TERM targets PID {selectedProcess.pid}. Android may deny it; do not stop critical system processes.</p>
+                            <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
+                              onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID {selectedProcess.pid}</AndroidActionButton>
+                          </>}
                     </div>
                   )}
                   <p className="text-muted-foreground text-xs">Per-process CPU is only shown if Android reports it.</p>
@@ -517,7 +517,7 @@ export default function ShizukuPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Android app permissions</CardTitle>
-                <CardDescription>Choose an app and inspect its actual requested permission grants here. A reported grant does not guarantee Android will allow changing it.</CardDescription>
+                <CardDescription>Select an app to inspect or change requested permissions. Android may refuse individual changes.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 lg:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
@@ -545,7 +545,7 @@ export default function ShizukuPage() {
                           "Package inventory unavailable or not authorized."}
                     </p> : (
                       <>
-                        <div className="max-h-[360px] overflow-y-auto rounded-lg border">
+                        <div className="max-h-[260px] overflow-y-auto rounded-lg border">
                           {visiblePermissionApps.map(item => (
                             <button key={item.packageName} type="button"
                               aria-label={"Inspect permissions for " + item.label + " (" + item.packageName + ")"}
@@ -641,7 +641,7 @@ export default function ShizukuPage() {
         {section === "services" && (
           <div className="space-y-3">
             <Card><CardHeader><CardTitle>Services & Android settings</CardTitle>
-              <CardDescription>Observed Android services and settings from native Shizuku.</CardDescription>
+              <CardDescription>Android settings and observed service components; runtime states are not reported.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="rounded-lg border p-4"><p className="text-sm text-muted-foreground">Screen brightness</p>
@@ -681,7 +681,7 @@ export default function ShizukuPage() {
               ) : (
                 <>
                   <p className="text-muted-foreground text-xs">
-                    {system.services.names.length} observed service components{system.services.truncated ? " · capped at 256; sample incomplete" : " · bounded snapshot"}
+                    {system.services.names.length} observed components · state unknown{system.services.truncated ? " · capped at 256" : ""}
                   </p>
                   <div className="max-h-72 overflow-y-auto rounded-lg border">
                     {visibleServices.map(service => (
@@ -707,7 +707,7 @@ export default function ShizukuPage() {
                     <div className="space-y-1 rounded-lg border p-3 text-sm">
                       <p className="font-medium">Selected Android component</p>
                       <p className="break-all font-mono text-xs">{selectedService}</p>
-                      <p className="text-muted-foreground text-xs">Android may refuse control of this observed service.</p>
+                      <p className="text-muted-foreground text-xs">Runtime state not reported. Start/Stop targets this component; Android may refuse.</p>
                       <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="service-start" target={selectedService}
                           onSuccess={() => setRefreshKey(k => k + 1)}>Start service</AndroidActionButton>
@@ -728,16 +728,16 @@ export default function ShizukuPage() {
           <Card><CardHeader><CardTitle>Power & hardware</CardTitle>
             <CardDescription>Real battery, temperature and Android RAM observations.</CardDescription>
           </CardHeader><CardContent className="space-y-3">
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {[
                 ["Battery level", unavailable(system?.power.batteryLevel, "%")],
                 ["Charging", system?.power.chargingState ? ({ charging: "Charging", discharging: "Discharging", full: "Full", "not-charging": "Not charging", unknown: "Unavailable" } as const)[system.power.chargingState] : system?.power.charging == null ? "Unavailable" : system.power.charging ? "Yes" : "No"],
                 ["External power", system?.power.powerConnected == null ? "Unavailable" : system.power.powerConnected ? "Connected" : "Disconnected"],
                 ["Battery temperature", unavailable(system?.power.batteryTemperatureC, " °C")],
                 ["Available Android RAM", gib(system?.power.memoryAvailableKb ?? null)],
-              ].map(([label, value]) => <div className="rounded-lg border p-4" key={label}>
-                <p className="text-muted-foreground text-sm">{label}</p>
-                <p className="mt-2 text-xl font-semibold">{value}</p>
+              ].map(([label, value]) => <div className="rounded-lg border p-3" key={label}>
+                <p className="text-muted-foreground text-xs">{label}</p>
+                <p className="mt-1 text-lg font-semibold">{value}</p>
               </div>)}
             </div>
             <p className="text-muted-foreground text-sm">Total system RAM: {gib(system?.power.memoryTotalKb ?? null)}</p>
