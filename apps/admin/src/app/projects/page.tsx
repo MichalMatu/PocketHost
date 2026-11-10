@@ -105,6 +105,9 @@ export default function ProjectsPage() {
   const [executionEnabled, setExecutionEnabled] = React.useState(false)
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
+  const [backupStatus, setBackupStatus] = React.useState<{
+    initialized: boolean; repositoryPresent: boolean; keyPresent: boolean
+  } | null>(null)
   const [registries, setRegistries] = React.useState<{
     modules: number; services: number; projects: number
   } | null>(null)
@@ -178,10 +181,29 @@ export default function ProjectsPage() {
             })
             setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
+          <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+            const response = await getJson(api + "/backup")
+            const value = response.backup as Record<string, unknown> | undefined
+            if (!value || typeof value.initialized !== "boolean" ||
+              typeof value.repositoryPresent !== "boolean" ||
+              typeof value.keyPresent !== "boolean") {
+              throw new Error("Invalid Node Restic state")
+            }
+            setBackupStatus({
+              initialized: value.initialized,
+              repositoryPresent: value.repositoryPresent,
+              keyPresent: value.keyPresent,
+            })
+            setMessage("Owned Node Restic repository inspected without running backup.")
+          })}>Inspect Node backups</Button>
         </CardContent>
       </Card>
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
+      {backupStatus && <p className="text-muted-foreground text-sm" aria-label="Node backup state">
+        Scoped Node Restic: {backupStatus.initialized ? "initialized" : "not initialized"}.
+        Backup and staging restore require separate explicit approval and Samsung validation.
+      </p>}
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.

@@ -35,6 +35,10 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         dependencyPlan: { packageName: "my-node-site", packageVersion: "1.0.0", dependencyCount: 0, status: "review-required" } }]
       return { ok: true, json: async () => ({ project }) }
     }
+    if (path === "/api/v1/node-projects/backup" && !options?.method)
+      return { ok: true, json: async () => ({ backup: {
+        initialized: false, repositoryPresent: false, keyPresent: false,
+      } }) }
     if (path === "/api/v1/node-projects/registry" && !options?.method)
       return { ok: true, json: async () => ({ registries: {
         schemaVersion: 1,
@@ -66,6 +70,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
   await user.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
   await screen.findByText(/Modules: 1 · Services: 0 · Projects: 1/)
+  await user.click(screen.getByRole("button", { name: "Inspect Node backups" }))
+  await screen.findByText(/Scoped Node Restic: not initialized/)
 
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)

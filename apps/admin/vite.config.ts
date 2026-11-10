@@ -25,6 +25,7 @@ import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-run
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
 import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
+import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backup-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
 
@@ -409,6 +410,7 @@ function nodeProjectApi(): Plugin {
         process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1"
       const host = enabled ? new NodeProjectHost() : null
       const runtime = enabled ? new NodeRunitHost() : null
+      const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
@@ -444,6 +446,7 @@ function nodeProjectApi(): Plugin {
           try {
             const data = route === "/" ? { projects: host.list() } :
               route === "/registry" ? { registries: runtime!.registryProjection() } :
+              route === "/backup" ? { backup: nodeBackup!.status() } :
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
