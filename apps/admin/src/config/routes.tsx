@@ -19,6 +19,7 @@ export const routes: RouteObject[] = [
   { path: "/host", lazy: page(() => import("@/app/host/page")) },
   { path: "/observability", lazy: page(() => import("@/app/observability/page")) },
   { path: "/shizuku", lazy: page(() => import("@/app/shizuku/page")) },
+  { path: "/phone-settings", lazy: page(() => import("@/app/phone-settings/page")) },
   { path: "/termux", element: <Navigate to="/dashboard" replace /> },
   { path: "/system", element: <Navigate to="/dashboard" replace /> },
   { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
