@@ -40,6 +40,12 @@ function statusLabel(state: SourceState) {
   }
 }
 
+function ownershipLabel(ownership: Process["ownership"]) {
+  if (ownership === "unverified") return "Ownership unknown"
+  if (ownership === "self") return "Observer process"
+  return ownership
+}
+
 function AccessInfoDialog() {
   return (
     <Dialog>
@@ -52,7 +58,8 @@ function AccessInfoDialog() {
           <DialogDescription>Why a reading may be unavailable here but present on the Dashboard</DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm">
-          <p>The Termux process list is a partial view of Android /proc. A process ID alone does not grant control. CPU ticks are accumulated process time, not current CPU utilization.</p>
+          <p>The Termux process list is a partial view of Android /proc. A process name does not establish its service, and unknown ownership is not proof of an external or managed process. PID and start ticks identify observations, not control permission.</p>
+          <p>CPU ticks are lifetime totals, not live CPU %. The panel never guesses a process-to-service mapping.</p>
           <p>Android-wide CPU and network measurements on the Dashboard use a separate, authorized Companion source. Termux may not have permission to read the corresponding kernel files.</p>
           <p>Battery availability depends on Android permissions and the Termux:API source. A missing Termux reading does not invalidate an independent, fresh source.</p>
           <p className="text-muted-foreground">This page samples on request. No process, package, service or permission is changed.</p>
@@ -69,14 +76,14 @@ function DiagnosticSource({ name, scope, state, observedAt }: {
   observedAt: string
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-3 last:border-b-0">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
       <div className="min-w-0">
         <p className="text-sm font-medium">{name}</p>
         <p className="text-muted-foreground text-xs">{scope}</p>
       </div>
-      <div className="text-right">
+      <div className="shrink-0 text-right">
         <Badge variant="outline">{statusLabel(state)}</Badge>
-        <p className="text-muted-foreground mt-1 text-xs tabular-nums">{seenAt(observedAt)}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs tabular-nums">{seenAt(observedAt)}</p>
       </div>
     </div>
   )
@@ -164,7 +171,7 @@ export default function ObservabilityPage() {
             </span>}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" render={<Link to="/dashboard" />}>Dashboard trends</Button>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link to="/dashboard" />}>Dashboard trends</Button>
             <Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}>
               <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
             </Button>
@@ -178,14 +185,14 @@ export default function ObservabilityPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Activity className="size-4" />Process diagnostics</CardTitle>
                 <CardDescription>
-                  Termux-visible processes · partial /proc inventory · cumulative CPU ticks, not live CPU %
+                  Termux-visible processes · partial Android inventory
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground" aria-label="Process inventory status">
                   <span className="tabular-nums">{processesOk ? processList.length + " visible processes" : "Process list unavailable"}</span>
                   <Badge variant="outline">{statusLabel(snapshot.processes.state)}</Badge>
-                  <span>{snapshot.processes.truncated ? "Inventory truncated at 96 entries" : "Partial Android process visibility"}</span>
+                  {snapshot.processes.truncated && <span>Inventory truncated at 96 entries</span>}
                 </div>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Input aria-label="Filter processes" placeholder="Filter name, PID or identity…" value={query} onChange={event => setQuery(event.target.value)} className="max-w-64" />
@@ -203,7 +210,7 @@ export default function ObservabilityPage() {
                           <th scope="col" className="p-3">Process</th>
                           <th scope="col" className="p-3">PID</th>
                           <th scope="col" className="p-3 text-right">Resident RAM</th>
-                          <th scope="col" className="p-3">Identity</th>
+                          <th scope="col" className="p-3">Ownership</th>
                           <th scope="col" className="p-3 text-right">Details</th>
                         </tr>
                       </thead>
@@ -216,7 +223,7 @@ export default function ObservabilityPage() {
                               <td className="p-3 font-medium">{process.name ?? "Unknown"}</td>
                               <td className="p-3 tabular-nums">{process.pid}</td>
                               <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : process.rssMiB + " MiB"}</td>
-                              <td className="p-3">{process.ownership}</td>
+                              <td className="p-3">{ownershipLabel(process.ownership)}</td>
                               <td className="p-3 text-right">
                                 <Button size="sm" variant="ghost" aria-label={`Process details for PID ${process.pid}`}
                                   aria-expanded={expanded} onClick={() => setExpandedProcess(expanded ? null : identity)}>
@@ -233,7 +240,7 @@ export default function ObservabilityPage() {
                                   <div><dt className="text-muted-foreground">Start ticks</dt><dd className="font-mono tabular-nums">{process.startTicks}</dd></div>
                                   <div><dt className="text-muted-foreground">Name source</dt><dd>{process.name ? "/proc/PID/status" : "Unavailable"}</dd></div>
                                 </dl>
-                                <p className="mt-3 text-muted-foreground">Cumulative ticks are not current CPU %. Identity is observational and never grants control.</p>
+                                <p className="mt-3 text-muted-foreground">Lifetime totals only · service affiliation is not inferred from process names.</p>
                               </td>
                             </tr>}
                           </React.Fragment>
@@ -245,16 +252,13 @@ export default function ObservabilityPage() {
                 ) : <p className="text-muted-foreground text-sm">
                   {processesOk ? "No visible process entries in this sample." : "Termux process inventory is unavailable or restricted; no zero-process assumption."}
                 </p>}
-                <p className="text-muted-foreground text-xs">
-                  Process counters are cumulative since each process started. PID and start ticks identify an observation, not permission to control it.
-                </p>
-              </CardContent>
+               </CardContent>
             </Card>
 
             <Card className={snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length ? "min-w-0" : "min-w-0 xl:col-span-2"}>
               <CardHeader>
                 <CardTitle>Telemetry sources</CardTitle>
-                <CardDescription>Termux access states only · current values and trends remain on Dashboard</CardDescription>
+                <CardDescription>Diagnostic source availability and observation times</CardDescription>
               </CardHeader>
               <CardContent>
                 <DiagnosticSource name="Termux CPU counters" scope="System CPU may be blocked by Android /proc permissions"
@@ -303,10 +307,9 @@ export default function ObservabilityPage() {
           </div>
         )}
         <p className="text-muted-foreground text-xs">
-          Services and software inventories live in <Link to="/services" className="underline">Services & Processes</Link>
-          {" and "}<Link to="/packages" className="underline">Packages & Software</Link>.
-          {" "}Android-wide CPU and app permissions belong to <Link to="/shizuku" className="underline">Android & Shizuku</Link>.
-          No background sampling or automatic recovery is performed here.
+          More tools: <Link to="/services" className="underline">Services & Processes</Link>
+          {" · "}<Link to="/packages" className="underline">Packages & Software</Link>
+          {" · "}<Link to="/shizuku" className="underline">Android & Shizuku</Link>
         </p>
       </div>
     </BaseLayout>
