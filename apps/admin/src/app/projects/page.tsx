@@ -22,6 +22,7 @@ type RuntimeState = {
   desired: "running" | "stopped"
   activeRelease: string | null
   lastGoodRelease: string | null
+  previousGoodRelease: string | null
   history: { at: string; action: string; release: string }[]
 }
 type RuntimePlan = {
@@ -234,6 +235,13 @@ export default function ProjectsPage() {
                     await loadRuntime(selected.id); setApproved(false)
                     setMessage("Owned Node release started and readiness verified by host.")
                   })}>Deploy selected release</Button>
+                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                  !runtime?.previousGoodRelease || runtime.state === "unknown"}
+                  onClick={() => action(async () => {
+                    await getJson(api + "/" + selected.id + "/rollback", "POST", { approved: true })
+                    await loadRuntime(selected.id); setApproved(false)
+                    setMessage("Previous verified Node release restored by host.")
+                  })}>Rollback active release</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled || runtime?.state !== "running"}
                   onClick={() => action(async () => {
                     await getJson(api + "/" + selected.id + "/stop", "POST", { approved: true })
@@ -251,7 +259,7 @@ export default function ProjectsPage() {
               {!executionEnabled && <p className="text-xs text-muted-foreground">
                 Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
               </p>}
-              <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
+              <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Previous good: {runtime?.previousGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
               {runtime?.history?.length ? <div className="space-y-1 text-xs">
                 {runtime.history.slice(-8).reverse().map((event, i) =>
                   <p key={event.at + i}>{event.at} · {event.action} · {event.release}</p>)}

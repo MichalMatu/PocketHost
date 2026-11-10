@@ -114,3 +114,12 @@ test('M3 staging refuses tampered source before any runit command', async (t) =>
   assert.throws(() => host.preview(project.id), /digest mismatch/);
   assert.equal(host.status(project.id).state, 'not-provisioned');
 });
+
+test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
+  const { projects, project, host } = fixture(t);
+  const staged = projects.stage(project.id, source).project;
+  await assert.rejects(host.rollback(project.id, false), /approval/);
+  await assert.rejects(host.rollback(project.id, true), /prior healthy/);
+  await assert.rejects(host.deploy(project.id, staged.candidateRelease, true, true),
+    /prior good/);
+});

@@ -21,7 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
-import { reviewNodeToolchain } from '../../shared/node-dependency-plan.ts';
+import { reviewNodeToolchain, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const FIRST_PORT = 19300;
@@ -42,6 +42,7 @@ type RuntimeRecord = {
   desired: 'stopped' | 'running';
   activeRelease: string | null;
   lastGoodRelease: string | null;
+  previousGoodRelease?: string | null;
   process: ProcessProof | null;
   readinessNonce: string;
   history: { at: string; action: 'start' | 'update' | 'stop' | 'failed' | 'rollback'; release: string }[];
@@ -162,6 +163,8 @@ function stored(raw: string, id: string): RuntimeRecord {
     !/^[a-f0-9]{48}$/.test(s.readinessNonce) ||
     (s.activeRelease !== null && !RELEASE.test(s.activeRelease)) ||
     (s.lastGoodRelease !== null && !RELEASE.test(s.lastGoodRelease)) ||
+    (s.previousGoodRelease !== undefined && s.previousGoodRelease !== null &&
+      !RELEASE.test(s.previousGoodRelease)) ||
     (s.process !== null && (!Number.isSafeInteger(s.process.pid) || s.process.pid < 2 ||
       !/^\d+$/.test(s.process.ticks))) ||
     !Array.isArray(s.history) || s.history.length > MAX_HISTORY ||
@@ -288,6 +291,18 @@ export class NodeRunitHost {
     state.history.push({ at: new Date().toISOString(), action, release });
     if (state.history.length > MAX_HISTORY) state.history.shift();
   }
+  private toolchain(plan: NodeDependencyPlan): {
+    nodeVersion: string | null;
+    npmVersion: string | null;
+    status: 'blocked' | 'review-required';
+    missingTools: string[];
+    conflicts: string[];
+  } {
+    const tools = this.toolchain(plan);
+    const { nodeVersion, npmVersion } = tools;
+    return { nodeVersion, npmVersion, status: tools.status,
+      missingTools: tools.missingTools, conflicts: tools.conflicts };
+  }
   preview(id: string): {
     release: string | null; port: number | null; missingTools: string[];
     nodeVersion: string | null; npmVersion: string | null;
@@ -328,10 +343,12 @@ export class NodeRunitHost {
   }
   status(id: string): { state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
     port: number | null; activeRelease: string | null; lastGoodRelease: string | null;
+    previousGoodRelease: string | null;
     desired: 'stopped' | 'running'; history: RuntimeRecord['history'] } {
     const state = this.record(id);
     if (!state) return { state: 'not-provisioned', port: null,
-      activeRelease: null, lastGoodRelease: null, desired: 'stopped', history: [] };
+      activeRelease: null, lastGoodRelease: null, previousGoodRelease: null,
+      desired: 'stopped', history: [] };
     const current = state.activeRelease
       ? this.observe(id, state.activeRelease)
       : this.unitState(id) === 'down' ? 'down' : 'unknown';
@@ -340,7 +357,8 @@ export class NodeRunitHost {
     return {
       state: current === 'down' ? 'stopped' : matches ? 'running' : 'unknown',
       port: state.port, activeRelease: state.activeRelease,
-      lastGoodRelease: state.lastGoodRelease, desired: state.desired,
+      lastGoodRelease: state.lastGoodRelease,
+      previousGoodRelease: state.previousGoodRelease ?? null, desired: state.desired,
       history: state.history,
     };
   }
@@ -405,16 +423,30 @@ export class NodeRunitHost {
     this.script(id, release, port, nonce);
     const state: RuntimeRecord = { schema: 1, owner: 'pockethost-node-runit',
       projectId: id, unit, port, desired: 'stopped', activeRelease: null,
-      lastGoodRelease: null, process: null, readinessNonce: nonce, history: [] };
+      lastGoodRelease: null, previousGoodRelease: null, process: null,
+      readinessNonce: nonce, history: [] };
     this.writeState(id, state);
     await this.admin.apply('register', unit);
     return state;
   }
-  async deploy(id: string, release: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
+  async deploy(
+    id: string, release: string, approved: boolean, rollback = false,
+  ): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned runtime approval required');
-    const plan = this.preview(id);
-    if (!plan.allowed || plan.release !== release || !RELEASE.test(release))
-      throw new Error('Dependency/toolchain plan not authorized');
+    if (!RELEASE.test(release)) throw new RangeError('Invalid Node release ID');
+    if (rollback) {
+      const state = this.record(id);
+      if (!state?.previousGoodRelease || state.previousGoodRelease !== release)
+        throw new Error('No verified prior good release for rollback');
+      const dependencyPlan = this.projects.release(id, release).plan;
+      if (dependencyPlan.dependencyCount !== 0 || dependencyPlan.commands.build !== null ||
+        this.toolchain(dependencyPlan).status === 'blocked')
+        throw new Error('Rollback dependencies or Node toolchain unavailable');
+    } else {
+      const plan = this.preview(id);
+      if (!plan.allowed || plan.release !== release)
+        throw new Error('Dependency/toolchain plan not authorized');
+    }
     const { folder } = this.context(id);
     const globalLock = path.join(this.projectRoot, '.node-ports.lock');
     const globalFd = openSync(globalLock, 'wx', 0o600);
@@ -428,11 +460,14 @@ export class NodeRunitHost {
       throw error;
     }
     try {
-      if (this.projects.inspect(id).candidateRelease !== release) {
+      if (!rollback && this.projects.inspect(id).candidateRelease !== release) {
         throw new Error('Node source candidate changed during admission');
       }
       this.projects.release(id, release); // Re-attest under the exclusive runtime lock.
       let state = this.record(id);
+      if (rollback && state?.previousGoodRelease !== release) {
+        throw new Error('Rollback target changed during admission');
+      }
       if (!state) {
         const reservations = new Set<number>();
         for (const otherProject of this.projects.list()) {
@@ -461,10 +496,11 @@ export class NodeRunitHost {
         if (result.result?.exit !== 0) throw new Error('Runit one-shot start rejected');
         const proof = await this.settle(id, release, state.port, nonce);
         state.activeRelease = release;
+        if (prior && prior !== release) state.previousGoodRelease = prior;
         state.lastGoodRelease = release;
         state.process = proof;
         state.desired = 'running';
-        this.history(state, prior ? 'update' : 'start', release);
+        this.history(state, rollback ? 'rollback' : prior ? 'update' : 'start', release);
         this.writeState(id, state);
       } catch (error) {
         this.history(state, 'failed', release);
@@ -503,6 +539,12 @@ export class NodeRunitHost {
       rmSync(lock, { force: true });
       rmSync(globalLock, { force: true });
     }
+  }
+  async rollback(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
+    if (approved !== true) throw new Error('Explicit owned rollback approval required');
+    const state = this.record(id);
+    if (!state?.previousGoodRelease) throw new Error('No prior healthy Node release');
+    return this.deploy(id, state.previousGoodRelease, approved, true);
   }
   async stop(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned stop required');

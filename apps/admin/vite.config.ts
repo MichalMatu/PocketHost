@@ -437,7 +437,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET") {
@@ -462,7 +462,8 @@ function nodeProjectApi(): Plugin {
         const restore = request.method === "POST" && !!id && op === "restore-candidate"
         const deploy = request.method === "POST" && !!id && op === "deploy"
         const stop = request.method === "POST" && !!id && op === "stop"
-        if (!create && !stage && !restore && !deploy && !stop) {
+        const rollback = request.method === "POST" && !!id && op === "rollback"
+        if (!create && !stage && !restore && !deploy && !stop && !rollback) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -475,7 +476,7 @@ function nodeProjectApi(): Plugin {
         }
         try {
           const result = await serial(async () => {
-            if (deploy || stop) {
+            if (deploy || stop || rollback) {
               if (!executionEnabled) throw new Error("Node runtime activation disabled")
               const requestBody = await readJson(request, 1024)
               if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody))
@@ -489,7 +490,8 @@ function nodeProjectApi(): Plugin {
               }
               if (Object.keys(body).join(",") !== "approved" || body.approved !== true)
                 throw new RangeError("Missing explicit stop approval")
-              return { runtime: await runtime!.stop(id!, true) }
+              return { runtime: rollback ?
+                await runtime!.rollback(id!, true) : await runtime!.stop(id!, true) }
             }
             if (restore) {
               if (request.headers["transfer-encoding"] !== undefined ||

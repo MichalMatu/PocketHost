@@ -38,7 +38,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
     if (path === "/api/v1/node-projects/" + ID + "/runtime" && !options?.method)
       return { ok: true, json: async () => ({ runtime: {
         state: "not-provisioned", port: null, desired: "stopped", activeRelease: null,
-        lastGoodRelease: null, history: [] }, executionEnabled: false }) }
+        lastGoodRelease: null, previousGoodRelease: null, history: [] }, executionEnabled: false }) }
     if (path === "/api/v1/node-projects/" + ID + "/plan" && !options?.method)
       return { ok: true, json: async () => ({ plan: {
         release: RELEASE, port: null, missingTools: [], conflicts: [],
@@ -58,5 +58,6 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
   expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
+  expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)
   expect(calls.mock.calls.some(call => String(call[0]).includes("/start"))).toBe(false)
 })
