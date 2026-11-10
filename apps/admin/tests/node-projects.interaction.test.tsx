@@ -46,6 +46,14 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         services: [],
         projects: [{ id: ID }],
       } }) }
+    if (path === "/api/v1/node-projects/" + ID + "/source" && !options?.method)
+      return { ok: true, json: async () => ({ source: {
+        release: RELEASE,
+        manifest: JSON.stringify({ name: "restored-node", version: "2.0.0", scripts: { start: "node server.mjs" } }),
+        lockfile: JSON.stringify({ name: "restored-node", version: "2.0.0", lockfileVersion: 3,
+          packages: { "": { name: "restored-node", version: "2.0.0" } } }),
+        serverSource: "console.log('verified release')",
+      } }) }
     if (path === "/api/v1/node-projects/" + ID + "/check-build" && options?.method === "POST")
       return { ok: true, json: async () => ({ buildCheck: {
         release: RELEASE, status: "syntax-valid", executed: false,
@@ -71,6 +79,10 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await screen.findByText("Private Node project created.")
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
+  await user.click(screen.getByRole("button", { name: "Load staged source" }))
+  await screen.findByText("Verified staged source loaded into editor; no process changed.")
+  expect((screen.getByLabelText("package.json") as HTMLTextAreaElement).value).toContain('restored-node')
+  expect((screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value).toContain('verified release')
   expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
   await user.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
   await screen.findByText(/Modules: 1 · Services: 0 · Projects: 1/)

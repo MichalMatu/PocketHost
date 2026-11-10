@@ -110,3 +110,21 @@ test('M3 source staging and candidate restore respect shared active deploy/backu
   rmSync(lock);
   assert.equal(host.restoreCandidate(project.id).candidateRelease, first.candidateRelease);
 });
+
+test('M3 editor recovers only the currently attested source candidate', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Editable node');
+  assert.throws(() => host.candidateSource(project.id), /No staged/);
+  const first = host.stage(project.id, source()).project;
+  const second = host.stage(project.id, source('1.0.1')).project;
+  const latest = host.candidateSource(project.id);
+  assert.equal(latest.release, second.candidateRelease);
+  assert.equal(JSON.parse(latest.manifest).version, '1.0.1');
+  assert.equal(JSON.parse(latest.lockfile).version, '1.0.1');
+  assert.equal(latest.serverSource, source().serverSource);
+  host.restoreCandidate(project.id);
+  assert.equal(host.candidateSource(project.id).release, first.candidateRelease);
+  const file = path.join(root, project.id, 'releases', first.candidateRelease, 'server.mjs');
+  writeFileSync(file, 'console.log("changed")');
+  assert.throws(() => host.candidateSource(project.id), /digest mismatch/);
+});

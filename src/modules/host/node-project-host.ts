@@ -394,6 +394,7 @@ export class NodeProjectHost {
     folder: string;
     projectFolder: string;
     plan: NodeDependencyPlan;
+    source: { manifest: string; lock: string; server: string };
   } {
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release');
     const marker = this.record(id);
@@ -425,7 +426,23 @@ export class NodeProjectHost {
     if ((manifest as { scripts?: { start?: unknown } }).scripts?.start !== 'node server.mjs') {
       throw new Error('Unsupported Node release entrypoint');
     }
-    return { project: this.summary(marker), folder, projectFolder, plan };
+    return { project: this.summary(marker), folder, projectFolder, plan,
+      source: { manifest: manifestText, lock: lockText, server: sourceText } };
+  }
+
+  /** Only expose the verified current candidate; no arbitrary file reads. */
+  candidateSource(id: string): {
+    release: string; manifest: string; lockfile: string; serverSource: string;
+  } {
+    const marker = this.record(id);
+    if (!marker.candidateRelease) throw new RangeError('No staged Node source candidate');
+    const verified = this.release(id, marker.candidateRelease);
+    return {
+      release: marker.candidateRelease,
+      manifest: verified.source.manifest,
+      lockfile: verified.source.lock,
+      serverSource: verified.source.server,
+    };
   }
 
   restoreCandidate(id: string): NodeProjectSummary {

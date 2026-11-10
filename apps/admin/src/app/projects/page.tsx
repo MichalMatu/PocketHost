@@ -296,7 +296,9 @@ export default function ProjectsPage() {
             <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
               disabled={busy} onClick={() => action(async () => {
                 setSelectedId(project.id); setApproved(false)
-                setRuntime(null); setPlan(null); setLogLines([])
+                setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+                setBuildCheck(null)
                 await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
         </CardContent>
@@ -316,6 +318,20 @@ export default function ProjectsPage() {
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
               value={source} onChange={event => setSource(event.target.value)} /></label>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={busy || !selected.candidateRelease}
+              onClick={() => action(async () => {
+                const response = await getJson(api + "/" + selected.id + "/source")
+                const value = response.source as Record<string, unknown> | undefined
+                if (!value || value.release !== selected.candidateRelease ||
+                  typeof value.manifest !== "string" || value.manifest.length > 140000 ||
+                  typeof value.lockfile !== "string" || value.lockfile.length > 140000 ||
+                  typeof value.serverSource !== "string" || value.serverSource.length > 65536)
+                  throw new Error("Invalid verified candidate source")
+                setManifest(value.manifest); setLockfile(value.lockfile)
+                setSource(value.serverSource); setApproved(false)
+                setBuildCheck(null); setPreview(null)
+                setMessage("Verified staged source loaded into editor; no process changed.")
+              })}>Load staged source</Button>
             <Button disabled={busy} onClick={() => action(async () => {
               const data = await getJson(api + "/" + selected.id + "/stage", "POST", {
                 packageJson: JSON.parse(manifest) as unknown,
