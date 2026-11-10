@@ -10,6 +10,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { classifyUiChanges } from '../../scripts/dev/ui-sync-policy.mjs';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const home = os.homedir();
@@ -95,6 +96,32 @@ export function assertPanelRunitIdentity(e) {
   return true;
 }
 
+/** Allow only verified UI-only Git fast-forward after a running Vite panel's HMR. */
+export function assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor, changedFiles }) {
+  const sha = /^[0-9a-f]{40}$/;
+  requireCondition(sha.test(markerSha) && sha.test(gatewaySha) && sha.test(checkoutSha), 'Invalid owner source sha');
+  requireCondition(markerSha === gatewaySha, 'Owner marker source disagreement');
+  if (markerSha !== checkoutSha) {
+    requireCondition(ancestor === true, 'Owner source is not an ancestor');
+    requireCondition(Array.isArray(changedFiles) && changedFiles.length > 0, 'No HMR source delta');
+    requireCondition(classifyUiChanges(changedFiles).allowed, 'HMR source contains non-UI changes');
+  }
+  return markerSha;
+}
+
+function verifiedMarkerHead(root, owner, gateway, checkoutSha) {
+  const markerSha = owner?.sourceSha;
+  const gatewaySha = gateway?.sourceSha;
+  requireCondition(typeof markerSha === 'string' && typeof gatewaySha === 'string', 'Owner source record missing');
+  if (markerSha === checkoutSha) {
+    return assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: [] });
+  }
+  git(root, 'merge-base', '--is-ancestor', markerSha, checkoutSha);
+  const delta = git(root, 'diff', '--name-only', '--no-renames', '-z', markerSha, checkoutSha)
+    .split(String.fromCharCode(0)).filter(Boolean);
+  return assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: delta });
+}
+
 function inspect(root, expectedHead) {
   fixedServiceRecord(service, root);
   fixedServiceRecord(watchdog, root);
@@ -104,11 +131,12 @@ function inspect(root, expectedHead) {
   const pid = managed.pid;
   const owner = readRecord(ownerFile);
   const gateway = readRecord(gatewayFile);
+  const verifiedHead = verifiedMarkerHead(root, owner, gateway, expectedHead);
   requireCondition(gateway.bind === '192.168.0.100', 'Unapproved gateway interface');
   const rawArgv = readFileSync('/proc/' + pid + '/cmdline', 'utf8').split('\0').filter(Boolean);
   const cwd = realpathSync('/proc/' + pid + '/cwd');
   const evidence = {
-    owner, gateway, root, head: expectedHead, pid,
+    owner, gateway, root, head: verifiedHead, pid,
     servicePid: Number(readFileSync(service + '/supervise/pid', 'utf8').trim()),
     ticks: startTicks(pid), cwd, argv: rawArgv,
     processUid: statSync('/proc/' + pid).uid, expectedUid: process.getuid(),

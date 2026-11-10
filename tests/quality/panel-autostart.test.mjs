@@ -84,3 +84,24 @@ test('panel refresh only signals its owned runit service and refuses foreign pro
   assert.match(rollout, /FETCH_HEAD/);
   assert.doesNotMatch(rollout, /killall|pkill|SIGKILL|--force|0\.0\.0\.0/);
 });
+
+test('HMR drift is accepted only for verified ancestor UI and docs files', async () => {
+  const { assertHmrOnlySourceDrift } = await import('../../ops/termux/refresh-panel.mjs');
+  const markerSha = 'a'.repeat(40);
+  const gatewaySha = markerSha;
+  const checkoutSha = 'b'.repeat(40);
+  const valid = { markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: [
+    'apps/admin/src/app/termux/system-page.tsx',
+    'apps/admin/tests/system-dashboard.interaction.test.tsx',
+    'docs/ARCHITECTURE.md',
+  ] };
+  assert.equal(assertHmrOnlySourceDrift(valid), markerSha);
+  assert.equal(assertHmrOnlySourceDrift({ ...valid, checkoutSha: markerSha, changedFiles: [] }), markerSha);
+  for (const change of [
+    { gatewaySha: checkoutSha }, { markerSha: 'bad' },
+    { ancestor: false }, { changedFiles: [] },
+    { changedFiles: ['apps/admin/vite.config.ts'] },
+    { changedFiles: ['src/modules/host/internet-connectivity.ts'] },
+    { changedFiles: ['apps/admin/src/../../secrets'] },
+  ]) assert.throws(() => assertHmrOnlySourceDrift({ ...valid, ...change }));
+});
