@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { ShizukuDiagnosticsPanel } from "@/app/shizuku/diagnostics-panel"
 
@@ -29,13 +29,17 @@ describe("Shizuku native diagnostics", () => {
       power: { batteryLevel: 80, batteryTemperatureC: 30, charging: false,
         memoryAvailableKb: 2000000, memoryTotalKb: 6000000 },
     }
-    vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+    const fetchMock = vi.fn(async (url: string) => ({
       ok: true, json: async () => url.endsWith("/status") ? sample :
         url.endsWith("/apps") ? apps : system,
-    })))
+    }))
+    vi.stubGlobal("fetch", fetchMock)
     render(<ShizukuDiagnosticsPanel />)
     expect(await screen.findByText("2000")).toBeTruthy()
-    expect(await screen.findByText(/3/)).toBeTruthy()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3))
+    for (const endpoint of ["/status", "/apps", "/system"]) {
+      expect(fetchMock.mock.calls.some(([url]) => url.endsWith(endpoint))).toBe(true)
+    }
     expect(screen.getByText(/Native capabilities \(1\)/)).toBeTruthy()
     await userEvent.setup().click(screen.getByText(/Native capabilities \(1\)/))
     expect(screen.getByText(/Shizuku Binder operation available/)).toBeTruthy()
