@@ -78,8 +78,8 @@ test('panel refresh only signals its owned runit service and refuses foreign pro
   const rollout = readFileSync(new URL('../../ops/termux/refresh-panel.mjs', import.meta.url), 'utf8');
   assert.match(rollout, /inspect\(root, oldSha\)/);
   assert.match(rollout, /supervise\/pid/);
-  assert.match(rollout, /\\['down', service\\]/);
-  assert.match(rollout, /\\['up', service\\]/);
+  assert.ok(rollout.includes("['down', service]"));
+  assert.ok(rollout.includes("['up', service]"));
   assert.match(rollout, /rollback = 'PASS'/);
   assert.match(rollout, /FETCH_HEAD/);
   assert.doesNotMatch(rollout, /killall|pkill|SIGKILL|--force|0\.0\.0\.0/);

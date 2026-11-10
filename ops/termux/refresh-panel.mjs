@@ -62,7 +62,9 @@ function readRecord(file) {
 function fixedServiceRecord(dir, root) {
   const meta = lstatSync(dir);
   requireCondition(meta.isDirectory() && !meta.isSymbolicLink(), 'Service not a real runit directory');
-  requireCondition(readRecord(dir + '/owner-root') === root, 'Unexpected runit service owner');
+  const rootRecord = lstatSync(dir + '/owner-root');
+  requireCondition(rootRecord.isFile() && !rootRecord.isSymbolicLink(), 'Linked or missing runit owner root');
+  requireCondition(readFileSync(dir + '/owner-root', 'utf8').trim() === root, 'Unexpected runit service owner');
   requireCondition(!lstatSync(dir + '/run').isSymbolicLink(), 'Linked runit launcher');
 }
 
