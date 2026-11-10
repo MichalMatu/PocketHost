@@ -82,3 +82,27 @@ adapter is not a verified physical backup. M4 Python/SSH/Cloudflare
 and M5 multi-component hosting are deferred while M2/M3 runtime
 acceptance is open. Rough source-progress estimates: M2 ~50%, M3 ~55%,
 M4 0%, M5 0%; **none are accepted device milestones**.
+
+## Continued M3 source iteration — 2026-11-10
+
+- `22ef491b9f34c07925ae903e6bd34491cbc0b988` adds an attested,
+  current-candidate-only source read in the host module and private API,
+  with a React editor load action. LAN-gateway reads of source are denied.
+  Switching projects clears the previous project's draft from the editor.
+- `fec1cae838c2a233324df943c8c9e5188cf4fac9` adds a read-only Node
+  HTTP health check that retains a single exact PID/start-ticks/release/nonce
+  identity across its loopback probe, plus React readiness inspection.
+- Source and UI regression cases were added for these features; source commits
+  are **not** native PASS. An exact-source Samsung Termux targeted check for
+  `22ef491b9f34c07925ae903e6bd34491cbc0b988` was published with task ID
+  `pockethost-m3-candidate-editor-22ef491-20261110-v1` but no terminal
+  result had been observed at this checkpoint. The subsequent health commit
+  has not been tested on Samsung.
+- No hosted Node service, tunnel, package installation, new boot service or
+  foreign process was started, stopped or modified in this continuation.
+  **PHYSICAL_OPEN** remains the first authorized disposable runit start,
+  local readiness observation, Stop, failed-update recovery and rollback.
+
+Next: consume the outstanding Samsung receipt, fix concrete failures, then
+run the narrow changed-file checks at the latest exact source SHA before
+any live runtime acceptance. Do not duplicate a still-pending host task.
