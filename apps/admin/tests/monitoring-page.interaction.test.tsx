@@ -62,7 +62,7 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.getByText("Diagnostic events")).toBeTruthy()
     expect(screen.getByText("2 visible processes")).toBeTruthy()
     expect(screen.getByRole("table", { name: "Termux-visible process details" })).toBeTruthy()
-    expect(screen.getByText("550", { selector: "td" })).toBeTruthy()
+    expect(within(screen.getByRole("table", { name: "Termux-visible process details" })).getAllByRole("row")[1]?.querySelectorAll("td")[1]?.textContent).toBe("550")
     expect(screen.queryByText("Available RAM")).toBeNull()
     expect(screen.queryByText("Free Termux storage")).toBeNull()
     expect(screen.queryByText("Installed packages")).toBeNull()
