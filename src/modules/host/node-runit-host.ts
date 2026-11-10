@@ -166,6 +166,41 @@ export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<bo
     request.on('error', () => resolve(false));
   });
 }
+/** Bounded local HTTP observation. Never forwards admin headers or exposes HTML execution. */
+export function readBoundedNodePreview(port: number): Promise<string> {
+  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535)
+    throw new RangeError('Invalid local preview port');
+  return new Promise((resolve, reject) => {
+    const request = http.get({
+      hostname: '127.0.0.1', port, path: '/', agent: false, timeout: 1500,
+      signal: AbortSignal.timeout(3000),
+      headers: { accept: 'text/plain, text/html' },
+    }, (response) => {
+      if (response.statusCode !== 200) {
+        response.destroy();
+        reject(new Error('Node preview returned non-success status'));
+        return;
+      }
+      const chunks: Buffer[] = [];
+      let total = 0;
+      response.on('data', (part: Buffer | string) => {
+        const bytes = Buffer.isBuffer(part) ? part : Buffer.from(part);
+        total += bytes.length;
+        if (total > 8192) {
+          request.destroy(new Error('Node preview response exceeds safe budget'));
+          return;
+        }
+        chunks.push(bytes);
+      });
+      response.once('end', () =>
+        resolve(Buffer.concat(chunks).toString('utf8').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')),
+      );
+      response.once('error', reject);
+    });
+    request.once('timeout', () => request.destroy(new Error('Node preview timeout')));
+    request.once('error', reject);
+  });
+}
 function stored(raw: string, id: string): RuntimeRecord {
   const v: unknown = JSON.parse(raw);
   if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('Invalid Node runtime state');
@@ -667,6 +702,25 @@ export class NodeRunitHost {
       rmSync(lock, { force: true });
       rmSync(globalLock, { force: true });
     }
+  }
+  /** Source output remains private to direct-loopback admin sessions. */
+  async previewLocalResponse(id: string): Promise<{
+    release: string; port: number; body: string;
+  }> {
+    const state = this.record(id);
+    if (!state?.activeRelease || !state.process || state.desired !== 'running' ||
+        this.status(id).state !== 'running') {
+      throw new Error('No verified running Node release available for local preview');
+    }
+    if (!await probeOwnedNodeReadiness(state.port, state.readinessNonce)) {
+      throw new Error('Owned Node readiness has not been verified');
+    }
+    const body = await readBoundedNodePreview(state.port);
+    const after = this.observe(id, state.activeRelease);
+    if (after === 'down' || after === 'unknown' ||
+        after.pid !== state.process.pid || after.ticks !== state.process.ticks)
+      throw new Error('Node runtime identity changed during preview');
+    return { release: state.activeRelease, port: state.port, body };
   }
   logs(id: string): { lines: string[] } {
     const state = this.record(id);

@@ -7,6 +7,7 @@ import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 import {
   NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort, runScript,
+  readBoundedNodePreview,
 } from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
 import { nodeHostingUnitName } from '../../src/shared/node-hosting-projection.ts';
@@ -171,4 +172,18 @@ test('M3 invalid Node syntax is detected without start or service registration',
   });
   assert.equal(host.status(project.id).state, 'not-provisioned');
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});
+
+test('M3 direct loopback Node preview is bounded and never follows foreign response redirects', async (t) => {
+  const server = createServer((req, res) => {
+    if (req.url === '/too-large') return;
+    res.writeHead(200, { 'Content-Type': 'text/html' });
+    res.end('<b>safe text preview</b>');
+  });
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  assert.equal(await readBoundedNodePreview(address.port), '<b>safe text preview</b>');
+  assert.throws(() => readBoundedNodePreview(0), /port/);
 });

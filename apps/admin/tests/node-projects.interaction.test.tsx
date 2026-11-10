@@ -83,5 +83,6 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await user.click(screen.getByRole("button", { name: "Check Node build syntax" }))
   await screen.findByText(/Candidate syntax: syntax-valid/)
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)
+  expect(screen.getByRole("button", { name: "Preview local response" }).hasAttribute("disabled")).toBe(true)
   expect(calls.mock.calls.some(call => String(call[0]).includes("/start"))).toBe(false)
 })

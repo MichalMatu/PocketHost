@@ -105,6 +105,7 @@ export default function ProjectsPage() {
   const [executionEnabled, setExecutionEnabled] = React.useState(false)
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
+  const [preview, setPreview] = React.useState<{ release: string; body: string } | null>(null)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -170,7 +171,7 @@ export default function ProjectsPage() {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
             setSelectedId(data.project.id); setName(""); setApproved(false)
-            setRuntime(null); setPlan(null); setLogLines([])
+            setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
             await refresh(); setReleases([]); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
@@ -389,6 +390,17 @@ export default function ProjectsPage() {
                     await loadRuntime(selected.id); setApproved(false)
                     setMessage("Owned Node service stopped.")
                   })}>Stop owned service</Button>
+                <Button variant="outline" disabled={busy || runtime?.state !== "running"}
+                  onClick={() => action(async () => {
+                    const response = await getJson(api + "/" + selected.id + "/preview")
+                    const value = response.preview as Record<string, unknown> | undefined
+                    if (!value || typeof value.release !== "string" ||
+                      !/^r-[a-f0-9]{32}$/.test(value.release) ||
+                      typeof value.body !== "string" || value.body.length > 8192)
+                      throw new Error("Invalid private Node preview response")
+                    setPreview({ release: value.release, body: value.body })
+                    setMessage("Private loopback response inspected as plain text, not published.")
+                  })}>Preview local response</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
                   const response = await getJson(api + "/" + selected.id + "/logs")
                   const logs = response.logs as { lines?: unknown } | undefined
@@ -411,6 +423,9 @@ export default function ProjectsPage() {
                 {runtime.history.slice(-8).reverse().map((event, i) =>
                   <p key={event.at + i}>{event.at} · {event.action} · {event.release}</p>)}
               </div> : null}
+              {preview && <pre aria-label="Local Node response" className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
+                {preview.body}
+              </pre>}
               {logLines.length > 0 && <pre aria-label="Node runit logs" className="max-h-52 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
                 {logLines.join("\n")}
               </pre>}
