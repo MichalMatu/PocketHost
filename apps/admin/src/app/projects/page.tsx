@@ -55,6 +55,11 @@ const exampleSource = [
   "const port = Number(process.env.PORT)",
   "if (!Number.isInteger(port)) throw new Error('PORT must be assigned by PocketHost')",
   "http.createServer((request, response) => {",
+  "  if (request.url === '/__pockethost/ready') {",
+  "    response.setHeader('X-PocketHost-Ready', process.env.POCKETHOST_READINESS_NONCE ?? '')",
+  "    response.end('ready')",
+  "    return",
+  "  }",
   "  response.setHeader('Content-Type', 'text/plain')",
   "  response.end('Hello from PocketHost Node!')",
   "}).listen(port, '127.0.0.1')",
@@ -171,7 +176,7 @@ export default function ProjectsPage() {
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; no public routes or automatic startup.</p>
+          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
               value={manifest} onChange={event => setManifest(event.target.value)} /></label>

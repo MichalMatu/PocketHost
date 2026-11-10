@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { createHash, randomBytes, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   lstatSync,
@@ -41,6 +41,7 @@ type RuntimeRecord = {
   activeRelease: string | null;
   lastGoodRelease: string | null;
   process: ProcessProof | null;
+  readinessNonce: string;
   history: { at: string; action: 'start' | 'update' | 'stop' | 'failed' | 'rollback'; release: string }[];
 };
 type UnitRecord = {
@@ -50,6 +51,7 @@ type UnitRecord = {
   unit: string;
   port: number;
   runDigest: string;
+  readinessNonce: string;
 };
 
 function unitName(id: string): string {
@@ -89,10 +91,11 @@ function quote(input: string): string {
 function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
-function runScript(folder: string, port: number): string {
+function runScript(folder: string, port: number, readinessNonce: string): string {
   return '#!' + PREFIX + '/bin/sh\nset -eu\ncd ' + quote(folder) +
-    '\nexport PORT=' + quote(String(port)) + '\nexec ' +
-    quote(PREFIX + '/bin/node') + ' ' + quote(path.join(folder, 'server.mjs')) + '\n';
+    '\nexport PORT=' + quote(String(port)) +
+    '\nexport POCKETHOST_READINESS_NONCE=' + quote(readinessNonce) +
+    '\nexec ' + quote(PREFIX + '/bin/node') + ' ' + quote(path.join(folder, 'server.mjs')) + '\n';
 }
 function observedTicks(pid: number): string | null {
   try {
@@ -111,13 +114,15 @@ function portFree(port: number): Promise<boolean> {
     s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
   });
 }
-function ready(port: number): Promise<boolean> {
+function ready(port: number, nonce: string): Promise<boolean> {
   return new Promise((resolve) => {
-    const request = http.get({ hostname: '127.0.0.1', port, path: '/', timeout: 600,
-      agent: false }, (response) => {
-        response.resume();
-        resolve(response.statusCode === 200);
-      });
+    const request = http.get({
+      hostname: '127.0.0.1', port, path: '/__pockethost/ready', timeout: 600,
+      agent: false,
+    }, (response) => {
+      response.resume();
+      resolve(response.statusCode === 200 && response.headers['x-pockethost-ready'] === nonce);
+    });
     request.on('timeout', () => request.destroy());
     request.on('error', () => resolve(false));
   });
@@ -130,6 +135,8 @@ function stored(raw: string, id: string): RuntimeRecord {
     s.unit !== unitName(id) || !Number.isSafeInteger(s.port) ||
     s.port < FIRST_PORT || s.port >= FIRST_PORT + PORT_COUNT ||
     !['running', 'stopped'].includes(s.desired) ||
+    typeof s.readinessNonce !== 'string' ||
+    !/^[a-f0-9]{48}$/.test(s.readinessNonce) ||
     (s.activeRelease !== null && !RELEASE.test(s.activeRelease)) ||
     (s.lastGoodRelease !== null && !RELEASE.test(s.lastGoodRelease)) ||
     (s.process !== null && (!Number.isSafeInteger(s.process.pid) || s.process.pid < 2 ||
@@ -194,6 +201,7 @@ export class NodeRunitHost {
     if (m.schema !== 1 || m.owner !== 'pockethost-node-runit' ||
       m.projectId !== id || m.unit !== unit || m.port !== record.port ||
       !/^[a-f0-9]{64}$/.test(m.runDigest) ||
+      m.readinessNonce !== record.readinessNonce ||
       digest(privateText(path.join(service, 'run'))) !== m.runDigest)
       throw new Error('Node runit service identity changed');
     const down = path.join(service, 'down');
@@ -229,14 +237,15 @@ export class NodeRunitHost {
     const { folder } = this.context(id);
     atomic(folder, RUNTIME_MARKER, JSON.stringify(state) + '\n');
   }
-  private script(id: string, release: string, port: number): void {
+  private script(id: string, release: string, port: number, nonce: string): void {
     const { service } = this.context(id);
     const folder = this.projects.release(id, release).folder;
-    const source = runScript(folder, port);
+    const source = runScript(folder, port, nonce);
     atomic(service, 'run', source, 0o700);
     atomic(service, UNIT_MARKER, JSON.stringify({
       schema: 1, owner: 'pockethost-node-runit', projectId: id,
       unit: unitName(id), port, runDigest: digest(source),
+      readinessNonce: nonce,
     }) + '\n');
   }
   private history(state: RuntimeRecord, action: RuntimeRecord['history'][number]['action'],
@@ -291,10 +300,10 @@ export class NodeRunitHost {
       history: state.history,
     };
   }
-  private async settle(id: string, release: string, port: number): Promise<ProcessProof> {
+  private async settle(id: string, release: string, port: number, nonce: string): Promise<ProcessProof> {
     for (let n = 0; n < 40; n++) {
       const proof = this.observe(id, release);
-      if (proof !== 'down' && proof !== 'unknown' && await ready(port)) {
+      if (proof !== 'down' && proof !== 'unknown' && await ready(port, nonce)) {
         const after = this.observe(id, release);
         if (after !== 'down' && after !== 'unknown' &&
           after.pid === proof.pid && after.ticks === proof.ticks) return proof;
@@ -333,10 +342,11 @@ export class NodeRunitHost {
     writeFileSync(path.join(service, 'log', 'run'),
       '#!' + PREFIX + '/bin/sh\nexec ' + quote(PREFIX + '/bin/svlogd') +
       ' -tt ' + quote(log) + '\n', { flag: 'wx', mode: 0o700 });
-    this.script(id, release, port);
+    const nonce = randomBytes(24).toString('hex');
+    this.script(id, release, port, nonce);
     const state: RuntimeRecord = { schema: 1, owner: 'pockethost-node-runit',
       projectId: id, unit, port, desired: 'stopped', activeRelease: null,
-      lastGoodRelease: null, process: null, history: [] };
+      lastGoodRelease: null, process: null, readinessNonce: nonce, history: [] };
     this.writeState(id, state);
     await this.admin.apply('register', unit);
     return state;
@@ -378,11 +388,13 @@ export class NodeRunitHost {
       if (state.activeRelease) await this.halt(id, state);
       else if (!await portFree(state.port)) throw new Error('Owned port not free');
       const prior = state.lastGoodRelease;
-      this.script(id, release, state.port);
+      const nonce = randomBytes(24).toString('hex');
+      this.script(id, release, state.port, nonce);
+      state.readinessNonce = nonce;
       try {
         const result = await this.admin.apply('once', state.unit);
         if (result.result?.exit !== 0) throw new Error('Runit one-shot start rejected');
-        const proof = await this.settle(id, release, state.port);
+        const proof = await this.settle(id, release, state.port, nonce);
         state.activeRelease = release;
         state.lastGoodRelease = release;
         state.process = proof;
@@ -405,10 +417,12 @@ export class NodeRunitHost {
         if (prior) {
           for (let n = 0; n < 40 && !await portFree(state.port); n++) await pause();
           if (!await portFree(state.port)) throw new Error('Failed release still occupies port');
-          this.script(id, prior, state.port);
+          const restoreNonce = randomBytes(24).toString('hex');
+          this.script(id, prior, state.port, restoreNonce);
+          state.readinessNonce = restoreNonce;
           const result = await this.admin.apply('once', state.unit);
           if (result.result?.exit !== 0) throw new Error('Rollback start refused');
-          const proof = await this.settle(id, prior, state.port);
+          const proof = await this.settle(id, prior, state.port, restoreNonce);
           state.activeRelease = prior;
           state.lastGoodRelease = prior;
           state.process = proof;
