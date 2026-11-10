@@ -55,6 +55,8 @@ test('M2 Node Restic uses a separate scoped repository and restores to staging o
   await host.backup(true, run);
   assert.ok(calls.some((call) => call.args.includes('pockethost-node') &&
     call.args.includes('backup') && call.cwd === path.dirname(root)));
+  assert.ok(calls.some((call) => call.args.includes('**/.node-ports.lock')));
+  assert.ok(calls.some((call) => call.args.includes('**/.node-runtime.lock')));
   assert.ok(calls.every((call) => !call.args.includes('home') &&
     !call.args.includes('prefix') && !call.args.includes('all')));
   const restored = await host.restoreToStaging(snapshot, true, run);
