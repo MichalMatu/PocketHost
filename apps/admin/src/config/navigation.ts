@@ -13,6 +13,7 @@ export const navGroups = [
       { title: "Monitoring", url: "/observability", icon: Activity },
       { title: "Observed host inventory", url: "/host", icon: ServerCog },
       { title: "Android & Shizuku", url: "/shizuku", icon: Smartphone },
+      { title: "Phone Settings", url: "/phone-settings", icon: Settings },
       { title: "Packages & Software", url: "/packages", icon: Package },
       { title: "File Manager", url: "/files", icon: FolderOpen },
       { title: "Services & Processes", url: "/services", icon: ServerCog },
