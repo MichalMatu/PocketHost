@@ -57,6 +57,19 @@ const internetFixture = () => ({
   state: "reachable", latencyMs: 14.2,
 })
 
+const historyFixture = () => ({
+  version: 1, source: "pockethost-collector", state: "ok",
+  intervalSeconds: 60, retentionHours: 24,
+  samples: [
+    {
+      observedAt: new Date(Date.now() - 180000).toISOString(),
+      cpu: 19, ram: 66, internetMs: 28, internetFailed: false,
+      bridgeMs: 12, bridgeOnline: true, servicesRunning: 6,
+      servicesTotal: 6, storageAvailableMiB: 12000, systemUptimeSeconds: 200,
+    },
+  ],
+})
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
@@ -66,7 +79,9 @@ describe("PocketHost real-data dashboard", () => {
   it("shows only live Termux and authorized Android metrics, never demo runtime or module tiles", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
       ok: true,
-      json: async () => url.includes("shizuku") ? bridgeFixture() : url.includes("internet-connectivity") ? internetFixture() : hostFixture,
+      json: async () => url.includes("shizuku") ? bridgeFixture() :
+        url.includes("internet-connectivity") ? internetFixture() :
+        url.includes("dashboard/history") ? historyFixture() : hostFixture,
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
@@ -76,6 +91,9 @@ describe("PocketHost real-data dashboard", () => {
     expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
     expect(within(metrics).getByText("6 / 6")).toBeTruthy()
     expect(screen.getByText("Live system resources")).toBeTruthy()
+    await screen.findByText(/Server history: up to 24 h/)
+    expect((vi.mocked(fetch).mock.calls as string[][]).some(([url]) =>
+      String(url).includes("/api/v1/dashboard/history?range=1h"))).toBe(true)
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
     for (const [metric, fill] of [
@@ -110,7 +128,8 @@ describe("PocketHost real-data dashboard", () => {
       ok: true,
       json: async () => url.includes("shizuku")
         ? { ...bridgeFixture(), authorized: false, connected: false, mode: "none", cpuPercent: null, visibleProcesses: null, uid: null }
-        : url.includes("internet-connectivity") ? internetFixture() : hostFixture,
+        : url.includes("internet-connectivity") ? internetFixture() :
+          url.includes("dashboard/history") ? historyFixture() : hostFixture,
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
@@ -132,6 +151,7 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText(/1 API errors/)).toBeTruthy()
     expect(screen.getByText(/0 TCP failures/)).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
+    await screen.findByText(/Server history unavailable/)
     expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")

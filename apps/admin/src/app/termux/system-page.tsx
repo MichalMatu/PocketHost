@@ -11,9 +11,10 @@ import { formatMemory } from "@/lib/format-memory"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
 import { parseInternetConnectivity, type InternetConnectivity } from "@/lib/internet-connectivity-schema"
+import { parseDashboardHistory, type DashboardHistoryPoint } from "@/lib/dashboard-history-schema"
 
 const POLL_MS = 15_000
-const MAX_SAMPLES = 120 // 30 min of in-tab samples, never claimed as durable history
+const MAX_SAMPLES = 240 // bounded 1h browser view; 24h history is retained on the PocketHost host
 
 type Sample = {
   observedAt: string
@@ -77,6 +78,29 @@ async function getInternet(signal: AbortSignal) {
   return parseInternetConnectivity(await response.json() as unknown)
 }
 
+function mergeHistory(previous: Sample[], stored: DashboardHistoryPoint[]): Sample[] {
+  const merged = new Map<string, Sample>()
+  for (const item of stored) merged.set(item.observedAt, {
+    observedAt: item.observedAt,
+    cpu: item.cpu, ram: item.ram, internetMs: item.internetMs,
+    internetFailed: item.internetFailed, bridgeMs: item.bridgeMs,
+    bridgeOnline: item.bridgeOnline, apiMs: null,
+  })
+  for (const item of previous) merged.set(item.observedAt, item)
+  return [...merged.values()]
+    .sort((a, b) => Date.parse(a.observedAt) - Date.parse(b.observedAt))
+    .slice(-MAX_SAMPLES)
+}
+
+async function getSavedHistory(signal: AbortSignal) {
+  const response = await fetch("/api/v1/dashboard/history?range=1h", {
+    credentials: "same-origin", cache: "no-store",
+    signal: AbortSignal.any([signal, AbortSignal.timeout(4500)]),
+  })
+  if (!response.ok) throw new Error("history-unavailable")
+  return parseDashboardHistory(await response.json() as unknown)
+}
+
 function metricValue(value: string | null, loading: boolean) {
   return loading
     ? <span aria-label="Loading" className="block h-8 w-28 max-w-full animate-pulse rounded bg-muted" />
@@ -119,6 +143,7 @@ export default function SystemPage() {
   const [bridge, setBridge] = React.useState<ShizukuStatus | null>(null)
   const [internet, setInternet] = React.useState<InternetConnectivity | null>(null)
   const [samples, setSamples] = React.useState<Sample[]>([])
+  const [historyState, setHistoryState] = React.useState<"loading" | "ok" | "unavailable">("loading")
   const [loading, setLoading] = React.useState(true)
   const [sampledAt, setSampledAt] = React.useState<string | null>(null)
   const [generation, setGeneration] = React.useState(0)
@@ -157,6 +182,13 @@ export default function SystemPage() {
       busy = false
     }
 
+    void getSavedHistory(controller.signal).then(history => {
+      if (controller.signal.aborted) return
+      setHistoryState(history.state)
+      if (history.state === "ok") setSamples(previous => mergeHistory(previous, history.samples))
+    }).catch(() => {
+      if (!controller.signal.aborted) setHistoryState("unavailable")
+    })
     void poll()
     const timer = window.setInterval(() => {
       if (document.visibilityState !== "hidden") void poll()
@@ -242,7 +274,12 @@ export default function SystemPage() {
               <div className="text-muted-foreground flex min-h-10 flex-wrap items-start gap-x-4 gap-y-1 pt-2 text-xs tabular-nums">
                 <span>CPU: {cpu === null ? "Unavailable" : cpu.toFixed(1) + "%"} · Android Bridge</span>
                 <span>RAM: {ramUsedPercent(host) === null ? "Unavailable" : ramUsedPercent(host) + "%"} · Termux / system-wide</span>
-                <span>History is limited to this open tab (max. 30 min).</span>
+                <span>{historyState === "ok"
+          ? "Server history: up to 24 h · showing last 1 h, including while this tab was closed."
+          : historyState === "unavailable"
+            ? "Server history unavailable · showing only live tab measurements."
+            : "Loading server history…"}
+        </span>
               </div>
             </CardContent>
           </Card>
