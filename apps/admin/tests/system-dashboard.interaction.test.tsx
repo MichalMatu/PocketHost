@@ -95,7 +95,8 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Power & storage")).toBeTruthy()
     expect(screen.getByText("Device uptime")).toBeTruthy()
     expect(screen.getByRole("button", { name: "24 hours" })).toBeTruthy()
-    await screen.findByText(/Server history: up to 24 h/)
+    expect(screen.getByRole("button", { name: "7 days" })).toBeTruthy()
+    await screen.findByText(/Server history: 24 h full resolution and up to 7 d hourly/)
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
     for (const [metric, fill] of [

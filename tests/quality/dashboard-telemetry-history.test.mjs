@@ -114,7 +114,8 @@ test('bounded history endpoint route has no arbitrary targets, methods, or extra
   assert.equal(parseDashboardHistoryRoute('/'), '1h');
   assert.equal(parseDashboardHistoryRoute('/?range=1h'), '1h');
   assert.equal(parseDashboardHistoryRoute('/?range=24h'), '24h');
-  for (const target of ['/other', '/?range=7d', '/?range=1h&range=24h',
+  assert.equal(parseDashboardHistoryRoute('/?range=7d'), '7d');
+  for (const target of ['/other', '/?range=8d', '/?range=1h&range=24h',
     '/?path=/etc/passwd', '/?range=24h&host=evil', '%%wrong']) {
     assert.equal(parseDashboardHistoryRoute(target), null);
   }
@@ -185,7 +186,7 @@ test('expired state-change events age out safely on restart', () => {
       version: 1, points: [point(initial)],
       events: [{ observedAt: new Date(initial).toISOString(), code: 'bridge-down', service: null }],
     }));
-    const next = initial + 3 * 86400000;
+    const next = initial + 8 * 86400000;
     const store = new DashboardHistoryStore(file, () => next);
     assert.equal(store.history().state, 'ok');
     assert.equal(store.history().events.length, 0);
@@ -206,4 +207,54 @@ test('Android TrafficStats history keeps genuine zero, rejects invented/old coun
     { ...network, networkObservedAt: null },
     { networkRxBytes: 1 },
   ]) assert.equal(validateDashboardPoint(point(time, bad), time), false);
+});
+
+test('7-day checkpoints and health thresholds persist without filling phone sleep gaps', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    let now = initial;
+    const file = path.join(dir, 'history.json');
+    const store = new DashboardHistoryStore(file, () => now);
+    assert.equal(store.append(point(now, {
+      batteryPercent: 50, batteryCharging: false, storageAvailableMiB: 900,
+    })), true);
+    now += 60000;
+    assert.equal(store.append(point(now, {
+      batteryPercent: 19, batteryCharging: false, storageAvailableMiB: 500,
+    })), true);
+    assert.deepEqual(store.history().events.map(e => e.code).sort(), ['battery-low','storage-low']);
+    now += 60000;
+    assert.equal(store.append(point(now, {
+      batteryPercent: 27, batteryCharging: true, storageAvailableMiB: 850,
+    })), true);
+    for (let i = 1; i <= 72; i++) {
+      now = initial + i * 3600000;
+      assert.equal(store.append(point(now)), true);
+    }
+    assert.equal(store.history('24h').samples.every(p =>
+      Date.parse(p.observedAt) >= now - 86400000), true);
+    assert.equal(store.history('7d').samples.some(p =>
+      Date.parse(p.observedAt) < now - 86400000), true);
+    assert.equal(store.history('7d').events.some(e => e.code === 'battery-low'), true);
+    store.flush();
+    const restored = new DashboardHistoryStore(file, () => now);
+    assert.deepEqual(restored.history('7d').samples, store.history('7d').samples);
+    assert.deepEqual(restored.history('7d').events, store.history('7d').events);
+    assert.equal(restored.history('7d').retentionHours, 168);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('collector and successful owned events are durable, bounded and never change services', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    const store = new DashboardHistoryStore(file, () => initial);
+    assert.equal(store.recordEvent('collector-started'), true);
+    assert.equal(store.recordEvent('owned-backup-created'), true);
+    assert.equal(store.recordEvent('owned-release-published'), true);
+    assert.equal(store.recordEvent('service-restored'), false);
+    const loaded = new DashboardHistoryStore(file, () => initial);
+    assert.deepEqual(loaded.history('24h').events.map(e => e.code),
+      ['collector-started', 'owned-backup-created', 'owned-release-published']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

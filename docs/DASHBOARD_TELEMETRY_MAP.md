@@ -98,3 +98,25 @@ longer historical retention are follow-on phases, not hidden prerequisites.
 Related: [architecture](ARCHITECTURE.md),
 [target Dashboard](TARGET_INFORMATION_ARCHITECTURE.md),
 [observability module](modules/observability.md).
+
+## Implemented source delta (2026-11-10, device re-acceptance pending)
+
+- Native Companion status now offers Android `TrafficStats.getTotalRxBytes/getTotalTxBytes`
+  totals with explicit `all-interfaces-since-boot` scope, observation time and
+  `null` on unsupported access. Two monotonic observations at most five
+  minutes apart derive sampled RX/TX Mb/s. No old APK value becomes zero.
+  Native APK installation and physical source fidelity on the Samsung are
+  still **UNVERIFIED**; per-interface Wi-Fi/mobile and NetworkStatsManager
+  accounting are outside this source slice.
+- History retains full-resolution 60-second observations up to 24 h and,
+  once old points have actually aged out, one genuine checkpoint per hour
+  up to 7 days. A sleeping/terminated collector leaves gaps. Existing
+  v1 history files without `archive` or `network*` fields remain readable.
+- Redacted service/connection events now include battery <=20% while
+  discharging, free Termux storage <=512 MiB, recovery thresholds,
+  collector starts, and successful PocketHost-owned backup/release actions.
+  No foreign service is adopted and no automatic action is triggered.
+- Selection is `1h`, `24h`, `7d` through the fixed same-origin endpoint.
+  Acceptance still requires exact-SHA Samsung focused tests and a deliberate
+  PocketHost-only restart/sleep observation, plus a separately built native
+  Companion APK and real RX/TX validation.
