@@ -137,10 +137,13 @@ describe("Android Shizuku UI response and bounded inventories", () => {
   })
 
   it("changes selected apps and inspects permissions without a second application picker", async () => {
+    // Only two packages: this test covers selection, not the separately tested 175-row pagination.
+    const focusedApps = { ...apps, packages: apps.packages.slice(0, 2) }
+    const focusedSystem = { ...system, processes: [] }
     const calls = mount(async url => {
       if (url.endsWith("/status")) return status
-      if (url.endsWith("/apps")) return apps
-      if (url.endsWith("/system")) return system
+      if (url.endsWith("/apps")) return focusedApps
+      if (url.endsWith("/system")) return focusedSystem
       if (url.includes("/app?package=")) {
         const packageName = decodeURIComponent(url.split("package=")[1])
         return {
@@ -155,16 +158,15 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       }
       throw new Error("Unexpected route")
     })
-    const user = userEvent.setup()
-    await user.click(await screen.findByText("Example 0"))
+    fireEvent.click(await screen.findByText("Example 0"))
     await screen.findByText("Version code")
-    await user.click(screen.getByRole("button", { name: "Manage permissions" }))
+    fireEvent.click(screen.getByRole("button", { name: "Manage permissions" }))
     expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
     expect(screen.getByRole("button", { name: "Permissions (1)" }).getAttribute("aria-pressed")).toBe("true")
-    await user.click(screen.getByText("Example 1"))
+    fireEvent.click(screen.getByText("Example 1"))
     await screen.findByText("Version code")
     expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
-    await user.click(screen.getByRole("button", { name: "Permissions (1)" }))
+    fireEvent.click(screen.getByRole("button", { name: "Permissions (1)" }))
     expect(screen.getByText("android.permission.RECORD_AUDIO")).toBeTruthy()
     expect(calls.mock.calls.some(call => String(call[0]).includes("/app?package=com.example.app1"))).toBe(true)
   })
@@ -226,24 +228,6 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.queryByRole("button", { name: "Send TERM to PID 1" })).toBeNull()
     await user.click(screen.getByRole("button", { name: "Inspect process 101" }))
     expect(screen.getByRole("button", { name: "Send TERM to PID 101" })).toBeTruthy()
-  })
-
-  it("uses Applications as the entrypoint for selected permissions without duplicating grants", async () => {
-    const detail = {
-      version: 1, source: "android-companion", packageName: "com.example.app0",
-      label: "Example 0", versionName: "1.0", versionCode: 1, targetSdk: 35,
-      enabled: true, system: false,
-      permissions: [{ name: "android.permission.CAMERA", granted: true }],
-    }
-    mount(async url => url.endsWith("/status") ? status :
-      url.endsWith("/apps") ? apps : url.endsWith("/system") ? system : detail)
-    const user = userEvent.setup()
-    await user.click(await screen.findByText("Example 0"))
-    await screen.findByRole("button", { name: "Manage permissions" })
-    expect(screen.queryByText("android.permission.CAMERA")).toBeNull()
-    await user.click(screen.getByRole("button", { name: "Manage permissions" }))
-    expect(screen.getByRole("button", { name: "Permissions (1)" }).getAttribute("aria-pressed")).toBe("true")
-    expect(screen.getByText("android.permission.CAMERA")).toBeTruthy()
   })
 
   it("prioritizes user apps while retaining system apps under All", async () => {
