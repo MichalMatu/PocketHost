@@ -192,3 +192,18 @@ test('expired state-change events age out safely on restart', () => {
     assert.equal(store.append(point(next)), true);
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('Android TrafficStats history keeps genuine zero, rejects invented/old counters and loads older files', () => {
+  const time = initial;
+  const at = new Date(time).toISOString();
+  const network = { networkRxBytes: 0, networkTxBytes: 123, networkObservedAt: at };
+  assert.equal(validateDashboardPoint(point(time, network), time), true);
+  assert.equal(validateDashboardPoint(point(time), time), true, 'old files omit native network counters');
+  for (const bad of [
+    { ...network, networkRxBytes: -1 },
+    { ...network, networkTxBytes: Number.MAX_SAFE_INTEGER + 1 },
+    { ...network, networkObservedAt: '2020-01-01T00:00:00Z' },
+    { ...network, networkObservedAt: null },
+    { networkRxBytes: 1 },
+  ]) assert.equal(validateDashboardPoint(point(time, bad), time), false);
+});

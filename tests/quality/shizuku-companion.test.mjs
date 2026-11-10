@@ -112,3 +112,24 @@ test('selected Android app details are validated, untrusted package names reject
   ])
     assert.throws(() => parseCompanionApp(JSON.stringify(wrong)));
 });
+
+test('native TrafficStats rejects forged counters and leaves unsupported values unavailable', () => {
+  const good = { ...sample(), network: {
+    source: 'android-trafficstats', scope: 'all-interfaces-since-boot',
+    observedAt: new Date().toISOString(), rxBytes: 0, txBytes: 1234,
+  } };
+  assert.deepEqual(parseCompanionStatus(JSON.stringify(good)), good);
+  assert.deepEqual(parseCompanionStatus(JSON.stringify(sample())), sample(), 'old Companion is compatible');
+  for (const bad of [
+    { ...good, network: { ...good.network, rxBytes: -1 } },
+    { ...good, network: { ...good.network, txBytes: 2.5 } },
+    { ...good, network: { ...good.network, rxBytes: Number.MAX_SAFE_INTEGER + 1 } },
+    { ...good, network: { ...good.network, source: 'termux' } },
+    { ...good, network: { ...good.network, observedAt: '2020-01-01T00:00:00Z' } },
+  ]) assert.throws(() => parseCompanionStatus(JSON.stringify(bad)));
+  assert.equal(parseCompanionStatus(JSON.stringify({
+    ...sample(), connected: false, authorized: false, mode: 'none',
+    cpuPercent: null, visibleProcesses: null,
+    network: { ...good.network, rxBytes: null, txBytes: null },
+  })).network.rxBytes, null);
+});
