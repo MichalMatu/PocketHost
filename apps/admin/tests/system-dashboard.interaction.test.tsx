@@ -16,7 +16,8 @@ vi.mock("recharts", () => ({
   AreaChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   LineChart: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
   CartesianGrid: () => null,
-  XAxis: () => null,
+  XAxis: ({ dataKey, type, scale }: { dataKey: string; type: string; scale: string }) =>
+    <span data-testid="history-time-axis" data-key={dataKey} data-type={type} data-scale={scale} />,
   YAxis: () => null,
   Area: ({ dataKey, stroke, fill, dot, activeDot, connectNulls, isAnimationActive }: {
     dataKey: string
@@ -96,7 +97,8 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Device uptime")).toBeTruthy()
     expect(screen.getByRole("button", { name: "24 hours" })).toBeTruthy()
     expect(screen.getByRole("button", { name: "7 days" })).toBeTruthy()
-    await screen.findByText(/Server history: 24 h full resolution and up to 7 d hourly/)
+    expect(screen.getByText(/History · 24 h detailed, 7 d hourly/)).toBeTruthy()
+    await screen.findByText("Collector: stale")
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
     for (const [metric, fill] of [
@@ -114,8 +116,8 @@ describe("PocketHost real-data dashboard", () => {
       expect(area.getAttribute("data-active-dot")).toBe("false")
       expect(area.getAttribute("data-animation")).toBe("false")
     }
-    expect(screen.getByText(/valid readings/)).toBeTruthy()
-    expect(screen.getByText(/0 API errors/)).toBeTruthy()
+    expect(screen.getByText(/Median .* · peak .* ms/)).toBeTruthy()
+    expect(screen.getByText(/0 unavailable/)).toBeTruthy()
     expect(screen.getByText("Android Bridge connectivity")).toBeTruthy()
     expect(screen.getByText("Android network · RX / TX")).toBeTruthy()
     expect(screen.getByTestId("traffic-chart-slot").className).toContain("h-[190px]")
@@ -125,6 +127,11 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.queryByText("File Manager")).toBeNull()
     expect(screen.queryByText("Packages")).toBeNull()
     expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
+    for (const axis of screen.getAllByTestId("history-time-axis")) {
+      expect(axis.getAttribute("data-key")).toBe("timestamp")
+      expect(axis.getAttribute("data-type")).toBe("number")
+      expect(axis.getAttribute("data-scale")).toBe("time")
+    }
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
     expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
@@ -147,6 +154,11 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Disconnected · last status received")).toBeTruthy()
     expect(screen.queryByText("0.0%")).toBeNull()
     expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
+    for (const axis of screen.getAllByTestId("history-time-axis")) {
+      expect(axis.getAttribute("data-key")).toBe("timestamp")
+      expect(axis.getAttribute("data-type")).toBe("number")
+      expect(axis.getAttribute("data-scale")).toBe("time")
+    }
   })
 
   it("reports genuine API and bridge unavailability without fabricated samples", async () => {
@@ -161,6 +173,11 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
     await screen.findByText(/Server history unavailable/)
     expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
+    for (const axis of screen.getAllByTestId("history-time-axis")) {
+      expect(axis.getAttribute("data-key")).toBe("timestamp")
+      expect(axis.getAttribute("data-type")).toBe("number")
+      expect(axis.getAttribute("data-scale")).toBe("time")
+    }
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
     expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
