@@ -300,6 +300,18 @@ export class NodeRunitHost {
       history: state.history,
     };
   }
+  /** New runit directories are discovered asynchronously by the installed service-daemon. */
+  private async awaitSupervisor(id: string): Promise<void> {
+    const { service } = this.context(id);
+    for (let n = 0; n < 120; n++) {
+      const status = spawnSync(PREFIX + '/bin/sv', ['status', service], {
+        shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
+      });
+      if (status.status === 0 && /^(?:run|down): /.test(status.stdout)) return;
+      await pause();
+    }
+    throw new Error('Existing Termux runit did not discover owned Node unit');
+  }
   private async settle(id: string, release: string, port: number, nonce: string): Promise<ProcessProof> {
     for (let n = 0; n < 40; n++) {
       const proof = this.observe(id, release);
@@ -387,6 +399,7 @@ export class NodeRunitHost {
       }
       if (state.activeRelease) await this.halt(id, state);
       else if (!await portFree(state.port)) throw new Error('Owned port not free');
+      await this.awaitSupervisor(id);
       const prior = state.lastGoodRelease;
       const nonce = randomBytes(24).toString('hex');
       this.script(id, release, state.port, nonce);
