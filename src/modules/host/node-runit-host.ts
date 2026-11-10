@@ -29,7 +29,6 @@ import { createHostingRegistries } from '../../shared/hosting-registry.ts';
 const PREFIX = '/data/data/com.termux/files/usr';
 const FIRST_PORT = 19300;
 const PORT_COUNT = 32;
-const ID = /^node-[a-f0-9]{32}$/;
 const RELEASE = /^r-[a-f0-9]{32}$/;
 const UNIT_MARKER = '.pockethost-node-unit.json';
 const RUNTIME_MARKER = '.pockethost-node-runtime.json';

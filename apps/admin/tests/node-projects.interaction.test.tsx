@@ -35,6 +35,13 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         dependencyPlan: { packageName: "my-node-site", packageVersion: "1.0.0", dependencyCount: 0, status: "review-required" } }]
       return { ok: true, json: async () => ({ project }) }
     }
+    if (path === "/api/v1/node-projects/registry" && !options?.method)
+      return { ok: true, json: async () => ({ registries: {
+        schemaVersion: 1,
+        modules: [{ id: "nodejs" }],
+        services: [],
+        projects: [{ id: ID }],
+      } }) }
     if (path === "/api/v1/node-projects/" + ID + "/runtime" && !options?.method)
       return { ok: true, json: async () => ({ runtime: {
         state: "not-provisioned", port: null, desired: "stopped", activeRelease: null,
@@ -57,6 +64,9 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
   expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
+  await user.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
+  await screen.findByText(/Modules: 1 · Services: 0 · Projects: 1/)
+
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)
   expect(calls.mock.calls.some(call => String(call[0]).includes("/start"))).toBe(false)

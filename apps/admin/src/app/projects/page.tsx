@@ -104,6 +104,9 @@ export default function ProjectsPage() {
   const [executionEnabled, setExecutionEnabled] = React.useState(false)
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
+  const [registries, setRegistries] = React.useState<{
+    modules: number; services: number; projects: number
+  } | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
@@ -159,10 +162,29 @@ export default function ProjectsPage() {
             setMessage("Private Node project created.")
           })}>Create project</Button>
           <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
+          <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+            const response = await getJson(api + "/registry")
+            const value = response.registries as Record<string, unknown> | undefined
+            if (!value || !Array.isArray(value.modules) || value.modules.length > 32 ||
+              !Array.isArray(value.services) || value.services.length > 64 ||
+              !Array.isArray(value.projects) || value.projects.length > 64) {
+              throw new Error("Invalid Hosting registry projection")
+            }
+            setRegistries({
+              modules: value.modules.length,
+              services: value.services.length,
+              projects: value.projects.length,
+            })
+            setMessage("Read-only module, service and project declarations verified.")
+          })}>Inspect hosting registries</Button>
         </CardContent>
       </Card>
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
+      {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
+        Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
+        Declarations do not grant process ownership or lifecycle permission.
+      </p>
       <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
         <CardContent>
