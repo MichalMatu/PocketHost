@@ -252,7 +252,7 @@ export default function ObservabilityPage() {
                 ) : <p className="text-muted-foreground text-sm">
                   {processesOk ? "No visible process entries in this sample." : "Termux process inventory is unavailable or restricted; no zero-process assumption."}
                 </p>}
-               </CardContent>
+              </CardContent>
             </Card>
 
             <Card className={snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length ? "min-w-0" : "min-w-0 xl:col-span-2"}>
