@@ -29,7 +29,7 @@ import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backu
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
 import { probeInternetConnectivity, allowsInternetProbeRequest } from "../../src/modules/host/internet-connectivity.ts"
-import { DashboardTelemetryRecorder, parseDashboardHistoryRoute } from "../../src/modules/host/dashboard-telemetry-history.ts"
+import { DashboardTelemetryRecorder, parseDashboardHistoryRoute, attachDashboardOwnedEvents, reportDashboardOwnedEvent } from "../../src/modules/host/dashboard-telemetry-history.ts"
 
 /** DEV-only, loopback-only read-only API. There are no mutation endpoints. */
 function termuxReadOnlyApi(): Plugin {
@@ -366,6 +366,11 @@ function ownedSiteFleetApi(): Plugin {
             if (action === "restart") return fleet.restart(id!)
             return fleet.rollback(id!)
           })
+          // These events reflect only successful, explicitly owned site actions.
+          if (upload) reportDashboardOwnedEvent("owned-release-published")
+          if (action === "rollback" || (versionCommand && releaseRoute?.[3] === "restore"))
+            reportDashboardOwnedEvent("owned-release-rolled-back")
+          if (action === "restart") reportDashboardOwnedEvent("owned-service-restarted")
           response.statusCode = create ? 201 : 200
           response.end(JSON.stringify({ site: result }))
         } catch (error) {
@@ -570,6 +575,10 @@ function nodeProjectApi(): Plugin {
             }
             return host.stage(id!, input)
           })
+          if (createBackup) reportDashboardOwnedEvent("owned-backup-created")
+          if (restoreBackup) reportDashboardOwnedEvent("owned-backup-restored")
+          if (deploy) reportDashboardOwnedEvent("owned-release-published")
+          if (rollback) reportDashboardOwnedEvent("owned-release-rolled-back")
           response.statusCode = create ? 201 : 200
           response.end(JSON.stringify(result))
         } catch (error) {
@@ -1396,6 +1405,12 @@ function termuxAdminApi(): Plugin {
             }
             throw new RangeError("Unsupported typed action")
           })
+          if (["restic", "restic-system", "snapshot"].includes(input.action ?? "")) {
+            if (input.name === "backup" || input.name === "create")
+              reportDashboardOwnedEvent("owned-backup-created")
+            if (input.name === "restore")
+              reportDashboardOwnedEvent("owned-backup-restored")
+          }
           response.end(JSON.stringify(result))
         } catch {
           response.statusCode = 409
@@ -1458,8 +1473,12 @@ function dashboardTelemetryApi(): Plugin {
     apply: "serve",
     configureServer(server) {
       const recorder = new DashboardTelemetryRecorder()
+      attachDashboardOwnedEvents(recorder.store)
       recorder.start()
-      server.httpServer?.once("close", () => recorder.stop())
+      server.httpServer?.once("close", () => {
+        attachDashboardOwnedEvents(null)
+        recorder.stop()
+      })
 
       server.middlewares.use("/api/v1/dashboard/history", (request, response) => {
         response.setHeader("Cache-Control", "no-store")
