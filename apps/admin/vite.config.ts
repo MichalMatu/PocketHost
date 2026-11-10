@@ -449,7 +449,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback|check-build|preview|source))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|stop|rollback|check-build|preview|source|health))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" && (op === "preview" || op === "source") &&
@@ -472,7 +472,8 @@ function nodeProjectApi(): Plugin {
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
               id && op === "logs" ? { logs: runtime!.logs(id) } :
               id && op === "preview" ? { preview: await runtime!.previewLocalResponse(id) } :
-              id && op === "source" ? { source: host.candidateSource(id) } : null
+              id && op === "source" ? { source: host.candidateSource(id) } :
+              id && op === "health" ? { health: await runtime!.health(id) } : null
             if (!data) response.statusCode = 404
             else response.statusCode = 200
             response.end(JSON.stringify(data ?? { error: "not-found" }))

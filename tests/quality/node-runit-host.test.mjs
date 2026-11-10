@@ -187,3 +187,15 @@ test('M3 direct loopback Node preview is bounded and never follows foreign respo
   assert.equal(await readBoundedNodePreview(address.port), '<b>safe text preview</b>');
   assert.throws(() => readBoundedNodePreview(0), /port/);
 });
+
+test('M3 live health never probes or starts a project without verified runit ownership', async (t) => {
+  const { projects, project, host, serviceRoot } = fixture(t);
+  assert.deepEqual(await host.health(project.id), {
+    state: 'not-provisioned', release: null, ready: null,
+  });
+  projects.stage(project.id, source);
+  assert.deepEqual(await host.health(project.id), {
+    state: 'not-provisioned', release: null, ready: null,
+  });
+  assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});

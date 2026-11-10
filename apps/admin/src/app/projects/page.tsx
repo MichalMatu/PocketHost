@@ -38,6 +38,11 @@ type RuntimePlan = {
   allowed: boolean
   reason: string
 }
+type NodeHealth = {
+  state: "not-provisioned" | "stopped" | "running" | "unknown"
+  release: string | null
+  ready: boolean | null
+}
 type Candidate = {
   id: string
   active: false
@@ -106,6 +111,7 @@ export default function ProjectsPage() {
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
   const [preview, setPreview] = React.useState<{ release: string; body: string } | null>(null)
+  const [health, setHealth] = React.useState<NodeHealth | null>(null)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -141,6 +147,7 @@ export default function ProjectsPage() {
     ])
     if (!status.runtime || !preview.plan) throw new Error("Invalid Node runtime report")
     setRuntime(status.runtime as RuntimeState)
+    setHealth(null)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
   }, [])
@@ -406,6 +413,17 @@ export default function ProjectsPage() {
                     await loadRuntime(selected.id); setApproved(false)
                     setMessage("Owned Node service stopped.")
                   })}>Stop owned service</Button>
+                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+                  const response = await getJson(api + "/" + selected.id + "/health")
+                  const value = response.health as Record<string, unknown> | undefined
+                  if (!value || !["not-provisioned", "stopped", "running", "unknown"].includes(String(value.state)) ||
+                    (value.ready !== null && typeof value.ready !== "boolean") ||
+                    (value.release !== null && (typeof value.release !== "string" ||
+                      !/^r-[a-f0-9]{32}$/.test(value.release))))
+                    throw new Error("Invalid owned Node health response")
+                  setHealth(value as NodeHealth)
+                  setMessage("Current Node readiness checked against verified local ownership.")
+                })}>Check live readiness</Button>
                 <Button variant="outline" disabled={busy || runtime?.state !== "running"}
                   onClick={() => action(async () => {
                     const response = await getJson(api + "/" + selected.id + "/preview")
@@ -430,6 +448,9 @@ export default function ProjectsPage() {
               </p>}
               {!executionEnabled && <p className="text-xs text-muted-foreground">
                 Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
+              </p>}
+              {health && <p className="text-sm" aria-label="Node live health">
+                Live health: {health.state} · HTTP readiness: {health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}.
               </p>}
               <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Previous good: {runtime?.previousGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
               <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.

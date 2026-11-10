@@ -703,6 +703,38 @@ export class NodeRunitHost {
       rmSync(globalLock, { force: true });
     }
   }
+  /** Current loopback readiness of the *same* verified process and release. */
+  async health(id: string): Promise<{
+    state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
+    release: string | null;
+    ready: boolean | null;
+  }> {
+    const state = this.record(id);
+    if (!state) return { state: 'not-provisioned', release: null, ready: null };
+    const release = state.activeRelease;
+    if (!release || state.desired !== 'running') {
+      return { state: this.unitState(id) === 'down' ? 'stopped' : 'unknown',
+        release, ready: null };
+    }
+    const before = this.observe(id, release);
+    if (before === 'down') return { state: 'stopped', release, ready: null };
+    if (before === 'unknown' || !state.process ||
+        before.pid !== state.process.pid || before.ticks !== state.process.ticks) {
+      return { state: 'unknown', release, ready: null };
+    }
+    const ready = await probeOwnedNodeReadiness(state.port, state.readinessNonce);
+    const current = this.record(id);
+    const after = this.observe(id, release);
+    if (!current || current.activeRelease !== release ||
+        current.readinessNonce !== state.readinessNonce ||
+        current.desired !== 'running' || !current.process ||
+        current.process.pid !== before.pid || current.process.ticks !== before.ticks ||
+        after === 'down' || after === 'unknown' ||
+        after.pid !== before.pid || after.ticks !== before.ticks) {
+      return { state: 'unknown', release, ready: null };
+    }
+    return { state: 'running', release, ready };
+  }
   /** Source output remains private to direct-loopback admin sessions. */
   async previewLocalResponse(id: string): Promise<{
     release: string; port: number; body: string;

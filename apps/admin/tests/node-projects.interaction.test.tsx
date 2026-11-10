@@ -54,6 +54,10 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
           packages: { "": { name: "restored-node", version: "2.0.0" } } }),
         serverSource: "console.log('verified release')",
       } }) }
+    if (path === "/api/v1/node-projects/" + ID + "/health" && !options?.method)
+      return { ok: true, json: async () => ({ health: {
+        state: "not-provisioned", release: null, ready: null,
+      } }) }
     if (path === "/api/v1/node-projects/" + ID + "/check-build" && options?.method === "POST")
       return { ok: true, json: async () => ({ buildCheck: {
         release: RELEASE, status: "syntax-valid", executed: false,
@@ -92,6 +96,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   expect(screen.getByRole("button", { name: "Restore Node snapshot to staging" }).hasAttribute("disabled")).toBe(true)
 
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
+  await user.click(screen.getByRole("button", { name: "Check live readiness" }))
+  await screen.findByText(/Live health: not-provisioned · HTTP readiness: not probed/)
   await user.click(screen.getByRole("button", { name: "Check Node build syntax" }))
   await screen.findByText(/Candidate syntax: syntax-valid/)
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)
