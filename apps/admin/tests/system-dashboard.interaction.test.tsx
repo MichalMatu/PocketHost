@@ -19,7 +19,15 @@ vi.mock("recharts", () => ({
   XAxis: () => null,
   YAxis: () => null,
   Area: () => null,
-  Line: () => null,
+  Line: ({ dataKey, stroke, dot, connectNulls, isAnimationActive }: {
+    dataKey: string
+    stroke: string
+    dot: boolean | { r: number }
+    connectNulls: boolean
+    isAnimationActive: boolean
+  }) => <span data-testid={`chart-line-${dataKey}`} data-stroke={stroke}
+    data-dot={typeof dot === "object" ? "always" : String(dot)}
+    data-connect-nulls={String(connectNulls)} data-animation={String(isAnimationActive)} />,
 }))
 
 const hostFixture = {
@@ -68,6 +76,13 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Live system resources")).toBeTruthy()
     expect(screen.getByText("Internet connectivity · Termux TCP")).toBeTruthy()
     expect(screen.getByText(/TCP endpoint reachable/)).toBeTruthy()
+    const tcpLine = screen.getByTestId("chart-line-internetMs")
+    expect(tcpLine.getAttribute("data-stroke")).toBe("var(--color-internetMs)")
+    expect(tcpLine.getAttribute("data-dot")).toBe("always")
+    expect(tcpLine.getAttribute("data-connect-nulls")).toBe("false")
+    expect(tcpLine.getAttribute("data-animation")).toBe("false")
+    expect(screen.getByText(/1 valid readings/)).toBeTruthy()
+    expect(screen.getByText(/0 API errors/)).toBeTruthy()
     expect(screen.getByText("Android Bridge connectivity")).toBeTruthy()
     expect(screen.getByText("Connected · authorized")).toBeTruthy()
     expect(screen.queryByText("Node runtime")).toBeNull()
@@ -104,6 +119,8 @@ describe("PocketHost real-data dashboard", () => {
     await within(metrics).findAllByText("Unavailable")
     expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
     expect(screen.getByText("No successful Internet TCP connection measured yet.")).toBeTruthy()
+    expect(screen.getByText(/1 API errors/)).toBeTruthy()
+    expect(screen.getByText(/0 TCP failures/)).toBeTruthy()
     expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
     expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")

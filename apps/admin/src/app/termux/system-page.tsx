@@ -246,16 +246,18 @@ export default function SystemPage() {
                     <CartesianGrid vertical={false} />
                     <XAxis dataKey="observedAt" tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={clock} />
                     <YAxis width={62} tickMargin={8} tickLine={false} axisLine={false} tickFormatter={value => value + " ms"} />
-                    <ChartTooltip content={<ChartTooltipContent indicator="line" />} />
-                    <Line type="monotone" dataKey="internetMs" stroke="var(--color-apiMs)" strokeWidth={2}
-                      dot={samples.length < 3} connectNulls={false} isAnimationActive={false} />
+                    <ChartTooltip content={<ChartTooltipContent indicator="line" labelFormatter={(label) => clock(String(label))} />} />
+                    <Line type="monotone" dataKey="internetMs" stroke="var(--color-internetMs)" strokeWidth={2}
+                      dot={{ r: 2.5 }} activeDot={{ r: 5 }} connectNulls={false} isAnimationActive={false} />
                   </LineChart>
                 </ChartContainer>
                 {!samples.some(sample => sample.internetMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Internet TCP connection measured yet.</p>}
               </div>
               <p className="text-muted-foreground min-h-10 pt-2 text-xs tabular-nums">
                 {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "Probe unavailable"}
-                {" · "}{samples.filter(sample => sample.internetFailed === true).length} failed samples
+                {" · "}{samples.filter(sample => sample.internetFailed === false).length} valid readings
+                {" · "}{samples.filter(sample => sample.internetFailed === true).length} TCP failures
+                {" · "}{samples.filter(sample => sample.internetFailed === null).length} API errors
                 {" · "}Panel API {samples.at(-1)?.apiMs ?? "—"} ms
               </p>
             </CardContent>
