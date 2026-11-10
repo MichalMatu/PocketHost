@@ -61,3 +61,16 @@ test('M2 Node Restic uses a separate scoped repository and restores to staging o
   assert.ok(restored.restoredTo.startsWith(path.join(state, 'restores') + path.sep));
   assert.equal(projects.inspect(project.id).activeRelease, null);
 });
+
+test('M2 Node Restic refuses foreign source and pending deployment entries before CLI', async (t) => {
+  const { root, host, projects } = setup(t);
+  projects.create('Owned project');
+  const called = [];
+  const run = async () => { called.push('restic'); return { exit: 0, output: '' }; };
+  writeFileSync(path.join(root, 'foreign.txt'), 'outside ownership');
+  await assert.rejects(host.backup(true, run), /Unexpected entry/);
+  rmSync(path.join(root, 'foreign.txt'));
+  writeFileSync(path.join(root, '.node-ports.lock'), '', { mode: 0o600 });
+  await assert.rejects(host.backup(true, run), /Unexpected entry|deployment in progress/);
+  assert.equal(called.length, 0);
+});
