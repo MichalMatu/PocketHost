@@ -3,7 +3,6 @@ import {
   Activity, AppWindow, Battery, Cpu, LockKeyhole, RefreshCw, Settings2,
   ShieldCheck, Smartphone, Terminal, Search, ExternalLink,
 } from "lucide-react"
-import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -49,6 +48,13 @@ function gib(value: number | null, precision = 2) {
   return value == null ? "Unavailable" : (value / (1024 * 1024)).toFixed(precision) + " GiB"
 }
 
+/** Android process RSS is in KiB; show process-scale values in MiB. */
+function processMiB(value: number | null) {
+  if (value == null) return "Unavailable"
+  if (value === 0) return "0 MiB"
+  return (value / 1024).toFixed(value < 1024 ? 2 : 1) + " MiB"
+}
+
 function LastSample({ observedAt }: { observedAt?: string }) {
   return <span className="text-muted-foreground text-xs">
     {observedAt ? "Sample: " + new Date(observedAt).toLocaleTimeString() : "No verified reading"}
@@ -67,18 +73,18 @@ export default function ShizukuPage() {
   const [detailError, setDetailError] = React.useState(false)
   const [refreshKey, setRefreshKey] = React.useState(0)
   const [section, setSection] = React.useState<Section>("applications")
-  const [packageFilter, setPackageFilter] = React.useState<PackageFilter>("all")
+  const [packageFilter, setPackageFilter] = React.useState<PackageFilter>("user")
   const [appSearch, setAppSearch] = React.useState("")
   const [processSearch, setProcessSearch] = React.useState("")
   const [serviceSearch, setServiceSearch] = React.useState("")
   const [permissionSearch, setPermissionSearch] = React.useState("")
   const [permissionAppSearch, setPermissionAppSearch] = React.useState("")
-  const [permissionPackageFilter, setPermissionPackageFilter] = React.useState<PackageFilter>("all")
+  const [permissionPackageFilter, setPermissionPackageFilter] = React.useState<PackageFilter>("user")
   const [permissionAppPage, setPermissionAppPage] = React.useState(0)
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
   const [selectedProcessPid, setSelectedProcessPid] = React.useState<number | null>(null)
-  const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("pid")
-  const [descending, setDescending] = React.useState(false)
+  const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("rss")
+  const [descending, setDescending] = React.useState(true)
   const [brightnessDraft, setBrightnessDraft] = React.useState("")
   const [timeoutDraft, setTimeoutDraft] = React.useState("")
   const [cpuHistory, setCpuHistory] = React.useState<Array<{ time: string; value: number }>>([])
@@ -389,7 +395,7 @@ export default function ShizukuPage() {
                         <div className="space-y-1 rounded-md border p-3 text-sm">
                           <p className="font-medium">Matching Android processes ({appProcesses.length})</p>
                           <p className="text-muted-foreground text-xs">Name-based match, not Android usage attribution.</p>
-                          <p>RSS: {gib(appRssKb, 4)} · CPU: {unavailable(appCpuPercent, "%")}</p>
+                          <p>RSS: {processMiB(appRssKb)} · CPU: {unavailable(appCpuPercent, "%")}</p>
                         </div>
                         <p className="text-sm font-medium">Requested permissions ({appDetail.permissions.length})</p>
                         <div className="max-h-48 overflow-auto rounded-md border">
@@ -433,7 +439,7 @@ export default function ShizukuPage() {
         {section === "processes" && (
           <Card>
             <CardHeader><CardTitle>Android CPU & processes</CardTitle>
-              <CardDescription>Real PID, owner, RSS and CPU (where Android reports it). No fabricated per-process CPU usage.</CardDescription>
+              <CardDescription>Device-wide process snapshot. Missing CPU readings are not interpreted as zero.</CardDescription>
             </CardHeader><CardContent className="space-y-3">
               <div className="flex flex-wrap items-center gap-2 text-sm">
                 <label htmlFor="android-process-sort">Sort by</label>
@@ -462,11 +468,15 @@ export default function ShizukuPage() {
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
-                  <div className="max-h-[460px] overflow-auto rounded-lg border">
-                    <table className="w-full min-w-[570px] text-left text-sm">
-                      <thead className="bg-muted/60 sticky top-0">
-                        <tr><th className="p-3">PID</th><th className="p-3">Process</th><th className="p-3">User</th><th className="p-3 text-right">RSS</th><th className="p-3 text-right">CPU</th></tr>
-                      </thead><tbody>
+                  <div className="relative max-h-[460px] overflow-auto rounded-lg border">
+                    <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-0 text-left text-sm" aria-label="Android processes">
+                      <thead><tr>
+                        <th scope="col" className="sticky top-0 z-20 w-20 border-b bg-background p-3">PID</th>
+                        <th scope="col" className="sticky top-0 z-20 w-[38%] border-b bg-background p-3">Process</th>
+                        <th scope="col" className="sticky top-0 z-20 w-[22%] border-b bg-background p-3">User</th>
+                        <th scope="col" className="sticky top-0 z-20 w-32 border-b bg-background p-3 text-right">RSS</th>
+                        <th scope="col" className="sticky top-0 z-20 w-24 border-b bg-background p-3 text-right">CPU</th>
+                      </tr></thead><tbody>
                         {visibleProcesses.map(proc => <tr className="border-t" key={proc.pid}>
                           <td className="p-3 font-mono">
                             <button type="button" className="underline underline-offset-2"
@@ -475,7 +485,7 @@ export default function ShizukuPage() {
                           </td>
                           <td className="max-w-80 break-all p-3">{proc.name}</td>
                           <td className="p-3">{proc.user}</td>
-                          <td className="p-3 text-right" title="Resident memory (GiB)">{gib(proc.rssKb, 4)}</td>
+                          <td className="p-3 text-right tabular-nums" title="Resident memory (MiB)">{processMiB(proc.rssKb)}</td>
                           <td className="p-3 text-right">{unavailable(proc.cpuPercent, "%")}</td>
                         </tr>)}
                       </tbody>
@@ -491,7 +501,7 @@ export default function ShizukuPage() {
                   {selectedProcess && (
                     <div className="space-y-2 rounded-lg border p-3 text-sm">
                       <p className="font-medium">Selected PID {selectedProcess.pid}</p>
-                      <p className="break-all">{selectedProcess.name} · {selectedProcess.user} · {gib(selectedProcess.rssKb, 4)}</p>
+                      <p className="break-all">{selectedProcess.name} · {selectedProcess.user} · {processMiB(selectedProcess.rssKb)}</p>
                       <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
                         onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID</AndroidActionButton>
                     </div>
@@ -738,12 +748,7 @@ export default function ShizukuPage() {
 
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>Browser = direct Shizuku diagnostics and actions · ADB ≠ root · Private LAN DEV</p>
-          <Button size="sm" variant="outline" nativeButton={false} render={<Link to="/observability" />}>
-            <Activity className="size-4" /> Termux monitoring
-          </Button>
-        </div>
+        <p className="text-muted-foreground text-xs">Direct Shizuku operations · ADB is not root · Private LAN DEV</p>
       </div>
     </BaseLayout>
   )
