@@ -38,8 +38,8 @@ const sample = () => ({
   processes: {
     state: "ok", observedAt: now(), partial: true, truncated: false,
     processes: [
-      { pid: 220, ppid: 1, startTicks: "550", cpuTicks: 250, rssMiB: 12.5, ownership: "self" },
-      { pid: 110, ppid: 1, startTicks: "250", cpuTicks: 550, rssMiB: 9, ownership: "unverified" },
+      { name: "node", pid: 220, ppid: 1, startTicks: "550", cpuTicks: 250, rssMiB: 12.5, ownership: "self" },
+      { name: "python3", pid: 110, ppid: 1, startTicks: "250", cpuTicks: 550, rssMiB: 9, ownership: "unverified" },
     ],
   },
   packages: { state: "ok", observedAt: now(), installed: [{ ecosystem: "termux", name: "curl", version: "9.0" }],
@@ -62,7 +62,12 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.getByText("Diagnostic events")).toBeTruthy()
     expect(screen.getByText("2 visible processes")).toBeTruthy()
     expect(screen.getByRole("table", { name: "Termux-visible process details" })).toBeTruthy()
-    expect(within(screen.getByRole("table", { name: "Termux-visible process details" })).getAllByRole("row")[1]?.querySelectorAll("td")[1]?.textContent).toBe("550")
+    const table = screen.getByRole("table", { name: "Termux-visible process details" })
+    expect(within(table).getAllByRole("row")[1]?.textContent).toContain("node")
+    expect(screen.queryByText("CPU ticks (lifetime total)")).toBeNull()
+    fireEvent.click(screen.getByRole("button", { name: "Process details for PID 110" }))
+    expect(screen.getByText("CPU ticks (lifetime total)")).toBeTruthy()
+    expect(screen.getByText("550", { selector: "dd" })).toBeTruthy()
     expect(screen.queryByText("Available RAM")).toBeNull()
     expect(screen.queryByText("Free Termux storage")).toBeNull()
     expect(screen.queryByText("Installed packages")).toBeNull()
@@ -82,17 +87,20 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
     const table = await screen.findByRole("table", { name: "Termux-visible process details" })
     let rows = within(table).getAllByRole("row")
-    expect(rows[1]?.textContent).toContain("110 / 1")
+    expect(rows[1]?.textContent).toContain("node")
+    fireEvent.click(screen.getByRole("button", { name: "CPU ticks" }))
+    rows = within(table).getAllByRole("row")
+    expect(rows[1]?.textContent).toContain("python3")
     fireEvent.click(screen.getByRole("button", { name: "PID" }))
     rows = within(table).getAllByRole("row")
-    expect(rows[1]?.textContent).toContain("110 / 1")
+    expect(rows[1]?.textContent).toContain("python3")
     fireEvent.click(screen.getByRole("button", { name: "Process RAM" }))
     rows = within(table).getAllByRole("row")
-    expect(rows[1]?.textContent).toContain("220 / 1")
-    fireEvent.change(screen.getByRole("textbox", { name: "Filter processes" }), { target: { value: "110" } })
+    expect(rows[1]?.textContent).toContain("node")
+    fireEvent.change(screen.getByRole("textbox", { name: "Filter processes" }), { target: { value: "python" } })
     expect(within(table).getAllByRole("row")).toHaveLength(2)
-    expect(table.textContent).toContain("110 / 1")
-    expect(table.textContent).not.toContain("220 / 1")
+    expect(table.textContent).toContain("python3")
+    expect(table.textContent).not.toContain("node")
     expect(screen.getByText(/cumulative since each process started/)).toBeTruthy()
   })
 
@@ -107,7 +115,9 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(await screen.findByText("Process list unavailable")).toBeTruthy()
     expect(screen.queryByRole("table")).toBeNull()
     expect(screen.getByText(/no zero-process assumption/)).toBeTruthy()
-    expect(screen.getByText(/Diagnostic event source unavailable/)).toBeTruthy()
+    expect(screen.getByText("Host diagnostic event stream is not connected yet.")).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Logs & Diagnostics" })).toBeTruthy()
+    expect(screen.queryByText("Diagnostic events")).toBeNull()
   })
 
   it("shows a real endpoint failure instead of fake empty monitoring", async () => {
