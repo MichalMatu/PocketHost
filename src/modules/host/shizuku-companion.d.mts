@@ -7,6 +7,14 @@ export interface ShizukuBridgeStatus {
   observedAt: string;
   cpuPercent: number | null;
   visibleProcesses: number | null;
+  /** Optional for older installed Companion APKs. Device-wide totals since Android boot. */
+  network?: {
+    source: 'android-trafficstats';
+    scope: 'all-interfaces-since-boot';
+    observedAt: string;
+    rxBytes: number | null;
+    txBytes: number | null;
+  };
   capabilities: Array<{ id: string; title: string; available: boolean; description: string }>;
 }
 export interface ShizukuBridgeApps {
