@@ -206,8 +206,8 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     })
     expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
     expect(await screen.findByText("Application inventory request failed. Try Refresh.")).toBeTruthy()
-    await userEvent.setup().click(screen.getByRole("tab", { name: /Device/i }))
-    await waitFor(() => expect(screen.getByText(/Total system RAM:/)).toBeTruthy())
+    await userEvent.setup().click(screen.getByRole("tab", { name: /Android services/i }))
+    await waitFor(() => expect(screen.getByText(/runtime state unknown/)).toBeTruthy())
   })
 
   it("protects PID 1 in the UI and shows real process RSS in MiB", async () => {
@@ -243,21 +243,41 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByText("Example 0")).toBeTruthy()
   })
 
-  it("does not probe diagnostics until expanded, and exposes display presets", async () => {
+  it("keeps diagnostics idle until explicitly expanded, without Device duplication", async () => {
     const calls = mount(async url => url.endsWith("/status") ? status :
       url.endsWith("/apps") ? apps : system)
-    const user = userEvent.setup()
     await screen.findByText("Example 0")
-    await user.click(screen.getByRole("tab", { name: /^Device$/ }))
+    expect(screen.queryByRole("tab", { name: /^Device$/ })).toBeNull()
     expect(screen.getByText(/Advanced Shizuku diagnostics · on demand/)).toBeTruthy()
     expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(1)
-    await user.click(screen.getByText(/Advanced Shizuku diagnostics · on demand/))
+    fireEvent.click(screen.getByText(/Advanced Shizuku diagnostics · on demand/))
     await waitFor(() => expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2))
-    await user.click(screen.getByRole("tab", { name: /^Android services$/ }))
-    expect(screen.getByRole("slider", { name: "Set screen brightness" })).toBeTruthy()
-    fireEvent.change(screen.getByRole("slider", { name: "Set screen brightness" }), { target: { value: "120" } })
-    expect(screen.getByRole("button", { name: "Apply brightness" })).toBeTruthy()
-    fireEvent.change(screen.getByRole("combobox", { name: "Set screen timeout" }), { target: { value: "120000" } })
-    expect(screen.getByRole("button", { name: "Apply timeout" })).toBeTruthy()
+    fireEvent.click(screen.getByRole("tab", { name: /Android services/i }))
+    expect(screen.queryByRole("slider", { name: /Set screen brightness/ })).toBeNull()
+    expect(screen.getByText("Android services")).toBeTruthy()
+    expect(screen.getByText("Phone Settings")).toBeTruthy()
+  })
+
+  it("keeps the application inventory mounted through a manual refresh", async () => {
+    let resolveStatus: ((value: typeof status) => void) | undefined
+    let attempts = 0
+    mount(async url => {
+      if (url.endsWith("/status")) {
+        attempts++
+        if (attempts === 2) return new Promise(resolve => { resolveStatus = resolve })
+        return status
+      }
+      return url.endsWith("/apps") ? apps : system
+    })
+    await screen.findByText("Example 0")
+    const inventory = screen.getByText("Example 0")
+    const panel = screen.getByRole("tabpanel")
+    expect(panel.className).toContain("min-h-[500px]")
+    fireEvent.click(screen.getByRole("button", { name: /Refresh/ }))
+    expect(screen.getByText("Example 0")).toBe(inventory)
+    expect(screen.getByRole("tabpanel")).toBe(panel)
+    if (!resolveStatus) throw new Error("Refresh status request not started")
+    resolveStatus(status)
+    await waitFor(() => expect(attempts).toBe(2))
   })
 })
