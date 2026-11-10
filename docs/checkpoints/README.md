@@ -9,6 +9,10 @@ purpose: Index historical evidence without overloading the active documentation 
 
 These dated files are historical **exact-SHA evidence**, not instructions to rerun tests. Start with [Minimal Context](../START_HERE.md) and open **only the relevant checkpoint**. Keep old receipts here rather than copying entire status logs into active handoff/roadmap/quality documents.
 
+## 2026-11-10
+
+- [M2/M3 guarded Node runit hosting source sprint](2026-11-10-m2-m3-node-runit-source-sprint.md)
+
 ## 2026-11-09
 
 - [M2/M3 Node source candidate and Samsung focused acceptance](2026-11-09-m2-m3-node-source-sprint.md)
