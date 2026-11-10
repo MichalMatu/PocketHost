@@ -149,3 +149,14 @@ test('M3 runit launch drops inherited admin environment and validates fixed loop
   assert.throws(() => runScript(folder, 8000, 'e'.repeat(48)), /launch/);
   assert.throws(() => runScript(folder, 19301, 'bad'), /launch/);
 });
+
+test('M3 owned log supervisor cannot be redirected through an arbitrary run command', (t) => {
+  const { project, projects, host, serviceRoot } = fixture(t);
+  projects.stage(project.id, source);
+  // A foreign pre-existing unit, even with an apparent log directory, is
+  // never adopted merely because it matches the deterministic Node name.
+  const service = path.join(serviceRoot, 'pockethost-' + project.id + '-s-' +
+    project.id.slice(5, 17));
+  mkdirSync(service);
+  assert.throws(() => host.preview(project.id), /collision/);
+});

@@ -56,6 +56,7 @@ type UnitRecord = {
   unit: string;
   port: number;
   runDigest: string;
+  logDigest: string;
   readinessNonce: string;
 };
 
@@ -99,6 +100,10 @@ function quote(input: string): string {
 }
 function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
+}
+function nodeLogRun(logFolder: string): string {
+  return '#!' + PREFIX + '/bin/sh\nexec ' + quote(PREFIX + '/bin/svlogd') +
+    ' -tt ' + quote(logFolder) + '\n';
 }
 /** A clean env blocks accidental inheritance of PocketHost admin credentials. */
 export function runScript(folder: string, port: number, readinessNonce: string): string {
@@ -243,6 +248,14 @@ export class NodeRunitHost {
     const down = path.join(service, 'down');
     if (absent(down)) throw new Error('Owned Node unit must remain manually disabled');
     privateText(down, 64);
+    checkedDirectory(path.join(service, 'log'));
+    checkedDirectory(this.logRoot);
+    checkedDirectory(path.join(this.logRoot, unit));
+    const logSource = privateText(path.join(service, 'log', 'run'));
+    if (!/^[a-f0-9]{64}$/.test(m.logDigest) ||
+      m.logDigest !== digest(nodeLogRun(path.join(this.logRoot, unit))) ||
+      digest(logSource) !== m.logDigest)
+      throw new Error('Owned Node log supervisor identity changed');
     if (!this.admin.isRegistered(unit))
       throw new Error('Node unit is not in verified runit registry');
   }
@@ -289,11 +302,14 @@ export class NodeRunitHost {
     const { service } = this.context(id);
     const folder = this.projects.release(id, release).folder;
     const source = runScript(folder, port, nonce);
+    const logSource = nodeLogRun(path.join(this.logRoot, unitName(id)));
+    if (privateText(path.join(service, 'log', 'run')) !== logSource)
+      throw new Error('Owned Node log run script differs from fixed specification');
     atomic(service, 'run', source, 0o700);
     atomic(service, UNIT_MARKER, JSON.stringify({
       schema: 1, owner: 'pockethost-node-runit', projectId: id,
       unit: unitName(id), port, runDigest: digest(source),
-      readinessNonce: nonce,
+      logDigest: digest(logSource), readinessNonce: nonce,
     }) + '\n');
   }
   private history(state: RuntimeRecord, action: RuntimeRecord['history'][number]['action'],
@@ -486,8 +502,7 @@ export class NodeRunitHost {
     mkdirSync(log, { mode: 0o700 });
     writeFileSync(path.join(service, 'down'), '', { flag: 'wx', mode: 0o600 });
     writeFileSync(path.join(service, 'log', 'run'),
-      '#!' + PREFIX + '/bin/sh\nexec ' + quote(PREFIX + '/bin/svlogd') +
-      ' -tt ' + quote(log) + '\n', { flag: 'wx', mode: 0o700 });
+      nodeLogRun(log), { flag: 'wx', mode: 0o700 });
     const nonce = randomBytes(24).toString('hex');
     this.script(id, release, port, nonce);
     const state: RuntimeRecord = { schema: 1, owner: 'pockethost-node-runit',
