@@ -230,8 +230,7 @@ export class NodeRunitHost {
     const down = path.join(service, 'down');
     if (absent(down)) throw new Error('Owned Node unit must remain manually disabled');
     privateText(down, 64);
-    const listing = this.admin.list(() => 'unknown');
-    if (!listing.some((entry) => entry.name === unit && entry.registered && !entry.protected))
+    if (!this.admin.isRegistered(unit))
       throw new Error('Node unit is not in verified runit registry');
   }
   private unitState(id: string): 'running' | 'down' | 'unknown' {
@@ -301,7 +300,14 @@ export class NodeRunitHost {
       missingTools: [], conflicts: [], nodeVersion: null, npmVersion: null,
       dependencyCount: null, allowed: false,
       reason: 'stage-source-first' };
-    const { plan } = this.projects.release(id, release);
+    const candidate = this.projects.candidates(id).find((entry) => entry.id === release);
+    if (!candidate) throw new Error('Unknown Node candidate');
+    const { dependencyPlan: plan, sourceIntegrity } = candidate;
+    if (sourceIntegrity !== 'verified') {
+      return { release, port: state?.port ?? null, nodeVersion: null, npmVersion: null,
+        missingTools: [], conflicts: [], dependencyCount: plan.dependencyCount,
+        allowed: false, reason: 'source-must-be-re-staged' };
+    }
     const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
       encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
     });
@@ -422,6 +428,10 @@ export class NodeRunitHost {
       throw error;
     }
     try {
+      if (this.projects.inspect(id).candidateRelease !== release) {
+        throw new Error('Node source candidate changed during admission');
+      }
+      this.projects.release(id, release); // Re-attest under the exclusive runtime lock.
       let state = this.record(id);
       if (!state) {
         const reservations = new Set<number>();

@@ -86,3 +86,12 @@ test('M3 legacy source lacking proof cannot run without re-staging', (t) => {
   assert.equal(host.candidates(project.id).length, 1);
   assert.throws(() => host.release(project.id, staged.candidateRelease), /ENOENT|source/);
 });
+
+test('M3 existing legacy candidate remains visible but requires fresh staging', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Legacy verified node');
+  const release = host.stage(project.id, source()).project.candidateRelease;
+  assert.equal(host.candidates(project.id)[0].sourceIntegrity, 'verified');
+  rmSync(path.join(root, project.id, 'releases', release, '.pockethost-node-source.json'));
+  assert.equal(host.candidates(project.id)[0].sourceIntegrity, 'legacy-needs-restaging');
+});

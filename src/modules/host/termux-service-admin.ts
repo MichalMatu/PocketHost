@@ -220,6 +220,13 @@ export class TermuxServiceAdmin {
     }
   }
 
+  /** Exact named registration check: never scan or infer ownership from other services. */
+  isRegistered(name: string): boolean {
+    valid(name);
+    const target = this.target(name);
+    return this.registry().some((item) => item.name === name && item.target === target);
+  }
+
   logs(name: string): { lines: string[] } {
     valid(name);
     const registrations = this.registry();

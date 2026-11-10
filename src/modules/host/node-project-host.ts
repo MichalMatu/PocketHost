@@ -63,6 +63,7 @@ export interface NodeCandidateRelease {
   candidate: boolean;
   previousCandidate: boolean;
   dependencyPlan: NodeDependencyPlan;
+  sourceIntegrity: 'verified' | 'legacy-needs-restaging';
 }
 
 function ownedDirectory(location: string): void {
@@ -350,8 +351,19 @@ export class NodeProjectHost {
           JSON.parse(privateFile(path.join(folder, 'package-lock.json'))),
         );
         privateFile(path.join(folder, 'server.mjs'), 64 * 1024);
+        const proofFile = path.join(folder, RELEASE_PROOF);
+        let sourceIntegrity: NodeCandidateRelease['sourceIntegrity'] = 'verified';
+        try {
+          lstatSync(proofFile);
+          // Presence alone is not proof: verify all three source digests.
+          this.release(id, name);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+          sourceIntegrity = 'legacy-needs-restaging';
+        }
         return {
           id: name,
+          sourceIntegrity,
           active: false,
           candidate: marker.candidateRelease === name,
           previousCandidate: marker.previousCandidate === name,

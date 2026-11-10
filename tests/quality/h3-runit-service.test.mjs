@@ -104,3 +104,10 @@ test('H3.4 runit enable/disable only explicitly registered non-protected exact s
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('exact runit registration inspection rejects names without proven owned entries', async (t) => {
+  const { serviceRoot, registerFile } = fixture(t);
+  const admin = new TermuxServiceAdmin(serviceRoot, registerFile);
+  assert.throws(() => admin.isRegistered('sshd'), /Protected|unavailable/);
+  assert.throws(() => admin.isRegistered('not-registered'), /unavailable/);
+});
