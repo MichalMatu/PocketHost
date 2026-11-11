@@ -38,8 +38,7 @@ owner-verified and refreshed **only PocketHost DEV panel** from
 First loopback route sweep passed 12/13; `/terminal` required a
 read-only follow-up. **Do not infer physical G3 PASS.**
 
-See the [2026-11-11 exact-SHA closeout and Hosting handoff](
-checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md) for task ID,
+See the [2026-11-11 exact-SHA closeout and Hosting handoff](checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md) for task ID,
 acceptance scope and remaining follow-up. A later docs-only commit does not
 change the tested app source or re-certify a new source SHA.
 

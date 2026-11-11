@@ -9,7 +9,10 @@ const routes = readFileSync(path.join(root, 'apps/admin/src/config/routes.tsx'),
 const html = readFileSync(path.join(root, 'apps/admin/index.html'), 'utf8');
 const navigation = readFileSync(path.join(root, 'apps/admin/src/config/navigation.ts'), 'utf8');
 const viteConfig = readFileSync(path.join(root, 'apps/admin/vite.config.ts'), 'utf8');
-const terminalPanel = readFileSync(path.join(root, 'apps/admin/src/app/termux/terminal-panel.tsx'), 'utf8');
+const terminalPanel = readFileSync(
+  path.join(root, 'apps/admin/src/app/termux/terminal-panel.tsx'),
+  'utf8',
+);
 
 const originalPaths = [
   '/',
