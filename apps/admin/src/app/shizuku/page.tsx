@@ -1,7 +1,7 @@
 import * as React from "react"
 import {
   AppWindow, Cpu, RefreshCw, Settings2,
-  ShieldCheck, Smartphone, Terminal, Search, ExternalLink,
+  ShieldCheck, Terminal, Search, ExternalLink,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -47,9 +47,9 @@ function processMiB(value: number | null) {
 }
 
 function LastSample({ observedAt }: { observedAt?: string }) {
-  return <span className="text-muted-foreground text-xs">
-    {observedAt ? "Sample: " + new Date(observedAt).toLocaleTimeString() : "No verified reading"}
-  </span>
+  return <Badge variant="outline">
+    {observedAt ? "Checked " + new Date(observedAt).toLocaleTimeString() : "No verified sample"}
+  </Badge>
 }
 
 export default function ShizukuPage() {
@@ -178,14 +178,18 @@ export default function ShizukuPage() {
   const visiblePermissions = (appDetail?.permissions ?? []).filter(permission =>
     permission.name.toLowerCase().includes(permissionSearch.trim().toLowerCase())
   )
+  function sortBy(column: typeof sortProcessBy) {
+    setDescending(current => column === sortProcessBy ? !current : true)
+    setSortProcessBy(column)
+    setProcessPage(0)
+  }
 
   return (
     <BaseLayout title="Android & Shizuku" description="Android-wide diagnostics and on-device privileged controls">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="outline"><Smartphone className="size-3" /> Android device</Badge>
-            <Badge variant="outline"><ShieldCheck className="size-3" /> {connected ? "Connected · " + status.mode.toUpperCase() + (status.uid == null ? "" : " · UID " + status.uid) : "Shizuku unavailable"}</Badge>
+            <Badge variant="outline"><ShieldCheck className="size-3" /> {loading ? "Checking Shizuku" : connected ? "Shizuku · " + status.mode.toUpperCase() + (status.uid == null ? "" : " · UID " + status.uid) : "Shizuku unavailable"}</Badge>
             <LastSample observedAt={status?.observedAt} />
           </div>
           <Button variant="outline" size="sm" disabled={loading}
@@ -202,9 +206,7 @@ export default function ShizukuPage() {
 
         {!connected && !loading && (
           <Card>
-            <CardHeader><CardTitle>Native connection required</CardTitle>
-              <CardDescription>These pages never invent privileged Android data.</CardDescription>
-            </CardHeader><CardContent className="text-sm text-muted-foreground">
+            <CardHeader><CardTitle>Connect Shizuku</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">
               Start Shizuku, authorize PocketHost Companion on the phone, then refresh this page.
               <a className="ml-2 inline-flex items-center gap-1 underline underline-offset-4"
                 href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
@@ -237,13 +239,10 @@ export default function ShizukuPage() {
           })}
         </div>
 
-        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section} className="min-h-[500px]">
+        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section} className="min-h-[500px] space-y-5">
         {section === "applications" && (
           <Card>
-            <CardHeader><CardTitle>Android apps & permissions</CardTitle>
-              <CardDescription>Choose an app to inspect details, manage requested permissions or perform available Android actions.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-4">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative min-w-48 flex-1">
                   <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
@@ -376,26 +375,12 @@ export default function ShizukuPage() {
                     </p>
                   </div>
                 </div>}
-              <LastSample observedAt={apps?.observedAt} />
             </CardContent>
           </Card>
         )}
         {section === "processes" && (
           <Card>
-            <CardHeader><CardTitle>Android processes</CardTitle>
-              <CardDescription>Android-wide snapshot: PID, owner, RAM and CPU only when reported.</CardDescription>
-            </CardHeader><CardContent className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <label htmlFor="android-process-sort">Sort by</label>
-                <select id="android-process-sort" aria-label="Sort Android processes" className="bg-background rounded-md border px-3 py-2"
-                  value={sortProcessBy} onChange={e => { setSortProcessBy(e.target.value as typeof sortProcessBy); setProcessPage(0) }}>
-                  <option value="pid">PID</option><option value="name">Name</option>
-                  <option value="user">Owner</option><option value="rss">RSS</option><option value="cpu">CPU</option>
-                </select>
-                <Button size="sm" variant="outline" onClick={() => { setDescending(x => !x); setProcessPage(0) }}>
-                  {descending ? "Descending" : "Ascending"}
-                </Button>
-              </div>
+            <CardContent className="space-y-3 pt-4">
               <Input aria-label="Search Android processes" value={processSearch}
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
@@ -403,11 +388,24 @@ export default function ShizukuPage() {
                   <div className="relative h-[65vh] min-h-[440px] max-h-[900px] overflow-auto rounded-lg border">
                     <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-0 text-left text-sm" aria-label="Android processes">
                       <thead><tr>
-                        <th scope="col" className="sticky top-0 z-20 w-20 border-b bg-background p-3">PID</th>
-                        <th scope="col" className="sticky top-0 z-20 w-[38%] border-b bg-background p-3">Process</th>
-                        <th scope="col" className="sticky top-0 z-20 w-[22%] border-b bg-background p-3">User</th>
-                        <th scope="col" className="sticky top-0 z-20 w-32 border-b bg-background p-3 text-right">RSS</th>
-                        <th scope="col" className="sticky top-0 z-20 w-24 border-b bg-background p-3 text-right">CPU</th>
+                        {([
+                          { key: "pid", label: "PID", width: "w-20", right: false },
+                          { key: "name", label: "Process", width: "w-[38%]", right: false },
+                          { key: "user", label: "User", width: "w-[22%]", right: false },
+                          { key: "rss", label: "RSS", width: "w-32", right: true },
+                          { key: "cpu", label: "CPU", width: "w-24", right: true },
+                        ] as const).map(column => (
+                          <th key={column.key} scope="col" className={"sticky top-0 z-20 border-b bg-background p-0 " + column.width}
+                            aria-sort={sortProcessBy === column.key ? descending ? "descending" : "ascending" : "none"}>
+                            <button type="button" aria-label={"Sort by " + column.label}
+                              onClick={() => sortBy(column.key)}
+                              className={"flex w-full items-center gap-1 p-3 hover:bg-muted focus-visible:outline-2 focus-visible:outline-offset-[-2px] " +
+                                (column.right ? "justify-end text-right" : "justify-start text-left")}>
+                              <span>{column.label}</span>
+                              {sortProcessBy === column.key && <span aria-hidden="true">{descending ? "↓" : "↑"}</span>}
+                            </button>
+                          </th>
+                        ))}
                       </tr></thead><tbody>
                         {visibleProcesses.map(proc => <tr className="border-t" key={proc.pid}>
                           <td className="p-3 font-mono">
@@ -443,18 +441,13 @@ export default function ShizukuPage() {
                           </>}
                     </div>
                   )}
-                  <p className="text-muted-foreground text-xs">Per-process CPU is only shown if Android reports it.</p>
-                  <LastSample observedAt={system.observedAt} />
                 </>}
             </CardContent>
           </Card>
         )}
         {section === "services" && (
           <div className="space-y-3">
-            <Card><CardHeader><CardTitle>Android services</CardTitle>
-              <CardDescription>Observed Android components only; runtime running/stopped states are not established.</CardDescription>
-            </CardHeader><CardContent className="space-y-3">
-              <p className="text-muted-foreground text-sm">Screen controls have moved to <a className="underline underline-offset-4" href="/phone-settings">Phone Settings</a>.</p>
+            <Card><CardContent className="space-y-3 pt-4">
               <Input aria-label="Search Android services" value={serviceSearch}
                 onChange={e => { setServiceSearch(e.target.value); setServicePage(0) }}
                 placeholder="Search service component..." />
@@ -506,19 +499,17 @@ export default function ShizukuPage() {
                   )}
                 </>
               )}
-              <p className="text-muted-foreground text-xs">These controls execute immediately through Shizuku. Actual Android refusals are shown.</p>
             </CardContent></Card>
           </div>
         )}
         {section === "shell" && <RemoteShellPanel />}
-        <details className="rounded-lg border p-3" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
-          <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics · on demand</summary>
-          {diagnosticsOpen && <div className="mt-3"><ShizukuDiagnosticsPanel /></div>}
+        <details className="mt-5 rounded-xl border bg-card p-4" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
+          <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics</summary>
+          {diagnosticsOpen && <div className="mt-4 [&>div]:border-0 [&>div]:bg-transparent [&>div]:shadow-none"><ShizukuDiagnosticsPanel /></div>}
         </details>
 
         </div>
 
-        <p className="text-muted-foreground text-xs">Direct Shizuku operations · ADB is not root · Private LAN DEV</p>
       </div>
     </BaseLayout>
   )
