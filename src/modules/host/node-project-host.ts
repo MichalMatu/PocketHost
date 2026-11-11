@@ -17,7 +17,10 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { planNodeDependencies, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
+import {
+  planNodeDependencies,
+  type NodeDependencyPlan,
+} from '../../shared/node-dependency-plan.ts';
 
 const PROJECT = /^node-[a-f0-9]{32}$/;
 const RELEASE = /^r-[a-f0-9]{32}$/;
@@ -310,48 +313,52 @@ export class NodeProjectHost {
   stage(id: string, input: unknown): { project: NodeProjectSummary; plan: NodeDependencyPlan } {
     const source = cleanSource(input);
     return this.mutation(() => {
-    const marker = this.record(id);
-    const releases = path.join(this.projectPath(id), 'releases');
-    if (
-      readdirSync(releases).filter((name) => RELEASE.test(name)).length >= MAX_RELEASES ||
-      marker.history.length >= 30
-    )
-      throw new RangeError('Node release budget reached');
-    const release = 'r-' + identifier();
-    const stage = path.join(releases, '.stage-' + identifier());
-    mkdirSync(stage, { mode: 0o700 });
-    try {
-      for (const [name, content] of [
-        ['package.json', source.manifest],
-        ['package-lock.json', source.lock],
-        ['server.mjs', source.source],
-      ] as const) {
-        writeFileSync(path.join(stage, name), content, { flag: 'wx', mode: 0o600 });
+      const marker = this.record(id);
+      const releases = path.join(this.projectPath(id), 'releases');
+      if (
+        readdirSync(releases).filter((name) => RELEASE.test(name)).length >= MAX_RELEASES ||
+        marker.history.length >= 30
+      )
+        throw new RangeError('Node release budget reached');
+      const release = 'r-' + identifier();
+      const stage = path.join(releases, '.stage-' + identifier());
+      mkdirSync(stage, { mode: 0o700 });
+      try {
+        for (const [name, content] of [
+          ['package.json', source.manifest],
+          ['package-lock.json', source.lock],
+          ['server.mjs', source.source],
+        ] as const) {
+          writeFileSync(path.join(stage, name), content, { flag: 'wx', mode: 0o600 });
+        }
+        writeFileSync(
+          path.join(stage, RELEASE_PROOF),
+          JSON.stringify({
+            schema: 1,
+            owner: 'pockethost-node-source',
+            id: release,
+            manifestDigest: digest(source.manifest),
+            lockDigest: digest(source.lock),
+            sourceDigest: digest(source.source),
+          }) + '\n',
+          { flag: 'wx', mode: 0o600 },
+        );
+        ownedDirectory(stage);
+        renameSync(stage, path.join(releases, release));
+        const previous = marker.candidateRelease;
+        marker.previousCandidate = previous;
+        marker.candidateRelease = release;
+        marker.history.push({
+          at: new Date().toISOString(),
+          action: 'stage',
+          from: previous,
+          to: release,
+        });
+        writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
+        return { project: this.summary(marker), plan: source.plan };
+      } finally {
+        if (existsSync(stage)) rmSync(stage, { recursive: true });
       }
-      writeFileSync(path.join(stage, RELEASE_PROOF), JSON.stringify({
-        schema: 1,
-        owner: 'pockethost-node-source',
-        id: release,
-        manifestDigest: digest(source.manifest),
-        lockDigest: digest(source.lock),
-        sourceDigest: digest(source.source),
-      }) + '\n', { flag: 'wx', mode: 0o600 });
-      ownedDirectory(stage);
-      renameSync(stage, path.join(releases, release));
-      const previous = marker.candidateRelease;
-      marker.previousCandidate = previous;
-      marker.candidateRelease = release;
-      marker.history.push({
-        at: new Date().toISOString(),
-        action: 'stage',
-        from: previous,
-        to: release,
-      });
-      writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
-      return { project: this.summary(marker), plan: source.plan };
-    } finally {
-      if (existsSync(stage)) rmSync(stage, { recursive: true });
-    }
     });
   }
   candidates(id: string): NodeCandidateRelease[] {
@@ -389,7 +396,10 @@ export class NodeProjectHost {
       });
   }
   /** Re-attest source and immutable release files immediately before a host operation. */
-  release(id: string, releaseId: string): {
+  release(
+    id: string,
+    releaseId: string,
+  ): {
     project: NodeProjectSummary;
     folder: string;
     projectFolder: string;
@@ -419,20 +429,29 @@ export class NodeProjectHost {
       proof.manifestDigest !== digest(manifestText) ||
       proof.lockDigest !== digest(lockText) ||
       proof.sourceDigest !== digest(sourceText)
-    ) throw new Error('Node release source digest mismatch');
+    )
+      throw new Error('Node release source digest mismatch');
     const manifest = JSON.parse(manifestText);
     const lockfile = JSON.parse(lockText);
     const plan = planNodeDependencies(manifest, lockfile);
     if ((manifest as { scripts?: { start?: unknown } }).scripts?.start !== 'node server.mjs') {
       throw new Error('Unsupported Node release entrypoint');
     }
-    return { project: this.summary(marker), folder, projectFolder, plan,
-      source: { manifest: manifestText, lock: lockText, server: sourceText } };
+    return {
+      project: this.summary(marker),
+      folder,
+      projectFolder,
+      plan,
+      source: { manifest: manifestText, lock: lockText, server: sourceText },
+    };
   }
 
   /** Only expose the verified current candidate; no arbitrary file reads. */
   candidateSource(id: string): {
-    release: string; manifest: string; lockfile: string; serverSource: string;
+    release: string;
+    manifest: string;
+    lockfile: string;
+    serverSource: string;
   } {
     const marker = this.record(id);
     if (!marker.candidateRelease) throw new RangeError('No staged Node source candidate');
@@ -447,22 +466,22 @@ export class NodeProjectHost {
 
   restoreCandidate(id: string): NodeProjectSummary {
     return this.mutation(() => {
-    const marker = this.record(id);
-    if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
-    const old = marker.candidateRelease;
-    const next = marker.previousCandidate;
-    ownedDirectory(path.join(this.projectPath(id), 'releases', next));
-    marker.candidateRelease = next;
-    marker.previousCandidate = old;
-    if (marker.history.length >= 30) throw new RangeError('Node release history budget reached');
-    marker.history.push({
-      at: new Date().toISOString(),
-      action: 'restore-candidate',
-      from: old,
-      to: next,
-    });
-    writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
-    return this.summary(marker);
+      const marker = this.record(id);
+      if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
+      const old = marker.candidateRelease;
+      const next = marker.previousCandidate;
+      ownedDirectory(path.join(this.projectPath(id), 'releases', next));
+      marker.candidateRelease = next;
+      marker.previousCandidate = old;
+      if (marker.history.length >= 30) throw new RangeError('Node release history budget reached');
+      marker.history.push({
+        at: new Date().toISOString(),
+        action: 'restore-candidate',
+        from: old,
+        to: next,
+      });
+      writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
+      return this.summary(marker);
     });
   }
 }

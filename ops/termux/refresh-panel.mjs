@@ -40,7 +40,10 @@ function command(file, args, cwd, timeout = 15000) {
     stdio: ['ignore', 'pipe', 'pipe'],
     maxBuffer: 100000,
   });
-  requireCondition(r.status === 0 && !r.error, 'Command refused: ' + path.basename(file) + ' ' + args[0]);
+  requireCondition(
+    r.status === 0 && !r.error,
+    'Command refused: ' + path.basename(file) + ' ' + args[0],
+  );
   return r.stdout.trim();
 }
 
@@ -62,44 +65,83 @@ function readRecord(file) {
 
 function fixedServiceRecord(dir, root) {
   const meta = lstatSync(dir);
-  requireCondition(meta.isDirectory() && !meta.isSymbolicLink(), 'Service not a real runit directory');
+  requireCondition(
+    meta.isDirectory() && !meta.isSymbolicLink(),
+    'Service not a real runit directory',
+  );
   const rootRecord = lstatSync(dir + '/owner-root');
-  requireCondition(rootRecord.isFile() && !rootRecord.isSymbolicLink(), 'Linked or missing runit owner root');
-  requireCondition(readFileSync(dir + '/owner-root', 'utf8').trim() === root, 'Unexpected runit service owner');
+  requireCondition(
+    rootRecord.isFile() && !rootRecord.isSymbolicLink(),
+    'Linked or missing runit owner root',
+  );
+  requireCondition(
+    readFileSync(dir + '/owner-root', 'utf8').trim() === root,
+    'Unexpected runit service owner',
+  );
   requireCondition(!lstatSync(dir + '/run').isSymbolicLink(), 'Linked runit launcher');
 }
 
 function startTicks(pid) {
   const line = readFileSync('/proc/' + pid + '/stat', 'utf8');
-  const part = line.slice(line.lastIndexOf(')') + 2).trim().split(/\s+/);
+  const part = line
+    .slice(line.lastIndexOf(')') + 2)
+    .trim()
+    .split(/\s+/);
   requireCondition(/^\d+$/.test(part[19] ?? ''), 'Malformed Linux process identity');
   return part[19];
 }
 
 export function assertPanelRunitIdentity(e) {
-  const { owner, gateway, root, head, pid, servicePid, ticks, cwd, argv, processUid, expectedUid } = e;
+  const { owner, gateway, root, head, pid, servicePid, ticks, cwd, argv, processUid, expectedUid } =
+    e;
   requireCondition(owner?.managedBy === 'termux-runit/pockethost-panel', 'Not runit-owned');
-  requireCondition(owner.pid === pid && gateway?.pid === pid && servicePid === pid, 'Runit PID mismatch');
-  requireCondition(owner.startTicks === ticks && gateway.startTicks === ticks, 'Process start ticks changed');
-  requireCondition(owner.cwd === root + '/apps/admin' && gateway.cwd === owner.cwd && cwd === owner.cwd, 'Process cwd mismatch');
-  requireCondition(owner.sourceSha === head && gateway.sourceSha === head, 'Active source SHA mismatch');
+  requireCondition(
+    owner.pid === pid && gateway?.pid === pid && servicePid === pid,
+    'Runit PID mismatch',
+  );
+  requireCondition(
+    owner.startTicks === ticks && gateway.startTicks === ticks,
+    'Process start ticks changed',
+  );
+  requireCondition(
+    owner.cwd === root + '/apps/admin' && gateway.cwd === owner.cwd && cwd === owner.cwd,
+    'Process cwd mismatch',
+  );
+  requireCondition(
+    owner.sourceSha === head && gateway.sourceSha === head,
+    'Active source SHA mismatch',
+  );
   requireCondition(owner.port === 8787 && gateway.owner === 'PocketHost', 'Unknown panel owner');
-  requireCondition(gateway.adminPort === 18878 && gateway.sitePort === 18879, 'Unexpected gateway ports');
+  requireCondition(
+    gateway.adminPort === 18878 && gateway.sitePort === 18879,
+    'Unexpected gateway ports',
+  );
   requireCondition(gateway.managedBy === owner.managedBy, 'Gateway owner manager mismatch');
   requireCondition(processUid === expectedUid, 'Unexpected process OS user');
   requireCondition(
     argv[0] === prefix + '/bin/node' &&
       argv[1] === root + '/apps/admin/node_modules/vite/bin/vite.js' &&
-      argv.includes('127.0.0.1') && argv.includes('8787') && argv.includes('--strictPort'),
+      argv.includes('127.0.0.1') &&
+      argv.includes('8787') &&
+      argv.includes('--strictPort'),
     'Not the exact runit Node/Vite command',
   );
   return true;
 }
 
 /** Allow only verified UI-only Git fast-forward after a running Vite panel's HMR. */
-export function assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor, changedFiles }) {
+export function assertHmrOnlySourceDrift({
+  markerSha,
+  gatewaySha,
+  checkoutSha,
+  ancestor,
+  changedFiles,
+}) {
   const sha = /^[0-9a-f]{40}$/;
-  requireCondition(sha.test(markerSha) && sha.test(gatewaySha) && sha.test(checkoutSha), 'Invalid owner source sha');
+  requireCondition(
+    sha.test(markerSha) && sha.test(gatewaySha) && sha.test(checkoutSha),
+    'Invalid owner source sha',
+  );
   requireCondition(markerSha === gatewaySha, 'Owner marker source disagreement');
   if (markerSha !== checkoutSha) {
     requireCondition(ancestor === true, 'Owner source is not an ancestor');
@@ -112,14 +154,30 @@ export function assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, a
 function verifiedMarkerHead(root, owner, gateway, checkoutSha) {
   const markerSha = owner?.sourceSha;
   const gatewaySha = gateway?.sourceSha;
-  requireCondition(typeof markerSha === 'string' && typeof gatewaySha === 'string', 'Owner source record missing');
+  requireCondition(
+    typeof markerSha === 'string' && typeof gatewaySha === 'string',
+    'Owner source record missing',
+  );
   if (markerSha === checkoutSha) {
-    return assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: [] });
+    return assertHmrOnlySourceDrift({
+      markerSha,
+      gatewaySha,
+      checkoutSha,
+      ancestor: true,
+      changedFiles: [],
+    });
   }
   git(root, 'merge-base', '--is-ancestor', markerSha, checkoutSha);
   const delta = git(root, 'diff', '--name-only', '--no-renames', '-z', markerSha, checkoutSha)
-    .split(String.fromCharCode(0)).filter(Boolean);
-  return assertHmrOnlySourceDrift({ markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: delta });
+    .split(String.fromCharCode(0))
+    .filter(Boolean);
+  return assertHmrOnlySourceDrift({
+    markerSha,
+    gatewaySha,
+    checkoutSha,
+    ancestor: true,
+    changedFiles: delta,
+  });
 }
 
 function inspect(root, expectedHead) {
@@ -127,29 +185,43 @@ function inspect(root, expectedHead) {
   fixedServiceRecord(watchdog, root);
   requireCondition(status(watchdog).running, 'Panel HTTP watchdog is down');
   const managed = status(service);
-  requireCondition(managed.running && Number.isSafeInteger(managed.pid), 'Owned panel service is down');
+  requireCondition(
+    managed.running && Number.isSafeInteger(managed.pid),
+    'Owned panel service is down',
+  );
   const pid = managed.pid;
   const owner = readRecord(ownerFile);
   const gateway = readRecord(gatewayFile);
   const verifiedHead = verifiedMarkerHead(root, owner, gateway, expectedHead);
   requireCondition(gateway.bind === '192.168.0.100', 'Unapproved gateway interface');
-  const rawArgv = readFileSync('/proc/' + pid + '/cmdline', 'utf8').split('\0').filter(Boolean);
+  const rawArgv = readFileSync('/proc/' + pid + '/cmdline', 'utf8')
+    .split('\0')
+    .filter(Boolean);
   const cwd = realpathSync('/proc/' + pid + '/cwd');
   const evidence = {
-    owner, gateway, root, head: verifiedHead, pid,
+    owner,
+    gateway,
+    root,
+    head: verifiedHead,
+    pid,
     servicePid: Number(readFileSync(service + '/supervise/pid', 'utf8').trim()),
-    ticks: startTicks(pid), cwd, argv: rawArgv,
-    processUid: statSync('/proc/' + pid).uid, expectedUid: process.getuid(),
+    ticks: startTicks(pid),
+    cwd,
+    argv: rawArgv,
+    processUid: statSync('/proc/' + pid).uid,
+    expectedUid: process.getuid(),
   };
   assertPanelRunitIdentity(evidence);
   return { pid, ticks: evidence.ticks, gatewayHost: gateway.bind };
 }
 
 function externalStates() {
-  return Object.fromEntries([...protectedServices].map(([name, location]) => {
-    const state = status(location);
-    return [name, state.running ? 'run' : 'down'];
-  }));
+  return Object.fromEntries(
+    [...protectedServices].map(([name, location]) => {
+      const state = status(location);
+      return [name, state.running ? 'run' : 'down'];
+    }),
+  );
 }
 
 function probe(host, port, pathname) {
@@ -197,20 +269,34 @@ async function refresh(target) {
   requireCondition(/^[a-f0-9]{40}$/.test(target ?? ''), 'Provide immutable full main SHA');
   const root = realpathSync(process.cwd());
   requireCondition(
-    root.startsWith(path.join(home, 'Projects/PocketHost-')) &&
-      !lstatSync(root).isSymbolicLink(),
+    root.startsWith(path.join(home, 'Projects/PocketHost-')) && !lstatSync(root).isSymbolicLink(),
     'Not a dedicated PocketHost checkout',
   );
-  requireCondition(git(root, 'remote', 'get-url', 'origin') === 'https://github.com/MichalMatu/PocketHost.git', 'Unexpected Git remote');
+  requireCondition(
+    git(root, 'remote', 'get-url', 'origin') === 'https://github.com/MichalMatu/PocketHost.git',
+    'Unexpected Git remote',
+  );
   requireCondition(git(root, 'status', '--porcelain') === '', 'Live checkout is dirty');
   const oldSha = git(root, 'rev-parse', 'HEAD');
   const before = inspect(root, oldSha);
-  requireCondition(await panelReady(before.gatewayHost), 'Existing panel or private LAN unavailable');
+  requireCondition(
+    await panelReady(before.gatewayHost),
+    'Existing panel or private LAN unavailable',
+  );
   const externalBefore = externalStates();
-  requireCondition(Object.values(externalBefore).every((s) => s === 'run'), 'Unhealthy protected external service before refresh');
+  requireCondition(
+    Object.values(externalBefore).every((s) => s === 'run'),
+    'Unhealthy protected external service before refresh',
+  );
   git(root, 'fetch', '--quiet', '--no-tags', 'origin', 'main');
-  requireCondition(git(root, 'rev-parse', 'FETCH_HEAD') === target, 'Remote main changed; pin new revision');
-  requireCondition(git(root, 'status', '--porcelain') === '', 'Live worktree changed before refresh');
+  requireCondition(
+    git(root, 'rev-parse', 'FETCH_HEAD') === target,
+    'Remote main changed; pin new revision',
+  );
+  requireCondition(
+    git(root, 'status', '--porcelain') === '',
+    'Live worktree changed before refresh',
+  );
   git(root, 'merge-base', '--is-ancestor', oldSha, target);
   if (oldSha === target) {
     return { status: 'CURRENT', sha: oldSha, owned: before.pid };
@@ -226,13 +312,26 @@ async function refresh(target) {
     await waitForDown();
     git(root, 'switch', '--quiet', '--detach', target);
     switched = true;
-    requireCondition(git(root, 'rev-parse', 'HEAD') === target, 'Git source did not reach pinned revision');
+    requireCondition(
+      git(root, 'rev-parse', 'HEAD') === target,
+      'Git source did not reach pinned revision',
+    );
     command(prefix + '/bin/sv', ['up', service], root, 10000);
     parked = false;
     const after = await waitForPanel(root, target, before.gatewayHost);
     const externalAfter = externalStates();
-    requireCondition(JSON.stringify(externalAfter) === JSON.stringify(externalBefore), 'Protected service changed during refresh');
-    return { status: 'PASS', from: oldSha, sha: target, ownedPid: after.pid, lanHttp: 200, external: 'unchanged' };
+    requireCondition(
+      JSON.stringify(externalAfter) === JSON.stringify(externalBefore),
+      'Protected service changed during refresh',
+    );
+    return {
+      status: 'PASS',
+      from: oldSha,
+      sha: target,
+      ownedPid: after.pid,
+      lanHttp: 200,
+      external: 'unchanged',
+    };
   } catch (error) {
     const originalError = String(error?.message ?? error);
     let rollback = 'NOT_REQUIRED';
@@ -241,7 +340,10 @@ async function refresh(target) {
         command(prefix + '/bin/sv', ['down', service], root, 10000);
         await waitForDown();
         if (switched) {
-          requireCondition(git(root, 'status', '--porcelain') === '', 'Refuse rollback over local changes');
+          requireCondition(
+            git(root, 'status', '--porcelain') === '',
+            'Refuse rollback over local changes',
+          );
           git(root, 'switch', '--quiet', '--detach', oldSha);
         }
         command(prefix + '/bin/sv', ['up', service], root, 10000);
@@ -262,7 +364,9 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.a
       if (out.status !== 'PASS' && out.status !== 'CURRENT') process.exitCode = 1;
     })
     .catch((err) => {
-      console.log(JSON.stringify({ status: 'HOLD', error: String(err?.message ?? err).slice(0, 160) }));
+      console.log(
+        JSON.stringify({ status: 'HOLD', error: String(err?.message ?? err).slice(0, 160) }),
+      );
       process.exitCode = 1;
     });
 }

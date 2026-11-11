@@ -16,7 +16,7 @@ purpose: Small source entrypoint and impact map to avoid loading unrelated code
 | Android & Shizuku UI      | apps/admin/src/app/shizuku/, apps/admin/src/lib/                                  | apps/admin/tests/shizuku-page.interaction.test.tsx, remote-shell-panel.interaction.test.tsx |
 | H2 owned sites            | src/modules/host/site-fleet-host.ts, src/modules/sites/                           | tests/quality/site-fleet-host.test.mjs, site-bundle.test.mjs                                |
 | Registry / ownership      | src/shared/hosting-registry.ts, src/modules/host/hosting-registry-store.ts        | tests/quality/hosting-registry*.test.mjs, hosting-service-ownership.test.mjs                |
-| Termux host operations    | src/modules/host/termux-admin.ts, termux-service-admin.ts, termux-restic-admin.ts | tests/quality/h3-*.test.mjs, h34-*.test.mjs                                                 |
+| Termux host operations    | src/modules/host/termux-admin.ts, termux-service-admin.ts, termux-restic-admin.ts | tests/quality/h3-_.test.mjs, h34-_.test.mjs                                                 |
 | Observability             | src/modules/host/observability-probes.ts, src/modules/observability/              | tests/quality/observability.test.mjs, host-snapshot.test.mjs                                |
 | DEV flow                  | scripts/dev/, scripts/quality/                                                    | tests/quality/dev-*.test.mjs and applicable structure/docs checks                           |
 | Android native Companion  | native/pockethost-companion/                                                      | native-focused Samsung tests only, do not claim from UI tests                               |

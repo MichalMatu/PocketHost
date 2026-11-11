@@ -14,8 +14,11 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const flags = process.argv.slice(2);
 const baseArg = flags.find((arg) => arg.startsWith('--base='));
 const run = flags.includes('--run');
-if (!baseArg || !/^--base=[0-9a-f]{7,40}$/.test(baseArg) ||
-    flags.some((arg) => arg !== baseArg && arg !== '--run')) {
+if (
+  !baseArg ||
+  !/^--base=[0-9a-f]{7,40}$/.test(baseArg) ||
+  flags.some((arg) => arg !== baseArg && arg !== '--run')
+) {
   console.error('Usage: node scripts/dev/changed-checks.mjs --base=<verified-sha> [--run]');
   process.exit(2);
 }
@@ -23,7 +26,10 @@ const base = baseArg.slice('--base='.length);
 
 function git(...args) {
   const result = spawnSync('git', args, {
-    cwd: root, encoding: 'utf8', timeout: 20000, maxBuffer: 4 * 1024 * 1024,
+    cwd: root,
+    encoding: 'utf8',
+    timeout: 20000,
+    maxBuffer: 4 * 1024 * 1024,
   });
   if (result.error || result.status !== 0) {
     throw new Error('Git verification failed: ' + args[0] + ' ' + args[1]);
@@ -41,9 +47,15 @@ function resolveImport(from, spec, tracked) {
   const relative = path.relative(root, target).split(path.sep).join('/');
   if (!relative || relative.startsWith('../') || path.isAbsolute(relative)) return null;
   for (const candidate of [
-    relative, relative + '.ts', relative + '.tsx', relative + '.js',
-    relative + '.mjs', relative + '.json', relative + '.css',
-    relative + '/index.ts', relative + '/index.tsx',
+    relative,
+    relative + '.ts',
+    relative + '.tsx',
+    relative + '.js',
+    relative + '.mjs',
+    relative + '.json',
+    relative + '.css',
+    relative + '/index.ts',
+    relative + '/index.tsx',
     relative + '/index.js',
   ]) {
     if (tracked.has(candidate)) return candidate;
@@ -53,7 +65,7 @@ function resolveImport(from, spec, tracked) {
 
 function importDependencies(source, file, tracked) {
   const matches = source.matchAll(
-    /\bfrom\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|\bimport\s*['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g
+    /\bfrom\s+['"]([^'"]+)['"]|\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)|\bimport\s*['"]([^'"]+)['"]|\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
   );
   const found = new Set();
   for (const match of matches) {
@@ -70,15 +82,18 @@ function buildTestDependencies(head) {
   if (existsSync(cache)) {
     try {
       const parsed = JSON.parse(readFileSync(cache, 'utf8'));
-      if (parsed.head === head && parsed.dependencies &&
-          typeof parsed.dependencies === 'object') return parsed.dependencies;
-    } catch { /* Corrupt cache is rebuilt, never treated as evidence. */ }
+      if (parsed.head === head && parsed.dependencies && typeof parsed.dependencies === 'object')
+        return parsed.dependencies;
+    } catch {
+      /* Corrupt cache is rebuilt, never treated as evidence. */
+    }
   }
   const files = git('ls-files', '-z').split('\0').filter(Boolean);
   const tracked = new Set(files);
-  const sourceFiles = files.filter((file) =>
-    /^(?:src\/|apps\/admin\/src\/|tests\/quality\/|apps\/admin\/tests\/|scripts\/)/.test(file) &&
-    /\.(?:ts|tsx|js|jsx|mjs|css)$/.test(file)
+  const sourceFiles = files.filter(
+    (file) =>
+      /^(?:src\/|apps\/admin\/src\/|tests\/quality\/|apps\/admin\/tests\/|scripts\/)/.test(file) &&
+      /\.(?:ts|tsx|js|jsx|mjs|css)$/.test(file),
   );
   const edges = new Map();
   for (const file of sourceFiles) {
@@ -86,9 +101,10 @@ function buildTestDependencies(head) {
     if (!existsSync(full)) continue;
     edges.set(file, importDependencies(readFileSync(full, 'utf8'), file, tracked));
   }
-  const tests = sourceFiles.filter((file) =>
-    /^tests\/quality\/.*\.test\.mjs$/.test(file) ||
-    /^apps\/admin\/tests\/.*\.test\.(?:ts|tsx)$/.test(file)
+  const tests = sourceFiles.filter(
+    (file) =>
+      /^tests\/quality\/.*\.test\.mjs$/.test(file) ||
+      /^apps\/admin\/tests\/.*\.test\.(?:ts|tsx)$/.test(file),
   );
   const dependencies = {};
   for (const test of tests) {
@@ -119,8 +135,9 @@ function main() {
   const head = git('rev-parse', 'HEAD').trim();
   git('rev-parse', '--verify', base + '^{commit}');
   git('merge-base', '--is-ancestor', base, head);
-  const paths = git('diff', '--name-only', '--no-renames',
-    '--diff-filter=ACDMRT', '-z', base, head).split('\0').filter(Boolean);
+  const paths = git('diff', '--name-only', '--no-renames', '--diff-filter=ACDMRT', '-z', base, head)
+    .split('\0')
+    .filter(Boolean);
   if (!paths.length) {
     console.log(JSON.stringify({ base, head, changed: [], state: 'NO_CHANGES' }));
     return;
@@ -134,23 +151,35 @@ function main() {
     const [command, ...args] = check.argv;
     const result = spawnSync(command, args, {
       cwd: path.join(root, check.cwd),
-      encoding: 'utf8', timeout: 180000, maxBuffer: 1024 * 1024,
+      encoding: 'utf8',
+      timeout: 180000,
+      maxBuffer: 1024 * 1024,
     });
     const ok = !result.error && result.status === 0;
-    console.log(JSON.stringify({
-      label: check.label, status: ok ? 'PASS' : 'FAIL',
-      code: result.status, error: result.error?.message ?? null,
-      output: ok ? (result.stdout ?? '').slice(-900) :
-        ((result.stdout ?? '') + (result.stderr ?? '')).slice(-5000),
-    }));
-    if (!ok) { process.exitCode = 1; return; }
+    console.log(
+      JSON.stringify({
+        label: check.label,
+        status: ok ? 'PASS' : 'FAIL',
+        code: result.status,
+        error: result.error?.message ?? null,
+        output: ok
+          ? (result.stdout ?? '').slice(-900)
+          : ((result.stdout ?? '') + (result.stderr ?? '')).slice(-5000),
+      }),
+    );
+    if (!ok) {
+      process.exitCode = 1;
+      return;
+    }
   }
   if (plan.review.length) {
     console.error('MANUAL_REVIEW required: ' + plan.review.join('; '));
     process.exitCode = 2;
   }
 }
-try { main(); } catch (error) {
+try {
+  main();
+} catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 2;
 }

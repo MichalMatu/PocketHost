@@ -17,16 +17,24 @@ export function planChangedChecks(paths, dependencies = {}) {
   let structure = false;
 
   for (const file of changes) {
-    if (typeof file !== 'string' || !file || file.startsWith('/') ||
-        file.includes('\\') || file.includes('\0') ||
-        file.split('/').some((part) => !part || part === '.' || part === '..')) {
+    if (
+      typeof file !== 'string' ||
+      !file ||
+      file.startsWith('/') ||
+      file.includes('\\') ||
+      file.includes('\0') ||
+      file.split('/').some((part) => !part || part === '.' || part === '..')
+    ) {
       review.push('Invalid change path: ' + String(file));
       continue;
     }
     const markdown = file.endsWith('.md');
     if (markdown && !file.startsWith('apps/admin/')) docs.push(file);
-    if (/\.(?:md|mjs|js|ts|tsx|json|css)$/.test(file) &&
-        !file.endsWith('package-lock.json') && !file.endsWith('pnpm-lock.yaml')) {
+    if (
+      /\.(?:md|mjs|js|ts|tsx|json|css)$/.test(file) &&
+      !file.endsWith('package-lock.json') &&
+      !file.endsWith('pnpm-lock.yaml')
+    ) {
       format.push(file);
     }
 
@@ -52,57 +60,104 @@ export function planChangedChecks(paths, dependencies = {}) {
     } else if (file.startsWith('scripts/') && file.endsWith('.mjs')) {
       rootLint.push(file);
       structure = true;
-    } else if (!markdown && !file.startsWith('apps/admin/src/') &&
-               !file.startsWith('apps/admin/public/')) {
+    } else if (
+      !markdown &&
+      !file.startsWith('apps/admin/src/') &&
+      !file.startsWith('apps/admin/public/')
+    ) {
       review.push('Explicit impact review required: ' + file);
     }
 
     // Routes are also inspected as file contents by a Node contract test.
-    if (['apps/admin/src/config/routes.tsx', 'apps/admin/src/config/navigation.ts',
-         'apps/admin/index.html'].includes(file)) node.add('tests/quality/admin-preservation.test.mjs');
+    if (
+      [
+        'apps/admin/src/config/routes.tsx',
+        'apps/admin/src/config/navigation.ts',
+        'apps/admin/index.html',
+      ].includes(file)
+    )
+      node.add('tests/quality/admin-preservation.test.mjs');
     if (file.startsWith('scripts/dev/ui-sync')) node.add('tests/quality/dev-ui-sync.test.mjs');
-    if (file.startsWith('scripts/dev/changed-checks')) node.add('tests/quality/dev-changed-checks.test.mjs');
+    if (file.startsWith('scripts/dev/changed-checks'))
+      node.add('tests/quality/dev-changed-checks.test.mjs');
 
-    if (file.startsWith('src/') ||
-        (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file))) {
+    if (
+      file.startsWith('src/') ||
+      (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file))
+    ) {
       const matching = Object.entries(dependencies).filter(([, targets]) => targets.includes(file));
       for (const [test] of matching) {
         if (test.startsWith('tests/quality/')) node.add(test);
-        else if (test.startsWith('apps/admin/tests/'))
-          ui.add(test.slice('apps/admin/'.length));
+        else if (test.startsWith('apps/admin/tests/')) ui.add(test.slice('apps/admin/'.length));
       }
-      if (!matching.length && !node.has('tests/quality/admin-preservation.test.mjs') &&
-          !file.endsWith('.css')) review.push('No known test dependency: ' + file);
+      if (
+        !matching.length &&
+        !node.has('tests/quality/admin-preservation.test.mjs') &&
+        !file.endsWith('.css')
+      )
+        review.push('No known test dependency: ' + file);
     }
   }
 
   const commands = [];
-  function add(label, cwd, argv) { commands.push({ label, cwd, argv }); }
+  function add(label, cwd, argv) {
+    commands.push({ label, cwd, argv });
+  }
   if (structure) add('structure', '.', ['node', 'scripts/quality/check-structure.mjs']);
   if (docs.length) add('docs', '.', ['node', 'scripts/quality/check-docs.mjs']);
   if (boundaries) add('boundaries', '.', ['node', 'scripts/quality/check-boundaries.mjs']);
   if (node.size) add('node tests', '.', ['node', '--test', ...[...node].sort()]);
-  if (ui.size) add('ui tests', 'apps/admin', [
-    'npm', 'run', 'test:ui', '--', ...[...ui].sort()
-  ]);
-  if (rootTypes) add('root incremental typecheck', '.', [
-    'npm', 'run', 'typecheck', '--', '--incremental',
-    '--tsBuildInfoFile', '.tmp/root-typecheck.tsbuildinfo'
-  ]);
-  if (adminTypes) add('admin incremental typecheck', 'apps/admin', [
-    'npm', 'exec', '--no', '--', 'tsc', '-b', '--pretty', 'false'
-  ]);
-  if (rootLint.length) add('root changed-file lint', '.', [
-    'npm', 'exec', '--no', '--', 'eslint', ...[...new Set(rootLint)].sort()
-  ]);
-  if (adminLint.length) add('admin changed-file lint', 'apps/admin', [
-    'npm', 'exec', '--no', '--', 'eslint', ...[...new Set(adminLint)].sort()
-  ]);
-  if (docs.length) add('changed markdown lint', '.', [
-    'npm', 'exec', '--no', '--', 'markdownlint-cli2', ...docs
-  ]);
-  if (format.length) add('changed-file format', '.', [
-    'npm', 'exec', '--no', '--', 'prettier', '--check', ...format
-  ]);
+  if (ui.size) add('ui tests', 'apps/admin', ['npm', 'run', 'test:ui', '--', ...[...ui].sort()]);
+  if (rootTypes)
+    add('root incremental typecheck', '.', [
+      'npm',
+      'run',
+      'typecheck',
+      '--',
+      '--incremental',
+      '--tsBuildInfoFile',
+      '.tmp/root-typecheck.tsbuildinfo',
+    ]);
+  if (adminTypes)
+    add('admin incremental typecheck', 'apps/admin', [
+      'npm',
+      'exec',
+      '--no',
+      '--',
+      'tsc',
+      '-b',
+      '--pretty',
+      'false',
+    ]);
+  if (rootLint.length)
+    add('root changed-file lint', '.', [
+      'npm',
+      'exec',
+      '--no',
+      '--',
+      'eslint',
+      ...[...new Set(rootLint)].sort(),
+    ]);
+  if (adminLint.length)
+    add('admin changed-file lint', 'apps/admin', [
+      'npm',
+      'exec',
+      '--no',
+      '--',
+      'eslint',
+      ...[...new Set(adminLint)].sort(),
+    ]);
+  if (docs.length)
+    add('changed markdown lint', '.', ['npm', 'exec', '--no', '--', 'markdownlint-cli2', ...docs]);
+  if (format.length)
+    add('changed-file format', '.', [
+      'npm',
+      'exec',
+      '--no',
+      '--',
+      'prettier',
+      '--check',
+      ...format,
+    ]);
   return { changed: changes, commands, review };
 }

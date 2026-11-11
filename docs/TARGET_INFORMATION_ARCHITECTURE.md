@@ -47,13 +47,13 @@ charts/table belong only to `/examples/dashboard`; their fake
 revenue, customer and visitor data must never appear as real
 PocketHost measurements.
 
-| Region | Target content |
-| ------ | -------------- |
-| Top status | Device/host reachability, CPU only with real authorized source, RAM, healthy/degraded services, last sample time |
-| Main trend | Verified Android-Bridge RX/TX if available; until then actual LAN/Internet connectivity latency, failures and reachability |
-| Supporting charts | RAM, real CPU when available, battery/charging, Termux storage; truthful data-source labels |
-| Recent events | Bounded, redacted failures, service/release events and warnings; distinguish zero events from missing telemetry |
-| Detailed screens | Monitoring, Android & Shizuku, Services, Network, Packages and Hosting retain drill-down controls |
+| Region            | Target content                                                                                                             |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Top status        | Device/host reachability, CPU only with real authorized source, RAM, healthy/degraded services, last sample time           |
+| Main trend        | Verified Android-Bridge RX/TX if available; until then actual LAN/Internet connectivity latency, failures and reachability |
+| Supporting charts | RAM, real CPU when available, battery/charging, Termux storage; truthful data-source labels                                |
+| Recent events     | Bounded, redacted failures, service/release events and warnings; distinguish zero events from missing telemetry            |
+| Detailed screens  | Monitoring, Android & Shizuku, Services, Network, Packages and Hosting retain drill-down controls                          |
 
 **Remove** nine large duplicate module navigation cards, the prominent
 Node version tile and repeated warnings. Node.js version belongs in
@@ -84,7 +84,7 @@ Single approved source/data flow: [Architecture](ARCHITECTURE.md).
   owner of every observed tunnel.
 - **ServiceRegistry:** one exact verified owner, runit service identity,
   desired/observed state, health policy and logs. Generic System
-  may *observe* an unknown service; it cannot adopt or signal it.
+  may _observe_ an unknown service; it cannot adopt or signal it.
 - **ProjectRegistry:** created inside PocketHost only, with
   versioned components, module links, owned ports/processes,
   release pointers, storage, secret references and selected routes.

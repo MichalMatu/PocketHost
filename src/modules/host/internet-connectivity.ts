@@ -26,10 +26,14 @@ export function probeInternetConnectivity(
       const elapsed = clock() - start;
       socket?.destroy();
       resolve({
-        version: 1, source: 'termux', method: 'tcp-handshake', target: '1.1.1.1:443',
-        observedAt: timestamp(), state: reachable ? 'reachable' : 'unreachable',
-        latencyMs: reachable && Number.isFinite(elapsed)
-          ? Math.max(0, Math.round(elapsed * 10) / 10) : null,
+        version: 1,
+        source: 'termux',
+        method: 'tcp-handshake',
+        target: '1.1.1.1:443',
+        observedAt: timestamp(),
+        state: reachable ? 'reachable' : 'unreachable',
+        latencyMs:
+          reachable && Number.isFinite(elapsed) ? Math.max(0, Math.round(elapsed * 10) / 10) : null,
       });
     };
     try {
@@ -53,9 +57,13 @@ export function allowsInternetProbeRequest(request: {
   method?: string;
   route?: string;
 }): boolean {
-  return ['127.0.0.1:8787', 'localhost:8787'].includes(request.host ?? '')
-    && (!request.origin || ['http://127.0.0.1:8787', 'http://localhost:8787'].includes(request.origin))
-    && request.fetchSite !== 'cross-site'
-    && ['127.0.0.1', '::ffff:127.0.0.1'].includes(request.remote ?? '')
-    && request.method === 'GET' && request.route === '/';
+  return (
+    ['127.0.0.1:8787', 'localhost:8787'].includes(request.host ?? '') &&
+    (!request.origin ||
+      ['http://127.0.0.1:8787', 'http://localhost:8787'].includes(request.origin)) &&
+    request.fetchSite !== 'cross-site' &&
+    ['127.0.0.1', '::ffff:127.0.0.1'].includes(request.remote ?? '') &&
+    request.method === 'GET' &&
+    request.route === '/'
+  );
 }

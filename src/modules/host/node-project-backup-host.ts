@@ -24,9 +24,7 @@ export class NodeProjectBackupHost {
   ) {
     this.root = root;
     this.projects = new NodeProjectHost(root);
-    this.restic = new ResticWorkspaceAdmin(
-      new WorkspaceFiles(root), state, 'pockethost-node',
-    );
+    this.restic = new ResticWorkspaceAdmin(new WorkspaceFiles(root), state, 'pockethost-node');
   }
   status(): { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean } {
     return this.restic.status();
@@ -41,16 +39,21 @@ export class NodeProjectBackupHost {
       throw new Error('Unsafe Node backup source root');
     }
     const projectIds = new Set(projects.map((project) => project.id));
-    const exact = (folder: string, allowed: ReadonlySet<string>, directories: ReadonlySet<string>) => {
+    const exact = (
+      folder: string,
+      allowed: ReadonlySet<string>,
+      directories: ReadonlySet<string>,
+    ) => {
       for (const entry of readdirSync(folder, { withFileTypes: true })) {
         if (!allowed.has(entry.name) || entry.isSymbolicLink()) {
           throw new Error('Unexpected entry in private Node backup scope');
         }
         const stat = lstatSync(path.join(folder, entry.name));
-        if (stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 ||
-          (directories.has(entry.name)
-            ? !entry.isDirectory()
-            : !entry.isFile() || stat.nlink !== 1)) {
+        if (
+          stat.uid !== process.getuid?.() ||
+          (stat.mode & 0o077) !== 0 ||
+          (directories.has(entry.name) ? !entry.isDirectory() : !entry.isFile() || stat.nlink !== 1)
+        ) {
           throw new Error('Invalid owned Node backup entry');
         }
       }
@@ -58,15 +61,17 @@ export class NodeProjectBackupHost {
     exact(root, projectIds, projectIds);
     const marker = new Set(['.pockethost-node.json', '.pockethost-node-runtime.json', 'releases']);
     const releaseFiles = new Set([
-      'package.json', 'package-lock.json', 'server.mjs', '.pockethost-node-source.json',
+      'package.json',
+      'package-lock.json',
+      'server.mjs',
+      '.pockethost-node-source.json',
     ]);
     for (const project of projects) {
       const folder = path.join(root, project.id);
       exact(folder, marker, new Set(['releases']));
       const releases = path.join(folder, 'releases');
       for (const item of readdirSync(releases, { withFileTypes: true })) {
-        if (!/^r-[a-f0-9]{32}$/.test(item.name) ||
-          !item.isDirectory() || item.isSymbolicLink()) {
+        if (!/^r-[a-f0-9]{32}$/.test(item.name) || !item.isDirectory() || item.isSymbolicLink()) {
           throw new Error('Unexpected release in private Node backup scope');
         }
         const dir = path.join(releases, item.name);
@@ -95,9 +100,7 @@ export class NodeProjectBackupHost {
     }
     return projects.length;
   }
-  async backup(
-    approved: boolean, run: Exec = executeFixed,
-  ): Promise<{ output: string }> {
+  async backup(approved: boolean, run: Exec = executeFixed): Promise<{ output: string }> {
     if (approved !== true) throw new Error('Explicit Node backup approval required');
     this.requireCreatedProjects();
     // The same exclusive lock is used by Node runtime deploy/stop.
@@ -117,7 +120,9 @@ export class NodeProjectBackupHost {
     return this.restic.snapshots(run);
   }
   async restoreToStaging(
-    snapshot: string, approved: boolean, run: Exec = executeFixed,
+    snapshot: string,
+    approved: boolean,
+    run: Exec = executeFixed,
   ): Promise<{ restoredTo: string; verifiedProjects: number }> {
     if (approved !== true) throw new Error('Explicit Node restore approval required');
     const restored = await this.restic.restoreToStaging(snapshot, run);

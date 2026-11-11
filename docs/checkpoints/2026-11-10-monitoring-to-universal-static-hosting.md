@@ -73,7 +73,7 @@ move, or change either site as part of this UI work.
    Only after this contract is validated should Monitoring consume
    a narrow read-only, bounded host diagnostic projection.
 5. Review legacy external service catalog and PhotoMap compatibility
-   endpoints for deprecation *after* generic functional parity and
+   endpoints for deprecation _after_ generic functional parity and
    compatibility checks, not by deleting them during Monitoring closeout.
 
 ## Acceptance boundary

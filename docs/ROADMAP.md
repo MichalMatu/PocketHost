@@ -35,7 +35,7 @@ or create a second process manager. See
 ## Current position
 
 Historical H2 static Hosting and the owner-directed Termux/Shizuku
-DEV panel have real source/device evidence at *older* SHAs. M0
+DEV panel have real source/device evidence at _older_ SHAs. M0
 Hosting/System separation is implemented in source. M1 versioned
 registry validation, private store, ownership diagnostics and
 restore/rollback protections are source candidates. Full

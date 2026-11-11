@@ -10,11 +10,11 @@ into an Agent context.
 Use Diátaxis as a **purpose guide**, not a folder migration or a reason to
 add new files. A document should answer one reader need:
 
-| Need | Existing entrypoints |
-| --- | --- |
-| Learn by doing (tutorial) | No standalone guided tutorial yet; add one only for a real learner workflow |
-| Accomplish a task (how-to) | [Fast DEV workflow](DEV_ITERATION.md), [Local Agent operations](LOCAL_AGENT_TERMUX.md) |
-| Look up facts (reference) | [Code map](CODE_MAP.md), [quality gates](QUALITY_GATES.md), [module specifications](MODULES.md) |
+| Need                               | Existing entrypoints                                                                                 |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Learn by doing (tutorial)          | No standalone guided tutorial yet; add one only for a real learner workflow                          |
+| Accomplish a task (how-to)         | [Fast DEV workflow](DEV_ITERATION.md), [Local Agent operations](LOCAL_AGENT_TERMUX.md)               |
+| Look up facts (reference)          | [Code map](CODE_MAP.md), [quality gates](QUALITY_GATES.md), [module specifications](MODULES.md)      |
 | Understand decisions (explanation) | [Architecture](ARCHITECTURE.md), [security model](SECURITY_MODEL.md), [ADRs](adr/0001-foundation.md) |
 
 Keep one canonical active source per topic and link to it. Historical

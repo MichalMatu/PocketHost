@@ -14,35 +14,35 @@ Android, Packages or Hosting screen. Display a number only if the source and
 scope are known; always show missing/stale measurements, not fabricated zeros.
 The example Dashboard under `/examples/dashboard` is visual reference only.
 
-| Priority | Observation / question | Confirmed source | First-screen placement |
-| --- | --- | --- | --- |
-| P0 | Is PocketHost reachable? Is its API fast? | Owned DEV panel / loopback; HTTP latency | Compact health state, warning if degraded |
-| P0 | Are known external services up? Did one stop? | Six exact read-only runit checks via `host/snapshot` | Summary count plus changes/alerts, not six large cards |
-| P0 | Is the Internet endpoint reachable? What is TCP latency/failure count? | Fixed Termux TCP handshake to `1.1.1.1:443`; not ICMP ping | Main network chart with explicit method and failures |
-| P0 | Device CPU and current authorization | Existing Android Companion/Bridge status, if authorized and recent | Shared CPU/RAM chart, source and freshness |
-| P0 | RAM, Termux storage, system uptime | Node/Termux host snapshot | Small summary / trend; warn on thresholds |
-| P1 | Battery %, charging, temperature | Termux:API percent currently supported; richer battery fields require native Bridge qualification | Compact status and battery trend once verified |
-| P1 | Restarts/outages, first failure and last recovery | Changes in admitted service state, Bridge state and connectivity samples | Bounded recent events with timestamps |
-| P1 | Panel/Bridge latency and unavailable samples | Existing API requests and Companion status adapter | Secondary latency and failure trend |
-| P1 | Free space trend and low-storage warning | Termux home filesystem snapshot; no other filesystem scans | One small trend, warning before critical threshold |
-| P0 | Actual device RX/TX rate (all interfaces combined) | Native Android Companion TrafficStats, confirmed on Samsung S22+ | Rate trend with fresh observed timestamps, no invented zero |
-| P2 | Separate Wi-Fi/mobile network totals and per-interface accounting | Not yet provided by current Android TrafficStats contract | Keep unavailable pending NetworkStatsManager permission/accuracy qualification |
-| P2 | Per-process CPU, logs, package versions, terminal and host inventory | Existing detail modules; partial permission-constrained process visibility | Drill-down only, except specific actionable alerts |
-| P2 | Project uptime, published revision, backup failures | PocketHost-owned project and backup records, only where ownership is proven | Small Hosting health summary after typed integration |
+| Priority | Observation / question                                                 | Confirmed source                                                                                  | First-screen placement                                                         |
+| -------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| P0       | Is PocketHost reachable? Is its API fast?                              | Owned DEV panel / loopback; HTTP latency                                                          | Compact health state, warning if degraded                                      |
+| P0       | Are known external services up? Did one stop?                          | Six exact read-only runit checks via `host/snapshot`                                              | Summary count plus changes/alerts, not six large cards                         |
+| P0       | Is the Internet endpoint reachable? What is TCP latency/failure count? | Fixed Termux TCP handshake to `1.1.1.1:443`; not ICMP ping                                        | Main network chart with explicit method and failures                           |
+| P0       | Device CPU and current authorization                                   | Existing Android Companion/Bridge status, if authorized and recent                                | Shared CPU/RAM chart, source and freshness                                     |
+| P0       | RAM, Termux storage, system uptime                                     | Node/Termux host snapshot                                                                         | Small summary / trend; warn on thresholds                                      |
+| P1       | Battery %, charging, temperature                                       | Termux:API percent currently supported; richer battery fields require native Bridge qualification | Compact status and battery trend once verified                                 |
+| P1       | Restarts/outages, first failure and last recovery                      | Changes in admitted service state, Bridge state and connectivity samples                          | Bounded recent events with timestamps                                          |
+| P1       | Panel/Bridge latency and unavailable samples                           | Existing API requests and Companion status adapter                                                | Secondary latency and failure trend                                            |
+| P1       | Free space trend and low-storage warning                               | Termux home filesystem snapshot; no other filesystem scans                                        | One small trend, warning before critical threshold                             |
+| P0       | Actual device RX/TX rate (all interfaces combined)                     | Native Android Companion TrafficStats, confirmed on Samsung S22+                                  | Rate trend with fresh observed timestamps, no invented zero                    |
+| P2       | Separate Wi-Fi/mobile network totals and per-interface accounting      | Not yet provided by current Android TrafficStats contract                                         | Keep unavailable pending NetworkStatsManager permission/accuracy qualification |
+| P2       | Per-process CPU, logs, package versions, terminal and host inventory   | Existing detail modules; partial permission-constrained process visibility                        | Drill-down only, except specific actionable alerts                             |
+| P2       | Project uptime, published revision, backup failures                    | PocketHost-owned project and backup records, only where ownership is proven                       | Small Hosting health summary after typed integration                           |
 
 ## Actual observed service catalog (read only)
 
 The current six-card host snapshot uses **legacy compatibility identifiers**,
 not a complete or newly discovered machine inventory:
 
-| Snapshot ID | Exact fixed runit unit | Role |
-| --- | --- | --- |
-| `ilestoi` | `wreckscanner` | External web-application service |
-| `tunnel` | `cloudflared` | External tunnel |
-| `ssh` | `sshd` | External SSH |
-| `mqtt` | `mosquitto` | External MQTT |
-| `healthwatch` | `ilestoi-healthwatch` | External website health watcher |
-| `local-agent` | `termux-agent` (separate known runit root) | External task agent |
+| Snapshot ID   | Exact fixed runit unit                     | Role                             |
+| ------------- | ------------------------------------------ | -------------------------------- |
+| `ilestoi`     | `wreckscanner`                             | External web-application service |
+| `tunnel`      | `cloudflared`                              | External tunnel                  |
+| `ssh`         | `sshd`                                     | External SSH                     |
+| `mqtt`        | `mosquitto`                                | External MQTT                    |
+| `healthwatch` | `ilestoi-healthwatch`                      | External website health watcher  |
+| `local-agent` | `termux-agent` (separate known runit root) | External task agent              |
 
 A service may be `running`, `stopped` or `unknown`. Do not
 count `unknown` as healthy. PocketHost's **own** `pockethost-panel` and
@@ -139,19 +139,19 @@ and a PocketHost-only panel refresh; previous physical receipts apply to
 
 ### Dashboard presentation re-audit (2026-11-10; new UI awaiting Samsung QA)
 
-| First-screen display | Source and scope | Duplicate audit |
-| --- | --- | --- |
-| Android CPU and CPU history | Authorized Companion, recent CPU sample | One number and one trend; remove repeated CPU value below graph |
-| Free system RAM and RAM-used trend | Termux host snapshot, same device RAM | Complementary units (GiB versus percent), not independent sensors |
-| Free Termux-home storage and storage-used trend | Same mounted filesystem | Same capacity measure in GiB / percent; avoid repeated footer values |
-| External services (running / total) and events | Fixed read-only inventory + recorded transitions | Current state versus incidents; never adopt services |
-| Battery, charging, temperature and battery history | Termux:API when fresh | Real absent readings stay unavailable; avoid repeated numeric footer |
-| Uptime | Device/system uptime from host | Single status, no redundant uptime chart |
-| DNS lookup | Fixed Termux DNS probe | Current status only; do not confuse with TCP or RX/TX |
-| TCP handshake | Fixed 1.1.1.1:443 | Endpoint connectivity and latency, not Internet download speed |
-| Android RX/TX | Native all-interface TrafficStats | Transfer rate, not TCP latency; real zero differs from unavailable |
-| Bridge API latency | Measured status API response | Internal Bridge responsiveness, not the Internet endpoint |
-| Recent events | Whitelisted locally persisted event codes | A compact time-scoped list, not a second full monitoring screen |
+| First-screen display                               | Source and scope                                 | Duplicate audit                                                      |
+| -------------------------------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
+| Android CPU and CPU history                        | Authorized Companion, recent CPU sample          | One number and one trend; remove repeated CPU value below graph      |
+| Free system RAM and RAM-used trend                 | Termux host snapshot, same device RAM            | Complementary units (GiB versus percent), not independent sensors    |
+| Free Termux-home storage and storage-used trend    | Same mounted filesystem                          | Same capacity measure in GiB / percent; avoid repeated footer values |
+| External services (running / total) and events     | Fixed read-only inventory + recorded transitions | Current state versus incidents; never adopt services                 |
+| Battery, charging, temperature and battery history | Termux:API when fresh                            | Real absent readings stay unavailable; avoid repeated numeric footer |
+| Uptime                                             | Device/system uptime from host                   | Single status, no redundant uptime chart                             |
+| DNS lookup                                         | Fixed Termux DNS probe                           | Current status only; do not confuse with TCP or RX/TX                |
+| TCP handshake                                      | Fixed 1.1.1.1:443                                | Endpoint connectivity and latency, not Internet download speed       |
+| Android RX/TX                                      | Native all-interface TrafficStats                | Transfer rate, not TCP latency; real zero differs from unavailable   |
+| Bridge API latency                                 | Measured status API response                     | Internal Bridge responsiveness, not the Internet endpoint            |
+| Recent events                                      | Whitelisted locally persisted event codes        | A compact time-scoped list, not a second full monitoring screen      |
 
 The UI candidate plots timestamps as actual elapsed time (rather than equal
 category spacing), labels date as well as time for 24h/7d views, shows both
