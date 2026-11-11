@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Archive, Boxes, FolderOpen, Package, RefreshCw, ServerCog, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -82,16 +83,16 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
     <BaseLayout title={sectionTitles[section]} description="Manage this Termux installation through scoped, typed controls">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" /> H3 · owner operations</Badge>
+          <div className="flex flex-wrap items-center gap-2">
+            <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" />Termux</Badge>
+            <Link to="/settings/network" className="text-muted-foreground text-xs underline-offset-4 hover:underline">
+              LAN only · no login
+            </Link>
+          </div>
           <Button variant="outline" onClick={() => void refresh()} disabled={reading}>
             <RefreshCw className={reading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
-        <GuardNotice>
-          This trusted-LAN development panel has no login. Administrative actions are available
-          without passwords, with explicit confirmations and fixed Termux commands.
-          Do not expose this panel to public networks.
-        </GuardNotice>
         <div className="space-y-5">
   
           {section === "packages" && <section className="space-y-4">
