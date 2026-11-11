@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { useLocation } from "react-router-dom"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -11,6 +12,34 @@ import type { AppearanceTab } from "@/components/mode-toggle"
 import { useSidebarConfig } from "@/hooks/use-sidebar-config"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
+/**
+ * PocketHost management screens are navigated by the sidebar; duplicating
+ * their name and marketing-style descriptions wastes the first viewport.
+ * Preserve the semantic h1 for assistive technology, but keep the large
+ * visual headings of the upstream example/template pages untouched.
+ */
+const compactManagementRoutes = new Set([
+  "/dashboard",
+  "/observability",
+  "/host",
+  "/shizuku",
+  "/phone-settings",
+  "/packages",
+  "/files",
+  "/services",
+  "/terminal",
+  "/backups",
+  "/sites",
+  "/projects",
+  "/deployments",
+  "/agents",
+  "/runtime-logs",
+  "/settings/network",
+  "/settings/appearance",
+  "/owned-site",
+  "/managed-projects",
+])
+
 interface BaseLayoutProps {
   children: React.ReactNode
   title?: string
@@ -18,6 +47,7 @@ interface BaseLayoutProps {
 }
 
 export function BaseLayout({ children, title, description }: BaseLayoutProps) {
+  const compactHeader = compactManagementRoutes.has(useLocation().pathname)
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const [customizerTab, setCustomizerTab] = React.useState<AppearanceTab>("theme")
   const [customizerVersion, setCustomizerVersion] = React.useState(0)
@@ -70,18 +100,27 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
             />
             <div className="flex flex-1 flex-col">
               <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                <div className={compactHeader
+                  ? "flex flex-col gap-3 py-2 md:gap-4 md:py-3"
+                  : "flex flex-col gap-4 py-4 md:gap-6 md:py-6"}>
                   {title && (
-                    <div className="px-4 lg:px-6">
-                      <div className="flex flex-col gap-2">
-                        <h1 className="text-2xl font-bold tracking-tight">
-                          {title}
-                        </h1>
-                        {description && (
-                          <p className="text-muted-foreground">{description}</p>
-                        )}
+                    compactHeader ? (
+                      <div className="sr-only">
+                        <h1>{title}</h1>
+                        {description && <p>{description}</p>}
                       </div>
-                    </div>
+                    ) : (
+                      <div className="px-4 lg:px-6">
+                        <div className="flex flex-col gap-2">
+                          <h1 className="text-2xl font-bold tracking-tight">
+                            {title}
+                          </h1>
+                          {description && (
+                            <p className="text-muted-foreground">{description}</p>
+                          )}
+                        </div>
+                      </div>
+                    )
                   )}
                   {children}
                 </div>
@@ -99,18 +138,27 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
             />
             <div className="flex flex-1 flex-col">
               <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+                <div className={compactHeader
+                  ? "flex flex-col gap-3 py-2 md:gap-4 md:py-3"
+                  : "flex flex-col gap-4 py-4 md:gap-6 md:py-6"}>
                   {title && (
-                    <div className="px-4 lg:px-6">
-                      <div className="flex flex-col gap-2">
-                        <h1 className="text-2xl font-bold tracking-tight">
-                          {title}
-                        </h1>
-                        {description && (
-                          <p className="text-muted-foreground">{description}</p>
-                        )}
+                    compactHeader ? (
+                      <div className="sr-only">
+                        <h1>{title}</h1>
+                        {description && <p>{description}</p>}
                       </div>
-                    </div>
+                    ) : (
+                      <div className="px-4 lg:px-6">
+                        <div className="flex flex-col gap-2">
+                          <h1 className="text-2xl font-bold tracking-tight">
+                            {title}
+                          </h1>
+                          {description && (
+                            <p className="text-muted-foreground">{description}</p>
+                          )}
+                        </div>
+                      </div>
+                    )
                   )}
                   {children}
                 </div>
