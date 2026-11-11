@@ -10,8 +10,9 @@ const deps = {
   ],
 };
 
-function makePlan(changed, review = []) {
-  return { head: "a".repeat(40), ...planChangedChecks(changed, deps), review };
+function makePlan(changed, review = null) {
+  const plan = planChangedChecks(changed, deps);
+  return { ...plan, head: "a".repeat(40), review: review ?? plan.review };
 }
 
 test("typecheck runs before UI interaction tests, formatting runs last", () => {
