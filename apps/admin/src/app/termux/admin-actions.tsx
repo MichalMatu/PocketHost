@@ -76,7 +76,6 @@ export function PackageManager({
 
   React.useEffect(() => {
     let active = true
-    setLoading(true)
     void inspect<PackageInventory>("packages").then(result => {
       if (!Array.isArray(result.packages) || result.packages.length > 700 ||
         result.packages.some(item => !item || typeof item.name !== "string" || typeof item.version !== "string"))
