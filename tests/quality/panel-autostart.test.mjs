@@ -40,7 +40,6 @@ test('install is guarded, disabled before activation, and scoped to the two Pock
   assert.doesNotMatch(installer, /rm -rf|pkill|killall|0\.0\.0\.0/);
 });
 
-
 test('guarded runit deployment accepts only the exact supervised Node/Vite panel identity', async () => {
   const { assertPanelRunitIdentity } = await import('../../ops/termux/refresh-panel.mjs');
   const root = '/data/data/com.termux/files/home/Projects/PocketHost-MVP';
@@ -51,15 +50,37 @@ test('guarded runit deployment accepts only the exact supervised Node/Vite panel
   const manager = 'termux-runit/pockethost-panel';
   const owner = { pid, startTicks: ticks, cwd, sourceSha: head, managedBy: manager, port: 8787 };
   const gateway = {
-    owner: 'PocketHost', pid, startTicks: ticks, cwd, sourceSha: head,
-    managedBy: manager, adminPort: 18878, sitePort: 18879,
+    owner: 'PocketHost',
+    pid,
+    startTicks: ticks,
+    cwd,
+    sourceSha: head,
+    managedBy: manager,
+    adminPort: 18878,
+    sitePort: 18879,
   };
   const argv = [
     '/data/data/com.termux/files/usr/bin/node',
     cwd + '/node_modules/vite/bin/vite.js',
-    '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+    '--host',
+    '127.0.0.1',
+    '--port',
+    '8787',
+    '--strictPort',
   ];
-  const e = { root, head, pid, ticks, cwd, owner, gateway, argv, servicePid: pid, processUid: 10520, expectedUid: 10520 };
+  const e = {
+    root,
+    head,
+    pid,
+    ticks,
+    cwd,
+    owner,
+    gateway,
+    argv,
+    servicePid: pid,
+    processUid: 10520,
+    expectedUid: 10520,
+  };
   assert.equal(assertPanelRunitIdentity(e), true);
   for (const changed of [
     { servicePid: 99 },
@@ -75,7 +96,10 @@ test('guarded runit deployment accepts only the exact supervised Node/Vite panel
 });
 
 test('panel refresh only signals its owned runit service and refuses foreign process adoption', () => {
-  const rollout = readFileSync(new URL('../../ops/termux/refresh-panel.mjs', import.meta.url), 'utf8');
+  const rollout = readFileSync(
+    new URL('../../ops/termux/refresh-panel.mjs', import.meta.url),
+    'utf8',
+  );
   assert.match(rollout, /inspect\(root, oldSha\)/);
   assert.match(rollout, /supervise\/pid/);
   assert.ok(rollout.includes("['down', service]"));
@@ -90,18 +114,30 @@ test('HMR drift is accepted only for verified ancestor UI and docs files', async
   const markerSha = 'a'.repeat(40);
   const gatewaySha = markerSha;
   const checkoutSha = 'b'.repeat(40);
-  const valid = { markerSha, gatewaySha, checkoutSha, ancestor: true, changedFiles: [
-    'apps/admin/src/app/termux/system-page.tsx',
-    'apps/admin/tests/system-dashboard.interaction.test.tsx',
-    'docs/ARCHITECTURE.md',
-  ] };
+  const valid = {
+    markerSha,
+    gatewaySha,
+    checkoutSha,
+    ancestor: true,
+    changedFiles: [
+      'apps/admin/src/app/termux/system-page.tsx',
+      'apps/admin/tests/system-dashboard.interaction.test.tsx',
+      'docs/ARCHITECTURE.md',
+    ],
+  };
   assert.equal(assertHmrOnlySourceDrift(valid), markerSha);
-  assert.equal(assertHmrOnlySourceDrift({ ...valid, checkoutSha: markerSha, changedFiles: [] }), markerSha);
+  assert.equal(
+    assertHmrOnlySourceDrift({ ...valid, checkoutSha: markerSha, changedFiles: [] }),
+    markerSha,
+  );
   for (const change of [
-    { gatewaySha: checkoutSha }, { markerSha: 'bad' },
-    { ancestor: false }, { changedFiles: [] },
+    { gatewaySha: checkoutSha },
+    { markerSha: 'bad' },
+    { ancestor: false },
+    { changedFiles: [] },
     { changedFiles: ['apps/admin/vite.config.ts'] },
     { changedFiles: ['src/modules/host/internet-connectivity.ts'] },
     { changedFiles: ['apps/admin/src/../../secrets'] },
-  ]) assert.throws(() => assertHmrOnlySourceDrift({ ...valid, ...change }));
+  ])
+    assert.throws(() => assertHmrOnlySourceDrift({ ...valid, ...change }));
 });

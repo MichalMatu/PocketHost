@@ -82,7 +82,15 @@ test('M3 legacy source lacking proof cannot run without re-staging', (t) => {
   const { host, root } = setup(t);
   const project = host.create('Legacy node');
   const staged = host.stage(project.id, source()).project;
-  rmSync(path.join(root, project.id, 'releases', staged.candidateRelease, '.pockethost-node-source.json'));
+  rmSync(
+    path.join(
+      root,
+      project.id,
+      'releases',
+      staged.candidateRelease,
+      '.pockethost-node-source.json',
+    ),
+  );
   assert.equal(host.candidates(project.id).length, 1);
   assert.throws(() => host.release(project.id, staged.candidateRelease), /ENOENT|source/);
 });

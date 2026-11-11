@@ -114,6 +114,8 @@ test('M2 lock review flags path tricks and unsupported engine declarations', () 
     packages: { ...lock.packages, '../outsider': { version: '1.0.0' } },
   });
   assert.deepEqual(unsafe.lockReview.unreviewedSources, ['../outsider']);
-  assert.throws(() => planNodeDependencies({ ...pkg, engines: { node: '^22' } }, lock),
-    /engine range/);
+  assert.throws(
+    () => planNodeDependencies({ ...pkg, engines: { node: '^22' } }, lock),
+    /engine range/,
+  );
 });

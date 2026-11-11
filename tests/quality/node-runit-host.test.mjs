@@ -6,7 +6,10 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 import {
-  NodeRunitHost, probeOwnedNodeReadiness, selectUnreservedNodePort, runScript,
+  NodeRunitHost,
+  probeOwnedNodeReadiness,
+  selectUnreservedNodePort,
+  runScript,
   readBoundedNodePreview,
 } from '../../src/modules/host/node-runit-host.ts';
 import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
@@ -22,15 +25,26 @@ function fixture(t) {
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const projects = new NodeProjectHost(root);
   const project = projects.create('Runit example');
-  return { home, root, serviceRoot, logRoot, projects, project,
-    host: new NodeRunitHost(root, serviceRoot, logRoot) };
+  return {
+    home,
+    root,
+    serviceRoot,
+    logRoot,
+    projects,
+    project,
+    host: new NodeRunitHost(root, serviceRoot, logRoot),
+  };
 }
 const source = {
-  packageJson: { name: 'node-example', version: '1.0.0',
-    scripts: { start: 'node server.mjs' } },
-  packageLock: { name: 'node-example', version: '1.0.0', lockfileVersion: 3,
-    packages: { '': { name: 'node-example', version: '1.0.0' } } },
-  serverSource: "import http from 'node:http';\nhttp.createServer((_,r)=>r.end('ok')).listen(process.env.PORT,'127.0.0.1');",
+  packageJson: { name: 'node-example', version: '1.0.0', scripts: { start: 'node server.mjs' } },
+  packageLock: {
+    name: 'node-example',
+    version: '1.0.0',
+    lockfileVersion: 3,
+    packages: { '': { name: 'node-example', version: '1.0.0' } },
+  },
+  serverSource:
+    "import http from 'node:http';\nhttp.createServer((_,r)=>r.end('ok')).listen(process.env.PORT,'127.0.0.1');",
 };
 
 test('M3 source validation and runtime inspection remain inert before explicit approval', async (t) => {
@@ -104,8 +118,9 @@ test('M2 port planner rejects conflicts and never adopts already-reserved Node p
   assert.equal(port, 19303);
   assert.deepEqual(touched, [19301, 19303]);
   await assert.rejects(
-    selectUnreservedNodePort(new Set(Array.from({ length: 32 }, (_, i) => 19300 + i)),
-      async () => { throw new Error('Reserved port was probed'); }),
+    selectUnreservedNodePort(new Set(Array.from({ length: 32 }, (_, i) => 19300 + i)), async () => {
+      throw new Error('Reserved port was probed');
+    }),
     /No unreserved/,
   );
 });
@@ -124,14 +139,12 @@ test('M3 rollback cannot manage a project without prior verified healthy release
   const staged = projects.stage(project.id, source).project;
   await assert.rejects(host.rollback(project.id, false), /approval/);
   await assert.rejects(host.rollback(project.id, true), /prior healthy/);
-  await assert.rejects(host.deploy(project.id, staged.candidateRelease, true, true),
-    /prior good/);
+  await assert.rejects(host.deploy(project.id, staged.candidateRelease, true, true), /prior good/);
 });
 
 test('M3 syntax check is explicitly non-executing and rejects unavailable release', (t) => {
   const { projects, project, host } = fixture(t);
-  assert.throws(() => host.checkBuild(project.id, 'r-' + '0'.repeat(32)),
-    /admission/);
+  assert.throws(() => host.checkBuild(project.id, 'r-' + '0'.repeat(32)), /admission/);
   const staged = projects.stage(project.id, source).project;
   const checked = host.checkBuild(project.id, staged.candidateRelease);
   assert.equal(checked.release, staged.candidateRelease);
@@ -149,7 +162,11 @@ test('M3 syntax check re-attests candidate and refuses tampered code', async (t)
 });
 
 test('M3 runit launch drops inherited admin environment and validates fixed loopback port', () => {
-  const folder = '/data/data/com.termux/files/home/PocketHost-NodeProjects/node-' + 'c'.repeat(32) + '/releases/r-' + 'd'.repeat(32);
+  const folder =
+    '/data/data/com.termux/files/home/PocketHost-NodeProjects/node-' +
+    'c'.repeat(32) +
+    '/releases/r-' +
+    'd'.repeat(32);
   const script = runScript(folder, 19301, 'e'.repeat(48));
   assert.match(script, /env' -i/);
   assert.match(script, /PATH=/);
@@ -165,8 +182,10 @@ test('M3 owned log supervisor cannot be redirected through an arbitrary run comm
   projects.stage(project.id, source);
   // A foreign pre-existing unit, even with an apparent log directory, is
   // never adopted merely because it matches the deterministic Node name.
-  const service = path.join(serviceRoot, 'pockethost-' + project.id + '-s-' +
-    project.id.slice(5, 17));
+  const service = path.join(
+    serviceRoot,
+    'pockethost-' + project.id + '-s-' + project.id.slice(5, 17),
+  );
   mkdirSync(service);
   assert.throws(() => host.preview(project.id), /collision/);
 });
@@ -177,7 +196,9 @@ test('M3 invalid Node syntax is detected without start or service registration',
   const staged = projects.stage(project.id, invalid).project;
   const result = host.checkBuild(project.id, staged.candidateRelease);
   assert.deepEqual(result, {
-    release: staged.candidateRelease, status: 'syntax-invalid', executed: false,
+    release: staged.candidateRelease,
+    status: 'syntax-invalid',
+    executed: false,
   });
   assert.equal(host.status(project.id).state, 'not-provisioned');
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
@@ -200,11 +221,15 @@ test('M3 direct loopback Node preview is bounded and never follows foreign respo
 test('M3 live health never probes or starts a project without verified runit ownership', async (t) => {
   const { projects, project, host, serviceRoot } = fixture(t);
   assert.deepEqual(await host.health(project.id), {
-    state: 'not-provisioned', release: null, ready: null,
+    state: 'not-provisioned',
+    release: null,
+    ready: null,
   });
   projects.stage(project.id, source);
   assert.deepEqual(await host.health(project.id), {
-    state: 'not-provisioned', release: null, ready: null,
+    state: 'not-provisioned',
+    release: null,
+    ready: null,
   });
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
 });

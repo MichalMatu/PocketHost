@@ -113,7 +113,10 @@ test('partial process view marks only own process as self, never grants foreign 
     result.processes.map((p) => p.ownership),
     ['unverified', 'self'],
   );
-  assert.deepEqual(result.processes.map((p) => p.name), ['node', 'python3']);
+  assert.deepEqual(
+    result.processes.map((p) => p.name),
+    ['node', 'python3'],
+  );
   assert.equal(JSON.stringify(result).includes('nested'), false);
   assert.equal(
     readProcessInventory(

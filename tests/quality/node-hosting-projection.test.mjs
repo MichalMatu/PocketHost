@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  nodeHostingServiceId, nodeHostingUnitName, projectNodeHostingDeclarations,
+  nodeHostingServiceId,
+  nodeHostingUnitName,
+  projectNodeHostingDeclarations,
 } from '../../src/shared/node-hosting-projection.ts';
 import { createHostingRegistries } from '../../src/shared/hosting-registry.ts';
 
@@ -25,15 +27,26 @@ test('M2 Node project, service and module declarations have exact reusable IDs',
 
 test('M2 projection refuses foreign identity, duplicate project, and reserved port collision', () => {
   assert.throws(() => nodeHostingUnitName('photomap-test'), /identity/);
-  assert.throws(() => projectNodeHostingDeclarations([
-    { id: a, kind: 'node', port: null, registered: true },
-  ]), /Invalid/);
-  assert.throws(() => projectNodeHostingDeclarations([
-    { id: a, kind: 'node', port: 19300, registered: true },
-    { id: a, kind: 'node', port: 19301, registered: true },
-  ]), /duplicate/);
-  assert.throws(() => createHostingRegistries(projectNodeHostingDeclarations([
-    { id: a, kind: 'node', port: 19300, registered: true },
-    { id: b, kind: 'node', port: 19300, registered: true },
-  ])), /collision/);
+  assert.throws(
+    () => projectNodeHostingDeclarations([{ id: a, kind: 'node', port: null, registered: true }]),
+    /Invalid/,
+  );
+  assert.throws(
+    () =>
+      projectNodeHostingDeclarations([
+        { id: a, kind: 'node', port: 19300, registered: true },
+        { id: a, kind: 'node', port: 19301, registered: true },
+      ]),
+    /duplicate/,
+  );
+  assert.throws(
+    () =>
+      createHostingRegistries(
+        projectNodeHostingDeclarations([
+          { id: a, kind: 'node', port: 19300, registered: true },
+          { id: b, kind: 'node', port: 19300, registered: true },
+        ]),
+      ),
+    /collision/,
+  );
 });
