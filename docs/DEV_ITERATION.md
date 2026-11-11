@@ -125,6 +125,23 @@ or major milestone closure. Separate current-source G1/G2 from
 physical G3; see [quality gates](QUALITY_GATES.md) and
 [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 
+## 2026-11-12 fast-flow incident — do not repeat
+
+A tiny Prettier change to `verify:changed` turned into a long chain of
+Local Agent tasks. Root causes: formatting was guessed and committed repeatedly
+instead of applying exact formatter output once; diagnostics lost ESLint stdout;
+unrelated checks were rerun after cosmetic changes; terminal results were
+polled continuously despite delayed publication.
+
+**Enforced next time:** batch the complete edit first; collect stdout **and**
+stderr in the *first* bounded Agent task; return one short machine-readable
+receipt; when Prettier fails, retrieve/apply its exact diff in one correction;
+rerun only the failed check. Do not create duplicate tasks or poll while the
+agent result is absent. Docs-only commits require **no** UI tests, build,
+device refresh or Local Agent execution. Never report PASS before the
+terminal receipt confirms it. This rule does not waive tests for risky host,
+security, persistence, network or service changes.
+
 ## Fast one-shot verification receipt
 
 `npm run verify:changed -- --base=<verified-sha>` reuses the

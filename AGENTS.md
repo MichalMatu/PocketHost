@@ -38,6 +38,14 @@ a full quality audit, broad lint, coverage run or long preflight.
    If the terminal receipt is unavailable, state **PENDING/HOLD** once
    and stop rather than consuming the conversation on repeated polls.
    Run no unauthorized foreign-service or device operations.
+7. **ONE-ROUND STYLE/DIAGNOSTICS; DO NOT RECREATE THE NOV 2026 SPIRAL.**
+   For a minor lint/Prettier failure, collect BOTH stdout and stderr in the
+   original bounded Agent receipt. Obtain the exact formatter output/diff
+   once, apply one coherent commit, and rerun only the failed gate. Do not
+   schedule separate formatting, diagnostic, full-suite, and acceptance jobs
+   for one cosmetic change. Never hand-guess Prettier output.
+   Read a pending task at most once per user turn; no busy-polling or
+   repeated progress messages. See docs/DEV_ITERATION.md for the incident.
 
 **Exceptions:** meaningful host security/process/network/persistence changes
 still require the relevant positive/negative device checks and any mandated
