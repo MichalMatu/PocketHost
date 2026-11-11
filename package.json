@@ -35,7 +35,8 @@
     "dev:sync:once": "node scripts/dev/ui-sync.mjs --once",
     "dev:sync:test": "node --test tests/quality/dev-ui-sync.test.mjs",
     "dev:changed": "node scripts/dev/changed-checks.mjs",
-    "check:links:external": "lychee --config .lychee.toml \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/*.md\" \"docs/modules/*.md\" \"docs/adr/*.md\" \"native/**/*.md\""
+    "check:links:external": "lychee --config .lychee.toml \"README.md\" \"CONTRIBUTING.md\" \"SECURITY.md\" \"AGENTS.md\" \"docs/*.md\" \"docs/modules/*.md\" \"docs/adr/*.md\" \"native/**/*.md\"",
+    "verify:changed": "node scripts/dev/verify-changed.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

@@ -84,6 +84,8 @@ export function planChangedChecks(
     if (file.startsWith('scripts/dev/ui-sync')) node.add('tests/quality/dev-ui-sync.test.mjs');
     if (file.startsWith('scripts/dev/changed-checks'))
       node.add('tests/quality/dev-changed-checks.test.mjs');
+    if (file.startsWith('scripts/dev/verify-changed'))
+      node.add('tests/quality/dev-verify-changed.test.mjs');
 
     if (
       file.startsWith('src/') ||

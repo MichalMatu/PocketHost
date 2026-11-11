@@ -50,6 +50,7 @@ identity established during the session; recheck when it changes.
 | Intent                     | Command                                                    |
 | -------------------------- | ---------------------------------------------------------- |
 | Preview affected gates     | npm run dev:changed -- --base=<last-verified-sha>          |
+| Fast one-shot verification | npm run verify:changed -- --base=<last-verified-sha>        |
 | Execute affected gates     | npm run dev:changed -- --base=<last-verified-sha> --run    |
 | Route preservation only    | npm run dev:quick                                          |
 | One interaction file       | npm run dev:ui -- tests/termux-center.interaction.test.tsx |
@@ -123,3 +124,22 @@ persistent data, package actions, network exposure, authorization
 or major milestone closure. Separate current-source G1/G2 from
 physical G3; see [quality gates](QUALITY_GATES.md) and
 [Local Agent transport](LOCAL_AGENT_TERMUX.md).
+
+## Fast one-shot verification receipt
+
+`npm run verify:changed -- --base=<verified-sha>` reuses the
+existing import dependency graph and executes **only the changed-file plan**.
+The default runs checks; use `--plan` to preview and `--admin-lint`
+only for an explicitly requested periodic lint check. Syntax checks on changed
+JavaScript and incremental TypeScript checks precede focused tests, then
+formatting runs last. The first failing step stops the run.
+
+The command emits one machine-readable JSON receipt with exact HEAD, base,
+selected checks, statuses, durations and a short failure tail. On a verified
+Termux host it also saves the last receipt to ignored
+`.tmp/verify-changed-last.json`. `PASS` means only selected
+checks passed; it is never full G2 or physical G3 acceptance.
+`MANUAL_REVIEW` stops before execution for unknown/config/privileged
+diffs. Package changes and backend/network changes require explicit review.
+The verifier never deploys, installs or changes services. It must only run
+inside the verified Samsung Local Agent session, not on a Mac or CI.

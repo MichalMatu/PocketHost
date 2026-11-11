@@ -18,7 +18,7 @@ interface CommandSearchProps {
 /** Only real PocketHost pages, shared with the sidebar. Template routes remain direct-URL only. */
 const groups = navGroups.map(group => ({
   label: group.label,
-  items: group.items.filter(item => item.url.startsWith("/") && !item.items),
+  items: group.items.filter(item => item.url.startsWith("/")),
 })).filter(group => group.items.length > 0)
 
 export function CommandSearch({ open, onOpenChange }: CommandSearchProps) {
