@@ -50,7 +50,7 @@ const managementRoutes = [
   ["/phone-settings", "Phone Settings"],
   ["/packages", "Packages & Software"],
   ["/files", "File Manager"],
-  ["/services", "Services & Processes"],
+  ["/services", "Services"],
   ["/terminal", "Terminal"],
   ["/backups", "Backups & Recovery"],
   ["/sites", "Hosted sites"],

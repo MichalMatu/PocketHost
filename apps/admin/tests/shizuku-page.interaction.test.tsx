@@ -298,7 +298,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     await screen.findByText("Example 0")
     const inventory = screen.getByText("Example 0")
     const panel = screen.getByRole("tabpanel")
-    expect(panel.className).toContain("min-h-[500px]")
+    expect(panel.className).not.toContain("min-h-[500px]")
     fireEvent.click(screen.getByRole("button", { name: /Refresh/ }))
     expect(screen.getByText("Example 0")).toBe(inventory)
     expect(screen.getByRole("tabpanel")).toBe(panel)
