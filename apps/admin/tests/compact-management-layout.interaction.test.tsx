@@ -104,6 +104,13 @@ describe("PocketHost global heading density", () => {
     expect(rendered.container.querySelector('[data-testid="page-content"]')).not.toBeNull()
   })
 
+  it("automatically keeps newly added PocketHost routes compact", () => {
+    const rendered = show("/future-pocket-host-screen", "New management module")
+    const h1 = rendered.container.querySelector("h1")
+    expect(h1?.parentElement?.classList.contains("sr-only")).toBe(true)
+    expect(rendered.container.querySelector(".text-2xl")).toBeNull()
+  })
+
   it("preserves visible upstream demo headings and their normal spacing", () => {
     const rendered = show("/examples/dashboard", "Dashboard example")
     const h1 = rendered.container.querySelector("h1")
