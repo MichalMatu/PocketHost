@@ -7,7 +7,7 @@ import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
 import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
 import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
-import { ObservabilityHistory } from "../../src/modules/observability/overview.ts"
+import { ObservabilityHistory, parseObservabilityScope } from "../../src/modules/observability/overview.ts"
 import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
 import { readLegacyPhotoMapEvents } from "../../src/modules/host/photomap-legacy-events.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
@@ -669,7 +669,8 @@ function observabilityApi(): Plugin {
           response.end(JSON.stringify({ error: "forbidden" }))
           return
         }
-        if (request.url !== "/") {
+        const scope = parseObservabilityScope(request.url)
+        if (scope === null) {
           response.statusCode = 404
           response.end("{}")
           return
@@ -686,11 +687,16 @@ function observabilityApi(): Plugin {
             readHostMetrics(),
           ])
           const processes = readProcessInventory()
-          const packages = readPackageInventory()
+          const observedAt = new Date().toISOString()
+          // Monitoring has no package list. Avoid five synchronous local CLI probes
+          // on this route; full inventory remains available to Packages and Services.
+          const packages = scope === "monitoring"
+            ? { state: "unavailable" as const, observedAt, installed: [], truncated: false,
+              updates: { state: "unknown" as const, candidates: [] } }
+            : readPackageInventory()
           // M0: global O1 is product-neutral; P4 events remain accessible
           // only through the explicit GET-only legacy PhotoMap endpoint.
           const diagnostics = { state: "unavailable" as const, events: [] }
-          const observedAt = new Date().toISOString()
           const payload = history.append({
             version: 1,
             mode: "read-only",
@@ -700,7 +706,7 @@ function observabilityApi(): Plugin {
             processes,
             packages,
             diagnostics,
-          })
+          }, { includePackageAlerts: scope === "full" })
           response.statusCode = 200
           response.end(JSON.stringify(payload))
         } catch {

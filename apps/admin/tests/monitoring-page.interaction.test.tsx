@@ -55,9 +55,11 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("Monitoring screen: diagnostic-only scope", () => {
   it("shows one process table, source states and events but no Dashboard summary clones", async () => {
-    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => sample() })))
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => sample() }))
+    vi.stubGlobal("fetch", fetchMock)
     render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
     expect(await screen.findByText("Process diagnostics")).toBeTruthy()
+    expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/observability?scope=monitoring")
     expect(screen.getByText("Telemetry sources")).toBeTruthy()
     expect(screen.getByText("Diagnostic events")).toBeTruthy()
     expect(screen.getByText("2 visible processes")).toBeTruthy()

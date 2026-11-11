@@ -47,6 +47,40 @@ function mount(fetcher: (url: string) => Promise<unknown>) {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("Android Shizuku UI response and bounded inventories", () => {
+  it("recovers from a transient first Shizuku connection read without user Refresh", async () => {
+    let attempts = 0
+    const calls = mount(async url => {
+      if (url.endsWith("/status")) {
+        attempts++
+        if (attempts === 1) throw new Error("Companion warming up")
+        return status
+      }
+      if (url.endsWith("/apps")) return apps
+      if (url.endsWith("/system")) return system
+      throw new Error("Unexpected route")
+    })
+    expect(await screen.findByText("Example 0")).toBeTruthy()
+    expect(attempts).toBe(2)
+    expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2)
+  })
+
+  it("retries only a failed initial Android apps GET without duplicating shell actions", async () => {
+    let appsAttempts = 0
+    const calls = mount(async url => {
+      if (url.endsWith("/status")) return status
+      if (url.endsWith("/apps")) {
+        appsAttempts++
+        if (appsAttempts === 1) throw new Error("Transient inventory failure")
+        return apps
+      }
+      if (url.endsWith("/system")) return system
+      throw new Error("Unexpected route")
+    })
+    expect(await screen.findByText("Example 0")).toBeTruthy()
+    expect(appsAttempts).toBe(2)
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+  })
+
   it("shows Shizuku connection without waiting for slow app or process inventories", async () => {
     mount(async url => {
       if (url.endsWith("/status")) return status

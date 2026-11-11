@@ -6,6 +6,33 @@ import { PackageManager, WorkspaceManager, WorkspaceBackupActions, RunitServiceA
 afterEach(() => vi.unstubAllGlobals())
 
 describe("H3 confirmed operations, no password prerequisite", () => {
+  it("shows cached update hints and exposes update checks without auto-upgrading", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (_url: string, options?: RequestInit) => ({
+      ok: true, json: async () => options?.method === "POST"
+        ? { result: { exit: 0, output: "Checked apt indexes" } }
+        : { packages: [{ name: "curl", version: "8" }, { name: "git", version: "2" }], truncated: false },
+    }))
+    vi.stubGlobal("fetch", calls)
+    const confirm = vi.fn(() => true)
+    vi.stubGlobal("confirm", confirm)
+    render(<PackageManager summary={{
+      installed: [], state: "ok", observedAt: new Date().toISOString(), truncated: false,
+      updates: { state: "cached-unverified", candidates: ["curl"] },
+    }} />)
+    await screen.findByRole("button", { name: "curl" })
+    expect(screen.getByText("Cached hint")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Check updates" })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "curl" }))
+    expect(screen.getByText(/Cached update hint · verify/)).toBeTruthy()
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(0)
+    await user.click(screen.getByRole("button", { name: "Check updates" }))
+    expect(confirm).toHaveBeenCalledTimes(1)
+    const posts = calls.mock.calls.filter(call => call[1]?.method === "POST")
+      .map(call => JSON.parse(String(call[1]?.body)))
+    expect(posts).toEqual([{ action: "package", name: "refresh" }])
+  })
+
   it("requires a successful apt simulation before applying a selected package", async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (url: string, options?: RequestInit) => ({

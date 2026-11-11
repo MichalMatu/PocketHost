@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 
-const endpoint = "/api/v1/observability"
+const endpoint = "/api/v1/observability?scope=monitoring"
 const unavailable = "Termux diagnostic snapshot unavailable. Existing services have not been changed."
 type Process = ObservabilitySnapshot["processes"]["processes"][number]
 type ProcessOrder = "cpu" | "ram" | "pid"

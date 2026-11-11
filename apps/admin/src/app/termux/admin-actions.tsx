@@ -189,6 +189,8 @@ export function PackageManager({
     installed?.packages.some(item => item.name === selected.name)
   const canManage = selected?.ecosystem === "termux" && validPackageName(selected.name)
   const isBusy = operationBusy || catalogBusy
+  const cachedUpdateHints = new Set(summary?.updates.state === "cached-unverified"
+    ? summary.updates.candidates : [])
   const counts = {
     termux: installed?.packages.length ?? null,
     node: summary?.installed.filter(item => item.ecosystem === "node").length ?? null,
@@ -211,9 +213,15 @@ export function PackageManager({
     <div className="flex flex-wrap gap-2">
       <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
         value={query} disabled={isBusy} onChange={event => changeQuery(event.target.value)} />
-      {ecosystem === "termux" &&
+      {ecosystem === "termux" && <>
         <Button size="sm" variant="outline" disabled={isBusy || !validPackageName(query.trim().toLowerCase())}
-          onClick={() => void searchCatalog()}>Search catalog</Button>}
+          onClick={() => void searchCatalog()}>Search catalog</Button>
+        <Button size="sm" variant="outline" disabled={isBusy}
+          title="Refreshes local apt metadata only; it does not install updates"
+          onClick={() => void refreshIndexes()}>Check updates</Button>
+        <Button size="sm" variant="outline" disabled={isBusy}
+          onClick={() => void preview("upgrade-all")}>Preview all upgrades</Button>
+      </>}
     </div>
 
     {inventoryError && ecosystem === "termux" &&
@@ -234,6 +242,7 @@ export function PackageManager({
               <th className="p-2 text-left"><button type="button" onClick={() => chooseSort("version")}>
                 Version {sort === "version" ? (descending ? "↓" : "↑") : ""}
               </button></th>
+              {ecosystem === "termux" && <th className="p-2 text-left">Updates</th>}
             </tr>
           </thead>
           <tbody>
@@ -242,6 +251,10 @@ export function PackageManager({
               <td className="p-2"><button type="button" className="text-left font-medium underline-offset-4 hover:underline"
                 disabled={isBusy} onClick={() => choose(item)}>{item.name}</button></td>
               <td className="p-2 font-mono text-xs">{item.version}</td>
+              {ecosystem === "termux" && <td className="p-2 text-xs">
+                {cachedUpdateHints.has(item.name) ? <Badge variant="outline">Cached hint</Badge> :
+                  <span aria-label="No cached update hint" className="text-muted-foreground">—</span>}
+              </td>}
             </tr>)}
           </tbody>
         </table>
@@ -269,6 +282,8 @@ export function PackageManager({
           selectedInstalled ? "Installed" : "Not installed"}</Badge>
       </div>
       {selected.version && <p className="font-mono text-xs">{selected.version}</p>}
+      {selected.ecosystem === "termux" && cachedUpdateHints.has(selected.name) &&
+        <p className="text-muted-foreground text-xs">Cached update hint · verify with Check updates before applying.</p>}
       {selected.description && <p className="text-sm text-muted-foreground">{selected.description}</p>}
       {canManage && <div className="flex flex-wrap gap-2">
         <Button size="sm" disabled={isBusy} onClick={() => void preview("install")}>Preview install</Button>
@@ -278,18 +293,6 @@ export function PackageManager({
           onClick={() => void preview("remove")}>Preview removal</Button>
       </div>}
     </div>}
-
-    {ecosystem === "termux" && <details className="rounded-md border p-3">
-      <summary className="cursor-pointer text-sm font-medium">Advanced package operations</summary>
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" disabled={isBusy} onClick={() => void refreshIndexes()}>
-          Refresh apt indexes
-        </Button>
-        <Button size="sm" variant="outline" disabled={isBusy} onClick={() => void preview("upgrade-all")}>
-          Preview upgrade all
-        </Button>
-      </div>
-    </details>}
 
     {plan && <div className="space-y-2 rounded-md border p-3">
       <p className="text-sm font-medium">Preview: {plan.kind}{plan.name ? " · " + plan.name : ""}</p>

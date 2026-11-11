@@ -4,11 +4,21 @@ const MAX_HISTORY = 36;
 const MAX_EVENTS = 20;
 const MAX_ALERTS = 12;
 
+/** Exact read-only projection modes; no arbitrary query or host command inputs. */
+export function parseObservabilityScope(path: string | undefined): 'full' | 'monitoring' | null {
+  if (path === '/') return 'full';
+  if (path === '/?scope=monitoring') return 'monitoring';
+  return null;
+}
+
 /** In-memory foreground-only history. No process manager, persistent daemon or host I/O. */
 export class ObservabilityHistory {
   private samples: O1HistoryPoint[] = [];
 
-  append(snapshot: Omit<O1Snapshot, 'history' | 'alerts'>): O1Snapshot {
+  append(
+    snapshot: Omit<O1Snapshot, 'history' | 'alerts'>,
+    { includePackageAlerts = true }: { includePackageAlerts?: boolean } = {},
+  ): O1Snapshot {
     if (!Number.isFinite(Date.parse(snapshot.observedAt)))
       throw new Error('Invalid observation timestamp');
     const point: O1HistoryPoint = {
@@ -25,8 +35,9 @@ export class ObservabilityHistory {
     if (snapshot.metrics.network.state !== 'ok') alerts.push('Network counters unavailable');
     if (snapshot.processes.state !== 'ok') alerts.push('Process view restricted');
     if (snapshot.processes.truncated) alerts.push('Process list truncated');
-    if (snapshot.packages.state !== 'ok') alerts.push('Termux package inventory unavailable');
-    if (snapshot.packages.updates.state !== 'cached-unverified')
+    if (includePackageAlerts && snapshot.packages.state !== 'ok')
+      alerts.push('Termux package inventory unavailable');
+    if (includePackageAlerts && snapshot.packages.updates.state !== 'cached-unverified')
       alerts.push('Package update metadata unknown');
     for (const service of snapshot.host.services) {
       if (service.state !== 'running')

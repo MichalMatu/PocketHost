@@ -16,6 +16,7 @@ import {
 } from '../../src/modules/host/observability-probes.ts';
 import {
   ObservabilityHistory,
+  parseObservabilityScope,
   sameProcessIdentity,
   sanitizeEvents,
 } from '../../src/modules/observability/overview.ts';
@@ -223,4 +224,13 @@ test('Node global and Python pip inventories admit only structured safe metadata
   );
   assert.deepEqual(parsePipInstalled('invalid json'), []);
   assert.deepEqual(parseNpmGlobals('invalid json'), []);
+});
+
+test('Monitoring scope accepts only the exact read-only projection path', () => {
+  assert.equal(parseObservabilityScope('/'), 'full');
+  assert.equal(parseObservabilityScope('/?scope=monitoring'), 'monitoring');
+  for (const path of [undefined, '/?scope=full', '/?scope=monitoring&extra=1',
+    '/?scope=MONITORING', '/terminal', '/?scope=monitoring%26command=run']) {
+    assert.equal(parseObservabilityScope(path), null);
+  }
 });

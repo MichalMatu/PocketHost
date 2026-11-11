@@ -138,7 +138,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 </div>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
                 <GuardNotice>
-                  Releases are not data backups. <a href="/sites" className="underline underline-offset-4">Website versions</a> remain separate.
+                  These backups cover the PocketHost workspace or Termux HOME/PREFIX. Hosting site backups and <a href="/sites" className="underline underline-offset-4">website versions</a> are separate.
                 </GuardNotice>
                 <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
                 <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />

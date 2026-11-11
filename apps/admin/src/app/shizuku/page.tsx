@@ -35,6 +35,19 @@ async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
   return response.json() as Promise<unknown>
 }
 
+/** First-entry GET retry for a temporarily cold Companion, never a shell or mutation. */
+async function readEntryJson(url: string, signal: AbortSignal, timeoutMs: number): Promise<unknown> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      return await readJson(url, AbortSignal.any([signal, AbortSignal.timeout(timeoutMs)]))
+    } catch (error) {
+      if (signal.aborted || attempt === 1) throw error
+      await new Promise(resolve => setTimeout(resolve, 350))
+    }
+  }
+  throw new Error("Android inventory unavailable")
+}
+
 function unavailable(value: string | number | null | undefined, suffix = "") {
   return value == null ? "Unavailable" : String(value) + suffix
 }
@@ -111,9 +124,7 @@ export default function ShizukuPage() {
     const controller = new AbortController()
     const signal = controller.signal
     // CPU/session status is independent of potentially slow package and process scans.
-    void readJson("/api/v1/shizuku/status", AbortSignal.any([
-      signal, AbortSignal.timeout(8000),
-    ]))
+    void readEntryJson("/api/v1/shizuku/status", signal, 8000)
       .then(parseShizukuStatus)
       .then(nativeStatus => {
         if (signal.aborted) return
@@ -121,18 +132,14 @@ export default function ShizukuPage() {
         if (!nativeStatus.connected || !nativeStatus.authorized) return
 
         setAppsLoading(true)
-        void readJson("/api/v1/shizuku/apps", AbortSignal.any([
-          signal, AbortSignal.timeout(25000),
-        ]))
+        void readEntryJson("/api/v1/shizuku/apps", signal, 25000)
           .then(parseShizukuApps)
           .then(packages => { if (!signal.aborted) setApps(packages) })
           .catch(() => { if (!signal.aborted) setAppsError(true) })
           .finally(() => { if (!signal.aborted) setAppsLoading(false) })
 
         setSystemLoading(true)
-        void readJson("/api/v1/shizuku/system", AbortSignal.any([
-          signal, AbortSignal.timeout(15000),
-        ]))
+        void readEntryJson("/api/v1/shizuku/system", signal, 15000)
           .then(parseShizukuSystem)
           .then(diagnostics => { if (!signal.aborted) setSystem(diagnostics) })
           .catch(() => { if (!signal.aborted) setSystemError(true) })
