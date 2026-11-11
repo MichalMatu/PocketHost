@@ -254,7 +254,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     await waitFor(() => expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2))
     fireEvent.click(screen.getByRole("tab", { name: /Android services/i }))
     expect(screen.queryByRole("slider", { name: /Set screen brightness/ })).toBeNull()
-    expect(screen.getByRole("heading", { name: "Android services" })).toBeTruthy()
+    expect(screen.getByRole("tabpanel").textContent).toContain("Observed Android components")
     expect(screen.getByText("Phone Settings")).toBeTruthy()
   })
 
