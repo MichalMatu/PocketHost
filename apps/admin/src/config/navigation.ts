@@ -1,7 +1,6 @@
 import {
-  Activity, AlertTriangle, Archive, Bot, FolderOpen, Globe2, HelpCircle, History, LayoutDashboard, LayoutTemplate,
-  Mail, Network, Package, ScrollText, ServerCog, Settings,
-  Shield, Smartphone, Terminal,
+  Activity, Archive, Bot, FolderOpen, Globe2, History, LayoutDashboard,
+  Network, Package, ScrollText, ServerCog, Settings, Smartphone, Terminal,
 } from "lucide-react"
 
 /** System management is primary; hosting and AI are separate capabilities. */
@@ -37,67 +36,8 @@ export const navGroups = [
     label: "Platform",
     items: [
       { title: "Network access", url: "/settings/network", icon: Network },
-      { title: "Logs & Diagnostics", url: "/runtime-logs", icon: ScrollText },
+      { title: "Project logs", url: "/runtime-logs", icon: ScrollText },
       { title: "Appearance", url: "/settings/appearance", icon: Settings },
-    ],
-  },
-  {
-    label: "Examples",
-    items: [
-      {
-        title: "Dashboard examples", url: "#", icon: LayoutTemplate,
-        items: [
-          { title: "Framework dashboard", url: "/examples/dashboard" },
-          { title: "Dashboard 2", url: "/dashboard-2" },
-        ],
-      },
-      {
-        title: "Template apps", url: "#", icon: Mail,
-        items: [
-          { title: "Mail", url: "/mail" },
-          { title: "Tasks", url: "/tasks" },
-          { title: "Chat", url: "/chat" },
-          { title: "Calendar", url: "/calendar" },
-          { title: "Users", url: "/users" },
-        ],
-      },
-      {
-        title: "Template pages", url: "#", icon: HelpCircle,
-        items: [
-          { title: "Landing", url: "/landing" },
-          { title: "FAQs", url: "/faqs" },
-          { title: "Pricing", url: "/pricing" },
-          { title: "User settings", url: "/settings/user" },
-          { title: "Account settings", url: "/settings/account" },
-          { title: "Billing", url: "/settings/billing" },
-          { title: "Notifications", url: "/settings/notifications" },
-          { title: "Connections", url: "/settings/connections" },
-        ],
-      },
-      {
-        title: "Auth Pages", url: "#", icon: Shield,
-        items: [
-          { title: "Sign In 1", url: "/auth/sign-in" },
-          { title: "Sign In 2", url: "/auth/sign-in-2" },
-          { title: "Sign In 3", url: "/auth/sign-in-3" },
-          { title: "Sign Up 1", url: "/auth/sign-up" },
-          { title: "Sign Up 2", url: "/auth/sign-up-2" },
-          { title: "Sign Up 3", url: "/auth/sign-up-3" },
-          { title: "Forgot Password 1", url: "/auth/forgot-password" },
-          { title: "Forgot Password 2", url: "/auth/forgot-password-2" },
-          { title: "Forgot Password 3", url: "/auth/forgot-password-3" },
-        ],
-      },
-      {
-        title: "Errors", url: "#", icon: AlertTriangle,
-        items: [
-          { title: "Unauthorized", url: "/errors/unauthorized" },
-          { title: "Forbidden", url: "/errors/forbidden" },
-          { title: "Not Found", url: "/errors/not-found" },
-          { title: "Internal Server Error", url: "/errors/internal-server-error" },
-          { title: "Under Maintenance", url: "/errors/under-maintenance" },
-        ],
-      },
     ],
   },
 ]

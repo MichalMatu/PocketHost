@@ -126,7 +126,9 @@ test('PocketHost dashboard is home and upstream charts stay available under exam
     /path: "\/examples\/dashboard", lazy: page\(\(\) => import\("@\/app\/dashboard\/page"\)\)/,
   );
   assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
-  assert.match(navigation, /title: "Framework dashboard", url: "\/examples\/dashboard"/);
+  // Template routes remain directly accessible but are not product navigation.
+  assert.doesNotMatch(navigation, /label: "Examples"/);
+  assert.doesNotMatch(navigation, /title: "Framework dashboard"/);
 });
 
 test('terminal React route does not get shadowed by ttyd reverse proxy', () => {
