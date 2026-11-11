@@ -49,7 +49,7 @@ describe("dedicated Phone Settings", () => {
     await screen.findByText(/Saved time until screen sleeps: 10 min/)
     const slider = screen.getByRole("slider", { name: "Set screen brightness" })
     expect(slider.getAttribute("value")).toBe("154")
-    expect(screen.getByText(/Adaptive brightness may override/)).toBeTruthy()
+    expect(screen.getByText(/Adaptive brightness can override saved levels/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Save brightness" })).toBeNull()
 
     fireEvent.change(slider, { target: { value: "7" } })
@@ -59,6 +59,60 @@ describe("dedicated Phone Settings", () => {
     const post = calls.mock.calls.find(call => call[1]?.method === "POST")
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ action: "brightness", target: "", value: "7" })
     expect(screen.getByText("Display & screen")).toBeTruthy()
+  })
+
+  it("checks adaptive mode without hidden shell calls and switches to safe manual brightness", async () => {
+    let mode = 1
+    let stored = 0
+    const commands: string[] = []
+    const shellResult = (stdout = "") => ({
+      action: "shell", mode: "adb", success: true, exitCode: 0, stdout,
+    })
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith("/remote-shell/run")) {
+        const command = JSON.parse(String(init?.body)).command as string
+        commands.push(command)
+        if (command === "settings get system screen_brightness_mode") {
+          return { ok: true, json: async () => shellResult(String(mode)) }
+        }
+        if (command === "settings put system screen_brightness 128") {
+          stored = 128
+          return { ok: true, json: async () => shellResult() }
+        }
+        if (command === "settings put system screen_brightness_mode 0") {
+          mode = 0
+          return { ok: true, json: async () => shellResult() }
+        }
+        if (command === "settings get system screen_brightness") {
+          return { ok: true, json: async () => shellResult(String(stored)) }
+        }
+        throw new Error("Unexpected Shizuku shell command: " + command)
+      }
+      return { ok: true, json: async () => url.endsWith("/status") ? status :
+        { ...system, settings: { ...system.settings, brightness: stored } } }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    render(<MemoryRouter><PhoneSettingsPage /></MemoryRouter>)
+    await screen.findByText(/Saved time until screen sleeps: 10 min/)
+    expect(commands).toEqual([])
+
+    fireEvent.click(screen.getByRole("button", { name: "Check mode" }))
+    expect(await screen.findByText("Adaptive · Android may override the slider")).toBeTruthy()
+    expect(commands).toEqual(["settings get system screen_brightness_mode"])
+
+    fireEvent.click(screen.getByRole("button", { name: /Switch to manual/ }))
+    await screen.findByText(/Manual mode verified; brightness stored as 128/)
+    expect(mode).toBe(0)
+    expect(stored).toBe(128)
+    expect(commands).toEqual([
+      "settings get system screen_brightness_mode",
+      "settings put system screen_brightness 128",
+      "settings put system screen_brightness_mode 0",
+      "settings get system screen_brightness_mode",
+      "settings get system screen_brightness",
+    ])
+    await screen.findByText(/Stored Android value:/)
+    expect(fetchMock.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(5)
   })
 
   it("does not offer settings writes on unauthorized Shizuku", async () => {
