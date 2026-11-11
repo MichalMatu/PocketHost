@@ -8,7 +8,7 @@ import { AgentApiPanel } from "@/app/termux/agent-panel"
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe("H3.4 full Termux administration", () => {
+describe("Termux filesystem and administration", () => {
   it("browses real named roots and saves a text file with typed intent", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, opts?: RequestInit) => {
@@ -40,20 +40,87 @@ describe("H3.4 full Termux administration", () => {
   })
   it("keeps the current directory when Refresh reloads file inventory", async () => {
     const user = userEvent.setup()
-    const calls = vi.fn(async (url: string) => url.includes("file-roots")
-      ? { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
-      : { ok: true, json: async () => ({
-        path: "", entries: [{ name: "note.md", kind: "file", bytes: 8 }], truncated: false,
-      }) })
+    const calls = vi.fn(async (url: string) => {
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      const params = new URL(url, "http://localhost").searchParams
+      return { ok: true, json: async () => ({
+        path: params.get("path") ?? "",
+        entries: params.get("root") === "home" && params.get("path") === ""
+          ? [{ name: "Projects", kind: "directory", bytes: 0 }]
+          : params.get("path") === "Projects"
+            ? [{ name: "source.md", kind: "file", bytes: 8 }] : [],
+        truncated: false,
+      }) }
+    })
     vi.stubGlobal("fetch", calls)
     const view = render(<TermuxFileExplorer />)
-    await screen.findByText(/note.md \(8 B\)/)
-    await user.click(screen.getByRole("button", { name: "Workspace" }))
-    await waitFor(() => expect(calls.mock.calls.filter(call =>
-      call[0].includes("Projects%2FPocketHost-H3-Workspace"))).toHaveLength(1))
+    await user.click(await screen.findByRole("button", { name: "Projects" }))
+    expect(await screen.findByRole("button", { name: "Open file source.md" })).toBeTruthy()
+    const requestsAtProject = () => calls.mock.calls.filter(call =>
+      new URL(call[0], "http://localhost").searchParams.get("path") === "Projects").length
+    const before = requestsAtProject()
     view.rerender(<TermuxFileExplorer refreshToken={1} />)
-    await waitFor(() => expect(calls.mock.calls.filter(call =>
-      call[0].includes("Projects%2FPocketHost-H3-Workspace"))).toHaveLength(2))
+    await waitFor(() => expect(requestsAtProject()).toBeGreaterThan(before))
+    expect(screen.getByRole("button", { name: "Open file source.md" })).toBeTruthy()
+  })
+
+  it("shows readable locations and hides shortcuts absent or inaccessible on device", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (url: string) => {
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [
+          { id: "home", available: true },
+          { id: "prefix", available: true },
+          { id: "shared", available: true },
+        ] }) }
+      const params = new URL(url, "http://localhost").searchParams
+      const root = params.get("root")
+      const path = params.get("path")
+      if (root === "shared" && path === "Download") return { ok: false }
+      const entries = path === "" && root === "home"
+        ? [{ name: "Projects", kind: "directory", bytes: 0 }]
+        : path === "" && root === "shared"
+          ? [{ name: "Download", kind: "directory", bytes: 0 },
+            { name: "Documents", kind: "directory", bytes: 0 }] : []
+      return { ok: true, json: async () => ({ path, entries, truncated: false }) }
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<TermuxFileExplorer />)
+    const select = screen.getByRole("combobox", { name: "Location" }) as HTMLSelectElement
+    expect(Array.from(select.options).map(option => option.textContent)).toEqual([
+      "Termux Home", "Termux System", "Phone Storage",
+    ])
+    expect(screen.queryByRole("button", { name: "Workspace" })).toBeNull()
+    expect(await screen.findByRole("button", { name: "Projects" })).toBeTruthy()
+    expect(await screen.findByRole("button", { name: "Documents" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Downloads" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Documents" }))
+    await waitFor(() => expect(calls.mock.calls.some(call =>
+      new URL(call[0], "http://localhost").searchParams.get("path") === "Documents" &&
+      new URL(call[0], "http://localhost").searchParams.get("root") === "shared")).toBe(true))
+    expect(select.value).toBe("shared")
+    expect(screen.getByText("Phone Storage")).toBeTruthy()
+  })
+
+  it("does not manufacture shortcuts for files, links, or missing roots", async () => {
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => {
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [
+          { id: "home", available: true }, { id: "shared", available: false },
+        ] }) }
+      const params = new URL(url, "http://localhost").searchParams
+      if (params.get("root") === "shared") return { ok: false }
+      return { ok: true, json: async () => ({
+        path: "", entries: [{ name: "Projects", kind: "link", bytes: 0 }],
+        truncated: false,
+      }) }
+    }))
+    render(<TermuxFileExplorer />)
+    await screen.findByText(/Projects \(link\)/)
+    await waitFor(() => expect(screen.queryByRole("navigation", { name: "Quick locations" })).toBeNull())
+    expect(screen.queryByRole("button", { name: "Projects" })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Downloads" })).toBeNull()
   })
 
   it("does not mistake a successful save followed by failed listing for a failed save", async () => {

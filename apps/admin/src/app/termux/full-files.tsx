@@ -9,11 +9,22 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { FileIcon, FileTextIcon, FolderIcon, LinkIcon, MoreHorizontalIcon } from "lucide-react"
+import { ChevronDownIcon, FileIcon, FileTextIcon, FolderIcon, LinkIcon, MoreHorizontalIcon } from "lucide-react"
 
 type Root = "home" | "prefix" | "shared"
 type Entry = { name: string; kind: "file" | "directory" | "link" | "other"; bytes: number }
 type Listing = { path: string; entries: Entry[]; truncated: boolean }
+type QuickLocation = { label: string; root: Root; path: string }
+const locationLabels: Record<Root, string> = {
+  home: "Termux Home",
+  prefix: "Termux System",
+  shared: "Phone Storage",
+}
+const quickLocationCandidates: QuickLocation[] = [
+  { label: "Projects", root: "home", path: "Projects" },
+  { label: "Downloads", root: "shared", path: "Download" },
+  { label: "Documents", root: "shared", path: "Documents" },
+]
 const api = "/api/v1/termux-admin"
 const headers = { "Content-Type": "application/json", "X-PocketHost-Intent": "termux-admin" }
 
@@ -40,6 +51,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
   const [folder, setFolder] = React.useState("")
   const currentLocation = React.useRef<{ root: Root; folder: string }>({ root: "home", folder: "" })
   const [available, setAvailable] = React.useState<{ id: Root; available: boolean }[] | null>(null)
+  const [quickLocations, setQuickLocations] = React.useState<QuickLocation[]>([])
   const [listing, setListing] = React.useState<Listing | null>(null)
   const [target, setTarget] = React.useState("")
   const [destination, setDestination] = React.useState("")
@@ -88,6 +100,28 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         currentLocation.current.folder !== location.folder) return
       setAvailable(roots.roots); setListing(data); setError("")
     }).catch(() => { if (active) setError("File inventory unavailable. Last listing retained.") })
+    return () => { active = false }
+  }, [refreshToken])
+  // Only expose shortcuts that exist and can actually be browsed. Never create directories here.
+  React.useEffect(() => {
+    let active = true
+    setQuickLocations([])
+    void Promise.allSettled([browse("home", ""), browse("shared", "")]).then(async results => {
+      const candidates = quickLocationCandidates.filter(candidate => {
+        const result = results[candidate.root === "home" ? 0 : 1]
+        return result?.status === "fulfilled" &&
+          result.value.entries.some(entry => entry.name === candidate.path && entry.kind === "directory")
+      })
+      const verified = await Promise.all(candidates.map(async candidate => {
+        try {
+          await browse(candidate.root, candidate.path)
+          return candidate
+        } catch {
+          return null
+        }
+      }))
+      if (active) setQuickLocations(verified.filter((candidate): candidate is QuickLocation => candidate !== null))
+    })
     return () => { active = false }
   }, [refreshToken])
   const read = async (name: string) => {
@@ -159,23 +193,36 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
     <h3 className="font-medium">Files</h3>
     <p className="text-xs text-muted-foreground">Symlinks are never followed. Deletion is permanent.</p>
     <div className="flex flex-wrap items-center gap-2">
-      <label htmlFor="h34-root" className="text-sm">Filesystem</label>
-      <select id="h34-root" aria-label="Filesystem root" className="rounded border bg-background p-2"
-        value={root} disabled={busy} onChange={event => void load(event.target.value as Root, "")}>
-        {(["home", "prefix", "shared"] as const).map(value => <option key={value} value={value}
-          disabled={available?.find(item => item.id === value)?.available === false}>{value}</option>)}
-      </select>
-      <Button size="sm" variant="outline" disabled={busy || available?.find(item => item.id === "home")?.available === false}
-        onClick={() => void load("home", "Projects/PocketHost-H3-Workspace")}>Workspace</Button>
+      <label htmlFor="file-location" className="text-sm">Location</label>
+      <div className="relative">
+        <select id="file-location" aria-label="Location"
+          className="h-9 min-w-44 appearance-none rounded-md border border-input bg-background py-1.5 pl-3 pr-10 text-sm text-foreground focus-visible:outline-2 focus-visible:outline-ring disabled:opacity-50"
+          value={root} disabled={busy} onChange={event => void load(event.target.value as Root, "")}>
+          {(["home", "prefix", "shared"] as const).map(value => <option key={value} value={value}
+            disabled={available?.find(item => item.id === value)?.available === false}>{locationLabels[value]}</option>)}
+        </select>
+        <ChevronDownIcon aria-hidden="true"
+          className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      </div>
       <Button size="sm" variant="outline" disabled={busy || !folder} onClick={() =>
         void load(root, crumbs.slice(0, -1).join("/"))}>Up</Button>
     </div>
+    {quickLocations.length > 0 && <nav aria-label="Quick locations" className="flex flex-wrap items-center gap-2">
+      <span className="text-xs text-muted-foreground">Quick access</span>
+      {quickLocations.map(shortcut => <Button key={shortcut.root + "/" + shortcut.path}
+        size="sm" variant="outline" disabled={busy}
+        onClick={() => void load(shortcut.root, shortcut.path)}>
+        <FolderIcon aria-hidden="true" className="mr-1 size-4" />
+        {shortcut.label}
+      </Button>)}
+    </nav>}
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
           {crumbs.length ? <button type="button" disabled={busy}
             className="hover:text-foreground underline-offset-4 hover:underline disabled:opacity-50"
-            onClick={() => void load(root, "")}>{root}</button> : <BreadcrumbPage>{root}</BreadcrumbPage>}
+            onClick={() => void load(root, "")}>{locationLabels[root]}</button> :
+            <BreadcrumbPage>{locationLabels[root]}</BreadcrumbPage>
         </BreadcrumbItem>
         {crumbs.map((part, index) => <React.Fragment key={index}>
           <BreadcrumbSeparator />
