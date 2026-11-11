@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { parseShizukuStatus, parseShizukuApps, parseShizukuSystem, type ShizukuStatus } from "@/lib/shizuku-schema"
 
 type Probe = { latencyMs: number | null; message: string; observedAt?: string }
@@ -60,13 +60,8 @@ export function ShizukuDiagnosticsPanel() {
     return () => controller.abort()
   }, [refresh])
   return <Card>
-    <CardHeader>
-      <CardTitle>Shizuku diagnostics & capabilities</CardTitle>
-      <CardDescription>Live Android bridge, Binder identity and request times; no assumed root permissions.</CardDescription>
-    </CardHeader>
-    <CardContent className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm">ADB is UID 2000; root is UID 0. Android may deny individual actions.</p>
+    <CardContent className="space-y-4 pt-4">
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <Button size="sm" variant="outline" disabled={loading} onClick={() => setRefresh(current => current + 1)}>
           {loading ? "Checking…" : "Run diagnostics"}
         </Button>
