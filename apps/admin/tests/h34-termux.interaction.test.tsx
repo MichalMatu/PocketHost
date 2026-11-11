@@ -56,6 +56,32 @@ describe("H3.4 full Termux administration", () => {
       call[0].includes("Projects%2FPocketHost-H3-Workspace"))).toHaveLength(2))
   })
 
+  it("does not mistake a successful save followed by failed listing for a failed save", async () => {
+    const user = userEvent.setup()
+    let saved = false
+    const calls = vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        saved = true
+        return { ok: true, json: async () => ({ changed: true }) }
+      }
+      if (url.includes("file-roots")) return { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      if (saved) return { ok: false }
+      return { ok: true, json: async () => ({
+        path: "", entries: [{ name: "note.txt", kind: "file", bytes: 8 }], truncated: false,
+      }) }
+    })
+    vi.stubGlobal("fetch", calls); vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<TermuxFileExplorer />)
+    await screen.findByText(/note.txt \(8 B\)/)
+    await user.type(screen.getByLabelText("Termux file source"), "new.txt")
+    await user.click(screen.getByRole("button", { name: "New / Edit text file" }))
+    await user.type(screen.getByLabelText("Termux text editor"), "test")
+    await user.click(screen.getByRole("button", { name: "Save text" }))
+    await screen.findByText("save completed")
+    expect(screen.getByRole("alert").textContent).toContain("directory refresh failed")
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+  })
+
   it("clears stale editor text when switching the file path", async () => {
     const user = userEvent.setup()
     const posts: Record<string, unknown>[] = []

@@ -91,16 +91,18 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
       return
     setBusy(true); setNotice(""); setError("")
     try {
-      await operate({ name: operation, root, path: relative,
-        destination: operation === "move" || operation === "copy" || operation === "copy-tree" ? destination : undefined,
-        content: operation === "save" ? content : undefined })
+      try {
+        await operate({ name: operation, root, path: relative,
+          destination: operation === "move" || operation === "copy" || operation === "copy-tree" ? destination : undefined,
+          content: operation === "save" ? content : undefined })
+      } catch {
+        setError(operation + " result unconfirmed. Inspect the directory before retrying.")
+        return
+      }
       setNotice(operation + " completed")
-      setListing(await browse(root, folder))
-    } catch {
-      setError(operation + " result unconfirmed. Refresh the directory before retrying.")
-      void browse(root, folder).then(setListing).catch(() => undefined)
-    }
-    finally { setBusy(false) }
+      try { setListing(await browse(root, folder)) }
+      catch { setError("Change acknowledged; directory refresh failed.") }
+    } finally { setBusy(false) }
   }
   const upload = async (file: File | undefined) => {
     if (!file || busy) return

@@ -50,10 +50,13 @@ export default function DeploymentsPage() {
     <BaseLayout title="Deployments" description="Actual, bounded release history of the registered PocketHost demo.">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" disabled={loading} onClick={() => {
-            setLoading(true)
-            void refresh().catch(() => setError("Could not refresh releases.")).finally(() => setLoading(false))
-          }}>Refresh history</Button>
+          <Button variant="outline" disabled={loading || nodeLoading} onClick={() => {
+            setLoading(true); setNodeLoading(true)
+            void Promise.allSettled([refresh(), refreshNodes()]).then(([demo, node]) => {
+              if (demo.status === "rejected") setError("Could not refresh demo releases.")
+              if (node.status === "rejected") setNodeError("Could not refresh Node deployments.")
+            }).finally(() => { setLoading(false); setNodeLoading(false) })
+          }}>Refresh</Button>
           <Link className="text-sm underline" to="/owned-site">Publish or rollback a release</Link>
         </div>
         {loading && <p role="status">Reading deployment journal…</p>}
@@ -65,13 +68,7 @@ export default function DeploymentsPage() {
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <Button variant="outline" disabled={nodeLoading}
-                onClick={() => {
-                  setNodeLoading(true)
-                  void refreshNodes()
-                    .catch(() => setNodeError("Could not refresh owned Node deployments."))
-                    .finally(() => setNodeLoading(false))
-                }}>Refresh Node history</Button>
+
               <Link to="/projects" className="text-sm underline">Manage Node projects</Link>
             </div>
             {nodeLoading && <p role="status">Reading Node deployment journal…</p>}

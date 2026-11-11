@@ -137,9 +137,9 @@ describe("H3 strict read-only contracts", () => {
   it("renders exactly one File Manager with the workspace shortcut", async () => {
     const user = userEvent.setup()
     const calls = mount("files")
-    await screen.findByText("Full Termux file manager")
+    await screen.findByRole("heading", { name: "Files" })
     expect(screen.queryByText("Termux workspace files")).toBeNull()
-    expect(screen.getAllByText("Full Termux file manager")).toHaveLength(1)
+    expect(screen.getAllByRole("heading", { name: "Files" })).toHaveLength(1)
     await user.click(screen.getByRole("button", { name: "Workspace" }))
     expect(calls.mock.calls.some(call => String(call[0]).includes("Projects%2FPocketHost-H3-Workspace"))).toBe(true)
     expect(screen.queryByRole("button", { name: "Inspect files" })).toBeNull()
@@ -158,8 +158,10 @@ describe("H3 strict read-only contracts", () => {
 
   it("keeps foreign runit observations separate from Hosting site controls", async () => {
     const calls = mount("services")
+    const observed = await screen.findByText(/Observed external services · read-only/)
+    expect(observed).toBeTruthy()
+    await userEvent.setup().click(observed)
     await screen.findByText("ilestoi")
-    expect(screen.getAllByText(/Observed external services · read-only/)).toHaveLength(1)
     expect(screen.queryByText("Manage owned services")).toBeNull()
     expect(screen.queryByText(/PocketHost-owned websites are managed/)).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)

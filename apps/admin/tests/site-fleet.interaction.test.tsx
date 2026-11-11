@@ -102,6 +102,29 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(screen.getByRole("button", { name: /Stop/ })).toBeTruthy()
   })
 
+  it("keeps successful site start distinct from a failed post-action refresh", async () => {
+    const user = userEvent.setup()
+    let reloaded = false
+    const calls = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !init?.method) {
+        if (reloaded) return { ok: false, status: 503 }
+        return { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+      }
+      if (url === "/api/v1/sites/" + ID + "/start" && init?.method === "POST") {
+        reloaded = true
+        return { ok: true, json: async () => ({ site: project("running", true) }) }
+      }
+      return { ok: false, status: 404 }
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<SitesPage />)
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /^Start$/ }))
+    await screen.findByText(/Operation acknowledged, but inventory refresh failed/)
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+  })
+
   it("with uncertain process identity blocks all writes while retaining read-only logs", async () => {
     const user = userEvent.setup()
     const fetchMock = withSites([project("unknown", true)])

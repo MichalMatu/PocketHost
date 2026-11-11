@@ -79,9 +79,9 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.getByText("Termux battery")).toBeTruthy()
     expect(screen.getByText("sample event")).toBeTruthy()
     expect(screen.queryByText("CPU metric unavailable")).toBeNull()
-    expect(screen.getByRole("link", { name: "Dashboard trends" })).toBeTruthy()
-    expect(screen.getByRole("link", { name: "Services & Processes" })).toBeTruthy()
-    expect(screen.getByRole("link", { name: "Packages & Software" })).toBeTruthy()
+    expect(screen.queryByRole("link", { name: "Dashboard trends" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Services & Processes" })).toBeNull()
+    expect(screen.queryByRole("link", { name: "Packages & Software" })).toBeNull()
   })
 
   it("filters and sorts process details without claiming live CPU percentages", async () => {
@@ -103,7 +103,7 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(within(table).getAllByRole("row")).toHaveLength(2)
     expect(table.textContent).toContain("python3")
     expect(table.textContent).not.toContain("node")
-    expect(screen.getByText("Termux-visible processes · partial Android inventory")).toBeTruthy()
+    expect(screen.getByText("2 visible processes")).toBeTruthy()
   })
 
   it("keeps permission failures and missing process inventory explicitly unavailable", async () => {

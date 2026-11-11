@@ -12,6 +12,7 @@ export default function RuntimeLogsPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [nodeProjects, setNodeProjects] = React.useState<NodeProjectEntry[]>([])
   const [selectedNode, setSelectedNode] = React.useState("")
+  const selectedNodeRef = React.useRef("")
   const [nodeLogs, setNodeLogs] = React.useState<string[]>([])
   const [nodeEnabled, setNodeEnabled] = React.useState<boolean | null>(null)
   const [nodeLoading, setNodeLoading] = React.useState(true)
@@ -26,7 +27,7 @@ export default function RuntimeLogsPage() {
   }, [])
   const loadNode = React.useCallback(async (id: string, signal?: AbortSignal) => {
     const lines = await readNodeLogs(id, signal)
-    if (!signal?.aborted) {
+    if (!signal?.aborted && selectedNodeRef.current === id) {
       setNodeLogs(lines)
       setNodeError(null)
     }
@@ -40,6 +41,7 @@ export default function RuntimeLogsPage() {
       setNodeProjects(catalog.projects)
       if (catalog.projects.length > 0) {
         const first = catalog.projects[0]!.id
+        selectedNodeRef.current = first
         setSelectedNode(first)
         await loadNode(first, controller.signal)
       }
@@ -61,9 +63,13 @@ export default function RuntimeLogsPage() {
     <BaseLayout title="Runtime logs" description="Bounded output from the explicit PocketHost-owned test process only.">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center gap-3">
-          <Button variant="outline" disabled={loading} onClick={() => {
-            setLoading(true)
-            void refresh().catch(() => setError("Could not refresh owned logs.")).finally(() => setLoading(false))
+          <Button variant="outline" disabled={loading || nodeLoading} onClick={() => {
+            setLoading(true); setNodeLoading(true)
+            void Promise.allSettled([refresh(), selectedNode ? loadNode(selectedNode) : Promise.resolve()])
+              .then(([demo, node]) => {
+                if (demo.status === "rejected") setError("Could not refresh demo logs.")
+                if (node.status === "rejected") setNodeError("Could not refresh Node logs.")
+              }).finally(() => { setLoading(false); setNodeLoading(false) })
           }}>Refresh logs</Button>
           <Link to="/owned-site" className="text-sm underline">Open project details</Link>
         </div>
@@ -83,21 +89,17 @@ export default function RuntimeLogsPage() {
                 <Button key={project.id} variant={selectedNode === project.id ? "default" : "outline"}
                   disabled={nodeLoading}
                   onClick={() => {
+                    selectedNodeRef.current = project.id
                     setSelectedNode(project.id)
+                    setNodeError(null)
                     setNodeLoading(true)
                     setNodeLogs([])
                     void loadNode(project.id)
-                      .catch(() => setNodeError("Cannot read verified Node service logs."))
+                      .catch(() => { if (selectedNodeRef.current === project.id) setNodeError("Cannot read verified Node service logs.") })
                       .finally(() => setNodeLoading(false))
                   }}>{project.name}</Button>
               ))}
-              {selectedNode && <Button variant="outline" disabled={nodeLoading}
-                onClick={() => {
-                  setNodeLoading(true)
-                  void loadNode(selectedNode)
-                    .catch(() => setNodeError("Could not refresh owned Node logs."))
-                    .finally(() => setNodeLoading(false))
-                }}>Refresh Node logs</Button>}
+
             </div>
             {nodeLogs.length > 0
               ? <pre aria-label="Node project logs" className="max-h-96 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-4 text-xs">{nodeLogs.join("\n")}</pre>

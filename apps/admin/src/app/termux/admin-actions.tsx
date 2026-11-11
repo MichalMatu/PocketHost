@@ -210,7 +210,7 @@ export function PackageManager({
 
     <div className="flex flex-wrap gap-2">
       <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
-        value={query} onChange={event => changeQuery(event.target.value)} />
+        value={query} disabled={isBusy} onChange={event => changeQuery(event.target.value)} />
       {ecosystem === "termux" &&
         <Button size="sm" variant="outline" disabled={isBusy || !validPackageName(query.trim().toLowerCase())}
           onClick={() => void searchCatalog()}>Search catalog</Button>}
@@ -240,7 +240,7 @@ export function PackageManager({
             {visible.map(item => <tr key={item.ecosystem + ":" + item.name}
               className={selected?.ecosystem === item.ecosystem && selected.name === item.name ? "bg-muted/50" : "border-b"}>
               <td className="p-2"><button type="button" className="text-left font-medium underline-offset-4 hover:underline"
-                onClick={() => choose(item)}>{item.name}</button></td>
+                disabled={isBusy} onClick={() => choose(item)}>{item.name}</button></td>
               <td className="p-2 font-mono text-xs">{item.version}</td>
             </tr>)}
           </tbody>
@@ -252,7 +252,7 @@ export function PackageManager({
       <p className="text-sm font-medium">Catalog results · {found.packages.length}{found.truncated ? "+" : ""}</p>
       <div className="max-h-56 overflow-auto rounded-md border">
         {found.packages.map(item => <button type="button" key={item.name}
-          className="block w-full border-b p-2 text-left text-sm hover:bg-muted"
+          className="block w-full border-b p-2 text-left text-sm hover:bg-muted" disabled={isBusy}
           onClick={() => choose({ ecosystem: "termux", name: item.name, description: item.description,
             version: installed?.packages.find(entry => entry.name === item.name)?.version })}>
           <span className="font-medium">{item.name}</span>

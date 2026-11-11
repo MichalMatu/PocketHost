@@ -65,8 +65,9 @@ export default function NetworkAccessPage() {
       if (!response.ok) throw new Error("Gateway could not be changed. An older PocketHost gateway may already own these ports.")
       const value: unknown = await response.json()
       setStatus(parseNetworkAccessStatus(value))
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Gateway change rejected safely.")
+    } catch {
+      setError("Gateway change result unconfirmed. Inspect the current LAN state before retrying.")
+      try { setStatus(await getStatus()) } catch { /* Keep last verified state. */ }
     } finally {
       setBusy(false)
     }

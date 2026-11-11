@@ -101,23 +101,32 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     void execute(
       () => mutate(endpoint + "/" + site.id + "/releases/" + release.id + "/" + action,
         action === "restore" ? "POST" : "DELETE"),
-      action === "restore" ? "Selected release restored. You can still use one-step Rollback." : "Archived release permanently removed.",
+      action === "restore" ? "Selected release restored. You can still use one-step Rollback." : "Archived release permanently removed.", true,
     )
   }
-  const execute = async (job: () => Promise<unknown>, success: string) => {
+  const execute = async (job: () => Promise<unknown>, success: string, mutation = false) => {
     if (busy) return
     setBusy(true)
     setError(null)
     setMessage(null)
     setHealth(null)
     try {
-      await job()
-      await onChange()
-      setAssets(null)
-      if (versions !== null) await readVersions()
-      setMessage(success)
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Operation failed safely.")
+      try {
+        await job()
+      } catch (cause) {
+        setError(mutation
+          ? "Result unconfirmed. Refresh the site state before retrying; no automatic retry."
+          : cause instanceof Error ? cause.message : "Read failed.")
+        return
+      }
+      try {
+        await onChange()
+        setAssets(null)
+        if (versions !== null) await readVersions()
+        setMessage(success)
+      } catch {
+        setMessage("Operation acknowledged, but inventory refresh failed. Verify the site state.")
+      }
     } finally {
       setBusy(false)
     }
@@ -127,7 +136,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     if ((name === "stop" || name === "restart" || name === "rollback") &&
         !window.confirm("Apply " + name + " only to " + site.name + "?")) return
     void execute(() => mutate(endpoint + "/" + site.id + "/" + name, "POST"),
-      name[0].toUpperCase() + name.slice(1) + " completed.")
+      name[0].toUpperCase() + name.slice(1) + " completed.", true)
   }
   const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
@@ -137,7 +146,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     void execute(async () => {
       if (file.size > maxZip) throw new RangeError("ZIP is larger than 6 MiB.")
       await mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip")
-    }, "ZIP was published as a new immutable release.")
+    }, "ZIP was published as a new immutable release.", true)
   }
   const folder = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -154,7 +163,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       })))
       await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
         JSON.stringify({ files: entries }), "application/json")
-    }, "Folder was published as a new immutable release.")
+    }, "Folder was published as a new immutable release.", true)
   }
   const verify = () => {
     void execute(async () => {
@@ -343,11 +352,16 @@ export default function SitesPage() {
     setCreating(true)
     setError(null)
     try {
-      await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
+      try {
+        await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
+      } catch {
+        setError("Create result unconfirmed. Refresh the site list before retrying.")
+        return
+      }
       setName("")
-      await reload()
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Creation was rejected.")
+      try { await reload() } catch {
+        setError("Creation acknowledged; site list refresh failed. Refresh before retrying.")
+      }
     } finally { setCreating(false) }
   }
 
