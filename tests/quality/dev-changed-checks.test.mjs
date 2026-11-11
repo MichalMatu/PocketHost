@@ -63,21 +63,21 @@ test('route preservation receives explicit test even if source is read as text',
 });
 
 test('unmapped code and dependency manifests cannot silently report full coverage', () => {
-  const plan = planChangedChecks([
-    'src/modules/host/new-dangerous-command.ts',
-    'package.json',
-  ]);
+  const plan = planChangedChecks(['src/modules/host/new-dangerous-command.ts', 'package.json']);
   assert.ok(plan.review.some((line) => line.includes('No known test dependency')));
   assert.ok(plan.review.some((line) => line.includes('Explicit impact review')));
   assert.equal(command(plan, 'node tests'), undefined);
 });
 
 test('changed test is run once and invalid paths are rejected', () => {
-  const plan = planChangedChecks([
-    'tests/quality/hosting-registry.test.mjs',
-    'tests/quality/hosting-registry.test.mjs',
-    '../../dangerous',
-  ], deps);
+  const plan = planChangedChecks(
+    [
+      'tests/quality/hosting-registry.test.mjs',
+      'tests/quality/hosting-registry.test.mjs',
+      '../../dangerous',
+    ],
+    deps,
+  );
   assert.deepEqual(command(plan, 'node tests').argv.slice(2), [
     'tests/quality/hosting-registry.test.mjs',
   ]);

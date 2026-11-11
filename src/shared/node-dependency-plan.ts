@@ -73,10 +73,15 @@ function matchingDependencies(
   return count;
 }
 
-
 function lockEntryPath(name: string): boolean {
-  if (name.length > 240 || name.startsWith('/') || name.includes('\\') ||
-    name.includes('\0') || name.includes('..')) return false;
+  if (
+    name.length > 240 ||
+    name.startsWith('/') ||
+    name.includes('\\') ||
+    name.includes('\0') ||
+    name.includes('..')
+  )
+    return false;
   const parts = name.split('/');
   let index = 0;
   while (index < parts.length) {
@@ -84,8 +89,8 @@ function lockEntryPath(name: string): boolean {
     const packageName = parts[index++];
     if (!packageName) return false;
     if (packageName.startsWith('@')) {
-      if (!/^@[a-z0-9._-]+$/.test(packageName) ||
-        !/^[a-z0-9._-]+$/.test(parts[index++] ?? '')) return false;
+      if (!/^@[a-z0-9._-]+$/.test(packageName) || !/^[a-z0-9._-]+$/.test(parts[index++] ?? ''))
+        return false;
     } else if (!/^[a-z0-9._-]+$/.test(packageName)) {
       return false;
     }
@@ -102,8 +107,9 @@ function reviewLockfile(
   for (const field of ['dependencies', 'devDependencies', 'optionalDependencies']) {
     for (const name of Object.keys(dependencyMap(root[field]))) direct.add(name);
   }
-  const missingDirectEntries = [...direct].filter((name) =>
-    !Object.hasOwn(packages, 'node_modules/' + name)).sort();
+  const missingDirectEntries = [...direct]
+    .filter((name) => !Object.hasOwn(packages, 'node_modules/' + name))
+    .sort();
   const unreviewedSources: string[] = [];
   const installScripts: string[] = [];
   for (const [name, input] of Object.entries(packages)) {
@@ -116,10 +122,13 @@ function reviewLockfile(
     if (entry.hasInstallScript === true) installScripts.push(name);
     const resolved = entry.resolved;
     const integrity = entry.integrity;
-    if (entry.link === true || typeof resolved !== 'string' ||
+    if (
+      entry.link === true ||
+      typeof resolved !== 'string' ||
       !resolved.startsWith('https://registry.npmjs.org/') ||
       typeof integrity !== 'string' ||
-      !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(integrity)) {
+      !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(integrity)
+    ) {
       unreviewedSources.push(name);
     }
   }
@@ -131,7 +140,9 @@ function reviewLockfile(
   };
 }
 function normalizedVersion(value: string): string {
-  const match = /^(0|[1-9][0-9]{0,2})(?:\.(0|[1-9][0-9]{0,2}))?(?:\.(0|[1-9][0-9]{0,2}))?$/.exec(value);
+  const match = /^(0|[1-9][0-9]{0,2})(?:\.(0|[1-9][0-9]{0,2}))?(?:\.(0|[1-9][0-9]{0,2}))?$/.exec(
+    value,
+  );
   if (!match) throw new Error('Invalid explicit tool version');
   const parts = [Number(match[1]), Number(match[2] ?? 0), Number(match[3] ?? 0)];
   if (parts.some((part) => part > 1000)) throw new Error('Unsupported tool version');
@@ -162,7 +173,6 @@ function npmVersionRequirement(value: unknown): string | null {
     throw new Error('Only an explicit npm package manager is supported');
   return normalizedVersion(value.slice(4));
 }
-
 
 export function planNodeDependencies(
   packageInput: unknown,
@@ -239,8 +249,11 @@ export function reviewNodeToolchain(
     const required = plan.requiredNodeVersion.replace(/(?:\.0){1,2}$/, '');
     conflicts.push('node-requires-' + required + '-or-newer');
   }
-  if (tools.npm && plan.requiredNpmVersion &&
-      compareVersions(tools.npm, plan.requiredNpmVersion) < 0) {
+  if (
+    tools.npm &&
+    plan.requiredNpmVersion &&
+    compareVersions(tools.npm, plan.requiredNpmVersion) < 0
+  ) {
     conflicts.push('npm-requires-' + plan.requiredNpmVersion + '-or-newer');
   }
   if (

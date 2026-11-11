@@ -31,10 +31,15 @@ export function projectNodeHostingDeclarations(
   const projects: HostedProject[] = [];
   const identities = new Set<string>();
   for (const entry of entries) {
-    if (!entry || entry.kind !== 'node' || !NODE_ID.test(entry.id) ||
-      typeof entry.registered !== 'boolean' || identities.has(entry.id) ||
+    if (
+      !entry ||
+      entry.kind !== 'node' ||
+      !NODE_ID.test(entry.id) ||
+      typeof entry.registered !== 'boolean' ||
+      identities.has(entry.id) ||
       (entry.registered && entry.port === null) ||
-      (!entry.registered && entry.port !== null)) {
+      (!entry.registered && entry.port !== null)
+    ) {
       throw new Error('Invalid or duplicate Node registry projection');
     }
     identities.add(entry.id);
@@ -53,15 +58,17 @@ export function projectNodeHostingDeclarations(
       schemaVersion: 1,
       id: entry.id,
       origin: 'created-in-pockethost',
-      components: [{
-        id: 'web',
-        moduleId: 'nodejs',
-        moduleVersion: 1,
-        role: 'backend',
-        port: entry.port,
-        serviceId,
-        secrets: [],
-      }],
+      components: [
+        {
+          id: 'web',
+          moduleId: 'nodejs',
+          moduleVersion: 1,
+          role: 'backend',
+          port: entry.port,
+          serviceId,
+          secrets: [],
+        },
+      ],
     });
   }
   return {

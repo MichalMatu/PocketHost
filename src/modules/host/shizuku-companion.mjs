@@ -46,15 +46,20 @@ export function parseCompanionStatus(raw) {
   // Backward-compatible: an older installed APK does not yet publish network counters.
   const network = value.network;
   if (network !== undefined) {
-    if (!network || typeof network !== 'object' || Array.isArray(network) ||
+    if (
+      !network ||
+      typeof network !== 'object' ||
+      Array.isArray(network) ||
       Object.keys(network).sort().join(',') !== 'observedAt,rxBytes,scope,source,txBytes' ||
       network.source !== 'android-trafficstats' ||
       network.scope !== 'all-interfaces-since-boot' ||
       typeof network.observedAt !== 'string' ||
       !Number.isFinite(Date.parse(network.observedAt)) ||
       Math.abs(Date.now() - Date.parse(network.observedAt)) > 60000 ||
-      !['rxBytes', 'txBytes'].every(k =>
-        network[k] === null || (Number.isSafeInteger(network[k]) && network[k] >= 0))) {
+      !['rxBytes', 'txBytes'].every(
+        (k) => network[k] === null || (Number.isSafeInteger(network[k]) && network[k] >= 0),
+      )
+    ) {
       throw new Error('invalid-companion-network');
     }
   }

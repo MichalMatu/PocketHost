@@ -23,7 +23,10 @@ import { NodeProjectHost } from './node-project-host.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import { reviewNodeToolchain, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
 import { evaluateHealthPolicy, type HealthDecision } from '../../shared/hosting-health-policy.ts';
-import { nodeHostingUnitName as unitName, projectNodeHostingDeclarations } from '../../shared/node-hosting-projection.ts';
+import {
+  nodeHostingUnitName as unitName,
+  projectNodeHostingDeclarations,
+} from '../../shared/node-hosting-projection.ts';
 import { createHostingRegistries } from '../../shared/hosting-registry.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
@@ -47,7 +50,11 @@ type RuntimeRecord = {
   previousGoodRelease?: string | null;
   process: ProcessProof | null;
   readinessNonce: string;
-  history: { at: string; action: 'start' | 'update' | 'stop' | 'failed' | 'rollback'; release: string }[];
+  history: {
+    at: string;
+    action: 'start' | 'update' | 'stop' | 'failed' | 'rollback';
+    release: string;
+  }[];
 };
 type UnitRecord = {
   schema: 1;
@@ -62,26 +69,48 @@ type UnitRecord = {
 
 function checkedDirectory(folder: string): void {
   const s = lstatSync(folder);
-  if (!s.isDirectory() || s.isSymbolicLink() || realpathSync(folder) !== folder ||
-    s.uid !== process.getuid?.()) throw new Error('Untrusted Node runtime directory');
+  if (
+    !s.isDirectory() ||
+    s.isSymbolicLink() ||
+    realpathSync(folder) !== folder ||
+    s.uid !== process.getuid?.()
+  )
+    throw new Error('Untrusted Node runtime directory');
 }
 function privateText(filename: string, max = 16384): string {
   const s = lstatSync(filename);
-  if (!s.isFile() || s.isSymbolicLink() || s.nlink !== 1 || s.uid !== process.getuid?.() ||
-    (s.mode & 0o077) !== 0 || s.size > max) throw new Error('Untrusted Node runtime file');
+  if (
+    !s.isFile() ||
+    s.isSymbolicLink() ||
+    s.nlink !== 1 ||
+    s.uid !== process.getuid?.() ||
+    (s.mode & 0o077) !== 0 ||
+    s.size > max
+  )
+    throw new Error('Untrusted Node runtime file');
   const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const current = fstatSync(fd);
-    if (!current.isFile() || current.nlink !== 1 || current.ino !== s.ino ||
-      current.dev !== s.dev || current.uid !== s.uid ||
-      (current.mode & 0o077) !== 0 || current.size > max)
+    if (
+      !current.isFile() ||
+      current.nlink !== 1 ||
+      current.ino !== s.ino ||
+      current.dev !== s.dev ||
+      current.uid !== s.uid ||
+      (current.mode & 0o077) !== 0 ||
+      current.size > max
+    )
       throw new Error('Node runtime file changed during verification');
     return readFileSync(fd, 'utf8');
-  } finally { closeSync(fd); }
+  } finally {
+    closeSync(fd);
+  }
 }
 function absent(name: string): boolean {
-  try { lstatSync(name); return false; }
-  catch (error) {
+  try {
+    lstatSync(name);
+    return false;
+  } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
     throw error;
   }
@@ -92,8 +121,11 @@ function atomic(folder: string, name: string, content: string, mode = 0o600): vo
   if (!absent(target)) privateText(target);
   const temp = path.join(folder, '.node-' + randomUUID());
   writeFileSync(temp, content, { flag: 'wx', mode });
-  try { renameSync(temp, target); }
-  finally { if (!absent(temp)) rmSync(temp); }
+  try {
+    renameSync(temp, target);
+  } finally {
+    if (!absent(temp)) rmSync(temp);
+  }
 }
 function quote(input: string): string {
   return "'" + input.replaceAll("'", "'\\''") + "'";
@@ -102,33 +134,65 @@ function digest(value: string): string {
   return createHash('sha256').update(value).digest('hex');
 }
 function nodeLogRun(logFolder: string): string {
-  return '#!' + PREFIX + '/bin/sh\nexec ' + quote(PREFIX + '/bin/svlogd') +
-    ' -tt ' + quote(logFolder) + '\n';
+  return (
+    '#!' +
+    PREFIX +
+    '/bin/sh\nexec ' +
+    quote(PREFIX + '/bin/svlogd') +
+    ' -tt ' +
+    quote(logFolder) +
+    '\n'
+  );
 }
 /** A clean env blocks accidental inheritance of PocketHost admin credentials. */
 export function runScript(folder: string, port: number, readinessNonce: string): string {
-  if (!path.isAbsolute(folder) || !Number.isSafeInteger(port) ||
-    port < FIRST_PORT || port >= FIRST_PORT + PORT_COUNT ||
-    !/^[a-f0-9]{48}$/.test(readinessNonce)) {
+  if (
+    !path.isAbsolute(folder) ||
+    !Number.isSafeInteger(port) ||
+    port < FIRST_PORT ||
+    port >= FIRST_PORT + PORT_COUNT ||
+    !/^[a-f0-9]{48}$/.test(readinessNonce)
+  ) {
     throw new RangeError('Invalid owned Node process launch');
   }
-  return '#!' + PREFIX + '/bin/sh\nset -eu\ncd ' + quote(folder) +
-    '\nexec ' + quote(PREFIX + '/bin/env') + ' -i' +
-    ' PATH=' + quote(PREFIX + '/bin') +
-    ' HOME=' + quote(folder) +
-    ' TMPDIR=' + quote(PREFIX + '/tmp') +
-    ' NODE_ENV=' + quote('production') +
-    ' PORT=' + quote(String(port)) +
-    ' POCKETHOST_READINESS_NONCE=' + quote(readinessNonce) +
-    ' ' + quote(PREFIX + '/bin/node') +
-    ' ' + quote(path.join(folder, 'server.mjs')) + '\n';
+  return (
+    '#!' +
+    PREFIX +
+    '/bin/sh\nset -eu\ncd ' +
+    quote(folder) +
+    '\nexec ' +
+    quote(PREFIX + '/bin/env') +
+    ' -i' +
+    ' PATH=' +
+    quote(PREFIX + '/bin') +
+    ' HOME=' +
+    quote(folder) +
+    ' TMPDIR=' +
+    quote(PREFIX + '/tmp') +
+    ' NODE_ENV=' +
+    quote('production') +
+    ' PORT=' +
+    quote(String(port)) +
+    ' POCKETHOST_READINESS_NONCE=' +
+    quote(readinessNonce) +
+    ' ' +
+    quote(PREFIX + '/bin/node') +
+    ' ' +
+    quote(path.join(folder, 'server.mjs')) +
+    '\n'
+  );
 }
 function observedTicks(pid: number): string | null {
   try {
     const raw = readFileSync('/proc/' + pid + '/stat', 'utf8');
-    const ticks = raw.slice(raw.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
+    const ticks = raw
+      .slice(raw.lastIndexOf(')') + 2)
+      .trim()
+      .split(/\s+/)[19];
     return ticks && /^\d+$/.test(ticks) ? ticks : null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 function pause(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 250));
@@ -146,22 +210,28 @@ export async function selectUnreservedNodePort(
   free: (port: number) => Promise<boolean>,
 ): Promise<number> {
   for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
-    if (!reserved.has(port) && await free(port)) return port;
+    if (!reserved.has(port) && (await free(port))) return port;
   }
   throw new Error('No unreserved loopback Node port');
 }
 /** Fixed loopback-only readiness probe; a foreign HTTP 200 never attests the release. */
 export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<boolean> {
-  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 ||
-    !/^[a-f0-9]{48}$/.test(nonce)) throw new RangeError('Unsafe Node readiness probe');
+  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 || !/^[a-f0-9]{48}$/.test(nonce))
+    throw new RangeError('Unsafe Node readiness probe');
   return new Promise((resolve) => {
-    const request = http.get({
-      hostname: '127.0.0.1', port, path: '/__pockethost/ready', timeout: 600,
-      agent: false,
-    }, (response) => {
-      response.resume();
-      resolve(response.statusCode === 200 && response.headers['x-pockethost-ready'] === nonce);
-    });
+    const request = http.get(
+      {
+        hostname: '127.0.0.1',
+        port,
+        path: '/__pockethost/ready',
+        timeout: 600,
+        agent: false,
+      },
+      (response) => {
+        response.resume();
+        resolve(response.statusCode === 200 && response.headers['x-pockethost-ready'] === nonce);
+      },
+    );
     request.on('timeout', () => request.destroy());
     request.on('error', () => resolve(false));
   });
@@ -171,60 +241,86 @@ export function readBoundedNodePreview(port: number): Promise<string> {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65535)
     throw new RangeError('Invalid local preview port');
   return new Promise((resolve, reject) => {
-    const request = http.get({
-      hostname: '127.0.0.1', port, path: '/', agent: false, timeout: 1500,
-      signal: AbortSignal.timeout(3000),
-      headers: { accept: 'text/plain, text/html' },
-    }, (response) => {
-      if (response.statusCode !== 200) {
-        response.destroy();
-        reject(new Error('Node preview returned non-success status'));
-        return;
-      }
-      const chunks: Buffer[] = [];
-      let total = 0;
-      response.on('data', (part: Buffer | string) => {
-        const bytes = Buffer.isBuffer(part) ? part : Buffer.from(part);
-        total += bytes.length;
-        if (total > 8192) {
-          request.destroy(new Error('Node preview response exceeds safe budget'));
+    const request = http.get(
+      {
+        hostname: '127.0.0.1',
+        port,
+        path: '/',
+        agent: false,
+        timeout: 1500,
+        signal: AbortSignal.timeout(3000),
+        headers: { accept: 'text/plain, text/html' },
+      },
+      (response) => {
+        if (response.statusCode !== 200) {
+          response.destroy();
+          reject(new Error('Node preview returned non-success status'));
           return;
         }
-        chunks.push(bytes);
-      });
-      response.once('end', () => {
-        const clean = Buffer.concat(chunks).toString('utf8').split('').filter((character) => {
-          const code = character.charCodeAt(0);
-          return code > 31 && code !== 127 || code === 9 || code === 10;
-        }).join('');
-        resolve(clean);
-      });
-      response.once('error', reject);
-    });
+        const chunks: Buffer[] = [];
+        let total = 0;
+        response.on('data', (part: Buffer | string) => {
+          const bytes = Buffer.isBuffer(part) ? part : Buffer.from(part);
+          total += bytes.length;
+          if (total > 8192) {
+            request.destroy(new Error('Node preview response exceeds safe budget'));
+            return;
+          }
+          chunks.push(bytes);
+        });
+        response.once('end', () => {
+          const clean = Buffer.concat(chunks)
+            .toString('utf8')
+            .split('')
+            .filter((character) => {
+              const code = character.charCodeAt(0);
+              return (code > 31 && code !== 127) || code === 9 || code === 10;
+            })
+            .join('');
+          resolve(clean);
+        });
+        response.once('error', reject);
+      },
+    );
     request.once('timeout', () => request.destroy(new Error('Node preview timeout')));
     request.once('error', reject);
   });
 }
 function stored(raw: string, id: string): RuntimeRecord {
   const v: unknown = JSON.parse(raw);
-  if (!v || typeof v !== 'object' || Array.isArray(v)) throw new Error('Invalid Node runtime state');
+  if (!v || typeof v !== 'object' || Array.isArray(v))
+    throw new Error('Invalid Node runtime state');
   const s = v as RuntimeRecord;
-  if (s.schema !== 1 || s.owner !== 'pockethost-node-runit' || s.projectId !== id ||
-    s.unit !== unitName(id) || !Number.isSafeInteger(s.port) ||
-    s.port < FIRST_PORT || s.port >= FIRST_PORT + PORT_COUNT ||
+  if (
+    s.schema !== 1 ||
+    s.owner !== 'pockethost-node-runit' ||
+    s.projectId !== id ||
+    s.unit !== unitName(id) ||
+    !Number.isSafeInteger(s.port) ||
+    s.port < FIRST_PORT ||
+    s.port >= FIRST_PORT + PORT_COUNT ||
     !['running', 'stopped'].includes(s.desired) ||
     typeof s.readinessNonce !== 'string' ||
     !/^[a-f0-9]{48}$/.test(s.readinessNonce) ||
     (s.activeRelease !== null && !RELEASE.test(s.activeRelease)) ||
     (s.lastGoodRelease !== null && !RELEASE.test(s.lastGoodRelease)) ||
-    (s.previousGoodRelease !== undefined && s.previousGoodRelease !== null &&
+    (s.previousGoodRelease !== undefined &&
+      s.previousGoodRelease !== null &&
       !RELEASE.test(s.previousGoodRelease)) ||
-    (s.process !== null && (!Number.isSafeInteger(s.process.pid) || s.process.pid < 2 ||
-      !/^\d+$/.test(s.process.ticks))) ||
-    !Array.isArray(s.history) || s.history.length > MAX_HISTORY ||
-    s.history.some((event) => !event || !RELEASE.test(event.release) ||
-      !['start', 'update', 'stop', 'failed', 'rollback'].includes(event.action) ||
-      !Number.isFinite(Date.parse(event.at)))) {
+    (s.process !== null &&
+      (!Number.isSafeInteger(s.process.pid) ||
+        s.process.pid < 2 ||
+        !/^\d+$/.test(s.process.ticks))) ||
+    !Array.isArray(s.history) ||
+    s.history.length > MAX_HISTORY ||
+    s.history.some(
+      (event) =>
+        !event ||
+        !RELEASE.test(event.release) ||
+        !['start', 'update', 'stop', 'failed', 'rollback'].includes(event.action) ||
+        !Number.isFinite(Date.parse(event.at)),
+    )
+  ) {
     throw new Error('Unsafe Node runtime record');
   }
   return s;
@@ -278,11 +374,16 @@ export class NodeRunitHost {
     if (!marker || typeof marker !== 'object' || Array.isArray(marker))
       throw new Error('Invalid unit provenance');
     const m = marker as UnitRecord;
-    if (m.schema !== 1 || m.owner !== 'pockethost-node-runit' ||
-      m.projectId !== id || m.unit !== unit || m.port !== record.port ||
+    if (
+      m.schema !== 1 ||
+      m.owner !== 'pockethost-node-runit' ||
+      m.projectId !== id ||
+      m.unit !== unit ||
+      m.port !== record.port ||
       !/^[a-f0-9]{64}$/.test(m.runDigest) ||
       m.readinessNonce !== record.readinessNonce ||
-      digest(privateText(path.join(service, 'run'))) !== m.runDigest)
+      digest(privateText(path.join(service, 'run'))) !== m.runDigest
+    )
       throw new Error('Node runit service identity changed');
     const down = path.join(service, 'down');
     if (absent(down)) throw new Error('Owned Node unit must remain manually disabled');
@@ -291,9 +392,11 @@ export class NodeRunitHost {
     checkedDirectory(this.logRoot);
     checkedDirectory(path.join(this.logRoot, unit));
     const logSource = privateText(path.join(service, 'log', 'run'));
-    if (!/^[a-f0-9]{64}$/.test(m.logDigest) ||
+    if (
+      !/^[a-f0-9]{64}$/.test(m.logDigest) ||
       m.logDigest !== digest(nodeLogRun(path.join(this.logRoot, unit))) ||
-      digest(logSource) !== m.logDigest)
+      digest(logSource) !== m.logDigest
+    )
       throw new Error('Owned Node log supervisor identity changed');
     if (!this.admin.isRegistered(unit))
       throw new Error('Node unit is not in verified runit registry');
@@ -301,7 +404,10 @@ export class NodeRunitHost {
   private unitState(id: string): 'running' | 'down' | 'unknown' {
     const { service } = this.context(id);
     const result = spawnSync(PREFIX + '/bin/sv', ['status', service], {
-      shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
+      shell: false,
+      encoding: 'utf8',
+      timeout: 1500,
+      maxBuffer: 2048,
     });
     if (result.error || result.status !== 0) return 'unknown';
     if (result.stdout.startsWith('down:')) return 'down';
@@ -313,7 +419,10 @@ export class NodeRunitHost {
     const running = this.unitState(id);
     if (running !== 'running') return running === 'down' ? 'down' : 'unknown';
     const result = spawnSync(PREFIX + '/bin/sv', ['status', service], {
-      shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
+      shell: false,
+      encoding: 'utf8',
+      timeout: 1500,
+      maxBuffer: 2048,
     });
     if (result.error || result.status !== 0) return 'unknown';
     if (result.stdout.startsWith('down:')) return 'down';
@@ -326,11 +435,16 @@ export class NodeRunitHost {
     try {
       const releaseFolder = this.projects.release(id, release).folder;
       const argv = readFileSync('/proc/' + pid + '/cmdline', 'utf8').split('\0');
-      if (statSync('/proc/' + pid).uid !== process.getuid?.() ||
+      if (
+        statSync('/proc/' + pid).uid !== process.getuid?.() ||
         readlinkSync('/proc/' + pid + '/cwd') !== releaseFolder ||
         !argv.includes(path.join(releaseFolder, 'server.mjs')) ||
-        !argv.includes(PREFIX + '/bin/node')) return 'unknown';
-    } catch { return 'unknown'; }
+        !argv.includes(PREFIX + '/bin/node')
+      )
+        return 'unknown';
+    } catch {
+      return 'unknown';
+    }
     return { pid, ticks };
   }
   private writeState(id: string, state: RuntimeRecord): void {
@@ -345,14 +459,26 @@ export class NodeRunitHost {
     if (privateText(path.join(service, 'log', 'run')) !== logSource)
       throw new Error('Owned Node log run script differs from fixed specification');
     atomic(service, 'run', source, 0o700);
-    atomic(service, UNIT_MARKER, JSON.stringify({
-      schema: 1, owner: 'pockethost-node-runit', projectId: id,
-      unit: unitName(id), port, runDigest: digest(source),
-      logDigest: digest(logSource), readinessNonce: nonce,
-    }) + '\n');
+    atomic(
+      service,
+      UNIT_MARKER,
+      JSON.stringify({
+        schema: 1,
+        owner: 'pockethost-node-runit',
+        projectId: id,
+        unit: unitName(id),
+        port,
+        runDigest: digest(source),
+        logDigest: digest(logSource),
+        readinessNonce: nonce,
+      }) + '\n',
+    );
   }
-  private history(state: RuntimeRecord, action: RuntimeRecord['history'][number]['action'],
-    release: string): void {
+  private history(
+    state: RuntimeRecord,
+    action: RuntimeRecord['history'][number]['action'],
+    release: string,
+  ): void {
     state.history.push({ at: new Date().toISOString(), action, release });
     if (state.history.length > MAX_HISTORY) state.history.shift();
   }
@@ -364,39 +490,72 @@ export class NodeRunitHost {
     conflicts: string[];
   } {
     const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
-      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
+      encoding: 'utf8',
+      shell: false,
+      timeout: 1500,
+      maxBuffer: 128,
     });
     const npm = spawnSync(PREFIX + '/bin/npm', ['--version'], {
-      encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 128,
+      encoding: 'utf8',
+      shell: false,
+      timeout: 1500,
+      maxBuffer: 128,
     });
     const nodeVersion = node.status === 0 ? node.stdout.trim() : null;
     const npmVersion = npm.status === 0 ? npm.stdout.trim() : null;
     const tools = reviewNodeToolchain(plan, { node: nodeVersion, npm: npmVersion });
-    return { nodeVersion, npmVersion, status: tools.status,
-      missingTools: tools.missingTools, conflicts: tools.conflicts };
+    return {
+      nodeVersion,
+      npmVersion,
+      status: tools.status,
+      missingTools: tools.missingTools,
+      conflicts: tools.conflicts,
+    };
   }
   preview(id: string): {
-    release: string | null; port: number | null; missingTools: string[];
-    nodeVersion: string | null; npmVersion: string | null;
-    conflicts: string[]; dependencyCount: number | null; allowed: boolean;
-    dependencyIssues: string[]; reason: string;
+    release: string | null;
+    port: number | null;
+    missingTools: string[];
+    nodeVersion: string | null;
+    npmVersion: string | null;
+    conflicts: string[];
+    dependencyCount: number | null;
+    allowed: boolean;
+    dependencyIssues: string[];
+    reason: string;
   } {
     const project = this.projects.inspect(id);
     const state = this.record(id);
     const release = project.candidateRelease;
-    if (!release) return { release: null, port: state?.port ?? null,
-      missingTools: [], conflicts: [], dependencyIssues: [],
-      nodeVersion: null, npmVersion: null,
-      dependencyCount: null, allowed: false,
-      reason: 'stage-source-first' };
+    if (!release)
+      return {
+        release: null,
+        port: state?.port ?? null,
+        missingTools: [],
+        conflicts: [],
+        dependencyIssues: [],
+        nodeVersion: null,
+        npmVersion: null,
+        dependencyCount: null,
+        allowed: false,
+        reason: 'stage-source-first',
+      };
     const candidate = this.projects.candidates(id).find((entry) => entry.id === release);
     if (!candidate) throw new Error('Unknown Node candidate');
     const { dependencyPlan: plan, sourceIntegrity } = candidate;
     if (sourceIntegrity !== 'verified') {
-      return { release, port: state?.port ?? null, nodeVersion: null, npmVersion: null,
-        missingTools: [], conflicts: [], dependencyIssues: [],
+      return {
+        release,
+        port: state?.port ?? null,
+        nodeVersion: null,
+        npmVersion: null,
+        missingTools: [],
+        conflicts: [],
+        dependencyIssues: [],
         dependencyCount: plan.dependencyCount,
-        allowed: false, reason: 'source-must-be-re-staged' };
+        allowed: false,
+        reason: 'source-must-be-re-staged',
+      };
     }
     const tools = this.toolchain(plan);
     const { nodeVersion, npmVersion } = tools;
@@ -407,25 +566,42 @@ export class NodeRunitHost {
       ...plan.lockReview.installScripts.map((name) => 'install-script:' + name),
     ];
     return {
-      release, port: state?.port ?? null, missingTools: tools.missingTools,
-      nodeVersion, npmVersion, conflicts: tools.conflicts, dependencyIssues,
+      release,
+      port: state?.port ?? null,
+      missingTools: tools.missingTools,
+      nodeVersion,
+      npmVersion,
+      conflicts: tools.conflicts,
+      dependencyIssues,
       dependencyCount: plan.dependencyCount,
       allowed: tools.status !== 'blocked' && clean,
-      reason: tools.status === 'blocked' ? 'missing-or-unsupported-toolchain' :
-        clean ? 'ready-for-explicit-local-deploy' : 'dependencies-or-build-need-separate-approval',
+      reason:
+        tools.status === 'blocked'
+          ? 'missing-or-unsupported-toolchain'
+          : clean
+            ? 'ready-for-explicit-local-deploy'
+            : 'dependencies-or-build-need-separate-approval',
     };
   }
   /** Fixed native syntax validation; reads a proven release but never executes its source. */
-  private checkReleaseSyntax(id: string, release: string): {
-    release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
+  private checkReleaseSyntax(
+    id: string,
+    release: string,
+  ): {
+    release: string;
+    status: 'syntax-valid' | 'syntax-invalid';
+    executed: false;
   } {
     const source = this.projects.release(id, release);
     const result = spawnSync(
       PREFIX + '/bin/node',
       ['--check', path.join(source.folder, 'server.mjs')],
       {
-        cwd: source.folder, encoding: 'utf8', shell: false,
-        timeout: 3000, maxBuffer: 4096,
+        cwd: source.folder,
+        encoding: 'utf8',
+        shell: false,
+        timeout: 3000,
+        maxBuffer: 4096,
         env: { ...process.env, NODE_OPTIONS: undefined },
       },
     );
@@ -437,8 +613,13 @@ export class NodeRunitHost {
       executed: false,
     };
   }
-  checkBuild(id: string, release: string): {
-    release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
+  checkBuild(
+    id: string,
+    release: string,
+  ): {
+    release: string;
+    status: 'syntax-valid' | 'syntax-invalid';
+    executed: false;
   } {
     // Syntax inspection needs the fixed Node binary, not an npm version probe.
     // Re-attest the exact staged candidate; do not grant deploy or run permission.
@@ -452,21 +633,38 @@ export class NodeRunitHost {
     }
     return this.checkReleaseSyntax(id, release);
   }
-  status(id: string): { state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
-    port: number | null; activeRelease: string | null; lastGoodRelease: string | null;
+  status(id: string): {
+    state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
+    port: number | null;
+    activeRelease: string | null;
+    lastGoodRelease: string | null;
     previousGoodRelease: string | null;
-    desired: 'stopped' | 'running'; history: RuntimeRecord['history'];
-    healthDecision: HealthDecision } {
+    desired: 'stopped' | 'running';
+    history: RuntimeRecord['history'];
+    healthDecision: HealthDecision;
+  } {
     const state = this.record(id);
-    if (!state) return { state: 'not-provisioned', port: null,
-      activeRelease: null, lastGoodRelease: null, previousGoodRelease: null,
-      desired: 'stopped', history: [],
-      healthDecision: { action: 'none', reason: 'not-provisioned', nextEligibleAtMs: null } };
+    if (!state)
+      return {
+        state: 'not-provisioned',
+        port: null,
+        activeRelease: null,
+        lastGoodRelease: null,
+        previousGoodRelease: null,
+        desired: 'stopped',
+        history: [],
+        healthDecision: { action: 'none', reason: 'not-provisioned', nextEligibleAtMs: null },
+      };
     const current = state.activeRelease
       ? this.observe(id, state.activeRelease)
-      : this.unitState(id) === 'down' ? 'down' : 'unknown';
-    const matches = current !== 'down' && current !== 'unknown' &&
-      state.process?.pid === current.pid && state.process.ticks === current.ticks;
+      : this.unitState(id) === 'down'
+        ? 'down'
+        : 'unknown';
+    const matches =
+      current !== 'down' &&
+      current !== 'unknown' &&
+      state.process?.pid === current.pid &&
+      state.process.ticks === current.ticks;
     const observed = current === 'down' ? 'stopped' : matches ? 'running' : 'unknown';
     const nowMs = Date.now();
     let attempts = 0;
@@ -491,10 +689,13 @@ export class NodeRunitHost {
     );
     return {
       state: current === 'down' ? 'stopped' : matches ? 'running' : 'unknown',
-      port: state.port, activeRelease: state.activeRelease,
+      port: state.port,
+      activeRelease: state.activeRelease,
       lastGoodRelease: state.lastGoodRelease,
-      previousGoodRelease: state.previousGoodRelease ?? null, desired: state.desired,
-      history: state.history, healthDecision,
+      previousGoodRelease: state.previousGoodRelease ?? null,
+      desired: state.desired,
+      history: state.history,
+      healthDecision,
     };
   }
   /** New runit directories are discovered asynchronously by the installed service-daemon. */
@@ -502,20 +703,33 @@ export class NodeRunitHost {
     const { service } = this.context(id);
     for (let n = 0; n < 120; n++) {
       const status = spawnSync(PREFIX + '/bin/sv', ['status', service], {
-        shell: false, encoding: 'utf8', timeout: 1500, maxBuffer: 2048,
+        shell: false,
+        encoding: 'utf8',
+        timeout: 1500,
+        maxBuffer: 2048,
       });
       if (status.status === 0 && /^(?:run|down): /.test(status.stdout)) return;
       await pause();
     }
     throw new Error('Existing Termux runit did not discover owned Node unit');
   }
-  private async settle(id: string, release: string, port: number, nonce: string): Promise<ProcessProof> {
+  private async settle(
+    id: string,
+    release: string,
+    port: number,
+    nonce: string,
+  ): Promise<ProcessProof> {
     for (let n = 0; n < 40; n++) {
       const proof = this.observe(id, release);
-      if (proof !== 'down' && proof !== 'unknown' && await probeOwnedNodeReadiness(port, nonce)) {
+      if (proof !== 'down' && proof !== 'unknown' && (await probeOwnedNodeReadiness(port, nonce))) {
         const after = this.observe(id, release);
-        if (after !== 'down' && after !== 'unknown' &&
-          after.pid === proof.pid && after.ticks === proof.ticks) return proof;
+        if (
+          after !== 'down' &&
+          after !== 'unknown' &&
+          after.pid === proof.pid &&
+          after.ticks === proof.ticks
+        )
+          return proof;
       }
       await pause();
     }
@@ -523,19 +737,23 @@ export class NodeRunitHost {
   }
   private async halt(id: string, state: RuntimeRecord): Promise<void> {
     if (!state.activeRelease) {
-      if (this.unitState(id) !== 'down') throw new Error('Unattributed runit process: stop refused');
+      if (this.unitState(id) !== 'down')
+        throw new Error('Unattributed runit process: stop refused');
       return;
     }
     const process = this.observe(id, state.activeRelease);
-    if (process === 'unknown' || (process !== 'down' &&
-      (!state.process || state.process.pid !== process.pid ||
-        state.process.ticks !== process.ticks)))
+    if (
+      process === 'unknown' ||
+      (process !== 'down' &&
+        (!state.process ||
+          state.process.pid !== process.pid ||
+          state.process.ticks !== process.ticks))
+    )
       throw new Error('Unsafe runit owner identity: stop refused');
     const result = await this.admin.apply('stop', state.unit);
     if (result.result?.exit !== 0) throw new Error('Runit stop rejected');
     for (let i = 0; i < 40; i++) {
-      if (this.observe(id, state.activeRelease) === 'down' &&
-        await portFree(state.port)) return;
+      if (this.observe(id, state.activeRelease) === 'down' && (await portFree(state.port))) return;
       await pause();
     }
     throw new Error('Owned Node process stop not verified');
@@ -551,20 +769,32 @@ export class NodeRunitHost {
     mkdirSync(path.join(service, 'log'), { mode: 0o700 });
     mkdirSync(log, { mode: 0o700 });
     writeFileSync(path.join(service, 'down'), '', { flag: 'wx', mode: 0o600 });
-    writeFileSync(path.join(service, 'log', 'run'),
-      nodeLogRun(log), { flag: 'wx', mode: 0o700 });
+    writeFileSync(path.join(service, 'log', 'run'), nodeLogRun(log), { flag: 'wx', mode: 0o700 });
     const nonce = randomBytes(24).toString('hex');
     this.script(id, release, port, nonce);
-    const state: RuntimeRecord = { schema: 1, owner: 'pockethost-node-runit',
-      projectId: id, unit, port, desired: 'stopped', activeRelease: null,
-      lastGoodRelease: null, previousGoodRelease: null, process: null,
-      readinessNonce: nonce, history: [] };
+    const state: RuntimeRecord = {
+      schema: 1,
+      owner: 'pockethost-node-runit',
+      projectId: id,
+      unit,
+      port,
+      desired: 'stopped',
+      activeRelease: null,
+      lastGoodRelease: null,
+      previousGoodRelease: null,
+      process: null,
+      readinessNonce: nonce,
+      history: [],
+    };
     this.writeState(id, state);
     await this.admin.apply('register', unit);
     return state;
   }
   async deploy(
-    id: string, release: string, approved: boolean, rollback = false,
+    id: string,
+    release: string,
+    approved: boolean,
+    rollback = false,
   ): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned runtime approval required');
     if (!RELEASE.test(release)) throw new RangeError('Invalid Node release ID');
@@ -573,8 +803,11 @@ export class NodeRunitHost {
       if (!state?.previousGoodRelease || state.previousGoodRelease !== release)
         throw new Error('No verified prior good release for rollback');
       const dependencyPlan = this.projects.release(id, release).plan;
-      if (dependencyPlan.dependencyCount !== 0 || dependencyPlan.commands.build !== null ||
-        this.toolchain(dependencyPlan).status === 'blocked')
+      if (
+        dependencyPlan.dependencyCount !== 0 ||
+        dependencyPlan.commands.build !== null ||
+        this.toolchain(dependencyPlan).status === 'blocked'
+      )
         throw new Error('Rollback dependencies or Node toolchain unavailable');
     } else {
       const plan = this.preview(id);
@@ -618,7 +851,7 @@ export class NodeRunitHost {
         state = await this.initialize(id, port, release);
       }
       if (state.activeRelease) await this.halt(id, state);
-      else if (!await portFree(state.port)) throw new Error('Owned port not free');
+      else if (!(await portFree(state.port))) throw new Error('Owned port not free');
       await this.awaitSupervisor(id);
       if (this.unitState(id) !== 'down') {
         throw new Error('Unattributed runit process: deployment refused');
@@ -650,13 +883,14 @@ export class NodeRunitHost {
         // Do not signal an unknown process; retain evidence and refuse adoption.
         const observed = this.observe(id, release);
         if (observed !== 'down') {
-          if (observed === 'unknown') throw new Error('Failed start identity unknown; manual review required');
+          if (observed === 'unknown')
+            throw new Error('Failed start identity unknown; manual review required');
           const result = await this.admin.apply('stop', state.unit);
           if (result.result?.exit !== 0) throw new Error('Failed start cleanup refused');
         }
         if (prior) {
-          for (let n = 0; n < 40 && !await portFree(state.port); n++) await pause();
-          if (!await portFree(state.port)) throw new Error('Failed release still occupies port');
+          for (let n = 0; n < 40 && !(await portFree(state.port)); n++) await pause();
+          if (!(await portFree(state.port))) throw new Error('Failed release still occupies port');
           const restoreNonce = randomBytes(24).toString('hex');
           this.script(id, prior, state.port, restoreNonce);
           state.readinessNonce = restoreNonce;
@@ -723,44 +957,64 @@ export class NodeRunitHost {
     if (!state) return { state: 'not-provisioned', release: null, ready: null };
     const release = state.activeRelease;
     if (!release || state.desired !== 'running') {
-      return { state: this.unitState(id) === 'down' ? 'stopped' : 'unknown',
-        release, ready: null };
+      return { state: this.unitState(id) === 'down' ? 'stopped' : 'unknown', release, ready: null };
     }
     const before = this.observe(id, release);
     if (before === 'down') return { state: 'stopped', release, ready: null };
-    if (before === 'unknown' || !state.process ||
-        before.pid !== state.process.pid || before.ticks !== state.process.ticks) {
+    if (
+      before === 'unknown' ||
+      !state.process ||
+      before.pid !== state.process.pid ||
+      before.ticks !== state.process.ticks
+    ) {
       return { state: 'unknown', release, ready: null };
     }
     const ready = await probeOwnedNodeReadiness(state.port, state.readinessNonce);
     const current = this.record(id);
     const after = this.observe(id, release);
-    if (!current || current.activeRelease !== release ||
-        current.readinessNonce !== state.readinessNonce ||
-        current.desired !== 'running' || !current.process ||
-        current.process.pid !== before.pid || current.process.ticks !== before.ticks ||
-        after === 'down' || after === 'unknown' ||
-        after.pid !== before.pid || after.ticks !== before.ticks) {
+    if (
+      !current ||
+      current.activeRelease !== release ||
+      current.readinessNonce !== state.readinessNonce ||
+      current.desired !== 'running' ||
+      !current.process ||
+      current.process.pid !== before.pid ||
+      current.process.ticks !== before.ticks ||
+      after === 'down' ||
+      after === 'unknown' ||
+      after.pid !== before.pid ||
+      after.ticks !== before.ticks
+    ) {
       return { state: 'unknown', release, ready: null };
     }
     return { state: 'running', release, ready };
   }
   /** Source output remains private to direct-loopback admin sessions. */
   async previewLocalResponse(id: string): Promise<{
-    release: string; port: number; body: string;
+    release: string;
+    port: number;
+    body: string;
   }> {
     const state = this.record(id);
-    if (!state?.activeRelease || !state.process || state.desired !== 'running' ||
-        this.status(id).state !== 'running') {
+    if (
+      !state?.activeRelease ||
+      !state.process ||
+      state.desired !== 'running' ||
+      this.status(id).state !== 'running'
+    ) {
       throw new Error('No verified running Node release available for local preview');
     }
-    if (!await probeOwnedNodeReadiness(state.port, state.readinessNonce)) {
+    if (!(await probeOwnedNodeReadiness(state.port, state.readinessNonce))) {
       throw new Error('Owned Node readiness has not been verified');
     }
     const body = await readBoundedNodePreview(state.port);
     const after = this.observe(id, state.activeRelease);
-    if (after === 'down' || after === 'unknown' ||
-        after.pid !== state.process.pid || after.ticks !== state.process.ticks)
+    if (
+      after === 'down' ||
+      after === 'unknown' ||
+      after.pid !== state.process.pid ||
+      after.ticks !== state.process.ticks
+    )
       throw new Error('Node runtime identity changed during preview');
     return { release: state.activeRelease, port: state.port, body };
   }
@@ -773,7 +1027,9 @@ export class NodeRunitHost {
     const entries = this.projects.list().map((project) => {
       const status = this.status(project.id);
       return {
-        id: project.id, kind: project.kind, port: status.port,
+        id: project.id,
+        kind: project.kind,
+        port: status.port,
         registered: status.state !== 'not-provisioned',
       };
     });

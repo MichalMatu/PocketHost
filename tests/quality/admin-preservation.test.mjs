@@ -74,7 +74,7 @@ test('full 32-route upstream admin shell remains available beside twenty PocketH
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 16);
+  assert.equal(chunks.length, originalPaths.length + 17);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -112,8 +112,14 @@ test('M0 keeps observed external services in System, not the Hosting project cat
 test('PocketHost dashboard is home and upstream charts stay available under examples', () => {
   assert.match(routes, /path: "\/", element: <Navigate to="\/dashboard" replace \/>/);
   assert.match(routes, /path: "\/system", element: <Navigate to="\/dashboard" replace \/>/);
-  assert.match(routes, /path: "\/dashboard", lazy: page\(\(\) => import\("@\/app\/termux\/system-page"\)\)/);
-  assert.match(routes, /path: "\/examples\/dashboard", lazy: page\(\(\) => import\("@\/app\/dashboard\/page"\)\)/);
+  assert.match(
+    routes,
+    /path: "\/dashboard", lazy: page\(\(\) => import\("@\/app\/termux\/system-page"\)\)/,
+  );
+  assert.match(
+    routes,
+    /path: "\/examples\/dashboard", lazy: page\(\(\) => import\("@\/app\/dashboard\/page"\)\)/,
+  );
   assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
   assert.match(navigation, /title: "Framework dashboard", url: "\/examples\/dashboard"/);
 });

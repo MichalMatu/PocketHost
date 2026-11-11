@@ -118,9 +118,10 @@ export class ResticWorkspaceAdmin {
     // Relative source avoids inaccessible Android ancestor xattrs (/data/data).
     // Node backup uses the same bounded source/port lock as runtime actions.
     // Do not archive ephemeral locks into a future staging-only restore.
-    const exclusions = this.backupTag === 'pockethost-node'
-      ? ['--exclude', '**/.node-ports.lock', '--exclude', '**/.node-runtime.lock']
-      : [];
+    const exclusions =
+      this.backupTag === 'pockethost-node'
+        ? ['--exclude', '**/.node-ports.lock', '--exclude', '**/.node-runtime.lock']
+        : [];
     return this.restic(
       ['backup', '--tag', this.backupTag, ...exclusions, '--', path.basename(source)],
       run,

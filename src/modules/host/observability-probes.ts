@@ -254,7 +254,12 @@ export function readProcessInventory(
       } catch {
         // Android can restrict /proc/PID/status independently. Never infer a name from argv.
       }
-      processes.push({ ...stat, name, rssMiB: rss, ownership: pid === selfPid ? 'self' : 'unverified' });
+      processes.push({
+        ...stat,
+        name,
+        rssMiB: rss,
+        ownership: pid === selfPid ? 'self' : 'unverified',
+      });
     } catch (error) {
       if (reason(error) === 'permission-denied') denied = true;
     }

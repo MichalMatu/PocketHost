@@ -1,12 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createHostingRegistryStore } from '../../src/modules/host/hosting-registry-store.ts';
@@ -98,7 +92,10 @@ test('M1 restore refuses an absent registry, active lock and symlinked owned fil
       declarations: declarations(),
     };
     const digest = fingerprintHostingRegistrySnapshot(backup);
-    assert.throws(() => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest), /current owned/);
+    assert.throws(
+      () => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest),
+      /current owned/,
+    );
     const store = createHostingRegistryStore(root);
     store.save(declarations(19100), 0);
     store.save(declarations(19200), 1);
@@ -106,13 +103,19 @@ test('M1 restore refuses an absent registry, active lock and symlinked owned fil
     const original = readFileSync(target, 'utf8');
     const lock = path.join(root, '.hosting-declarations.lock');
     writeFileSync(lock, 'held', { mode: 0o600 });
-    assert.throws(() => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest), /EEXIST/);
+    assert.throws(
+      () => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest),
+      /EEXIST/,
+    );
     assert.equal(readFileSync(target, 'utf8'), original);
     rmSync(lock);
     const originalFile = path.join(root, 'kept-original.json');
     writeFileSync(originalFile, original, { mode: 0o600 });
     rmSync(target);
     symlinkSync(originalFile, target);
-    assert.throws(() => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest), /Unsafe registry file/);
+    assert.throws(
+      () => restoreHostingRegistryFromVerifiedBackup(root, backup, 2, digest),
+      /Unsafe registry file/,
+    );
     assert.equal(readFileSync(originalFile, 'utf8'), original);
   }));

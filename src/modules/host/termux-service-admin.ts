@@ -296,7 +296,14 @@ export class TermuxServiceAdmin {
       );
       return { changed: true, result };
     }
-    const command = operation === 'start' ? 'up' : operation === 'stop' ? 'down' : operation === 'once' ? 'once' : 'restart';
+    const command =
+      operation === 'start'
+        ? 'up'
+        : operation === 'stop'
+          ? 'down'
+          : operation === 'once'
+            ? 'once'
+            : 'restart';
     const result = await run(
       path.join(PREFIX, 'bin', 'sv'),
       [command, path.join(this.serviceRoot, name)],
