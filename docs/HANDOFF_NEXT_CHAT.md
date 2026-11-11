@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-09
+last_reviewed: 2026-11-11
 purpose: Compact, current PocketHost resumption contract; historical receipts stay in checkpoints and Git history
 ---
 
@@ -25,25 +25,23 @@ external-service catalog are implemented as source changes.
 M1 versioned declarations, one private host-owned registry store,
 ownership diagnostics, rollback planning and restore protections have
 focused negative tests. **This does not activate migrations, managed
-services, new process control or public routes.** M2 shared lifecycle
-and M3 disposable Node Hosting remain future work.
+services, new process control or public routes.** M2/M3 source candidates exist for owned lifecycle, staging and runit; disposable
+physical Node Hosting acceptance remains OPEN for the next chat.
 
-## Evidence snapshot, not a fresh PASS
+## Current evidence — scope-specific PASS
 
-Historical exact-SHA Samsung receipts include 196/196 Node tests in
-earlier M0 runs, 55/55 UI tests at 0f5291d7, and focused M1 negative
-tests at 9fb7db9, 22245f13 and 4fa08631. They certify only those
-revisions/scopes. The later 9b478177 focused docs/format task passed
-the Markdown gate but failed on one Prettier warning in
-tests/quality/hosting-registry-restore.test.mjs. Read its actual
-terminal result before scheduling more work.
+On 2026-11-11, Samsung `npm run check:all` completed **G2 PASS**
+on source `bba2d625269fed249aa88d4e180450ec0e071459`:
+282/282 Node tests and 111/111 admin UI tests. The same task
+owner-verified and refreshed **only PocketHost DEV panel** from
+`504df7a` to `bba2d62`; protected external services were unchanged.
+First loopback route sweep passed 12/13; `/terminal` required a
+read-only follow-up. **Do not infer physical G3 PASS.**
 
-The 2026-11-09 documentation/performance commits **685daea and later**
-have no confirmed exact-SHA Samsung acceptance in this handoff.
-Final current-source G1/G2 and physical G3 therefore remain **OPEN**.
-Earlier PocketHost-only panel runit/LAN acceptance is historical, not
-proof that today's main is installed. Do not infer task completion
-from publication, cached notes or a commit.
+See the [2026-11-11 exact-SHA closeout and Hosting handoff](
+checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md) for task ID,
+acceptance scope and remaining follow-up. A later docs-only commit does not
+change the tested app source or re-certify a new source SHA.
 
 ## First actions
 

@@ -9,6 +9,10 @@ purpose: Index historical evidence without overloading the active documentation 
 
 These dated files are historical **exact-SHA evidence**, not instructions to rerun tests. Start with [Minimal Context](../START_HERE.md) and open **only the relevant checkpoint**. Keep old receipts here rather than copying entire status logs into active handoff/roadmap/quality documents.
 
+## 2026-11-11
+
+- [System UX G2 closeout and Hosting handoff](2026-11-11-system-ux-closeout-hosting-handoff.md)
+
 ## 2026-11-10
 
 - [Monitoring closeout and universal static Hosting handoff](2026-11-10-monitoring-to-universal-static-hosting.md)
