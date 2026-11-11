@@ -11,7 +11,6 @@ export const navGroups = [
     items: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
       { title: "Monitoring", url: "/observability", icon: Activity },
-      { title: "Observed host inventory", url: "/host", icon: ServerCog },
       { title: "Android & Shizuku", url: "/shizuku", icon: Smartphone },
       { title: "Phone Settings", url: "/phone-settings", icon: Settings },
       { title: "Packages & Software", url: "/packages", icon: Package },
@@ -24,6 +23,7 @@ export const navGroups = [
   {
     label: "Hosting",
     items: [
+      { title: "Observed host inventory", url: "/host", icon: ServerCog },
       { title: "Websites", url: "/sites", icon: Globe2 },
       { title: "Projects", url: "/projects", icon: FolderOpen },
       { title: "Deployments", url: "/deployments", icon: History },
