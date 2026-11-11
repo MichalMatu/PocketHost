@@ -222,7 +222,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
           {crumbs.length ? <button type="button" disabled={busy}
             className="hover:text-foreground underline-offset-4 hover:underline disabled:opacity-50"
             onClick={() => void load(root, "")}>{locationLabels[root]}</button> :
-            <BreadcrumbPage>{locationLabels[root]}</BreadcrumbPage>
+            <BreadcrumbPage>{locationLabels[root]}</BreadcrumbPage>}
         </BreadcrumbItem>
         {crumbs.map((part, index) => <React.Fragment key={index}>
           <BreadcrumbSeparator />
