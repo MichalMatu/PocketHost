@@ -1,7 +1,6 @@
 import * as React from "react"
 import { Activity, Battery, Clock3, Cpu, HardDrive, RefreshCw, ServerCog, Wifi } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
-import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -331,12 +330,9 @@ export default function SystemPage() {
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">DEV · Private LAN</Badge>
-            <Badge variant="outline" className="min-w-36 justify-center">{host ? "Termux online" : "Termux unavailable"}</Badge>
-            <span className="text-muted-foreground min-w-40 text-xs tabular-nums" aria-live="polite">
-              {sampledAt ? "Checked " + clock(sampledAt) : "Checking live sources"}
-            </span>
-            <span className="text-muted-foreground text-xs" aria-live="polite">{collectorLabel}</span>
+            <Badge variant="outline">{host ? "Termux online" : "Termux unavailable"}</Badge>
+            <Badge variant="outline">{collectorLabel}</Badge>
+            {sampledAt && <Badge variant="outline">Checked {clock(sampledAt)}</Badge>}
           </div>
           <Button variant="outline" size="sm" onClick={() => setGeneration(value => value + 1)}>
             <RefreshCw className="size-4" />Refresh
@@ -604,11 +600,6 @@ export default function SystemPage() {
           </Card>
         </div>
 
-        <p className="text-muted-foreground text-xs">
-          Read-only device observations. For details open <Link to="/observability" className="underline">Termux monitoring</Link>
-          {" or "}<Link to="/shizuku" className="underline">Android & Shizuku</Link>.
-          Unavailable sources and gaps are shown explicitly; detailed diagnostics remain in their respective sections.
-        </p>
       </div>
     </BaseLayout>
   )
