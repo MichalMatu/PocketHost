@@ -8,6 +8,8 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const routes = readFileSync(path.join(root, 'apps/admin/src/config/routes.tsx'), 'utf8');
 const html = readFileSync(path.join(root, 'apps/admin/index.html'), 'utf8');
 const navigation = readFileSync(path.join(root, 'apps/admin/src/config/navigation.ts'), 'utf8');
+const viteConfig = readFileSync(path.join(root, 'apps/admin/vite.config.ts'), 'utf8');
+const terminalPanel = readFileSync(path.join(root, 'apps/admin/src/app/termux/terminal-panel.tsx'), 'utf8');
 
 const originalPaths = [
   '/',
@@ -122,4 +124,11 @@ test('PocketHost dashboard is home and upstream charts stay available under exam
   );
   assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
   assert.match(navigation, /title: "Framework dashboard", url: "\/examples\/dashboard"/);
+});
+
+test('terminal React route does not get shadowed by ttyd reverse proxy', () => {
+  assert.match(routes, /path: "\/terminal", lazy:/);
+  assert.match(viteConfig, /"\/terminal\/"\s*:\s*\{\s*target: "http:\/\/127\.0\.0\.1:18798"/);
+  assert.doesNotMatch(viteConfig, /"\/terminal"\s*:/);
+  assert.match(terminalPanel, /src="\/terminal\/" /);
 });

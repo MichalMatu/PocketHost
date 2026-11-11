@@ -1517,7 +1517,8 @@ export default defineConfig({
     port: 8787,
     strictPort: true,
     proxy: {
-      "/terminal": { target: "http://127.0.0.1:18798", changeOrigin: true, ws: true },
+      // Keep /terminal as a React page; proxy only ttyd iframe/WebSocket subpaths.
+      "/terminal/": { target: "http://127.0.0.1:18798", changeOrigin: true, ws: true },
     },
   },
   resolve: {
