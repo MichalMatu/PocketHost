@@ -101,3 +101,18 @@ it("missing optional demo logs is a neutral empty state with a monitoring link",
   expect(screen.queryByText("PocketHost Demo")).toBeNull()
   expect(screen.queryByRole("alert")).toBeNull()
 })
+
+it("treats a missing optional demo deployment as inactive rather than broken", async () => {
+  const requests = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects" || url === "/api/v1/owned-site/project")
+      return { ok: false, status: 404 }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
+  await screen.findByText("Optional demo deployment history is not configured.")
+  expect(screen.queryByRole("alert")).toBeNull()
+  expect(screen.queryByRole("link", { name: "Open demo release" })).toBeNull()
+  expect(requests.mock.calls.some(([input]) => String(input).startsWith("/api/v1/node-projects/"))).toBe(false)
+})
