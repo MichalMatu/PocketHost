@@ -128,9 +128,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
 
           {section === "files" && <section className="space-y-4">
             <Card>
-              <CardHeader>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 <TermuxFileExplorer />
               </CardContent>
             </Card>
