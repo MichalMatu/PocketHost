@@ -55,7 +55,10 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("Monitoring screen: diagnostic-only scope", () => {
   it("shows one process table, source states and events but no Dashboard summary clones", async () => {
-    const fetchMock = vi.fn(async (_url: string) => ({ ok: true, json: async () => sample() }))
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url !== "/api/v1/observability?scope=monitoring") throw new Error("Unexpected route")
+      return { ok: true, json: async () => sample() }
+    })
     vi.stubGlobal("fetch", fetchMock)
     render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
     expect(await screen.findByText("Process diagnostics")).toBeTruthy()
