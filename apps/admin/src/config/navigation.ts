@@ -15,7 +15,7 @@ export const navGroups = [
       { title: "Phone Settings", url: "/phone-settings", icon: Settings },
       { title: "Packages & Software", url: "/packages", icon: Package },
       { title: "File Manager", url: "/files", icon: FolderOpen },
-      { title: "Services & Processes", url: "/services", icon: ServerCog },
+      { title: "Services", url: "/services", icon: ServerCog },
       { title: "Terminal", url: "/terminal", icon: Terminal },
       { title: "Backups & Recovery", url: "/backups", icon: Archive },
     ],

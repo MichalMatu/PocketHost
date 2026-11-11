@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
@@ -38,6 +38,24 @@ describe("H3.4 full Termux administration", () => {
       action: "full-file", name: "save", root: "home", path: "new.md", content: "Hello Termux",
     })
   })
+  it("keeps the current directory when Refresh reloads file inventory", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (url: string) => url.includes("file-roots")
+      ? { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      : { ok: true, json: async () => ({
+        path: "", entries: [{ name: "note.md", kind: "file", bytes: 8 }], truncated: false,
+      }) })
+    vi.stubGlobal("fetch", calls)
+    const view = render(<TermuxFileExplorer />)
+    await screen.findByText(/note.md \(8 B\)/)
+    await user.click(screen.getByRole("button", { name: "Workspace" }))
+    await waitFor(() => expect(calls.mock.calls.filter(call =>
+      call[0].includes("Projects%2FPocketHost-H3-Workspace"))).toHaveLength(1))
+    view.rerender(<TermuxFileExplorer refreshToken={1} />)
+    await waitFor(() => expect(calls.mock.calls.filter(call =>
+      call[0].includes("Projects%2FPocketHost-H3-Workspace"))).toHaveLength(2))
+  })
+
   it("clears stale editor text when switching the file path", async () => {
     const user = userEvent.setup()
     const posts: Record<string, unknown>[] = []

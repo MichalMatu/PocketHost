@@ -1,7 +1,7 @@
 import * as React from "react"
 import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { parseH3Files, parseH3Tools } from "@/lib/termux-center-schema"
 import { navGroups } from "@/config/navigation"
@@ -117,6 +117,15 @@ describe("H3 strict read-only contracts", () => {
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
 
+  it("Refresh reloads the full Termux package inventory", async () => {
+    const user = userEvent.setup()
+    const calls = mount("packages")
+    await screen.findByRole("button", { name: "curl" })
+    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await waitFor(() => expect(calls.mock.calls.filter(call =>
+      String(call[0]).includes("mode=packages"))).toHaveLength(2))
+  })
+
   it("keeps one compact LAN warning linked to full network safety guidance", async () => {
     mount("packages")
     await screen.findByText("curl")
@@ -150,7 +159,7 @@ describe("H3 strict read-only contracts", () => {
   it("keeps foreign runit observations separate from Hosting site controls", async () => {
     const calls = mount("services")
     await screen.findByText("ilestoi")
-    expect(screen.getAllByText("External inventory · read-only")).toHaveLength(1)
+    expect(screen.getAllByText(/Observed external services · read-only/)).toHaveLength(1)
     expect(screen.queryByText("Manage owned services")).toBeNull()
     expect(screen.queryByText(/PocketHost-owned websites are managed/)).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)

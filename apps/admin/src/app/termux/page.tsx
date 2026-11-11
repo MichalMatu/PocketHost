@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { Archive, Boxes, RefreshCw, ServerCog, ShieldCheck } from "lucide-react"
+import { Archive, Boxes, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -31,7 +31,7 @@ export type TermuxSection = "packages" | "files" | "services" | "backups" | "ter
 const sectionTitles: Record<TermuxSection, string> = {
   packages: "Packages & Software",
   files: "File Manager",
-  services: "Services & Processes",
+  services: "Services",
   backups: "Backups & Recovery",
   terminal: "Terminal",
   agents: "Agents & API",
@@ -42,7 +42,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const [tools, setTools] = React.useState<H3Tools | null>(null)
   const [reading, setReading] = React.useState(false)
   const [errors, setErrors] = React.useState({ snapshot: false, tools: false })
-  const [packageRefreshToken, setPackageRefreshToken] = React.useState(0)
+  const [sectionRefreshToken, setSectionRefreshToken] = React.useState(0)
 
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setReading(true)
@@ -85,7 +85,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               <Badge variant="outline">LAN only · no login</Badge>
             </Link>
           </div>
-          <Button variant="outline" onClick={() => { if (section === "packages") setPackageRefreshToken(value => value + 1); void refresh() }} disabled={reading}>
+          <Button variant="outline" onClick={() => { setSectionRefreshToken(value => value + 1); void refresh() }} disabled={reading}>
             <RefreshCw className={reading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
@@ -96,7 +96,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               <CardHeader><CardTitle>Installed software</CardTitle></CardHeader>
               <CardContent>
                 <PackageManager summary={snapshot?.packages} summaryError={errors.snapshot}
-                  refreshToken={packageRefreshToken} onChanged={() => void refresh()} />
+                  refreshToken={sectionRefreshToken} onChanged={() => void refresh()} />
               </CardContent>
             </Card>
           </section>}
@@ -104,27 +104,27 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           {section === "files" && <section className="space-y-4">
             <Card>
               <CardContent className="space-y-4 pt-4">
-                <TermuxFileExplorer />
+                <TermuxFileExplorer refreshToken={sectionRefreshToken} />
               </CardContent>
             </Card>
           </section>}
 
-          {section === "services" && <section className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><ServerCog className="size-5" /> Termux services</CardTitle>
-                <Badge variant="outline">External inventory · read-only</Badge>
-              </CardHeader>
-              <CardContent className="space-y-3">
+          {section === "services" && <section className="space-y-3">
+            <RunitServiceActions refreshToken={sectionRefreshToken} />
+            <details className="rounded-md border p-3">
+              <summary className="cursor-pointer text-sm font-medium">
+                Observed external services · read-only
+                {snapshot && " (" + snapshot.host.services.length + ")"}
+              </summary>
+              <div className="mt-3 space-y-2">
                 {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
                 {snapshot?.host.services.map(service => <div key={service.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-2">
-                  <span className="text-sm font-medium">{service.label}</span>
+                  <span className="text-sm">{service.label}</span>
                   <State value={service.state} />
                 </div>)}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
-                <RunitServiceActions />
-              </CardContent>
-            </Card>
+              </div>
+            </details>
           </section>}
 
           {section === "backups" && <section className="space-y-4">
@@ -140,9 +140,9 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 <GuardNotice>
                   Releases are not data backups. <a href="/sites" className="underline underline-offset-4">Website versions</a> remain separate.
                 </GuardNotice>
-                <WorkspaceBackupActions />
-                <ResticActions detected={restic?.state === "detected"} />
-                <FullTermuxBackups detected={restic?.state === "detected"} />
+                <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
+                <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
+                <FullTermuxBackups detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
                 <p className="text-sm font-medium">Optional integrations</p>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
@@ -150,10 +150,10 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             </Card>
           </section>}
           {section === "terminal" && <section className="space-y-4">
-            <TermuxTerminalPanel detected={tools?.tools.some(item => item.id === "ttyd" && item.state === "detected") ?? false} />
+            <TermuxTerminalPanel detected={tools?.tools.some(item => item.id === "ttyd" && item.state === "detected") ?? false} refreshToken={sectionRefreshToken} />
           </section>}
           {section === "agents" && <section className="space-y-4">
-            <AgentApiPanel />
+            <AgentApiPanel refreshToken={sectionRefreshToken} />
           </section>}
         </div>
       </div>

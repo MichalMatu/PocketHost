@@ -22,7 +22,7 @@ async function command(name: "start" | "stop"): Promise<Status> {
   const result = await response.json() as { terminal: Status }
   return result.terminal
 }
-export function TermuxTerminalPanel({ detected = true }: { detected?: boolean }) {
+export function TermuxTerminalPanel({ detected = true, refreshToken = 0 }: { detected?: boolean; refreshToken?: number }) {
   const [status, setStatus] = React.useState<Status | null>(null)
   const [error, setError] = React.useState("")
   const [busy, setBusy] = React.useState(false)
@@ -32,7 +32,7 @@ export function TermuxTerminalPanel({ detected = true }: { detected?: boolean })
     void read().then(result => { if (mounted) setStatus(result) })
       .catch(() => { if (mounted) setError("Terminal status unavailable.") })
     return () => { mounted = false }
-  }, [])
+  }, [refreshToken])
   const run = async (name: "start" | "stop") => {
     if (busy || !detected || !window.confirm(name === "start"
       ? "Open an interactive Termux shell for this trusted LAN session? Commands have your Termux user's permissions."
@@ -43,29 +43,26 @@ export function TermuxTerminalPanel({ detected = true }: { detected?: boolean })
       const state = await command(name)
       setStatus(state)
       setVisible(name === "start" && state.running)
-    } catch { setError("Terminal could not start or stop. Check ttyd installation and port ownership.") }
+    } catch {
+      setError("Terminal result unconfirmed. Verify session status before retrying.")
+      void read().then(setStatus).catch(() => undefined)
+    }
     finally { setBusy(false) }
   }
   return <section className="space-y-4 rounded-md border p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-medium">Interactive Termux terminal</h3>
-      <Badge variant="outline">{status?.running ? "Session active" : "Stopped"}</Badge>
+      <Badge variant="outline">{status ? status.running ? "Session active" : "Stopped" : "Status unknown"}</Badge>
     </div>
-    <p className="text-sm text-muted-foreground">
-      Uses the installed ttyd and its xterm.js UI. Exactly one writable shell session,
-      launched manually on 127.0.0.1, through the existing private LAN gateway.
-      No password prompt, persistent service or public listener.
-    </p>
+    <p className="text-xs text-muted-foreground">Interactive Termux shell · private LAN only.</p>
     {!detected && <p className="text-sm">ttyd is not installed. Install it in Packages before opening the terminal.</p>}
     <div className="flex flex-wrap gap-2">
-      <Button disabled={!detected || busy || status?.running === true} onClick={() => void run("start")}>Start terminal</Button>
+      <Button disabled={!detected || busy || !status || status.running} onClick={() => void run("start")}>Start terminal</Button>
       <Button variant="outline" disabled={busy || !status?.running} onClick={() => void run("stop")}>Stop terminal</Button>
       <Button variant="outline" disabled={busy || !status?.running} onClick={() => setVisible(prev => !prev)}>
         {visible ? "Hide terminal" : "Show terminal"}
       </Button>
-      <Button variant="outline" disabled={busy} onClick={() => void read().then(setStatus).catch(() => setError("Status unavailable"))}>
-        Refresh
-      </Button>
+
     </div>
     {visible && status?.running && <iframe
       title="PocketHost interactive Termux shell" src="/terminal/" loading="eager"

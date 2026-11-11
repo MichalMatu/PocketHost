@@ -17,7 +17,7 @@ async function post<T>(input: object): Promise<T> {
   if (!response.ok) throw new Error("Restic command failed or was refused")
   return response.json() as Promise<T>
 }
-export function FullTermuxBackups({ detected }: { detected: boolean }) {
+export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: boolean; refreshToken?: number }) {
   const [scope, setScope] = React.useState<Scope>("home")
   const [status, setStatus] = React.useState<ResticState | null>(null)
   const [records, setRecords] = React.useState<Snapshot[] | null>(null)
@@ -51,24 +51,26 @@ export function FullTermuxBackups({ detected }: { detected: boolean }) {
       setMessage(name === "restore" && result.result?.restoredTo
         ? "Restored into: " + result.result.restoredTo
         : "Restic " + name + " completed")
-    } catch { setError("Backup operation failed. Check Restic installation, free storage and repository state.") }
+    } catch { setError("Backup result unconfirmed. Verify snapshots before retrying.") }
     finally { setBusy(false) }
   }
   React.useEffect(() => {
     if (!detected) return
     let active = true
-    void get<{ restic: ResticState }>("?mode=restic-status").then(result => {
-      if (active) setStatus(result.restic)
-    }).catch(() => { if (active) setError("Restic state unavailable") })
+    void get<{ restic: ResticState }>("?mode=restic-status").then(async result => {
+      if (!active) return
+      setStatus(result.restic)
+      if (!result.restic.initialized) { setRecords([]); return }
+      const listing = await get<{ snapshots: Snapshot[] }>("?mode=system-snapshots&scope=" + scope)
+      if (!Array.isArray(listing.snapshots) || listing.snapshots.length > 40 ||
+        !listing.snapshots.every(item => /^[a-f0-9]{64}$/.test(item.id))) throw new Error("Invalid backup records")
+      if (active) setRecords(listing.snapshots)
+    }).catch(() => { if (active) setError("Restic inventory unavailable. Last results retained.") })
     return () => { active = false }
-  }, [detected])
+  }, [detected, refreshToken, scope])
   return <section className="space-y-3 rounded-md border p-3">
     <h3 className="text-sm font-medium">Full Termux backups with Restic</h3>
-    <p className="text-xs text-muted-foreground">
-      Encrypted local snapshots of HOME, Termux programs (PREFIX), or both.
-      The Restic repository and its local encryption key are excluded from the backup.
-      Restores go into staging, never over running applications.
-    </p>
+    <p className="text-xs text-muted-foreground">Local encrypted backups · key excluded · restores go to staging.</p>
     <div className="flex flex-wrap items-center gap-2">
       <label htmlFor="h34-restic-scope" className="text-sm">Backup scope</label>
       <select id="h34-restic-scope" aria-label="Termux backup scope" value={scope}
@@ -84,8 +86,7 @@ export function FullTermuxBackups({ detected }: { detected: boolean }) {
       <Button size="sm" disabled={busy || !detected} onClick={() => void run("backup")}>Create full backup</Button>
       <Button size="sm" variant="outline" disabled={busy || !detected || !status?.initialized}
         onClick={() => void run("check")}>Verify repository</Button>
-      <Button size="sm" variant="outline" disabled={busy || !detected}
-        onClick={() => void refresh(scope).catch(() => setError("Cannot load backup list"))}>List snapshots</Button>
+
     </div>
     {!detected && <p className="text-sm">Restic not detected. Install it using Packages.</p>}
     <div className="max-h-64 space-y-2 overflow-auto">

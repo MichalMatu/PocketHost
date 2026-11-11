@@ -28,9 +28,10 @@ async function operate<T>(payload: Record<string, unknown>): Promise<T> {
   if (!response.ok) throw new Error("Filesystem operation refused")
   return response.json() as Promise<T>
 }
-export function TermuxFileExplorer() {
+export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number }) {
   const [root, setRoot] = React.useState<Root>("home")
   const [folder, setFolder] = React.useState("")
+  const currentLocation = React.useRef<{ root: Root; folder: string }>({ root: "home", folder: "" })
   const [available, setAvailable] = React.useState<{ id: Root; available: boolean }[] | null>(null)
   const [listing, setListing] = React.useState<Listing | null>(null)
   const [target, setTarget] = React.useState("")
@@ -51,6 +52,7 @@ export function TermuxFileExplorer() {
     setBusy(true); setError("")
     try {
       const data = await browse(selected, relative)
+      currentLocation.current = { root: selected, folder: relative }
       setRoot(selected); setFolder(relative); setListing(data)
       setEditing(false); setTarget(""); setContent(""); setDestination(""); setNotice("")
     } catch (e) { setError(e instanceof Error ? e.message : "Browsing failed") }
@@ -58,15 +60,20 @@ export function TermuxFileExplorer() {
   }, [])
   React.useEffect(() => {
     let active = true
+    const location = currentLocation.current
     void Promise.all([
-      fetch(api + "?mode=file-roots", { credentials: "same-origin" }).then(res => res.json()) as Promise<{ roots: { id: Root; available: boolean }[] }>,
-      browse("home", ""),
-    ]).then(([roots, files]) => {
-      if (!active) return
-      setAvailable(roots.roots); setListing(files)
-    }).catch(() => { if (active) setError("Full Termux file manager unavailable") })
+      fetch(api + "?mode=file-roots", { credentials: "same-origin" }).then(res => {
+        if (!res.ok) throw new Error("Filesystem roots unavailable")
+        return res.json() as Promise<{ roots: { id: Root; available: boolean }[] }>
+      }),
+      browse(location.root, location.folder),
+    ]).then(([roots, data]) => {
+      if (!active || currentLocation.current.root !== location.root ||
+        currentLocation.current.folder !== location.folder) return
+      setAvailable(roots.roots); setListing(data); setError("")
+    }).catch(() => { if (active) setError("File inventory unavailable. Last listing retained.") })
     return () => { active = false }
-  }, [])
+  }, [refreshToken])
   const read = async (name: string) => {
     setBusy(true); setError("")
     try {
@@ -89,7 +96,10 @@ export function TermuxFileExplorer() {
         content: operation === "save" ? content : undefined })
       setNotice(operation + " completed")
       setListing(await browse(root, folder))
-    } catch { setError(operation + " failed. The file may be protected, linked or unavailable.") }
+    } catch {
+      setError(operation + " result unconfirmed. Refresh the directory before retrying.")
+      void browse(root, folder).then(setListing).catch(() => undefined)
+    }
     finally { setBusy(false) }
   }
   const upload = async (file: File | undefined) => {
@@ -125,11 +135,8 @@ export function TermuxFileExplorer() {
     finally { setBusy(false) }
   }
   return <section className="space-y-3 rounded-md border p-3">
-    <h3 className="font-medium">Full Termux file manager</h3>
-    <p className="text-xs text-muted-foreground">
-      Manage Termux-owned HOME, PREFIX or Android shared files. No password required.
-      Symbolic links are listed but never followed; deleting directories requires empty contents.
-    </p>
+    <h3 className="font-medium">Files</h3>
+    <p className="text-xs text-muted-foreground">Symlinks are never followed. Deletion is permanent.</p>
     <div className="flex flex-wrap items-center gap-2">
       <label htmlFor="h34-root" className="text-sm">Filesystem</label>
       <select id="h34-root" aria-label="Filesystem root" className="rounded border bg-background p-2"
@@ -142,7 +149,7 @@ export function TermuxFileExplorer() {
         onClick={() => void load("home", "Projects/PocketHost-H3-Workspace")}>Workspace</Button>
       <Button size="sm" variant="outline" disabled={busy || !folder} onClick={() =>
         void load(root, folder.split("/").slice(0, -1).join("/"))}>Up</Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void load(root, folder)}>Refresh</Button>
+
     </div>
     <div className="max-h-72 overflow-auto rounded border">
       {listing?.entries.map(item => <div className="flex items-center justify-between gap-2 border-b p-2 text-xs"

@@ -456,7 +456,7 @@ export function WorkspaceManager() {
   </div>
 }
 
-export function WorkspaceBackupActions() {
+export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: number }) {
   const [items, setItems] = React.useState<SnapshotInfo[] | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -471,7 +471,7 @@ export function WorkspaceBackupActions() {
       if (active) setItems(response.snapshots)
     }).catch(() => { if (active) setError("Backup inventory unavailable") })
     return () => { active = false }
-  }, [])
+  }, [refreshToken])
   const run = async (name: "create" | "restore" | "delete" | "verify", snapshot?: string) => {
     if (busy || (name !== "verify" && !window.confirm(name === "restore"
       ? "Restore snapshot " + snapshot + "? The current workspace will be preserved in a sidecar."
@@ -485,14 +485,13 @@ export function WorkspaceBackupActions() {
       setDone(name === "verify" && response.verification
         ? "Snapshot integrity: " + response.verification.state + " (" + response.verification.files + " files)"
         : "Workspace snapshot " + name + " completed")
-    } catch { setError("Workspace snapshot operation failed safely.") }
+    } catch { setError("Snapshot result unconfirmed. Inspect snapshots before retrying.") }
     finally { setBusy(false) }
   }
   return <div className="space-y-3 rounded-md border p-3">
     <h3 className="text-sm font-medium">Workspace snapshots</h3>
     <Button disabled={busy} size="sm" onClick={() => void run("create")}>Create snapshot</Button>
-    <Button disabled={busy} size="sm" variant="outline"
-      onClick={() => void load().catch(() => setError("Backup inventory unavailable"))}>Refresh snapshots</Button>
+
     {items?.map(item => <div key={item.name} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 text-xs">
       <span>{item.createdAt.slice(0, 19).replace("T", " ")} · {item.files} files</span>
       <div className="flex gap-2">
@@ -512,7 +511,7 @@ export function WorkspaceBackupActions() {
 
 type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown"; enabled?: boolean | null }
 
-export function RunitServiceActions() {
+export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: number }) {
   const [services, setServices] = React.useState<RunitEntry[] | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -533,7 +532,7 @@ export function RunitServiceActions() {
       if (active) setServices(result.services)
     }).catch(() => { if (active) setError("Runit services unavailable") })
     return () => { active = false }
-  }, [])
+  }, [refreshToken])
   const readServiceLogs = async (service: RunitEntry) => {
     setBusy(true); setError(null)
     try {
@@ -563,13 +562,8 @@ export function RunitServiceActions() {
   return <div className="space-y-3 rounded-md border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Runit services</h3>
-      <Button size="sm" variant="outline" disabled={busy}
-        onClick={() => void refresh().catch(() => setError("Runit inventory unavailable"))}>Refresh runit</Button>
     </div>
-    <p className="text-muted-foreground text-xs">
-      Existing services are only observed until you explicitly register them.
-      Protected system services are never available for registration or mutation.
-    </p>
+    <p className="text-muted-foreground text-xs">Protected services are read-only. Register to enable lifecycle controls.</p>
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
@@ -605,7 +599,7 @@ export function RunitServiceActions() {
 type ResticStatus = { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean }
 type ResticSnapshot = { id: string; time: string; paths: string[] }
 
-export function ResticActions({ detected }: { detected: boolean }) {
+export function ResticActions({ detected, refreshToken = 0 }: { detected: boolean; refreshToken?: number }) {
   const [status, setStatus] = React.useState<ResticStatus | null>(null)
   const [snapshots, setSnapshots] = React.useState<ResticSnapshot[] | null>(null)
   const [busy, setBusy] = React.useState(false)
@@ -634,7 +628,7 @@ export function ResticActions({ detected }: { detected: boolean }) {
       } else setSnapshots([])
     }).catch(() => { if (active) setError("Restic state cannot be inspected.") })
     return () => { active = false }
-  }, [detected])
+  }, [detected, refreshToken])
   const run = async (operation: "init" | "backup" | "check" | "restore" | "forget", snapshot?: string) => {
     if (busy || !detected) return
     const question = operation === "backup" ? "Back up the H3 workspace into the local encrypted Restic repository?" :
@@ -658,17 +652,12 @@ export function ResticActions({ detected }: { detected: boolean }) {
   }
   return <div className="space-y-3 rounded-md border p-3">
     <h3 className="text-sm font-medium">Encrypted Restic backups</h3>
-    <p className="text-muted-foreground text-xs">
-      Native Restic stores H3 workspace snapshots in its own encrypted local repository.
-      The recovery key is generated once and stored privately on Termux;
-      keep a separate secure copy for recovery after device loss.
-    </p>
+    <p className="text-muted-foreground text-xs">Workspace only · encrypted locally. Store a separate recovery-key copy.</p>
     {!detected && <p className="text-muted-foreground text-sm">Restic executable not detected. Install restic from Packages to use this integration.</p>}
     {detected && <>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline">{status?.initialized ? "Repository initialized" : "Repository not initialized"}</Badge>
-        <Button size="sm" variant="outline" disabled={busy}
-          onClick={() => void refresh().catch(() => setError("Restic refresh failed"))}>Refresh Restic</Button>
+
       </div>
       <div className="flex flex-wrap gap-2">
         <Button size="sm" disabled={busy || status?.initialized === true}
@@ -696,8 +685,6 @@ export function ResticActions({ detected }: { detected: boolean }) {
     </>}
     {busy && <p role="status">Running the selected Restic command…</p>}
     <Feedback error={error} done={done} />
-    <p className="text-muted-foreground text-xs">
-      Restic restores to isolated staging, not over active services. This is a local backup until an off-device destination is configured.
-    </p>
+    <p className="text-muted-foreground text-xs">Restore uses isolated staging; not an off-device backup.</p>
   </div>
 }

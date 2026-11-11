@@ -12,7 +12,7 @@ const example = [
   "  --data '{\"action\":\"package-preview\",\"name\":\"install\",\"path\":\"git\"}'",
 ].join("\n")
 
-export function AgentApiPanel() {
+export function AgentApiPanel({ refreshToken = 0 }: { refreshToken?: number }) {
   const [capabilities, setCapabilities] = React.useState<Capabilities | null>(null)
   const [error, setError] = React.useState("")
   const [copied, setCopied] = React.useState(false)
@@ -29,14 +29,10 @@ export function AgentApiPanel() {
       setCapabilities(value)
     }).catch(() => { if (mounted) setError("Agent API contract unavailable.") })
     return () => { mounted = false }
-  }, [])
+  }, [refreshToken])
   return <section className="space-y-4 rounded-md border p-4">
     <h3 className="font-medium">Local Agent & AI control API</h3>
-    <p className="text-sm text-muted-foreground">
-      PocketHost now exposes its existing typed administrative operations to the
-      Termux Local Agent OS account over loopback HTTP, without a login prerequisite.
-      This is an API adapter, not a second AI execution engine or a new Local Agent daemon.
-    </p>
+    <p className="text-xs text-muted-foreground">Typed administrative API · Termux loopback only.</p>
     {capabilities && <div className="space-y-2">
       <p className="text-sm">API version: {capabilities.version} · Transport: {capabilities.transport}</p>
       <p className="text-sm">Registered actions: {capabilities.actions.join(", ")}</p>
@@ -46,11 +42,7 @@ export function AgentApiPanel() {
     <Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(example).then(
       () => setCopied(true), () => setError("Clipboard unavailable"),
     )}>{copied ? "Copied" : "Copy example"}</Button>
-    <p className="text-xs text-muted-foreground">
-      The existing Local Agent Git task transport is unchanged. The agent can call this
-      local endpoint via an authorized host task while PocketHost is running.
-      No public bind, no automatic startup and no GitHub credentials exposed.
-    </p>
+
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </section>
 }
