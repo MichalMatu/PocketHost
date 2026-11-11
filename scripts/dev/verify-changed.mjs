@@ -61,9 +61,8 @@ function emit(report, code) {
 
 function tail(output) {
   // Compact terminal evidence; never print full command output.
-  return String(output ?? '')
-    .replace(/\x1b\[[0-9;]*m/g, '')
-    .slice(-1800);
+  const ansi = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
+  return String(output ?? '').replace(ansi, '').slice(-1800);
 }
 
 if (!optionsValid) {
@@ -151,17 +150,14 @@ if (!optionsValid) {
           path.join(root, check.cwd),
         );
         const ok = !output.error && output.status === 0;
+        const diagnosticOutput = [output.stdout, output.stderr, output.error?.message]
+          .filter(Boolean)
+          .join('\n');
         return {
           ok,
           code: output.status,
           elapsedMs: Date.now() - began,
-          ...(ok
-            ? {}
-            : {
-                error: tail(
-                  output.stderr || output.stdout || output.error?.message || 'Command failed',
-                ),
-              }),
+          ...(ok ? {} : { error: tail(diagnosticOutput || 'Command failed') }),
         };
       });
       emit(
