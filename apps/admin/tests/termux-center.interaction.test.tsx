@@ -92,10 +92,14 @@ describe("H3 strict read-only contracts", () => {
   })
   it("promotes six real Termux routes and preserves upstream examples", () => {
     const mainItems = navGroups.flatMap(group => group.items)
-    for (const path of ["/system", "/packages", "/files", "/services", "/backups", "/terminal", "/agents"]) {
+    for (const path of ["/packages", "/files", "/services", "/backups", "/terminal", "/agents"]) {
       expect(mainItems.some(item => item.url === path)).toBe(true)
       expect(routes.some(route => route.path === path)).toBe(true)
     }
+    // /system is an intentional compatibility redirect to Dashboard, not a second menu item.
+    expect(routes.some(route => route.path === "/system")).toBe(true)
+    expect(mainItems.some(item => item.url === "/system")).toBe(false)
+    expect(mainItems.filter(item => item.url === "/dashboard")).toHaveLength(1)
     expect(mainItems.some(item => item.title === "Termux Control Center")).toBe(false)
     for (const path of ["/termux", "/dashboard", "/mail", "/auth/sign-in", "/errors/forbidden"]) {
       expect(routes.some(route => route.path === path)).toBe(true)
