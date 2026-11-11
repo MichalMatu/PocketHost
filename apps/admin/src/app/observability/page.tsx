@@ -4,7 +4,7 @@ import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
@@ -178,9 +178,7 @@ export default function ObservabilityPage() {
             <Card className="min-w-0 xl:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Activity className="size-4" />Process diagnostics</CardTitle>
-                <CardDescription>
-                  Termux-visible processes · partial Android inventory
-                </CardDescription>
+ 
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground" aria-label="Process inventory status">
@@ -253,7 +251,7 @@ export default function ObservabilityPage() {
             <Card className={snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length ? "min-w-0" : "min-w-0 xl:col-span-2"}>
               <CardHeader>
                 <CardTitle>Telemetry sources</CardTitle>
-                <CardDescription>Diagnostic source availability and observation times</CardDescription>
+
               </CardHeader>
               <CardContent>
                 <DiagnosticSource name="Termux CPU counters" scope="System CPU may be blocked by Android /proc permissions"
@@ -282,7 +280,7 @@ export default function ObservabilityPage() {
             {snapshot.diagnostics.state === "ok" && snapshot.diagnostics.events.length > 0 && <Card className="min-w-0">
               <CardHeader>
                 <CardTitle>Diagnostic events</CardTitle>
-                <CardDescription>Structured runtime observations · not the Dashboard health timeline</CardDescription>
+
               </CardHeader>
               <CardContent>
                 {snapshot.diagnostics.state !== "ok" ? (

@@ -79,36 +79,36 @@ export default function HostOverview() {
         </div>
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         <div data-testid="host-summary" aria-busy={pending} className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-          <Card className="min-h-36">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription>Node.js</CardDescription>
               <CardTitle><Value pending={pending}>{runtime?.nodeVersion ?? "Unavailable"}</Value></CardTitle>
             </CardHeader>
-            <CardContent className="min-h-5 text-muted-foreground text-xs">{runtime?.architecture ?? " "}</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">{runtime?.architecture ?? " "}</CardContent>
           </Card>
-          <Card className="min-h-36">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription>Device uptime</CardDescription>
               <CardTitle><Value pending={pending}>{runtime ? Math.floor(runtime.systemUptimeSeconds / 3600) + " h" : "Unavailable"}</Value></CardTitle>
             </CardHeader>
           </Card>
-          <Card className="min-h-36">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription>Available memory</CardDescription>
               <CardTitle><Value pending={pending}>{runtime ? runtime.freeMemoryMiB.toLocaleString() + " MiB" : "Unavailable"}</Value></CardTitle>
             </CardHeader>
-            <CardContent className="min-h-5 text-muted-foreground text-xs">{runtime ? "of " + runtime.totalMemoryMiB.toLocaleString() + " MiB" : " "}</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">{runtime ? "of " + runtime.totalMemoryMiB.toLocaleString() + " MiB" : " "}</CardContent>
           </Card>
-          <Card className="min-h-36">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription>Termux storage free</CardDescription>
               <CardTitle><Value pending={pending}>{runtime?.storage ? runtime.storage.availableMiB.toLocaleString() + " MiB" : "Unavailable"}</Value></CardTitle>
             </CardHeader>
-            <CardContent className="min-h-5 text-muted-foreground text-xs">{runtime?.storage ? "of " + runtime.storage.totalMiB.toLocaleString() + " MiB" : " "}</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">{runtime?.storage ? "of " + runtime.storage.totalMiB.toLocaleString() + " MiB" : " "}</CardContent>
           </Card>
         </div>
-        <Card className="min-h-[390px]">
-          <CardHeader className="gap-1">
+        <Card>
+          <CardHeader className="gap-1 px-4">
             <CardTitle className="flex items-center gap-2"><Server className="size-4" />Observed services</CardTitle>
           </CardHeader>
           <CardContent data-testid="host-services" aria-busy={pending}>

@@ -239,7 +239,7 @@ export default function ShizukuPage() {
           })}
         </div>
 
-        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section} className="min-h-[500px] space-y-5">
+        <div id="android-module-panel" role="tabpanel" aria-labelledby={"android-tab-" + section} className="space-y-4">
         {section === "applications" && (
           <Card>
             <CardContent className="space-y-4 pt-4">
@@ -257,7 +257,7 @@ export default function ShizukuPage() {
               </div>
               {!apps ? <p role="status" className="text-muted-foreground text-sm">{appsLoading ? "Loading Android applications…" : appsError ? "Application inventory request failed. Try Refresh." : "Package inventory unavailable or not authorized."}</p> :
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
-                  <div className="h-[65vh] min-h-[440px] max-h-[900px] overflow-y-auto rounded-lg border">
+                  <div className="max-h-[65vh] min-h-48 overflow-y-auto rounded-lg border">
                     {visibleApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
@@ -385,7 +385,7 @@ export default function ShizukuPage() {
                 onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
-                  <div className="relative h-[65vh] min-h-[440px] max-h-[900px] overflow-auto rounded-lg border">
+                  <div className="relative max-h-[65vh] min-h-48 overflow-auto rounded-lg border">
                     <table className="w-full min-w-[700px] table-fixed border-separate border-spacing-0 text-left text-sm" aria-label="Android processes">
                       <thead><tr>
                         {([
@@ -461,7 +461,7 @@ export default function ShizukuPage() {
                   <p className="text-muted-foreground text-xs">
                     {system.services.names.length} observed · {shownServices.length} matching · runtime state unknown{system.services.truncated ? " · capped at 256" : ""}
                   </p>
-                  <div className="h-[65vh] min-h-[440px] max-h-[900px] overflow-y-auto rounded-lg border">
+                  <div className="max-h-[65vh] min-h-48 overflow-y-auto rounded-lg border">
                     {visibleServices.map(service => (
                       <button type="button" key={service}
                         aria-pressed={selectedService === service}

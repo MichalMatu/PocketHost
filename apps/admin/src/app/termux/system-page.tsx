@@ -176,14 +176,14 @@ function SummaryCard({ title, value, detail, icon: Icon, loading }: {
   loading: boolean
 }) {
   return (
-    <Card className="min-h-40 min-w-0">
-      <CardHeader className="gap-1">
+    <Card className="min-w-0 gap-2 py-3">
+      <CardHeader className="gap-1 px-4">
         <CardDescription className="flex items-center gap-2">
           <Icon className="size-4" />{title}
         </CardDescription>
         <CardTitle className="text-2xl tabular-nums">{metricValue(value, loading)}</CardTitle>
       </CardHeader>
-      <CardContent className="text-muted-foreground min-h-10 text-xs">{detail}</CardContent>
+      {detail && <CardContent className="px-4 text-xs text-muted-foreground">{detail}</CardContent>}
     </Card>
   )
 }
@@ -343,39 +343,39 @@ export default function SystemPage() {
 
         <div data-testid="system-metrics" aria-busy={active} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard title="Android CPU" value={cpu === null ? null : cpu.toFixed(1) + "%"}
-            icon={Cpu} loading={active} detail={bridgeState} />
+            icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />
           <SummaryCard title="Available RAM" value={host ? formatMemory(host.runtime.freeMemoryMiB) : null}
             icon={Activity} loading={active} detail={host ? "of " + formatMemory(host.runtime.totalMemoryMiB) + " · system-wide" : "Termux measurement unavailable"} />
           <SummaryCard title="Termux storage" value={host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null}
             icon={HardDrive} loading={active} detail="Free on the Termux home filesystem" />
           <SummaryCard title="Observed services" value={servicesRunning === null ? null : servicesRunning + " / " + host!.services.length}
-            icon={ServerCog} loading={active} detail={serviceUnknown ? "Some service states unknown · read-only" : "Running external services · read-only"} />
+            icon={ServerCog} loading={active} detail={serviceUnknown ? "Some states unknown · read-only" : "External · read-only"} />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
-          <Card className="min-h-28">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API</CardDescription>
               <CardTitle className="text-lg tabular-nums">{batteryPercent === null ? "Unavailable" : batteryPercent + "%"}</CardTitle>
             </CardHeader>
-            <CardContent className="text-muted-foreground min-h-5 text-xs">
+            <CardContent className="px-4 text-xs text-muted-foreground">
               {batteryCharging === true ? "Charging" : batteryCharging === false ? "Not charging" : "Charge state unavailable"}
               {" · "}{batteryTempC === null ? "Temperature unavailable" : batteryTempC.toFixed(1) + "°C"}
             </CardContent>
           </Card>
-          <Card className="min-h-28">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
               <CardTitle className="text-lg tabular-nums">{uptime(host?.runtime.systemUptimeSeconds ?? null)}</CardTitle>
             </CardHeader>
-            <CardContent className="text-muted-foreground min-h-5 text-xs">Since device boot</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">Since device boot</CardContent>
           </Card>
-          <Card className="min-h-28">
-            <CardHeader className="gap-1">
+          <Card className="gap-2 py-3">
+            <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Wifi className="size-4" />DNS · Termux</CardDescription>
               <CardTitle className="text-lg tabular-nums">{dnsMs === null ? "Unavailable" : dnsMs.toFixed(1) + " ms"}</CardTitle>
             </CardHeader>
-            <CardContent className="text-muted-foreground min-h-5 text-xs">
+            <CardContent className="px-4 text-xs text-muted-foreground">
               {dnsFailed === true ? "Fixed DNS lookup failed" : dnsFailed === false ? "Fixed DNS lookup successful" : "No recent DNS sample"}
             </CardContent>
           </Card>
@@ -463,7 +463,7 @@ export default function SystemPage() {
                 </ChartContainer>
                 {!samples.some(sample => sample.internetMs !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-8 top-1/2 -translate-y-1/2 text-center text-sm">No successful Internet TCP connection measured yet.</p>}
               </div>
-              <p className="text-muted-foreground min-h-10 pt-2 text-xs tabular-nums">
+              <p className="text-muted-foreground pt-2 text-xs tabular-nums">
                 {internet?.state === "reachable" ? "TCP endpoint reachable" : internet?.state === "unreachable" ? "TCP endpoint check failed" : "TCP probe unavailable"}
                 {" · "}{latencySummary(samples.map(sample => sample.internetMs))}
                 {" · "}{samples.filter(sample => sample.internetFailed === true).length} failures
@@ -503,7 +503,7 @@ export default function SystemPage() {
                     Waiting for two supported Android network counter readings.
                   </p>}
               </div>
-              <p className="text-muted-foreground min-h-9 pt-2 text-xs tabular-nums" aria-label="Android transfer rates">
+              <p className="text-muted-foreground pt-2 text-xs tabular-nums" aria-label="Android transfer rates">
                 RX: {formatTrafficMbps(rxMbps)} · TX: {formatTrafficMbps(txMbps)}
                 {" · "}{trafficFresh && lastTraffic?.networkObservedAt
                   ? "Measured " + clock(lastTraffic.networkObservedAt) : "Native source unavailable or stale"}

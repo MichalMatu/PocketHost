@@ -97,13 +97,14 @@ export default function PhoneSettingsPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{loading ? "Checking Shizuku" : connected ? "Shizuku authorized" : "Shizuku unavailable"}</Badge>
             {sample && <Badge variant="outline">Checked {new Date(sample).toLocaleTimeString()}</Badge>}
+            {system?.settings.airplaneMode != null && <Badge variant="outline">Airplane mode: {system.settings.airplaneMode ? "On" : "Off"}</Badge>}
           </div>
           <Button size="sm" variant="outline" disabled={loading} onClick={refreshValues}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        <Card className="min-h-[380px]">
+        <Card>
           <CardHeader>
             <CardTitle>Display & screen</CardTitle>
           </CardHeader>
@@ -112,7 +113,7 @@ export default function PhoneSettingsPage() {
               <section className="space-y-3 rounded-lg border p-4">
                 <h3 className="font-medium">Brightness</h3>
                 <BrightnessModeControl connected={connected} onValuesChanged={refreshValues} />
-                <p className="min-h-5 text-sm text-muted-foreground">Stored Android value: <span className="font-medium tabular-nums">
+                <p className="min-h-5 text-sm text-muted-foreground">Current: <span className="font-medium tabular-nums">
                   {currentBrightness == null ? "Unavailable" : currentBrightness + " / 255"}
                 </span></p>
                 <label className="block text-sm" htmlFor="android-brightness">Requested brightness: {selectedBrightness} / 255</label>
@@ -129,7 +130,7 @@ export default function PhoneSettingsPage() {
               </section>
               <section className="space-y-3 rounded-lg border p-4">
                 <h3 className="font-medium">Screen timeout</h3>
-                <p className="min-h-5 text-sm text-muted-foreground">Saved time until screen sleeps: {timeoutLabel(currentTimeout)}</p>
+                <p className="min-h-5 text-sm text-muted-foreground">Current: {timeoutLabel(currentTimeout)}</p>
                 <label htmlFor="android-timeout" className="block text-sm">New timeout</label>
                 <select id="android-timeout" aria-label="Set screen timeout"
                   className="bg-background w-full rounded-md border px-3 py-2 text-sm"
@@ -141,19 +142,12 @@ export default function PhoneSettingsPage() {
                 {timeoutDraft !== "" && connected &&
                   <AndroidActionButton action="timeout" value={timeoutDraft}
                     onSuccess={refreshValues}>Save timeout</AndroidActionButton>}
-                <p className="text-xs text-muted-foreground">
-                  Android may enforce device policy limits. Saving does not override system administrators.
-                </p>
+
               </section>
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader><CardTitle>Other settings</CardTitle></CardHeader>
-          <CardContent className="flex flex-wrap gap-3 text-sm">
-            <span>Airplane mode: <strong>{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</strong></span>
-          </CardContent>
-        </Card>
+
       </div>
     </BaseLayout>
   )
