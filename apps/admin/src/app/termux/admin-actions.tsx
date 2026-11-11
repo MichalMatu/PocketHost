@@ -514,6 +514,10 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
 
 type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown"; enabled?: boolean | null }
 
+// UI guard only: the panel and its watcher must not be stopped from this page.
+const isPanelService = (service: RunitEntry) =>
+  service.name === "pockethost-panel" || service.name === "pockethost-panel-watch"
+
 export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: number }) {
   const [services, setServices] = React.useState<RunitEntry[] | null>(null)
   const [busy, setBusy] = React.useState(false)
@@ -548,7 +552,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
     finally { setBusy(false) }
   }
   const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
-    if (busy || service.protected || !window.confirm(
+    if (busy || service.protected || isPanelService(service) || !window.confirm(
       name === "register" ?
         "Register service " + service.name + " for PocketHost lifecycle control? Registration does not start or stop it." :
         "Run " + name + " for explicitly registered runit service " + service.name + "?",
@@ -566,7 +570,10 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Runit services</h3>
     </div>
-    <p className="text-muted-foreground text-xs">Protected services are read-only. Register to enable lifecycle controls.</p>
+    <p className="text-muted-foreground text-xs">
+      Register grants lifecycle controls (start, stop, restart, autostart); it does not start a service.
+      Protected services and the PocketHost panel/watch are read-only here.
+    </p>
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
@@ -575,10 +582,10 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           <Badge variant="outline">{service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{service.protected ? "Protected" : service.registered ? "Registered" : "Observed"}</Badge>
+          <Badge variant="outline">{service.protected ? "Protected" : isPanelService(service) ? "Panel · read-only" : service.registered ? "Registered" : "Observed"}</Badge>
         </div>
       </div>
-      {!service.protected && <div className="flex flex-wrap gap-1">
+      {!service.protected && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {service.registered ? <>
           <Button size="sm" disabled={busy || service.state === "running"} onClick={() => void perform("start", service)}>Start</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("stop", service)}>Stop</Button>
@@ -588,6 +595,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void readServiceLogs(service)}>Logs</Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("unregister", service)}>Unregister</Button>
         </> : <Button size="sm" variant="outline" disabled={busy}
+          title="Grant lifecycle controls; this does not start the service"
           onClick={() => void perform("register", service)}>Register</Button>}
       </div>}
     </div>)}

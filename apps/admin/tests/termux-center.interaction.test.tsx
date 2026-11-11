@@ -59,6 +59,12 @@ function mount(section: "packages" | "files" | "services" | "backups" | "termina
         { name: "curl", version: "8.0" },
       ], truncated: false } :
       url === "/api/v1/observability" ? observation :
+      url.includes("mode=services") ? { services: [
+        { name: "cloudflared", registered: false, protected: true, state: "running", enabled: null },
+        { name: "pockethost-panel", registered: false, protected: false, state: "running", enabled: true },
+        { name: "pockethost-panel-watch", registered: false, protected: false, state: "running", enabled: true },
+        { name: "cupsd", registered: false, protected: false, state: "stopped", enabled: false },
+      ] } :
       url === "/api/v1/sites" ? { sites: [site] } :
       url === "/api/v1/termux-tools" ? tools :
       url.includes("mode=file-roots") ? { roots: [
@@ -165,7 +171,18 @@ describe("H3 strict read-only contracts", () => {
     const calls = mount("services")
     const observed = await screen.findByText(/Observed external services · read-only/)
     expect(observed).toBeTruthy()
+    const user = userEvent.setup()
+    const details = screen.getByText("Show monitoring details").closest("details")
+    expect(details?.hasAttribute("open")).toBe(false)
+    await user.click(screen.getByText("Show monitoring details"))
+    expect(details?.hasAttribute("open")).toBe(true)
     await screen.findByText("ilestoi")
+    await screen.findByText("pockethost-panel")
+    expect(screen.getAllByText("Panel · read-only")).toHaveLength(2)
+    const registerButtons = screen.getAllByRole("button", { name: "Register" })
+    expect(registerButtons).toHaveLength(1)
+    expect(registerButtons[0].getAttribute("title")).toMatch(/does not start/)
+    expect(screen.getByText(/They may also appear in the runit list above/)).toBeTruthy()
     expect(screen.queryByText("Observed external services · read-only", { selector: "summary" })).toBeNull()
     expect(screen.getByText(/cannot be managed here/)).toBeTruthy()
     expect(screen.queryByText("Manage owned services")).toBeNull()

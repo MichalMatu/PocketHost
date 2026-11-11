@@ -116,19 +116,25 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 Observed external services · read-only
                 {snapshot && " (" + snapshot.host.services.length + ")"}
               </CardTitle></CardHeader>
-              <CardContent className="space-y-1">
+              <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
                   These external services are observed only and cannot be managed here.
+                  They may also appear in the runit list above.
                 </p>
-                {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
-                {snapshot?.host.services.map(service => <div key={service.id}
-                  className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
-                  <span className="text-sm">{service.label}</span>
-                  <State value={service.state} />
-                </div>)}
-                {snapshot?.host.services.length === 0 &&
-                  <p className="text-sm text-muted-foreground">No observed external services.</p>}
-                {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
+                <details>
+                  <summary className="cursor-pointer text-sm font-medium">Show monitoring details</summary>
+                  <div className="mt-2 space-y-1">
+                    {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
+                    {snapshot?.host.services.map(service => <div key={service.id}
+                      className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
+                      <span className="text-sm">{service.label}</span>
+                      <State value={service.state} />
+                    </div>)}
+                    {snapshot?.host.services.length === 0 &&
+                      <p className="text-sm text-muted-foreground">No observed external services.</p>}
+                    {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
+                  </div>
+                </details>
               </CardContent>
             </Card>
           </section>}
