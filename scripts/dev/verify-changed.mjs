@@ -62,7 +62,9 @@ function emit(report, code) {
 function tail(output) {
   // Compact terminal evidence; never print full command output.
   const ansi = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
-  return String(output ?? '').replace(ansi, '').slice(-1800);
+  return String(output ?? '')
+    .replace(ansi, '')
+    .slice(-1800);
 }
 
 if (!optionsValid) {
