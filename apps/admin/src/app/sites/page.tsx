@@ -395,7 +395,7 @@ export default function SitesPage() {
           No user sites created yet. Your existing PocketHost demo and imported services are untouched.
         </p>}
         <div className="grid gap-5">
-          {sites.map(site => <SiteCard key={site.id} site={site} onChange={refresh} />)}
+          {sites.map(site => <SiteCard key={site.id} site={site} onChange={reload} />)}
         </div>
         <p className="text-muted-foreground text-xs">
           Each site is bound to its own local-only port; the manually enabled trusted-LAN gateway
