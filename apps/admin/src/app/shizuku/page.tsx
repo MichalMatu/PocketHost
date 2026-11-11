@@ -1,7 +1,7 @@
 import * as React from "react"
 import {
   AppWindow, Cpu, RefreshCw, Settings2,
-  ShieldCheck, Terminal, Search, ExternalLink,
+  ShieldCheck, Terminal, Search, ExternalLink, Activity,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -16,7 +16,7 @@ import {
   type ShizukuStatus, type ShizukuApps, type ShizukuSystem, type ShizukuApp,
 } from "@/lib/shizuku-schema"
 
-type Section = "applications" | "processes" | "services" | "shell"
+type Section = "applications" | "processes" | "services" | "shell" | "diagnostics"
 type PackageFilter = "all" | "user" | "system"
 const PAGE_SIZE = 80
 
@@ -25,6 +25,7 @@ const sections = [
   { id: "processes", label: "Android processes", icon: Cpu },
   { id: "services", label: "Android services", icon: Settings2 },
   { id: "shell", label: "Android shell", icon: Terminal },
+  { id: "diagnostics", label: "Diagnostics", icon: Activity },
 ] as const
 
 async function readJson(url: string, signal: AbortSignal): Promise<unknown> {
@@ -83,7 +84,6 @@ export default function ShizukuPage() {
   const [serviceSearch, setServiceSearch] = React.useState("")
   const [permissionSearch, setPermissionSearch] = React.useState("")
   const [appView, setAppView] = React.useState<"details" | "permissions">("details")
-  const [diagnosticsOpen, setDiagnosticsOpen] = React.useState(false)
   const [selectedService, setSelectedService] = React.useState<string | null>(null)
   const [selectedProcessPid, setSelectedProcessPid] = React.useState<number | null>(null)
   const [sortProcessBy, setSortProcessBy] = React.useState<"pid" | "name" | "user" | "rss" | "cpu">("rss")
@@ -510,10 +510,7 @@ export default function ShizukuPage() {
           </div>
         )}
         {section === "shell" && <RemoteShellPanel />}
-        <details className="mt-5 rounded-xl border bg-card p-4" onToggle={event => setDiagnosticsOpen(event.currentTarget.open)}>
-          <summary className="cursor-pointer text-sm font-medium">Advanced Shizuku diagnostics</summary>
-          {diagnosticsOpen && <div className="mt-4 [&>div]:border-0 [&>div]:bg-transparent [&>div]:shadow-none"><ShizukuDiagnosticsPanel /></div>}
-        </details>
+        {section === "diagnostics" && <ShizukuDiagnosticsPanel />}
 
         </div>
 

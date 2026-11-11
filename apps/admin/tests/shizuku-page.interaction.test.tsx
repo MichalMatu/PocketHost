@@ -303,19 +303,21 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByText("Example 0")).toBeTruthy()
   })
 
-  it("keeps diagnostics idle until explicitly expanded, without Device duplication", async () => {
+  it("puts diagnostics in one dedicated tab and never repeats them under other modules", async () => {
     const calls = mount(async url => url.endsWith("/status") ? status :
       url.endsWith("/apps") ? apps : system)
     await screen.findByText("Example 0")
-    expect(screen.queryByRole("tab", { name: /^Device$/ })).toBeNull()
-    expect(screen.getByText(/Advanced Shizuku diagnostics/)).toBeTruthy()
+    expect(screen.getByRole("tab", { name: "Diagnostics" })).toBeTruthy()
+    expect(screen.queryByText("Shizuku connection diagnostics")).toBeNull()
     expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(1)
-    fireEvent.click(screen.getByText(/Advanced Shizuku diagnostics/))
+    fireEvent.click(screen.getByRole("tab", { name: "Diagnostics" }))
+    expect(await screen.findByText("Shizuku connection diagnostics")).toBeTruthy()
     await waitFor(() => expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2))
+    expect(screen.queryByText("Advanced Shizuku diagnostics")).toBeNull()
+    expect(screen.getByText("Native capabilities (0)")).toBeTruthy()
     fireEvent.click(screen.getByRole("tab", { name: /Android services/i }))
-    expect(screen.queryByRole("slider", { name: /Set screen brightness/ })).toBeNull()
+    expect(screen.queryByText("Shizuku connection diagnostics")).toBeNull()
     expect(screen.getByRole("textbox", { name: "Search Android services" })).toBeTruthy()
-    expect(screen.queryByText("Screen controls have moved to")).toBeNull()
   })
 
   it("keeps the application inventory mounted through a manual refresh", async () => {

@@ -1,7 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen, waitFor } from "@testing-library/react"
-import userEvent from "@testing-library/user-event"
 import { ShizukuDiagnosticsPanel } from "@/app/shizuku/diagnostics-panel"
 
 afterEach(() => vi.unstubAllGlobals())
@@ -41,8 +40,9 @@ describe("Shizuku native diagnostics", () => {
       expect(fetchMock.mock.calls.some(([url]) => url.endsWith(endpoint))).toBe(true)
     }
     expect(screen.getByText(/Native capabilities \(1\)/)).toBeTruthy()
-    await userEvent.setup().click(screen.getByText(/Native capabilities \(1\)/))
     expect(screen.getByText(/Shizuku Binder operation available/)).toBeTruthy()
+    expect(screen.getByRole("region", { name: "Native capabilities" }).querySelectorAll("li")).toHaveLength(1)
+    expect(screen.queryByText("Advanced Shizuku diagnostics")).toBeNull()
     expect(screen.queryByText(sample.observedAt)).toBeNull()
   })
 })

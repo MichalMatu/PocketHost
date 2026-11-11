@@ -60,29 +60,36 @@ export function ShizukuDiagnosticsPanel() {
     return () => controller.abort()
   }, [refresh])
   return <Card>
-    <CardContent className="space-y-4 pt-4">
+    <CardContent className="space-y-5 pt-4">
+      <div className="space-y-1">
+        <h2 className="font-medium">Shizuku connection diagnostics</h2>
+        <p className="text-xs text-muted-foreground">
+          Read-only checks run when this tab opens or when requested. No Android settings are changed.
+        </p>
+      </div>
       <div className="flex flex-wrap items-center justify-end gap-3">
         <Button size="sm" variant="outline" disabled={loading} onClick={() => setRefresh(current => current + 1)}>
           {loading ? "Checking…" : "Run diagnostics"}
         </Button>
       </div>
-      <dl className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-sm">
+      <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
         {[
           ["Connection", !status ? "Not checked" : status.connected && status.authorized ? "Connected and authorized" : "Not authorized"],
           ["Shizuku mode", status?.mode?.toUpperCase() ?? "Unknown"],
-          ["Real Android UID", status?.uid == null ? "Not reported" : String(status.uid)],
+          ["Android UID", status?.uid == null ? "Not reported" : String(status.uid)],
           ["Last verified sample", localSample(status?.observedAt)],
-          ["Companion source", status?.source ?? "Unavailable"],
-          ["Observed capabilities", status ? String(status.capabilities.length) : "Unavailable"],
-        ].map(([label, value]) => <div key={label} className="rounded-lg border p-2.5">
+          ["Data source", status?.source ?? "Unavailable"],
+        ].map(([label, value]) => <div key={label} className="min-w-0 space-y-1">
           <dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-words font-medium">{value}</dd>
         </div>)}
       </dl>
-      <div className="space-y-2">
-        <p className="font-medium text-sm">API round trips</p>
+      <p className="text-xs text-muted-foreground">ADB / UID 2000 indicates Android shell permissions, not root access.</p>
+      <div className="space-y-2 border-t pt-4">
+        <h3 className="font-medium text-sm">API checks</h3>
+        <p className="text-xs text-muted-foreground">Response times for three independent read-only requests; not network or CPU performance.</p>
         {endpoints.map(endpoint => {
           const observation = probes[endpoint.name]
-          return <div key={endpoint.name} className="flex flex-wrap justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+          return <div key={endpoint.name} className="flex flex-wrap justify-between gap-2 border-b border-border/50 py-2 text-sm last:border-b-0">
             <span>{endpoint.name}</span>
             <span role="status" className="text-muted-foreground">
               {observation ? observation.message +
@@ -92,17 +99,21 @@ export function ShizukuDiagnosticsPanel() {
           </div>
         })}
       </div>
-      <details className="rounded-lg border p-3">
-        <summary className="cursor-pointer text-sm font-medium">Native capabilities ({status?.capabilities?.length ?? 0})</summary>
-        <div className="mt-3 space-y-2">
-          {status?.capabilities?.length ? status.capabilities.map(capability => (
-            <div key={capability.id} className="rounded-md border px-3 py-2 text-sm">
-              <p className="font-medium">{capability.title} · {capability.available ? "Available" : "Unavailable"}</p>
-              <p className="text-muted-foreground text-xs">{capability.description}</p>
+      <section className="space-y-2 border-t pt-4" aria-label="Native capabilities">
+        <h3 className="text-sm font-medium">Native capabilities ({status?.capabilities?.length ?? 0})</h3>
+        {status?.capabilities?.length ? <ul className="divide-y divide-border/50">
+          {status.capabilities.map(capability => <li key={capability.id}
+            className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 py-2 text-sm">
+            <div className="min-w-0">
+              <p className="font-medium">{capability.title}</p>
+              <p className="text-xs text-muted-foreground">{capability.description}</p>
             </div>
-          )) : <p className="text-muted-foreground text-sm">No authorized capability report.</p>}
-        </div>
-      </details>
+            <span className="text-xs text-muted-foreground">
+              {capability.available ? "Available" : "Unavailable"}
+            </span>
+          </li>)}
+        </ul> : <p className="text-muted-foreground text-sm">No authorized capability report.</p>}
+      </section>
     </CardContent>
   </Card>
 }
