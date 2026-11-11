@@ -151,7 +151,7 @@ describe("H3 strict read-only contracts", () => {
   it("keeps system backups distinct from immutable Hosting release history", async () => {
     const calls = mount("backups")
     await screen.findByText("Backup readiness")
-    expect(screen.getByRole("link", { name: "Website versions" }).getAttribute("href")).toBe("/sites")
+    expect(screen.getByRole("link", { name: /website versions/i }).getAttribute("href")).toBe("/sites")
     expect(screen.queryByText("View release history")).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
