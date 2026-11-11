@@ -52,7 +52,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       if (url.endsWith("/status")) return status
       return new Promise(() => undefined)
     })
-    expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
+    expect(await screen.findByText(/Shizuku · ADB/)).toBeTruthy()
     expect(screen.getByText("Loading Android applications…")).toBeTruthy()
     await userEvent.setup().click(screen.getByRole("tab", { name: /Android processes/i }))
     expect(screen.getByText("Loading Android processes…")).toBeTruthy()
@@ -204,7 +204,7 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       if (url.endsWith("/system")) return system
       throw new Error("inventory unavailable")
     })
-    expect(await screen.findByText(/Connected · ADB/)).toBeTruthy()
+    expect(await screen.findByText(/Shizuku · ADB/)).toBeTruthy()
     expect(await screen.findByText("Application inventory request failed. Try Refresh.")).toBeTruthy()
     await userEvent.setup().click(screen.getByRole("tab", { name: /Android services/i }))
     await waitFor(() => expect(screen.getByText(/runtime state unknown/)).toBeTruthy())
@@ -230,6 +230,32 @@ describe("Android Shizuku UI response and bounded inventories", () => {
     expect(screen.getByRole("button", { name: "Send TERM to PID 101" })).toBeTruthy()
   })
 
+  it("sorts in table headers without a redundant toolbar and preserves RSS descending by default", async () => {
+    const sample = { ...system, processes: [
+      { ...system.processes[0], pid: 10, name: "alpha", rssKb: 1024, cpuPercent: 2 },
+      { ...system.processes[0], pid: 20, name: "beta", rssKb: 8192, cpuPercent: 1 },
+      { ...system.processes[0], pid: 30, name: "gamma", rssKb: 2048, cpuPercent: 9 },
+    ] }
+    mount(async url => url.endsWith("/status") ? status :
+      url.endsWith("/apps") ? apps : sample)
+    await screen.findByText("Example 0")
+    fireEvent.click(screen.getByRole("tab", { name: /Android processes/i }))
+    const table = screen.getByRole("table", { name: "Android processes" })
+    const firstPid = () => table.querySelector("tbody tr td")?.textContent?.trim()
+    expect(screen.queryByLabelText("Sort Android processes")).toBeNull()
+    expect(firstPid()).toBe("20")
+    expect(table.querySelector('th[aria-sort="descending"]')?.textContent).toContain("RSS")
+    fireEvent.click(screen.getByRole("button", { name: "Sort by PID" }))
+    expect(firstPid()).toBe("30")
+    expect(table.querySelector('th[aria-sort="descending"]')?.textContent).toContain("PID")
+    fireEvent.click(screen.getByRole("button", { name: "Sort by PID" }))
+    expect(firstPid()).toBe("10")
+    expect(table.querySelector('th[aria-sort="ascending"]')?.textContent).toContain("PID")
+    fireEvent.click(screen.getByRole("button", { name: "Sort by CPU" }))
+    expect(firstPid()).toBe("30")
+    expect(table.querySelector('th[aria-sort="descending"]')?.textContent).toContain("CPU")
+  })
+
   it("prioritizes user apps while retaining system apps under All", async () => {
     const mixed = { ...apps, packages: [
       { ...apps.packages[0], system: true },
@@ -248,14 +274,14 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       url.endsWith("/apps") ? apps : system)
     await screen.findByText("Example 0")
     expect(screen.queryByRole("tab", { name: /^Device$/ })).toBeNull()
-    expect(screen.getByText(/Advanced Shizuku diagnostics · on demand/)).toBeTruthy()
+    expect(screen.getByText(/Advanced Shizuku diagnostics/)).toBeTruthy()
     expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(1)
-    fireEvent.click(screen.getByText(/Advanced Shizuku diagnostics · on demand/))
+    fireEvent.click(screen.getByText(/Advanced Shizuku diagnostics/))
     await waitFor(() => expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/status"))).toHaveLength(2))
     fireEvent.click(screen.getByRole("tab", { name: /Android services/i }))
     expect(screen.queryByRole("slider", { name: /Set screen brightness/ })).toBeNull()
-    expect(screen.getByRole("tabpanel").textContent).toContain("Observed Android components")
-    expect(screen.getByText("Phone Settings")).toBeTruthy()
+    expect(screen.getByRole("textbox", { name: "Search Android services" })).toBeTruthy()
+    expect(screen.queryByText("Screen controls have moved to")).toBeNull()
   })
 
   it("keeps the application inventory mounted through a manual refresh", async () => {
