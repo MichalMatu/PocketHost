@@ -13,32 +13,32 @@ import { useSidebarConfig } from "@/hooks/use-sidebar-config"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
 /**
- * PocketHost management screens are navigated by the sidebar; duplicating
- * their name and marketing-style descriptions wastes the first viewport.
- * Preserve the semantic h1 for assistive technology, but keep the large
- * visual headings of the upstream example/template pages untouched.
+ * A PocketHost screen inherits the dense management layout by default.
+ * Only preserved upstream sample pages retain their original large headers.
+ * An h1 and description stay in the accessibility tree on management routes.
  */
-const compactManagementRoutes = new Set([
-  "/dashboard",
-  "/observability",
-  "/host",
-  "/shizuku",
-  "/phone-settings",
-  "/packages",
-  "/files",
-  "/services",
-  "/terminal",
-  "/backups",
-  "/sites",
-  "/projects",
-  "/deployments",
-  "/agents",
-  "/runtime-logs",
-  "/settings/network",
-  "/settings/appearance",
-  "/owned-site",
-  "/managed-projects",
+const originalTemplateRoutes = new Set([
+  "/landing",
+  "/dashboard-2",
+  "/mail",
+  "/tasks",
+  "/chat",
+  "/calendar",
+  "/users",
+  "/faqs",
+  "/pricing",
+  "/settings/user",
+  "/settings/account",
+  "/settings/billing",
+  "/settings/notifications",
+  "/settings/connections",
 ])
+function usesCompactHeader(pathname: string) {
+  return !originalTemplateRoutes.has(pathname) &&
+    !pathname.startsWith("/examples/") &&
+    !pathname.startsWith("/auth/") &&
+    !pathname.startsWith("/errors/")
+}
 
 interface BaseLayoutProps {
   children: React.ReactNode
@@ -47,7 +47,7 @@ interface BaseLayoutProps {
 }
 
 export function BaseLayout({ children, title, description }: BaseLayoutProps) {
-  const compactHeader = compactManagementRoutes.has(useLocation().pathname)
+  const compactHeader = usesCompactHeader(useLocation().pathname)
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const [customizerTab, setCustomizerTab] = React.useState<AppearanceTab>("theme")
   const [customizerVersion, setCustomizerVersion] = React.useState(0)
