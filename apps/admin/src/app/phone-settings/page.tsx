@@ -48,8 +48,6 @@ export default function PhoneSettingsPage() {
   React.useEffect(() => {
     const controller = new AbortController()
     const signal = controller.signal
-    setLoading(true)
-    setError(null)
     const load = async () => {
       try {
         const verified = parseShizukuStatus(await readSnapshot(
@@ -97,7 +95,11 @@ export default function PhoneSettingsPage() {
               {sample ? "Sample: " + new Date(sample).toLocaleTimeString() : "No verified sample"}
             </span>
           </div>
-          <Button size="sm" variant="outline" disabled={loading} onClick={() => setRefreshKey(key => key + 1)}>
+          <Button size="sm" variant="outline" disabled={loading} onClick={() => {
+            setLoading(true)
+            setError(null)
+            setRefreshKey(key => key + 1)
+          }}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh values
           </Button>
         </div>
