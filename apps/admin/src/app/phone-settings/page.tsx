@@ -1,10 +1,9 @@
 import * as React from "react"
-import { Link } from "react-router-dom"
-import { RefreshCw, Settings2 } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { AndroidActionButton } from "@/app/shizuku/android-action-button"
 import { BrightnessModeControl } from "./brightness-mode-control"
 import {
@@ -96,23 +95,17 @@ export default function PhoneSettingsPage() {
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline"><Settings2 className="size-3" /> Android display</Badge>
-            <Badge variant="outline">{loading ? "Checking connection…" : connected ? "Shizuku authorized" : "Read-only · unavailable"}</Badge>
-            <span className="min-w-28 text-muted-foreground text-xs">
-              {sample ? "Sample: " + new Date(sample).toLocaleTimeString() : "No verified sample"}
-            </span>
+            <Badge variant="outline">{loading ? "Checking Shizuku" : connected ? "Shizuku authorized" : "Shizuku unavailable"}</Badge>
+            {sample && <Badge variant="outline">Checked {new Date(sample).toLocaleTimeString()}</Badge>}
           </div>
           <Button size="sm" variant="outline" disabled={loading} onClick={refreshValues}>
-            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh values
+            <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>
         {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
         <Card className="min-h-[380px]">
           <CardHeader>
             <CardTitle>Display & screen</CardTitle>
-            <CardDescription>
-              Saved Android display settings. An accepted write does not prove the physical screen brightness changed.
-            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="grid gap-4 lg:grid-cols-2">
@@ -156,19 +149,11 @@ export default function PhoneSettingsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader><CardTitle>Additional observed settings</CardTitle>
-            <CardDescription>Read-only until verified Android capabilities are available.</CardDescription>
-          </CardHeader>
+          <CardHeader><CardTitle>Other settings</CardTitle></CardHeader>
           <CardContent className="flex flex-wrap gap-3 text-sm">
             <span>Airplane mode: <strong>{system?.settings.airplaneMode == null ? "Unavailable" : system.settings.airplaneMode ? "On" : "Off"}</strong></span>
-            <span className="text-muted-foreground">No change action is available here.</span>
           </CardContent>
         </Card>
-        <p className="text-sm text-muted-foreground">
-          <Link className="underline underline-offset-4" to="/shizuku">Android & Shizuku</Link>
-          {" · "}
-          <Link className="underline underline-offset-4" to="/dashboard">Device health & history</Link>
-        </p>
       </div>
     </BaseLayout>
   )
