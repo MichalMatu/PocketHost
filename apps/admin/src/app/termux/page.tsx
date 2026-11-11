@@ -131,7 +131,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
               </CardContent>
             </Card>
-          </section>
+          </section>}
 
           {section === "backups" && <section className="space-y-4">
             <Card>
