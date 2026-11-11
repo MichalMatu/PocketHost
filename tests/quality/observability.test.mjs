@@ -229,8 +229,14 @@ test('Node global and Python pip inventories admit only structured safe metadata
 test('Monitoring scope accepts only the exact read-only projection path', () => {
   assert.equal(parseObservabilityScope('/'), 'full');
   assert.equal(parseObservabilityScope('/?scope=monitoring'), 'monitoring');
-  for (const path of [undefined, '/?scope=full', '/?scope=monitoring&extra=1',
-    '/?scope=MONITORING', '/terminal', '/?scope=monitoring%26command=run']) {
+  for (const path of [
+    undefined,
+    '/?scope=full',
+    '/?scope=monitoring&extra=1',
+    '/?scope=MONITORING',
+    '/terminal',
+    '/?scope=monitoring%26command=run',
+  ]) {
     assert.equal(parseObservabilityScope(path), null);
   }
 });
