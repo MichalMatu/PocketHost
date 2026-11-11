@@ -80,7 +80,24 @@ it("Runtime logs reads only selected owned Node service and preserves H1 demo", 
 it("Node feature disabled never requests foreign service runtime or logs", async () => {
   const requests = setup(false)
   render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)
-  await screen.findByText("Node Hosting is disabled.")
+  await screen.findByText(/Node Hosting is disabled\./)
   expect(requests.mock.calls.some((call) =>
     String(call[0]).startsWith("/api/v1/node-projects/"))).toBe(false)
+})
+
+
+it("missing optional demo logs is a neutral empty state with a monitoring link", async () => {
+  const requests = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects" || url === "/api/v1/owned-site/logs")
+      return { ok: false, status: 404 }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)
+  await screen.findByText("Optional demo logs are not enabled on this panel.")
+  expect(screen.getByRole("link", { name: "Monitoring" }).getAttribute("href")).toBe("/observability")
+  expect(screen.getByRole("link", { name: "Services" }).getAttribute("href")).toBe("/services")
+  expect(screen.queryByText("PocketHost Demo")).toBeNull()
+  expect(screen.queryByRole("alert")).toBeNull()
 })

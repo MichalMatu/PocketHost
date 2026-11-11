@@ -587,7 +587,7 @@ export default function SystemPage() {
                 <ul className="space-y-2 text-sm" aria-label="Recent system events">
                   {[...recentEvents].reverse().slice(0, 7).map(event => (
                     <li key={event.observedAt + event.code + event.service}
-                      className="flex items-center justify-between gap-4 border-b border-border/50 pb-2">
+                      className="flex items-center justify-between gap-4 border-b border-border/50 pb-2 last:border-b-0 last:pb-0">
                       <span>{event.code.replaceAll("-", " ")}{event.service ? " · " + event.service : ""}</span>
                       <span className="text-muted-foreground shrink-0 text-xs tabular-nums">{clock(event.observedAt)}</span>
                     </li>

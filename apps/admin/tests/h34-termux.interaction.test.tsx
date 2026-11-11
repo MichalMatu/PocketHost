@@ -199,7 +199,7 @@ describe("Termux filesystem and administration", () => {
     render(<TermuxFileExplorer />)
     await user.click(await screen.findByRole("button", { name: "Open folder docs" }))
     expect(await screen.findByRole("button", { name: "Open file readme.md" })).toBeTruthy()
-    await user.click(screen.getByRole("button", { name: "home" }))
+    await user.click(screen.getByRole("button", { name: "Termux Home" }))
     expect(await screen.findByRole("button", { name: "Open folder docs" })).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Open" })).toBeNull()
   })
