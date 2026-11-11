@@ -32,42 +32,275 @@ function Feedback({ error, done }: { error: string | null; done: string | null }
     {done && <p role="status" className="text-sm">{done}</p>}</>
 }
 
-export function PackageActions() {
-  const [name, setName] = React.useState("")
-  const [busy, setBusy] = React.useState(false)
+type PackageEcosystem = "termux" | "node" | "python"
+type InstalledPackage = { name: string; version: string }
+type AvailablePackage = { name: string; description: string }
+type PackageSummary = {
+  installed: Array<InstalledPackage & { ecosystem: PackageEcosystem }>
+  state: string
+  truncated: boolean
+  observedAt: string
+  updates: { state: string; candidates: string[] }
+}
+type PackageKind = "install" | "remove" | "upgrade" | "upgrade-all"
+type SelectedPackage = { name: string; ecosystem: PackageEcosystem; version?: string; description?: string }
+type PackagePlan = { kind: PackageKind; name?: string; output: string }
+type PackageInventory = { packages: InstalledPackage[]; truncated: boolean }
+
+const validPackageName = (value: string) => /^[a-z0-9][a-z0-9+.-]{0,39}$/.test(value)
+
+export function PackageManager({
+  summary, summaryError = false, refreshToken = 0, onChanged,
+}: {
+  summary?: PackageSummary | null
+  summaryError?: boolean
+  refreshToken?: number
+  onChanged?: () => void
+}) {
+  const [ecosystem, setEcosystem] = React.useState<PackageEcosystem>("termux")
+  const [installed, setInstalled] = React.useState<PackageInventory | null>(null)
+  const [loading, setLoading] = React.useState(true)
+  const [reload, setReload] = React.useState(0)
+  const [query, setQuery] = React.useState("")
+  const [sort, setSort] = React.useState<"name" | "version">("name")
+  const [descending, setDescending] = React.useState(false)
+  const [selected, setSelected] = React.useState<SelectedPackage | null>(null)
+  const [found, setFound] = React.useState<{ packages: AvailablePackage[]; truncated: boolean } | null>(null)
+  const [catalogBusy, setCatalogBusy] = React.useState(false)
+  const [operationBusy, setOperationBusy] = React.useState(false)
+  const [plan, setPlan] = React.useState<PackagePlan | null>(null)
   const [error, setError] = React.useState<string | null>(null)
-  const [done, setDone] = React.useState<string | null>(null)
+  const [inventoryError, setInventoryError] = React.useState(false)
+  const [message, setMessage] = React.useState<string | null>(null)
   const [output, setOutput] = React.useState("")
-  const run = async (kind: "install" | "remove" | "upgrade" | "refresh" | "upgrade-all", preview = false) => {
-    if (busy) return
-    if (!preview && !window.confirm("Run Termux package operation: " + kind + (name ? " " + name : "") + "? This can alter system packages.")) return
-    setBusy(true); setDone(null); setError(null); setOutput("")
-    try {
-      const data = await action<CommandResponse>({ action: preview ? "package-preview" : "package", name: kind,
-        path: ["install","remove","upgrade"].includes(kind) ? name.trim() : undefined })
-      setOutput(data.result.output)
-      setDone((preview ? "Simulation " : "Operation ") + kind + " finished with exit " + data.result.exit)
-    } catch (cause) { setError(cause instanceof Error ? cause.message : "Package operation failed.") }
-    finally { setBusy(false) }
+
+  React.useEffect(() => {
+    let active = true
+    setLoading(true)
+    void inspect<PackageInventory>("packages").then(result => {
+      if (!Array.isArray(result.packages) || result.packages.length > 700 ||
+        result.packages.some(item => !item || typeof item.name !== "string" || typeof item.version !== "string"))
+        throw new Error("Invalid package inventory")
+      if (active) { setInstalled(result); setInventoryError(false) }
+    }).catch(() => { if (active) setInventoryError(true) })
+      .finally(() => { if (active) setLoading(false) })
+    return () => { active = false }
+  }, [refreshToken, reload])
+
+  const changeEcosystem = (next: PackageEcosystem) => {
+    setEcosystem(next); setQuery(""); setSelected(null); setPlan(null); setFound(null)
+    setError(null); setMessage(null); setOutput("")
   }
-  return <div className="space-y-3 rounded-md border p-3">
-    <h3 className="text-sm font-medium">Manage Termux packages</h3>
-    <Input aria-label="Package name" placeholder="Package name, e.g. git" value={name}
-      disabled={busy} onChange={event => setName(event.target.value)} />
-    <div className="flex flex-wrap gap-2">
-      <Button size="sm" disabled={busy} onClick={() => void run("refresh")}>Refresh package indexes</Button>
-      <Button size="sm" disabled={busy || !name.trim()} onClick={() => void run("install")}>Install</Button>
-      <Button size="sm" variant="outline" disabled={busy || !name.trim()} onClick={() => void run("upgrade")}>Upgrade package</Button>
-      <Button size="sm" variant="outline" disabled={busy || !name.trim()} onClick={() => void run("remove")}>Remove</Button>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void run("upgrade-all")}>Upgrade all</Button>
-      <Button size="sm" variant="secondary" disabled={busy || !name.trim()} onClick={() => void run("install", true)}>Preview install</Button>
-      <Button size="sm" variant="secondary" disabled={busy || !name.trim()} onClick={() => void run("remove", true)}>Preview removal</Button>
-      <Button size="sm" variant="secondary" disabled={busy} onClick={() => void run("upgrade-all", true)}>Preview upgrade all</Button>
+  const choose = (item: SelectedPackage) => {
+    setSelected(item); setPlan(null); setError(null); setMessage(null); setOutput("")
+  }
+  const changeQuery = (value: string) => {
+    setQuery(value); setPlan(null); setFound(null); setSelected(null); setError(null)
+  }
+  const visible = (ecosystem === "termux"
+    ? (installed?.packages ?? []).map(item => ({ ...item, ecosystem: "termux" as const }))
+    : (summary?.installed ?? []).filter(item => item.ecosystem === ecosystem))
+    .filter(item => (item.name + " " + item.version).toLowerCase().includes(query.toLowerCase().trim()))
+    .sort((a, b) => {
+      const comparison = a[sort].localeCompare(b[sort], undefined, { numeric: true }) || a.name.localeCompare(b.name)
+      return descending ? -comparison : comparison
+    })
+  const chooseSort = (column: "name" | "version") => {
+    if (sort === column) setDescending(previous => !previous)
+    else { setSort(column); setDescending(false) }
+  }
+  const searchCatalog = async () => {
+    const term = query.trim().toLowerCase()
+    if (catalogBusy || operationBusy || ecosystem !== "termux" || !validPackageName(term)) return
+    setCatalogBusy(true); setError(null); setFound(null)
+    try {
+      const result = await inspect<{ packages: AvailablePackage[]; truncated: boolean }>("search-packages", term)
+      if (!Array.isArray(result.packages) || result.packages.length > 60) throw new Error("Invalid catalog")
+      setFound(result)
+    } catch { setError("Termux catalog search failed.") }
+    finally { setCatalogBusy(false) }
+  }
+  const request = async (kind: PackageKind | "refresh", preview: boolean, name?: string): Promise<CommandResponse> => {
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-PocketHost-Intent": "termux-admin" },
+      credentials: "same-origin",
+      body: JSON.stringify({
+        action: preview ? "package-preview" : "package",
+        name: kind,
+        path: kind === "install" || kind === "remove" || kind === "upgrade" ? name : undefined,
+      }),
+    })
+    if (!response.ok) throw new Error("HTTP " + response.status)
+    const data = await response.json() as CommandResponse
+    if (!data?.result || typeof data.result.exit !== "number" || typeof data.result.output !== "string")
+      throw new Error("Invalid apt response")
+    if (data.result.exit !== 0) throw new Error("apt exit " + data.result.exit)
+    return data
+  }
+  const preview = async (kind: PackageKind) => {
+    const name = kind === "upgrade-all" ? undefined : selected?.ecosystem === "termux" ? selected.name : undefined
+    if (operationBusy || catalogBusy || (kind !== "upgrade-all" && (!name || !validPackageName(name)))) return
+    setOperationBusy(true); setPlan(null); setError(null); setMessage(null); setOutput("")
+    try {
+      const data = await request(kind, true, name)
+      setPlan({ kind, name, output: data.result.output })
+      setOutput(data.result.output)
+      setMessage("Preview ready · no changes made")
+    } catch (cause) {
+      setError("Preview failed (" + (cause instanceof Error ? cause.message : "unknown") + "). No changes made.")
+    } finally { setOperationBusy(false) }
+  }
+  const reconcile = () => {
+    setReload(current => current + 1)
+    onChanged?.()
+  }
+  const apply = async () => {
+    const approved = plan
+    if (!approved || operationBusy ||
+      (approved.kind !== "upgrade-all" && (selected?.ecosystem !== "termux" || selected.name !== approved.name))) return
+    if (!window.confirm("Apply Termux " + approved.kind +
+      (approved.name ? " " + approved.name : "") + " after preview? This changes installed packages.")) return
+    setOperationBusy(true); setPlan(null); setError(null); setMessage(null); setOutput("")
+    try {
+      const data = await request(approved.kind, false, approved.name)
+      setOutput(data.result.output)
+      setMessage("Operation completed · inventory refreshed")
+    } catch (cause) {
+      setError("Result unconfirmed (" + (cause instanceof Error ? cause.message : "connection lost") +
+        "). Inspect installed packages before retrying. No automatic retry.")
+    } finally {
+      setOperationBusy(false); setFound(null); reconcile()
+    }
+  }
+  const refreshIndexes = async () => {
+    if (operationBusy || !window.confirm("Refresh Termux apt indexes? This changes local package metadata.")) return
+    setOperationBusy(true); setPlan(null); setMessage(null); setError(null); setOutput("")
+    try {
+      const data = await request("refresh", false)
+      setOutput(data.result.output)
+      setMessage("Package indexes refreshed")
+    } catch (cause) {
+      setError("Index refresh result unconfirmed (" + (cause instanceof Error ? cause.message : "connection lost") + ").")
+    } finally {
+      setOperationBusy(false); setFound(null); reconcile()
+    }
+  }
+  const selectedInstalled = selected?.ecosystem === "termux" &&
+    installed?.packages.some(item => item.name === selected.name)
+  const canManage = selected?.ecosystem === "termux" && validPackageName(selected.name)
+  const isBusy = operationBusy || catalogBusy
+  const counts = {
+    termux: installed?.packages.length ?? null,
+    node: summary?.installed.filter(item => item.ecosystem === "node").length ?? null,
+    python: summary?.installed.filter(item => item.ecosystem === "python").length ?? null,
+  }
+
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center gap-2" aria-label="Package ecosystems">
+      {(["termux", "node", "python"] as const).map(item =>
+        <Button key={item} size="sm" variant={ecosystem === item ? "secondary" : "outline"}
+          onClick={() => changeEcosystem(item)} disabled={isBusy}>
+          {item === "termux" ? "Termux" : item === "node" ? "Node" : "Python"} · {counts[item] ?? "—"}
+        </Button>)}
+      {ecosystem !== "termux" && <Badge variant="outline">Read-only sample</Badge>}
+      {ecosystem === "termux" && installed?.truncated && <Badge variant="outline">Partial inventory</Badge>}
+      {ecosystem === "termux" && summary?.updates.state === "cached-unverified" &&
+        <Badge variant="outline">{summary.updates.candidates.length} cached update hints · unverified</Badge>}
     </div>
-    {busy && <p role="status">Running the selected operation…</p>}
-    <Feedback error={error} done={done} />
-    {output && <pre className="max-h-48 overflow-auto whitespace-pre-wrap rounded bg-muted p-2 text-xs">{output}</pre>}
-    <p className="text-muted-foreground text-xs">Calls the existing Termux apt engine with fixed arguments. No shell input.</p>
+
+    <div className="flex flex-wrap gap-2">
+      <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
+        value={query} onChange={event => changeQuery(event.target.value)} />
+      {ecosystem === "termux" &&
+        <Button size="sm" variant="outline" disabled={isBusy || !validPackageName(query.trim().toLowerCase())}
+          onClick={() => void searchCatalog()}>Search catalog</Button>}
+    </div>
+
+    {inventoryError && ecosystem === "termux" &&
+      <p role="alert">Termux inventory unavailable. {installed ? "Showing last successful result." : "Try Refresh."}</p>}
+    {summaryError && ecosystem !== "termux" && <p role="alert">Ecosystem metadata may be outdated.</p>}
+    {loading && !installed && ecosystem === "termux" &&
+      <div aria-label="Loading package inventory" className="space-y-2">
+        {[0, 1, 2].map(item => <div key={item} className="h-7 animate-pulse rounded bg-muted" />)}
+      </div>}
+    {(!loading || installed || ecosystem !== "termux") &&
+      <div className="max-h-[30rem] overflow-auto rounded-md border">
+        <table className="w-full text-sm">
+          <thead className="sticky top-0 bg-background">
+            <tr className="border-b">
+              <th className="p-2 text-left"><button type="button" onClick={() => chooseSort("name")}>
+                Package {sort === "name" ? (descending ? "↓" : "↑") : ""}
+              </button></th>
+              <th className="p-2 text-left"><button type="button" onClick={() => chooseSort("version")}>
+                Version {sort === "version" ? (descending ? "↓" : "↑") : ""}
+              </button></th>
+            </tr>
+          </thead>
+          <tbody>
+            {visible.map(item => <tr key={item.ecosystem + ":" + item.name}
+              className={selected?.ecosystem === item.ecosystem && selected.name === item.name ? "bg-muted/50" : "border-b"}>
+              <td className="p-2"><button type="button" className="text-left font-medium underline-offset-4 hover:underline"
+                onClick={() => choose(item)}>{item.name}</button></td>
+              <td className="p-2 font-mono text-xs">{item.version}</td>
+            </tr>)}
+          </tbody>
+        </table>
+        {visible.length === 0 && !inventoryError && <p className="p-3 text-sm text-muted-foreground">No matching packages.</p>}
+      </div>}
+
+    {found && ecosystem === "termux" && <div className="space-y-1">
+      <p className="text-sm font-medium">Catalog results · {found.packages.length}{found.truncated ? "+" : ""}</p>
+      <div className="max-h-56 overflow-auto rounded-md border">
+        {found.packages.map(item => <button type="button" key={item.name}
+          className="block w-full border-b p-2 text-left text-sm hover:bg-muted"
+          onClick={() => choose({ ecosystem: "termux", name: item.name, description: item.description,
+            version: installed?.packages.find(entry => entry.name === item.name)?.version })}>
+          <span className="font-medium">{item.name}</span>
+          {item.description && <span className="ml-2 text-muted-foreground">{item.description}</span>}
+        </button>)}
+        {found.packages.length === 0 && <p className="p-3 text-sm">No catalog matches.</p>}
+      </div>
+    </div>}
+
+    {selected && <div className="space-y-3 rounded-md border p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="font-medium">{selected.name}</span>
+        <Badge variant="outline">{selected.ecosystem !== "termux" ? "Read-only" :
+          selectedInstalled ? "Installed" : "Not installed"}</Badge>
+      </div>
+      {selected.version && <p className="font-mono text-xs">{selected.version}</p>}
+      {selected.description && <p className="text-sm text-muted-foreground">{selected.description}</p>}
+      {canManage && <div className="flex flex-wrap gap-2">
+        <Button size="sm" disabled={isBusy} onClick={() => void preview("install")}>Preview install</Button>
+        <Button size="sm" variant="outline" disabled={isBusy || !selectedInstalled}
+          onClick={() => void preview("upgrade")}>Preview upgrade</Button>
+        <Button size="sm" variant="outline" disabled={isBusy || !selectedInstalled}
+          onClick={() => void preview("remove")}>Preview removal</Button>
+      </div>}
+    </div>}
+
+    {ecosystem === "termux" && <details className="rounded-md border p-3">
+      <summary className="cursor-pointer text-sm font-medium">Advanced package operations</summary>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={isBusy} onClick={() => void refreshIndexes()}>
+          Refresh apt indexes
+        </Button>
+        <Button size="sm" variant="outline" disabled={isBusy} onClick={() => void preview("upgrade-all")}>
+          Preview upgrade all
+        </Button>
+      </div>
+    </details>}
+
+    {plan && <div className="space-y-2 rounded-md border p-3">
+      <p className="text-sm font-medium">Preview: {plan.kind}{plan.name ? " · " + plan.name : ""}</p>
+      <p className="text-xs text-muted-foreground">Apt simulation only. Confirm before applying.</p>
+      <Button size="sm" disabled={isBusy} onClick={() => void apply()}>Apply previewed changes</Button>
+    </div>}
+    {operationBusy && <p role="status">Termux operation in progress…</p>}
+    {message && <p role="status" className="text-sm">{message}</p>}
+    {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+    {output && <pre className="max-h-60 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-2 text-xs">{output}</pre>}
   </div>
 }
 
@@ -367,74 +600,6 @@ export function RunitServiceActions() {
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>
     </div>}
     <Feedback error={error} done={done} />
-  </div>
-}
-
-type InstalledPackage = { name: string; version: string }
-type AvailablePackage = { name: string; description: string }
-export function PackageCatalog() {
-  const [installed, setInstalled] = React.useState<{ packages: InstalledPackage[]; truncated: boolean } | null>(null)
-  const [found, setFound] = React.useState<{ packages: AvailablePackage[]; truncated: boolean } | null>(null)
-  const [filter, setFilter] = React.useState("")
-  const [query, setQuery] = React.useState("")
-  const [busy, setBusy] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
-  const loadInstalled = async () => {
-    if (busy) return
-    setBusy(true); setError(null)
-    try {
-      const result = await inspect<{ packages: InstalledPackage[]; truncated: boolean }>("packages")
-      if (!Array.isArray(result.packages) || result.packages.length > 700)
-        throw new Error("Invalid package inventory")
-      setInstalled(result)
-    } catch { setError("Full installed-package inventory is unavailable.") }
-    finally { setBusy(false) }
-  }
-  const search = async () => {
-    if (busy || !/^[a-z0-9][a-z0-9+.-]{0,39}$/.test(query)) return
-    setBusy(true); setError(null)
-    try {
-      const result = await inspect<{ packages: AvailablePackage[]; truncated: boolean }>("search-packages", query)
-      if (!Array.isArray(result.packages) || result.packages.length > 60)
-        throw new Error("Invalid package search")
-      setFound(result)
-    } catch { setError("Termux apt package catalog is unavailable.") }
-    finally { setBusy(false) }
-  }
-  const visible = installed?.packages.filter(item => item.name.toLowerCase().includes(filter.toLowerCase().trim())) ?? []
-  return <div className="space-y-3 rounded-md border p-3">
-    <h3 className="text-sm font-medium">Full Termux package catalog</h3>
-    <Button size="sm" variant="outline" disabled={busy} onClick={() => void loadInstalled()}>
-      Load installed Termux packages
-    </Button>
-    {installed && <>
-      <Input aria-label="Filter complete package inventory" placeholder="Filter installed software" value={filter}
-        onChange={event => setFilter(event.target.value)} />
-      <p className="text-muted-foreground text-xs">
-        {installed.packages.length} installed Termux packages {installed.truncated ? "(truncated)" : "(complete within the catalog limit)"}
-      </p>
-      <div className="max-h-64 overflow-auto">
-        {visible.map(item => <div key={item.name} className="flex flex-wrap justify-between gap-2 border-b py-2 text-xs">
-          <span>{item.name}</span><span className="font-mono">{item.version}</span>
-        </div>)}
-      </div>
-    </>}
-    <div className="flex flex-wrap gap-2">
-      <Input className="min-w-40 flex-1" aria-label="Search available Termux software" placeholder="Find available packages" value={query}
-        onChange={event => setQuery(event.target.value.toLowerCase())} />
-      <Button size="sm" disabled={busy || !/^[a-z0-9][a-z0-9+.-]{0,39}$/.test(query)}
-        onClick={() => void search()}>Search catalog</Button>
-    </div>
-    {found && <div className="max-h-64 space-y-1 overflow-auto">
-      {found.packages.map(item => <div key={item.name} className="border-b py-2 text-xs">
-        <p className="font-medium">{item.name}</p>
-        <p className="text-muted-foreground">{item.description}</p>
-      </div>)}
-      {found.packages.length === 0 && <p className="text-sm">No packages found.</p>}
-      {found.truncated && <p className="text-xs">Search results truncated.</p>}
-    </div>}
-    {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-    <p className="text-muted-foreground text-xs">Uses dpkg-query and apt-cache directly, without reimplementing package resolution.</p>
   </div>
 }
 

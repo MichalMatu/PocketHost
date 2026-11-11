@@ -1,32 +1,73 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
-import { PackageActions, WorkspaceManager, WorkspaceBackupActions, RunitServiceActions, PackageCatalog, ResticActions } from "@/app/termux/admin-actions"
+import { PackageManager, WorkspaceManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
 
 afterEach(() => vi.unstubAllGlobals())
 
 describe("H3 confirmed operations, no password prerequisite", () => {
-  it("sends typed fixed package operation only after confirmation", async () => {
+  it("requires a successful apt simulation before applying a selected package", async () => {
+    const user = userEvent.setup()
+    const fetchMock = vi.fn(async (url: string, options?: RequestInit) => ({
+      ok: true,
+      json: async () => options?.method === "POST"
+        ? { operation: "install", result: { exit: 0, output: "apt preview or applied" } }
+        : { packages: [{ name: "git", version: "2.50" }], truncated: false },
+    }))
+    const confirm = vi.fn(() => true)
+    vi.stubGlobal("fetch", fetchMock)
+    vi.stubGlobal("confirm", confirm)
+    render(<PackageManager />)
+    await user.click(await screen.findByRole("button", { name: "git" }))
+    expect(screen.queryByRole("button", { name: "Apply previewed changes" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Preview removal" }))
+    await screen.findByRole("button", { name: "Apply previewed changes" })
+    expect(confirm).not.toHaveBeenCalled()
+    await user.click(screen.getByRole("button", { name: "Apply previewed changes" }))
+    await screen.findByText("Operation completed · inventory refreshed")
+    const sent = fetchMock.mock.calls.filter(call => call[1]?.method === "POST")
+      .map(call => JSON.parse(String(call[1]?.body)))
+    expect(sent).toEqual([
+      { action: "package-preview", name: "remove", path: "git" },
+      { action: "package", name: "remove", path: "git" },
+    ])
+    expect((fetchMock.mock.calls.find(call => call[1]?.method === "POST")![1]?.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("termux-admin")
+    expect(confirm).toHaveBeenCalledTimes(1)
+  })
+
+  it("invalidates the preview when a different package is selected", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal("fetch", vi.fn(async (_url: string, options?: RequestInit) => ({
+      ok: true, json: async () => options?.method === "POST"
+        ? { result: { exit: 0, output: "Simulated" } }
+        : { packages: [{ name: "git", version: "2" }, { name: "curl", version: "8" }], truncated: false },
+    })))
+    render(<PackageManager />)
+    await user.click(await screen.findByRole("button", { name: "git" }))
+    await user.click(screen.getByRole("button", { name: "Preview removal" }))
+    await screen.findByRole("button", { name: "Apply previewed changes" })
+    await user.click(screen.getByRole("button", { name: "curl" }))
+    expect(screen.queryByRole("button", { name: "Apply previewed changes" })).toBeNull()
+  })
+
+  it("does not retry a mutation when its result is unconfirmed", async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => {
-      void _url
-      void options
-      return {
-        ok: true, json: async () => ({
-          operation: "install", result: { exit: 0, output: "fixture install complete" },
-        }),
+      if (options?.method === "POST") {
+        const body = JSON.parse(String(options.body))
+        if (body.action === "package") throw new TypeError("Network disconnected")
+        return { ok: true, json: async () => ({ result: { exit: 0, output: "Simulated" } }) }
       }
+      return { ok: true, json: async () => ({ packages: [{ name: "curl", version: "8" }], truncated: false }) }
     })
     vi.stubGlobal("fetch", fetchMock)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    render(<PackageActions />)
-    await user.type(screen.getByLabelText("Package name"), "git")
-    await user.click(screen.getByRole("button", { name: "Install" }))
-    await screen.findByText("fixture install complete")
-    const sent = fetchMock.mock.calls[0]!
-    expect(JSON.parse(String(sent[1]?.body))).toEqual({ action: "package", name: "install", path: "git" })
-    expect((sent[1]?.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("termux-admin")
-    expect(screen.queryByLabelText(/password/i)).toBeNull()
+    render(<PackageManager />)
+    await user.click(await screen.findByRole("button", { name: "curl" }))
+    await user.click(screen.getByRole("button", { name: "Preview removal" }))
+    await user.click(await screen.findByRole("button", { name: "Apply previewed changes" }))
+    await screen.findByText(/Result unconfirmed/)
+    expect(fetchMock.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(2)
   })
 
   it("supports creating and saving a file in its separate workspace", async () => {
@@ -66,27 +107,6 @@ describe("H3 confirmed operations, no password prerequisite", () => {
 })
 
 describe("H3 additional native-tool integrations", () => {
-  it("previews apt changes without a confirmation or mutation", async () => {
-    const user = userEvent.setup()
-    const fetchMock = vi.fn(async (_url: string, _options?: RequestInit) => {
-      void _url
-      void _options
-      return {
-        ok: true,
-        json: async () => ({ operation: "install", result: { exit: 0, output: "Simulated changes" } }),
-      }
-    })
-    const confirm = vi.fn(() => true)
-    vi.stubGlobal("fetch", fetchMock)
-    vi.stubGlobal("confirm", confirm)
-    render(<PackageActions />)
-    await user.type(screen.getByLabelText("Package name"), "git")
-    await user.click(screen.getByRole("button", { name: "Preview install" }))
-    await screen.findByText("Simulated changes")
-    const payload = JSON.parse(String(fetchMock.mock.calls[0]![1]?.body))
-    expect(payload).toEqual({ action: "package-preview", name: "install", path: "git" })
-    expect(confirm).not.toHaveBeenCalled()
-  })
   it("reports snapshot verification independently from restore", async () => {
     const user = userEvent.setup()
     const name = "snapshot-20261107-aaaaaaaaaaaa"
@@ -141,8 +161,8 @@ describe("H3 runit service registration UI", () => {
   })
 })
 
-describe("H3 complete Termux software catalog", () => {
-  it("loads dpkg inventory and searches available apt packages with no writes", async () => {
+describe("H3 unified package inventory", () => {
+  it("shows one installed list, filters it and searches the apt catalog separately", async () => {
     const user = userEvent.setup()
     const fetchMock = vi.fn(async (url: string, options?: RequestInit) => {
       expect(options?.method).toBe("GET")
@@ -151,10 +171,10 @@ describe("H3 complete Termux software catalog", () => {
         : { query: "restic", packages: [{ name: "restic", description: "Encrypted backups" }], truncated: false } }
     })
     vi.stubGlobal("fetch", fetchMock)
-    render(<PackageCatalog />)
-    await user.click(screen.getByRole("button", { name: "Load installed Termux packages" }))
-    await screen.findByText("curl")
-    await user.type(screen.getByLabelText("Search available Termux software"), "restic")
+    render(<PackageManager />)
+    await screen.findByRole("button", { name: "curl" })
+    expect(screen.getAllByLabelText("Search packages")).toHaveLength(1)
+    await user.type(screen.getByLabelText("Search packages"), "restic")
     await user.click(screen.getByRole("button", { name: "Search catalog" }))
     await screen.findByText("Encrypted backups")
     expect(fetchMock.mock.calls).toHaveLength(2)

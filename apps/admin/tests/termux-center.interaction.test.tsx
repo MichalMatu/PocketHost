@@ -55,7 +55,10 @@ function mount(section: "packages" | "files" | "services" | "backups" | "termina
   const mock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     expect(init?.method ?? "GET").toBe("GET")
     const url = String(input)
-    const output = url === "/api/v1/observability" ? observation :
+    const output = url.includes("mode=packages") ? { packages: [
+        { name: "curl", version: "8.0" },
+      ], truncated: false } :
+      url === "/api/v1/observability" ? observation :
       url === "/api/v1/sites" ? { sites: [site] } :
       url === "/api/v1/termux-tools" ? tools :
       url.includes("mode=file-roots") ? { roots: [
@@ -109,7 +112,7 @@ describe("H3 strict read-only contracts", () => {
   it("loads packages without fetching unrelated module inventories", async () => {
     const calls = mount("packages")
     await screen.findByText("curl")
-    expect(screen.getByLabelText("Filter installed packages")).toBeTruthy()
+    expect(screen.getByLabelText("Search packages")).toBeTruthy()
     expect(screen.queryByText("Full Termux file manager")).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
