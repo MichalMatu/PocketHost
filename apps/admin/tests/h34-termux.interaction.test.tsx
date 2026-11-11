@@ -102,7 +102,7 @@ describe("H3.4 full Termux administration", () => {
     vi.stubGlobal("confirm", vi.fn(() => true))
     render(<TermuxFileExplorer />)
     await screen.findByText(/old.txt \(18 B\)/)
-    await user.click(screen.getByRole("button", { name: "Edit" }))
+    await user.click(screen.getByRole("button", { name: "Open file old.txt" }))
     expect((screen.getByLabelText("Termux text editor") as HTMLTextAreaElement).value)
       .toBe("Previous file text")
     const source = screen.getByLabelText("Termux file source")
@@ -118,6 +118,78 @@ describe("H3.4 full Termux administration", () => {
       action: "full-file", root: "home", path: "new.txt", content: "New file text",
     })
   })
+  it("opens folders by row click and navigates with breadcrumbs", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (url: string) => url.includes("mode=file-roots")
+      ? { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      : { ok: true, json: async () => ({
+        path: "", entries: url.includes("path=docs")
+          ? [{ name: "readme.md", kind: "file", bytes: 5 }]
+          : [{ name: "docs", kind: "directory", bytes: 0 }],
+        truncated: false,
+      }) })
+    vi.stubGlobal("fetch", calls)
+    render(<TermuxFileExplorer />)
+    await user.click(await screen.findByRole("button", { name: "Open folder docs" }))
+    expect(await screen.findByRole("button", { name: "Open file readme.md" })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "home" }))
+    expect(await screen.findByRole("button", { name: "Open folder docs" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Open" })).toBeNull()
+  })
+
+  it("stages copy through the file menu and uses the destination path unchanged", async () => {
+    const user = userEvent.setup()
+    const posts: Record<string, unknown>[] = []
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        posts.push(JSON.parse(String(options.body)) as Record<string, unknown>)
+        return { ok: true, json: async () => ({ changed: true }) }
+      }
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      return { ok: true, json: async () => ({
+        path: "", entries: [{ name: "memo.txt", kind: "file", bytes: 3 }], truncated: false,
+      }) }
+    }))
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<TermuxFileExplorer />)
+    await user.click(await screen.findByRole("button", { name: "Actions for memo.txt" }))
+    await user.click(await screen.findByRole("menuitem", { name: "Copy to…" }))
+    expect(posts).toHaveLength(0)
+    await user.type(screen.getByLabelText("Termux destination"), "archive/memo.txt")
+    await user.click(screen.getByRole("button", { name: "Copy" }))
+    await screen.findByText("copy completed")
+    expect(posts).toHaveLength(1)
+    expect(posts[0]).toMatchObject({
+      action: "full-file", name: "copy", root: "home",
+      path: "memo.txt", destination: "archive/memo.txt",
+    })
+  })
+
+  it("requires two confirmations for folder-tree deletion and never opens links", async () => {
+    const user = userEvent.setup()
+    const posts = vi.fn()
+    vi.stubGlobal("confirm", vi.fn().mockReturnValueOnce(true).mockReturnValueOnce(false))
+    vi.stubGlobal("fetch", vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") posts(options)
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      return { ok: true, json: async () => ({
+        path: "", entries: [
+          { name: "docs", kind: "directory", bytes: 0 },
+          { name: "unsafe-link", kind: "link", bytes: 0 },
+        ], truncated: false,
+      }) }
+    }))
+    render(<TermuxFileExplorer />)
+    expect(await screen.findByRole("button", { name: "Open folder docs" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Open file unsafe-link" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Actions for docs" }))
+    await user.click(await screen.findByRole("menuitem", { name: "Delete folder tree" }))
+    expect(window.confirm).toHaveBeenCalledTimes(2)
+    expect(posts).not.toHaveBeenCalled()
+  })
+
   it("starts one ttyd session only on click, no password and no autostart", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, options?: RequestInit) => {
