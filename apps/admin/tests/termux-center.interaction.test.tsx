@@ -134,16 +134,21 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.queryByText(/This trusted-LAN development panel has no login/)).toBeNull()
   })
 
-  it("renders exactly one File Manager with the workspace shortcut", async () => {
+  it("renders one general-purpose File Manager without a hardcoded workspace shortcut", async () => {
     const user = userEvent.setup()
     const calls = mount("files")
     await screen.findByRole("heading", { name: "Files" })
-    expect(screen.queryByText("Termux workspace files")).toBeNull()
     expect(screen.getAllByRole("heading", { name: "Files" })).toHaveLength(1)
-    await user.click(screen.getByRole("button", { name: "Workspace" }))
-    expect(calls.mock.calls.some(call => String(call[0]).includes("Projects%2FPocketHost-H3-Workspace"))).toBe(true)
+    const location = screen.getByRole("combobox", { name: "Location" })
+    expect(screen.getByRole("option", { name: "Termux Home" })).toBeTruthy()
+    expect(screen.getByRole("option", { name: "Termux System" })).toBeTruthy()
+    expect(screen.getByRole("option", { name: "Phone Storage" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Workspace" })).toBeNull()
+    expect(screen.queryByRole("navigation", { name: "Quick locations" })).toBeNull()
+    await user.selectOptions(location, "prefix")
+    await waitFor(() => expect(calls.mock.calls.some(call =>
+      String(call[0]).includes("mode=browse-root&root=prefix"))).toBe(true))
     expect(screen.queryByRole("button", { name: "Inspect files" })).toBeNull()
-    expect(screen.queryByText(/This File Manager remains for Termux system paths/)).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })

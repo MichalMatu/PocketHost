@@ -100,7 +100,7 @@ describe("Termux filesystem and administration", () => {
       new URL(call[0], "http://localhost").searchParams.get("path") === "Documents" &&
       new URL(call[0], "http://localhost").searchParams.get("root") === "shared")).toBe(true))
     expect(select.value).toBe("shared")
-    expect(screen.getByText("Phone Storage")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Phone Storage" })).toBeTruthy()
   })
 
   it("does not manufacture shortcuts for files, links, or missing roots", async () => {
