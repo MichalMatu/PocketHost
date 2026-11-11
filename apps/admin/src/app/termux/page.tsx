@@ -1,10 +1,10 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { Archive, Boxes, FolderOpen, Package, RefreshCw, ServerCog, ShieldCheck } from "lucide-react"
+import { Archive, Boxes, Package, RefreshCw, ServerCog, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
@@ -86,7 +86,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" />Termux</Badge>
             <Link to="/settings/network" className="text-muted-foreground text-xs underline-offset-4 hover:underline">
-              LAN only · no login
+              <Badge variant="outline">LAN only · no login</Badge>
             </Link>
           </div>
           <Button variant="outline" onClick={() => void refresh()} disabled={reading}>
@@ -99,7 +99,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Package className="size-5" /> Installed software</CardTitle>
-                <CardDescription>Reuses O1's bounded dpkg, npm and pip inventory; cached update hints are not verified.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <Input aria-label="Filter installed packages" placeholder="Search installed packages…" value={query}
@@ -119,7 +118,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                     </div>)}
                     {installed.length === 0 && <p className="text-muted-foreground">No matching packages in the bounded sample.</p>}
                   </div>
-                  <GuardNotice>Package modifications execute only when you select and confirm an action.</GuardNotice>
                 </>}
                 {!snapshot && !errors.snapshot && <p role="status">Reading package metadata…</p>}
                 <PackageActions />
@@ -131,14 +129,9 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           {section === "files" && <section className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><FolderOpen className="size-5" /> File Manager</CardTitle>
-                <CardDescription>One explorer for HOME, PREFIX, shared storage and the H3 workspace.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <TermuxFileExplorer />
-                <GuardNotice>
-                  Files inside a PocketHost-created website belong to <a className="underline underline-offset-4" href="/sites">Hosting → Websites</a>. This File Manager remains for Termux system paths.
-                </GuardNotice>
               </CardContent>
             </Card>
           </section>}
@@ -147,19 +140,16 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><ServerCog className="size-5" /> Termux services</CardTitle>
-                <CardDescription>Existing allowlisted runit status checks. Observed services are externally owned, not adopted.</CardDescription>
+                <Badge variant="outline">External inventory · read-only</Badge>
               </CardHeader>
               <CardContent className="space-y-3">
                 {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
                 {snapshot?.host.services.map(service => <div key={service.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-2">
                   <span className="text-sm font-medium">{service.label}</span>
-                  <div className="flex gap-2"><Badge variant="outline">External</Badge><State value={service.state} /></div>
+                  <State value={service.state} />
                 </div>)}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
                 <RunitServiceActions />
-                <GuardNotice>
-                  PocketHost-owned websites are managed in <a className="underline underline-offset-4" href="/sites">Hosting → Websites</a>, not in the system service inventory.
-                </GuardNotice>
               </CardContent>
             </Card>
           </section>}
@@ -168,21 +158,18 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Archive className="size-5" /> Backup readiness</CardTitle>
-                <CardDescription>Optional Restic tool detection and scoped Termux backup operations.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="outline"><Boxes className="size-3" /> Restic: {restic?.state ?? "unverified"}</Badge>
-                  <Badge variant="outline">Restic jobs: not configured</Badge>
                 </div>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
                 <GuardNotice>
-                  Website versions and release rollback belong to <a href="/sites" className="underline underline-offset-4">Hosting → Websites</a>. A release is not an independent data backup.
+                  Releases are not data backups. <a href="/sites" className="underline underline-offset-4">Website versions</a> remain separate.
                 </GuardNotice>
                 <WorkspaceBackupActions />
                 <ResticActions detected={restic?.state === "detected"} />
                 <FullTermuxBackups detected={restic?.state === "detected"} />
-                <GuardNotice>Snapshots protect the H3 workspace; website releases are separate and do not replace a full Termux backup.</GuardNotice>
                 <p className="text-sm font-medium">Optional integrations</p>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
