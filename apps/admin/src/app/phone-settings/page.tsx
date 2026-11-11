@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { AndroidActionButton } from "@/app/shizuku/android-action-button"
+import { BrightnessModeControl } from "./brightness-mode-control"
 import {
   parseShizukuStatus, parseShizukuSystem,
   type ShizukuStatus, type ShizukuSystem,
@@ -84,6 +85,12 @@ export default function PhoneSettingsPage() {
   const sample = system?.observedAt
   const selectedBrightness = brightnessDraft || String(currentBrightness ?? 128)
 
+  function refreshValues() {
+    setLoading(true)
+    setError(null)
+    setRefreshKey(key => key + 1)
+  }
+
   return (
     <BaseLayout title="Phone Settings" description="Android display controls through the authorized Shizuku Companion">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
@@ -95,11 +102,7 @@ export default function PhoneSettingsPage() {
               {sample ? "Sample: " + new Date(sample).toLocaleTimeString() : "No verified sample"}
             </span>
           </div>
-          <Button size="sm" variant="outline" disabled={loading} onClick={() => {
-            setLoading(true)
-            setError(null)
-            setRefreshKey(key => key + 1)
-          }}>
+          <Button size="sm" variant="outline" disabled={loading} onClick={refreshValues}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh values
           </Button>
         </div>
@@ -115,6 +118,7 @@ export default function PhoneSettingsPage() {
             <div className="grid gap-4 lg:grid-cols-2">
               <section className="space-y-3 rounded-lg border p-4">
                 <h3 className="font-medium">Brightness</h3>
+                <BrightnessModeControl connected={connected} onValuesChanged={refreshValues} />
                 <p className="min-h-5 text-sm text-muted-foreground">Stored Android value: <span className="font-medium tabular-nums">
                   {currentBrightness == null ? "Unavailable" : currentBrightness + " / 255"}
                 </span></p>
@@ -124,10 +128,10 @@ export default function PhoneSettingsPage() {
                   onChange={event => setBrightnessDraft(event.target.value)} />
                 {brightnessDraft !== "" && connected &&
                   <AndroidActionButton action="brightness" value={brightnessDraft}
-                    onSuccess={() => setRefreshKey(key => key + 1)}>Save brightness</AndroidActionButton>}
+                    onSuccess={refreshValues}>Save brightness</AndroidActionButton>}
                 <p className="text-xs text-muted-foreground">
-                  Adaptive brightness may override the visible result. The current Companion does not report
-                  brightness mode or actual display luminance.
+                  Check the mode above. Adaptive brightness can override saved levels.
+                  The native bridge reports stored values, not physical screen luminance.
                 </p>
               </section>
               <section className="space-y-3 rounded-lg border p-4">
@@ -143,7 +147,7 @@ export default function PhoneSettingsPage() {
                 </select>
                 {timeoutDraft !== "" && connected &&
                   <AndroidActionButton action="timeout" value={timeoutDraft}
-                    onSuccess={() => setRefreshKey(key => key + 1)}>Save timeout</AndroidActionButton>}
+                    onSuccess={refreshValues}>Save timeout</AndroidActionButton>}
                 <p className="text-xs text-muted-foreground">
                   Android may enforce device policy limits. Saving does not override system administrators.
                 </p>
