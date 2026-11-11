@@ -192,9 +192,13 @@ export function readBoundedNodePreview(port: number): Promise<string> {
         }
         chunks.push(bytes);
       });
-      response.once('end', () =>
-        resolve(Buffer.concat(chunks).toString('utf8').replace(/[\x00-\x08\x0b-\x1f\x7f]/g, '')),
-      );
+      response.once('end', () => {
+        const clean = Buffer.concat(chunks).toString('utf8').split('').filter((character) => {
+          const code = character.charCodeAt(0);
+          return code > 31 && code !== 127 || code === 9 || code === 10;
+        }).join('');
+        resolve(clean);
+      });
       response.once('error', reject);
     });
     request.once('timeout', () => request.destroy(new Error('Node preview timeout')));
@@ -436,9 +440,15 @@ export class NodeRunitHost {
   checkBuild(id: string, release: string): {
     release: string; status: 'syntax-valid' | 'syntax-invalid'; executed: false;
   } {
-    const plan = this.preview(id);
-    if (!plan.allowed || plan.release !== release || !RELEASE.test(release)) {
-      throw new Error('Node source admission or toolchain unavailable');
+    // Syntax inspection needs the fixed Node binary, not an npm version probe.
+    // Re-attest the exact staged candidate; do not grant deploy or run permission.
+    const candidate = this.projects.inspect(id).candidateRelease;
+    if (candidate !== release || !RELEASE.test(release)) {
+      throw new Error('Node source admission unavailable');
+    }
+    const source = this.projects.release(id, release);
+    if (source.plan.dependencyCount !== 0 || source.plan.commands.build !== null) {
+      throw new Error('Node syntax check requires a dependency-free, no-build candidate');
     }
     return this.checkReleaseSyntax(id, release);
   }

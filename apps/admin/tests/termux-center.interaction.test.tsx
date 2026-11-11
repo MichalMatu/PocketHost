@@ -121,7 +121,7 @@ describe("H3 strict read-only contracts", () => {
     const user = userEvent.setup()
     const calls = mount("packages")
     await screen.findByRole("button", { name: "curl" })
-    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await user.click(screen.getByRole("button", { name: "Refresh" }))
     await waitFor(() => expect(calls.mock.calls.filter(call =>
       String(call[0]).includes("mode=packages"))).toHaveLength(2))
   })

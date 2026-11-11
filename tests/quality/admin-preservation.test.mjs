@@ -44,9 +44,9 @@ const originalPaths = [
   '*',
 ];
 
-test('full 32-route upstream admin shell remains available beside seventeen PocketHost routes', () => {
+test('full 32-route upstream admin shell remains available beside twenty PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 19);
+  assert.equal(allPaths.length, originalPaths.length + 20);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -96,8 +96,9 @@ test('M0 keeps observed external services in System, not the Hosting project cat
   const systemGroup = navigation.split('label: "System",')[1]?.split('label: "Hosting",')[0] ?? '';
   const hostingGroup =
     navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
-  assert.match(systemGroup, /url: "\/host"/);
-  assert.doesNotMatch(hostingGroup, /url: "\/host"/);
+  assert.match(systemGroup, /url: "\/services"/);
+  assert.doesNotMatch(systemGroup, /url: "\/host"/);
+  assert.match(hostingGroup, /url: "\/host"/);
   assert.match(hostingGroup, /url: "\/sites"/);
   assert.match(hostingGroup, /url: "\/deployments"/);
   assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);

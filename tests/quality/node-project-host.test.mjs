@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync, symlinkSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';

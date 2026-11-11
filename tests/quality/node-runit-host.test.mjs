@@ -139,6 +139,15 @@ test('M3 syntax check is explicitly non-executing and rejects unavailable releas
   assert.equal(checked.status, 'syntax-valid');
 });
 
+test('M3 syntax check re-attests candidate and refuses tampered code', async (t) => {
+  const { projects, project, root, host } = fixture(t);
+  const staged = projects.stage(project.id, source).project;
+  const file = path.join(root, project.id, 'releases', staged.candidateRelease, 'server.mjs');
+  (await import('node:fs')).writeFileSync(file, 'console.log("changed")');
+  assert.throws(() => host.checkBuild(project.id, staged.candidateRelease), /digest mismatch/);
+  assert.equal(host.status(project.id).state, 'not-provisioned');
+});
+
 test('M3 runit launch drops inherited admin environment and validates fixed loopback port', () => {
   const folder = '/data/data/com.termux/files/home/PocketHost-NodeProjects/node-' + 'c'.repeat(32) + '/releases/r-' + 'd'.repeat(32);
   const script = runScript(folder, 19301, 'e'.repeat(48));

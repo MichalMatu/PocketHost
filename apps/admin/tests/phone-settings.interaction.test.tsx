@@ -111,7 +111,7 @@ describe("dedicated Phone Settings", () => {
       "settings get system screen_brightness_mode",
       "settings get system screen_brightness",
     ])
-    await screen.findByText(/Current: 128 \/ 255/)
+    await screen.findByText("128 / 255")
     expect(fetchMock.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(5)
   })
 
