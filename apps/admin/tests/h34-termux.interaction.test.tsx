@@ -257,7 +257,7 @@ describe("Termux filesystem and administration", () => {
     expect(posts).not.toHaveBeenCalled()
   })
 
-  it("starts one ttyd session only on click, no password and no autostart", async () => {
+  it("starts a ttyd session only on click and renders one automatically visible shell", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, options?: RequestInit) => {
       expect(url).toContain("/api/v1/termux-admin")
@@ -268,15 +268,60 @@ describe("Termux filesystem and administration", () => {
     })
     vi.stubGlobal("fetch", calls)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    render(<TermuxTerminalPanel />)
+    render(<TermuxTerminalPanel detected />)
     await screen.findByText("Stopped")
     expect(screen.queryByTitle("PocketHost interactive Termux shell")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Start terminal" }))
-    await screen.findByText("Session active")
+    await screen.findByText("Terminal running")
     const shell = screen.getByTitle("PocketHost interactive Termux shell") as HTMLIFrameElement
     expect(shell.getAttribute("src")).toBe("/terminal/")
     expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+    expect(screen.queryByRole("button", { name: /Show terminal|Hide terminal/ })).toBeNull()
+    expect(screen.queryByRole("button", { name: "Start terminal" })).toBeNull()
+    expect(screen.getByRole("button", { name: "Stop terminal" })).toBeTruthy()
     expect(screen.queryByLabelText(/password/i)).toBeNull()
+  })
+
+  it("restores an already-running terminal on mount without starting another shell", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (_url: string, options?: RequestInit) => {
+      if (options?.method === "POST") return {
+        ok: true, json: async () => ({ terminal: { running: false, url: null } }),
+      }
+      return { ok: true, json: async () => ({ terminal: { running: true, url: "/terminal/" } }) }
+    })
+    vi.stubGlobal("fetch", calls)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<TermuxTerminalPanel detected={false} />)
+    expect(await screen.findByTitle("PocketHost interactive Termux shell")).toBeTruthy()
+    expect(screen.getByText("Terminal running")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Stop terminal" })).toBeTruthy()
+    expect(screen.queryByText(/ttyd is not installed/)).toBeNull()
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(0)
+    await user.click(screen.getByRole("button", { name: "Stop terminal" }))
+    await screen.findByText("Stopped")
+    expect(screen.queryByTitle("PocketHost interactive Termux shell")).toBeNull()
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+  })
+
+  it("does not invent a missing ttyd installation while tool detection is pending", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, json: async () => ({ terminal: { running: false, url: null } }),
+    })))
+    render(<TermuxTerminalPanel />)
+    await screen.findByText("Stopped")
+    expect(screen.queryByText(/ttyd is not installed/)).toBeNull()
+    expect(screen.getByRole("button", { name: "Start terminal" }).hasAttribute("disabled")).toBe(true)
+  })
+
+  it("refuses a conflicting running status without mounting a phantom terminal", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({
+      ok: true, json: async () => ({ terminal: { running: true, url: null } }),
+    })))
+    render(<TermuxTerminalPanel detected />)
+    await screen.findByRole("alert")
+    expect(screen.queryByTitle("PocketHost interactive Termux shell")).toBeNull()
+    expect(screen.getByText("Status unverified")).toBeTruthy()
   })
   it("runs selected full-home encrypted backup through fixed Restic API", async () => {
     const user = userEvent.setup()

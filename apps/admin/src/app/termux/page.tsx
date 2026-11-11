@@ -150,7 +150,9 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             </Card>
           </section>}
           {section === "terminal" && <section className="space-y-4">
-            <TermuxTerminalPanel detected={tools?.tools.some(item => item.id === "ttyd" && item.state === "detected") ?? false} refreshToken={sectionRefreshToken} />
+            <TermuxTerminalPanel
+              detected={tools ? tools.tools.some(item => item.id === "ttyd" && item.state === "detected") : undefined}
+              detectionError={errors.tools} refreshToken={sectionRefreshToken} />
           </section>}
           {section === "agents" && <section className="space-y-4">
             <AgentApiPanel refreshToken={sectionRefreshToken} />

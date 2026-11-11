@@ -4,14 +4,28 @@ import { Badge } from "@/components/ui/badge"
 
 const api = "/api/v1/termux-admin"
 type Status = { running: boolean; url: string | null }
-async function read(): Promise<Status> {
-  const response = await fetch(api + "?mode=terminal-status", { credentials: "same-origin", cache: "no-store" })
-  if (!response.ok) throw new Error("Terminal status unavailable")
-  const result = await response.json() as { terminal: Status }
-  if (typeof result.terminal?.running !== "boolean" ||
-    ![null, "/terminal/"].includes(result.terminal.url)) throw new Error("Invalid terminal status")
-  return result.terminal
+
+function parseStatus(value: unknown): Status {
+  if (!value || typeof value !== "object" || !("terminal" in value)) {
+    throw new Error("Invalid terminal status")
+  }
+  const terminal = value.terminal
+  if (!terminal || typeof terminal !== "object" || !("running" in terminal) ||
+    !("url" in terminal) || typeof terminal.running !== "boolean" ||
+    (terminal.running ? terminal.url !== "/terminal/" : terminal.url !== null)) {
+    throw new Error("Invalid terminal status")
+  }
+  return terminal as Status
 }
+
+async function read(): Promise<Status> {
+  const response = await fetch(api + "?mode=terminal-status", {
+    credentials: "same-origin", cache: "no-store",
+  })
+  if (!response.ok) throw new Error("Terminal status unavailable")
+  return parseStatus(await response.json() as unknown)
+}
+
 async function command(name: "start" | "stop"): Promise<Status> {
   const response = await fetch(api, {
     method: "POST", credentials: "same-origin",
@@ -19,56 +33,77 @@ async function command(name: "start" | "stop"): Promise<Status> {
     body: JSON.stringify({ action: "terminal", name }),
   })
   if (!response.ok) throw new Error("Terminal command failed")
-  const result = await response.json() as { terminal: Status }
-  return result.terminal
+  return parseStatus(await response.json() as unknown)
 }
-export function TermuxTerminalPanel({ detected = true, refreshToken = 0 }: { detected?: boolean; refreshToken?: number }) {
+
+export function TermuxTerminalPanel({
+  detected, detectionError = false, refreshToken = 0,
+}: { detected?: boolean; detectionError?: boolean; refreshToken?: number }) {
   const [status, setStatus] = React.useState<Status | null>(null)
   const [error, setError] = React.useState("")
   const [busy, setBusy] = React.useState(false)
-  const [visible, setVisible] = React.useState(false)
   React.useEffect(() => {
     let mounted = true
-    void read().then(result => { if (mounted) setStatus(result) })
-      .catch(() => { if (mounted) setError("Terminal status unavailable.") })
+    void read().then(result => {
+      if (mounted) { setStatus(result); setError("") }
+    }).catch(() => {
+      if (mounted) setError("Terminal status unavailable. Refresh to check the session.")
+    })
     return () => { mounted = false }
   }, [refreshToken])
+
   const run = async (name: "start" | "stop") => {
-    if (busy || !detected || !window.confirm(name === "start"
-      ? "Open an interactive Termux shell for this trusted LAN session? Commands have your Termux user's permissions."
-      : "End this PocketHost-owned ttyd session?")) return
+    if (busy || !status || (name === "start" && (detected !== true || status.running)) ||
+      (name === "stop" && !status.running) || !window.confirm(name === "start"
+        ? "Open an interactive Termux shell for this trusted LAN session? Commands have your Termux user's permissions."
+        : "End this PocketHost-owned ttyd session?")) return
     setBusy(true); setError("")
     try {
-      setVisible(false)
-      const state = await command(name)
-      setStatus(state)
-      setVisible(name === "start" && state.running)
+      setStatus(await command(name))
     } catch {
-      setError("Terminal result unconfirmed. Verify session status before retrying.")
+      setError("Terminal result unconfirmed. Refresh to verify the session before retrying.")
       void read().then(setStatus).catch(() => undefined)
+    } finally {
+      setBusy(false)
     }
-    finally { setBusy(false) }
   }
+
+  const running = status?.running === true && status.url === "/terminal/"
   return <section className="space-y-4 rounded-md border p-4">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-medium">Interactive Termux terminal</h3>
-      <Badge variant="outline">{status ? status.running ? "Session active" : "Stopped" : "Status unknown"}</Badge>
+      <Badge variant="outline">{error ? "Status unverified" :
+        status ? running ? "Terminal running" : "Stopped" : "Checking status"}</Badge>
     </div>
-    <p className="text-xs text-muted-foreground">Interactive Termux shell · private LAN only.</p>
-    {!detected && <p className="text-sm">ttyd is not installed. Install it in Packages before opening the terminal.</p>}
+    <p className="text-xs text-muted-foreground">
+      Private LAN only. Shell commands have your Termux user's permissions. One browser client at a time.
+    </p>
+    {detectionError && <p role="alert" className="text-sm text-destructive">
+      Terminal availability could not be checked. Refresh to retry.
+    </p>}
+    {detected === false && !detectionError && !running && <p className="text-sm">
+      ttyd is not installed. Install it in Packages before opening a terminal.
+    </p>}
     <div className="flex flex-wrap gap-2">
-      <Button disabled={!detected || busy || !status || status.running} onClick={() => void run("start")}>Start terminal</Button>
-      <Button variant="outline" disabled={busy || !status?.running} onClick={() => void run("stop")}>Stop terminal</Button>
-      <Button variant="outline" disabled={busy || !status?.running} onClick={() => setVisible(prev => !prev)}>
-        {visible ? "Hide terminal" : "Show terminal"}
-      </Button>
-
+      {running
+        ? <Button variant="outline" disabled={busy} onClick={() => void run("stop")}>
+          Stop terminal
+        </Button>
+        : <Button disabled={busy || !status || detected !== true} onClick={() => void run("start")}>
+          Start terminal
+        </Button>}
     </div>
-    {visible && status?.running && <iframe
-      title="PocketHost interactive Termux shell" src="/terminal/" loading="eager"
-      className="h-[520px] w-full rounded-md border bg-black"
-      referrerPolicy="same-origin"
-    />}
+    {running ? <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">
+        The terminal appears automatically while ttyd is running. Leaving this page can disconnect the single-client session.
+      </p>
+      <iframe title="PocketHost interactive Termux shell" src="/terminal/" loading="eager"
+        className="h-[520px] w-full rounded-md border bg-black"
+        referrerPolicy="same-origin"
+      />
+    </div> : status && <p className="rounded-md border p-4 text-sm text-muted-foreground">
+      Terminal stopped. Start a session to open the shell here.
+    </p>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </section>
 }
