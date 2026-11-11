@@ -35,6 +35,17 @@ transcripts, duplicated status reports and entire source trees.
   cache and unchanged node_modules between sessions; install with the
   **verified** lockfile only when missing or changed, on the phone.
 
+## Optional graph tooling (host policy takes precedence)
+
+- Graphify/OpenVisio may help with nontrivial dependency mapping, but
+  **PocketHost execution stays exclusively on Samsung Termux Local Agent**.
+  The earlier disposable Mac Graphify pilot does not authorize Mac runs,
+  provide a current on-phone index, or install these tools on Samsung.
+- Only use an explicitly tested, scoped, on-demand adapter if available
+  on the authorized Termux host; otherwise use source and the existing
+  `dev:changed` selector. No OpenVisio auto-`init`, MCP, `--watch`,
+  telemetry or global scans. Never use graph hints as test PASS.
+
 ## FAST FLOW — proportional checks and caching
 
 For each iteration: **fresh main -> edit -> commit -> compare with the last
