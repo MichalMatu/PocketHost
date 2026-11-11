@@ -56,6 +56,23 @@ test('UI delta selects only dependent interaction test and incremental admin typ
   assert.deepEqual(plan.review, []);
 });
 
+test('admin ESLint is periodic and opt-in, not automatic for every UI change', () => {
+  const changed = [
+    'apps/admin/src/app/shizuku/page.tsx',
+    'apps/admin/tests/shizuku-page.interaction.test.tsx',
+  ];
+  const normal = planChangedChecks(changed, deps);
+  assert.equal(command(normal, 'admin changed-file lint'), undefined);
+  assert.ok(command(normal, 'ui tests'));
+  assert.ok(command(normal, 'admin incremental typecheck'));
+
+  const periodic = planChangedChecks(changed, deps, { includeAdminLint: true });
+  assert.deepEqual(command(periodic, 'admin changed-file lint').argv.slice(-2), [
+    'src/app/shizuku/page.tsx',
+    'tests/shizuku-page.interaction.test.tsx',
+  ]);
+});
+
 test('route preservation receives explicit test even if source is read as text', () => {
   const plan = planChangedChecks(['apps/admin/src/config/navigation.ts']);
   assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));

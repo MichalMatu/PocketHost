@@ -14,12 +14,15 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const flags = process.argv.slice(2);
 const baseArg = flags.find((arg) => arg.startsWith('--base='));
 const run = flags.includes('--run');
+const includeAdminLint = flags.includes('--admin-lint');
 if (
   !baseArg ||
   !/^--base=[0-9a-f]{7,40}$/.test(baseArg) ||
-  flags.some((arg) => arg !== baseArg && arg !== '--run')
+  flags.some((arg) => arg !== baseArg && arg !== '--run' && arg !== '--admin-lint')
 ) {
-  console.error('Usage: node scripts/dev/changed-checks.mjs --base=<verified-sha> [--run]');
+  console.error(
+    'Usage: node scripts/dev/changed-checks.mjs --base=<verified-sha> [--run] [--admin-lint]',
+  );
   process.exit(2);
 }
 const base = baseArg.slice('--base='.length);
@@ -142,8 +145,22 @@ function main() {
     console.log(JSON.stringify({ base, head, changed: [], state: 'NO_CHANGES' }));
     return;
   }
-  const plan = planChangedChecks(paths, buildTestDependencies(head));
-  console.log(JSON.stringify({ base, head, ...plan, mode: run ? 'run' : 'plan' }, null, 2));
+  const plan = planChangedChecks(paths, buildTestDependencies(head), {
+    includeAdminLint,
+  });
+  console.log(
+    JSON.stringify(
+      {
+        base,
+        head,
+        ...plan,
+        mode: run ? 'run' : 'plan',
+        adminLint: includeAdminLint ? 'requested' : 'deferred',
+      },
+      null,
+      2,
+    ),
+  );
   if (!run) return;
   // Keep the incremental TypeScript cache across Local Agent invocations.
   mkdirSync(path.join(root, '.tmp'), { recursive: true });

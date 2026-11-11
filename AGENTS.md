@@ -73,6 +73,15 @@ Preferred selection on clean, exact-SHA checkout:
   npm run dev:ui -- <test-file> runs a named interaction test.
   npm run dev:full / coverage / whole builds are for milestone closeout
   or cross-cutting high-risk changes, never a cosmetic default.
+- **Admin ESLint is not a routine DEV blocker.** Do not run
+  `admin:lint` or admin changed-file ESLint on every iteration. Batch it
+  manually about once a week (only if UI source changed), before a
+  milestone/release, or for a specific suspected lint regression.
+  `dev:changed` skips admin ESLint unless `--admin-lint` is requested.
+  For regular iterations, noncritical admin lint is not a blocker for
+  otherwise verified tests, typechecks, HMR or owner review.
+  Release G2 (`check:all`) still includes admin ESLint; never run
+  full G2 merely to clear routine lint warnings.
 - No mandatory Git pre-commit/pre-push hook, automatic npm install or
   daemonized QA loop. Keep commands explicit, deterministic and narrow.
   See [fast-flow guide](docs/DEV_ITERATION.md).

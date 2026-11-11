@@ -26,7 +26,7 @@ No GitHub Actions, Codex, Work or Mac/Linux fallback.
 | ----------------------------------------- | -------------------------------------------------------------------------- |
 | Docs only                                 | Documentation link/index check, changed Markdown lint and Prettier         |
 | Visual CSS/copy                           | Existing Vite HMR and owner review; focused check only if behavior changed |
-| Routes/controls                           | Affected Node/Vitest contracts and changed-file lint                       |
+| Routes/controls                           | Affected Node/Vitest contracts; admin lint is periodic, not default        |
 | Pure source/contract                      | Dependent Node tests, TypeScript incremental, boundaries                   |
 | Host command, data, ownership, networking | Positive/negative targeted device checks and explicit risk review          |
 | Milestone/public release                  | All applicable G0–G3, not just targeted checks                             |
@@ -37,6 +37,17 @@ through Local Agent only. Missing dependency mapping or infrastructure
 changes require manual impact review; the selector never claims full
 coverage automatically. Preserve dependencies and caches; avoid
 duplicate successful tests.
+
+### Admin ESLint cadence
+
+Admin ESLint is **optional during normal DEV iterations**: run a manual
+batch about once a week if UI source changed, during milestone/release
+closeout, or when investigating a specific suspected lint regression.
+`dev:changed` excludes admin ESLint by default; `--admin-lint`
+opts in to changed-file admin lint. Do not repeatedly block focused
+tests, Vite HMR or owner UI review on noncritical admin lint findings.
+Record skipped lint as **NOT RUN**, not PASS. Full `check:all`
+retains mandatory admin lint for G2 releases, not everyday commits.
 
 ## Optional external link review
 

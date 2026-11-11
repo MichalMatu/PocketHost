@@ -2,7 +2,11 @@
  * Dependency-aware, intentionally conservative PocketHost DEV gate planner.
  * Pure logic: no Git, filesystem or host operations.
  */
-export function planChangedChecks(paths, dependencies = {}) {
+export function planChangedChecks(
+  paths,
+  dependencies = {},
+  { includeAdminLint = false } = {},
+) {
   const changes = [...new Set(paths)].sort();
   const node = new Set();
   const ui = new Set();
@@ -138,7 +142,7 @@ export function planChangedChecks(paths, dependencies = {}) {
       'eslint',
       ...[...new Set(rootLint)].sort(),
     ]);
-  if (adminLint.length)
+  if (includeAdminLint && adminLint.length)
     add('admin changed-file lint', 'apps/admin', [
       'npm',
       'exec',

@@ -30,8 +30,9 @@ purpose: Small PocketHost context entrypoint; detailed evidence is linked, not p
    `npm run dev:changed -- --base=<sha>`; run that plan only through
    the verified Samsung Termux Local Agent after checking pending tasks.
 3. Run impacted tests, incremental typecheck where applicable and
-   changed-file lint/format; preserve existing npm, Vite and TypeScript
-   caches. No automatic reinstall, whole build or duplicated QA.
+   changed-file root lint/format; admin ESLint is periodic and manual,
+   not a per-iteration blocker. Preserve existing npm, Vite and
+   TypeScript caches. No automatic reinstall or duplicated QA.
 4. For UI changes use existing Vite HMR. Restart only the positively
    owned PocketHost panel if necessary; backend changes require manual
    sync/review. No foreign service operations.

@@ -34,12 +34,17 @@ identity established during the session; recheck when it changes.
 | Manually opt-in UI watcher | npm run dev:sync                                           |
 | Validate watcher policy    | npm run dev:sync:test                                      |
 | Milestone full gate        | npm run dev:full                                           |
+| Periodic admin ESLint     | npm run admin:lint (manual, about weekly or milestone)     |
 
 The change selector reads an exact clean Git revision range and
 direct/transitive static imports to select affected Node and Vitest
 tests. Its local dependency map is cached under ignored .tmp/,
 keyed by HEAD. The default **previews only**; --run executes checks
-in the same checked-out environment. Unmapped code, deleted files,
+in the same checked-out environment. Routine admin ESLint is
+**deferred**, not automatic; use `--admin-lint` for one intentional
+periodic check of changed UI files. Never halt ordinary UI iterations
+only to fix noncritical admin lint issues. A release G2 still requires
+admin lint, but it must not run on each commit. Unmapped code, deleted files,
 dependency/config and high-risk service changes require manual
 review; they are never implicitly accepted. Dynamic or indirect
 runtime wiring may need an additional focused test.
