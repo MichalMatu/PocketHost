@@ -11,6 +11,7 @@ These dated files are historical **exact-SHA evidence**, not instructions to rer
 
 ## 2026-11-10
 
+- [Monitoring closeout and universal static Hosting handoff](2026-11-10-monitoring-to-universal-static-hosting.md)
 - [M2/M3 guarded Node runit hosting source sprint](2026-11-10-m2-m3-node-runit-source-sprint.md)
 
 ## 2026-11-09

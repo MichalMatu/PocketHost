@@ -1,3 +1,10 @@
+---
+status: source-implemented-validation-open
+owner: ui
+last_reviewed: 2026-11-10
+purpose: Monitoring separation and generic static Hosting source handoff
+---
+
 # Monitoring closeout → universal static Hosting handoff (2026-11-10)
 
 ## Product decision
