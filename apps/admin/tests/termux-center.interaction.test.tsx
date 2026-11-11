@@ -1,4 +1,5 @@
 import * as React from "react"
+import { MemoryRouter } from "react-router-dom"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
@@ -76,7 +77,7 @@ function mount(section: "packages" | "files" | "services" | "backups" | "termina
     return { ok: output !== null, json: async () => output }
   })
   vi.stubGlobal("fetch", mock)
-  render(<TermuxCenterPage section={section} />)
+  render(<MemoryRouter><TermuxCenterPage section={section} /></MemoryRouter>)
   return mock
 }
 afterEach(() => vi.unstubAllGlobals())
@@ -107,6 +108,14 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.getByLabelText("Filter installed packages")).toBeTruthy()
     expect(screen.queryByText("Full Termux file manager")).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
+  })
+
+  it("keeps one compact LAN warning linked to full network safety guidance", async () => {
+    mount("packages")
+    await screen.findByText("curl")
+    const link = screen.getByRole("link", { name: "LAN only · no login" })
+    expect(link.getAttribute("href")).toBe("/settings/network")
+    expect(screen.queryByText(/This trusted-LAN development panel has no login/)).toBeNull()
   })
 
   it("renders exactly one File Manager with the workspace shortcut", async () => {
