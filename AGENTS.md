@@ -1,5 +1,49 @@
 # PocketHost — Agent Contract
 
+## CRITICAL: FAST FLOW FIRST — NO REPEATED GATES, NO LONG LOOPS
+
+**MANDATORY FOR EVERY AGENT AND EVERY POCKETHOST SPRINT:**
+Deliver the smallest complete working change. Select tests from the **actual
+changed paths**, not the whole project. Do not turn a one-file UI fix into
+a full quality audit, broad lint, coverage run or long preflight.
+
+1. **ONE COHERENT EDIT -> ONE FOCUSED CHECK -> DEPLOY/OWNER REVIEW.**
+   Batch related fixes; finish the functional change before polishing docs.
+   Do not repeatedly run the same checks as SHAs move due to documentation.
+2. **TEST ONLY WHAT CHANGED.** UI event -> relevant interaction test(s);
+   changed test file -> that test only; backend contract -> dependent Node
+   test(s), incremental types if relevant; copy/CSS -> HMR + visual review;
+   docs -> documentation checks only. No blanket UI suite, whole repo
+   ESLint, full build, coverage, G1/G2 or repeated unrelated checks as a
+   routine gate. Use `dev:changed` or an even smaller explicitly reviewed
+   focused command. Manual review is required for unmapped/high-risk files.
+3. **ADMIN ESLINT IS NOT ON THE CRITICAL PATH.** Never automatically run
+   `admin:lint` during ordinary iterations, even after another failed
+   gate. Batch about weekly when changes justify it, before an actual
+   release or while diagnosing a specific lint bug. `--admin-lint` is
+   explicit opt-in. Full release G2 still retains admin lint.
+4. **NO CHECKPOINT/FORMAT/LINT SPIRAL.** A failed check calls for one
+   concrete fix and rerunning **only that failed check plus directly
+   affected dependent tests**. Reuse previous PASS for unchanged SHA/scope.
+   Do not repeatedly block an owner-requested DEV panel refresh on
+   cosmetic findings in unrelated tests. Do not claim skipped tests PASS.
+5. **PANEL DELIVERY TAKES PRIORITY.** Prefer existing HMR. Where a
+   restart is necessary, use only the guarded, ownership-verified
+   PocketHost DEV refresh with rollback and protected-service checks.
+   Keep the target SHA pinned; do not move `main` with documentation-only
+   commits while an exact-SHA panel refresh is pending. One confirmed
+   refresh and bounded smoke, not a series of redundant restarts.
+6. **NO ENDLESS POLLING OR TASK DUPLICATION.** Read pending Local Agent
+   tasks/results once before scheduling; do not queue equivalent tasks.
+   If the terminal receipt is unavailable, state **PENDING/HOLD** once
+   and stop rather than consuming the conversation on repeated polls.
+   Run no unauthorized foreign-service or device operations.
+
+**Exceptions:** meaningful host security/process/network/persistence changes
+still require the relevant positive/negative device checks and any mandated
+release gates. Speed never overrides ownership safeguards or invents PASS
+evidence.
+
 ## Read scope and context budget
 
 This file applies repository-wide; nested AGENTS.md files add local rules.
@@ -60,8 +104,8 @@ Preferred selection on clean, exact-SHA checkout:
 - npm run dev:changed -- --base=<last-verified-sha> --run: execute that plan
   **only via Samsung Termux Local Agent**; never treat preview as execution.
 - The selector maps changed source to directly/transitively dependent
-  Node/Vitest tests; runs changed tests and cheap applicable structural
-  checks. If a file has no mapped tests or is infrastructure/config, it
+  Node/Vitest tests; tests-only changes do **not** trigger broad
+  structural gates. If a file has no mapped tests or is infrastructure/config, it
   demands MANUAL_REVIEW, **not** an invented PASS or a default full suite.
   Deleted/renamed files, missing dependencies and privileged changes need
   explicit assessment. If a required test is omitted, run it directly.

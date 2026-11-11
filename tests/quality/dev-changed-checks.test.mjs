@@ -53,7 +53,34 @@ test('UI delta selects only dependent interaction test and incremental admin typ
   assert.deepEqual(ui.argv.slice(-1), ['tests/shizuku-page.interaction.test.tsx']);
   assert.ok(command(plan, 'admin incremental typecheck'));
   assert.equal(command(plan, 'node tests'), undefined);
+  assert.equal(command(plan, 'admin changed-file lint'), undefined);
+  assert.equal(command(plan, 'structure'), undefined);
   assert.deepEqual(plan.review, []);
+});
+
+test('a changed UI test runs only itself, without admin lint, build or other suites', () => {
+  const plan = planChangedChecks(['apps/admin/tests/shizuku-page.interaction.test.tsx'], deps);
+  assert.deepEqual(plan.commands.map((item) => item.label), [
+    'ui tests',
+    'changed-file format',
+  ]);
+  assert.deepEqual(command(plan, 'ui tests').argv.slice(-1), [
+    'tests/shizuku-page.interaction.test.tsx',
+  ]);
+  assert.deepEqual(plan.review, []);
+});
+
+test('a changed Node test does not automatically run unrelated structure or other tests', () => {
+  const path = 'tests/quality/hosting-registry.test.mjs';
+  const plan = planChangedChecks([path], deps);
+  assert.deepEqual(command(plan, 'node tests').argv, [
+    'node',
+    '--test',
+    path,
+  ]);
+  assert.equal(command(plan, 'structure'), undefined);
+  assert.equal(command(plan, 'admin changed-file lint'), undefined);
+  assert.equal(command(plan, 'ui tests'), undefined);
 });
 
 test('admin ESLint is periodic and opt-in, not automatic for every UI change', () => {

@@ -7,6 +7,30 @@ purpose: Small, safe and cache-aware Samsung Local Agent development loop
 
 # PocketHost DEV — Fast Flow
 
+## NON-NEGOTIABLE: SHORT, CHANGE-FOCUSED SPRINTS
+
+**Default: implement -> run only affected tests -> sync/HMR -> owner review.
+No per-commit ESLint, complete UI suite, full G2, coverage or build.**
+
+- A changed interaction test runs **that file only**. A changed Node test
+  runs **that file only**. Do not add a structure gate for a test-only edit.
+- For a UI behavior change, run the directly related Vitest file and
+  incremental TypeScript only when the changed component warrants it.
+- For copy/CSS, use HMR and owner visual acceptance; for docs-only edits,
+  no source tests and no panel restart.
+- For a failing focused test, fix the actual regression, then rerun
+  that test. **Do not replay previously passed checks** to chase a new SHA.
+- Admin ESLint is periodic and opt-in. It is not a blocker in the
+  ordinary fast loop; full release G2 remains a separate milestone gate.
+- Avoid preflight repetition, duplicate Local Agent tasks and continuous
+  polling. Do not let documentation-only commits invalidate an
+  exact-SHA DEV refresh already in progress.
+- A requested PocketHost-only reload uses the existing guarded owner
+  refresh and a small route smoke, **not** another lengthy G2.
+  Keep foreign services untouched. Missing evidence stays HOLD/OPEN,
+  never reported as PASS.
+
+
 ## One normal iteration
 
 **Fresh main -> small coherent edit -> commit -> focused Samsung

@@ -45,7 +45,7 @@ export function planChangedChecks(
     if (file.startsWith('tests/quality/') && file.endsWith('.test.mjs')) {
       node.add(file);
       rootLint.push(file);
-      structure = true;
+      // A test-only edit must not need a repo-wide structure gate.
       continue;
     }
     if (file.startsWith('apps/admin/tests/') && /\.test\.(tsx|ts)$/.test(file)) {
