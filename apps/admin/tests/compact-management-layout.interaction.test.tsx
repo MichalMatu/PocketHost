@@ -57,7 +57,7 @@ const managementRoutes = [
   ["/projects", "Projects"],
   ["/deployments", "Deployments"],
   ["/agents", "Agents & API"],
-  ["/runtime-logs", "Logs & Diagnostics"],
+  ["/runtime-logs", "Project logs"],
   ["/settings/network", "Network access"],
   ["/settings/appearance", "Appearance"],
   ["/owned-site", "Owned site"],
@@ -88,6 +88,7 @@ describe("PocketHost global heading density", () => {
       expect(h1?.parentElement?.classList.contains("sr-only"), path).toBe(true)
       expect(h1?.parentElement?.textContent, path).toContain("Descriptive subtitle")
       expect(rendered.container.querySelector(".text-2xl"), path).toBeNull()
+      expect(rendered.queryByText("Footer"), path).toBeNull()
       expect(rendered.container.querySelector('[data-testid="page-content"]')?.textContent).toBe("Working controls")
       expect(Array.from(rendered.container.querySelectorAll("div")).some(element =>
         element.classList.contains("py-2") && element.classList.contains("md:py-3"),
@@ -116,6 +117,7 @@ describe("PocketHost global heading density", () => {
     const h1 = rendered.container.querySelector("h1")
     expect(h1?.textContent).toBe("Dashboard example")
     expect(h1?.classList.contains("text-2xl")).toBe(true)
+    expect(rendered.getByText("Footer")).toBeTruthy()
     expect(h1?.parentElement?.parentElement?.textContent).toContain("Descriptive subtitle")
     expect(Array.from(rendered.container.querySelectorAll("div")).some(element =>
       element.classList.contains("py-4") && element.classList.contains("md:py-6"),

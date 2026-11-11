@@ -8,6 +8,7 @@ import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hostin
 
 export default function DeploymentsPage() {
   const [project, setProject] = React.useState<OwnedProject | null>(null)
+  const [demoEnabled, setDemoEnabled] = React.useState<boolean | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [nodeLoading, setNodeLoading] = React.useState(true)
@@ -18,9 +19,13 @@ export default function DeploymentsPage() {
     const response = await fetch("/api/v1/owned-site/project", {
       cache: "no-store", credentials: "same-origin", signal,
     })
-    if (!response.ok) throw new Error("Deployment history unavailable or disabled")
+    if (response.status === 404) {
+      if (!signal?.aborted) { setProject(null); setDemoEnabled(false); setError(null) }
+      return
+    }
+    if (!response.ok) throw new Error("Deployment history unavailable")
     const data = parseOwnedProject(await response.json())
-    if (!signal?.aborted) { setProject(data); setError(null) }
+    if (!signal?.aborted) { setProject(data); setDemoEnabled(true); setError(null) }
   }, [])
   const refreshNodes = React.useCallback(async (signal?: AbortSignal) => {
     const report = await readNodeRuntimeCatalog(signal)
@@ -47,7 +52,7 @@ export default function DeploymentsPage() {
     return () => controller.abort()
   }, [refresh])
   return (
-    <BaseLayout title="Deployments" description="Actual, bounded release history of the registered PocketHost demo.">
+    <BaseLayout title="Deployments" description="Release history of explicitly managed PocketHost projects">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center gap-3">
           <Button variant="outline" disabled={loading || nodeLoading} onClick={() => {
@@ -57,10 +62,13 @@ export default function DeploymentsPage() {
               if (node.status === "rejected") setNodeError("Could not refresh Node deployments.")
             }).finally(() => { setLoading(false); setNodeLoading(false) })
           }}>Refresh</Button>
-          <Link className="text-sm underline" to="/owned-site">Publish or rollback a release</Link>
+          {demoEnabled && <Link className="text-sm underline" to="/owned-site">Open demo release</Link>}
         </div>
         {loading && <p role="status">Reading deployment journal…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+        {demoEnabled === false && <p className="text-sm text-muted-foreground">
+          Optional demo deployment history is not configured.
+        </p>}
         <Card>
           <CardHeader>
             <CardTitle>Node.js deployments</CardTitle>
@@ -73,7 +81,7 @@ export default function DeploymentsPage() {
             </div>
             {nodeLoading && <p role="status">Reading Node deployment journal…</p>}
             {nodeError && <p role="alert" className="text-destructive text-sm">{nodeError}</p>}
-            {nodeEnabled === false && <p className="text-muted-foreground text-sm">Node Hosting is disabled in this DEV panel.</p>}
+            {nodeEnabled === false && <p className="text-muted-foreground text-sm">Node Hosting is disabled; no Node release history is available.</p>}
             {nodeEnabled && nodeProjects.length === 0 && <p className="text-muted-foreground text-sm">No user-created Node projects yet.</p>}
             {nodeProjects.map((node) => (
               <section className="rounded-md border p-3" key={node.id}>
@@ -99,7 +107,7 @@ export default function DeploymentsPage() {
             {project.history.length === 0 ? <p className="text-muted-foreground text-sm">No journal entries. Older deployments are not fabricated.</p> : (
               <ol className="space-y-3 text-sm">
                 {project.history.map((entry, i) => (
-                  <li key={entry.at + i} className="flex flex-wrap justify-between gap-2 border-b pb-2">
+                  <li key={entry.at + i} className="flex flex-wrap justify-between gap-2 border-b pb-2 last:border-b-0 last:pb-0">
                     <span>{entry.action}: {entry.from === null ? "new project" : `v${entry.from}`} → v{entry.to}</span>
                     <time className="text-muted-foreground">{entry.at}</time>
                   </li>

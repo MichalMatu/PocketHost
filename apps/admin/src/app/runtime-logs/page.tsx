@@ -70,7 +70,7 @@ export default function RuntimeLogsPage() {
     return () => controller.abort()
   }, [refresh])
   return (
-    <BaseLayout title="Logs & Diagnostics" description="Project-scoped runtime logs and links to device monitoring">
+    <BaseLayout title="Project logs" description="Logs from projects managed by PocketHost">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
         <div className="space-y-1">
           <h2 className="text-base font-medium">Project logs</h2>
@@ -89,7 +89,7 @@ export default function RuntimeLogsPage() {
                 if (node.status === "rejected") setNodeError("Could not refresh Node logs.")
               }).finally(() => { setLoading(false); setNodeLoading(false) })
           }}>Refresh logs</Button>
-          <Link to="/owned-site" className="text-sm underline">Open project details</Link>
+          {demoLogsEnabled && <Link to="/owned-site" className="text-sm underline">Open demo project</Link>}
         </div>
         {loading && <p role="status">Reading bounded runtime output…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
@@ -101,7 +101,7 @@ export default function RuntimeLogsPage() {
             {nodeLoading && <p role="status">Reading Node logs…</p>}
             {nodeError && <p role="alert" className="text-destructive text-sm">{nodeError}</p>}
             {nodeEnabled === false && <p className="text-muted-foreground text-sm">
-              Node Hosting is disabled. This is an optional project feature, not a device fault.
+              Node Hosting is disabled. Static websites remain available; no Node logs can be shown.
             </p>}
             {nodeEnabled && nodeProjects.length === 0 && <p className="text-muted-foreground text-sm">No Node projects to inspect.</p>}
             <div className="flex flex-wrap gap-2">
