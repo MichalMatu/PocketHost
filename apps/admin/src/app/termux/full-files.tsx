@@ -189,7 +189,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
     finally { setBusy(false) }
   }
   const crumbs = folder.split("/").filter(Boolean)
-  return <section className="space-y-3 rounded-md border p-3">
+  return <section className="space-y-3">
     <h3 className="font-medium">Files</h3>
     <p className="text-xs text-muted-foreground">Symlinks are never followed. Deletion is permanent.</p>
     <div className="flex flex-wrap items-center gap-2">

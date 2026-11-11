@@ -1,12 +1,10 @@
 "use client"
 
 import * as React from "react"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
 import { ModeToggle, type AppearanceTab } from "@/components/mode-toggle"
-import { getAppUrl } from "@/lib/utils"
 
 interface SiteHeaderProps {
   onCustomize: (tab: AppearanceTab) => void
@@ -44,21 +42,6 @@ export function SiteHeader({
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="hidden sm:flex"
-              nativeButton={false}
-              render={
-                <a
-                  href={getAppUrl("/sites")}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                />
-              }
-            >
-              Hosted sites
-            </Button>
             <ModeToggle
               onCustomize={onCustomize}
               onResetAppearance={onResetAppearance}

@@ -111,43 +111,48 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
 
           {section === "services" && <section className="space-y-3">
             <RunitServiceActions refreshToken={sectionRefreshToken} />
-            <details className="rounded-md border p-3">
-              <summary className="cursor-pointer text-sm font-medium">
+            <Card>
+              <CardHeader><CardTitle className="text-sm">
                 Observed external services · read-only
                 {snapshot && " (" + snapshot.host.services.length + ")"}
-              </summary>
-              <div className="mt-3 space-y-2">
+              </CardTitle></CardHeader>
+              <CardContent className="space-y-1">
+                <p className="text-xs text-muted-foreground">
+                  These external services are observed only and cannot be managed here.
+                </p>
                 {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
-                {snapshot?.host.services.map(service => <div key={service.id} className="flex flex-wrap items-center justify-between gap-3 border-b py-2">
+                {snapshot?.host.services.map(service => <div key={service.id}
+                  className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
                   <span className="text-sm">{service.label}</span>
                   <State value={service.state} />
                 </div>)}
+                {snapshot?.host.services.length === 0 &&
+                  <p className="text-sm text-muted-foreground">No observed external services.</p>}
                 {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
-              </div>
-            </details>
-          </section>}
+              </CardContent>
+            </Card>
+          </section>
 
           {section === "backups" && <section className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Archive className="size-5" /> Backup readiness</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline"><Boxes className="size-3" /> Restic: {restic?.state ?? "unverified"}</Badge>
-                </div>
+              <CardContent className="space-y-3">
+                <Badge variant="outline"><Boxes className="size-3" /> Restic: {restic?.state ?? "unverified"}</Badge>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
                 <GuardNotice>
-                  These backups cover the PocketHost workspace or Termux HOME/PREFIX. Hosting site backups and <a href="/sites" className="underline underline-offset-4">website versions</a> are separate.
+                  Termux backups, PocketHost workspace snapshots, and <a href="/sites"
+                    className="underline underline-offset-4">website versions</a> are separate.
+                  Restores use an isolated location.
                 </GuardNotice>
-                <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
-                <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
-                <FullTermuxBackups detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
-                <p className="text-sm font-medium">Optional integrations</p>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
               </CardContent>
             </Card>
+            <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
+            <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
+            <FullTermuxBackups detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
           </section>}
           {section === "terminal" && <section className="space-y-4">
             <TermuxTerminalPanel

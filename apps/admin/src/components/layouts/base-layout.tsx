@@ -126,7 +126,7 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
                 </div>
               </div>
             </div>
-            <SiteFooter />
+            {!compactHeader && <SiteFooter />}
           </SidebarInset>
         </>
       ) : (
@@ -164,7 +164,7 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
                 </div>
               </div>
             </div>
-            <SiteFooter />
+            {!compactHeader && <SiteFooter />}
           </SidebarInset>
           <AppSidebar
             variant={config.variant}
