@@ -188,9 +188,9 @@ function SummaryCard({ title, value, detail, icon: Icon, loading }: {
   )
 }
 
-function freshCpu(bridge: ShizukuStatus | null) {
-  if (!bridge || !bridge.connected || !bridge.authorized || bridge.cpuPercent === null) return null
-  const age = Date.now() - Date.parse(bridge.observedAt)
+function freshCpu(bridge: ShizukuStatus | null, referenceTimeMs: number | null) {
+  if (referenceTimeMs === null || !bridge || !bridge.connected || !bridge.authorized || bridge.cpuPercent === null) return null
+  const age = referenceTimeMs - Date.parse(bridge.observedAt)
   return age >= 0 && age <= 45_000 ? bridge.cpuPercent : null
 }
 
@@ -232,7 +232,7 @@ export default function SystemPage() {
         setSampledAt(now)
         setSamples(previous => [...previous, {
           observedAt: now,
-          cpu: freshCpu(bridgeResult?.bridge ?? null),
+          cpu: freshCpu(bridgeResult?.bridge ?? null, Date.parse(now)),
           ram: ramUsedPercent(nextHost),
           apiMs: hostResult?.apiMs ?? null,
           internetMs: internetResult?.latencyMs ?? null,
@@ -275,10 +275,13 @@ export default function SystemPage() {
     return () => controller.abort()
   }, [generation, historyRange])
 
+  // Use a timestamp captured by the polling effect, never an impure clock read during render.
+  const referenceTimeMs = sampledAt === null ? null : Date.parse(sampledAt)
   const lastCollected = [...samples].reverse().find(sample =>
     sample.batteryPercent !== undefined || sample.dnsFailed !== undefined) ?? null
-  const collectedFresh = lastCollected !== null &&
-    Date.now() - Date.parse(lastCollected.observedAt) <= 150000
+  const collectedAge = referenceTimeMs === null || lastCollected === null ? null :
+    referenceTimeMs - Date.parse(lastCollected.observedAt)
+  const collectedFresh = collectedAge !== null && collectedAge >= 0 && collectedAge <= 150000
   const collectorLabel = historyState === "loading" ? "Collector: checking"
     : historyState === "unavailable" ? "Collector: unavailable"
     : !lastCollected ? "Collector: no samples"
@@ -307,14 +310,13 @@ export default function SystemPage() {
   }))
   const lastTraffic = [...trafficSamples].reverse().find(sample =>
     sample.networkRxMbps !== null || sample.networkTxMbps !== null)
-  const trafficFresh = lastTraffic?.networkObservedAt
-    ? Date.now() - Date.parse(lastTraffic.networkObservedAt) >= 0 &&
-      Date.now() - Date.parse(lastTraffic.networkObservedAt) <= 150000
-    : false
+  const trafficAge = referenceTimeMs === null || !lastTraffic?.networkObservedAt ? null :
+    referenceTimeMs - Date.parse(lastTraffic.networkObservedAt)
+  const trafficFresh = trafficAge !== null && trafficAge >= 0 && trafficAge <= 150000
   const rxMbps = trafficFresh ? lastTraffic?.networkRxMbps ?? null : null
   const txMbps = trafficFresh ? lastTraffic?.networkTxMbps ?? null : null
 
-  const cpu = freshCpu(bridge)
+  const cpu = freshCpu(bridge, referenceTimeMs)
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
   const serviceUnknown = host?.services.some(service => service.state === "unknown") ?? false
   const active = !sampledAt && loading
