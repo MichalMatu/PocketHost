@@ -102,7 +102,7 @@ export default function RuntimeLogsPage() {
             {nodeError && <p role="alert" className="text-destructive text-sm">{nodeError}</p>}
             {nodeEnabled === false && <p className="text-muted-foreground text-sm">
               Node Hosting is disabled. This is an optional project feature, not a device fault.
-            </p>
+            </p>}
             {nodeEnabled && nodeProjects.length === 0 && <p className="text-muted-foreground text-sm">No Node projects to inspect.</p>}
             <div className="flex flex-wrap gap-2">
               {nodeProjects.map((project) => (
