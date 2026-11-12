@@ -167,7 +167,7 @@ it("treats a malformed installed-tool report as an error without claiming versio
   expect(requests.mock.calls.every(([url]) => String(url).startsWith("/api/v1/node-projects"))).toBe(true)
 })
 
-it("starts only an explicitly approved, verified stopped Node release", async () => {
+it("starts and restarts only an explicitly approved, verified Node release", async () => {
   const user = userEvent.setup()
   let running = false
   const project = {
@@ -199,7 +199,8 @@ it("starts only an explicitly approved, verified stopped Node release", async ()
         },
         executionEnabled: true,
       }) }
-    if (url === "/api/v1/node-projects/" + ID + "/start" && options?.method === "POST") {
+    if ((url === "/api/v1/node-projects/" + ID + "/start" ||
+         url === "/api/v1/node-projects/" + ID + "/restart") && options?.method === "POST") {
       expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-node-project")
       expect(JSON.parse(String(options.body))).toEqual({ approved: true })
       running = true
@@ -219,6 +220,14 @@ it("starts only an explicitly approved, verified stopped Node release", async ()
   await user.click(start)
   await screen.findByText("Previously verified Node release started and readiness confirmed.")
   expect((screen.getByRole("button", { name: "Start stopped service" }) as HTMLButtonElement).disabled).toBe(true)
+  const restart = screen.getByRole("button", { name: "Restart service" }) as HTMLButtonElement
+  expect(restart.disabled).toBe(true)
+  await user.click(screen.getByLabelText("Approve local Node execution"))
+  expect(restart.disabled).toBe(false)
+  await user.click(restart)
+  await screen.findByText("Owned Node service restarted and readiness verified.")
+  expect(restart.disabled).toBe(true)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/start"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restart"))).toHaveLength(1)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
