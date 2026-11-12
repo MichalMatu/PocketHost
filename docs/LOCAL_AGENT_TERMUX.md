@@ -26,6 +26,22 @@ mandatory task-routing identities; read them from fresh private
 evidence, not a historic receipt. Keep them and private paths
 out of public docs and logs.
 
+## Memory limits for screenshot and browser tasks
+
+- The 2026-11-12 nine-screen audit was **killed by a 1300 MiB task override**
+  (`command_memory_limit`, observed RSS 1344 MiB), **not by a time limit**.
+- Set explicit `memory_limit_mb: 2560` on bounded screenshot/Chromium
+  tasks for the Samsung with approximately 3.5 GiB free RAM. Never copy the
+  old 1300 MiB override into browser tasks. Capture one screen at a time,
+  do not launch competing browsers, and respect foreign services.
+- The matching Termux-only Agent default is defined in
+  `MichalMatu/local-agent` (its runtime must be **installed** for the
+  default to change). Explicit per-task values still take precedence; the
+  effective value appears in each Local Agent terminal receipt.
+- Before heavy browser captures, check current available device memory and
+  abort with a clear HOLD if insufficient. A higher cap does **not** create
+  RAM or remove Android OOM risks. No service restart is implied.
+
 ## Fast resumption of an established session
 
 1. Read [START_HERE](START_HERE.md), root AGENTS.md and the
