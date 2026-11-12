@@ -524,16 +524,21 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
     await user.click(screen.getByRole("button", { name: "Check GitHub updates" }))
     if (scenario === "unchanged") {
       await screen.findByText(/matches the current staged source. No update needed/)
+      expect(screen.queryByLabelText("GitHub source changes")).toBeNull()
       expect(editor.value).toBe(priorEditor)
       expect(stage.disabled).toBe(true)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
     } else if (scenario === "candidate-unavailable") {
       await screen.findByText("Could not load Node projects. Try Refresh.")
+      expect(screen.queryByLabelText("GitHub source changes")).toBeNull()
       expect(editor.value).toBe(priorEditor)
       expect(stage.disabled).toBe(true)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
     } else {
       await screen.findByText(/contains changes. Review and stage/)
+      expect(screen.getByLabelText("GitHub source changes").textContent).toContain(
+        "example/safe-node @ " + "a".repeat(12) + " · Changed: server.mjs",
+      )
       expect(editor.value).toBe(remoteSource)
       expect(stage.disabled).toBe(false)
       expect((screen.getByRole("button", { name: "Publish update" }) as HTMLButtonElement).disabled)
@@ -541,6 +546,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
       await user.click(stage)
       await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
+      expect(screen.queryByLabelText("GitHub source changes")).toBeNull()
       expect(project.candidateRelease).toBe(next)
       expect(project.previousCandidate).toBe(RELEASE)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
