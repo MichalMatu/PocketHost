@@ -70,7 +70,7 @@ a second settings database or second hosting/package manager.
 
 One versioned, PocketHost-owned settings contract holds shared
 configuration. Native-only permission grants remain under Android's
-authority and are *observed*, not copied or fabricated. The UI
+authority and are _observed_, not copied or fabricated. The UI
 reads effective capability state and surfaces permission gaps and
 actions; native services own Binder and lifecycle; the runtime host
 owns packages, processes and filesystem. Browser controls never
