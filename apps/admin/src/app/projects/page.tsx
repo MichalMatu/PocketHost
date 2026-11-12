@@ -449,6 +449,7 @@ export default function ProjectsPage() {
                 const sourcePlan = data?.plan as Record<string, unknown> | undefined
                 const commands = sourcePlan?.commands as Record<string, unknown> | undefined
                 if (!data || !sourcePlan || !commands ||
+                    typeof sourcePlan.dependencyCount !== "number" ||
                     !Number.isSafeInteger(sourcePlan.dependencyCount) ||
                     (sourcePlan.dependencyCount as number) < 0 ||
                     (sourcePlan.dependencyCount as number) > 500 ||
