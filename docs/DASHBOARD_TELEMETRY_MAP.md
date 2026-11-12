@@ -7,6 +7,13 @@ purpose: Map available PocketHost telemetry to first-screen decisions and a boun
 
 # Dashboard telemetry and service map
 
+> This plan concerns **device/Termux telemetry**, not website visitor
+> analytics. The active [Basic Hosting roadmap](ROADMAP.md)
+> prioritizes per-project HTTP traffic data from Cloudflare or owned
+> origin logs. Basic must not require the Android Companion/Bridge.
+> Further Companion/Shizuku telemetry work is frozen for now.
+
+
 ## First-screen rule
 
 The main Dashboard is a **read-only health overview**, never a second Services,
