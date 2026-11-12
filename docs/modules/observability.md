@@ -7,6 +7,15 @@ purpose: Define the new read-only aggregation and history module
 
 # Observability Module
 
+**Basic Hosting boundary:** project website traffic analytics are
+separate from Android-wide network telemetry. Obtain per-site
+requests, visits and errors from approved Cloudflare APIs and/or
+owned origin logs, with truthful availability labels. Do not gate
+Basic Hosting analytics on Companion or Shizuku. Follow the active
+[Hosting roadmap](../ROADMAP.md); existing Pro-native telemetry
+code is preserved but frozen.
+
+
 ## Responsibility
 
 Aggregate **already admitted read-only** metrics and events
