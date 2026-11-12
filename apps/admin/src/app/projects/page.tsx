@@ -457,6 +457,14 @@ export default function ProjectsPage() {
                     await loadRuntime(selected.id); setApproved(false)
                     setMessage("Owned Node service stopped.")
                   })}>Stop owned service</Button>
+                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                  runtime?.state !== "running" || !runtime.activeRelease ||
+                  runtime.activeRelease !== runtime.lastGoodRelease}
+                  onClick={() => action(async () => {
+                    await getJson(api + "/" + selected.id + "/restart", "POST", { approved: true })
+                    await loadRuntime(selected.id); setApproved(false)
+                    setMessage("Owned Node service restarted and readiness verified.")
+                  })}>Restart service</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
                   const response = await getJson(api + "/" + selected.id + "/health")
                   const value = response.health as Record<string, unknown> | undefined
