@@ -21,7 +21,10 @@ remaining G1/G2 and separate physical G3 evidence.
 
 The [unified APK and isolated runtime decision](adr/0015-unified-android-app-isolated-runtime.md)
 adds a packaging track alongside reusable M2/M3 Hosting. Avoid duplicate
-installers or host engines until the custom-prefix bootstrap is proven.
+installers or host engines until a supported independent runtime is proven.
+The [2026-11-12 reuse and risk re-audit](checkpoints/2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
+requires a small multi-process runtime comparison at S1, before selecting
+any full Termux fork or Linux packaging strategy.
 The [web-first Basic/Pro sprint sequence](adr/0016-web-first-basic-pro-unified-product.md)
 is the canonical packaging-first execution order (S0–S10); the M0–M7
 steps below remain the existing Hosting capability roadmap, not a

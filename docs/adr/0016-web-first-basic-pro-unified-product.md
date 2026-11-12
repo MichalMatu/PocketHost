@@ -131,7 +131,11 @@ Known earlier quality-gate failures stay OPEN until resolved.
 
 ### S1 — Verified feasibility and execution chain
 
-**Deliver:** exact current repo/QA state and Local Agent receipts;
+**Deliver:** compare a small Termux-compatible custom-prefix runtime,
+an existing Linux-in-APK reference and, if useful, an embedded Node
+backend (not assumed multi-process Hosting). Apply the
+[upstream and risk re-audit](../checkpoints/2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
+before selecting one runtime. Collect exact repo/QA state and Agent receipts;
 read-only Samsung app/UID/API/ABI/storage inventory; pin licenses
 and upstream source versions; identify Android build/debug
 signing method and supported executable bootstrap approach.
@@ -167,9 +171,11 @@ the existing Companion app.
 installs independently, opens its own landing UI and reports
 missing backend truthfully. No legacy service interaction.
 
-### S4 — Custom-prefix runtime proof
+### S4 — Selected independent runtime proof
 
-**Deliver:** pinned Termux-compatible bootstrap for the new
+**Deliver:** the **one runtime selected at S1**: a pinned
+Termux-compatible custom-prefix bootstrap only if proven best,
+or a compatible tested alternative. Preserve the same new
 PocketHost app ID and ABI; minimal shell/toolchain executable
 under Android's real restrictions, with separate HOME/PREFIX and
 single reviewed runtime-layout adapter. Do **not** rely on

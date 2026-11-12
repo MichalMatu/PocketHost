@@ -11,6 +11,7 @@ These dated files are historical **exact-SHA evidence**, not instructions to rer
 
 ## 2026-11-12
 
+- [Unified APK, Basic/Pro runtime reuse and risk re-audit](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
 - [Repository repair source checkpoint and pending native gates](2026-11-12-general-repository-repair-continuation.md)
 - [Nine-screen System source audit and targeted fixes](2026-11-12-system-nine-screen-ux-source-audit.md)
 
