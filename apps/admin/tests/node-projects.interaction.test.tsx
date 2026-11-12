@@ -125,6 +125,14 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await user.type(screen.getByLabelText("Project name"), "My node")
   await user.click(screen.getByRole("button", { name: "Create project" }))
   await screen.findByText("Private Node project created.")
+  const previousManifest = (screen.getByLabelText("package.json") as HTMLTextAreaElement).value
+  await user.upload(screen.getByLabelText("Load local Node files"), [
+    new File(["{}"], "package.json"),
+    new File(["{}"], "package-lock.json"),
+  ])
+  await screen.findByText("Select exactly package.json, package-lock.json and server.mjs.")
+  expect((screen.getByLabelText("package.json") as HTMLTextAreaElement).value).toBe(previousManifest)
+  expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/stage"))).toHaveLength(0)
   const importedPackage = {
     name: "imported-node", version: "1.2.3", scripts: { start: "node server.mjs" },
   }
