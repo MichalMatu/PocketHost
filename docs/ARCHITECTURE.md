@@ -41,6 +41,8 @@ the current React UI and the Termux backend. It is an architectural
 target, **not** a claim that a unified APK already exists.
 The [isolated APK packaging decision](adr/0015-unified-android-app-isolated-runtime.md)
 sets the clean-install and custom-prefix feasibility gates.
+The [web-first Basic/Pro decision and ordered implementation sprints](adr/0016-web-first-basic-pro-unified-product.md)
+keep Android native screens minimal and the React panel authoritative.
 
 ```text
 Main PocketHost Android app / shared React Dashboard

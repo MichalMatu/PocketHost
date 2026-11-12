@@ -24,8 +24,13 @@ Android application ID, UID and private data, not an update to
 environment must start the local UI/backend offline; optional Hosting
 capabilities may use an explicitly user-approved installer from pinned,
 verified packages. Reuse the existing Node, runit, Restic, site-release,
-registry and typed API boundaries. Shizuku Manager remains a separately
-authorized Android facility, not an APK-bundled root privilege.
+registry and typed API boundaries. The final optional Pro integration
+may embed only needed Shizuku-compatible mechanisms after explicit
+feasibility and security acceptance; an existing Shizuku Manager
+remains a development adapter, not an expected final install.
+Embedded code cannot grant root or ADB rights automatically.
+See [ADR-0016 web-first Basic/Pro](0016-web-first-basic-pro-unified-product.md)
+for product UX, capability separation and the ordered sprint plan.
 
 ## Technical feasibility gates, not yet a working package
 

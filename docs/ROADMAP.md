@@ -32,6 +32,11 @@ or create a second process manager. See
 [target navigation](TARGET_INFORMATION_ARCHITECTURE.md) and
 [upstream/licensing review](UPSTREAM_REUSE_STRATEGY.md).
 
+For the single-APK packaging program, follow the
+[web-first Basic/Pro sequential sprints](adr/0016-web-first-basic-pro-unified-product.md).
+These complement the M0–M7 Hosting milestones below; they do not
+replace or recertify earlier source/device evidence.
+
 ## Current position
 
 Historical H2 static Hosting and the owner-directed Termux/Shizuku
