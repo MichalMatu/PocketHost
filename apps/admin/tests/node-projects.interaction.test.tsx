@@ -63,6 +63,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
     }
     if (path === "/api/v1/node-projects/" + ID + "/stage" && options?.method === "POST") {
       const envelope = JSON.parse(String(options.body))
+      expect(envelope.expectedCandidate).toBeNull()
       expect(envelope.packageJson.scripts.start).toBe("node server.mjs")
       expect(envelope.packageJson.name).toBe("imported-node")
       expect(envelope.serverSource).toBe("console.log('uploaded Node')")
@@ -488,6 +489,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
       if (url.endsWith("/stage") && options?.method === "POST") {
         expect(JSON.parse(String(options.body))).toEqual({
           packageJson: remoteManifest, packageLock: remoteLock, serverSource: remoteSource,
+          expectedCandidate: RELEASE,
         })
         project = { ...project, candidateRelease: next, previousCandidate: RELEASE, deploymentCount: 2 }
         return { ok: true, json: async () => ({ project }) }
