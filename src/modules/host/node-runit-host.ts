@@ -482,13 +482,8 @@ export class NodeRunitHost {
     state.history.push({ at: new Date().toISOString(), action, release });
     if (state.history.length > MAX_HISTORY) state.history.shift();
   }
-  private toolchain(plan: NodeDependencyPlan): {
-    nodeVersion: string | null;
-    npmVersion: string | null;
-    status: 'blocked' | 'review-required';
-    missingTools: string[];
-    conflicts: string[];
-  } {
+  /** Read-only, bounded fixed-binary probes. No package install or service actions. */
+  toolVersions(): { nodeVersion: string | null; npmVersion: string | null } {
     const node = spawnSync(PREFIX + '/bin/node', ['--version'], {
       encoding: 'utf8',
       shell: false,
@@ -501,8 +496,19 @@ export class NodeRunitHost {
       timeout: 1500,
       maxBuffer: 128,
     });
-    const nodeVersion = node.status === 0 ? node.stdout.trim() : null;
-    const npmVersion = npm.status === 0 ? npm.stdout.trim() : null;
+    return {
+      nodeVersion: node.status === 0 ? node.stdout.trim() : null,
+      npmVersion: npm.status === 0 ? npm.stdout.trim() : null,
+    };
+  }
+  private toolchain(plan: NodeDependencyPlan): {
+    nodeVersion: string | null;
+    npmVersion: string | null;
+    status: 'blocked' | 'review-required';
+    missingTools: string[];
+    conflicts: string[];
+  } {
+    const { nodeVersion, npmVersion } = this.toolVersions();
     const tools = reviewNodeToolchain(plan, { node: nodeVersion, npm: npmVersion });
     return {
       nodeVersion,
