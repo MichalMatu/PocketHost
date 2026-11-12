@@ -843,6 +843,9 @@ export class NodeRunitHost {
         throw new Error('Node release syntax invalid: existing service retained');
       }
       let state = this.record(id);
+      if (!rollback && state?.activeRelease === release) {
+        throw new Error('Node release already active; use Start or Restart instead');
+      }
       if (rollback && state?.previousGoodRelease !== release) {
         throw new Error('Rollback target changed during admission');
       }
