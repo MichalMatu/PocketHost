@@ -569,12 +569,14 @@ export default function ProjectsPage() {
                     })
                     setMessage("Node syntax check completed without executing project source.")
                   })}>Check Node build syntax</Button>
-                <Button disabled={busy || editorDirty || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
+                <Button disabled={busy || editorDirty || !approved || !executionEnabled ||
+                  !plan?.allowed || !selected.candidateRelease ||
+                  runtime?.activeRelease === selected.candidateRelease}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "deploy",
                       { approved: true, release: selected.candidateRelease },
                       "Owned Node release started and readiness verified by host.")
-                  })}>Deploy selected release</Button>
+                  })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
                   runtime?.state !== "stopped" || !runtime.activeRelease ||
                   runtime.activeRelease !== runtime.lastGoodRelease}
