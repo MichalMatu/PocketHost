@@ -39,39 +39,22 @@ external-service catalog are implemented as source changes.
 M1 versioned declarations, one private host-owned registry store,
 ownership diagnostics, rollback planning and restore protections have
 focused negative tests. **This does not activate migrations, managed
-services, new process control or public routes.** M2/M3 source candidates exist for owned lifecycle, staging and runit; disposable
-physical Node Hosting acceptance remains OPEN for the next chat.
+services, new process control or public routes.** M2/M3 source candidates exist for owned lifecycle, staging and
+runit; disposable physical Node Hosting acceptance remains OPEN.
 
-## Current evidence — scope-specific PASS
+## Evidence and outstanding gates
 
-On 2026-11-11, Samsung `npm run check:all` completed **G2 PASS**
-on source `bba2d625269fed249aa88d4e180450ec0e071459`:
-282/282 Node tests and 111/111 admin UI tests. The same task
-owner-verified and refreshed **only PocketHost DEV panel** from
-`504df7a` to `bba2d62`; protected external services were unchanged.
-First loopback route sweep passed 12/13; `/terminal` required a
-read-only follow-up. **Do not infer physical G3 PASS.**
+Historical Samsung G2 PASS: source `bba2d625`, 282/282 Node
+and 111/111 UI tests, with the PocketHost-only panel refreshed.
+This **does not** validate newer main or physical G3.
+The current source-repair checks, live panel update, browser
+smoke and disposable Node physical acceptance remain OPEN/HOLD
+without exact-SHA Samsung terminal receipts.
 
-See the [2026-11-11 exact-SHA closeout and Hosting handoff](checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md) for task ID,
-acceptance scope and remaining follow-up. A later docs-only commit does not
-change the tested app source or re-certify a new source SHA.
-
-## Current System UX follow-up (2026-11-12)
-
-The nine-screen read-only source review, focused UI fixes, screenshot
-attempts and exact-SHA test holds are tracked in the
-[2026-11-12 System screenshot and UX checkpoint](checkpoints/2026-11-12-system-nine-screen-ux-source-audit.md).
-Do not repeat the 2026-11-11 full G2: earlier PASS belongs to its tested SHA.
-Capture/device acceptance and deployment are separate from source commits.
-
-## 2026-11-12 repository repair continuation
-
-Package view reset, backend protection for the PocketHost panel/watchdog
-and truthful package-refresh status are committed as source repairs.
-See the [repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md).
-Current-source Samsung gates, live panel update and G3 remain OPEN.
-A previously published scoped Agent task has no accepted terminal
-receipt yet; do not reuse its old-SHA result as a PASS.
+Read the [verified closeout](checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md),
+[System UX follow-up](checkpoints/2026-11-12-system-nine-screen-ux-source-audit.md)
+and [current repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md)
+only when they affect the next action. Do not repeat historical G2.
 
 ## First actions
 
