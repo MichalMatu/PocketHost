@@ -1012,6 +1012,21 @@ export class NodeRunitHost {
       rmSync(globalLock, { force: true });
     }
   }
+  /** Explicit sequential restart; a failed stop never permits a new start. */
+  async restart(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
+    if (approved !== true) throw new Error('Explicit owned restart approval required');
+    const observed = this.status(id);
+    if (
+      observed.state !== 'running' ||
+      !observed.activeRelease ||
+      observed.lastGoodRelease !== observed.activeRelease
+    )
+      throw new Error('No verified running Node release to restart');
+    // Both steps re-attest ownership and hold the existing global/project
+    // locks. If stop succeeds but start fails, the project stays stopped.
+    await this.stop(id, true);
+    return this.start(id, true);
+  }
   /** Current loopback readiness of the *same* verified process and release. */
   async health(id: string): Promise<{
     state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
