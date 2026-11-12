@@ -97,7 +97,7 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
     response.status === 404 ? "Node project resource not found." :
     response.status === 403 ? "Node Hosting access denied." :
     response.status === 400 ? "Invalid project input, manifest, lockfile or source." :
-    response.status === 409 && url.endsWith("/stage")
+    response.status === 409 && (url.endsWith("/stage") || url.endsWith("/restore-candidate"))
       ? "Node source save refused. Refresh project and review the current candidate."
       : method ? "Operation refused by the private host." : "Could not load Node projects. Try Refresh.")
   const value: unknown = await response.json()
@@ -537,6 +537,7 @@ export default function ProjectsPage() {
                 packageLock: JSON.parse(lockfile) as unknown,
                 serverSource: source,
                 expectedCandidate: selected.candidateRelease,
+                expectedRevision: selected.deploymentCount,
               })
               if (!validProject(data.project)) throw new Error("Invalid stage response")
               await refresh()
@@ -548,7 +549,10 @@ export default function ProjectsPage() {
             })}>Validate and stage source</Button>
             <Button variant="outline" disabled={busy || !selected.previousCandidate}
               onClick={() => action(async () => {
-                const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST")
+                const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST", {
+                  expectedCandidate: selected.candidateRelease,
+                  expectedRevision: selected.deploymentCount,
+                })
                 if (!validProject(data.project)) throw new Error("Invalid restore response")
                 await refresh()
                 await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
