@@ -103,7 +103,10 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
 }
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<Project[]>([])
-  const [nodeTools, setNodeTools] = React.useState<{ nodeVersion: string | null; npmVersion: string | null } | null>(null)
+  const [nodeTools, setNodeTools] = React.useState<{
+    nodeVersion: string | null
+    npmVersion: string | null
+  } | null>(null)
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
