@@ -422,6 +422,8 @@ export default function ProjectsPage() {
                   setSource(files.source)
                   setApproved(false)
                   setBuildCheck(null)
+                  setPlan(null)
+                  setExecutionEnabled(false)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
                 })
               }} />
