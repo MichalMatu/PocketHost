@@ -39,6 +39,54 @@ test('M3 creates a private project, stages immutable source and preserves prior 
   assert.equal(host.restoreCandidate(created.id).candidateRelease, first.candidateRelease);
   assert.equal(host.inspect(created.id).activeRelease, null);
 });
+test('M3 source save is idempotent for an attested identical candidate', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Retry safe Node');
+  const first = host.stage(project.id, source());
+  assert.equal(first.unchanged, false);
+  const repeated = host.stage(project.id, source());
+  assert.equal(repeated.unchanged, true);
+  assert.equal(repeated.project.candidateRelease, first.project.candidateRelease);
+  assert.equal(repeated.project.previousCandidate, null);
+  assert.equal(repeated.project.deploymentCount, 1);
+  assert.equal(host.candidates(project.id).length, 1);
+  const updated = host.stage(project.id, source('1.0.1'));
+  assert.equal(updated.unchanged, false);
+  assert.equal(updated.project.previousCandidate, first.project.candidateRelease);
+  assert.equal(updated.project.deploymentCount, 2);
+  const anotherRetry = host.stage(project.id, source('1.0.1'));
+  assert.equal(anotherRetry.unchanged, true);
+  assert.equal(anotherRetry.project.candidateRelease, updated.project.candidateRelease);
+  assert.equal(anotherRetry.project.deploymentCount, 2);
+  assert.equal(host.candidates(project.id).length, 2);
+});
+
+test('M3 duplicate save remains valid at release limit without bypassing new release budget', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Full release budget');
+  let latest;
+  for (let i = 0; i < 12; i++) {
+    latest = host.stage(project.id, source('1.0.' + i));
+  }
+  assert.equal(host.candidates(project.id).length, 12);
+  const repeated = host.stage(project.id, source('1.0.11'));
+  assert.equal(repeated.unchanged, true);
+  assert.equal(repeated.project.candidateRelease, latest.project.candidateRelease);
+  assert.equal(host.candidates(project.id).length, 12);
+  assert.throws(() => host.stage(project.id, source('1.0.12')), /release budget/);
+});
+
+test('M3 duplicate save cannot hide tampered release source or forged source proof', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Source attestation');
+  const staged = host.stage(project.id, source()).project;
+  const folder = path.join(root, project.id, 'releases', staged.candidateRelease);
+  writeFileSync(path.join(folder, 'server.mjs'), 'console.log("tampered")');
+  assert.throws(() => host.stage(project.id, source()), /digest mismatch/);
+  assert.equal(host.inspect(project.id).deploymentCount, 1);
+  assert.equal(host.candidates(project.id).length, 1);
+});
+
 test('M3 rejects foreign id, malformed source and project limit or unknown release', (t) => {
   const { host } = setup(t);
   const project = host.create('Safe node');
