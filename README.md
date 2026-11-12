@@ -1,13 +1,26 @@
 # PocketHost
 
-PocketHost is currently an **Android Termux management console**
-with an owner-operated React/Vite DEV panel, system/host diagnostics,
-owned static Hosting, Termux administration and Android Shizuku
-integration. The planned single PocketHost Android app will reuse
-upstream Termux and its packages plus Companion, Termux:API, Boot and
-Shizuku integration; it will not replace the Termux toolchain. The longer-term target is a **modular platform** where
-Hosting composes reusable Node, Python, SSH, Cloudflare and other
-capabilities. Planned modules are not claims of deployed features.
+PocketHost is a **Termux-hosted web control panel and hosting
+platform for an Android phone**. Current development prioritizes a
+fully functional **Basic** product using only official Termux and its
+supported packages: Node.js applications, GitHub deployments,
+Cloudflare/domain publishing, SSH, per-project web traffic analytics,
+files, terminal and backup. Hosting is the primary product focus;
+the current menu is not being reorganized during this sprint.
+
+**Basic/Pro is a technical separation, not a free/paid tier:**
+Basic never requires Companion/Shizuku or another Android helper
+app. Pro adds Android-app-dependent capabilities; its existing
+Companion/Shizuku source is preserved but frozen. The future
+single-APK integration is deferred. Both scopes are intended to
+be fully functional, and planned integrations are not claims that
+they are already deployed.
+
+**Next two work packages:** (1) finish Node.js Hosting with
+GitHub import/update and safe rollback; (2) complete the panel's
+Cloudflare, SSH, per-site analytics and backup workflows. A versioned
+bundle and one-command Termux installer follow the working end-to-end
+Hosting flow. See [canonical roadmap](docs/ROADMAP.md).
 
 ## Current scope and safety
 
@@ -30,7 +43,7 @@ revision passed. Source work and panel deployment are separate.
 - [Code map and affected tests](docs/CODE_MAP.md)
 - [Fast flow and cache-aware checks](docs/DEV_ITERATION.md)
 - [Samsung Termux Local Agent execution](docs/LOCAL_AGENT_TERMUX.md)
-- [Termux-first single-app architecture](docs/adr/0017-termux-first-single-app-integration.md)
+- [Deferred future single-APK architecture](docs/adr/0017-termux-first-single-app-integration.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Quality gates](docs/QUALITY_GATES.md)
 - [Documentation index and historical evidence](docs/README.md)
