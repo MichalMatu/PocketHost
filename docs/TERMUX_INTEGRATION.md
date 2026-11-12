@@ -18,6 +18,17 @@ All PocketHost source execution, package resolution, checks, tests and builds mu
 - Start development GUI with a CLI command when implementation exists. No application or device boot autostart.
 - Dependencies managed as ordinary project packages first; new system-level packages require an explicit approval path.
 
+## Future single-app packaging
+
+The active Samsung Termux installation remains the protected DEV host.
+For the **future** single PocketHost APK, reuse upstream termux-app as the
+base and keep the official package-prefix/CLI ecosystem. Integrate the
+existing PocketHost Node/web backend and Companion plus selected
+Termux:API/Boot logic without rebuilding SSH, Git, Node or apt. See
+[ADR-0017](adr/0017-termux-first-single-app-integration.md).
+An app signed differently cannot silently replace the current Termux;
+perform packaging experiments only on an approved disposable target.
+
 ## Read-only host preflight
 
 A future inventory adapter may query allowlisted process and network metadata, OS/Termux versions and package presence. The adapter must tolerate unavailable tools, Android permissions and partial output. It must never scan unrestricted storage or print environment secrets. Do not assume a particular HTTP server, port, tunnel, package manager configuration or production path.

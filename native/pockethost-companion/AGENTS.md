@@ -22,5 +22,7 @@ and unauthenticated; do not call it secure or expose it to the public internet.
 Do not mutate unrelated Termux services or auto-execute commands on startup.
 
 Use GitHub Connector and authorized Local Agent workflows; no GitHub Actions,
-Codex or ChatGPT Work. Native Gradle/Android build uses the already authorized
-Mac toolchain and physical Samsung target. No unverified deployment claims.
+Codex or ChatGPT Work. Native Gradle/Android builds and tests follow root AGENTS.md:
+verified Samsung Termux Local Agent only; do not silently switch to
+Mac or another build host. The currently installed Companion remains
+protected until an explicit, reversible phone acceptance. No unverified deployment claims.

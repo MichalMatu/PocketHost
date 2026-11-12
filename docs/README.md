@@ -78,8 +78,9 @@ evidence. The active constraints live in root AGENTS.md.
 - [ADR-0012 private UI fast review](adr/0012-private-ui-rapid-review.md)
 - [ADR-0013 Shizuku power user](adr/0013-shizuku-power-user.md)
 - [ADR-0014 PocketHost-only runit](adr/0014-termux-panel-supervision.md)
-- [ADR-0015 unified Android APK and isolated runtime](adr/0015-unified-android-app-isolated-runtime.md)
-- [ADR-0016 web-first Basic/Pro and sequential implementation sprints](adr/0016-web-first-basic-pro-unified-product.md)
+- [ADR-0017 Termux-first single PocketHost app (active)](adr/0017-termux-first-single-app-integration.md)
+- [ADR-0015 isolated APK runtime (superseded)](adr/0015-unified-android-app-isolated-runtime.md)
+- [ADR-0016 standalone S0–S10 sprints (superseded)](adr/0016-web-first-basic-pro-unified-product.md)
 
 [Checkpoint archive](checkpoints/README.md) preserves exact-SHA
 historical device evidence. Open a specific checkpoint by need,

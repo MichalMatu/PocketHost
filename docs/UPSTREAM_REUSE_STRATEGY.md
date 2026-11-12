@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted-with-component-feasibility-gates
 owner: core
 last_reviewed: 2026-11-09
 purpose: Evidence-led GitHub reuse matrix and integration gates for the modular Termux hosting roadmap
@@ -18,11 +18,19 @@ Current approval is **documentation and evaluation only**: do not
 install anything, import code, change service ownership or publish
 routes merely because it appears in this matrix.
 
-PocketHost remains a JS/TS application. Native Termux programs may be
-executed as **external, independently installed CLI tools**, not
-copied into or rewritten inside PocketHost. Avoid a second runit
-supervisor, SSH daemon, Python runtime implementation, tunnel agent
-or proprietary deployment engine.
+The PocketHost UI/backend remains JS/TS. In DEV its native tools run
+as independently installed Termux CLI packages. For the target **one
+APK**, reuse the upstream Termux Android application/bootstrap/packages
+and adapt the existing Companion with relevant upstream API/Boot code;
+this is source integration, not reimplementation of Git, SSH, apt,
+Node.js, runit or a parallel package feed. Keep the official package
+prefix wherever feasible, and never silently swap the active signed
+Termux install. See [ADR-0017](adr/0017-termux-first-single-app-integration.md).
+
+Source copying must be deliberate: pin exact upstream versions, account
+for GPLv3 and other licenses, preserve notices and publish required
+source when distributing derivatives. Shizuku's authorization and
+Android's signature/permission boundaries still apply.
 
 This inventory is based on public GitHub repositories/docs checked on
 2026-11-09. Licenses are GitHub metadata and README statements, not
@@ -35,22 +43,20 @@ without a focused Samsung Termux compatibility and ownership gate.
 | Upstream and license                                                                                   | What PocketHost should reuse                                                                                             | Implementation boundary / acceptance                                                                                                                                                                                         |
 | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [termux/termux-services](https://github.com/termux/termux-services) — GPL-3.0                          | Installed `runit`, `service-daemon`, `sv status/up/down`, `sv-enable`/`sv-disable`, `down` marker, standard service logs | Build **one verified-owner** `SupervisorAdapter`; never embed/copy upstream scripts or add a parallel watchdog daemon. Existing external runit services remain protected                                                     |
-| [termux/termux-boot](https://github.com/termux/termux-boot) — GPLv3 per README                         | Existing `~/.termux/boot` entrypoint and documented boot order                                                           | Integrate module autostart into one known launch strategy; no competing boot handlers; reboot and OEM battery/Doze validation required                                                                                       |
+| [termux/termux-boot](https://github.com/termux/termux-boot) — GPLv3 per README | Reuse existing DEV boot behavior; adapt its receiver logic inside the future unified APK | Owner-opted startup of PocketHost-owned services only, with Android foreground/boot restrictions and reboot testing |
 | [termux/termux-packages](https://github.com/termux/termux-packages) — mixed/no single SPDX declaration | Official Termux package recipes and installed `pkg`/`apt`/`dpkg-query` utilities                                         | Use **runtime installed-version probes** and package plans. Do not copy package recipes wholesale, use Debian/Ubuntu assumptions, or run global upgrades as a side effect of deploy                                          |
 | [cloudflare/cloudflared](https://github.com/cloudflare/cloudflared) — Apache-2.0                       | Existing binary, locally managed tunnel config; `tunnel ingress validate` and `tunnel ingress rule`                      | Cloudflare module edits **staged config only after explicit action**; preserve the current externally owned tunnel and never start a duplicate. Hosting only requests route bindings                                         |
 | [restic/restic](https://github.com/restic/restic) — BSD-2-Clause                                       | Existing encrypted backup/snapshot/check/restore commands                                                                | Reuse a single typed Restic adapter with exact exit-status checks, credentials outside logs, retention locks, and a disposable restore acceptance. Do not invent a second archive-based backup product                       |
 | [termux/proot-distro](https://github.com/termux/proot-distro) — GPL-3.0                                | Installed CLI lifecycle, `run` and container backup/restore where actually supported                                     | Optional Python/PRoot adapter; **not** a Docker daemon or secure kernel/container boundary. Check Termux ABI, process descendants, mounts, data and actual target support                                                    |
 | [tsl0922/ttyd](https://github.com/tsl0922/ttyd) — MIT                                                  | Optional packaged browser terminal / WebSocket front end                                                                 | Reuse binary only **if it works on the actual Samsung**. PocketHost H3.4 recorded native ttyd SIGSEGV in prior tests: leave this path BLOCKED until a new minimal one-session physical check. Never expose terminal publicly |
-| [termux/termux-api](https://github.com/termux/termux-api) — GPLv3 per README                           | Installed Android command helpers for capabilities actually available to Termux                                          | Optional low-privilege companion only; do not duplicate native Shizuku privilege transport or presume API permissions, app signature or root                                                                                 |
+| [termux/termux-api](https://github.com/termux/termux-api) — GPLv3 per README | Reuse needed Android API components and preserve existing termux-* commands where possible | Integrate into the future PocketHost Android app after per-command IPC, signature, permission and license tests; no fake privileges |
 
-**Licensing stance:** GPL external utilities installed and run via
-their provided CLI are distinct from copying GPL source into
-PocketHost; still review redistribution and integration terms.
-Apache/MIT/BSD sources are also subject to license notices, copyright
-and dependency review **before source copying**. A root PocketHost
-license policy and provenance ledger should be settled before any
-vendoring; the repository tree checked on this date did not show
-a root `LICENSE` (the imported admin has its own upstream notice).
+**Licensing stance:** Existing external CLI packages and an Android APK
+that incorporates GPLv3 Termux source have different distribution
+obligations. An integrated build must resolve GPL compatibility,
+corresponding-source delivery, upstream notices and the PocketHost root
+license **before** shipping. No vendoring or derivative release has
+been authorized merely by this architecture decision.
 
 ## B — Take narrow design patterns; do not transplant whole platforms
 

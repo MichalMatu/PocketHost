@@ -1,9 +1,11 @@
 # PocketHost
 
-PocketHost is an experimental **Android Termux management console**
+PocketHost is currently an **Android Termux management console**
 with an owner-operated React/Vite DEV panel, system/host diagnostics,
 owned static Hosting, Termux administration and Android Shizuku
-integration. The longer-term target is a **modular platform** where
+integration. The planned single PocketHost Android app will reuse
+upstream Termux and its packages plus Companion, Termux:API, Boot and
+Shizuku integration; it will not replace the Termux toolchain. The longer-term target is a **modular platform** where
 Hosting composes reusable Node, Python, SSH, Cloudflare and other
 capabilities. Planned modules are not claims of deployed features.
 
@@ -28,6 +30,7 @@ revision passed. Source work and panel deployment are separate.
 - [Code map and affected tests](docs/CODE_MAP.md)
 - [Fast flow and cache-aware checks](docs/DEV_ITERATION.md)
 - [Samsung Termux Local Agent execution](docs/LOCAL_AGENT_TERMUX.md)
+- [Termux-first single-app architecture](docs/adr/0017-termux-first-single-app-integration.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Quality gates](docs/QUALITY_GATES.md)
 - [Documentation index and historical evidence](docs/README.md)

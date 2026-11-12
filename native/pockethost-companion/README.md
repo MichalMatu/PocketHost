@@ -1,88 +1,41 @@
-# PocketHost Companion — Android & Shizuku
+# PocketHost Companion — native Android and Shizuku DEV adapter
 
-This native Android source begins the actual Shizuku integration. It is a
-standalone **developer app**, not yet connected to the PocketHost browser.
+This is the **existing**, separately installed development Companion.
+Its Java source is the base for the Android part of the future unified
+PocketHost app, as specified by
+[ADR-0017](../../docs/adr/0017-termux-first-single-app-integration.md).
+It is **not** a new runtime, replacement Termux or standalone host engine.
 
-## What works when installed and authorized
+## Current source capabilities
 
-- Detect real Shizuku Binder availability, permission, ADB shell (UID 2000)
-  vs root (UID 0).
-- Explicitly ask the **user** to grant Shizuku permission from Android.
-- Start a Shizuku UserService and request a bounded, real Android CPU
-  `dumpsys cpuinfo` sample and Android-visible process count.
-- Display actual readings on the phone, without inventing a system CPU %.
+- Shizuku Binder permission/status; real authorized ADB/root UID and
+  PowerUserService actions (ADB does not imply root).
+- Android telemetry and app/process/service/permission information
+  subject to actual Android access.
+- Owner-enabled foreground monitoring service with visible notification.
+- Local Android loopback telemetry bridge and owner-directed Android
+  action/shell routes for the PocketHost DEV web interface.
+- ContentProvider for bounded diagnosis with caller restrictions.
+  The HTTP loopback action routes are **not caller-authenticated** by
+  being on 127.0.0.1; current private-LAN DEV access is not production
+  security and must never be exposed publicly.
 
-No public HTTP endpoints, automatically granted permission, background
-daemons, privileged shell buttons or changes to unrelated Android services
-are introduced. Those are later modules, not banned features.
+Current web integration is described in
+[Shizuku module](../../docs/modules/shizuku.md). Do not infer every
+operation is accepted on the latest source revision from an older
+hardware test. Real Binder permission, Android errors and privilege
+revocation must be shown honestly.
 
-## Development build
+## Build and device operations
 
-From the Mac Android SDK environment (after installing Android Gradle
-Plugin dependencies as needed):
+Follow [root AGENTS](../../AGENTS.md) and
+[Samsung Local Agent workflow](../../docs/LOCAL_AGENT_TERMUX.md).
+Build/test commands execute only through the verified Samsung Termux
+Local Agent; a source commit never installs an APK. Keep official
+Termux, installed Companion, Shizuku and foreign services untouched.
 
-```sh
-cd native/pockethost-companion
-gradle :app:assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n pl.pockethost.companion/.MainActivity
-```
-
-The first run needs an **on-device Shizuku permission approval**. After
-granting, tap **Read Android CPU and processes**. Native IPC with the web
-panel is a separate next slice; it must not expose an unrestricted Shizuku
-Binder bridge to the currently login-free LAN web page.
-
-Shizuku API: `dev.rikka.shizuku:api:13.1.5` and
-`dev.rikka.shizuku:provider:13.1.5`; user service is used instead
-of the deprecated `Shizuku.newProcess`.
-
-## Caveat
-
-The initial CPU parser targets the Android `dumpsys cpuinfo` `TOTAL`
-summary observed over ADB on Samsung. Other Android versions may return
-different output; report `Unavailable` rather than guessing.
-
-Build tools: Android SDK API 36, Android Gradle Plugin 8.10.1,
-Gradle 8.11.1+ and Java 17+. No device app is installed by committing code.
-
-## DEV bridge to Termux (2026-11-08)
-
-After explicit Shizuku authorization, the companion samples CPU/process
-information while its screen is active and publishes a short-lived JSON
-snapshot via Android `content read --uri
-content://pl.pockethost.companion.telemetry/status`. The provider is
-read-only and accepts only the Termux app UID and shell UID. Snapshots
-expire after 30 seconds. It exposes no actions, Binder references or
-privileged command execution. A matching PocketHost loopback API can
-fetch this output without making an Android HTTP listener.
-
-For continued sampling when the app is in the background, a future
-Android foreground service with an explicit user-visible notification
-is needed. This first DEV version does not claim always-on telemetry.
-
-On Android 16, the Termux app UID cannot execute `/system/bin/content`
-because `app_process` is restricted. The supported initial transport is
-`http://127.0.0.1:18791/status`, bound _only_ to Android loopback by
-PocketHost Companion, read-only, short-lived, and without any actions.
-Termux can retrieve it directly; the existing browser panel proxies only
-typed telemetry. The provider remains for Android ADB-level diagnosis.
-
-## Background CPU access (Android 16)
-
-Android may freeze the Companion when it becomes a cached background app.
-A real on-device test restored `GET http://127.0.0.1:18791/status` immediately
-when Companion was brought to the foreground (CPU 19%, 855 processes).
-The native service `TelemetryForegroundService` is an **owner-enabled foreground
-service with a visible persistent notification**. After Shizuku approval,
-tap **Read Android CPU and processes** to activate it. It samples at most
-once per 15 seconds, keeps the local read-only HTTP listener responsive
-and makes full-device CPU visible in `/shizuku` even when the activity
-is not in front. **Stop background CPU monitoring** disables it.
-
-Android 14+ requires `FOREGROUND_SERVICE`,
-`FOREGROUND_SERVICE_SPECIAL_USE`, an appropriate special-use subtype
-and a visible notification. No Android battery optimization or cached-app
-freezer system settings are disabled. App-initiated activation is required;
-no hidden boot receiver is introduced. Following a device reboot,
-Shizuku may need to be restarted and the owner may reopen Companion.
+The future one-app integration will **adapt this Java code**, plus
+needed Termux:API and Boot components, into a licensed termux-app-based
+Android application. Do not write another shell/package manager or
+silently adopt old service/process ownership. Embedded Shizuku server
+and pairing remain feasibility gates, not assumed capabilities.

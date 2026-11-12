@@ -39,10 +39,14 @@ Never widen to a wildcard listener or WAN. See
 Android application integrating the existing native Companion/Bridge,
 the current React UI and the Termux backend. It is an architectural
 target, **not** a claim that a unified APK already exists.
-The [isolated APK packaging decision](adr/0015-unified-android-app-isolated-runtime.md)
-sets the clean-install and custom-prefix feasibility gates.
-The [web-first Basic/Pro decision and ordered implementation sprints](adr/0016-web-first-basic-pro-unified-product.md)
-keep Android native screens minimal and the React panel authoritative.
+The [Termux-first single-app integration decision](adr/0017-termux-first-single-app-integration.md)
+sets the target: a pinned termux-app-derived Android package, existing
+Termux package ecosystem and one PocketHost web UI. Extend and migrate
+existing Companion Java components; adapt selected Termux:API/Boot
+functions and retain authorized Shizuku. ADR-0015/0016 and their
+standalone custom-runtime sprint sequence are retired. No new host,
+package manager or supervisor. The active official Termux and all its
+services stay unchanged during development.
 
 ```text
 Main PocketHost Android app / shared React Dashboard

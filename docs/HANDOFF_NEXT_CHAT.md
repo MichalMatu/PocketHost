@@ -14,6 +14,15 @@ on main with non-force, expected-HEAD updates. The active compact
 entrypoint is [START_HERE](START_HERE.md), and local instructions
 live in the nearest AGENTS.md.
 
+**Canonical architecture:** [ADR-0017 Termux-first single app](adr/0017-termux-first-single-app-integration.md).
+One future PocketHost APK integrates upstream Termux packages and terminal,
+existing PocketHost web/Node backend, expanded Companion, selected
+Termux:API/Boot and authorized Shizuku. ADR-0015/0016 S1–S10 are retired.
+The separately signed ARM64 S1 test APK is historical only; do not extend
+it or duplicate the runtime. On-device development still uses the existing
+Termux and preserves all protected services. I0 cleanup is source-only;
+I1 contracts and upstream analysis are next, not a physical migration.
+
 PocketHost is a **DEV-only Android/Termux management console**.
 H2 owned static hosting, Termux administration, read-only observations,
 Shizuku integration and browser-owner shell controls have source/history.
@@ -90,6 +99,7 @@ GitHub Actions, Codex, Work or non-Termux PocketHost execution.
 ## Canonical pointers
 
 - [Quality gates and precise PASS semantics](QUALITY_GATES.md)
+- [One-APK integration decision](adr/0017-termux-first-single-app-integration.md)
 - [Current delivery sequence](ROADMAP.md)
 - [Code ownership and test map](CODE_MAP.md)
 - [Termux host-command transport](LOCAL_AGENT_TERMUX.md)

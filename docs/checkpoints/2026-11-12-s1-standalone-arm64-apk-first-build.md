@@ -1,11 +1,26 @@
 ---
-status: build-pass-physical-install-open
+status: retired-historical-evidence
 owner: core
 last_reviewed: 2026-11-12
 purpose: Exact-source S1 standalone APK build evidence and remaining native isolation gates
 ---
 
 # S1 — standalone ARM64 APK first successful build
+
+**Retired from product plan.** This records a disposable probe, not an
+accepted PocketHost runtime or the next development sprint. The original
+build-day OPEN statements below are historical snapshots; current product
+architecture is [ADR-0017](../adr/0017-termux-first-single-app-integration.md).
+
+**Later physical evidence:** the owner confirmed installing and running
+the separate probe APK and reported PASS for the two ARM64 subprocesses.
+Samsung Local Agent read-only package UID task
+pockethost-s1-installed-apk-uid-readonly-20261112-v1 completed with
+PASS_DISTINCT_UIDS: com.termux=10520, Companion=10077, probe=10749.
+This is only APK process/UID isolation, **not** Termux/Node/package
+integration. It does not establish unchanged foreign service state.
+The test APK remains owner-managed on the device; code cleanup does
+not uninstall it.
 
 ## Scope and source
 
@@ -41,7 +56,7 @@ purpose: Exact-source S1 standalone APK build evidence and remaining native isol
   **Size:** 20,975 bytes.
   **SHA-256:** `8dbcbb70204057137e4ad967f1165961d79fdaae28c8e0639fa7dadc27652729`.
 
-## Remaining validation (not yet PASS)
+## Remaining validation at the time of this first build (historical)
 
 1. Read-only artifact verification: exact ZIP/hash, Android manifest
    package ID, min/target SDK, debug signature, native ELF AArch64,

@@ -11,8 +11,8 @@ These dated files are historical **exact-SHA evidence**, not instructions to rer
 
 ## 2026-11-12
 
-- [S1 first independent ARM64 APK build — exact-source evidence and physical gates](2026-11-12-s1-standalone-arm64-apk-first-build.md)
-- [Unified APK, Basic/Pro runtime reuse and risk re-audit](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
+- [Retired S1 standalone APK experiment — historical build/device evidence](2026-11-12-s1-standalone-arm64-apk-first-build.md)
+- [Historical standalone APK risk/reuse audit — superseded by ADR-0017](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
 - [Repository repair source checkpoint and pending native gates](2026-11-12-general-repository-repair-continuation.md)
 - [Nine-screen System source audit and targeted fixes](2026-11-12-system-nine-screen-ux-source-audit.md)
 

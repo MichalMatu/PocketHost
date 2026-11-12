@@ -1,11 +1,18 @@
 ---
-status: evidence-led-design-reaudit-device-validation-open
+status: historical-risk-review-superseded
 owner: core
 last_reviewed: 2026-11-12
 purpose: Review the one-APK Basic/Pro direction, reuse options, code reality and Android hazards
 ---
 
 # Unified PocketHost — reuse and failure-mode re-audit
+
+**Historical review, not an active implementation plan.** Its runtime
+candidate comparison and S1 selection decision are superseded by
+[ADR-0017](../adr/0017-termux-first-single-app-integration.md).
+Keep the Android packaging, signing, package prefix, licensing and
+privileged-bridge findings as risks to resolve in the Termux-first
+integration. Do not resume the standalone custom runtime sprint.
 
 ## Review boundary
 

@@ -32,10 +32,13 @@ or create a second process manager. See
 [target navigation](TARGET_INFORMATION_ARCHITECTURE.md) and
 [upstream/licensing review](UPSTREAM_REUSE_STRATEGY.md).
 
-For the single-APK packaging program, follow the
-[web-first Basic/Pro sequential sprints](adr/0016-web-first-basic-pro-unified-product.md).
-These complement the M0–M7 Hosting milestones below; they do not
-replace or recertify earlier source/device evidence.
+For the one-APK program follow
+[ADR-0017 Termux-first integration](adr/0017-termux-first-single-app-integration.md)
+(I0–I4). The APK foundation is official Termux source and packages,
+with selected Termux:API/Boot functionality, existing Companion and
+Shizuku integrated by reuse. Do not build an independent package
+manager, host engine or custom-prefix runtime. This packaging work
+complements M0–M7 Hosting; no earlier QA is recertified.
 
 ## Current position
 
