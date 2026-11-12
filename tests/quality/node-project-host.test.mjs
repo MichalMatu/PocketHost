@@ -92,6 +92,41 @@ test('M3 concurrent Node editors cannot replace an unexpected source candidate',
   assert.equal(retry.project.candidateRelease, latestId);
 });
 
+test('M3 candidate restore rejects stale revisions even after A-B-A transitions', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Safe restore revisions');
+  const a = host.stage(project.id, source(), null, 0).project;
+  const b = host.stage(project.id, source('1.0.1'), a.candidateRelease, 1).project;
+  const restoredA = host.restoreCandidate(project.id, b.candidateRelease, 2);
+  assert.equal(restoredA.candidateRelease, a.candidateRelease);
+  assert.equal(restoredA.previousCandidate, b.candidateRelease);
+  assert.equal(restoredA.deploymentCount, 3);
+  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2), /candidate changed/);
+  const restoredB = host.restoreCandidate(project.id, a.candidateRelease, 3);
+  assert.equal(restoredB.candidateRelease, b.candidateRelease);
+  assert.equal(restoredB.deploymentCount, 4);
+  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2), /candidate changed/);
+  assert.throws(() => host.stage(project.id, source('1.0.2'), b.candidateRelease, 2),
+    /candidate changed/);
+  assert.equal(host.inspect(project.id).deploymentCount, 4);
+  assert.equal(host.candidates(project.id).length, 2);
+});
+
+test('M3 restore refuses tampered previous source without changing candidate pointer', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Restore verified only');
+  const a = host.stage(project.id, source()).project;
+  const b = host.stage(project.id, source('1.0.1')).project;
+  writeFileSync(path.join(root, project.id, 'releases', a.candidateRelease, 'server.mjs'),
+    'console.log("tampered")');
+  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2),
+    /digest mismatch/);
+  const latest = host.inspect(project.id);
+  assert.equal(latest.candidateRelease, b.candidateRelease);
+  assert.equal(latest.previousCandidate, a.candidateRelease);
+  assert.equal(latest.deploymentCount, 2);
+});
+
 test('M3 duplicate save remains valid at release limit without bypassing new release budget', (t) => {
   const { host } = setup(t);
   const project = host.create('Full release budget');
