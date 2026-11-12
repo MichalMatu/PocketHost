@@ -524,7 +524,8 @@ export class NodeProjectHost {
       if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
       const old = marker.candidateRelease;
       const next = marker.previousCandidate;
-      ownedDirectory(path.join(this.projectPath(id), 'releases', next));
+      // Restoring a candidate must not resurrect tampered or legacy source.
+      this.release(id, next);
       marker.candidateRelease = next;
       marker.previousCandidate = old;
       if (marker.history.length >= 30) throw new RangeError('Node release history budget reached');
