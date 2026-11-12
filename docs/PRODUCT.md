@@ -12,6 +12,19 @@ capabilities, the limited PocketHost panel runit exception and the
 modular platform target are defined by [root AGENTS](../AGENTS.md),
 [roadmap](ROADMAP.md) and [ADR-0014](adr/0014-termux-panel-supervision.md).
 
+## Current priority (2026-11-12)
+
+[ROADMAP](ROADMAP.md) defines two current P0 tasks: complete
+Node.js project Hosting with GitHub deploy/update/rollback, then
+the Hosting panel's Cloudflare/domain/HTTPS, SSH, per-site web
+analytics and scoped backup. **Basic** is fully functional with
+official Termux and no separate Android helper application;
+**Pro** adds optional external Android-app-dependent functions,
+not a billing tier. Companion/Shizuku code is frozen, menu changes
+and the unified APK are deferred. A versioned bundle and one-command
+Termux installer follow the working Hosting path. All historical
+MVP acceptance below remains scoped to its original evidence.
+
 ## Problem
 
 People can generate websites with AI but struggle to host them. PocketHost aims to make an Android phone running Termux an approachable web-hosting node, eventually with simple domains and AI deployment.
