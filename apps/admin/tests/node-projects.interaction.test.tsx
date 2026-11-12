@@ -231,3 +231,61 @@ it("starts and restarts only an explicitly approved, verified Node release", asy
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restart"))).toHaveLength(1)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
+
+it.each(["refresh-failed", "mutation-unconfirmed"] as const)(
+  "disables repeat Node actions when %s",
+  async (scenario) => {
+    const user = userEvent.setup()
+    let submitted = false
+    const project = {
+      id: ID, name: "Safe Node", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+      previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url === "/api/v1/node-projects/" + ID + "/releases")
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime") && !options?.method) {
+        if (submitted && scenario === "refresh-failed") return { ok: false, status: 503 }
+        return { ok: true, json: async () => ({
+          runtime: {
+            state: "running", port: 19301, desired: "running",
+            activeRelease: RELEASE, lastGoodRelease: RELEASE,
+            previousGoodRelease: null, history: [],
+          }, executionEnabled: true,
+        }) }
+      }
+      if (url.endsWith("/plan") && !options?.method)
+        return { ok: true, json: async () => ({
+          plan: { release: RELEASE, port: 19301, missingTools: [],
+            conflicts: [], dependencyCount: 0, allowed: true,
+            reason: "ready-for-explicit-local-deploy" },
+          executionEnabled: true,
+        }) }
+      if (url.endsWith("/restart") && options?.method === "POST") {
+        submitted = true
+        if (scenario === "mutation-unconfirmed") throw new Error("connection lost")
+        return { ok: true, json: async () => ({ runtime: { state: "running" } }) }
+      }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await screen.findByRole("button", { name: "Safe Node" })
+    await user.click(screen.getByRole("button", { name: "Safe Node" }))
+    await screen.findByText(/Runtime: running/)
+    await user.click(screen.getByLabelText("Approve local Node execution"))
+    await user.click(screen.getByRole("button", { name: "Restart service" }))
+    await screen.findByText(scenario === "refresh-failed"
+      ? "Node action acknowledged, but runtime refresh failed. Review plan before retrying."
+      : "Node action result unconfirmed. Refresh runtime status before retrying.")
+    expect((screen.getByRole("button", { name: "Restart service" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Stop owned service" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByLabelText("Approve local Node execution") as HTMLInputElement).checked).toBe(false)
+    expect(screen.queryByText("Owned Node service restarted and readiness verified.")).toBeNull()
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restart"))).toHaveLength(1)
+  },
+)
