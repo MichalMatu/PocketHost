@@ -166,3 +166,59 @@ it("treats a malformed installed-tool report as an error without claiming versio
   expect(screen.queryByText(/Installed tools:/)).toBeNull()
   expect(requests.mock.calls.every(([url]) => String(url).startsWith("/api/v1/node-projects"))).toBe(true)
 })
+
+it("starts only an explicitly approved, verified stopped Node release", async () => {
+  const user = userEvent.setup()
+  let running = false
+  const project = {
+    id: ID, name: "Resume Node", kind: "node", state: "source-staged",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects" && !options?.method)
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url === "/api/v1/node-projects/" + ID + "/releases" && !options?.method)
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url === "/api/v1/node-projects/" + ID + "/runtime" && !options?.method)
+      return { ok: true, json: async () => ({
+        runtime: {
+          state: running ? "running" : "stopped", port: 19301,
+          desired: running ? "running" : "stopped",
+          activeRelease: RELEASE, lastGoodRelease: RELEASE,
+          previousGoodRelease: null, history: [],
+        },
+        executionEnabled: true,
+      }) }
+    if (url === "/api/v1/node-projects/" + ID + "/plan" && !options?.method)
+      return { ok: true, json: async () => ({
+        plan: {
+          release: RELEASE, port: 19301, missingTools: [], conflicts: [],
+          dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
+        },
+        executionEnabled: true,
+      }) }
+    if (url === "/api/v1/node-projects/" + ID + "/start" && options?.method === "POST") {
+      expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-node-project")
+      expect(JSON.parse(String(options.body))).toEqual({ approved: true })
+      running = true
+      return { ok: true, json: async () => ({ runtime: { state: "running" } }) }
+    }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await screen.findByRole("button", { name: "Resume Node" })
+  await user.click(screen.getByRole("button", { name: "Resume Node" }))
+  await screen.findByText(/Runtime: stopped/)
+  const start = screen.getByRole("button", { name: "Start stopped service" }) as HTMLButtonElement
+  expect(start.disabled).toBe(true)
+  await user.click(screen.getByLabelText("Approve local Node execution"))
+  expect(start.disabled).toBe(false)
+  await user.click(start)
+  await screen.findByText("Previously verified Node release started and readiness confirmed.")
+  expect((screen.getByRole("button", { name: "Start stopped service" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/start"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})
