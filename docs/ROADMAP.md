@@ -2,7 +2,7 @@
 status: active
 owner: core
 last_reviewed: 2026-11-12
-purpose: Canonical target sequence and acceptance outcomes for modular PocketHost
+purpose: Canonical Hosting-first Basic delivery priorities and future modular milestones
 ---
 
 # PocketHost Roadmap
@@ -40,53 +40,64 @@ not required for the current Termux-installed Basic MVP. Do not build an
 independent package manager, host engine or custom-prefix runtime.
 No earlier QA is recertified.
 
-## Immediate priority — Termux-first Hosting MVP Basic
+## Current product decision — functional Basic and Pro
 
-**P0 product decision (2026-11-12):** finish a usable, web-first
-PocketHost Hosting product on the **already installed Termux** before
-pursuing a unified Android APK. Termux remains the host/runtime;
-PocketHost is the primary browser-based administration experience.
-No Companion app, Shizuku permission or separate APK is required to
-install or operate **Basic**. Preserve the existing H2 static-hosting
-capability; do not rebuild a static-only native server. Cloudflare
-Pages may be used for suitable static deployments, while phone-hosted
-Node services use explicitly configured ingress.
+**Basic and Pro describe technical dependencies, not price or a
+free/paid feature limit. Both must be fully functional in their scope.**
 
-**MVP Basic completion order (highest priority first):**
+- **Basic:** full website/application hosting and administration using
+  only official Termux and supported packages. Git/GitHub, SSH,
+  Cloudflare, project traffic analytics, files, terminal and backups
+  belong to Basic; external web services are allowed, but separate
+  Android helper APKs are not required.
+- **Pro:** additional Android/system capabilities that require separately
+  installed Android applications or authorizations (e.g. Companion
+  and Shizuku). Existing Pro code stays preserved but **frozen**.
+  Basic must never depend on its presence, status or permissions.
 
-1. **Usable dynamic Hosting (P0):** finish M2/M3 with one disposable,
-   user-created Node.js service managed end-to-end from the panel:
-   create/import, reviewed dependency plan, start/stop/restart,
-   readiness, bounded logs, release/update and rollback. Reuse
-   existing H2 static projects and the single owned runit adapter.
-2. **Everyday panel modules (P0):** make project files and browser
-   terminal usable; add GitHub project import/pull/update, SSH
-   administration, Cloudflare Tunnel/domain/HTTPS publishing,
-   monitoring and traffic analytics where data is available.
-   Never treat access to an existing external service as ownership.
-3. **Reliability and safety (P0):** scoped Restic backup/restore,
-   explicit recovery policy, safe service reboot behavior,
-   verified ownership, credentials and appropriate authentication
-   before any public management interface. Prove changes on
-   disposable projects without touching existing production services.
-4. **Simple onboarding (P0):** a documented, repeatable
-   **one-command Termux installer/bootstrap** that checks and
-   installs required supported dependencies, starts PocketHost and
-   opens/shows the local panel address; handle retries, updates
-   and failure reporting without breaking other Termux workloads.
-5. **Physical MVP acceptance (release gate):** exercise complete
-   browser flows and a clean Termux install on Samsung, including
-   Node failure/rollback, Cloudflare reachability, backup/restore,
-   Android restart and resource limits. Source tests and historical
-   panel PASS are not release or device acceptance.
+**Current product:** PocketHost inside official Termux, managed through
+one web panel. Existing H2 static hosting is retained, not rewritten.
+Cloudflare Pages is optional for static sites; phone-hosted services
+use explicit origin routes. The future unified Android APK/I0–I4 is
+**deferred**, not the Basic MVP path.
 
-**Deferred / not MVP blockers:** new native APK runtime, upstream
-Termux-app fork/unified APK integration (I0–I4), Companion expansion,
-Shizuku features, Pro-specific capabilities and migrations of
-pre-existing owner workloads. Existing Companion/Shizuku DEV code is
-**frozen, not deleted**; preserve its current boundaries and do not
-silently expand or rework it. The one-APK goal remains a possible
-later product track, not the critical path for Basic.
+## Next two development tasks — Hosting first
+
+1. **P0 — complete Node.js Hosting + GitHub deployment.** Reuse M1–M3,
+   H2 releases and the one verified runit adapter. From the current
+   panel, create/import a disposable user-owned project (folder/ZIP
+   or GitHub repository), inspect an explicit dependency plan,
+   install/build after approval, start/stop/restart, prove local
+   readiness, inspect logs, update/pull/publish and safely roll back.
+   A source candidate is not a successfully running Node service.
+2. **P0 — finish the Hosting management panel.** Integrate
+   Cloudflare Tunnel, domains and HTTPS publishing; SSH configuration;
+   per-site **web traffic analytics** (requests, visitors and errors
+   when data is actually available, not Android-wide RX/TX);
+   file/terminal workflows; scoped Restic backup and verified restore.
+   Reuse official Termux tools and existing PocketHost contracts.
+   No adoption or change to external existing services without
+   separate explicit authorization.
+
+**Menu/navigation:** keep the current menu and routes unchanged
+during these two tasks. Reorganize by Basic/Pro only later after the
+Hosting flow works; avoid UI churn and duplicate admin surfaces.
+
+**After these two tasks:** make a versioned PocketHost bundle and
+a repeatable **one-command installer for official Termux** using its
+own pkg/npm tooling, with minimal required dependencies and optional
+packages configured in the panel. Exercise a clean-install smoke
+early, but finish full installer polish after working Hosting.
+Then perform exact-source Samsung browser/device acceptance:
+GitHub -> running Node -> Cloudflare -> update/rollback -> backup
+and restore, plus permissions, restarts and error paths. Do not
+expose the current unauthenticated DEV admin panel publicly.
+
+**Not a blocker now:** Pro/Companion/Shizuku expansion, unified APK,
+Python/PRoot and additional runtimes, automatic adoption/migration
+of IleStoi, PhotoMap, Local Agent or other live services. No source,
+APK, menu, process or production service change is authorized by
+this roadmap alone.
 
 ## Current position
 
@@ -107,10 +118,10 @@ See [compact handoff](HANDOFF_NEXT_CHAT.md).
 | M1 — P0 | Versioned Module/Service/Project declarations, components, secret refs and private persistence                                                          | Reject duplicate/stale identities, collisions, foreign ownership and unsupported migrations; rollback/restore negative cases |
 | M2 — P0 | Reviewed dependency plans; single runit adapter, bounded health/recovery policy, scoped backup/restore                                                  | Disposable restart/failure/disable/restore pass; no unowned process signalled                                                |
 | M3 — P0 | First **disposable user-created Node.js** project, minimal browser wizard, manifest/lockfile, local build/start/readiness, staged versions and rollback | Real browser flow, safe failed update, restart/recovery and verified no interference with H2/other Termux sites              |
-| M4 — P1 | Separate SSH and Cloudflare modules plus second Python/venv runtime, optional PRoot                                                                     | Distinct ownership, no duplicate shared daemon, correct external-vs-origin health and rollback                               |
+| M4 — P0 | SSH, Cloudflare/domain/HTTPS and per-site web analytics integrated with Hosting; Python/PRoot deferred                                         | Independent ownership; verified public origin routing and traffic measurements; no external service takeover                 |
 | M5 — P1 | Multi-component Hosting wizard, source import, reviewed dependencies, optional routes, storage, secrets and coordinated release                         | Node frontend+backend and worker failure/rollback/data-restore scenarios                                                     |
 | M6 — P1 | Explicit staged migration of existing owner workloads, **Local Agent last**                                                                             | Independent SSH/USB recovery, final data sync, one queue consumer, Android reboot/Wi-Fi/suspend/health acceptance            |
-| M7 — P2 | Further runtimes/databases, richer secret management, scheduled operations, authenticated API and hardening                                             | Separately scoped security, recovery and public-access acceptance                                                            |
+| M7 — P2 | Python/PRoot, further runtimes/databases, richer secret management, scheduled operations, authenticated API and hardening                                             | Separately scoped security, recovery and public-access acceptance                                                            |
 
 ## Hard dependencies
 
