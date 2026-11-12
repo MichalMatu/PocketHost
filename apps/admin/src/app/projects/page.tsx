@@ -432,7 +432,7 @@ export default function ProjectsPage() {
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
-                setApproved(false); setBuildCheck(null); setPlan(null)
+                setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
                 setExecutionEnabled(false); setEditorDirty(true)
                 setMessage("GitHub source " + data.commit.slice(0, 12) +
                   " loaded into editor. Review and stage before deployment.")
@@ -453,6 +453,7 @@ export default function ProjectsPage() {
                   setApproved(false)
                   setBuildCheck(null)
                   setPlan(null)
+                  setPreview(null)
                   setExecutionEnabled(false)
                   setEditorDirty(true)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
@@ -524,7 +525,7 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
-                <Button disabled={busy || !plan?.allowed || !selected.candidateRelease}
+                <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",
                       "POST", { release: selected.candidateRelease })
