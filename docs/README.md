@@ -28,7 +28,7 @@ Don't invent parallel documents just to fill all four categories.
 - [Fast DEV / selective checks](DEV_ITERATION.md)
 - [Termux Local Agent contract](LOCAL_AGENT_TERMUX.md)
 - [Current QA and release gates](QUALITY_GATES.md)
-- [Canonical M0–M7 roadmap](ROADMAP.md)
+- [Canonical Hosting-first Basic/Pro priorities and M0–M7 roadmap](ROADMAP.md)
 - [Small development plan](DEVELOPMENT_PLAN.md)
 - [Architecture boundaries](ARCHITECTURE.md)
 - [Module dependencies](MODULES.md)
@@ -62,7 +62,9 @@ Don't invent parallel documents just to fill all four categories.
 
 ADRs record the decision at its date; a newer owner-approved ADR
 can supersede older initial-MVP scope without changing historic
-evidence. The active constraints live in root AGENTS.md.
+evidence. The active product execution order lives in [ROADMAP](ROADMAP.md) and
+[DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md); root AGENTS.md defines
+execution/safety constraints.
 
 - [ADR-0001 foundation](adr/0001-foundation.md)
 - [ADR-0002 upstream Termux](adr/0002-upstream-termux.md)
@@ -78,7 +80,7 @@ evidence. The active constraints live in root AGENTS.md.
 - [ADR-0012 private UI fast review](adr/0012-private-ui-rapid-review.md)
 - [ADR-0013 Shizuku power user](adr/0013-shizuku-power-user.md)
 - [ADR-0014 PocketHost-only runit](adr/0014-termux-panel-supervision.md)
-- [ADR-0017 Termux-first single PocketHost app (active)](adr/0017-termux-first-single-app-integration.md)
+- [ADR-0017 future one-APK integration (deferred, not the Basic MVP)](adr/0017-termux-first-single-app-integration.md)
 - [ADR-0015 isolated APK runtime (superseded)](adr/0015-unified-android-app-isolated-runtime.md)
 - [ADR-0016 standalone S0–S10 sprints (superseded)](adr/0016-web-first-basic-pro-unified-product.md)
 
