@@ -425,18 +425,48 @@ export default function ProjectsPage() {
                 if (!data || data.repository !== githubRepository.trim() ||
                     typeof data.commit !== "string" || !/^[a-f0-9]{40}$/.test(data.commit) ||
                     !contents || typeof contents.packageJson !== "object" ||
-                    !contents.packageJson || typeof contents.packageLock !== "object" ||
-                    !contents.packageLock || typeof contents.serverSource !== "string" ||
-                    contents.serverSource.length > 65536)
+                    !contents.packageJson || Array.isArray(contents.packageJson) ||
+                    typeof contents.packageLock !== "object" ||
+                    !contents.packageLock || Array.isArray(contents.packageLock) ||
+                    typeof contents.serverSource !== "string" ||
+                    !contents.serverSource.trim() || contents.serverSource.length > 65536)
                   throw new Error("Invalid GitHub Node source preview")
+                if (selected.candidateRelease) {
+                  // Compare with the attested on-host candidate, not a possibly
+                  // edited browser buffer. A matching remote commit needs no new release.
+                  const current = await getJson(api + "/" + selected.id + "/source")
+                  const staged = current.source as Record<string, unknown> | undefined
+                  if (!staged || staged.release !== selected.candidateRelease ||
+                      typeof staged.manifest !== "string" ||
+                      typeof staged.lockfile !== "string" ||
+                      typeof staged.serverSource !== "string" ||
+                      staged.manifest.length > 140000 || staged.lockfile.length > 140000 ||
+                      staged.serverSource.length > 65536)
+                    throw new Error("Could not verify current staged Node source")
+                  let matching = false
+                  try {
+                    matching = JSON.stringify(JSON.parse(staged.manifest)) ===
+                        JSON.stringify(contents.packageJson) &&
+                      JSON.stringify(JSON.parse(staged.lockfile)) ===
+                        JSON.stringify(contents.packageLock) &&
+                      staged.serverSource === contents.serverSource
+                  } catch {
+                    throw new Error("Could not verify current staged Node source")
+                  }
+                  if (matching) {
+                    setMessage("GitHub commit " + data.commit.slice(0, 12) +
+                      " matches the current staged source. No update needed.")
+                    return
+                  }
+                }
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
                 setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
                 setExecutionEnabled(false); setEditorDirty(true)
-                setMessage("GitHub source " + data.commit.slice(0, 12) +
-                  " loaded into editor. Review and stage before deployment.")
-              })}>Load GitHub source</Button>
+                setMessage("GitHub commit " + data.commit.slice(0, 12) +
+                  " contains changes. Review and stage to preserve the previous release.")
+              })}>{selected.candidateRelease ? "Check GitHub updates" : "Load GitHub source"}</Button>
           </div>
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
@@ -484,7 +514,8 @@ export default function ProjectsPage() {
                 setBuildCheck(null); setPreview(null); setEditorDirty(false)
                 setMessage("Verified staged source loaded into editor; no process changed.")
               })}>Load staged source</Button>
-            <Button disabled={busy} onClick={() => action(async () => {
+            <Button disabled={busy || (!!selected.candidateRelease && !editorDirty)}
+              onClick={() => action(async () => {
               const data = await getJson(api + "/" + selected.id + "/stage", "POST", {
                 packageJson: JSON.parse(manifest) as unknown,
                 packageLock: JSON.parse(lockfile) as unknown,
