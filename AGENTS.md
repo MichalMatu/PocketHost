@@ -76,6 +76,15 @@ See docs/DEV_ITERATION.md and docs/LOCAL_AGENT_TERMUX.md.
 
 ## Product and privilege boundaries
 
+**Active product order (ROADMAP):** first finish Basic Node.js Hosting
+and GitHub deploy; then Hosting panel Cloudflare/SSH, per-site web
+traffic analytics and backup. Basic is fully operational on official
+Termux without Companion/Shizuku. Pro denotes extra Android-app
+dependencies, not billing. Companion/Shizuku and the unified APK
+are frozen/deferred for this sprint. Do not reorder the menu or
+change existing Pro code. Historical Android plans are not active
+instructions; refer to docs/ROADMAP.md.
+
 PocketHost is a **DEV-only**, owner-operated Android/Termux management
 console. Shizuku is a first-class power-user integration; expose real
 authorized ADB/native capabilities and explicit Advanced Shell execution
