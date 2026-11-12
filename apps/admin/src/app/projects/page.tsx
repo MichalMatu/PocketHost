@@ -534,6 +534,7 @@ export default function ProjectsPage() {
                 packageJson: JSON.parse(manifest) as unknown,
                 packageLock: JSON.parse(lockfile) as unknown,
                 serverSource: source,
+                expectedCandidate: selected.candidateRelease,
               })
               if (!validProject(data.project)) throw new Error("Invalid stage response")
               await refresh()
