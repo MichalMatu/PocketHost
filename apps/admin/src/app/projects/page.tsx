@@ -525,7 +525,9 @@ export default function ProjectsPage() {
               await refresh()
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
               setApproved(false); setBuildCheck(null); setEditorDirty(false)
-              setMessage("Source candidate staged. Review the execution plan before deploying.")
+              setMessage(data.unchanged === true
+                ? "Source matches the current verified candidate. No new release created."
+                : "Source candidate staged. Review the execution plan before deploying.")
             })}>Validate and stage source</Button>
             <Button variant="outline" disabled={busy || !selected.previousCandidate}
               onClick={() => action(async () => {
