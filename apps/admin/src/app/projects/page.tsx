@@ -114,6 +114,8 @@ export default function ProjectsPage() {
   const [manifest, setManifest] = React.useState(examplePackage)
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
+  const [githubRepository, setGithubRepository] = React.useState("")
+  const [editorDirty, setEditorDirty] = React.useState(false)
   const [releases, setReleases] = React.useState<Candidate[]>([])
   const [runtime, setRuntime] = React.useState<RuntimeState | null>(null)
   const [plan, setPlan] = React.useState<RuntimePlan | null>(null)
@@ -398,7 +400,7 @@ export default function ProjectsPage() {
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
-                setBuildCheck(null)
+                setBuildCheck(null); setEditorDirty(false)
                 await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
         </CardContent>
@@ -408,6 +410,34 @@ export default function ProjectsPage() {
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
+              <Input aria-label="Public GitHub repository" placeholder="owner/repository"
+                value={githubRepository} maxLength={150}
+                onChange={event => setGithubRepository(event.target.value)} />
+            </label>
+            <Button variant="outline" disabled={busy || !githubRepository.trim()}
+              onClick={() => action(async () => {
+                const result = await getJson(api + "/github/preview", "POST",
+                  { repository: githubRepository.trim() })
+                const data = result.preview as Record<string, unknown> | undefined
+                const contents = data?.source as Record<string, unknown> | undefined
+                if (!data || data.repository !== githubRepository.trim() ||
+                    typeof data.commit !== "string" || !/^[a-f0-9]{40}$/.test(data.commit) ||
+                    !contents || typeof contents.packageJson !== "object" ||
+                    !contents.packageJson || typeof contents.packageLock !== "object" ||
+                    !contents.packageLock || typeof contents.serverSource !== "string" ||
+                    contents.serverSource.length > 65536)
+                  throw new Error("Invalid GitHub Node source preview")
+                setManifest(JSON.stringify(contents.packageJson, null, 2))
+                setLockfile(JSON.stringify(contents.packageLock, null, 2))
+                setSource(contents.serverSource)
+                setApproved(false); setBuildCheck(null); setPlan(null)
+                setExecutionEnabled(false); setEditorDirty(true)
+                setMessage("GitHub source " + data.commit.slice(0, 12) +
+                  " loaded into editor. Review and stage before deployment.")
+              })}>Load GitHub source</Button>
+          </div>
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
               disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
@@ -424,19 +454,20 @@ export default function ProjectsPage() {
                   setBuildCheck(null)
                   setPlan(null)
                   setExecutionEnabled(false)
+                  setEditorDirty(true)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
                 })
               }} />
           </label>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={manifest} onChange={event => setManifest(event.target.value)} /></label>
+              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
           <label className="grid gap-1 text-sm">package-lock.json
             <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={lockfile} onChange={event => setLockfile(event.target.value)} /></label>
+              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
           <label className="grid gap-1 text-sm">server.mjs
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={source} onChange={event => setSource(event.target.value)} /></label>
+              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" disabled={busy || !selected.candidateRelease}
               onClick={() => action(async () => {
@@ -449,7 +480,7 @@ export default function ProjectsPage() {
                   throw new Error("Invalid verified candidate source")
                 setManifest(value.manifest); setLockfile(value.lockfile)
                 setSource(value.serverSource); setApproved(false)
-                setBuildCheck(null); setPreview(null)
+                setBuildCheck(null); setPreview(null); setEditorDirty(false)
                 setMessage("Verified staged source loaded into editor; no process changed.")
               })}>Load staged source</Button>
             <Button disabled={busy} onClick={() => action(async () => {
@@ -461,7 +492,7 @@ export default function ProjectsPage() {
               if (!validProject(data.project)) throw new Error("Invalid stage response")
               await refresh()
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-              setApproved(false); setBuildCheck(null)
+              setApproved(false); setBuildCheck(null); setEditorDirty(false)
               setMessage("Source candidate staged. Review the execution plan before deploying.")
             })}>Validate and stage source</Button>
             <Button variant="outline" disabled={busy || !selected.previousCandidate}
@@ -506,7 +537,7 @@ export default function ProjectsPage() {
                     })
                     setMessage("Node syntax check completed without executing project source.")
                   })}>Check Node build syntax</Button>
-                <Button disabled={busy || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
+                <Button disabled={busy || editorDirty || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "deploy",
                       { approved: true, release: selected.candidateRelease },
