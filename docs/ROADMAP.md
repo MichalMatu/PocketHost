@@ -61,6 +61,27 @@ Cloudflare Pages is optional for static sites; phone-hosted services
 use explicit origin routes. The future unified Android APK/I0–I4 is
 **deferred**, not the Basic MVP path.
 
+## Parallel Hosting model — preserve existing static H2
+
+**Accepted decision (2026-11-12):** keep the verified H2 static
+Hosting implementation operational and **unchanged during Node.js
+development**. Static (HTML/CSS/JS) and dynamic (Node.js) Hosting
+are parallel project types with separate project directories, ports,
+process identities, releases and lifecycle operations. Neither
+hosting type depends on the other's runtime, deployment or health;
+a Node project failure/update must not interrupt an H2 site, and
+vice versa.
+
+One PocketHost panel may present both, with shared **infrastructure
+interfaces** for project ownership, GitHub, Cloudflare, SSH,
+monitoring and Restic. Reuse the existing trusted Termux process
+tools and host adapters; **do not build two competing service
+supervisors** or migrate static H2 to Node.js/runit just for
+uniformity. Static's existing execution path is preserved.
+Cross-type changes require explicit justification and focused
+regression tests proving static Create/Start/Publish/Rollback,
+process/port isolation and protection of external workloads.
+
 ## Next two development tasks — Hosting first
 
 1. **P0 — complete Node.js Hosting + GitHub deployment.** Reuse M1–M3,
