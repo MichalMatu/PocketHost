@@ -372,6 +372,59 @@ it.each(["response-mismatch", "refresh-mismatch"] as const)(
   },
 )
 
+it("blocks follow-up Node execution if the owned HTTP readiness proof fails", async () => {
+  const user = userEvent.setup()
+  const project = {
+    id: ID, name: "Unready Node", kind: "node", state: "source-staged",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "running", desired: "running", port: 19301,
+        activeRelease: RELEASE, lastGoodRelease: RELEASE,
+        previousGoodRelease: null, history: [],
+      }, executionEnabled: true }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: RELEASE, port: 19301, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
+      }, executionEnabled: true }) }
+    if (url.endsWith("/restart") && options?.method === "POST")
+      return { ok: true, json: async () => ({ runtime: {
+        state: "running", activeRelease: RELEASE,
+      } }) }
+    if (url.endsWith("/health"))
+      return { ok: true, json: async () => ({ health: {
+        state: "running", release: RELEASE, ready: false,
+      } }) }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await screen.findByRole("button", { name: "Unready Node" })
+  await user.click(screen.getByRole("button", { name: "Unready Node" }))
+  await screen.findByText(/Runtime: running/)
+  await user.click(screen.getByLabelText("Approve local Node execution"))
+  await user.click(screen.getByRole("button", { name: "Restart service" }))
+  await screen.findByText(
+    "Node process acknowledged, but HTTP readiness was not verified. Review plan before retrying.",
+  )
+  expect((screen.getByRole("button", { name: "Restart service" }) as HTMLButtonElement).disabled)
+    .toBe(true)
+  expect((screen.getByRole("button", { name: "Stop owned service" }) as HTMLButtonElement).disabled)
+    .toBe(true)
+  expect(screen.queryByText("Owned Node service restarted and readiness verified.")).toBeNull()
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/health"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restart"))).toHaveLength(1)
+})
+
 it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
   "compares GitHub Node source and preserves previous candidate when %s",
   async (scenario) => {
