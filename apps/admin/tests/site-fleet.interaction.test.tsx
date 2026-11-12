@@ -64,11 +64,38 @@ function withSites(initial: ReturnType<typeof project>[] = []) {
 
 afterEach(() => vi.unstubAllGlobals())
 
+describe("Static Hosting catalog states", () => {
+  it.each([
+    [404, "Static hosting is disabled on this panel."],
+    [403, "Static hosting access denied."],
+    [503, "Could not load static sites. Try Refresh."],
+  ])("keeps API failure %i distinct from no sites", async (status, message) => {
+    const calls = vi.fn(async () => ({ ok: false, status }))
+    vi.stubGlobal("fetch", calls)
+    render(<SitesPage />)
+    expect((await screen.findByRole("alert")).textContent).toBe(message)
+    expect(screen.queryByText(/No static sites yet/)).toBeNull()
+    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(calls.mock.calls).toHaveLength(1)
+  })
+
+  it("refuses an invalid inventory instead of claiming it is empty", async () => {
+    const calls = vi.fn(async () => ({
+      ok: true, status: 200, json: async () => ({ sites: [{ id: "not-owned" }] }),
+    }))
+    vi.stubGlobal("fetch", calls)
+    render(<SitesPage />)
+    await screen.findByText("Invalid static site inventory. No changes were made.")
+    expect(screen.queryByText(/No static sites yet/)).toBeNull()
+    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
 describe("H2 browser site-manager lifecycle", () => {
   it("creates one explicitly owned site with deliberate intent but cannot start before publishing", async () => {
     const user = userEvent.setup()
     const fetchMock = withSites()
-    await screen.findByText(/No user sites created yet/)
+    await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.click(screen.getByRole("button", { name: /Create site/ }))
     await screen.findByText("My own site")
