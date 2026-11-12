@@ -144,6 +144,16 @@ test('M3 staging refuses tampered source before any runit command', async (t) =>
   assert.equal(host.status(project.id).state, 'not-provisioned');
 });
 
+test('M3 resume refuses missing approval and never creates an unowned service', async (t) => {
+  const { host, projects, project, serviceRoot } = fixture(t);
+  const staged = projects.stage(project.id, source).project;
+  await assert.rejects(host.start(project.id, false), /approval/);
+  await assert.rejects(host.start(project.id, true), /No verified active Node release/);
+  assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+  assert.equal(host.status(project.id).state, 'not-provisioned');
+  assert.equal(projects.inspect(project.id).candidateRelease, staged.candidateRelease);
+});
+
 test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
   const { projects, project, host } = fixture(t);
   const staged = projects.stage(project.id, source).project;
