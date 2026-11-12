@@ -919,6 +919,65 @@ export class NodeRunitHost {
       rmSync(globalLock, { force: true });
     }
   }
+  /** Explicit one-shot resume of the last verified release; never adopts a runit process. */
+  async start(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
+    if (approved !== true) throw new Error('Explicit owned start approval required');
+    const { folder } = this.context(id);
+    const globalLock = path.join(this.projectRoot, '.node-ports.lock');
+    const globalFd = openSync(globalLock, 'wx', 0o600);
+    closeSync(globalFd);
+    const lock = path.join(folder, '.node-runtime.lock');
+    try {
+      const fd = openSync(lock, 'wx', 0o600);
+      closeSync(fd);
+    } catch (error) {
+      rmSync(globalLock, { force: true });
+      throw error;
+    }
+    try {
+      const state = this.record(id);
+      if (!state?.activeRelease || state.lastGoodRelease !== state.activeRelease)
+        throw new Error('No verified active Node release to resume');
+      if (state.desired !== 'stopped' || state.process !== null ||
+          this.unitState(id) !== 'down')
+        throw new Error('Owned Node service is not safely stopped');
+      if (!(await portFree(state.port))) throw new Error('Owned Node port is occupied');
+      const release = this.projects.release(id, state.activeRelease);
+      if (release.plan.dependencyCount !== 0 ||
+          release.plan.commands.build !== null ||
+          this.toolchain(release.plan).status === 'blocked')
+        throw new Error('Node release dependencies or toolchain no longer supported');
+      if (this.checkReleaseSyntax(id, state.activeRelease).status !== 'syntax-valid')
+        throw new Error('Node release source syntax invalid');
+      const nonce = randomBytes(24).toString('hex');
+      this.script(id, state.activeRelease, state.port, nonce);
+      state.readinessNonce = nonce;
+      this.writeState(id, state);
+      try {
+        const result = await this.admin.apply('once', state.unit);
+        if (result.result?.exit !== 0) throw new Error('Runit one-shot start rejected');
+        const proof = await this.settle(id, state.activeRelease, state.port, nonce);
+        state.process = proof;
+        state.desired = 'running';
+        this.history(state, 'start', state.activeRelease);
+        this.writeState(id, state);
+      } catch (error) {
+        state.process = null;
+        state.desired = 'stopped';
+        this.history(state, 'failed', state.activeRelease);
+        this.writeState(id, state);
+        // A failed start may have left a process behind. Never signal an
+        // unverified PID or automatically retry; require manual review.
+        if (this.observe(id, state.activeRelease) !== 'down')
+          throw new Error('Node start unconfirmed; inspect the owned process before retrying');
+        throw error;
+      }
+      return this.status(id);
+    } finally {
+      rmSync(lock, { force: true });
+      rmSync(globalLock, { force: true });
+    }
+  }
   async rollback(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned rollback approval required');
     const state = this.record(id);
