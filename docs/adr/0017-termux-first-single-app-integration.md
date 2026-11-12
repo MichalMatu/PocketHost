@@ -1,11 +1,22 @@
 ---
-status: accepted-implementation-open
+status: deferred-future-option
 owner: core
 last_reviewed: 2026-11-12
-purpose: Canonical single PocketHost application built from existing Termux and Android components
+purpose: Deferred future one-APK integration; not an active Basic MVP implementation plan
 ---
 
 # ADR-0017 — Termux-first unified PocketHost
+
+> **Deferred (2026-11-12):** this historical one-APK architecture is
+> not the current development path. The active
+> [Hosting-first roadmap](../ROADMAP.md) defines two P0 tasks:
+> Node.js + GitHub and Hosting panel integrations (Cloudflare,
+> SSH, web analytics, backup). Basic runs wholly in official
+> Termux without Companion or Shizuku. Pro denotes additional
+> Android-app-dependent capabilities, not a payment tier.
+> Keep Companion/Shizuku code frozen and preserve the menu.
+> Do not start I0–I4 or replace the installed Termux.
+
 
 ## Owner decision
 
@@ -74,7 +85,7 @@ acceptance gates. Combining Termux GPLv3 code with the app requires a
 documented distribution license and corresponding source/notices.
 Do not promise a Play Store release before policy/licensing feasibility.
 
-## Implementation order
+## Deferred implementation order — only after a new owner decision
 
 1. **I0 — source cleanup and baseline:** retire the unrelated standalone
    runtime probe, fix documents and protect existing services; no deployment.
@@ -101,7 +112,7 @@ of any of the integration stages above.
 
 ## Present state
 
-**I0 in progress; I1–I4 OPEN.** No unified APK or embedded privileged
+**I0–I4 DEFERRED; no active APK sprint.** No unified APK or embedded privileged
 Shizuku server has been demonstrated. Development commands/builds/tests
 are dispatched only through the Samsung Termux Local Agent under
 [AGENTS](../../AGENTS.md); source changes use GitHub Connector.
