@@ -84,7 +84,7 @@ test('M3 duplicate save cannot hide tampered release source or forged source pro
   writeFileSync(path.join(folder, 'server.mjs'), 'console.log("tampered")');
   assert.throws(() => host.stage(project.id, source()), /digest mismatch/);
   assert.equal(host.inspect(project.id).deploymentCount, 1);
-  assert.equal(host.candidates(project.id).length, 1);
+  assert.equal(host.inspect(project.id).candidateRelease, staged.candidateRelease);
 });
 
 test('M3 rejects foreign id, malformed source and project limit or unknown release', (t) => {
