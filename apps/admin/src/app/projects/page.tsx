@@ -119,6 +119,7 @@ export default function ProjectsPage() {
   const [githubRepository, setGithubRepository] = React.useState("")
   const [githubReview, setGithubReview] = React.useState<{
     repository: string; commit: string; changed: string[]
+    dependencies: number; buildRequired: boolean
   } | null>(null)
   const [editorDirty, setEditorDirty] = React.useState(false)
   const [releases, setReleases] = React.useState<Candidate[]>([])
@@ -445,7 +446,17 @@ export default function ProjectsPage() {
                   { repository: githubRepository.trim() })
                 const data = result.preview as Record<string, unknown> | undefined
                 const contents = data?.source as Record<string, unknown> | undefined
-                if (!data || data.repository !== githubRepository.trim() ||
+                const sourcePlan = data?.plan as Record<string, unknown> | undefined
+                const commands = sourcePlan?.commands as Record<string, unknown> | undefined
+                if (!data || !sourcePlan || !commands ||
+                    !Number.isSafeInteger(sourcePlan.dependencyCount) ||
+                    (sourcePlan.dependencyCount as number) < 0 ||
+                    (sourcePlan.dependencyCount as number) > 500 ||
+                    (commands.build !== null &&
+                     (!Array.isArray(commands.build) ||
+                      commands.build.length !== 3 ||
+                      commands.build.join(" ") !== "npm run build")) ||
+                    data.repository !== githubRepository.trim() ||
                     typeof data.commit !== "string" || !/^[a-f0-9]{40}$/.test(data.commit) ||
                     !contents || typeof contents.packageJson !== "object" ||
                     !contents.packageJson || Array.isArray(contents.packageJson) ||
@@ -487,6 +498,8 @@ export default function ProjectsPage() {
                   repository: data.repository as string,
                   commit: data.commit,
                   changed,
+                  dependencies: sourcePlan.dependencyCount as number,
+                  buildRequired: commands.build !== null,
                 })
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
@@ -499,8 +512,10 @@ export default function ProjectsPage() {
           </div>
           {githubReview && <p className="text-muted-foreground text-xs"
             aria-label="GitHub source changes">
-            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")}
-          </p>}
+            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"}
+            {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
+              " · Staging only; package installation/build requires separate approval."}
+          </p>
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
               disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
