@@ -592,7 +592,22 @@ function nodeProjectApi(): Plugin {
                   Object.keys(input).join(",") !== "name") throw new RangeError("Invalid project")
               return { project: host.create((input as { name: unknown }).name) }
             }
-            return host.stage(id!, input)
+            if (!input || typeof input !== "object" || Array.isArray(input)) {
+              throw new RangeError("Invalid staged Node source")
+            }
+            const body = input as Record<string, unknown>
+            if (Object.keys(body).sort().join(",") !==
+                "expectedCandidate,packageJson,packageLock,serverSource" ||
+                (body.expectedCandidate !== null &&
+                 (typeof body.expectedCandidate !== "string" ||
+                  !/^r-[a-f0-9]{32}$/.test(body.expectedCandidate)))) {
+              throw new RangeError("Invalid Node source revision")
+            }
+            return host.stage(id!, {
+              packageJson: body.packageJson,
+              packageLock: body.packageLock,
+              serverSource: body.serverSource,
+            }, body.expectedCandidate as string | null)
           })
           if (createBackup) reportDashboardOwnedEvent("owned-backup-created")
           if (restoreBackup) reportDashboardOwnedEvent("owned-backup-restored")
