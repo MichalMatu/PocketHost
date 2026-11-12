@@ -97,7 +97,9 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
     response.status === 404 ? "Node project resource not found." :
     response.status === 403 ? "Node Hosting access denied." :
     response.status === 400 ? "Invalid project input, manifest, lockfile or source." :
-    method ? "Operation refused by the private host." : "Could not load Node projects. Try Refresh.")
+    response.status === 409 && url.endsWith("/stage")
+      ? "Node source save refused. Refresh project and review the current candidate."
+      : method ? "Operation refused by the private host." : "Could not load Node projects. Try Refresh.")
   const value: unknown = await response.json()
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid host response")
   return value as Record<string, unknown>
