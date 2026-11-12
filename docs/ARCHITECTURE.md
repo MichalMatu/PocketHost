@@ -39,6 +39,8 @@ Never widen to a wildcard listener or WAN. See
 Android application integrating the existing native Companion/Bridge,
 the current React UI and the Termux backend. It is an architectural
 target, **not** a claim that a unified APK already exists.
+The [isolated APK packaging decision](adr/0015-unified-android-app-isolated-runtime.md)
+sets the clean-install and custom-prefix feasibility gates.
 
 ```text
 Main PocketHost Android app / shared React Dashboard

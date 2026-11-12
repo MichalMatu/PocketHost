@@ -19,6 +19,10 @@ remaining G1/G2 and separate physical G3 evidence.
 
 ## Next development path
 
+The [unified APK and isolated runtime decision](adr/0015-unified-android-app-isolated-runtime.md)
+adds a packaging track alongside reusable M2/M3 Hosting. Avoid duplicate
+installers or host engines until the custom-prefix bootstrap is proven.
+
 1. **M0 acceptance closure:** separate source from device acceptance.
    Consume already published native receipts first; repair only
    confirmed failures. For static Hosting, verify disposable

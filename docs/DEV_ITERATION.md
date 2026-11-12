@@ -30,7 +30,6 @@ No per-commit ESLint, complete UI suite, full G2, coverage or build.**
   Keep foreign services untouched. Missing evidence stays HOLD/OPEN,
   never reported as PASS.
 
-
 ## One normal iteration
 
 **Fresh main -> small coherent edit -> commit -> focused Samsung
