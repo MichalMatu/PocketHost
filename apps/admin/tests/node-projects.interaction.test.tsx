@@ -655,3 +655,69 @@ it("rejects a stale Node editor save and never retries the conflicting stage req
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
+
+it.each(["restored", "conflict"] as const)(
+  "restores previous Node source only at the observed revision: %s",
+  async (scenario) => {
+    const user = userEvent.setup()
+    const current = "r-" + "c".repeat(32)
+    let project = {
+      id: ID, name: "Versioned Node", kind: "node" as const, state: "source-staged" as const,
+      runtime: "not-provisioned" as const, activeRelease: null,
+      candidateRelease: current, previousCandidate: RELEASE,
+      deploymentCount: 2, createdAt: "2026-11-09T12:00:00Z",
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "not-provisioned", desired: "stopped", port: null,
+          activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+        }, executionEnabled: false }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: project.candidateRelease, port: null, missingTools: [],
+          conflicts: [], dependencyCount: 0, allowed: false, reason: "no-owned-service",
+        }, executionEnabled: false }) }
+      if (url.endsWith("/restore-candidate") && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"])
+          .toBe("owned-node-project")
+        expect(JSON.parse(String(options.body))).toEqual({
+          expectedCandidate: current, expectedRevision: 2,
+        })
+        if (scenario === "conflict") return { ok: false, status: 409 }
+        project = {
+          ...project, candidateRelease: RELEASE,
+          previousCandidate: current, deploymentCount: 3,
+        }
+        return { ok: true, json: async () => ({ project }) }
+      }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await screen.findByRole("button", { name: "Versioned Node" })
+    await user.click(screen.getByRole("button", { name: "Versioned Node" }))
+    await screen.findByText(/Runtime: not-provisioned/)
+    await user.click(screen.getByRole("button", { name: "Restore previous candidate" }))
+    if (scenario === "restored") {
+      await screen.findByText("Previous source candidate restored. No live process was changed.")
+      expect(project.candidateRelease).toBe(RELEASE)
+      expect(project.previousCandidate).toBe(current)
+      expect(project.deploymentCount).toBe(3)
+    } else {
+      await screen.findByText("Node source save refused. Refresh project and review the current candidate.")
+      expect(project.candidateRelease).toBe(current)
+      expect(project.previousCandidate).toBe(RELEASE)
+      expect(project.deploymentCount).toBe(2)
+    }
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restore-candidate")))
+      .toHaveLength(1)
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy")))
+      .toHaveLength(0)
+  },
+)
