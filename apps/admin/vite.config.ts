@@ -456,7 +456,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|rollback|check-build|preview|source|health))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" && (op === "preview" || op === "source") &&
@@ -497,11 +497,12 @@ function nodeProjectApi(): Plugin {
         const deploy = request.method === "POST" && !!id && op === "deploy"
         const start = request.method === "POST" && !!id && op === "start"
         const stop = request.method === "POST" && !!id && op === "stop"
+        const restart = request.method === "POST" && !!id && op === "restart"
         const rollback = request.method === "POST" && !!id && op === "rollback"
         const checkBuild = request.method === "POST" && !!id && op === "check-build"
         const createBackup = request.method === "POST" && route === "/backup/create"
         const restoreBackup = request.method === "POST" && route === "/backup/restore"
-        if (!create && !stage && !restore && !deploy && !start && !stop && !rollback &&
+        if (!create && !stage && !restore && !deploy && !start && !stop && !restart && !rollback &&
             !checkBuild && !createBackup && !restoreBackup) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
@@ -545,7 +546,7 @@ function nodeProjectApi(): Plugin {
                 id!, (input as { release: string }).release,
               ) }
             }
-            if (deploy || start || stop || rollback) {
+            if (deploy || start || stop || restart || rollback) {
               if (!executionEnabled) throw new Error("Node runtime activation disabled")
               const requestBody = await readJson(request, 1024)
               if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody))
@@ -558,8 +559,9 @@ function nodeProjectApi(): Plugin {
                 return { runtime: await runtime!.deploy(id!, body.release, true) }
               }
               if (Object.keys(body).join(",") !== "approved" || body.approved !== true)
-                throw new RangeError("Missing explicit stop approval")
+                throw new RangeError("Missing explicit runtime approval")
               return { runtime: rollback ? await runtime!.rollback(id!, true) :
+                restart ? await runtime!.restart(id!, true) :
                 start ? await runtime!.start(id!, true) : await runtime!.stop(id!, true) }
             }
             if (restore) {
