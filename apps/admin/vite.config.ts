@@ -580,11 +580,20 @@ function nodeProjectApi(): Plugin {
                 start ? await runtime!.start(id!, true) : await runtime!.stop(id!, true) }
             }
             if (restore) {
-              if (request.headers["transfer-encoding"] !== undefined ||
-                  ![undefined, "0"].includes(request.headers["content-length"])) {
-                throw new RangeError("Body not permitted on candidate restore")
-              }
-              return { project: host.restoreCandidate(id!) }
+              const input = await readJson(request, 1024)
+              if (!input || typeof input !== "object" || Array.isArray(input) ||
+                  Object.keys(input).sort().join(",") !== "expectedCandidate,expectedRevision")
+                throw new RangeError("Invalid candidate restore revision")
+              const body = input as Record<string, unknown>
+              if (typeof body.expectedCandidate !== "string" ||
+                  !/^r-[a-f0-9]{32}$/.test(body.expectedCandidate) ||
+                  !Number.isSafeInteger(body.expectedRevision) ||
+                  (body.expectedRevision as number) < 1 ||
+                  (body.expectedRevision as number) > 30)
+                throw new RangeError("Invalid candidate restore revision")
+              return { project: host.restoreCandidate(
+                id!, body.expectedCandidate, body.expectedRevision as number,
+              ) }
             }
             const input = await readJson(request, stage ? 340 * 1024 : 1024)
             if (create) {
@@ -597,17 +606,20 @@ function nodeProjectApi(): Plugin {
             }
             const body = input as Record<string, unknown>
             if (Object.keys(body).sort().join(",") !==
-                "expectedCandidate,packageJson,packageLock,serverSource" ||
+                "expectedCandidate,expectedRevision,packageJson,packageLock,serverSource" ||
                 (body.expectedCandidate !== null &&
                  (typeof body.expectedCandidate !== "string" ||
-                  !/^r-[a-f0-9]{32}$/.test(body.expectedCandidate)))) {
+                  !/^r-[a-f0-9]{32}$/.test(body.expectedCandidate))) ||
+                !Number.isSafeInteger(body.expectedRevision) ||
+                (body.expectedRevision as number) < 0 ||
+                (body.expectedRevision as number) > 30) {
               throw new RangeError("Invalid Node source revision")
             }
             return host.stage(id!, {
               packageJson: body.packageJson,
               packageLock: body.packageLock,
               serverSource: body.serverSource,
-            }, body.expectedCandidate as string | null)
+            }, body.expectedCandidate as string | null, body.expectedRevision as number)
           })
           if (createBackup) reportDashboardOwnedEvent("owned-backup-created")
           if (restoreBackup) reportDashboardOwnedEvent("owned-backup-restored")
