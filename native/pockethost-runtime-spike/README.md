@@ -29,11 +29,15 @@ part of Android's executable policy that cannot be proven from inside
   native ELF architecture, package contents and collision-free ports,
   then request explicit owner-approved physical deployment.
 
-## Build environment (future, not yet verified)
+## Build environment (Samsung first build verified)
 
-Actual device: Android 16 / ARM64. The existing Termux has `clang`
-but initially lacked Java, Gradle, Android SDK/API36 and AAPT2.
-Use only an explicitly approved, isolated toolchain workspace;
+Samsung Android 16 / ARM64 has compiled this prototype from exact source
+`fd69447d39ca16a3761c3fb235a6e572fffc681b`: OpenJDK 17,
+Termux-native AAPT2, Android SDK 36 and Gradle 8.11.1. Its first
+independent debug APK **has not been installed**. See the
+[first-build checkpoint](../../docs/checkpoints/2026-11-12-s1-standalone-arm64-apk-first-build.md)
+for the output SHA-256 and remaining device acceptance gates.
+Keep any future toolchain changes in an approved isolated workspace;
 do not run downloaded setup scripts or global `pkg upgrade`.
 
 Source uses AGP 8.10.1, requiring compatible Gradle 8.11.1+
