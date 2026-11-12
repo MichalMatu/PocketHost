@@ -51,6 +51,7 @@ type Candidate = {
   dependencyPlan: { packageName: string; packageVersion: string; dependencyCount: number; status: "review-required" }
 }
 const api = "/api/v1/node-projects"
+const disabledMessage = "Node Hosting is not enabled on this panel."
 const intent = "owned-node-project"
 const examplePackage = JSON.stringify({
   name: "my-node-site", version: "1.0.0", type: "module",
@@ -91,14 +92,18 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
       method, headers: { "X-PocketHost-Intent": intent, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     } : {}) })
-  if (!response.ok) throw new Error(response.status === 404 ? "Node Hosting is disabled on this DEV panel." :
-    response.status === 400 ? "Invalid project input, manifest, lockfile or source." : "Operation refused by the private host.")
+  if (!response.ok) throw new Error(response.status === 404 && url === api ? disabledMessage :
+    response.status === 404 ? "Node project resource not found." :
+    response.status === 403 ? "Node Hosting access denied." :
+    response.status === 400 ? "Invalid project input, manifest, lockfile or source." :
+    method ? "Operation refused by the private host." : "Could not load Node projects. Try Refresh.")
   const value: unknown = await response.json()
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("Invalid host response")
   return value as Record<string, unknown>
 }
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<Project[]>([])
+  const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
   const [manifest, setManifest] = React.useState(examplePackage)
@@ -132,9 +137,24 @@ export default function ProjectsPage() {
   const [message, setMessage] = React.useState<string | null>(null)
   const selected = projects.find((project) => project.id === selectedId)
   const refresh = React.useCallback(async () => {
-    const data = await getJson(api)
-    if (!Array.isArray(data.projects) || !data.projects.every(validProject)) throw new Error("Invalid Node project registry response")
-    setProjects(data.projects)
+    try {
+      const data = await getJson(api)
+      if (!Array.isArray(data.projects) || !data.projects.every(validProject))
+        throw new Error("Invalid Node project registry response")
+      setProjects(data.projects)
+      setCatalogState("ready")
+      setError(null)
+    } catch (cause) {
+      if (cause instanceof Error && cause.message === disabledMessage) {
+        setProjects([])
+        setSelectedId("")
+        setCatalogState("disabled")
+        setError(null)
+        return
+      }
+      setCatalogState("error")
+      throw cause
+    }
   }, [])
   const loadReleases = React.useCallback(async (id: string) => {
     const data = await getJson(api + "/" + id + "/releases")
@@ -153,13 +173,11 @@ export default function ProjectsPage() {
   }, [])
   React.useEffect(() => {
     let live = true
-    void Promise.resolve().then(() => getJson(api)).then(data => {
-      if (!live) return
-      if (!Array.isArray(data.projects) || !data.projects.every(validProject)) throw new Error("Invalid project registry")
-      setProjects(data.projects)
-    }).catch(cause => { if (live) setError(cause instanceof Error ? cause.message : "Project catalog unavailable") })
+    void Promise.resolve().then(refresh).catch(cause => {
+      if (live) setError(cause instanceof Error ? cause.message : "Could not load Node projects.")
+    })
     return () => { live = false }
-  }, [])
+  }, [refresh])
   const action = (fn: () => Promise<void>) => {
     setBusy(true); setError(null); setMessage(null)
     void fn().catch(cause => setError(cause instanceof Error ? cause.message : "Operation rejected"))
@@ -169,12 +187,12 @@ export default function ProjectsPage() {
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       <Card>
         <CardHeader><CardTitle>Create Node.js project</CardTitle>
-          <CardDescription>Creates only private PocketHost metadata. It cannot adopt existing services.</CardDescription></CardHeader>
+          <CardDescription>Manage projects created in PocketHost.</CardDescription></CardHeader>
         <CardContent className="flex flex-wrap items-end gap-3">
           <label className="grid min-w-52 gap-1 text-sm">Project name
             <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
           </label>
-          <Button disabled={busy || name.trim().length < 2} onClick={() => action(async () => {
+          <Button disabled={busy || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
             setSelectedId(data.project.id); setName(""); setApproved(false)
@@ -183,7 +201,7 @@ export default function ProjectsPage() {
             setMessage("Private Node project created.")
           })}>Create project</Button>
           <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
-          <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+          <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
             const response = await getJson(api + "/registry")
             const value = response.registries as Record<string, unknown> | undefined
             if (!value || !Array.isArray(value.modules) || value.modules.length > 32 ||
@@ -198,7 +216,7 @@ export default function ProjectsPage() {
             })
             setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
-          <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+          <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
             const response = await getJson(api + "/backup")
             const value = response.backup as Record<string, unknown> | undefined
             if (!value || typeof value.initialized !== "boolean" ||
@@ -216,6 +234,7 @@ export default function ProjectsPage() {
           })}>Inspect Node backups</Button>
         </CardContent>
       </Card>
+      {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
       {backupStatus && <Card>
@@ -295,7 +314,7 @@ export default function ProjectsPage() {
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
       </p>}
-      <Card><CardHeader><CardTitle>Owned projects</CardTitle>
+      {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
         <CardContent>
           {projects.length === 0 ? <p className="text-muted-foreground text-sm">No Node projects yet.</p> :
@@ -309,8 +328,8 @@ export default function ProjectsPage() {
                 await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
         </CardContent>
-      </Card>
-      {selected && <Card>
+      </Card>}
+      {selected && catalogState === "ready" && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
