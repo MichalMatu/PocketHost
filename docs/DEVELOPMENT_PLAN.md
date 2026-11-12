@@ -17,42 +17,41 @@ suites, install packages repeatedly, create duplicate environments
 or treat task publication as PASS. Close a milestone with its
 remaining G1/G2 and separate physical G3 evidence.
 
-## Next development path
+## Active development path — two Hosting tasks
 
-The canonical [Termux-first integration ADR](adr/0017-termux-first-single-app-integration.md)
-sets I0–I4: cleanup, one cross-component API seam, reusable Android
-API/Boot/Companion code, upstream Termux app assembly, then disposable
-phone acceptance. Do not create another Linux runtime, bootstrap,
-package feed or manager. The existing M0–M7 Hosting roadmap below
-continues; it is not superseded by packaging work.
+**[ROADMAP](ROADMAP.md) is authoritative.** Deliver full **Basic**
+functionality inside official Termux; Pro is an optional technical
+extension relying on external Android applications, **not** a paid
+tier or a restricted Basic. Freeze Companion/Shizuku development and
+defer one-APK I0–I4. Do not reorder the existing menu yet.
 
-1. **M0 acceptance closure:** separate source from device acceptance.
-   Consume already published native receipts first; repair only
-   confirmed failures. For static Hosting, verify disposable
-   Create/Start/Publish/Rollback and protected-service invariants.
-2. **M1 identity foundation:** keep one pure declaration validator
-   and one host-owned revisioned private store. Complete exact-SHA
-   focused negative QA for owner identity, locks, symlinks, stale
-   revisions, rollback/restore and migration rejection. No live
-   process or service registration by inference.
-3. **M2 minimum shared adapter:** preview project-local dependency
-   plans, verified runit service adapter, manual-down-aware
-   cooldown/retry policy and scoped backup/restore. Prove with
-   disposable fixtures and failure cases, not a new daemon.
-4. **M3 first usable product:** browser Create Project for one
-   disposable Node app using an explicit lockfile, staging,
-   owned port, readiness, logs, publish and rollback. Keep H2
-   static hosting functioning; do not wait for optional
-   Cloudflare, Python or a full template marketplace.
-5. **Later modules and migrations:** only after M3 proves the
-   reusable contracts and separate target-specific hardware
-   acceptance. See [M4–M7](ROADMAP.md).
+1. **Node.js Hosting + GitHub (P0):** build on existing M0/M1
+   identities, M2 runit/backup and M3 staging/project candidates.
+   Close one disposable end-to-end browser flow: create/import from
+   files or GitHub, inspect manifest/lockfile and dependency plan,
+   install/build on explicit approval, own the process and port,
+   start/stop, readiness/logs, update and last-good rollback.
+   No duplicate supervisor, installer or service registry.
+2. **Hosting panel integrations (P0):** finish Cloudflare
+   Tunnel/domains/HTTPS, SSH controls, project files and terminal,
+   **per-project web traffic** analytics (not Android RX/TX),
+   and scoped backup/restore. Use official Termux CLIs and existing
+   typed host adapters. Protect foreign tunnels, SSH, services and
+   production workloads; keep admin UI private until authenticated.
 
-**Immediate gate before more features:** accept the pending [repository
-repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md)
-with exact-source Samsung tests and one milestone G2. If no authenticated
-Local Agent terminal result is available, retain HOLD and do not claim
-deployment or quality acceptance.
+After usable Hosting, prepare a versioned Termux PocketHost bundle
+and a minimal one-command installer plus first-run panel flow. Test
+installer assumptions early using disposable/isolated fixtures,
+then run a clean Termux-to-public-site acceptance with failure,
+rollback, restore and Android restart cases. No separate APK is
+required for Basic.
+
+**Immediate verification before more features:** the open
+[repository repair](checkpoints/2026-11-12-general-repository-repair-continuation.md)
+must receive an exact-SHA Samsung terminal receipt. Check pending
+Local Agent tasks before queuing a duplicate; do not rerun historical
+complete suites without a milestone reason. Physical Node Hosting
+and public-ingress acceptance remain separate gates.
 
 ## Change discipline
 
