@@ -13,7 +13,6 @@ purpose: Map available PocketHost telemetry to first-screen decisions and a boun
 > origin logs. Basic must not require the Android Companion/Bridge.
 > Further Companion/Shizuku telemetry work is frozen for now.
 
-
 ## First-screen rule
 
 The main Dashboard is a **read-only health overview**, never a second Services,
