@@ -12,6 +12,8 @@ function fixture() {
   mkdirSync(path.join(services, 'site-worker'));
   mkdirSync(path.join(services, 'wreckscanner'));
   mkdirSync(path.join(services, 'wreckscanner-backup'));
+  mkdirSync(path.join(services, 'pockethost-panel'));
+  mkdirSync(path.join(services, 'pockethost-panel-watch'));
   return { tmp, services, registry: path.join(tmp, 'state', 'registry.json') };
 }
 
@@ -62,6 +64,15 @@ test('H3 protected services, path traversal and symlink aliases never become man
       admin.list(() => 'running').find((x) => x.name === 'wreckscanner-backup')?.protected,
       true,
     );
+    // The DEV panel and its watchdog must be protected by the host adapter,
+    // not only hidden from the browser's Service controls.
+    for (const name of ['pockethost-panel', 'pockethost-panel-watch']) {
+      assert.equal(admin.list(() => 'running').find((x) => x.name === name)?.protected, true);
+      for (const operation of ['register', 'unregister', 'start', 'stop', 'restart', 'once', 'enable', 'disable']) {
+        await assert.rejects(admin.apply(operation, name), /Protected service/);
+      }
+      assert.throws(() => admin.isRegistered(name), /Protected service/);
+    }
     await assert.rejects(admin.apply('register', '../service'), /Invalid/);
     await assert.rejects(admin.apply('start', 'site-worker/../wreckscanner'), /Invalid/);
     symlinkSync(path.join(services, 'wreckscanner'), path.join(services, 'alias'));
@@ -71,7 +82,7 @@ test('H3 protected services, path traversal and symlink aliases never become man
     await assert.rejects(admin.apply('register', 'not-present'), /unavailable/);
     assert.deepEqual(
       admin.list(() => 'stopped').map((x) => x.name),
-      ['alias', 'backup-alias', 'site-worker', 'wreckscanner', 'wreckscanner-backup'],
+      ['alias', 'backup-alias', 'pockethost-panel', 'pockethost-panel-watch', 'site-worker', 'wreckscanner', 'wreckscanner-backup'],
     );
   } finally {
     rmSync(tmp, { recursive: true, force: true });

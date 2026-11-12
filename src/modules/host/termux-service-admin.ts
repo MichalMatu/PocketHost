@@ -26,6 +26,8 @@ const PROTECTED = new Set([
   'mosquitto',
   'ilestoi-healthwatch',
   'termux-agent',
+  'pockethost-panel',
+  'pockethost-panel-watch',
 ]);
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
