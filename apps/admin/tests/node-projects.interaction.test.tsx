@@ -577,6 +577,59 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
   },
 )
 
+it("previews GitHub dependencies and required build without installing or staging", async () => {
+  const user = userEvent.setup()
+  const project = {
+    id: ID, name: "Dependency preview", kind: "node", state: "created",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: null,
+    previousCandidate: null, deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: null, port: null, missingTools: [], conflicts: [],
+        dependencyCount: null, allowed: false, reason: "stage-source-first",
+      }, executionEnabled: false }) }
+    if (url.endsWith("/github/preview") && options?.method === "POST")
+      return { ok: true, json: async () => ({ preview: {
+        repository: "example/with-packages", commit: "a".repeat(40),
+        source: {
+          packageJson: { name: "with-packages", version: "1.0.0",
+            scripts: { start: "node server.mjs", build: "node build.mjs" } },
+          packageLock: { name: "with-packages", version: "1.0.0", lockfileVersion: 3,
+            packages: { "": { name: "with-packages", version: "1.0.0" } } },
+          serverSource: "console.log('preview only')",
+        },
+        plan: { dependencyCount: 2, commands: { build: ["npm", "run", "build"] } },
+      } }) }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await screen.findByRole("button", { name: "Dependency preview" })
+  await user.click(screen.getByRole("button", { name: "Dependency preview" }))
+  await screen.findByText(/Runtime: not-provisioned/)
+  await user.type(screen.getByLabelText("Public GitHub repository"), "example/with-packages")
+  await user.click(screen.getByRole("button", { name: "Load GitHub source" }))
+  await screen.findByText(/GitHub commit a{12} contains changes/)
+  const review = screen.getByLabelText("GitHub source changes").textContent ?? ""
+  expect(review).toContain("Changed: package.json, package-lock.json, server.mjs")
+  expect(review).toContain("Dependencies: 2 · Build: required")
+  expect(review).toContain("Staging only; package installation/build requires separate approval.")
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})
+
 it("rejects malformed GitHub preview without changing the Node source editor", async () => {
   const user = userEvent.setup()
   const project = {
