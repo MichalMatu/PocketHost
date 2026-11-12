@@ -938,14 +938,15 @@ export class NodeRunitHost {
       const state = this.record(id);
       if (!state?.activeRelease || state.lastGoodRelease !== state.activeRelease)
         throw new Error('No verified active Node release to resume');
-      if (state.desired !== 'stopped' || state.process !== null ||
-          this.unitState(id) !== 'down')
+      if (state.desired !== 'stopped' || state.process !== null || this.unitState(id) !== 'down')
         throw new Error('Owned Node service is not safely stopped');
       if (!(await portFree(state.port))) throw new Error('Owned Node port is occupied');
       const release = this.projects.release(id, state.activeRelease);
-      if (release.plan.dependencyCount !== 0 ||
-          release.plan.commands.build !== null ||
-          this.toolchain(release.plan).status === 'blocked')
+      if (
+        release.plan.dependencyCount !== 0 ||
+        release.plan.commands.build !== null ||
+        this.toolchain(release.plan).status === 'blocked'
+      )
         throw new Error('Node release dependencies or toolchain no longer supported');
       if (this.checkReleaseSyntax(id, state.activeRelease).status !== 'syntax-valid')
         throw new Error('Node release source syntax invalid');
