@@ -192,6 +192,24 @@ test('M3 restart coordinates existing stop then start and never starts if stop f
   assert.deepEqual(calls, [['stop']]);
 });
 
+test('M3 refuses redundant deploy of current Node release before touching runit', async (t) => {
+  const { host, project, projects, serviceRoot, root } = fixture(t);
+  const release = projects.stage(project.id, source).project.candidateRelease;
+  const operations = [];
+  host.preview = () => ({ allowed: true, release });
+  host.checkReleaseSyntax = () => ({ release, status: 'syntax-valid', executed: false });
+  host.record = () => ({ activeRelease: release, desired: 'running' });
+  host.halt = async () => { operations.push('halt'); };
+  host.initialize = async () => { operations.push('initialize'); };
+  await assert.rejects(
+    host.deploy(project.id, release, true),
+    /already active; use Start or Restart/,
+  );
+  assert.deepEqual(operations, []);
+  assert.deepEqual(readdirSync(serviceRoot), []);
+  assert.equal((await import('node:fs')).existsSync(path.join(root, '.node-ports.lock')), false);
+});
+
 test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
   const { projects, project, host } = fixture(t);
   const staged = projects.stage(project.id, source).project;
