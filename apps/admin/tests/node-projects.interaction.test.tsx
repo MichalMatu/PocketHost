@@ -485,6 +485,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
         return { ok: true, json: async () => ({ preview: {
           repository: "example/safe-node", commit: "a".repeat(40),
           source: { packageJson: remoteManifest, packageLock: remoteLock, serverSource: remoteSource },
+          plan: { dependencyCount: 0, commands: { build: null } },
         } }) }
       }
       if (url.endsWith("/stage") && options?.method === "POST") {
@@ -537,7 +538,8 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
     } else {
       await screen.findByText(/contains changes. Review and stage/)
       expect(screen.getByLabelText("GitHub source changes").textContent).toContain(
-        "example/safe-node @ " + "a".repeat(12) + " · Changed: server.mjs",
+        "example/safe-node @ " + "a".repeat(12) +
+          " · Changed: server.mjs · Dependencies: 0 · Build: none",
       )
       expect(editor.value).toBe(remoteSource)
       expect(stage.disabled).toBe(false)
