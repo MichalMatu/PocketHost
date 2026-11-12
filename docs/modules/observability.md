@@ -15,7 +15,6 @@ Basic Hosting analytics on Companion or Shizuku. Follow the active
 [Hosting roadmap](../ROADMAP.md); existing Pro-native telemetry
 code is preserved but frozen.
 
-
 ## Responsibility
 
 Aggregate **already admitted read-only** metrics and events
