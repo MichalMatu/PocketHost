@@ -468,6 +468,7 @@ function nodeProjectApi(): Plugin {
         if (request.method === "GET") {
           try {
             const data = route === "/" ? { projects: host.list() } :
+              route === "/toolchain" ? { toolchain: runtime!.toolVersions() } :
               route === "/registry" ? { registries: runtime!.registryProjection() } :
               route === "/backup" ? { backup: nodeBackup!.status(), backupsEnabled: backupEnabled } :
               route === "/backup/snapshots" ? {
