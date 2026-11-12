@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-11
+last_reviewed: 2026-11-12
 purpose: Compact, current PocketHost resumption contract; historical receipts stay in checkpoints and Git history
 ---
 
@@ -49,6 +49,15 @@ attempts and exact-SHA test holds are tracked in the
 [2026-11-12 System screenshot and UX checkpoint](checkpoints/2026-11-12-system-nine-screen-ux-source-audit.md).
 Do not repeat the 2026-11-11 full G2: earlier PASS belongs to its tested SHA.
 Capture/device acceptance and deployment are separate from source commits.
+
+## 2026-11-12 repository repair continuation
+
+Package view reset, backend protection for the PocketHost panel/watchdog
+and truthful package-refresh status are committed as source repairs.
+See the [repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md).
+Current-source Samsung gates, live panel update and G3 remain OPEN.
+A previously published scoped Agent task has no accepted terminal
+receipt yet; do not reuse its old-SHA result as a PASS.
 
 ## First actions
 

@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-09
+last_reviewed: 2026-11-12
 purpose: Short execution plan that implements the canonical roadmap without duplicate history
 ---
 
@@ -40,6 +40,12 @@ remaining G1/G2 and separate physical G3 evidence.
 5. **Later modules and migrations:** only after M3 proves the
    reusable contracts and separate target-specific hardware
    acceptance. See [M4–M7](ROADMAP.md).
+
+**Immediate gate before more features:** accept the pending [repository
+repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md)
+with exact-source Samsung tests and one milestone G2. If no authenticated
+Local Agent terminal result is available, retain HOLD and do not claim
+deployment or quality acceptance.
 
 ## Change discipline
 

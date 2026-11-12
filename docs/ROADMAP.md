@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-09
+last_reviewed: 2026-11-12
 purpose: Canonical target sequence and acceptance outcomes for modular PocketHost
 ---
 
@@ -76,6 +76,10 @@ See [compact handoff](HANDOFF_NEXT_CHAT.md).
 - **Security:** existing owner-private LAN HTTP console is not
   safe to expose on WAN. Binder/Shizuku capabilities depend on
   actual authorization and Android UID, never pretend ADB is root.
+
+Before a new M3 feature sprint, close the [current source repair
+verification](checkpoints/2026-11-12-general-repository-repair-continuation.md)
+on exact Samsung SHA; do not conflate it with disposable G3 acceptance.
 
 ## Iteration policy
 

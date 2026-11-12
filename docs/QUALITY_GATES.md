@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-09
+last_reviewed: 2026-11-12
 purpose: Current proportional source checks, hardware/release gates and evidence rules
 ---
 
@@ -85,6 +85,13 @@ is not a G3 public-product release. Vite HMR is preferred.
 Existing Termux runit panel supervision (ADR-0014) does not grant
 ownership of hosted sites or external processes. No automatic
 package migration, global upgrades, WAN or foreign service control.
+
+## Recent audit-repair gate status
+
+Samsung G2 passed at `bba2d625` on 2026-11-11 (282 Node and 111 UI
+tests), not on the later main. A package-view test failed at `862e99a`;
+the source fixes through `3877a5f` remain **UNVERIFIED** pending
+a terminal Samsung receipt. See the [repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md).
 
 ## Native evidence at historical SHAs
 
