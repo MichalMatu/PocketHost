@@ -207,7 +207,7 @@ export default function ProjectsPage() {
               const result = await getJson(api + "/toolchain")
               const tools = result.toolchain as Record<string, unknown> | undefined
               const version = (value: unknown) => value === null ||
-                (typeof value === "string" && /^v?\\d+\\.\\d+\\.\\d+$/.test(value))
+                (typeof value === "string" && /^v?\d+\.\d+\.\d+$/.test(value))
               if (!tools || !version(tools.nodeVersion) || !version(tools.npmVersion))
                 throw new Error("Invalid Node toolchain report")
               setNodeTools(tools as { nodeVersion: string | null; npmVersion: string | null })
