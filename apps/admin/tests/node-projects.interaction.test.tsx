@@ -368,67 +368,99 @@ it.each(["response-mismatch", "refresh-mismatch"] as const)(
   },
 )
 
-it("loads a pinned public GitHub source into the editor without automatically staging or deploying", async () => {
-  const user = userEvent.setup()
-  const project = {
-    id: ID, name: "GitHub Node", kind: "node", state: "source-staged",
-    runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
-    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
-  }
-  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
-    const url = String(input)
-    if (url === "/api/v1/node-projects") return {
-      ok: true, json: async () => ({ projects: [project] }),
+it.each(["unchanged", "updated"] as const)(
+  "compares GitHub Node source and preserves previous candidate when %s",
+  async (scenario) => {
+    const user = userEvent.setup()
+    const next = "r-" + "c".repeat(32)
+    const remoteManifest = {
+      name: "github-node", version: "2.0.0", scripts: { start: "node server.mjs" },
     }
-    if (url.endsWith("/releases")) return {
-      ok: true, json: async () => ({ releases: [] }),
+    const remoteLock = {
+      name: "github-node", version: "2.0.0", lockfileVersion: 3,
+      packages: { "": { name: "github-node", version: "2.0.0" } },
     }
-    if (url.endsWith("/runtime")) return {
-      ok: true, json: async () => ({ runtime: {
-        state: "stopped", desired: "stopped", port: 19301,
-        activeRelease: RELEASE, lastGoodRelease: RELEASE,
-        previousGoodRelease: null, history: [],
-      }, executionEnabled: true }),
+    const remoteSource = "console.log('from GitHub')"
+    let project: Record<string, unknown> = {
+      id: ID, name: "GitHub Node", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+      previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
     }
-    if (url.endsWith("/plan")) return {
-      ok: true, json: async () => ({ plan: {
-        release: RELEASE, port: 19301, missingTools: [], conflicts: [],
-        dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
-      }, executionEnabled: true }),
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "stopped", desired: "stopped", port: 19301,
+          activeRelease: RELEASE, lastGoodRelease: RELEASE,
+          previousGoodRelease: null, history: [],
+        }, executionEnabled: true }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: RELEASE, port: 19301, missingTools: [], conflicts: [],
+          dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
+        }, executionEnabled: true }) }
+      if (url.endsWith("/source"))
+        return { ok: true, json: async () => ({ source: {
+          release: RELEASE,
+          manifest: JSON.stringify(remoteManifest),
+          lockfile: JSON.stringify(remoteLock),
+          serverSource: scenario === "unchanged" ? remoteSource : "console.log('older')",
+        } }) }
+      if (url === "/api/v1/node-projects/github/preview" && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"])
+          .toBe("owned-node-project")
+        expect(JSON.parse(String(options.body))).toEqual({ repository: "example/safe-node" })
+        return { ok: true, json: async () => ({ preview: {
+          repository: "example/safe-node", commit: "a".repeat(40),
+          source: { packageJson: remoteManifest, packageLock: remoteLock, serverSource: remoteSource },
+        } }) }
+      }
+      if (url.endsWith("/stage") && options?.method === "POST") {
+        expect(JSON.parse(String(options.body))).toEqual({
+          packageJson: remoteManifest, packageLock: remoteLock, serverSource: remoteSource,
+        })
+        project = { ...project, candidateRelease: next, previousCandidate: RELEASE, deploymentCount: 2 }
+        return { ok: true, json: async () => ({ project }) }
+      }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await screen.findByRole("button", { name: "GitHub Node" })
+    await user.click(screen.getByRole("button", { name: "GitHub Node" }))
+    await screen.findByText(/Runtime: stopped/)
+    const editor = screen.getByLabelText("server.mjs") as HTMLTextAreaElement
+    const priorEditor = editor.value
+    const stage = screen.getByRole("button", { name: "Validate and stage source" }) as HTMLButtonElement
+    expect(stage.disabled).toBe(true)
+    await user.type(screen.getByLabelText("Public GitHub repository"), "example/safe-node")
+    await user.click(screen.getByRole("button", { name: "Check GitHub updates" }))
+    if (scenario === "unchanged") {
+      await screen.findByText(/matches the current staged source. No update needed/)
+      expect(editor.value).toBe(priorEditor)
+      expect(stage.disabled).toBe(true)
+      expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
+    } else {
+      await screen.findByText(/contains changes. Review and stage/)
+      expect(editor.value).toBe(remoteSource)
+      expect(stage.disabled).toBe(false)
+      expect((screen.getByRole("button", { name: "Deploy selected release" }) as HTMLButtonElement).disabled)
+        .toBe(true)
+      expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
+      await user.click(stage)
+      await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
+      expect(project.candidateRelease).toBe(next)
+      expect(project.previousCandidate).toBe(RELEASE)
+      expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
     }
-    if (url === "/api/v1/node-projects/github/preview" && options?.method === "POST") {
-      expect((options.headers as Record<string, string>)["X-PocketHost-Intent"])
-        .toBe("owned-node-project")
-      expect(JSON.parse(String(options.body))).toEqual({ repository: "example/safe-node" })
-      return { ok: true, json: async () => ({ preview: {
-        repository: "example/safe-node", commit: "a".repeat(40),
-        source: {
-          packageJson: { name: "github-node", version: "2.0.0", scripts: { start: "node server.mjs" } },
-          packageLock: {
-            name: "github-node", version: "2.0.0", lockfileVersion: 3,
-            packages: { "": { name: "github-node", version: "2.0.0" } },
-          },
-          serverSource: "console.log('from GitHub')",
-        },
-      } }) }
-    }
-    throw new Error("Unexpected request " + url)
-  })
-  vi.stubGlobal("fetch", calls)
-  render(<ProjectsPage />)
-  await screen.findByRole("button", { name: "GitHub Node" })
-  await user.click(screen.getByRole("button", { name: "GitHub Node" }))
-  await screen.findByText(/Runtime: stopped/)
-  await user.type(screen.getByLabelText("Public GitHub repository"), "example/safe-node")
-  await user.click(screen.getByRole("button", { name: "Load GitHub source" }))
-  await screen.findByText(/GitHub source a{12} loaded into editor/)
-  expect((screen.getByLabelText("package.json") as HTMLTextAreaElement).value).toContain("github-node")
-  expect((screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value).toBe("console.log('from GitHub')")
-  expect((screen.getByRole("button", { name: "Deploy selected release" }) as HTMLButtonElement).disabled)
-    .toBe(true)
-  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
-  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
-})
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/source"))).toHaveLength(1)
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+  },
+)
 
 it("rejects malformed GitHub preview without changing the Node source editor", async () => {
   const user = userEvent.setup()
