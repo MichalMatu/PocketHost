@@ -2,7 +2,7 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-10
-purpose: Approved navigation and ownership boundary for future modular PocketHost
+purpose: Future modular navigation reference; current menu unchanged during Basic Hosting P0
 ---
 
 # PocketHost Target Navigation and Ownership
@@ -10,7 +10,12 @@ purpose: Approved navigation and ownership boundary for future modular PocketHos
 ## Decision versus deployed state
 
 The approved future product is **a modular Termux/Android platform**,
-not just a hosting panel. Existing app navigation and hardcoded
+not just a hosting panel. **Current development is Hosting-first Basic in
+official Termux:** full Node.js/GitHub Hosting, then Cloudflare, SSH,
+per-project web traffic analytics and backup. Basic is fully functional
+without Companion/Shizuku; Pro adds Android-app-dependent abilities,
+not a paid tier. **Do not reorganize the current menu for these tasks.**
+See the [canonical roadmap](ROADMAP.md). Existing app navigation and hardcoded
 legacy adapters are transitional; this document is not a declaration
 that the new modules or routes are deployed. Preserve the current
 H2 static sites, routes and upstream admin screens until a tested
@@ -23,7 +28,7 @@ Hosting projects. PhotoMap TEST and its isolated PRoot candidate
 remain separate from regular System observations and do not
 authorize production PhotoMap control.
 
-## Target navigation
+## Deferred target navigation — current menu remains unchanged
 
 | Main area         | Target purpose                                                                 |
 | ----------------- | ------------------------------------------------------------------------------ |
@@ -31,14 +36,14 @@ authorize production PhotoMap control.
 | Hosting           | Overview, Projects, Deployments, Domains & Routing, Storage & Backups, Logs    |
 | Modules           | Node.js, Python/PRoot, SSH, Cloudflare; future Databases                       |
 | Termux/System     | Monitoring, Processes & Services, Packages, Files, Terminal, System Backups    |
-| Android & Shizuku | Applications, CPU & Processes, Permissions, Services, Advanced Shell, Hardware |
+| Android & Shizuku (Pro) | Applications, CPU & Processes, Permissions, Services, Advanced Shell, Hardware |
 | Automation        | Agents, Tasks, API                                                             |
 | Platform          | Network Access, Diagnostics, Settings, Appearance                              |
 
 The old five-area UI proposal is superseded by this module-first
 target. Keep route compatibility and test navigation when migrating.
 
-## Approved Dashboard layout — 2026-11-10
+## Earlier Dashboard layout decision — 2026-11-10 (not the current P0 sprint)
 
 The initial screen is **`/dashboard`**, a cross-module **health and
 trends overview**, not another grid of links to the sidebar. The
@@ -68,11 +73,13 @@ Persisted 1 h / 24 h trends and automatic background recording
 remain planned, not deployed. Reuse the authorized Companion
 foreground service rather than adding a hidden startup process.
 
-**Implementation sequence:** remove duplicate cards and render
+**Deferred Dashboard implementation sequence:** remove duplicate cards and render
 actual available status/latency; integrate typed Android Bridge
 CPU/battery where already authorized; introduce bounded local
 history; then qualify `NetworkStatsManager` permissions and RX/TX
 fidelity on the real Samsung before displaying network traffic.
+
+This Android device-telemetry flow is separate from **Basic website traffic analytics** (Cloudflare/origin logs). Do not require Companion for Hosting analytics.
 
 Single approved source/data flow: [Architecture](ARCHITECTURE.md).
 
