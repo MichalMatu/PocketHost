@@ -27,12 +27,33 @@ const demo = {
   startTicks: null,
   history: [{ at: "2026-11-09T10:00:00Z", action: "create", from: null, to: 1 }],
 }
+const staticSite = {
+  id: "site-" + "c".repeat(32),
+  name: "Example static",
+  kind: "static-site",
+  state: "stopped",
+  port: 19080,
+  activeRelease: release,
+  previousRelease: null,
+  canRollback: false,
+  pid: null,
+  startTicks: null,
+  fileCount: 1,
+  bytes: 320,
+  releases: 1,
+  memoryBytes: null,
+  uptimeSeconds: null,
+  healthy: null,
+  history: [{ at: "2026-11-10T02:00:00Z", action: "publish", from: null, to: release }],
+}
 afterEach(() => vi.unstubAllGlobals())
 
 function setup(enabled: boolean) {
   const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
     const url = String(input)
     expect(options?.method).toBeUndefined()
+    if (url === "/api/v1/sites")
+      return { ok: true, status: 200, json: async () => ({ sites: [staticSite] }) }
     if (url === "/api/v1/owned-site/project")
       return { ok: true, status: 200, json: async () => ({ project: demo }) }
     if (url === "/api/v1/owned-site/logs")
@@ -59,12 +80,15 @@ function setup(enabled: boolean) {
   return requests
 }
 
-it("Deployments combines existing H1 demo with owned Node runtime journal", async () => {
+it("Deployments shows only owned static and Node project histories", async () => {
   const requests = setup(true)
   render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
+  await screen.findByText("Example static")
   await screen.findByText("Example Node")
-  expect(screen.getByText("PocketHost Demo")).toBeTruthy()
+  expect(screen.getByText(/publish · r-/)).toBeTruthy()
   expect(screen.getByText(/start · r-/)).toBeTruthy()
+  expect(screen.queryByText("PocketHost Demo")).toBeNull()
+  expect(requests.mock.calls.some(([input]) => String(input) === "/api/v1/owned-site/project")).toBe(false)
   expect(requests.mock.calls.every((call) => call[1]?.method === undefined)).toBe(true)
 })
 
@@ -102,17 +126,63 @@ it("missing optional demo logs is a neutral empty state with a monitoring link",
   expect(screen.queryByRole("alert")).toBeNull()
 })
 
-it("treats a missing optional demo deployment as inactive rather than broken", async () => {
+it("distinguishes both disabled Hosting modules from empty projects", async () => {
   const requests = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
-    if (url === "/api/v1/node-projects" || url === "/api/v1/owned-site/project")
+    if (url === "/api/v1/sites" || url === "/api/v1/node-projects")
       return { ok: false, status: 404 }
     throw new Error("Unexpected endpoint " + url)
   })
   vi.stubGlobal("fetch", requests)
   render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
-  await screen.findByText("Optional demo deployment history is not configured.")
+  await screen.findByText("Static hosting is not enabled on this panel.")
+  await screen.findByText("Node Hosting is not enabled on this panel.")
+  expect(screen.queryByText("No static sites yet.")).toBeNull()
+  expect(screen.queryByText("No Node projects yet.")).toBeNull()
   expect(screen.queryByRole("alert")).toBeNull()
-  expect(screen.queryByRole("link", { name: "Open demo release" })).toBeNull()
-  expect(requests.mock.calls.some(([input]) => String(input).startsWith("/api/v1/node-projects/"))).toBe(false)
+  expect(requests.mock.calls.some(([input]) => String(input).startsWith("/api/v1/owned-site"))).toBe(false)
+})
+
+it("shows independent empty states for enabled Hosting modules", async () => {
+  const requests = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/sites") return { ok: true, status: 200, json: async () => ({ sites: [] }) }
+    if (url === "/api/v1/node-projects") return { ok: true, status: 200, json: async () => ({ projects: [] }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
+  await screen.findByText("No static sites yet.")
+  await screen.findByText("No Node projects yet.")
+  expect(screen.queryByRole("alert")).toBeNull()
+  expect(requests.mock.calls.some(([input]) => String(input).startsWith("/api/v1/owned-site"))).toBe(false)
+})
+
+it("a failed static inventory does not hide the available Node catalog", async () => {
+  const requests = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/sites") return { ok: false, status: 403 }
+    if (url === "/api/v1/node-projects") return { ok: true, status: 200, json: async () => ({ projects: [] }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
+  await screen.findByText("Static hosting access denied.")
+  await screen.findByText("No Node projects yet.")
+  expect(screen.queryByText("No static sites yet.")).toBeNull()
+  expect(screen.getAllByRole("alert")).toHaveLength(1)
+})
+
+it("rejects malformed static inventory instead of treating it as empty", async () => {
+  const requests = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/sites") return { ok: true, status: 200, json: async () => ({ sites: [{ id: "foreign" }] }) }
+    if (url === "/api/v1/node-projects") return { ok: false, status: 404 }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
+  await screen.findByText("Invalid static site inventory.")
+  expect(screen.queryByText("No static sites yet.")).toBeNull()
+  expect(screen.queryByText("PocketHost Demo")).toBeNull()
 })
