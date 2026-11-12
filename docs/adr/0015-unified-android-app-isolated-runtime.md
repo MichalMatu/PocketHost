@@ -8,7 +8,8 @@ purpose: Historical isolated custom-prefix APK proposal; no longer an active pro
 # ADR-0015 — Retired isolated APK runtime proposal
 
 **SUPERSEDED:** [ADR-0017 Termux-first integration](0017-termux-first-single-app-integration.md)
-is the only current one-app architecture decision.
+describes a **deferred** future one-app possibility. The active
+[Hosting-first Basic roadmap](../ROADMAP.md) does not require an APK.
 
 This earlier proposal tested a separately identified Android APK and
 a custom Termux-compatible runtime. That direction would require its
