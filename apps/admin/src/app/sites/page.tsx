@@ -16,8 +16,14 @@ const maxFolder = 8 * 1024 * 1024
 
 async function readSites(signal?: AbortSignal): Promise<FleetSite[]> {
   const response = await fetch(endpoint, { credentials: "same-origin", cache: "no-store", signal })
-  if (!response.ok) throw new Error("Site management is not available in this PocketHost session.")
-  return parseFleetSites(await response.json())
+  if (response.status === 404) throw new Error("Static hosting is disabled on this panel.")
+  if (response.status === 403) throw new Error("Static hosting access denied.")
+  if (!response.ok) throw new Error("Could not load static sites. Try Refresh.")
+  try {
+    return parseFleetSites(await response.json())
+  } catch {
+    throw new Error("Invalid static site inventory. No changes were made.")
+  }
 }
 async function mutate(url: string, method: "POST" | "PUT" | "DELETE", body?: BodyInit, type?: string): Promise<FleetSite> {
   const response = await fetch(url, {
@@ -337,13 +343,17 @@ export default function SitesPage() {
   React.useEffect(() => {
     const controller = new AbortController()
     void Promise.resolve().then(() => reload(controller.signal))
-      .catch(() => { if (!controller.signal.aborted) setError("Owned site management unavailable; existing services unchanged.") })
+      .catch(cause => {
+        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not load static sites.")
+      })
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [reload])
   const refresh = async () => {
     setLoading(true)
-    try { await reload() } catch { setError("Could not read owned sites.") }
+    try { await reload() } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not load static sites.")
+    }
     finally { setLoading(false) }
   }
   const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -371,16 +381,14 @@ export default function SitesPage() {
         <Card>
           <CardHeader>
             <CardTitle>New hosted site</CardTitle>
-            <CardDescription>Up to eight explicitly owned static sites. ZIP or folder, then Start.
-              Only HTML, CSS, JS, images, fonts and other allowlisted static assets.
-              Use relative asset paths. No server-side code or package installation.</CardDescription>
+            <CardDescription>HTML, CSS and JavaScript. Import a ZIP or folder; up to eight sites.</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={createSite} className="flex flex-col gap-3 sm:flex-row">
               <label htmlFor="new-owned-site" className="sr-only">Site name</label>
               <Input id="new-owned-site" value={name} onChange={event => setName(event.target.value)}
                 placeholder="My first site" minLength={2} maxLength={60} required />
-              <Button type="submit" disabled={creating || sites.length >= 8 || name.trim().length < 2}>
+              <Button type="submit" disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
                 <FolderOpen /> Create site
               </Button>
               <Button type="button" variant="outline" disabled={loading} onClick={() => void refresh()}>
@@ -392,7 +400,7 @@ export default function SitesPage() {
         {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {!loading && sites.length === 0 && !error && <p className="text-muted-foreground text-sm">
-          No user sites created yet. Your existing PocketHost demo and imported services are untouched.
+          No static sites yet. Create your first site above.
         </p>}
         <div className="grid gap-5">
           {sites.map(site => <SiteCard key={site.id} site={site} onChange={reload} />)}
