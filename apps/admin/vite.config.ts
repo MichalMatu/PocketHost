@@ -24,6 +24,7 @@ import { ManagedPhotoMapHost } from "../../src/modules/host/managed-photomap-hos
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
+import { previewPublicGitHubNodeSource } from "../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
 import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backup-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
@@ -492,6 +493,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const create = request.method === "POST" && route === "/"
+        const githubPreview = request.method === "POST" && route === "/github/preview"
         const stage = request.method === "POST" && !!id && op === "stage"
         const restore = request.method === "POST" && !!id && op === "restore-candidate"
         const deploy = request.method === "POST" && !!id && op === "deploy"
@@ -502,8 +504,8 @@ function nodeProjectApi(): Plugin {
         const checkBuild = request.method === "POST" && !!id && op === "check-build"
         const createBackup = request.method === "POST" && route === "/backup/create"
         const restoreBackup = request.method === "POST" && route === "/backup/restore"
-        if (!create && !stage && !restore && !deploy && !start && !stop && !restart && !rollback &&
-            !checkBuild && !createBackup && !restoreBackup) {
+        if (!create && !githubPreview && !stage && !restore && !deploy && !start && !stop &&
+            !restart && !rollback && !checkBuild && !createBackup && !restoreBackup) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -515,6 +517,19 @@ function nodeProjectApi(): Plugin {
           return
         }
         try {
+          if (githubPreview) {
+            const body = await readJson(request, 512)
+            if (!body || typeof body !== "object" || Array.isArray(body) ||
+                Object.keys(body).join(",") !== "repository") {
+              throw new RangeError("Invalid GitHub source preview request")
+            }
+            const preview = await previewPublicGitHubNodeSource(
+              (body as { repository: unknown }).repository,
+            )
+            response.statusCode = 200
+            response.end(JSON.stringify({ preview }))
+            return
+          }
           const result = await serial(async () => {
             if (createBackup || restoreBackup) {
               if (!backupEnabled) throw new Error("Node backup mutations disabled")
