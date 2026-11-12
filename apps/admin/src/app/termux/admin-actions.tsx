@@ -87,6 +87,13 @@ export function PackageManager({
     return () => { active = false }
   }, [refreshToken, reload])
 
+  // Installed inventory and catalog search share an input, but switching back
+  // to installed must not retain a catalog-only filter or package selection.
+  const changeView = (next: "installed" | "available") => {
+    setView(next)
+    if (next === "installed") setQuery("")
+    setSelected(null); setPlan(null); setError(null); setMessage(null); setOutput("")
+  }
   const changeEcosystem = (next: PackageEcosystem) => {
     setEcosystem(next); setView("installed"); setQuery(""); setSelected(null); setPlan(null); setFound(null)
     setError(null); setMessage(null); setOutput("")
@@ -214,10 +221,10 @@ export function PackageManager({
     {ecosystem === "termux" && <div role="tablist" aria-label="Package views" className="flex flex-wrap gap-2">
       <Button size="sm" role="tab" aria-selected={view === "installed"}
         variant={view === "installed" ? "secondary" : "outline"} disabled={isBusy}
-        onClick={() => setView("installed")}>Installed</Button>
+        onClick={() => changeView("installed")}>Installed</Button>
       <Button size="sm" role="tab" aria-selected={view === "available"}
         variant={view === "available" ? "secondary" : "outline"} disabled={isBusy}
-        onClick={() => setView("available")}>Available</Button>
+        onClick={() => changeView("available")}>Available</Button>
     </div>}
     <div className="flex flex-wrap gap-2">
       <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
