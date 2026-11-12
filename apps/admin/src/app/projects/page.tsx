@@ -410,7 +410,7 @@ export default function ProjectsPage() {
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
                   onChange={event => setApproved(event.target.checked)} />
-                I authorize this project's staged Node source to run on this Termux host.
+                I authorize this PocketHost-owned Node service to run on this Termux host.
               </label>
               <div className="flex flex-wrap gap-2">
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
@@ -436,6 +436,14 @@ export default function ProjectsPage() {
                     await loadRuntime(selected.id); setApproved(false)
                     setMessage("Owned Node release started and readiness verified by host.")
                   })}>Deploy selected release</Button>
+                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                  runtime?.state !== "stopped" || !runtime.activeRelease ||
+                  runtime.activeRelease !== runtime.lastGoodRelease}
+                  onClick={() => action(async () => {
+                    await getJson(api + "/" + selected.id + "/start", "POST", { approved: true })
+                    await loadRuntime(selected.id); setApproved(false)
+                    setMessage("Previously verified Node release started and readiness confirmed.")
+                  })}>Start stopped service</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
                   !runtime?.previousGoodRelease || runtime.state === "unknown"}
                   onClick={() => action(async () => {
