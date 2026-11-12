@@ -310,7 +310,12 @@ export class NodeProjectHost {
       return this.summary(marker);
     });
   }
-  stage(id: string, input: unknown, expectedCandidate?: string | null): {
+  stage(
+    id: string,
+    input: unknown,
+    expectedCandidate?: string | null,
+    expectedRevision?: number,
+  ): {
     project: NodeProjectSummary;
     plan: NodeDependencyPlan;
     unchanged: boolean;
@@ -318,12 +323,16 @@ export class NodeProjectHost {
     if (expectedCandidate !== undefined && expectedCandidate !== null &&
         !RELEASE.test(expectedCandidate))
       throw new RangeError('Invalid expected Node candidate');
+    if (expectedRevision !== undefined &&
+        (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30))
+      throw new RangeError('Invalid expected Node revision');
     const source = cleanSource(input);
     return this.mutation(() => {
       const marker = this.record(id);
-      // Enforce optimistic revision control under the same exclusive lock as
-      // candidate mutation. Do not write files for a stale browser tab.
-      if (expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate)
+      // Check both identity and monotonic history under the exclusive lock.
+      // The history revision prevents A -> B -> A from bypassing conflict checks.
+      if ((expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
+          (expectedRevision !== undefined && marker.history.length !== expectedRevision))
         throw new Error('Node candidate changed; reload before staging');
       const releases = path.join(this.projectPath(id), 'releases');
       if (marker.candidateRelease) {
@@ -497,9 +506,21 @@ export class NodeProjectHost {
     };
   }
 
-  restoreCandidate(id: string): NodeProjectSummary {
+  restoreCandidate(
+    id: string,
+    expectedCandidate?: string,
+    expectedRevision?: number,
+  ): NodeProjectSummary {
+    if (expectedCandidate !== undefined && !RELEASE.test(expectedCandidate))
+      throw new RangeError('Invalid expected Node candidate');
+    if (expectedRevision !== undefined &&
+        (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30))
+      throw new RangeError('Invalid expected Node revision');
     return this.mutation(() => {
       const marker = this.record(id);
+      if ((expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
+          (expectedRevision !== undefined && marker.history.length !== expectedRevision))
+        throw new Error('Node candidate changed; reload before restoring');
       if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
       const old = marker.candidateRelease;
       const next = marker.previousCandidate;
