@@ -89,6 +89,14 @@ export default function PhoneSettingsPage() {
     setError(null)
     setRefreshKey(key => key + 1)
   }
+  function brightnessSaved() {
+    setBrightnessDraft("")
+    refreshValues()
+  }
+  function timeoutSaved() {
+    setTimeoutDraft("")
+    refreshValues()
+  }
 
   return (
     <BaseLayout title="Phone Settings" description="Android display controls through the authorized Shizuku Companion">
@@ -122,7 +130,7 @@ export default function PhoneSettingsPage() {
                   onChange={event => setBrightnessDraft(event.target.value)} />
                 {brightnessDraft !== "" && connected &&
                   <AndroidActionButton action="brightness" value={brightnessDraft}
-                    onSuccess={refreshValues}>Save brightness</AndroidActionButton>}
+                    onSuccess={brightnessSaved}>Save brightness</AndroidActionButton>}
                 <p className="text-xs text-muted-foreground">
                   Check the mode above. Adaptive brightness can override saved levels.
                   The native bridge reports stored values, not physical screen luminance.
@@ -141,7 +149,7 @@ export default function PhoneSettingsPage() {
                 </select>
                 {timeoutDraft !== "" && connected &&
                   <AndroidActionButton action="timeout" value={timeoutDraft}
-                    onSuccess={refreshValues}>Save timeout</AndroidActionButton>}
+                    onSuccess={timeoutSaved}>Save timeout</AndroidActionButton>}
 
               </section>
             </div>

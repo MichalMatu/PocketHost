@@ -25,8 +25,9 @@ const system = {
 function mount(disconnected = false) {
   const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
     if (init?.method === "POST") {
+      const payload = JSON.parse(String(init.body)) as { action: string }
       return { ok: true, json: async () => ({
-        success: true, action: "brightness", mode: "adb", output: "", durationMs: 2,
+        success: true, action: payload.action, mode: "adb", output: "", durationMs: 2,
       }) }
     }
     expect(init?.method).toBe("GET")
@@ -58,6 +59,15 @@ describe("dedicated Phone Settings", () => {
     await waitFor(() => expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1))
     const post = calls.mock.calls.find(call => call[1]?.method === "POST")
     expect(JSON.parse(String(post?.[1]?.body))).toEqual({ action: "brightness", target: "", value: "7" })
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Save brightness" })).toBeNull())
+    expect((slider as HTMLInputElement).value).toBe("154")
+
+    const timeout = screen.getByRole("combobox", { name: "Set screen timeout" })
+    fireEvent.change(timeout, { target: { value: "30000" } })
+    fireEvent.click(screen.getByRole("button", { name: "Save timeout" }))
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Save timeout" })).toBeNull())
+    expect((timeout as HTMLSelectElement).value).toBe("")
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(2)
     expect(screen.getByText("Display & screen")).toBeTruthy()
   })
 

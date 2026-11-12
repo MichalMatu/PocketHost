@@ -42,6 +42,14 @@ See the [2026-11-11 exact-SHA closeout and Hosting handoff](checkpoints/2026-11-
 acceptance scope and remaining follow-up. A later docs-only commit does not
 change the tested app source or re-certify a new source SHA.
 
+## Current System UX follow-up (2026-11-12)
+
+The nine-screen read-only source review, focused UI fixes, screenshot
+attempts and exact-SHA test holds are tracked in the
+[2026-11-12 System screenshot and UX checkpoint](checkpoints/2026-11-12-system-nine-screen-ux-source-audit.md).
+Do not repeat the 2026-11-11 full G2: earlier PASS belongs to its tested SHA.
+Capture/device acceptance and deployment are separate from source commits.
+
 ## First actions
 
 1. Check fresh PocketHost main and, only if native execution is needed,

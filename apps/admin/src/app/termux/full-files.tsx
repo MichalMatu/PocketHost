@@ -170,7 +170,9 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         reader.readAsDataURL(file)
       })
       await operate({ name: "upload", root, path: combine(file.name), base64: data })
-      setListing(await browse(root, folder)); setNotice("Imported " + file.name)
+      setNotice("Imported " + file.name)
+      try { setListing(await browse(root, folder)) }
+      catch { setError("Upload acknowledged; directory refresh failed.") }
     } catch { setError("Upload failed or destination exists.") }
     finally { setBusy(false) }
   }
@@ -288,7 +290,9 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
           </DropdownMenu>}
         </div>
       })}
-      {!listing?.entries.length && <p className="p-3 text-sm text-muted-foreground">No files in this directory.</p>}
+      {listing === null && !error && <p role="status" className="p-3 text-sm text-muted-foreground">Loading directory…</p>}
+      {listing !== null && listing.entries.length === 0 && !error &&
+        <p className="p-3 text-sm text-muted-foreground">No files in this directory.</p>}
       {listing?.truncated && <p className="p-2 text-xs">Directory listing limited to 300 entries.</p>}
     </div>
     <Input placeholder="New folder, file, or source path" aria-label="Termux file source"

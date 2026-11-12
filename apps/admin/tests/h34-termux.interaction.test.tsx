@@ -9,6 +9,48 @@ import { AgentApiPanel } from "@/app/termux/agent-panel"
 afterEach(() => vi.unstubAllGlobals())
 
 describe("Termux filesystem and administration", () => {
+  it("does not show an empty-directory message before the first listing arrives", async () => {
+    let deliverListing: (value: { path: string; entries: []; truncated: boolean }) => void = () => {}
+    const pending = new Promise<{ path: string; entries: []; truncated: boolean }>(resolve => {
+      deliverListing = resolve
+    })
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => url.includes("mode=file-roots")
+      ? { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      : { ok: true, json: async () => pending }))
+    render(<TermuxFileExplorer />)
+    expect(screen.getByText("Loading directory…")).toBeTruthy()
+    expect(screen.queryByText("No files in this directory.")).toBeNull()
+    deliverListing({ path: "", entries: [], truncated: false })
+    expect(await screen.findByText("No files in this directory.")).toBeTruthy()
+    expect(screen.queryByText("Loading directory…")).toBeNull()
+  })
+
+  it("does not report a successful upload as failed when the follow-up listing fails", async () => {
+    const user = userEvent.setup()
+    let uploaded = false
+    const calls = vi.fn(async (url: string, options?: RequestInit) => {
+      if (options?.method === "POST") {
+        uploaded = true
+        return { ok: true, json: async () => ({ changed: true }) }
+      }
+      if (url.includes("mode=file-roots"))
+        return { ok: true, json: async () => ({ roots: [{ id: "home", available: true }] }) }
+      if (uploaded) return { ok: false }
+      return { ok: true, json: async () => ({
+        path: "", entries: [{ name: "note.txt", kind: "file", bytes: 8 }], truncated: false,
+      }) }
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<TermuxFileExplorer />)
+    await screen.findByText(/note.txt \(8 B\)/)
+    await user.upload(screen.getByLabelText("Import Termux file"),
+      new File(["hello"], "uploaded.txt", { type: "text/plain" }))
+    await screen.findByText("Imported uploaded.txt")
+    expect(screen.getByRole("alert").textContent).toContain("directory refresh failed")
+    expect(screen.queryByText("Upload failed or destination exists.")).toBeNull()
+    expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
+  })
+
   it("browses real named roots and saves a text file with typed intent", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (url: string, opts?: RequestInit) => {
