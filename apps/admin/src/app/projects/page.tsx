@@ -103,6 +103,7 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
 }
 export default function ProjectsPage() {
   const [projects, setProjects] = React.useState<Project[]>([])
+  const [nodeTools, setNodeTools] = React.useState<{ nodeVersion: string | null; npmVersion: string | null } | null>(null)
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
@@ -201,6 +202,16 @@ export default function ProjectsPage() {
             setMessage("Private Node project created.")
           })}>Create project</Button>
           <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
+          <Button variant="outline" disabled={busy || catalogState !== "ready"}
+            onClick={() => action(async () => {
+              const result = await getJson(api + "/toolchain")
+              const tools = result.toolchain as Record<string, unknown> | undefined
+              const version = (value: unknown) => value === null ||
+                (typeof value === "string" && /^v?\\d+\\.\\d+\\.\\d+$/.test(value))
+              if (!tools || !version(tools.nodeVersion) || !version(tools.npmVersion))
+                throw new Error("Invalid Node toolchain report")
+              setNodeTools(tools as { nodeVersion: string | null; npmVersion: string | null })
+            })}>Check Node tools</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
             const response = await getJson(api + "/registry")
             const value = response.registries as Record<string, unknown> | undefined
@@ -235,6 +246,9 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
+      {nodeTools && <p role="status" className="text-muted-foreground text-sm">
+        Installed tools: Node {nodeTools.nodeVersion ?? "not detected"} · npm {nodeTools.npmVersion ?? "not detected"}
+      </p>}
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
       {backupStatus && <Card>
