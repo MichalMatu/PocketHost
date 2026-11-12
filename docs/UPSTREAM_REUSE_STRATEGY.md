@@ -9,6 +9,13 @@ purpose: Evidence-led GitHub reuse matrix and integration gates for the modular 
 
 ## Decision and limits
 
+**Current implementation priority:** use this as a reuse catalog,
+not a to-do sequence. Follow the [canonical roadmap](ROADMAP.md):
+(1) Node.js Hosting + GitHub end-to-end, (2) panel Cloudflare,
+SSH, per-site web traffic analytics and Restic backup. Basic
+uses only official Termux; Pro requires optional Android helpers.
+Defer APK integration, Companion/Shizuku changes and menu redesign.
+
 **Prefer existing, maintained Termux tools and small reusable interfaces
 to writing new daemons, installers, watchdogs, backup engines or web
 terminals.** Integrate them through a typed PocketHost host adapter.
@@ -149,7 +156,8 @@ Before any imported source or CLI integration:
   accepted** separately. Documentation and public GitHub code
   are not device PASS.
 
-The next concrete action is **R0/M0**, then **R1/M1-M2** and an
-early **R3/M3 Node Hosting MVP**. Extra runtimes, Git push
-deployment, reverse-proxy management and template marketplace
-must not displace this short reliable path.
+R0/M0 reuse analysis remains background evidence; **do not restart
+that audit**. Next implementation follows the two P0 Hosting tasks in
+[ROADMAP](ROADMAP.md). GitHub import, Cloudflare ingress, SSH and
+per-site web analytics are part of complete Termux-only Basic;
+Python/PRoot and additional native Android integration are later.
