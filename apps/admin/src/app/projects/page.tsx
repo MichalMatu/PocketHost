@@ -187,6 +187,35 @@ export default function ProjectsPage() {
     void fn().catch(cause => setError(cause instanceof Error ? cause.message : "Operation rejected"))
       .finally(() => setBusy(false))
   }
+  const runRuntimeAction = async (
+    id: string,
+    operation: "deploy" | "start" | "stop" | "restart" | "rollback",
+    body: unknown,
+    successMessage: string,
+  ) => {
+    // Once submitted, a lost response must never leave stale controls enabled
+    // or imply it is safe to retry a potentially completed host operation.
+    setApproved(false)
+    setExecutionEnabled(false)
+    setRuntime(null)
+    setPlan(null)
+    let result: Record<string, unknown>
+    try {
+      result = await getJson(api + "/" + id + "/" + operation, "POST", body)
+    } catch {
+      throw new Error("Node action result unconfirmed. Refresh runtime status before retrying.")
+    }
+    if (!result.runtime || typeof result.runtime !== "object" ||
+        Array.isArray(result.runtime)) {
+      throw new Error("Node action response unverified. Refresh runtime status before retrying.")
+    }
+    try {
+      await loadRuntime(id)
+      setMessage(successMessage)
+    } catch {
+      setError("Node action acknowledged, but runtime refresh failed. Review plan before retrying.")
+    }
+  }
   return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       <Card>
@@ -431,39 +460,34 @@ export default function ProjectsPage() {
                   })}>Check Node build syntax</Button>
                 <Button disabled={busy || !approved || !executionEnabled || !plan?.allowed || !selected.candidateRelease}
                   onClick={() => action(async () => {
-                    await getJson(api + "/" + selected.id + "/deploy", "POST",
-                      { approved: true, release: selected.candidateRelease })
-                    await loadRuntime(selected.id); setApproved(false)
-                    setMessage("Owned Node release started and readiness verified by host.")
+                    await runRuntimeAction(selected.id, "deploy",
+                      { approved: true, release: selected.candidateRelease },
+                      "Owned Node release started and readiness verified by host.")
                   })}>Deploy selected release</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
                   runtime?.state !== "stopped" || !runtime.activeRelease ||
                   runtime.activeRelease !== runtime.lastGoodRelease}
                   onClick={() => action(async () => {
-                    await getJson(api + "/" + selected.id + "/start", "POST", { approved: true })
-                    await loadRuntime(selected.id); setApproved(false)
-                    setMessage("Previously verified Node release started and readiness confirmed.")
+                    await runRuntimeAction(selected.id, "start", { approved: true },
+                      "Previously verified Node release started and readiness confirmed.")
                   })}>Start stopped service</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
                   !runtime?.previousGoodRelease || runtime.state === "unknown"}
                   onClick={() => action(async () => {
-                    await getJson(api + "/" + selected.id + "/rollback", "POST", { approved: true })
-                    await loadRuntime(selected.id); setApproved(false)
-                    setMessage("Previous verified Node release restored by host.")
+                    await runRuntimeAction(selected.id, "rollback", { approved: true },
+                      "Previous verified Node release restored by host.")
                   })}>Rollback active release</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled || runtime?.state !== "running"}
                   onClick={() => action(async () => {
-                    await getJson(api + "/" + selected.id + "/stop", "POST", { approved: true })
-                    await loadRuntime(selected.id); setApproved(false)
-                    setMessage("Owned Node service stopped.")
+                    await runRuntimeAction(selected.id, "stop", { approved: true },
+                      "Owned Node service stopped.")
                   })}>Stop owned service</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
                   runtime?.state !== "running" || !runtime.activeRelease ||
                   runtime.activeRelease !== runtime.lastGoodRelease}
                   onClick={() => action(async () => {
-                    await getJson(api + "/" + selected.id + "/restart", "POST", { approved: true })
-                    await loadRuntime(selected.id); setApproved(false)
-                    setMessage("Owned Node service restarted and readiness verified.")
+                    await runRuntimeAction(selected.id, "restart", { approved: true },
+                      "Owned Node service restarted and readiness verified.")
                   })}>Restart service</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
                   const response = await getJson(api + "/" + selected.id + "/health")
