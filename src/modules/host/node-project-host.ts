@@ -310,14 +310,21 @@ export class NodeProjectHost {
       return this.summary(marker);
     });
   }
-  stage(id: string, input: unknown): {
+  stage(id: string, input: unknown, expectedCandidate?: string | null): {
     project: NodeProjectSummary;
     plan: NodeDependencyPlan;
     unchanged: boolean;
   } {
+    if (expectedCandidate !== undefined && expectedCandidate !== null &&
+        !RELEASE.test(expectedCandidate))
+      throw new RangeError('Invalid expected Node candidate');
     const source = cleanSource(input);
     return this.mutation(() => {
       const marker = this.record(id);
+      // Enforce optimistic revision control under the same exclusive lock as
+      // candidate mutation. Do not write files for a stale browser tab.
+      if (expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate)
+        throw new Error('Node candidate changed; reload before staging');
       const releases = path.join(this.projectPath(id), 'releases');
       if (marker.candidateRelease) {
         // Retry-safe under the same project mutation lock. Never trust only
