@@ -61,6 +61,37 @@ test('M3 source save is idempotent for an attested identical candidate', (t) => 
   assert.equal(host.candidates(project.id).length, 2);
 });
 
+test('M3 concurrent Node editors cannot replace an unexpected source candidate', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Concurrent editors');
+  const first = host.stage(project.id, source(), null);
+  assert.equal(first.unchanged, false);
+  const firstId = first.project.candidateRelease;
+  const latest = host.stage(project.id, source('1.0.1'), firstId);
+  assert.equal(latest.unchanged, false);
+  assert.equal(latest.project.previousCandidate, firstId);
+  const latestId = latest.project.candidateRelease;
+  assert.throws(
+    () => host.stage(project.id, source('1.0.2'), firstId),
+    /candidate changed/,
+  );
+  assert.throws(
+    () => host.stage(project.id, source(), null),
+    /candidate changed/,
+  );
+  assert.throws(
+    () => host.stage(project.id, source('1.0.3'), 'bad-release'),
+    /Invalid expected/,
+  );
+  assert.equal(host.inspect(project.id).candidateRelease, latestId);
+  assert.equal(host.inspect(project.id).previousCandidate, firstId);
+  assert.equal(host.inspect(project.id).deploymentCount, 2);
+  assert.equal(host.candidates(project.id).length, 2);
+  const retry = host.stage(project.id, source('1.0.1'), latestId);
+  assert.equal(retry.unchanged, true);
+  assert.equal(retry.project.candidateRelease, latestId);
+});
+
 test('M3 duplicate save remains valid at release limit without bypassing new release budget', (t) => {
   const { host } = setup(t);
   const project = host.create('Full release budget');
