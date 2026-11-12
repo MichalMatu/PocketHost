@@ -611,3 +611,44 @@ it("rejects malformed GitHub preview without changing the Node source editor", a
   expect((screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value).toBe(originalSource)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
 })
+
+it("rejects a stale Node editor save and never retries the conflicting stage request", async () => {
+  const user = userEvent.setup()
+  const project = {
+    id: ID, name: "Concurrent Node", kind: "node", state: "source-staged",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: RELEASE, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
+      }, executionEnabled: false }) }
+    if (url.endsWith("/stage") && options?.method === "POST") {
+      expect(JSON.parse(String(options.body)).expectedCandidate).toBe(RELEASE)
+      return { ok: false, status: 409 }
+    }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await screen.findByRole("button", { name: "Concurrent Node" })
+  await user.click(screen.getByRole("button", { name: "Concurrent Node" }))
+  await screen.findByText(/Runtime: not-provisioned/)
+  await user.type(screen.getByLabelText("server.mjs"), "x")
+  await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
+  await screen.findByText("Node source save refused. Refresh project and review the current candidate.")
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})
