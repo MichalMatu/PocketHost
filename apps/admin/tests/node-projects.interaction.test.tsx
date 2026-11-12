@@ -381,6 +381,8 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
       packages: { "": { name: "github-node", version: "2.0.0" } },
     }
     const remoteSource = "console.log('from GitHub')"
+    let published = false
+    let rolledBack = false
     let project: Record<string, unknown> = {
       id: ID, name: "GitHub Node", kind: "node", state: "source-staged",
       runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
@@ -394,13 +396,14 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
         return { ok: true, json: async () => ({ releases: [] }) }
       if (url.endsWith("/runtime"))
         return { ok: true, json: async () => ({ runtime: {
-          state: "stopped", desired: "stopped", port: 19301,
-          activeRelease: RELEASE, lastGoodRelease: RELEASE,
-          previousGoodRelease: null, history: [],
+          state: "running", desired: "running", port: 19301,
+          activeRelease: rolledBack ? RELEASE : published ? next : RELEASE,
+          lastGoodRelease: rolledBack ? RELEASE : published ? next : RELEASE,
+          previousGoodRelease: rolledBack ? next : published ? RELEASE : null, history: [],
         }, executionEnabled: true }) }
       if (url.endsWith("/plan"))
         return { ok: true, json: async () => ({ plan: {
-          release: RELEASE, port: 19301, missingTools: [], conflicts: [],
+          release: project.candidateRelease, port: 19301, missingTools: [], conflicts: [],
           dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
         }, executionEnabled: true }) }
       if (url.endsWith("/source") && scenario === "candidate-unavailable")
@@ -428,13 +431,27 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
         project = { ...project, candidateRelease: next, previousCandidate: RELEASE, deploymentCount: 2 }
         return { ok: true, json: async () => ({ project }) }
       }
+      if (url.endsWith("/deploy") && options?.method === "POST") {
+        expect(JSON.parse(String(options.body))).toEqual({ approved: true, release: next })
+        published = true
+        return { ok: true, json: async () => ({ runtime: {
+          state: "running", activeRelease: next,
+        } }) }
+      }
+      if (url.endsWith("/rollback") && options?.method === "POST") {
+        expect(JSON.parse(String(options.body))).toEqual({ approved: true })
+        rolledBack = true
+        return { ok: true, json: async () => ({ runtime: {
+          state: "running", activeRelease: RELEASE,
+        } }) }
+      }
       throw new Error("Unexpected request " + url)
     })
     vi.stubGlobal("fetch", calls)
     render(<ProjectsPage />)
     await screen.findByRole("button", { name: "GitHub Node" })
     await user.click(screen.getByRole("button", { name: "GitHub Node" }))
-    await screen.findByText(/Runtime: stopped/)
+    await screen.findByText(/Runtime: running/)
     const editor = screen.getByLabelText("server.mjs") as HTMLTextAreaElement
     const priorEditor = editor.value
     const stage = screen.getByRole("button", { name: "Validate and stage source" }) as HTMLButtonElement
@@ -455,7 +472,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
       await screen.findByText(/contains changes. Review and stage/)
       expect(editor.value).toBe(remoteSource)
       expect(stage.disabled).toBe(false)
-      expect((screen.getByRole("button", { name: "Deploy selected release" }) as HTMLButtonElement).disabled)
+      expect((screen.getByRole("button", { name: "Publish update" }) as HTMLButtonElement).disabled)
         .toBe(true)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
       await user.click(stage)
@@ -463,9 +480,28 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
       expect(project.candidateRelease).toBe(next)
       expect(project.previousCandidate).toBe(RELEASE)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
+      const publish = screen.getByRole("button", { name: "Publish update" }) as HTMLButtonElement
+      expect(publish.disabled).toBe(true)
+      await user.click(screen.getByLabelText("Approve local Node execution"))
+      expect(publish.disabled).toBe(false)
+      await user.click(publish)
+      await screen.findByText("Owned Node release started and readiness verified by host.")
+      expect(published).toBe(true)
+      expect((screen.getByRole("button", { name: "Publish update" }) as HTMLButtonElement).disabled)
+        .toBe(true)
+      const rollback = screen.getByRole("button", { name: "Rollback active release" }) as HTMLButtonElement
+      expect(rollback.disabled).toBe(true)
+      await user.click(screen.getByLabelText("Approve local Node execution"))
+      expect(rollback.disabled).toBe(false)
+      await user.click(rollback)
+      await screen.findByText("Previous verified Node release restored by host.")
+      expect(rolledBack).toBe(true)
     }
     expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/source"))).toHaveLength(1)
-    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy")))
+      .toHaveLength(scenario === "updated" ? 1 : 0)
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/rollback")))
+      .toHaveLength(scenario === "updated" ? 1 : 0)
   },
 )
 
