@@ -9,7 +9,9 @@ purpose: Retired standalone APK sprint sequence; historical product rationale on
 
 **SUPERSEDED:** follow
 [ADR-0017 Termux-first integration](0017-termux-first-single-app-integration.md)
-and its I0–I4 integration sequence. Do not resume S1/S2 custom runtime
+is a **deferred** future option; follow the active
+[Termux-only Hosting-first roadmap](../ROADMAP.md). Do not resume I0–I4
+or S1/S2 custom runtime
 selection or implement another package, process or Hosting engine.
 
 The enduring product decisions are one user-facing PocketHost app,
