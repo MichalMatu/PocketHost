@@ -3,6 +3,7 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { readLocalNodeFiles } from "@/lib/node-source-import"
 
 type Project = {
   id: string
@@ -407,6 +408,24 @@ export default function ProjectsPage() {
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
+          <label className="grid gap-1 text-sm">Load local Node files
+            <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              onChange={event => {
+                const picked = Array.from(event.currentTarget.files ?? [])
+                event.currentTarget.value = ""
+                if (!picked.length) return
+                action(async () => {
+                  const files = await readLocalNodeFiles(picked)
+                  setManifest(files.manifest)
+                  setLockfile(files.lockfile)
+                  setSource(files.source)
+                  setApproved(false)
+                  setBuildCheck(null)
+                  setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
+                })
+              }} />
+          </label>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
               value={manifest} onChange={event => setManifest(event.target.value)} /></label>
