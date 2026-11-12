@@ -32,13 +32,61 @@ or create a second process manager. See
 [target navigation](TARGET_INFORMATION_ARCHITECTURE.md) and
 [upstream/licensing review](UPSTREAM_REUSE_STRATEGY.md).
 
-For the one-APK program follow
+For the **deferred one-APK program** see
 [ADR-0017 Termux-first integration](adr/0017-termux-first-single-app-integration.md)
-(I0–I4). The APK foundation is official Termux source and packages,
-with selected Termux:API/Boot functionality, existing Companion and
-Shizuku integrated by reuse. Do not build an independent package
-manager, host engine or custom-prefix runtime. This packaging work
-complements M0–M7 Hosting; no earlier QA is recertified.
+(I0–I4). This future integration reuses official Termux source/packages,
+selected Termux:API/Boot functionality, Companion and Shizuku; it is
+not required for the current Termux-installed Basic MVP. Do not build an
+independent package manager, host engine or custom-prefix runtime.
+No earlier QA is recertified.
+
+## Immediate priority — Termux-first Hosting MVP Basic
+
+**P0 product decision (2026-11-12):** finish a usable, web-first
+PocketHost Hosting product on the **already installed Termux** before
+pursuing a unified Android APK. Termux remains the host/runtime;
+PocketHost is the primary browser-based administration experience.
+No Companion app, Shizuku permission or separate APK is required to
+install or operate **Basic**. Preserve the existing H2 static-hosting
+capability; do not rebuild a static-only native server. Cloudflare
+Pages may be used for suitable static deployments, while phone-hosted
+Node services use explicitly configured ingress.
+
+**MVP Basic completion order (highest priority first):**
+
+1. **Usable dynamic Hosting (P0):** finish M2/M3 with one disposable,
+   user-created Node.js service managed end-to-end from the panel:
+   create/import, reviewed dependency plan, start/stop/restart,
+   readiness, bounded logs, release/update and rollback. Reuse
+   existing H2 static projects and the single owned runit adapter.
+2. **Everyday panel modules (P0):** make project files and browser
+   terminal usable; add GitHub project import/pull/update, SSH
+   administration, Cloudflare Tunnel/domain/HTTPS publishing,
+   monitoring and traffic analytics where data is available.
+   Never treat access to an existing external service as ownership.
+3. **Reliability and safety (P0):** scoped Restic backup/restore,
+   explicit recovery policy, safe service reboot behavior,
+   verified ownership, credentials and appropriate authentication
+   before any public management interface. Prove changes on
+   disposable projects without touching existing production services.
+4. **Simple onboarding (P0):** a documented, repeatable
+   **one-command Termux installer/bootstrap** that checks and
+   installs required supported dependencies, starts PocketHost and
+   opens/shows the local panel address; handle retries, updates
+   and failure reporting without breaking other Termux workloads.
+5. **Physical MVP acceptance (release gate):** exercise complete
+   browser flows and a clean Termux install on Samsung, including
+   Node failure/rollback, Cloudflare reachability, backup/restore,
+   Android restart and resource limits. Source tests and historical
+   panel PASS are not release or device acceptance.
+
+**Deferred / not MVP blockers:** new native APK runtime, upstream
+Termux-app fork/unified APK integration (I0–I4), Companion expansion,
+Shizuku features, Pro-specific capabilities and migrations of
+pre-existing owner workloads. Existing Companion/Shizuku DEV code is
+**frozen, not deleted**; preserve its current boundaries and do not
+silently expand or rework it. The one-APK goal remains a possible
+later product track, not the critical path for Basic.
 
 ## Current position
 
