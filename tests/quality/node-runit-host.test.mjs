@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
@@ -64,6 +64,16 @@ test('M3 source validation and runtime inspection remain inert before explicit a
   assert.equal(host.status(project.id).state, 'not-provisioned');
   assert.deepEqual(host.logs(project.id).lines, []);
   assert.equal((await import('node:fs')).readdirSync(serviceRoot).length, 0);
+});
+
+test('M3 reads installed Node tool versions without creating or starting a service', (t) => {
+  const { host, serviceRoot } = fixture(t);
+  const versions = host.toolVersions();
+  assert.deepEqual(Object.keys(versions), ['nodeVersion', 'npmVersion']);
+  for (const value of Object.values(versions)) {
+    assert.ok(value === null || /^v?\d+\.\d+\.\d+$/.test(value));
+  }
+  assert.deepEqual(readdirSync(serviceRoot), []);
 });
 
 test('M3 cannot adopt preexisting service directory or symlink', (t) => {
