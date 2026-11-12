@@ -9,6 +9,42 @@ import ProjectsPage from "@/app/projects/page"
 const ID = "node-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 afterEach(() => vi.unstubAllGlobals())
+
+it("keeps a disabled Node API distinct from an empty project list", async () => {
+  const requests = vi.fn(async () => ({ ok: false, status: 404 }))
+  vi.stubGlobal("fetch", requests)
+  render(<ProjectsPage />)
+  await screen.findByText("Node Hosting is not enabled on this panel.")
+  expect(screen.queryByRole("alert")).toBeNull()
+  expect(screen.queryByText("No Node projects yet.")).toBeNull()
+  expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
+  expect((screen.getByRole("button", { name: "Inspect hosting registries" }) as HTMLButtonElement).disabled).toBe(true)
+  expect((screen.getByRole("button", { name: "Inspect Node backups" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(requests.mock.calls).toHaveLength(1)
+})
+
+it.each([
+  [403, "Node Hosting access denied."],
+  [503, "Could not load Node projects. Try Refresh."],
+])("displays API error %i without claiming that Node projects are empty", async (status, message) => {
+  const requests = vi.fn(async () => ({ ok: false, status }))
+  vi.stubGlobal("fetch", requests)
+  render(<ProjectsPage />)
+  expect((await screen.findByRole("alert")).textContent).toBe(message)
+  expect(screen.queryByText("No Node projects yet.")).toBeNull()
+  expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(requests.mock.calls).toHaveLength(1)
+})
+
+it("rejects invalid Node project inventory without hiding an error as an empty catalog", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({
+    ok: true, status: 200, json: async () => ({ projects: [{ id: "foreign" }] }),
+  })))
+  render(<ProjectsPage />)
+  await screen.findByText("Invalid Node project registry response")
+  expect(screen.queryByText("No Node projects yet.")).toBeNull()
+  expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
+})
 it("M3 browser creates and stages a real API-backed Node source candidate without running it", async () => {
   const user = userEvent.setup()
   let projects: unknown[] = []
