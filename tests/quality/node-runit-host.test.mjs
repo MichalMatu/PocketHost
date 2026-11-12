@@ -166,7 +166,8 @@ test('M3 restart coordinates existing stop then start and never starts if stop f
   const { project, host } = fixture(t);
   const calls = [];
   host.status = () => ({
-    state: 'running', activeRelease: 'r-' + 'a'.repeat(32),
+    state: 'running',
+    activeRelease: 'r-' + 'a'.repeat(32),
     lastGoodRelease: 'r-' + 'a'.repeat(32),
   });
   host.stop = async (id, approved) => {
