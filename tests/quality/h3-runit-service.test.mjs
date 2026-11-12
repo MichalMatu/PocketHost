@@ -68,7 +68,16 @@ test('H3 protected services, path traversal and symlink aliases never become man
     // not only hidden from the browser's Service controls.
     for (const name of ['pockethost-panel', 'pockethost-panel-watch']) {
       assert.equal(admin.list(() => 'running').find((x) => x.name === name)?.protected, true);
-      for (const operation of ['register', 'unregister', 'start', 'stop', 'restart', 'once', 'enable', 'disable']) {
+      for (const operation of [
+        'register',
+        'unregister',
+        'start',
+        'stop',
+        'restart',
+        'once',
+        'enable',
+        'disable',
+      ]) {
         await assert.rejects(admin.apply(operation, name), /Protected service/);
       }
       assert.throws(() => admin.isRegistered(name), /Protected service/);
@@ -82,7 +91,15 @@ test('H3 protected services, path traversal and symlink aliases never become man
     await assert.rejects(admin.apply('register', 'not-present'), /unavailable/);
     assert.deepEqual(
       admin.list(() => 'stopped').map((x) => x.name),
-      ['alias', 'backup-alias', 'pockethost-panel', 'pockethost-panel-watch', 'site-worker', 'wreckscanner', 'wreckscanner-backup'],
+      [
+        'alias',
+        'backup-alias',
+        'pockethost-panel',
+        'pockethost-panel-watch',
+        'site-worker',
+        'wreckscanner',
+        'wreckscanner-backup',
+      ],
     );
   } finally {
     rmSync(tmp, { recursive: true, force: true });

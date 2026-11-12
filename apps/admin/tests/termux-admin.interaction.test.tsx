@@ -51,7 +51,7 @@ describe("H3 confirmed operations, no password prerequisite", () => {
     await screen.findByRole("button", { name: "Apply previewed changes" })
     expect(confirm).not.toHaveBeenCalled()
     await user.click(screen.getByRole("button", { name: "Apply previewed changes" }))
-    await screen.findByText("Operation completed · inventory refreshed")
+    await screen.findByText("Operation completed · inventory refresh requested")
     const sent = fetchMock.mock.calls.filter(call => call[1]?.method === "POST")
       .map(call => JSON.parse(String(call[1]?.body)))
     expect(sent).toEqual([
@@ -62,6 +62,27 @@ describe("H3 confirmed operations, no password prerequisite", () => {
     expect(confirm).toHaveBeenCalledTimes(1)
   })
 
+  it("reports a completed package operation without claiming its failed inventory refresh succeeded", async () => {
+    const user = userEvent.setup()
+    let reads = 0
+    const fetchMock = vi.fn(async (_url: string, options?: RequestInit) => {
+      if (options?.method === "POST")
+        return { ok: true, json: async () => ({ result: { exit: 0, output: "Applied" } }) }
+      reads += 1
+      if (reads > 1) throw new Error("Inventory read failed")
+      return { ok: true, json: async () => ({ packages: [{ name: "curl", version: "8" }], truncated: false }) }
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    render(<PackageManager />)
+    await user.click(await screen.findByRole("button", { name: "curl" }))
+    await user.click(screen.getByRole("button", { name: "Preview removal" }))
+    await user.click(await screen.findByRole("button", { name: "Apply previewed changes" }))
+    await screen.findByText("Operation completed · inventory refresh requested")
+    await screen.findByText(/Termux inventory unavailable. Showing last successful result./)
+    expect(reads).toBe(2)
+    expect(screen.getByRole("button", { name: "curl" })).toBeTruthy()
+  })
   it("invalidates the preview when a different package is selected", async () => {
     const user = userEvent.setup()
     vi.stubGlobal("fetch", vi.fn(async (_url: string, options?: RequestInit) => ({

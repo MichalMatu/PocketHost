@@ -172,7 +172,7 @@ export function PackageManager({
     try {
       const data = await request(approved.kind, false, approved.name)
       setOutput(data.result.output)
-      setMessage("Operation completed · inventory refreshed")
+      setMessage("Operation completed · inventory refresh requested")
     } catch (cause) {
       setError("Result unconfirmed (" + (cause instanceof Error ? cause.message : "connection lost") +
         "). Inspect installed packages before retrying. No automatic retry.")
