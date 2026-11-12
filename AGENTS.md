@@ -1,56 +1,27 @@
 # PocketHost — Agent Contract
 
-## CRITICAL: FAST FLOW FIRST — NO REPEATED GATES, NO LONG LOOPS
+## CRITICAL: FAST FLOW FIRST
 
-**MANDATORY FOR EVERY AGENT AND EVERY POCKETHOST SPRINT:**
-Deliver the smallest complete working change. Select tests from the **actual
-changed paths**, not the whole project. Do not turn a one-file UI fix into
-a full quality audit, broad lint, coverage run or long preflight.
+**MANDATORY:** One coherent change → one focused Samsung check → HMR/owner review.
+Select checks by changed paths, never an automatic whole-repo audit.
+Reuse prior exact-SHA PASS for unchanged scope; skipped checks are not PASS.
 
-1. **ONE COHERENT EDIT -> ONE FOCUSED CHECK -> DEPLOY/OWNER REVIEW.**
-   Batch related fixes; finish the functional change before polishing docs.
-   Do not repeatedly run the same checks as SHAs move due to documentation.
-2. **TEST ONLY WHAT CHANGED.** UI event -> relevant interaction test(s);
-   changed test file -> that test only; backend contract -> dependent Node
-   test(s), incremental types if relevant; copy/CSS -> HMR + visual review;
-   docs -> documentation checks only. No blanket UI suite, whole repo
-   ESLint, full build, coverage, G1/G2 or repeated unrelated checks as a
-   routine gate. Use `dev:changed` or an even smaller explicitly reviewed
-   focused command. Manual review is required for unmapped/high-risk files.
-3. **ADMIN ESLINT IS NOT ON THE CRITICAL PATH.** Never automatically run
-   `admin:lint` during ordinary iterations, even after another failed
-   gate. Batch about weekly when changes justify it, before an actual
-   release or while diagnosing a specific lint bug. `--admin-lint` is
-   explicit opt-in. Full release G2 still retains admin lint.
-4. **NO CHECKPOINT/FORMAT/LINT SPIRAL.** A failed check calls for one
-   concrete fix and rerunning **only that failed check plus directly
-   affected dependent tests**. Reuse previous PASS for unchanged SHA/scope.
-   Do not repeatedly block an owner-requested DEV panel refresh on
-   cosmetic findings in unrelated tests. Do not claim skipped tests PASS.
-5. **PANEL DELIVERY TAKES PRIORITY.** Prefer existing HMR. Where a
-   restart is necessary, use only the guarded, ownership-verified
-   PocketHost DEV refresh with rollback and protected-service checks.
-   Keep the target SHA pinned; do not move `main` with documentation-only
-   commits while an exact-SHA panel refresh is pending. One confirmed
-   refresh and bounded smoke, not a series of redundant restarts.
-6. **NO ENDLESS POLLING OR TASK DUPLICATION.** Read pending Local Agent
-   tasks/results once before scheduling; do not queue equivalent tasks.
-   If the terminal receipt is unavailable, state **PENDING/HOLD** once
-   and stop rather than consuming the conversation on repeated polls.
-   Run no unauthorized foreign-service or device operations.
-7. **ONE-ROUND STYLE/DIAGNOSTICS; DO NOT RECREATE THE NOV 2026 SPIRAL.**
-   For a minor lint/Prettier failure, collect BOTH stdout and stderr in the
-   original bounded Agent receipt. Obtain the exact formatter output/diff
-   once, apply one coherent commit, and rerun only the failed gate. Do not
-   schedule separate formatting, diagnostic, full-suite, and acceptance jobs
-   for one cosmetic change. Never hand-guess Prettier output.
-   Read a pending task at most once per user turn; no busy-polling or
-   repeated progress messages. See docs/DEV_ITERATION.md for the incident.
+1. UI changes → affected Vitest interactions; backend changes → relevant
+   positive and negative tests; CSS/copy → HMR and owner review; docs → docs check.
+   Unmapped/high-risk changes require manual review, not an invented PASS.
+2. Admin ESLint is not a routine DEV gate. Run periodically when useful,
+   on explicit request or at release; full G2 retains it.
+3. On failure, make one concrete fix and rerun only the affected check.
+   Collect stdout and stderr once; do not guess formatter output. Avoid
+   repetitive QA, formatting, audits and documentation loops.
+4. Prefer existing Vite HMR; if restart is necessary, verify owner/PID/start
+   ticks, exact working directory, rollback and protected services.
+5. Read pending Local Agent results once per turn; no duplicates or busy
+   polling. Published task is not a terminal PASS. Missing receipt is HOLD.
+6. Commit source before docs polish; a GitHub commit does not update the
+   phone. Never block owner-requested DEV refresh on unrelated cosmetic gates.
 
-**Exceptions:** meaningful host security/process/network/persistence changes
-still require the relevant positive/negative device checks and any mandated
-release gates. Speed never overrides ownership safeguards or invents PASS
-evidence.
+See docs/DEV_ITERATION.md for exact rules, caching and prior QA incidents.
 
 ## Read scope and context budget
 
@@ -87,56 +58,21 @@ transcripts, duplicated status reports and entire source trees.
   cache and unchanged node_modules between sessions; install with the
   **verified** lockfile only when missing or changed, on the phone.
 
-## Optional graph tooling (host policy takes precedence)
+## Optional graph tooling
 
-- Graphify/OpenVisio may help with nontrivial dependency mapping, but
-  **PocketHost execution stays exclusively on Samsung Termux Local Agent**.
-  The earlier disposable Mac Graphify pilot does not authorize Mac runs,
-  provide a current on-phone index, or install these tools on Samsung.
-- Only use an explicitly tested, scoped, on-demand adapter if available
-  on the authorized Termux host; otherwise use source and the existing
-  `dev:changed` selector. No OpenVisio auto-`init`, MCP, `--watch`,
-  telemetry or global scans. Never use graph hints as test PASS.
+Optional only, never substitute for Samsung evidence. No automatic global
+init, scans, watch mode or Mac tooling.
 
 ## FAST FLOW — proportional checks and caching
 
-For each iteration: **fresh main -> edit -> commit -> compare with the last
-verified SHA -> smallest relevant Samsung check -> existing DEV panel HMR ->
-owner review**. Batch related changes. Do not replay prior successful
-checks, run blanket tests/coverage/builds per commit, or repeat a full
-preflight when host/checkouts are already verified and unchanged.
-
-Preferred selection on clean, exact-SHA checkout:
-
-- npm run dev:changed -- --base=<last-verified-sha>: preview a bounded plan.
-- npm run dev:changed -- --base=<last-verified-sha> --run: execute that plan
-  **only via Samsung Termux Local Agent**; never treat preview as execution.
-- The selector maps changed source to directly/transitively dependent
-  Node/Vitest tests; tests-only changes do **not** trigger broad
-  structural gates. If a file has no mapped tests or is infrastructure/config, it
-  demands MANUAL_REVIEW, **not** an invented PASS or a default full suite.
-  Deleted/renamed files, missing dependencies and privileged changes need
-  explicit assessment. If a required test is omitted, run it directly.
-- Documentation-only changes: docs links, changed Markdown lint/format;
-  **no** build, source suite, TypeScript or phone restart. Visual CSS/copy:
-  HMR and owner review; behavior, route and contract edits: impacted tests.
-  Use incremental TypeScript build-info and existing Vite/Vitest/npm caches.
-- npm run dev:quick is an optional route preservation check;
-  npm run dev:ui -- <test-file> runs a named interaction test.
-  npm run dev:full / coverage / whole builds are for milestone closeout
-  or cross-cutting high-risk changes, never a cosmetic default.
-- **Admin ESLint is not a routine DEV blocker.** Do not run
-  `admin:lint` or admin changed-file ESLint on every iteration. Batch it
-  manually about once a week (only if UI source changed), before a
-  milestone/release, or for a specific suspected lint regression.
-  `dev:changed` skips admin ESLint unless `--admin-lint` is requested.
-  For regular iterations, noncritical admin lint is not a blocker for
-  otherwise verified tests, typechecks, HMR or owner review.
-  Release G2 (`check:all`) still includes admin ESLint; never run
-  full G2 merely to clear routine lint warnings.
-- No mandatory Git pre-commit/pre-push hook, automatic npm install or
-  daemonized QA loop. Keep commands explicit, deterministic and narrow.
-  See [fast-flow guide](docs/DEV_ITERATION.md).
+Fresh main → edit → commit → compare with last verified SHA → smallest
+Samsung check → DEV HMR → owner review. Preview changed checks with
+`npm run dev:changed -- --base=<last-verified-sha>`; execute `--run`
+only via exact verified Samsung Termux Local Agent. Tests-only changes
+do not trigger blanket gates; docs-only changes need no restart or build.
+Preserve npm, Vite and TypeScript caches. No routine admin lint or full
+release gates for minor edits. A DEV sync is not a G3 physical PASS.
+See docs/DEV_ITERATION.md and docs/LOCAL_AGENT_TERMUX.md.
 
 ## Product and privilege boundaries
 

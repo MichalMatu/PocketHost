@@ -43,6 +43,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const [reading, setReading] = React.useState(false)
   const [errors, setErrors] = React.useState({ snapshot: false, tools: false })
   const [sectionRefreshToken, setSectionRefreshToken] = React.useState(0)
+  const [lastOverviewRead, setLastOverviewRead] = React.useState<number | null>(null)
 
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setReading(true)
@@ -55,6 +56,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
         : Promise.resolve(null),
     ])
     if (signal?.aborted) return
+    if ((observed.status === "fulfilled" && observed.value !== null) ||
+        (optional.status === "fulfilled" && optional.value !== null)) setLastOverviewRead(Date.now())
     setSnapshot(previous => observed.status === "fulfilled" ? observed.value : previous)
     setTools(optional.status === "fulfilled" ? optional.value : null)
     setErrors({
@@ -74,6 +77,10 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
 
   const restic = tools?.tools.find(item => item.id === "restic")
   const tooling = tools?.tools ?? []
+  const overviewTracked = ["packages", "services", "backups", "terminal"].includes(section)
+  const overviewFailed = (["packages", "services"].includes(section) && errors.snapshot) ||
+    (["backups", "terminal"].includes(section) && errors.tools)
+  const overviewSource = ["packages", "services"].includes(section) ? "Observability" : "Tool inventory"
 
   return (
     <BaseLayout title={sectionTitles[section]} >
@@ -85,6 +92,12 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               <Badge variant="outline">LAN only · no login</Badge>
             </Link>
           </div>
+          {overviewTracked && <p role="status" className="text-xs text-muted-foreground">
+            {overviewSource}: {reading ? "Loading…" : overviewFailed ? "Unavailable · retry" :
+              lastOverviewRead === null ? "Not checked" : "Ready"}
+            {lastOverviewRead !== null && !reading &&
+              <span> · last successful read {new Date(lastOverviewRead).toLocaleTimeString()}</span>}
+          </p>}
           <Button variant="outline" onClick={() => { setSectionRefreshToken(value => value + 1); void refresh() }} disabled={reading}>
             <RefreshCw className={reading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
@@ -93,7 +106,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   
           {section === "packages" && <section className="space-y-4">
             <Card>
-              <CardHeader><CardTitle>Installed software</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Software inventory and catalog</CardTitle></CardHeader>
               <CardContent>
                 <PackageManager summary={snapshot?.packages} summaryError={errors.snapshot}
                   refreshToken={sectionRefreshToken} onChanged={() => void refresh()} />
@@ -118,8 +131,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               </CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  These external services are observed only and cannot be managed here.
-                  They may also appear in the runit list above.
+                  Monitoring-only observations, not another set of controls.
+                  Some may also appear above in the runit list.
                 </p>
                 <details>
                   <summary className="cursor-pointer text-sm font-medium">Show monitoring details</summary>
@@ -148,6 +161,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 <Badge variant="outline"><Boxes className="size-3" /> Restic: {restic?.state ?? "unverified"}</Badge>
                 {errors.tools && <p role="alert">Optional tool detection unavailable.</p>}
                 <GuardNotice>
+                  These are local recovery mechanisms, not off-device disaster recovery.
+                  Keep an independent copy and its recovery key outside this phone.
                   Termux backups, PocketHost workspace snapshots, and <a href="/sites"
                     className="underline underline-offset-4">website versions</a> are separate.
                   Restores use an isolated location.
@@ -156,9 +171,21 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
               </CardContent>
             </Card>
-            <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
-            <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
-            <FullTermuxBackups detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">1. PocketHost workspace</h2>
+              <p className="text-xs text-muted-foreground">Fast snapshots of PocketHost-owned files only.</p>
+              <WorkspaceBackupActions refreshToken={sectionRefreshToken} />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">2. Encrypted workspace archive</h2>
+              <p className="text-xs text-muted-foreground">Restic protects the workspace locally; recovery needs the key.</p>
+              <ResticActions detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">3. Termux system archive</h2>
+              <p className="text-xs text-muted-foreground">Choose HOME, PREFIX or both. Restores go to staging.</p>
+              <FullTermuxBackups detected={restic?.state === "detected"} refreshToken={sectionRefreshToken} />
+            </div>
           </section>}
           {section === "terminal" && <section className="space-y-4">
             <TermuxTerminalPanel

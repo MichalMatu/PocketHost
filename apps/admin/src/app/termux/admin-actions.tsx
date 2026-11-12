@@ -58,6 +58,7 @@ export function PackageManager({
   onChanged?: () => void
 }) {
   const [ecosystem, setEcosystem] = React.useState<PackageEcosystem>("termux")
+  const [view, setView] = React.useState<"installed" | "available">("installed")
   const [installed, setInstalled] = React.useState<PackageInventory | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [reload, setReload] = React.useState(0)
@@ -87,7 +88,7 @@ export function PackageManager({
   }, [refreshToken, reload])
 
   const changeEcosystem = (next: PackageEcosystem) => {
-    setEcosystem(next); setQuery(""); setSelected(null); setPlan(null); setFound(null)
+    setEcosystem(next); setView("installed"); setQuery(""); setSelected(null); setPlan(null); setFound(null)
     setError(null); setMessage(null); setOutput("")
   }
   const choose = (item: SelectedPackage) => {
@@ -111,7 +112,7 @@ export function PackageManager({
   const searchCatalog = async () => {
     const term = query.trim().toLowerCase()
     if (catalogBusy || operationBusy || ecosystem !== "termux" || !validPackageName(term)) return
-    setCatalogBusy(true); setError(null); setFound(null)
+    setView("available"); setCatalogBusy(true); setError(null); setFound(null)
     try {
       const result = await inspect<{ packages: AvailablePackage[]; truncated: boolean }>("search-packages", term)
       if (!Array.isArray(result.packages) || result.packages.length > 60) throw new Error("Invalid catalog")
@@ -210,6 +211,14 @@ export function PackageManager({
         <Badge variant="outline">{summary.updates.candidates.length} cached update hints · unverified</Badge>}
     </div>
 
+    {ecosystem === "termux" && <div role="tablist" aria-label="Package views" className="flex flex-wrap gap-2">
+      <Button size="sm" role="tab" aria-selected={view === "installed"}
+        variant={view === "installed" ? "secondary" : "outline"} disabled={isBusy}
+        onClick={() => setView("installed")}>Installed</Button>
+      <Button size="sm" role="tab" aria-selected={view === "available"}
+        variant={view === "available" ? "secondary" : "outline"} disabled={isBusy}
+        onClick={() => setView("available")}>Available</Button>
+    </div>}
     <div className="flex flex-wrap gap-2">
       <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
         value={query} disabled={isBusy} onChange={event => changeQuery(event.target.value)} />
@@ -227,11 +236,11 @@ export function PackageManager({
     {inventoryError && ecosystem === "termux" &&
       <p role="alert">Termux inventory unavailable. {installed ? "Showing last successful result." : "Try Refresh."}</p>}
     {summaryError && ecosystem !== "termux" && <p role="alert">Ecosystem metadata may be outdated.</p>}
-    {loading && !installed && ecosystem === "termux" &&
+    {loading && !installed && ecosystem === "termux" && view === "installed" &&
       <div aria-label="Loading package inventory" className="space-y-2">
         {[0, 1, 2].map(item => <div key={item} className="h-7 animate-pulse rounded bg-muted" />)}
       </div>}
-    {(!loading || installed || ecosystem !== "termux") &&
+    {(ecosystem !== "termux" || view === "installed") && (!loading || installed || ecosystem !== "termux") &&
       <div className="max-h-[30rem] overflow-auto rounded-md border">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-background">
@@ -258,10 +267,14 @@ export function PackageManager({
             </tr>)}
           </tbody>
         </table>
-        {visible.length === 0 && !inventoryError && <p className="p-3 text-sm text-muted-foreground">No matching packages.</p>}
+        {visible.length === 0 && !inventoryError && <p className="p-3 text-sm text-muted-foreground">No matching installed packages.</p>}
       </div>}
 
-    {found && ecosystem === "termux" && <div className="space-y-1">
+    {ecosystem === "termux" && view === "available" && !found && !catalogBusy &&
+      <p className="rounded-md border border-dashed p-3 text-sm text-muted-foreground">
+        Search the Termux catalog above. Results are separate from installed packages and searching makes no changes.
+      </p>}
+    {found && ecosystem === "termux" && view === "available" && <div className="space-y-1">
       <p className="text-sm font-medium">Catalog results · {found.packages.length}{found.truncated ? "+" : ""}</p>
       <div className="max-h-56 overflow-auto rounded-md border">
         {found.packages.map(item => <button type="button" key={item.name}
@@ -532,6 +545,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           ["running", "stopped", "unknown"].includes(item.state)))
       throw new Error("Invalid runit inventory")
     setServices(data.services)
+    setError(null)
   }, [])
   React.useEffect(() => {
     let active = true
@@ -560,34 +574,44 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
     setBusy(true); setError(null); setDone(null)
     try {
       await action({ action: "service", name, path: service.name })
-      await refresh()
-      setDone(service.name + ": " + name + " completed")
+      try {
+        await refresh()
+        setDone(service.name + ": " + name + " completed")
+      } catch {
+        setDone(service.name + ": " + name + " acknowledged · status not refreshed")
+        setError("Service inventory refresh failed. Verify live state before another command.")
+      }
     } catch {
-      setError("Service action rejected. Registration, identity or runit availability may have changed.")
+      setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
     } finally { setBusy(false) }
   }
   return <div className="space-y-3 rounded-md border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Runit services</h3>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
     </div>
     <p className="text-muted-foreground text-xs">
       Register grants lifecycle controls (start, stop, restart, autostart); it does not start a service.
       Protected services and the PocketHost panel/watch are read-only here.
     </p>
+    {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
         <p className="text-sm font-medium">{service.name}</p>
-        <div className="flex gap-2">
-          <Badge variant="outline">{service.state}</Badge>
+        <div className="flex flex-wrap gap-2" aria-label={"Status for " + service.name}>
+          <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
           <Badge variant="outline">{service.protected ? "Protected" : isPanelService(service) ? "Panel · read-only" : service.registered ? "Registered" : "Observed"}</Badge>
         </div>
       </div>
+      {service.state === "unknown" && <p className="text-xs text-muted-foreground">
+        Runtime state unknown. Start, Stop and Restart require a confirmed state.
+      </p>}
       {!service.protected && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {service.registered ? <>
-          <Button size="sm" disabled={busy || service.state === "running"} onClick={() => void perform("start", service)}>Start</Button>
+          <Button size="sm" disabled={busy || service.state !== "stopped"} onClick={() => void perform("start", service)}>Start</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("stop", service)}>Stop</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("enable", service)}>Enable</Button>

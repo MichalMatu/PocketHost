@@ -209,6 +209,42 @@ describe("H3 unified package inventory", () => {
   })
 })
 
+describe("System UX distinctions", () => {
+  it("separates installed package inventory from available catalog results", async () => {
+    const user = userEvent.setup()
+    vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
+      ok: true, json: async () => url.includes("mode=packages")
+        ? { packages: [{ name: "curl", version: "8.1" }], truncated: false }
+        : { packages: [{ name: "restic", description: "Encrypted backups" }], truncated: false },
+    })))
+    render(<PackageManager />)
+    await screen.findByRole("button", { name: "curl" })
+    await user.click(screen.getByRole("tab", { name: "Available" }))
+    expect(screen.queryByRole("button", { name: "curl" })).toBeNull()
+    await user.type(screen.getByRole("textbox", { name: "Search packages" }), "restic")
+    await user.click(screen.getByRole("button", { name: "Search catalog" }))
+    await screen.findByText("Encrypted backups")
+    await user.click(screen.getByRole("tab", { name: "Installed" }))
+    expect(await screen.findByRole("button", { name: "curl" })).toBeTruthy()
+    expect(screen.queryByText("Encrypted backups")).toBeNull()
+  })
+
+  it("prevents Start when a service has no confirmed runtime state", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async () => ({ ok: true, json: async () => ({ services: [
+      { name: "site-worker", registered: true, protected: false, state: "unknown" },
+    ] }) }))
+    vi.stubGlobal("fetch", calls)
+    render(<RunitServiceActions />)
+    await screen.findByText("site-worker")
+    expect((screen.getByRole("button", { name: "Start" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Restart" }) as HTMLButtonElement).disabled).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Refresh services" }))
+    expect(calls.mock.calls).toHaveLength(2)
+  })
+})
+
 describe("H3 native encrypted Restic backup UI", () => {
   it("backs up owned workspace through the typed endpoint without a password form", async () => {
     const user = userEvent.setup()

@@ -47,10 +47,16 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
       const result = await post<{ result?: { restoredTo?: string } }>({
         action: "restic-system", name, root: scope, path: id,
       })
-      await refresh(scope)
-      setMessage(name === "restore" && result.result?.restoredTo
+      const acknowledged = name === "restore" && result.result?.restoredTo
         ? "Restored into: " + result.result.restoredTo
-        : "Restic " + name + " completed")
+        : "Restic " + name + " acknowledged"
+      try {
+        await refresh(scope)
+        setMessage(acknowledged + " · inventory refreshed")
+      } catch {
+        setMessage(acknowledged + " · inventory not refreshed")
+        setError("Snapshot inventory unavailable. Verify state before retrying.")
+      }
     } catch { setError("Backup result unconfirmed. Verify snapshots before retrying.") }
     finally { setBusy(false) }
   }
