@@ -117,6 +117,9 @@ export default function ProjectsPage() {
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
   const [githubRepository, setGithubRepository] = React.useState("")
+  const [githubReview, setGithubReview] = React.useState<{
+    repository: string; commit: string; changed: string[]
+  } | null>(null)
   const [editorDirty, setEditorDirty] = React.useState(false)
   const [releases, setReleases] = React.useState<Candidate[]>([])
   const [runtime, setRuntime] = React.useState<RuntimeState | null>(null)
@@ -416,7 +419,8 @@ export default function ProjectsPage() {
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
-                setBuildCheck(null); setEditorDirty(false)
+                setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+                setGithubRepository("")
                 await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
         </CardContent>
@@ -430,7 +434,10 @@ export default function ProjectsPage() {
             <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
               <Input aria-label="Public GitHub repository" placeholder="owner/repository"
                 value={githubRepository} maxLength={150}
-                onChange={event => setGithubRepository(event.target.value)} />
+                onChange={event => {
+                  setGithubRepository(event.target.value)
+                  setGithubReview(null)
+                }} />
             </label>
             <Button variant="outline" disabled={busy || !githubRepository.trim()}
               onClick={() => action(async () => {
@@ -447,9 +454,9 @@ export default function ProjectsPage() {
                     typeof contents.serverSource !== "string" ||
                     !contents.serverSource.trim() || contents.serverSource.length > 65536)
                   throw new Error("Invalid GitHub Node source preview")
+                const changed = ["package.json", "package-lock.json", "server.mjs"]
                 if (selected.candidateRelease) {
-                  // Compare with the attested on-host candidate, not a possibly
-                  // edited browser buffer. A matching remote commit needs no new release.
+                  // Compare only with attested on-host source, never the editor buffer.
                   const current = await getJson(api + "/" + selected.id + "/source")
                   const staged = current.source as Record<string, unknown> | undefined
                   if (!staged || staged.release !== selected.candidateRelease ||
@@ -459,22 +466,28 @@ export default function ProjectsPage() {
                       staged.manifest.length > 140000 || staged.lockfile.length > 140000 ||
                       staged.serverSource.length > 65536)
                     throw new Error("Could not verify current staged Node source")
-                  let matching = false
                   try {
-                    matching = JSON.stringify(JSON.parse(staged.manifest)) ===
-                        JSON.stringify(contents.packageJson) &&
-                      JSON.stringify(JSON.parse(staged.lockfile)) ===
-                        JSON.stringify(contents.packageLock) &&
-                      staged.serverSource === contents.serverSource
+                    if (JSON.stringify(JSON.parse(staged.manifest)) ===
+                        JSON.stringify(contents.packageJson)) changed.splice(changed.indexOf("package.json"), 1)
+                    if (JSON.stringify(JSON.parse(staged.lockfile)) ===
+                        JSON.stringify(contents.packageLock)) changed.splice(changed.indexOf("package-lock.json"), 1)
+                    if (staged.serverSource === contents.serverSource)
+                      changed.splice(changed.indexOf("server.mjs"), 1)
                   } catch {
                     throw new Error("Could not verify current staged Node source")
                   }
-                  if (matching) {
+                  if (!changed.length) {
+                    setGithubReview(null)
                     setMessage("GitHub commit " + data.commit.slice(0, 12) +
                       " matches the current staged source. No update needed.")
                     return
                   }
                 }
+                setGithubReview({
+                  repository: data.repository as string,
+                  commit: data.commit,
+                  changed,
+                })
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
@@ -484,6 +497,10 @@ export default function ProjectsPage() {
                   " contains changes. Review and stage to preserve the previous release.")
               })}>{selected.candidateRelease ? "Check GitHub updates" : "Load GitHub source"}</Button>
           </div>
+          {githubReview && <p className="text-muted-foreground text-xs"
+            aria-label="GitHub source changes">
+            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")}
+          </p>}
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
               disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
@@ -502,19 +519,20 @@ export default function ProjectsPage() {
                   setPreview(null)
                   setExecutionEnabled(false)
                   setEditorDirty(true)
+                  setGithubReview(null)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
                 })
               }} />
           </label>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
+              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
           <label className="grid gap-1 text-sm">package-lock.json
             <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
+              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
           <label className="grid gap-1 text-sm">server.mjs
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false) }} /></label>
+              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" disabled={busy || !selected.candidateRelease}
               onClick={() => action(async () => {
@@ -527,7 +545,7 @@ export default function ProjectsPage() {
                   throw new Error("Invalid verified candidate source")
                 setManifest(value.manifest); setLockfile(value.lockfile)
                 setSource(value.serverSource); setApproved(false)
-                setBuildCheck(null); setPreview(null); setEditorDirty(false)
+                setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
                 setMessage("Verified staged source loaded into editor; no process changed.")
               })}>Load staged source</Button>
             <Button disabled={busy || (!!selected.candidateRelease && !editorDirty)}
@@ -542,7 +560,7 @@ export default function ProjectsPage() {
               if (!validProject(data.project)) throw new Error("Invalid stage response")
               await refresh()
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-              setApproved(false); setBuildCheck(null); setEditorDirty(false)
+              setApproved(false); setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
               setMessage(data.unchanged === true
                 ? "Source matches the current verified candidate. No new release created."
                 : "Source candidate staged. Review the execution plan before deploying.")
@@ -556,7 +574,7 @@ export default function ProjectsPage() {
                 if (!validProject(data.project)) throw new Error("Invalid restore response")
                 await refresh()
                 await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-                setApproved(false)
+                setApproved(false); setGithubReview(null)
                 setMessage("Previous source candidate restored. No live process was changed.")
               })}>Restore previous candidate</Button>
           </div>
