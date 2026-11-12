@@ -39,6 +39,16 @@ defer one-APK I0–I4. Do not reorder the existing menu yet.
    typed host adapters. Protect foreign tunnels, SSH, services and
    production workloads; keep admin UI private until authenticated.
 
+**Static Hosting isolation rule:** H2 is already working and
+remains a parallel, independent Hosting type. Do not refactor
+or migrate its SiteFleetHost execution path as a prerequisite
+for Node.js. Retain separate files/ports/processes/release
+history; share only verified infrastructure interfaces and
+panel components. Exercise H2 smoke/regression tests when
+shared host contracts change, proving no cross-type
+start/stop/update/rollback interference. See
+[architecture](ARCHITECTURE.md) and [roadmap](ROADMAP.md).
+
 After usable Hosting, prepare a versioned Termux PocketHost bundle
 and a minimal one-command installer plus first-run panel flow. Test
 installer assumptions early using disposable/isolated fixtures,
