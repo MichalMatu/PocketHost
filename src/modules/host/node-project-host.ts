@@ -310,11 +310,37 @@ export class NodeProjectHost {
       return this.summary(marker);
     });
   }
-  stage(id: string, input: unknown): { project: NodeProjectSummary; plan: NodeDependencyPlan } {
+  stage(id: string, input: unknown): {
+    project: NodeProjectSummary;
+    plan: NodeDependencyPlan;
+    unchanged: boolean;
+  } {
     const source = cleanSource(input);
     return this.mutation(() => {
       const marker = this.record(id);
       const releases = path.join(this.projectPath(id), 'releases');
+      if (marker.candidateRelease) {
+        // Retry-safe under the same project mutation lock. Never trust only
+        // filenames or a candidate ID: re-attest the stored source digests.
+        const proof = path.join(releases, marker.candidateRelease, RELEASE_PROOF);
+        let proven = true;
+        try {
+          lstatSync(proof);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+          proven = false; // Historic unproven source must be re-staged.
+        }
+        if (proven) {
+          const current = this.release(id, marker.candidateRelease);
+          if (
+            current.source.manifest === source.manifest &&
+            current.source.lock === source.lock &&
+            current.source.server === source.source
+          ) {
+            return { project: this.summary(marker), plan: source.plan, unchanged: true };
+          }
+        }
+      }
       if (
         readdirSync(releases).filter((name) => RELEASE.test(name)).length >= MAX_RELEASES ||
         marker.history.length >= 30
@@ -355,7 +381,7 @@ export class NodeProjectHost {
           to: release,
         });
         writeAtomic(this.projectPath(id), MARKER, JSON.stringify(marker) + '\n');
-        return { project: this.summary(marker), plan: source.plan };
+        return { project: this.summary(marker), plan: source.plan, unchanged: false };
       } finally {
         if (existsSync(stage)) rmSync(stage, { recursive: true });
       }
