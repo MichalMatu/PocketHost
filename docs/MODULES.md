@@ -20,7 +20,9 @@ has no direct OS or shell access.
 
 ## Approved target: modules, managed services, Hosting
 
-The 2026-11-09 [roadmap](ROADMAP.md) distinguishes three layers:
+The [current Hosting-first roadmap](ROADMAP.md) distinguishes three
+shared layers. Basic Hosting is the immediate priority; Pro-native
+Android integrations and menu redesign are deferred:
 
 - **`ModuleRegistry`:** Node.js, Python/PRoot, SSH, Cloudflare and
   later databases, each exposing versioned capabilities, module UI
