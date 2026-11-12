@@ -11,6 +11,12 @@ purpose: Small PocketHost context entrypoint; detailed evidence is linked, not p
 
 - Work only from **fresh MichalMatu/PocketHost main**; handoff SHAs are
   historical evidence, never the assumed HEAD.
+- **Current P0:** [ROADMAP](ROADMAP.md) — first complete Node.js
+  Hosting/GitHub, then Cloudflare, SSH, per-site web analytics and
+  backup. Keep the menu unchanged. Basic is full official-Termux
+  hosting without Companion/Shizuku; Pro is the optional external
+  Android-app-dependent scope, **not** a price tier. APK I0–I4 deferred.
+
 - DEV-only Samsung Termux admin panel; Shizuku and direct owner-triggered
   power-user actions are product scope. Preserve all unrelated services,
   PocketHost-only runit exception, private LAN and ownership checks.
