@@ -2,7 +2,7 @@
 status: accepted-with-follow-up
 owner: core
 last_reviewed: 2026-11-10
-purpose: Current module boundaries, target architecture and host trust rules
+purpose: Current Termux Basic Hosting boundaries, optional Pro bridge and deferred APK
 ---
 
 # PocketHost Architecture
@@ -33,9 +33,25 @@ Never widen to a wildcard listener or WAN. See
 [ADR-0013](adr/0013-shizuku-power-user.md) and
 [ADR-0014](adr/0014-termux-panel-supervision.md).
 
-## Approved target: single Android app and unified telemetry flow
+## Current product architecture — Hosting-first Basic
 
-**Owner decision, 2026-11-10.** The target is one main PocketHost
+The [canonical roadmap](ROADMAP.md) prioritizes (1) complete
+Node.js/GitHub project Hosting and (2) the Hosting panel's Cloudflare,
+SSH, per-site web analytics and backup. **Basic is a complete product
+running in official Termux without any additional Android APK.**
+GitHub and Cloudflare are external web services, not Android helper
+app requirements. Pro means optional features requiring Android
+applications/permissions (Companion/Shizuku), **not** a paid tier.
+Those existing integrations are frozen; current menu/routes remain.
+Phone-hosted website traffic analytics must be collected from
+origin logs or Cloudflare, not inferred from Android RX/TX.
+Reuse existing processes/release and ownership contracts. Do not
+change protected external processes or expose the DEV admin publicly.
+
+## Deferred target: single Android app and unified telemetry flow
+
+**Historical owner decision, 2026-11-10; deferred as of 2026-11-12.**
+If separately resumed, the target is one main PocketHost
 Android application integrating the existing native Companion/Bridge,
 the current React UI and the Termux backend. It is an architectural
 target, **not** a claim that a unified APK already exists.
@@ -112,7 +128,7 @@ Detailed current capability boundaries:
 | Feature modules   | Pure runtime, packages, sites, config and observability policies                          | No imports of other modules' internals                   |
 | Shared contracts  | Typed immutable identities, lifecycle declarations, capabilities, release/data interfaces | No implicit physical service ownership                   |
 | Host adapter      | Exact filesystem/process/runit/Restic/native bridge operations                            | Explicit target, verified ownership, bounded execution   |
-| Android Companion | Authorized Android API/Binder Shizuku actions                                             | Android loopback, actual ADB/root UID and OS permissions |
+| Android Companion (optional Pro) | Authorized Android API/Binder Shizuku actions                                             | Android loopback, actual ADB/root UID and OS permissions |
 
 Code map: [CODE_MAP](CODE_MAP.md); module dependency
 rules: [MODULES](MODULES.md). Upstream admin screens,
