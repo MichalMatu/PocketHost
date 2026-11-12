@@ -18,7 +18,19 @@ All PocketHost source execution, package resolution, checks, tests and builds mu
 - Start development GUI with a CLI command when implementation exists. No application or device boot autostart.
 - Dependencies managed as ordinary project packages first; new system-level packages require an explicit approval path.
 
-## Future single-app packaging
+## Current Termux-only Basic delivery
+
+Current [roadmap priority](ROADMAP.md) is complete Node.js Hosting
+plus GitHub, then the Hosting panel's Cloudflare, SSH, per-project
+web analytics and backup. Full Basic relies only on official Termux
+and its supported packages; it does not require Companion/Shizuku.
+Pro means optional Android-app-dependent capabilities, not a fee.
+Do not reorder navigation or change the Companion during these
+tasks. Package PocketHost as a versioned Termux app bundle and
+add a one-command bootstrap after proving the Hosting flow;
+use official pkg/npm rather than a new package manager.
+
+## Deferred future single-app packaging
 
 The active Samsung Termux installation remains the protected DEV host.
 For the **future** single PocketHost APK, reuse upstream termux-app as the
