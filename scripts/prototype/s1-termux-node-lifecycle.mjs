@@ -23,10 +23,15 @@ export function parseReadyLine(raw, expectedId, expectedPid) {
     throw new Error('Malformed process readiness message');
   }
   if (
-    !value || typeof value !== 'object' ||
-    value.id !== expectedId || !WORKER_IDS.has(value.id) ||
-    !Number.isSafeInteger(value.pid) || value.pid !== expectedPid ||
-    !Number.isInteger(value.port) || value.port < 1 || value.port > 65535
+    !value ||
+    typeof value !== 'object' ||
+    value.id !== expectedId ||
+    !WORKER_IDS.has(value.id) ||
+    !Number.isSafeInteger(value.pid) ||
+    value.pid !== expectedPid ||
+    !Number.isInteger(value.port) ||
+    value.port < 1 ||
+    value.port > 65535
   ) {
     throw new Error('Untrusted process readiness message');
   }
@@ -55,7 +60,10 @@ async function worker(id) {
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('No owned loopback port');
   process.stdout.write(JSON.stringify({ id, pid: process.pid, port: address.port }) + '\n');
-  const shutdown = () => server.close(() => { process.exitCode = 0; });
+  const shutdown = () =>
+    server.close(() => {
+      process.exitCode = 0;
+    });
   process.once('SIGTERM', shutdown);
   process.once('SIGINT', shutdown);
 }
@@ -68,7 +76,9 @@ function launch(id) {
     shell: false,
   });
   let stderr = '';
-  child.stderr.on('data', (chunk) => { stderr = (stderr + chunk.toString()).slice(-800); });
+  child.stderr.on('data', (chunk) => {
+    stderr = (stderr + chunk.toString()).slice(-800);
+  });
   const ready = new Promise((resolve, reject) => {
     let resolved = false;
     let buffer = '';
@@ -82,7 +92,11 @@ function launch(id) {
     const fail = (error) => finish(reject, error);
     child.once('error', fail);
     child.once('exit', (code, signal) => {
-      fail(new Error('Owned process exited before readiness: ' + String(code ?? signal) + ' ' + stderr));
+      fail(
+        new Error(
+          'Owned process exited before readiness: ' + String(code ?? signal) + ' ' + stderr,
+        ),
+      );
     });
     child.stdout.on('data', (chunk) => {
       if (resolved) return;
@@ -132,10 +146,7 @@ async function stopOwned(child) {
   if (!graceful && child.exitCode === null && child.signalCode === null) {
     // Only the ChildProcess that this test itself created, never a discovered PID.
     child.kill('SIGKILL');
-    await Promise.race([
-      exited,
-      new Promise((resolve) => setTimeout(resolve, 1500)),
-    ]);
+    await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 1500))]);
   }
 }
 
@@ -163,7 +174,12 @@ export async function runTermuxLifecycleProbe() {
       androidApkIndependent: false,
       processesStarted: 3,
       simultaneousNodeProcesses: 2,
-      checks: ['distinct-processes', 'distinct-loopback-ports', 'isolated-stop', 'replacement-start'],
+      checks: [
+        'distinct-processes',
+        'distinct-loopback-ports',
+        'isolated-stop',
+        'replacement-start',
+      ],
     };
   } finally {
     await Promise.allSettled(owned.map(stopOwned));
