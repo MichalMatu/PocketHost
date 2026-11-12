@@ -13,19 +13,21 @@ const MAX_TOTAL = 320 * 1024;
 function repositoryParts(value: unknown): { owner: string; name: string } {
   if (typeof value !== 'string' || value.length > 150 || value.trim() !== value)
     throw new RangeError('Invalid public GitHub repository');
-  const parts = value.split('/');
+  const [owner, name, extra] = value.split('/');
   if (
-    parts.length !== 2 ||
-    !OWNER.test(parts[0]) ||
-    !REPO.test(parts[1]) ||
-    parts[1] === '.' ||
-    parts[1] === '..' ||
-    parts[1].startsWith('.') ||
-    parts[1].endsWith('.git')
+    !owner ||
+    !name ||
+    extra !== undefined ||
+    !OWNER.test(owner) ||
+    !REPO.test(name) ||
+    name === '.' ||
+    name === '..' ||
+    name.startsWith('.') ||
+    name.endsWith('.git')
   ) {
     throw new RangeError('Use a public GitHub repository as owner/repository');
   }
-  return { owner: parts[0], name: parts[1] };
+  return { owner, name };
 }
 
 async function apiJson(url: string, limit: number, get: typeof fetch): Promise<unknown> {
@@ -129,23 +131,26 @@ export async function previewPublicGitHubNodeSource(
     if (total > MAX_TOTAL) throw new RangeError('GitHub Node source exceeds 320 KB');
     texts.push(contents);
   }
+  const [manifest, lock, serverSource] = texts;
+  if (manifest === undefined || lock === undefined || serverSource === undefined)
+    throw new RangeError('Missing GitHub Node source file');
   let packageJson: unknown;
   let packageLock: unknown;
   try {
-    packageJson = JSON.parse(texts[0]);
-    packageLock = JSON.parse(texts[1]);
+    packageJson = JSON.parse(manifest);
+    packageLock = JSON.parse(lock);
   } catch {
     throw new RangeError('Invalid GitHub Node manifest or lockfile');
   }
   const plan = planNodeDependencies(packageJson, packageLock);
   if ((packageJson as { scripts?: { start?: unknown } }).scripts?.start !== 'node server.mjs')
     throw new RangeError('GitHub Node entrypoint must be node server.mjs');
-  if (!texts[2].trim() || texts[2].includes('\0'))
+  if (!serverSource.trim() || serverSource.includes('\0'))
     throw new RangeError('Invalid GitHub Node source');
   return {
     repository: owner + '/' + name,
     commit,
-    source: { packageJson, packageLock, serverSource: texts[2] },
+    source: { packageJson, packageLock, serverSource },
     plan,
   };
 }
