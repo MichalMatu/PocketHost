@@ -49,7 +49,7 @@ export async function readLocalNodeFiles(files: readonly File[]): Promise<LocalN
     FILES.map(name => readFile(selected.get(name)!)),
   )
   if (source.includes("\0") || !source.trim() ||
-      new TextEncoder().encode(source).length > MAX_SOURCE_BYTES)
+      new Blob([source]).size > MAX_SOURCE_BYTES)
     throw new Error("Invalid or oversized Node entry source.")
 
   let pkg: Record<string, unknown>
