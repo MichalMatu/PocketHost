@@ -231,12 +231,26 @@ export default function ProjectsPage() {
     try {
       const observed = await loadRuntime(id)
       if (observed.state !== expectedState ||
+          observed.desired !== expectedState ||
           (expectedRelease && observed.activeRelease !== expectedRelease)) {
         setExecutionEnabled(false)
         setRuntime(null)
         setPlan(null)
         setError("Node action acknowledged, but runtime state differs. Review plan before retrying.")
         return
+      }
+      if (expectedState === "running") {
+        const report = await getJson(api + "/" + id + "/health")
+        const health = report.health as Record<string, unknown> | undefined
+        if (!health || health.state !== "running" ||
+            health.release !== expectedRelease || health.ready !== true) {
+          setExecutionEnabled(false)
+          setRuntime(null)
+          setPlan(null)
+          setError("Node process acknowledged, but HTTP readiness was not verified. Review plan before retrying.")
+          return
+        }
+        setHealth({ state: "running", release: expectedRelease ?? null, ready: true })
       }
       setMessage(successMessage)
     } catch {
