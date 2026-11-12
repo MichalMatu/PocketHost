@@ -225,6 +225,10 @@ it("starts and restarts only an explicitly approved, verified Node release", asy
         },
         executionEnabled: true,
       }) }
+    if (url === "/api/v1/node-projects/" + ID + "/health")
+      return { ok: true, json: async () => ({ health: {
+        state: "running", release: RELEASE, ready: true,
+      } }) }
     if ((url === "/api/v1/node-projects/" + ID + "/start" ||
          url === "/api/v1/node-projects/" + ID + "/restart") && options?.method === "POST") {
       expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-node-project")
@@ -406,6 +410,10 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
           release: project.candidateRelease, port: 19301, missingTools: [], conflicts: [],
           dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
         }, executionEnabled: true }) }
+      if (url.endsWith("/health"))
+        return { ok: true, json: async () => ({ health: {
+          state: "running", release: rolledBack ? RELEASE : next, ready: true,
+        } }) }
       if (url.endsWith("/source") && scenario === "candidate-unavailable")
         return { ok: false, status: 503 }
       if (url.endsWith("/source"))
