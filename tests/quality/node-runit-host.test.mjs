@@ -154,6 +154,43 @@ test('M3 resume refuses missing approval and never creates an unowned service', 
   assert.equal(projects.inspect(project.id).candidateRelease, staged.candidateRelease);
 });
 
+test('M3 restart refuses approval or missing verified owner without any unit action', async (t) => {
+  const { projects, project, host, serviceRoot } = fixture(t);
+  projects.stage(project.id, source);
+  await assert.rejects(host.restart(project.id, false), /approval/);
+  await assert.rejects(host.restart(project.id, true), /No verified running Node release/);
+  assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});
+
+test('M3 restart coordinates existing stop then start and never starts if stop fails', async (t) => {
+  const { project, host } = fixture(t);
+  const calls = [];
+  host.status = () => ({
+    state: 'running', activeRelease: 'r-' + 'a'.repeat(32),
+    lastGoodRelease: 'r-' + 'a'.repeat(32),
+  });
+  host.stop = async (id, approved) => {
+    calls.push(['stop', id, approved]);
+  };
+  host.start = async (id, approved) => {
+    calls.push(['start', id, approved]);
+    return { state: 'running', activeRelease: 'r-' + 'a'.repeat(32) };
+  };
+  const result = await host.restart(project.id, true);
+  assert.equal(result.state, 'running');
+  assert.deepEqual(calls, [
+    ['stop', project.id, true],
+    ['start', project.id, true],
+  ]);
+  calls.length = 0;
+  host.stop = async () => {
+    calls.push(['stop']);
+    throw new Error('Owned process identity changed');
+  };
+  await assert.rejects(host.restart(project.id, true), /identity changed/);
+  assert.deepEqual(calls, [['stop']]);
+});
+
 test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
   const { projects, project, host } = fixture(t);
   const staged = projects.stage(project.id, source).project;
