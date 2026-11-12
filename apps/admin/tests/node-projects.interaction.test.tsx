@@ -64,6 +64,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
     if (path === "/api/v1/node-projects/" + ID + "/stage" && options?.method === "POST") {
       const envelope = JSON.parse(String(options.body))
       expect(envelope.packageJson.scripts.start).toBe("node server.mjs")
+      expect(envelope.packageJson.name).toBe("imported-node")
+      expect(envelope.serverSource).toBe("console.log('uploaded Node')")
       const project = { ...(projects[0] as Record<string, unknown>), state: "source-staged",
         candidateRelease: RELEASE, deploymentCount: 1 }
       projects = [project]
@@ -123,6 +125,22 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await user.type(screen.getByLabelText("Project name"), "My node")
   await user.click(screen.getByRole("button", { name: "Create project" }))
   await screen.findByText("Private Node project created.")
+  const importedPackage = {
+    name: "imported-node", version: "1.2.3", scripts: { start: "node server.mjs" },
+  }
+  const importedLock = {
+    name: "imported-node", version: "1.2.3", lockfileVersion: 3,
+    packages: { "": { name: "imported-node", version: "1.2.3" } },
+  }
+  await user.upload(screen.getByLabelText("Load local Node files"), [
+    new File([JSON.stringify(importedPackage)], "package.json"),
+    new File([JSON.stringify(importedLock)], "package-lock.json"),
+    new File(["console.log('uploaded Node')"], "server.mjs"),
+  ])
+  await screen.findByText("Three Node files loaded into the editor. Validate and stage to save a candidate.")
+  expect((screen.getByLabelText("package.json") as HTMLTextAreaElement).value).toContain("imported-node")
+  expect((screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value).toBe("console.log('uploaded Node')")
+  expect(calls.mock.calls.filter(call => String(call[0]).endsWith("/stage"))).toHaveLength(0)
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
   await user.click(screen.getByRole("button", { name: "Load staged source" }))
