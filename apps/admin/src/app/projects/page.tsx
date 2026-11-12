@@ -165,15 +165,25 @@ export default function ProjectsPage() {
     if (!Array.isArray(data.releases)) throw new Error("Invalid release inventory")
     setReleases(data.releases as Candidate[])
   }, [])
-  const loadRuntime = React.useCallback(async (id: string) => {
+  const loadRuntime = React.useCallback(async (id: string): Promise<RuntimeState> => {
     const [status, preview] = await Promise.all([
       getJson(api + "/" + id + "/runtime"), getJson(api + "/" + id + "/plan"),
     ])
-    if (!status.runtime || !preview.plan) throw new Error("Invalid Node runtime report")
-    setRuntime(status.runtime as RuntimeState)
+    if (!status.runtime || typeof status.runtime !== "object" ||
+        Array.isArray(status.runtime) || !preview.plan)
+      throw new Error("Invalid Node runtime report")
+    const observed = status.runtime as RuntimeState
+    if (!["not-provisioned", "stopped", "running", "unknown"].includes(observed.state) ||
+        !["stopped", "running"].includes(observed.desired) ||
+        (observed.activeRelease !== null &&
+         (typeof observed.activeRelease !== "string" ||
+          !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
+      throw new Error("Invalid Node runtime state")
+    setRuntime(observed)
     setHealth(null)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
+    return observed
   }, [])
   React.useEffect(() => {
     let live = true
@@ -195,6 +205,10 @@ export default function ProjectsPage() {
   ) => {
     // Once submitted, a lost response must never leave stale controls enabled
     // or imply it is safe to retry a potentially completed host operation.
+    const expectedState = operation === "stop" ? "stopped" : "running"
+    const expectedRelease = operation === "deploy"
+      ? (body as { release: string }).release
+      : operation === "rollback" ? runtime?.previousGoodRelease : runtime?.activeRelease
     setApproved(false)
     setExecutionEnabled(false)
     setRuntime(null)
@@ -205,14 +219,27 @@ export default function ProjectsPage() {
     } catch {
       throw new Error("Node action result unconfirmed. Refresh runtime status before retrying.")
     }
-    if (!result.runtime || typeof result.runtime !== "object" ||
-        Array.isArray(result.runtime)) {
+    const acknowledged = result.runtime as Record<string, unknown> | undefined
+    if (!acknowledged || typeof acknowledged !== "object" ||
+        Array.isArray(acknowledged) || acknowledged.state !== expectedState ||
+        (expectedRelease && acknowledged.activeRelease !== expectedRelease)) {
       throw new Error("Node action response unverified. Refresh runtime status before retrying.")
     }
     try {
-      await loadRuntime(id)
+      const observed = await loadRuntime(id)
+      if (observed.state !== expectedState ||
+          (expectedRelease && observed.activeRelease !== expectedRelease)) {
+        setExecutionEnabled(false)
+        setRuntime(null)
+        setPlan(null)
+        setError("Node action acknowledged, but runtime state differs. Review plan before retrying.")
+        return
+      }
       setMessage(successMessage)
     } catch {
+      setExecutionEnabled(false)
+      setRuntime(null)
+      setPlan(null)
       setError("Node action acknowledged, but runtime refresh failed. Review plan before retrying.")
     }
   }
