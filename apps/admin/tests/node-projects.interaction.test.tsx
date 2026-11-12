@@ -368,7 +368,7 @@ it.each(["response-mismatch", "refresh-mismatch"] as const)(
   },
 )
 
-it.each(["unchanged", "updated"] as const)(
+it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
   "compares GitHub Node source and preserves previous candidate when %s",
   async (scenario) => {
     const user = userEvent.setup()
@@ -403,6 +403,8 @@ it.each(["unchanged", "updated"] as const)(
           release: RELEASE, port: 19301, missingTools: [], conflicts: [],
           dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
         }, executionEnabled: true }) }
+      if (url.endsWith("/source") && scenario === "candidate-unavailable")
+        return { ok: false, status: 503 }
       if (url.endsWith("/source"))
         return { ok: true, json: async () => ({ source: {
           release: RELEASE,
@@ -441,6 +443,11 @@ it.each(["unchanged", "updated"] as const)(
     await user.click(screen.getByRole("button", { name: "Check GitHub updates" }))
     if (scenario === "unchanged") {
       await screen.findByText(/matches the current staged source. No update needed/)
+      expect(editor.value).toBe(priorEditor)
+      expect(stage.disabled).toBe(true)
+      expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
+    } else if (scenario === "candidate-unavailable") {
+      await screen.findByText("Could not load Node projects. Try Refresh.")
       expect(editor.value).toBe(priorEditor)
       expect(stage.disabled).toBe(true)
       expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
