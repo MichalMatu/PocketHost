@@ -571,6 +571,7 @@ export default function ProjectsPage() {
                   })}>Check Node build syntax</Button>
                 <Button disabled={busy || editorDirty || !approved || !executionEnabled ||
                   !plan?.allowed || !selected.candidateRelease ||
+                  plan.release !== selected.candidateRelease ||
                   runtime?.activeRelease === selected.candidateRelease}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "deploy",
