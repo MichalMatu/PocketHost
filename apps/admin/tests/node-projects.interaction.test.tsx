@@ -71,6 +71,10 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         dependencyPlan: { packageName: "my-node-site", packageVersion: "1.0.0", dependencyCount: 0, status: "review-required" } }]
       return { ok: true, json: async () => ({ project }) }
     }
+    if (path === "/api/v1/node-projects/toolchain" && !options?.method)
+      return { ok: true, json: async () => ({ toolchain: {
+        nodeVersion: "v26.13.0", npmVersion: "11.6.2",
+      } }) }
     if (path === "/api/v1/node-projects/backup" && !options?.method)
       return { ok: true, json: async () => ({ backup: {
         initialized: false, repositoryPresent: false, keyPresent: false,
@@ -114,6 +118,8 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   vi.stubGlobal("fetch", calls)
   render(<ProjectsPage />)
   await screen.findByText("No Node projects yet.")
+  await user.click(screen.getByRole("button", { name: "Check Node tools" }))
+  await screen.findByText("Installed tools: Node v26.13.0 · npm 11.6.2")
   await user.type(screen.getByLabelText("Project name"), "My node")
   await user.click(screen.getByRole("button", { name: "Create project" }))
   await screen.findByText("Private Node project created.")
@@ -139,4 +145,24 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)
   expect(screen.getByRole("button", { name: "Preview local response" }).hasAttribute("disabled")).toBe(true)
   expect(calls.mock.calls.some(call => String(call[0]).includes("/start"))).toBe(false)
+})
+
+it("treats a malformed installed-tool report as an error without claiming versions", async () => {
+  const requests = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url) === "/api/v1/node-projects")
+      return { ok: true, status: 200, json: async () => ({ projects: [] }) }
+    if (String(url) === "/api/v1/node-projects/toolchain")
+      return { ok: true, status: 200, json: async () => ({
+        toolchain: { nodeVersion: "not a version", npmVersion: null },
+      }) }
+    throw new Error("Unexpected endpoint " + String(url))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<ProjectsPage />)
+  await screen.findByText("No Node projects yet.")
+  const user = userEvent.setup()
+  await user.click(screen.getByRole("button", { name: "Check Node tools" }))
+  await screen.findByText("Invalid Node toolchain report")
+  expect(screen.queryByText(/Installed tools:/)).toBeNull()
+  expect(requests.mock.calls.every(([url]) => String(url).startsWith("/api/v1/node-projects"))).toBe(true)
 })
