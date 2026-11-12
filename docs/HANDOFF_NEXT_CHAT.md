@@ -14,14 +14,19 @@ on main with non-force, expected-HEAD updates. The active compact
 entrypoint is [START_HERE](START_HERE.md), and local instructions
 live in the nearest AGENTS.md.
 
-**Canonical architecture:** [ADR-0017 Termux-first single app](adr/0017-termux-first-single-app-integration.md).
-One future PocketHost APK integrates upstream Termux packages and terminal,
-existing PocketHost web/Node backend, expanded Companion, selected
-Termux:API/Boot and authorized Shizuku. ADR-0015/0016 S1–S10 are retired.
-The separately signed ARM64 S1 test APK is historical only; do not extend
-it or duplicate the runtime. On-device development still uses the existing
-Termux and preserves all protected services. I0 cleanup is source-only;
-I1 contracts and upstream analysis are next, not a physical migration.
+**Active roadmap:** [Hosting-first Basic/Pro and two P0 tracks](ROADMAP.md).
+Basic is the fully functional official-Termux product (Node.js, GitHub,
+Cloudflare, SSH, per-site traffic analytics, backup). Pro is a
+technical category for functions needing extra Android apps/permissions,
+not a price tier. **Do not change the menu now.**
+Freeze Companion/Shizuku code without deleting it. Current tasks:
+(1) finish owned Node.js Hosting + GitHub import/update/rollback;
+(2) integrate Hosting panel Cloudflare/domains/SSH/web analytics/backup.
+
+**Deferred only:** [ADR-0017 unified Android APK](adr/0017-termux-first-single-app-integration.md).
+I0–I4, Android app packaging and Companion expansion are *not* the
+next implementation steps. Historical standalone S1 probe stays retired;
+the active installed Termux and protected services remain unchanged.
 
 PocketHost is a **DEV-only Android/Termux management console**.
 H2 owned static hosting, Termux administration, read-only observations,
@@ -70,22 +75,20 @@ receipt yet; do not reuse its old-SHA result as a PASS.
 
 ## First actions
 
-1. Check fresh PocketHost main and, only if native execution is needed,
-   the **actual private Local Agent** host/installation and pending
-   task receipts. Do not re-enroll the project or replay settled tests.
-2. Use the last verified source SHA as the base of the
-   [change-aware plan](DEV_ITERATION.md): run only affected Node/Vitest,
-   lint/format and incremental typechecks through Samsung Termux Agent.
-   For unmapped/host-sensitive files, manually select the negative tests.
-3. For docs-only edits: docs link/index, Markdownlint and formatting,
-   without frontend rebuild, service restart or physical gate.
-   UI-only edits: HMR on the existing verified PocketHost panel.
-4. When genuinely closing M0/M1, collect only missing exact-final-SHA
-   source and disposable physical evidence. Separate that from M2/M3
-   implementation. Never promote historical PASS to a new SHA.
-5. Record a **short status delta**, task ID, tested SHA, commands/exit
-   codes and remaining risk in one relevant checkpoint. Do not append
-   another chronological transcript to this file.
+1. Verify fresh main, current repair/test receipts and the real
+   Samsung Local Agent state before sending any task. Do not replay
+   already accepted tests or mistake published tasks for PASS.
+2. Continue **P0 Node.js + GitHub** using existing M1–M3 source
+   and runit adapter: disposable create/import, dependency plan,
+   owned start/readiness/logs, update and rollback. Obtain exact-SHA
+   Samsung tests and separate physical acceptance.
+3. Then continue **P0 Hosting integrations**: Cloudflare/domain/HTTPS,
+   SSH, per-site web analytics (not Android RX/TX), file/terminal and
+   Restic backup/restore. Never adopt observed foreign services.
+4. For docs-only edits run only relevant links/Markdown/format checks
+   on Samsung when available; do not build/restart the panel.
+   Preserve exact source receipts and OPEN/HOLD outcomes in a
+   relevant checkpoint rather than duplicating status in this file.
 
 ## Preserved boundaries
 
@@ -99,8 +102,8 @@ GitHub Actions, Codex, Work or non-Termux PocketHost execution.
 ## Canonical pointers
 
 - [Quality gates and precise PASS semantics](QUALITY_GATES.md)
-- [One-APK integration decision](adr/0017-termux-first-single-app-integration.md)
-- [Current delivery sequence](ROADMAP.md)
+- [Canonical current Hosting-first delivery sequence](ROADMAP.md)
+- [Deferred one-APK integration option](adr/0017-termux-first-single-app-integration.md)
 - [Code ownership and test map](CODE_MAP.md)
 - [Termux host-command transport](LOCAL_AGENT_TERMUX.md)
 - [Recent M0/M1 source and evidence checkpoint](checkpoints/2026-11-09-m0-m1-ownership-and-canonical-style.md)
