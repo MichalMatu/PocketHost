@@ -48,6 +48,30 @@ origin logs or Cloudflare, not inferred from Android RX/TX.
 Reuse existing processes/release and ownership contracts. Do not
 change protected external processes or expose the DEV admin publicly.
 
+## Parallel hosting execution boundaries
+
+**Static H2 and Node.js Hosting are two independent project
+execution paths, not two independent management platforms.**
+Keep the already device-accepted H2 SiteFleetHost/static server,
+project paths, ports, immutable releases, process identity and
+start/stop/restart/publish/rollback behavior intact. Node.js
+projects use their own root, port pool, verified process identity,
+staged releases, readiness, logs and rollback. Neither lifecycle
+owns or manipulates the other type's resources or automatically
+adopts observed processes.
+
+The browser panel and typed infrastructure contracts can be
+shared: project discovery/navigation, GitHub import, Cloudflare
+routing, SSH controls, per-site traffic reports and scoped
+backup. Keep type-specific deployment/runtime adapters distinct.
+Use existing Termux utilities and one verified runit/service
+adapter where applicable; this **does not authorize replacing
+H2's proven execution model**, starting another supervisor,
+reassigning ports or migrating live websites. A failure, update
+or rollback in one type must leave the other type unchanged.
+Qualify any shared change with regression tests for H2 static
+hosting and disposable Node projects.
+
 ## Deferred target: single Android app and unified telemetry flow
 
 **Historical owner decision, 2026-11-10; deferred as of 2026-11-12.**
