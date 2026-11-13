@@ -118,17 +118,33 @@ const inside = (root: string, target: string) => target.startsWith(root + path.s
  * Constructor overrides exist solely for isolated host tests.
  */
 export class IleStoiDiagnosticHost {
+  private readonly serviceRoot: string;
+  private readonly svRoot: string;
+  private readonly logRoot: string;
+  private readonly command: Command;
+  private readonly readProc: (file: string) => string;
+  private readonly now: () => string;
+  private readonly httpProbe: (route: HealthRoute) => Promise<HealthReading>;
+
   constructor(
-    private readonly serviceRoot = path.join(PREFIX, 'var/service'),
-    private readonly svRoot = path.join(PREFIX, 'var/sv'),
-    private readonly logRoot = path.join(PREFIX, 'var/log/sv'),
-    private readonly command: Command = (file, args) => spawnSync(file, args, {
+    serviceRoot = path.join(PREFIX, 'var/service'),
+    svRoot = path.join(PREFIX, 'var/sv'),
+    logRoot = path.join(PREFIX, 'var/log/sv'),
+    command: Command = (file, args) => spawnSync(file, args, {
       encoding: 'utf8', shell: false, timeout: 1200, maxBuffer: 2048,
     }),
-    private readonly readProc: (file: string) => string = file => readFileSync(file, 'utf8'),
-    private readonly now: () => string = () => new Date().toISOString(),
-    private readonly httpProbe: (route: HealthRoute) => Promise<HealthReading> = probeIleStoiHttp,
-  ) {}
+    readProc: (file: string) => string = file => readFileSync(file, 'utf8'),
+    now: () => string = () => new Date().toISOString(),
+    httpProbe: (route: HealthRoute) => Promise<HealthReading> = probeIleStoiHttp,
+  ) {
+    this.serviceRoot = serviceRoot;
+    this.svRoot = svRoot;
+    this.logRoot = logRoot;
+    this.command = command;
+    this.readProc = readProc;
+    this.now = now;
+    this.httpProbe = httpProbe;
+  }
 
   private service(): { argument: string; resolved: string } {
     const root = lstatSync(this.serviceRoot);
