@@ -47,11 +47,13 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
             <p>Emergency STOP marker: {data.localAgent.intake}</p>
             <p>Local claims: {data.localAgent.claims ?? "unverified"}</p>
             <p>Local result spools: {data.localAgent.spooled ?? "unverified"}</p>
+            <p>Claims without local spool: {data.localAgent.unspooledClaims ?? "unverified"}</p>
             <p>Last result outcome: {data.localAgent.lastResult}</p>
             <p>Remote publication: {data.localAgent.publication}</p>
             <p className="text-xs text-muted-foreground">
               No STOP marker does not prove that task intake works. File counts do not prove
-              spool integrity, task completion or GitHub delivery.
+              spool integrity, task completion or GitHub delivery. Missing spool records can
+              indicate execution still in progress or interrupted work; do not automatically replay.
             </p>
           </div>
           <div className="rounded-md border p-3 space-y-1">

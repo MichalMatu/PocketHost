@@ -70,6 +70,7 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
     assert.equal(result.localAgent.intake, 'stop-absent');
     assert.equal(result.localAgent.claims, 0);
     assert.equal(result.localAgent.spooled, 0);
+    assert.equal(result.localAgent.unspooledClaims, 0);
     assert.equal(result.localAgent.publication, 'not-checked');
     assert.equal(result.localAgent.lastResult, 'unverified');
     assert.equal(result.pocketHost.owner.state, 'verified');
@@ -153,12 +154,14 @@ test('Local Agent STOP signal and spool counts are observed without reading priv
   const f = fixture(), calls = [];
   try {
     writeFileSync(path.join(f.agentState, 'claims', 'task-one.json'), '{secret}');
+    writeFileSync(path.join(f.agentState, 'claims', 'task-two.json'), '{other secret}');
     writeFileSync(path.join(f.agentState, 'results', 'task-one.json'), '{private data}');
     symlinkSync('missing-target', path.join(f.agentState, 'EMERGENCY_STOP'));
     const observed = build(f, calls).inspect().localAgent;
     assert.equal(observed.intake, 'stop-present');
-    assert.equal(observed.claims, 1);
+    assert.equal(observed.claims, 2);
     assert.equal(observed.spooled, 1);
+    assert.equal(observed.unspooledClaims, 1);
     assert.equal(observed.lastResult, 'unverified');
     assert.equal(observed.publication, 'not-checked');
     assert.ok(!JSON.stringify(observed).includes('private data'));
@@ -175,6 +178,7 @@ test('symlinked Local Agent state or results fail closed without following links
     const observed = build(f).inspect().localAgent;
     assert.equal(observed.claims, 0);
     assert.equal(observed.spooled, null);
+    assert.equal(observed.unspooledClaims, null);
     assert.equal(observed.publication, 'not-checked');
     rmSync(status);
     rmSync(f.agentState, { recursive: true });
@@ -183,6 +187,7 @@ test('symlinked Local Agent state or results fail closed without following links
     assert.equal(unknown.intake, 'unverified');
     assert.equal(unknown.claims, null);
     assert.equal(unknown.spooled, null);
+    assert.equal(unknown.unspooledClaims, null);
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
 
@@ -231,5 +236,21 @@ test('foreign Vite process, altered listening port and extra flags never verify 
       assert.equal(result.pocketHost.owner.reason, 'invalid-process');
       assert.equal(result.pocketHost.restart, 'blocked');
     }
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('Agent ignores non-JSON files and rejects symlinked claim entries', () => {
+  const f = fixture();
+  try {
+    writeFileSync(path.join(f.agentState, 'claims', 'README'), 'untrusted info');
+    writeFileSync(path.join(f.agentState, 'claims', 'safe.json'), '{}');
+    const baseline = build(f).inspect().localAgent;
+    assert.equal(baseline.claims, 1);
+    assert.equal(baseline.unspooledClaims, 1);
+    symlinkSync('/etc/passwd', path.join(f.agentState, 'claims', 'unsafe.json'));
+    const rejected = build(f).inspect().localAgent;
+    assert.equal(rejected.claims, null);
+    assert.equal(rejected.unspooledClaims, null);
+    assert.equal(rejected.publication, 'not-checked');
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });

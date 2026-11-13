@@ -15,6 +15,7 @@ export const controlPlaneSchema = z.object({
     runit, intake: z.enum(["stop-present", "stop-absent", "unverified"]),
     claims: z.number().int().nonnegative().nullable(),
     spooled: z.number().int().nonnegative().nullable(),
+    unspooledClaims: z.number().int().nonnegative().nullable(),
     lastResult: z.literal("unverified"),
     publication: z.literal("not-checked"),
   }).strict(),

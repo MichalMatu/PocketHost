@@ -30,6 +30,7 @@ export interface ControlPlaneDiagnostics {
     intake: 'stop-present' | 'stop-absent' | 'unverified';
     claims: number | null;
     spooled: number | null;
+    unspooledClaims: number | null;
     lastResult: 'unverified';
     publication: 'not-checked';
   };
@@ -143,6 +144,7 @@ export class ControlPlaneDiagnosticHost {
   private localAgentState(): Omit<ControlPlaneDiagnostics['localAgent'], 'runit'> {
     const unavailable = {
       intake: 'unverified' as const, claims: null, spooled: null,
+      unspooledClaims: null,
       lastResult: 'unverified' as const, publication: 'not-checked' as const,
     };
     const state = path.join(this.home, '.local/state/local-agent/termux');
@@ -168,27 +170,31 @@ export class ControlPlaneDiagnosticHost {
         if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return unavailable;
         intake = 'stop-absent';
       }
-      const count = (name: 'claims' | 'results'): number | null => {
+      const entries = (name: 'claims' | 'results'): Set<string> | null => {
         const folder = path.join(state, name);
         const entry = lstatSync(folder);
         if (!entry.isDirectory() || entry.isSymbolicLink() ||
             this.resolve(folder) !== folder) return null;
         const items = readdirSync(folder, { withFileTypes: true });
         if (items.length > 2048) return null;
-        let total = 0;
+        const ids = new Set<string>();
         for (const item of items) {
           if (!item.name.endsWith('.json')) continue;
           if (!/^[A-Za-z0-9._-]{1,200}\.json$/.test(item.name) || !item.isFile())
             return null;
-          total++;
+          ids.add(item.name);
         }
-        return total;
+        return ids;
       };
-      const claims = count('claims');
-      const spooled = count('results');
+      const claimNames = entries('claims');
+      const spoolNames = entries('results');
+      const claims = claimNames?.size ?? null;
+      const spooled = spoolNames?.size ?? null;
+      const unspooledClaims = claimNames && spoolNames ?
+        [...claimNames].filter(name => !spoolNames.has(name)).length : null;
       return {
-        intake, claims, spooled,
-        // Presence is not proof of integrity, result outcome, or remote delivery.
+        intake, claims, spooled, unspooledClaims,
+        // Filename matching does not verify content, execution or remote delivery.
         lastResult: 'unverified', publication: 'not-checked',
       };
     } catch {
