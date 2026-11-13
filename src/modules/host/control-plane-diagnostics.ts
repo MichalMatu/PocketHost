@@ -290,8 +290,18 @@ export class ControlPlaneDiagnosticHost {
       const activeCwd = this.resolve(proc + '/cwd');
       const argv = this.proc(proc + '/cmdline');
       const after = parseProcessStat(this.proc(proc + '/stat'), pid as number);
+      // The only authorized DEV launcher is ops/termux/panel-service.sh.
+      // A foreign node process with argv containing "vite.js" is not our panel.
+      const expectedArgs = [
+        path.join(PREFIX, 'bin/node'),
+        path.join(root, 'apps/admin/node_modules/vite/bin/vite.js'),
+        '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+      ];
+      const actualArgs = argv.split('\0');
+      if (actualArgs.at(-1) === '') actualArgs.pop();
       if (!before || !after || before.startTicks !== ticks || after.startTicks !== ticks ||
-          activeCwd !== cwd || !argv.split('\0').some(item => /(^|\/)vite(?:\.mjs|\.js)?$/.test(item)))
+          activeCwd !== cwd || actualArgs.length !== expectedArgs.length ||
+          actualArgs.some((arg, index) => arg !== expectedArgs[index]))
         throw Error('invalid-process');
       value.pid = pid as number;
       value.startTicks = ticks;

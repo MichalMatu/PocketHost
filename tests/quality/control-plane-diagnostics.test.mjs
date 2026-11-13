@@ -34,7 +34,11 @@ function fixture() {
   writeFileSync(gateway, JSON.stringify(g));
   return { root, home, services, sv, admin, agentState, marker, gateway, m, g };
 }
-function build(f, calls = [], procCwd = f.admin, argv = 'node\0vite\0') {
+const panelArgv = f =>
+  ['/data/data/com.termux/files/usr/bin/node',
+    path.join(path.dirname(path.dirname(f.admin)), 'apps/admin/node_modules/vite/bin/vite.js'),
+    '--host', '127.0.0.1', '--port', '8787', '--strictPort'].join('\0') + '\0';
+function build(f, calls = [], procCwd = f.admin, argv = panelArgv(f)) {
   const run = (bin, args) => {
     calls.push([bin, args]);
     if (bin.endsWith('/bin/sv')) return {
@@ -122,8 +126,7 @@ test('symlink owner marker, process drift, foreign checkout are rejected', () =>
 test('Vite JavaScript CLI process is accepted only with matching owner and start ticks', () => {
   const f = fixture();
   try {
-    const good = build(f, [], f.admin,
-      'node\0/data/data/com.termux/files/home/Projects/PocketHost-Preview/apps/admin/node_modules/vite/bin/vite.js\0').inspect();
+    const good = build(f, [], f.admin, panelArgv(f)).inspect();
     assert.equal(good.pocketHost.owner.state, 'verified');
     const bad = build(f, [], f.admin,
       'node\0/data/data/com.termux/files/home/foreign/myvite.js\0').inspect();
@@ -206,5 +209,26 @@ test('Agent runit marker symlink cannot redirect status to a foreign service', (
     assert.equal(observed.runit.error, 'unsafe-service');
     assert.ok(!calls.some(([bin, args]) => bin.endsWith('/bin/sv') &&
       args[1].includes('/runit/services/termux-agent')));
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('foreign Vite process, altered listening port and extra flags never verify panel identity', () => {
+  const f = fixture();
+  try {
+    const original = panelArgv(f);
+    const variants = [
+      original.replace('/apps/admin/node_modules/vite/bin/vite.js',
+        '/apps/admin/node_modules/other/vite.js'),
+      original.replace('--port\08787', '--port\09999'),
+      original.replace('--host\0127.0.0.1', '--host\00.0.0.0'),
+      original.replace('--strictPort', '--strictPort\0--force'),
+      original.replace('/bin/node\0', '/bin/bash\0'),
+    ];
+    for (const argv of variants) {
+      const result = build(f, [], f.admin, argv).inspect();
+      assert.equal(result.pocketHost.owner.state, 'unverified');
+      assert.equal(result.pocketHost.owner.reason, 'invalid-process');
+      assert.equal(result.pocketHost.restart, 'blocked');
+    }
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
