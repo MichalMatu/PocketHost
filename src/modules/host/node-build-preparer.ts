@@ -7,7 +7,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
-import { NodeDependencyPreparer } from './node-dependency-preparer.ts';
+import { NodeDependencyPreparer, verifyCopiedNodePackages } from './node-dependency-preparer.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const RELEASE = /^r-[a-f0-9]{32}$/;
@@ -379,9 +379,14 @@ export class NodeBuildPreparer {
         ['server.mjs', current.source.server],
       ] as const) writeFileSync(path.join(workspace, name), contents, { flag: 'wx', mode: 0o600 });
       if (current.plan.dependencyCount > 0) {
-        cpSync(path.join(current.folder, 'node_modules'), path.join(workspace, 'node_modules'), {
+        const published = path.join(current.folder, 'node_modules');
+        const copied = path.join(workspace, 'node_modules');
+        cpSync(published, copied, {
           recursive: true, force: false, errorOnExist: true, dereference: false,
         });
+        // A copy can change or gain links during filesystem traversal.
+        // Fail closed before executing a build against those bytes.
+        verifyCopiedNodePackages(published, copied);
         // The original release packages must remain unchanged after the copy.
         new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
           .verifyPrepared(projectId, releaseId);

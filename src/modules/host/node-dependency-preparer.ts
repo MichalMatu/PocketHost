@@ -140,6 +140,20 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
   return { treeDigest: hash.digest('hex'), entries, bytes };
 }
 
+/** Verify that the disposable build copy contains exactly the attested
+ * package bytes. Unlike npm's copy operation, this rejects hard links,
+ * symbolic links, devices, extra entries and any changed content.
+ */
+export function verifyCopiedNodePackages(original: string, copy: string): void {
+  const published = attestPackageTree(original);
+  const staged = attestPackageTree(copy);
+  if (
+    staged.treeDigest !== published.treeDigest ||
+    staged.entries !== published.entries ||
+    staged.bytes !== published.bytes
+  ) throw new Error('Temporary Node package copy differs from verified release');
+}
+
 /**
  * Isolated npm preparation for explicitly approved owned releases.
  * Never called by the QA checkout or by service discovery.

@@ -7,7 +7,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeDependencyPreparer } from '../../src/modules/host/node-dependency-preparer.ts';
+import { NodeDependencyPreparer, verifyCopiedNodePackages } from '../../src/modules/host/node-dependency-preparer.ts';
 
 const cleanSource = {
   packageJson: {
@@ -100,6 +100,25 @@ test('build candidates prepare pinned dev dependencies without executing project
   ]]);
   assert.equal(preparer.verifyPrepared(project.id, release).verified, true);
   assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'dist')), false);
+});
+
+test('temporary npm copy rejects changed bytes, extra entries and symbolic links', (t) => {
+  const { root } = fixture(t);
+  const original = path.join(root, 'original');
+  const copied = path.join(root, 'copy');
+  mkdirSync(original, { mode: 0o700 });
+  mkdirSync(copied, { mode: 0o700 });
+  writeFileSync(path.join(original, 'package.js'), 'const safe = true');
+  writeFileSync(path.join(copied, 'package.js'), 'const safe = true');
+  assert.doesNotThrow(() => verifyCopiedNodePackages(original, copied));
+  writeFileSync(path.join(copied, 'package.js'), 'const safe = false');
+  assert.throws(() => verifyCopiedNodePackages(original, copied), /differs/);
+  writeFileSync(path.join(copied, 'package.js'), 'const safe = true');
+  writeFileSync(path.join(copied, 'extra.js'), 'extra');
+  assert.throws(() => verifyCopiedNodePackages(original, copied), /differs/);
+  rmSync(path.join(copied, 'extra.js'));
+  symlinkSync(path.join(original, 'package.js'), path.join(copied, 'linked.js'));
+  assert.throws(() => verifyCopiedNodePackages(original, copied), /Unsafe npm dependency tree/);
 });
 
 test('dependency preparation refuses missing approval, active releases and stale candidates', async (t) => {
