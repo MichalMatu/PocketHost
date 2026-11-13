@@ -66,6 +66,95 @@ test('M3 source validation and runtime inspection remain inert before explicit a
   assert.equal((await import('node:fs')).readdirSync(serviceRoot).length, 0);
 });
 
+test('M3 dependency setup review is inert, pinned and excludes package lifecycle scripts', (t) => {
+  const { host, project, projects, serviceRoot } = fixture(t);
+  host.toolchain = () => ({
+    status: 'review-required', missingTools: [], conflicts: [],
+    nodeVersion: 'v26.0.0', npmVersion: '11.0.0',
+  });
+  const staged = projects.stage(project.id, source).project;
+  const empty = host.reviewDependencySetup(project.id);
+  assert.deepEqual(empty, {
+    release: staged.candidateRelease, status: 'not-required',
+    dependencyCount: 0, installRequired: false, buildRequired: false,
+    installCommand: null, buildCommand: null, blockers: [], executed: false,
+  });
+  const nextSource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      scripts: { start: 'node server.mjs', build: 'node build.mjs' },
+      dependencies: { 'is-odd': '3.0.1' },
+    },
+    packageLock: {
+      ...source.packageLock,
+      packages: {
+        '': {
+          ...source.packageLock.packages[''],
+          dependencies: { 'is-odd': '3.0.1' },
+        },
+        'node_modules/is-odd': {
+          version: '3.0.1', resolved: 'https://registry.npmjs.org/is-odd/-/is-odd-3.0.1.tgz',
+          integrity: 'sha512-' + 'A'.repeat(86) + '==',
+        },
+      },
+    },
+  };
+  const updated = projects.stage(project.id, nextSource).project;
+  const review = host.reviewDependencySetup(project.id);
+  assert.equal(review.release, updated.candidateRelease);
+  assert.equal(review.status, 'review-required');
+  assert.equal(review.dependencyCount, 1);
+  assert.deepEqual(review.installCommand,
+    ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund']);
+  assert.deepEqual(review.buildCommand, ['npm', 'run', 'build']);
+  assert.equal(review.executed, false);
+  assert.deepEqual(review.blockers, []);
+  assert.deepEqual(readdirSync(serviceRoot), []);
+});
+
+test('M3 dependency setup review blocks untrusted lock sources and unsupported toolchain', (t) => {
+  const { host, project, projects, root, serviceRoot } = fixture(t);
+  const dependencySource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      dependencies: { 'sample-pkg': '1.0.0' },
+    },
+    packageLock: {
+      ...source.packageLock,
+      packages: {
+        '': {
+          ...source.packageLock.packages[''],
+          dependencies: { 'sample-pkg': '1.0.0' },
+        },
+        'node_modules/sample-pkg': {
+          version: '1.0.0', resolved: 'file:../other-project',
+          integrity: 'bad-integrity', hasInstallScript: true,
+        },
+      },
+    },
+  };
+  const staged = projects.stage(project.id, dependencySource).project;
+  host.toolchain = () => ({
+    status: 'blocked', missingTools: ['npm'], conflicts: ['node-requires-26-or-newer'],
+    nodeVersion: 'v22.0.0', npmVersion: null,
+  });
+  const result = host.reviewDependencySetup(project.id);
+  assert.equal(result.status, 'blocked');
+  assert.deepEqual(result.blockers, [
+    'missing-tool:npm',
+    'node-requires-26-or-newer',
+    'unreviewed-source:node_modules/sample-pkg',
+    'install-script:node_modules/sample-pkg',
+  ]);
+  assert.equal(result.executed, false);
+  assert.deepEqual(readdirSync(serviceRoot), []);
+  const file = path.join(root, project.id, 'releases', staged.candidateRelease, 'server.mjs');
+  (await import('node:fs')).writeFileSync(file, 'console.log("tampered")');
+  assert.throws(() => host.reviewDependencySetup(project.id), /digest mismatch/);
+});
+
 test('M3 reads installed Node tool versions without creating or starting a service', (t) => {
   const { host, serviceRoot } = fixture(t);
   const versions = host.toolVersions();
