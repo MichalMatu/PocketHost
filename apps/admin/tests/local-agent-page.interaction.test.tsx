@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import LocalAgentPage from "@/app/local-agent/page"
 import { localAgentLogSchema } from "@/lib/local-agent-logs-schema"
@@ -20,7 +20,7 @@ const sample = {
   unclassifiedLines: 1, truncated: false,
   notice: "sanitized-events-only-no-lifecycle-authority",
 }
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
 describe("read-only Local Agent menu page", () => {
   it("renders safe event summaries and supports a GET-only refresh", async () => {
@@ -36,6 +36,27 @@ describe("read-only Local Agent menu page", () => {
     expect(getter.mock.calls.every(call =>
       call[0] === "/api/v1/termux-admin?mode=local-agent-logs" &&
       call[1]?.method === "GET")).toBe(true)
+  })
+  it("polls sanitized events every 5s, and pause stops automatic reads", async () => {
+    const getter = vi.fn(async () => ({ ok: true, json: async () => sample }))
+    vi.stubGlobal("fetch", getter)
+    render(<LocalAgentPage />)
+    await screen.findByText(/Task stopped by execution budget/)
+    expect(getter).toHaveBeenCalledTimes(1)
+    vi.useFakeTimers()
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(getter).toHaveBeenCalledTimes(2)
+    fireEvent.click(screen.getByRole("button", { name: "Pause live" }))
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+    const afterPause = getter.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+    expect(getter).toHaveBeenCalledTimes(afterPause)
+    expect(screen.getByText("Live paused")).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Resume live" }))
+    const afterResume = getter.mock.calls.length
+    await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
+    expect(getter.mock.calls.length).toBeGreaterThan(afterResume)
+    expect(getter.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
   })
   it("rejects forged raw log fields or commands", () => {
     expect(() => localAgentLogSchema.parse({ ...sample, token: "secret" })).toThrow()

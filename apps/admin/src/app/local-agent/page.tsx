@@ -8,34 +8,55 @@ import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-l
 
 export default function LocalAgentPage() {
   const [refreshToken, setRefreshToken] = React.useState(0)
+  const [live, setLive] = React.useState(true)
   const [logs, setLogs] = React.useState<LocalAgentLogData | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(false)
   React.useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError(false)
-    setLogs(null)
-    void fetch("/api/v1/termux-admin?mode=local-agent-logs", {
-      method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
-    }).then(async response => {
-      if (!response.ok) throw Error("unavailable")
-      return localAgentLogSchema.parse(await response.json() as unknown)
-    }).then(value => {
-      if (!controller.signal.aborted) { setLogs(value); setLoading(false) }
-    }).catch(() => {
-      if (!controller.signal.aborted) { setError(true); setLoading(false) }
-    })
-    return () => controller.abort()
-  }, [refreshToken])
+    let active: AbortController | null = null
+    const readLogs = async () => {
+      // Only one read in flight. Slow devices never accumulate overlapping requests.
+      if (active !== null) return
+      const controller = new AbortController()
+      active = controller
+      try {
+        const response = await fetch("/api/v1/termux-admin?mode=local-agent-logs", {
+          method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
+        })
+        if (!response.ok) throw Error("unavailable")
+        const data = localAgentLogSchema.parse(await response.json() as unknown)
+        if (!controller.signal.aborted) { setLogs(data); setError(false) }
+      } catch {
+        if (!controller.signal.aborted) { setLogs(null); setError(true) }
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+        active = null
+      }
+    }
+    void readLogs()
+    const interval = live ? window.setInterval(() => {
+      // Keep the agent idle when the owner is not watching this page.
+      if (document.visibilityState === "visible") void readLogs()
+    }, 5000) : null
+    return () => {
+      if (interval !== null) window.clearInterval(interval)
+      active?.abort()
+    }
+  }, [refreshToken, live])
 
   return <BaseLayout title="Local Agent">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Badge variant="outline">Local Agent · read-only</Badge>
-        <Button variant="outline" onClick={() => setRefreshToken(value => value + 1)}>
-          Refresh diagnostics and logs
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge variant="outline">{live ? "Live · every 5s" : "Live paused"}</Badge>
+          <Button variant="outline" onClick={() => setLive(value => !value)}>
+            {live ? "Pause live" : "Resume live"}
+          </Button>
+          <Button variant="outline" onClick={() => setRefreshToken(value => value + 1)}>
+            Refresh diagnostics and logs
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground">
         The Agent runs in its own private Termux runit supervisor. Missing results may mean
