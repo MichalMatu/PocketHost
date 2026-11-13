@@ -11,6 +11,7 @@ These dated files are historical **exact-SHA evidence**, not instructions to rer
 
 ## 2026-11-13
 
+- [Current owner-priority: existing Termux service control panels / next-chat execution](2026-11-13-termux-service-panels-next-chat.md)
 - [Node Hosting panel visual checkpoint and next-chat handoff](2026-11-13-node-panel-preview-handoff.md)
 
 ## 2026-11-12

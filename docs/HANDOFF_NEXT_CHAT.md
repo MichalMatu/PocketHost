@@ -7,6 +7,22 @@ purpose: Compact, current PocketHost resumption contract; historical receipts st
 
 # PocketHost — Next Session
 
+## Immediate owner-selected continuation — Termux service panels (2026-11-13)
+
+The owner **deferred backups and Termux reset** and now prioritizes
+working operator panels for the **already running services**, one by one,
+over additional Node Hosting code. **Start implementation on IleStoi /
+wreckscanner** in the existing Termux → Services screen. Then integrate
+Cloudflare Tunnel, SSH/Mosquitto/healthwatch, and Local Agent/PocketHost.
+For protected external services, begin read-only; stop/restart/config
+requires a separate service-specific explicit authorization and verified
+owner identity. Preserve Node Hosting source, historical QA, H2 and every
+running service. No new menu, second runit supervisor or blanket adoption.
+
+**Execution handoff:** [2026-11-13 service-panels checkpoint](checkpoints/2026-11-13-termux-service-panels-next-chat.md).
+Read it before following the older Node-first plan below. Use fresh main
+HEAD; do not assume this documentation commit is a phone deployment.
+
 ## Current source and work
 
 Use the **fresh main HEAD**; never assume a checkpoint SHA. Work directly

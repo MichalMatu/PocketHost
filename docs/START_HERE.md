@@ -11,11 +11,13 @@ purpose: Small PocketHost context entrypoint; detailed evidence is linked, not p
 
 - Work only from **fresh MichalMatu/PocketHost main**; handoff SHAs are
   historical evidence, never the assumed HEAD.
-- **Current P0:** [ROADMAP](ROADMAP.md) — first complete Node.js
-  Hosting/GitHub, then Cloudflare, SSH, per-site web analytics and
-  backup. Keep the menu unchanged. Basic is full official-Termux
-  hosting without Companion/Shizuku; Pro is the optional external
-  Android-app-dependent scope, **not** a price tier. APK I0–I4 deferred.
+- **Current owner priority (2026-11-13):** [service panels checkpoint](checkpoints/2026-11-13-termux-service-panels-next-chat.md)
+  — build real read-only operational dashboards for existing Termux
+  services one at a time, beginning with IleStoi/wreckscanner, then
+  Cloudflare, SSH/Mosquitto/healthwatch, Local Agent and PocketHost.
+  Reuse Termux → Services; preserve the existing Node.js Hosting
+  work and [ROADMAP](ROADMAP.md). No service lifecycle grants or menu
+  changes. Basic is official-Termux-only; Pro/Android APK deferred.
 
 - DEV-only Samsung Termux admin panel; Shizuku and direct owner-triggered
   power-user actions are product scope. Preserve all unrelated services,

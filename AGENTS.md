@@ -76,14 +76,18 @@ See docs/DEV_ITERATION.md and docs/LOCAL_AGENT_TERMUX.md.
 
 ## Product and privilege boundaries
 
-**Active product order (ROADMAP):** first finish Basic Node.js Hosting
-and GitHub deploy; then Hosting panel Cloudflare/SSH, per-site web
-traffic analytics and backup. Basic is fully operational on official
-Termux without Companion/Shizuku. Pro denotes extra Android-app
-dependencies, not billing. Companion/Shizuku and the unified APK
-are frozen/deferred for this sprint. Do not reorder the menu or
-change existing Pro code. Historical Android plans are not active
-instructions; refer to docs/ROADMAP.md.
+**Current owner-selected sprint priority (2026-11-13):** integrate real
+per-service control/diagnostic panels in the EXISTING Termux Services
+screen: IleStoi/wreckscanner first; then Cloudflare Tunnel, SSH,
+Mosquitto, healthwatch; then Local Agent and PocketHost itself. For
+externally operated services begin strictly read-only. A per-service
+dashboard NEVER grants lifecycle ownership; do not start/stop/restart
+or change configurations without separately authorized, positively
+attested control for that specific service. Preserve the already-built
+Node.js Hosting code and return to its acceptance after these panels.
+Basic remains official-Termux-only; Companion/Shizuku and unified APK
+are frozen. Do not reorder the menu. See docs/ROADMAP.md and
+docs/checkpoints/2026-11-13-termux-service-panels-next-chat.md.
 
 PocketHost is a **DEV-only**, owner-operated Android/Termux management
 console. Shizuku is a first-class power-user integration; expose real

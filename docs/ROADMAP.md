@@ -82,7 +82,23 @@ Cross-type changes require explicit justification and focused
 regression tests proving static Create/Start/Publish/Rollback,
 process/port isolation and protection of external workloads.
 
-## Next two development tasks — Hosting first
+## Immediate owner-selected sprint — existing service dashboards (2026-11-13)
+
+The owner temporarily prioritizes **visible operational controls for the
+services already running on Samsung** over additional speculative Node.js
+Hosting features. Implement within the existing Termux → Services UI:
+(1) IleStoi/wreckscanner; (2) Cloudflare Tunnel; (3) SSH, Mosquitto and
+healthwatch; (4) Local Agent and PocketHost. Each starts with real
+read-only status, bounded/redacted logs and honest unavailable readings.
+Any lifecycle/configuration control is a **separate later authorization**
+with exact service ownership and process evidence; inventory alone
+never grants control. Keep already-built Node Hosting intact and retain
+all historical quality evidence. No new navigation, second supervisor,
+Termux reset or live service takeover.
+
+[Execution-ready handoff](checkpoints/2026-11-13-termux-service-panels-next-chat.md).
+
+## Next two development tasks — Hosting first (resume after service dashboards)
 
 1. **P0 — complete Node.js Hosting + GitHub deployment.** Reuse M1–M3,
    H2 releases and the one verified runit adapter. From the current
