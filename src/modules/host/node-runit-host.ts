@@ -910,6 +910,13 @@ export class NodeRunitHost {
         throw new Error('Node source candidate changed during admission');
       }
       const source = this.projects.release(id, release); // Re-attest under lock.
+      let state = this.record(id);
+      // Reject a duplicate before expensive dependency/build reads: the owned
+      // release identity is already known under the exclusive lifecycle lock.
+      if (!rollback && state?.activeRelease === release)
+        throw new Error('Node release already active; use Start or Restart instead');
+      if (rollback && state?.previousGoodRelease !== release)
+        throw new Error('Rollback target changed during admission');
       if (!this.dependenciesReady(id, release, source.plan) ||
           this.toolchain(source.plan).status === 'blocked')
         throw new Error('Release dependencies unverified: existing service retained');
@@ -917,13 +924,6 @@ export class NodeRunitHost {
       // Node --check parses source without executing it or installing packages.
       if (this.checkReleaseSyntax(id, release).status !== 'syntax-valid') {
         throw new Error('Node release syntax invalid: existing service retained');
-      }
-      let state = this.record(id);
-      if (!rollback && state?.activeRelease === release) {
-        throw new Error('Node release already active; use Start or Restart instead');
-      }
-      if (rollback && state?.previousGoodRelease !== release) {
-        throw new Error('Rollback target changed during admission');
       }
       // An update can fail after stopping the current service. Verify the
       // entire fallback (source, packages, toolchain and syntax) *before*
