@@ -60,10 +60,15 @@ export function classifyAgentLogLine(line: string): AgentLogEvent | null {
 }
 
 export class LocalAgentLogHost {
+  private readonly home: string;
+  private readonly now: () => string;
   constructor(
-    private readonly home = os.homedir(),
-    private readonly now: () => string = () => new Date().toISOString(),
-  ) {}
+    home = os.homedir(),
+    now: () => string = () => new Date().toISOString(),
+  ) {
+    this.home = home;
+    this.now = now;
+  }
 
   inspect(): LocalAgentLogDiagnostics {
     const result: LocalAgentLogDiagnostics = {
@@ -73,23 +78,62 @@ export class LocalAgentLogHost {
       notice: 'sanitized-events-only-no-lifecycle-authority',
     };
     const root = path.join(this.home, '.local/state/local-agent/termux');
-    const folder = path.join(root, 'runit/log/termux-agent');
-    const file = path.join(folder, 'current');
     let fd: number | null = null;
     try {
-      const parents = [
-        this.home, path.join(this.home, '.local'),
-        path.join(this.home, '.local/state'),
-        path.join(this.home, '.local/state/local-agent'), root,
-        path.join(root, 'runit'), path.join(root, 'runit/log'), folder,
+      // Installed services differ in their private svlogd layout. Inspect
+      // only these fixed paths; never parse and execute the service log script.
+      const base = path.join(root, 'runit');
+      const candidates = [
+        path.join(base, 'log/termux-agent/current'),
+        path.join(base, 'log/termux-agent/main/current'),
+        path.join(base, 'services/termux-agent/log/main/current'),
+        path.join(base, 'services/termux-agent/log/current'),
       ];
-      for (const directory of parents) {
+      const stableParents = [this.home, path.join(this.home, '.local'),
+        path.join(this.home, '.local/state'),
+        path.join(this.home, '.local/state/local-agent'), root, base];
+      for (const directory of stableParents) {
         const stat = lstatSync(directory);
         if (!stat.isDirectory() || stat.isSymbolicLink() ||
             realpathSync(directory) !== directory) {
           result.state = 'unsafe-log';
           return result;
         }
+      }
+      let file: string | null = null;
+      for (const candidate of candidates) {
+        const parts = path.relative(base, path.dirname(candidate)).split(path.sep);
+        let folder = base;
+        let absent = false;
+        for (const part of parts) {
+          folder = path.join(folder, part);
+          try {
+            const entry = lstatSync(folder);
+            if (!entry.isDirectory() || entry.isSymbolicLink() ||
+                realpathSync(folder) !== folder) {
+              result.state = 'unsafe-log';
+              return result;
+            }
+          } catch (error) {
+            if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+              absent = true;
+              break;
+            }
+            throw error;
+          }
+        }
+        if (absent) continue;
+        try {
+          lstatSync(candidate);
+          file = candidate;
+          break;
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
+      }
+      if (file === null) {
+        result.state = 'missing';
+        return result;
       }
       const stat = lstatSync(file);
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 32 * 1024 * 1024) {

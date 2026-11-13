@@ -68,3 +68,17 @@ test('oversized log file cannot be streamed into browser', () => {
     assert.deepEqual(result.events, []);
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
+
+test('also supports a private service-local svlogd main/current layout', () => {
+  const f = fixture();
+  try {
+    const serviceLog = path.join(f.home,
+      '.local/state/local-agent/termux/runit/services/termux-agent/log/main');
+    mkdirSync(serviceLog, { recursive: true });
+    writeFileSync(path.join(serviceLog, 'current'), sample + '\n');
+    const result = new LocalAgentLogHost(f.home).inspect();
+    assert.equal(result.state, 'ok');
+    assert.deepEqual(result.events.map(event => event.kind), ['budget']);
+    assert.ok(!JSON.stringify(result).includes('PRIVATE_TOKEN'));
+  } finally { rmSync(f.home, { recursive: true, force: true }); }
+});
