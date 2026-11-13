@@ -106,7 +106,7 @@ test('M3 dependency setup review is inert, pinned and excludes package lifecycle
   assert.equal(review.status, 'review-required');
   assert.equal(review.dependencyCount, 1);
   assert.deepEqual(review.installCommand,
-    ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund']);
+    ['npm', 'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--omit=dev']);
   assert.deepEqual(review.buildCommand, ['npm', 'run', 'build']);
   assert.equal(review.executed, false);
   assert.deepEqual(review.blockers, []);
