@@ -44,6 +44,17 @@ type NodeHealth = {
   release: string | null
   ready: boolean | null
 }
+type DependencyReview = {
+  release: string
+  status: "not-required" | "review-required" | "blocked"
+  dependencyCount: number
+  installRequired: boolean
+  buildRequired: boolean
+  installCommand: string[] | null
+  buildCommand: string[] | null
+  blockers: string[]
+  executed: false
+}
 type Candidate = {
   id: string
   active: false
@@ -130,6 +141,7 @@ export default function ProjectsPage() {
   const [logLines, setLogLines] = React.useState<string[]>([])
   const [preview, setPreview] = React.useState<{ release: string; body: string } | null>(null)
   const [health, setHealth] = React.useState<NodeHealth | null>(null)
+  const [dependencyReview, setDependencyReview] = React.useState<DependencyReview | null>(null)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -190,6 +202,7 @@ export default function ProjectsPage() {
       throw new Error("Invalid Node runtime state")
     setRuntime(observed)
     setHealth(null)
+    setDependencyReview(null)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
@@ -421,6 +434,7 @@ export default function ProjectsPage() {
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+                setDependencyReview(null)
                 setGithubRepository("")
                 await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
               })}>{project.name}</Button>)}</div>}
@@ -506,6 +520,7 @@ export default function ProjectsPage() {
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
                 setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
+                setDependencyReview(null)
                 setExecutionEnabled(false); setEditorDirty(true)
                 setMessage("GitHub commit " + data.commit.slice(0, 12) +
                   " contains changes. Review and stage to preserve the previous release.")
@@ -536,19 +551,20 @@ export default function ProjectsPage() {
                   setExecutionEnabled(false)
                   setEditorDirty(true)
                   setGithubReview(null)
+                  setDependencyReview(null)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
                 })
               }} />
           </label>
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
+              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
           <label className="grid gap-1 text-sm">package-lock.json
             <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
+              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
           <label className="grid gap-1 text-sm">server.mjs
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null) }} /></label>
+              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" disabled={busy || !selected.candidateRelease}
               onClick={() => action(async () => {
@@ -562,6 +578,7 @@ export default function ProjectsPage() {
                 setManifest(value.manifest); setLockfile(value.lockfile)
                 setSource(value.serverSource); setApproved(false)
                 setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
+                setDependencyReview(null)
                 setMessage("Verified staged source loaded into editor; no process changed.")
               })}>Load staged source</Button>
             <Button disabled={busy || (!!selected.candidateRelease && !editorDirty)}
@@ -604,6 +621,14 @@ export default function ProjectsPage() {
                 <p role="alert" className="text-sm text-destructive">{[
                   ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
                 ].join(", ")}</p>}
+              {dependencyReview && <p className="text-muted-foreground text-xs"
+                aria-label="Node dependency setup">
+                Setup: {dependencyReview.status} · Dependencies: {dependencyReview.dependencyCount} ·
+                Install: {dependencyReview.installRequired ? dependencyReview.installCommand?.join(" ") : "not required"} ·
+                Build: {dependencyReview.buildRequired ? dependencyReview.buildCommand?.join(" ") : "not required"} ·
+                Blockers: {dependencyReview.blockers.length ? dependencyReview.blockers.join(", ") : "none"} ·
+                Not executed; installation/build requires separate approval.
+              </p>}
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
                   onChange={event => setApproved(event.target.checked)} />
@@ -613,6 +638,33 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
+                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                  onClick={() => action(async () => {
+                    const result = await getJson(api + "/" + selected.id + "/dependency-review")
+                    const review = result.review as Partial<DependencyReview> | undefined
+                    if (!review || review.release !== selected.candidateRelease ||
+                        !["not-required", "review-required", "blocked"].includes(review.status ?? "") ||
+                        typeof review.dependencyCount !== "number" ||
+                        !Number.isSafeInteger(review.dependencyCount) ||
+                        review.dependencyCount < 0 || review.dependencyCount > 500 ||
+                        typeof review.installRequired !== "boolean" ||
+                        typeof review.buildRequired !== "boolean" ||
+                        !Array.isArray(review.blockers) ||
+                        !review.blockers.every(item => typeof item === "string") ||
+                        review.executed !== false ||
+                        (review.installCommand !== null &&
+                         (!Array.isArray(review.installCommand) ||
+                          review.installCommand.join(" ") !==
+                            "npm ci --ignore-scripts --no-audit --no-fund")) ||
+                        (review.buildCommand !== null &&
+                         (!Array.isArray(review.buildCommand) ||
+                          review.buildCommand.join(" ") !== "npm run build")) ||
+                        (review.installRequired !== (review.installCommand !== null)) ||
+                        (review.buildRequired !== (review.buildCommand !== null)))
+                      throw new Error("Invalid Node dependency review")
+                    setDependencyReview(review as DependencyReview)
+                    setMessage("Dependency setup reviewed without running npm or build.")
+                  })}>Review dependency setup</Button>
                 <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",
