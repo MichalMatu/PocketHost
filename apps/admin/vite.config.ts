@@ -713,8 +713,10 @@ function nodeProjectApi(): Plugin {
               throw new RangeError("Invalid staged Node source")
             }
             const body = input as Record<string, unknown>
-            if (Object.keys(body).sort().join(",") !==
-                "expectedCandidate,expectedRevision,packageJson,packageLock,serverSource" ||
+            if (![
+                  "expectedCandidate,expectedRevision,packageJson,packageLock,serverSource",
+                  "expectedCandidate,expectedRevision,extraFiles,packageJson,packageLock,serverSource",
+                ].includes(Object.keys(body).sort().join(",")) ||
                 (body.expectedCandidate !== null &&
                  (typeof body.expectedCandidate !== "string" ||
                   !/^r-[a-f0-9]{32}$/.test(body.expectedCandidate))) ||
@@ -727,6 +729,7 @@ function nodeProjectApi(): Plugin {
               packageJson: body.packageJson,
               packageLock: body.packageLock,
               serverSource: body.serverSource,
+              ...(body.extraFiles === undefined ? {} : { extraFiles: body.extraFiles }),
             }, body.expectedCandidate as string | null, body.expectedRevision as number)
           })
           if (createBackup) reportDashboardOwnedEvent("owned-backup-created")

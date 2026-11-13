@@ -5,6 +5,29 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles } from "@/lib/node-source-import"
 
+function validatedExtras(input: unknown): Record<string, string> {
+  if (input === undefined) return {}
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Invalid imported frontend file list")
+  const result: Record<string, string> = {}
+  const names = Object.keys(input).sort()
+  if (names.length > 32) throw new Error("Frontend source file budget exceeded")
+  let bytes = 0
+  for (const name of names) {
+    const content = (input as Record<string, unknown>)[name]
+    if (name.length > 160 || !(
+      /^(?:src|public)\/(?:[A-Za-z0-9_-]+\/){0,6}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:js|jsx|ts|tsx|css|html|json|svg|txt|md)$/.test(name) ||
+      /^(?:index\.html|vite\.config\.(?:js|mjs|ts)|tsconfig(?:\.[a-z0-9_-]+)?\.json|postcss\.config\.(?:js|cjs)|tailwind\.config\.(?:js|ts))$/.test(name)
+    ) || typeof content !== "string" || !content.trim() || content.includes("\0") ||
+       new Blob([content]).size > 32 * 1024)
+      throw new Error("Invalid imported frontend source file")
+    bytes += new Blob([name, content]).size
+    if (bytes > 96 * 1024) throw new Error("Frontend source exceeds 96 KB")
+    result[name] = content
+  }
+  return result
+}
+
 type Project = {
   id: string
   name: string
@@ -143,10 +166,11 @@ export default function ProjectsPage() {
   const [manifest, setManifest] = React.useState(examplePackage)
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
+  const [extraFiles, setExtraFiles] = React.useState<Record<string, string>>({})
   const [githubRepository, setGithubRepository] = React.useState("")
   const [githubReview, setGithubReview] = React.useState<{
     repository: string; commit: string; changed: string[]
-    dependencies: number; buildRequired: boolean
+    dependencies: number; buildRequired: boolean; extraCount: number
   } | null>(null)
   const [editorDirty, setEditorDirty] = React.useState(false)
   const [releases, setReleases] = React.useState<Candidate[]>([])
@@ -461,6 +485,7 @@ export default function ProjectsPage() {
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+                setExtraFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
                 setGithubRepository("")
@@ -508,6 +533,7 @@ export default function ProjectsPage() {
                     typeof contents.serverSource !== "string" ||
                     !contents.serverSource.trim() || contents.serverSource.length > 65536)
                   throw new Error("Invalid GitHub Node source preview")
+                const fetchedExtras = validatedExtras(contents.extraFiles)
                 const changed = ["package.json", "package-lock.json", "server.mjs"]
                 if (selected.candidateRelease) {
                   // Compare only with attested on-host source, never the editor buffer.
@@ -530,6 +556,9 @@ export default function ProjectsPage() {
                   } catch {
                     throw new Error("Could not verify current staged Node source")
                   }
+                  const oldExtras = validatedExtras(staged.extraFiles)
+                  if (JSON.stringify(oldExtras) !== JSON.stringify(fetchedExtras))
+                    changed.push("frontend files")
                   if (!changed.length) {
                     setGithubReview(null)
                     setMessage("GitHub commit " + data.commit.slice(0, 12) +
@@ -543,7 +572,9 @@ export default function ProjectsPage() {
                   changed,
                   dependencies: sourcePlan.dependencyCount as number,
                   buildRequired: commands.build !== null,
+                  extraCount: Object.keys(fetchedExtras).length,
                 })
+                setExtraFiles(fetchedExtras)
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
@@ -556,7 +587,7 @@ export default function ProjectsPage() {
           </div>
           {githubReview && <p className="text-muted-foreground text-xs"
             aria-label="GitHub source changes">
-            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"}
+            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"} · Frontend files: {githubReview.extraCount}
             {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
               " · Staging only; package installation/build requires separate approval."}
           </p>}
@@ -572,6 +603,7 @@ export default function ProjectsPage() {
                   setManifest(files.manifest)
                   setLockfile(files.lockfile)
                   setSource(files.source)
+                  setExtraFiles({})
                   setApproved(false)
                   setBuildCheck(null)
                   setPlan(null)
@@ -593,6 +625,20 @@ export default function ProjectsPage() {
           <label className="grid gap-1 text-sm">server.mjs
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
               value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+          <p className="text-muted-foreground text-xs" aria-label="Imported frontend files">
+            Extra source files: {Object.keys(extraFiles).length ?
+              Object.keys(extraFiles).sort().join(", ") : "none"}
+          </p>
+          {Object.keys(extraFiles).length > 0 && <Button variant="outline"
+            disabled={busy} onClick={() => {
+              setExtraFiles({})
+              setEditorDirty(true)
+              setApproved(false)
+              setGithubReview(null)
+              setDependencyReview(null)
+              setBuildReview(null)
+              setPlan(null)
+            }}>Clear imported frontend files</Button>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" disabled={busy || !selected.candidateRelease}
               onClick={() => action(async () => {
@@ -603,8 +649,9 @@ export default function ProjectsPage() {
                   typeof value.lockfile !== "string" || value.lockfile.length > 140000 ||
                   typeof value.serverSource !== "string" || value.serverSource.length > 65536)
                   throw new Error("Invalid verified candidate source")
+                const verifiedExtras = validatedExtras(value.extraFiles)
                 setManifest(value.manifest); setLockfile(value.lockfile)
-                setSource(value.serverSource); setApproved(false)
+                setSource(value.serverSource); setExtraFiles(verifiedExtras); setApproved(false)
                 setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
                 setMessage("Verified staged source loaded into editor; no process changed.")
@@ -615,6 +662,7 @@ export default function ProjectsPage() {
                 packageJson: JSON.parse(manifest) as unknown,
                 packageLock: JSON.parse(lockfile) as unknown,
                 serverSource: source,
+                ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
                 expectedCandidate: selected.candidateRelease,
                 expectedRevision: selected.deploymentCount,
               })
