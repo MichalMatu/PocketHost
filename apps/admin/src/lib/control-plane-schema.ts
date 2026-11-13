@@ -16,7 +16,9 @@ export const controlPlaneSchema = z.object({
     claims: z.number().int().nonnegative().nullable(),
     spooled: z.number().int().nonnegative().nullable(),
     unspooledClaims: z.number().int().nonnegative().nullable(),
-    lastResult: z.literal("unverified"),
+    orphanSpools: z.number().int().nonnegative().nullable(),
+    lastResult: z.enum(["done", "failed", "unknown", "unverified"]),
+    lastResultAt: z.string().datetime({ offset: true }).nullable(),
     publication: z.literal("not-checked"),
   }).strict(),
   pocketHost: z.object({

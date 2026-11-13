@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readSync, readdirSync, realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseProcessStat } from './observability-probes.ts';
@@ -31,7 +31,9 @@ export interface ControlPlaneDiagnostics {
     claims: number | null;
     spooled: number | null;
     unspooledClaims: number | null;
-    lastResult: 'unverified';
+    orphanSpools: number | null;
+    lastResult: 'done' | 'failed' | 'unknown' | 'unverified';
+    lastResultAt: string | null;
     publication: 'not-checked';
   };
   pocketHost: { runit: ServiceState; watch: ServiceState; owner: Owner;
@@ -140,12 +142,75 @@ export class ControlPlaneDiagnosticHost {
     return unknown('unavailable');
   }
 
+  /** Read only the two bounded, locally correlated status fields of a recent result. */
+  private recentAgentSpool(state: string, spoolNames: Set<string> | null,
+    claimNames: Set<string> | null): { lastResult: ControlPlaneDiagnostics['localAgent']['lastResult'];
+      lastResultAt: string | null } {
+    const unverified = { lastResult: 'unverified' as const, lastResultAt: null };
+    if (!spoolNames || !claimNames || !spoolNames.size) return unverified;
+    try {
+      let newest: { name: string; mtimeMs: number } | null = null;
+      for (const name of spoolNames) {
+        const stats = lstatSync(path.join(state, 'results', name));
+        if (!stats.isFile() || stats.isSymbolicLink() || !Number.isFinite(stats.mtimeMs))
+          return unverified;
+        if (!newest || stats.mtimeMs > newest.mtimeMs)
+          newest = { name, mtimeMs: stats.mtimeMs };
+      }
+      if (!newest || !claimNames.has(newest.name)) return unverified;
+      // Never follow a raced symlink, and never read an unbounded result payload.
+      const readBounded = (file: string, maxBytes: number): unknown => {
+        const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+        try {
+          const stats = fstatSync(fd);
+          if (!stats.isFile() || stats.size < 2 || stats.size > maxBytes)
+            throw Error('untrusted-spool');
+          const bytes = Buffer.alloc(stats.size + 1);
+          const actual = readSync(fd, bytes, 0, bytes.length, 0);
+          if (actual !== stats.size) throw Error('changed-spool');
+          return JSON.parse(bytes.toString('utf8', 0, actual)) as unknown;
+        } finally {
+          closeSync(fd);
+        }
+      };
+      const claim = readBounded(path.join(state, 'claims', newest.name), 4096);
+      const spool = readBounded(path.join(state, 'results', newest.name), 262144);
+      const record = (value: unknown): value is Record<string, unknown> =>
+        value !== null && typeof value === 'object' && !Array.isArray(value);
+      const id = newest.name.slice(0, -5);
+      if (!record(claim) || !record(spool) || !record(spool.result) ||
+          Object.keys(claim).sort().join(',') !== 'id,status,task_digest,version' ||
+          claim.version !== 1 || claim.id !== id ||
+          claim.status !== 'execution_may_have_started' ||
+          typeof claim.task_digest !== 'string' || !/^[a-f0-9]{64}$/.test(claim.task_digest) ||
+          spool.version !== 1 || spool.id !== id || spool.task_digest !== claim.task_digest ||
+          !['done', 'failed', 'unknown'].includes(String(spool.status)) ||
+          typeof spool.target_host_id !== 'string' || !spool.target_host_id ||
+          typeof spool.target_installation_id !== 'string' || !spool.target_installation_id ||
+          spool.result.id !== id || spool.result.status !== spool.status ||
+          (spool.result.task_digest !== undefined &&
+            spool.result.task_digest !== claim.task_digest) ||
+          (spool.result.target_host_id !== undefined &&
+            spool.result.target_host_id !== spool.target_host_id) ||
+          (spool.result.target_installation_id !== undefined &&
+            spool.result.target_installation_id !== spool.target_installation_id))
+        return unverified;
+      return {
+        lastResult: spool.status as 'done' | 'failed' | 'unknown',
+        lastResultAt: new Date(newest.mtimeMs).toISOString(),
+      };
+    } catch {
+      return unverified;
+    }
+  }
+
   /** Only the installed Termux Agent's fixed private state, never its config or task contents. */
   private localAgentState(): Omit<ControlPlaneDiagnostics['localAgent'], 'runit'> {
     const unavailable = {
       intake: 'unverified' as const, claims: null, spooled: null,
-      unspooledClaims: null,
-      lastResult: 'unverified' as const, publication: 'not-checked' as const,
+      unspooledClaims: null, orphanSpools: null,
+      lastResult: 'unverified' as const, lastResultAt: null,
+      publication: 'not-checked' as const,
     };
     const state = path.join(this.home, '.local/state/local-agent/termux');
     try {
@@ -192,10 +257,13 @@ export class ControlPlaneDiagnosticHost {
       const spooled = spoolNames?.size ?? null;
       const unspooledClaims = claimNames && spoolNames ?
         [...claimNames].filter(name => !spoolNames.has(name)).length : null;
+      const orphanSpools = claimNames && spoolNames ?
+        [...spoolNames].filter(name => !claimNames.has(name)).length : null;
       return {
-        intake, claims, spooled, unspooledClaims,
-        // Filename matching does not verify content, execution or remote delivery.
-        lastResult: 'unverified', publication: 'not-checked',
+        intake, claims, spooled, unspooledClaims, orphanSpools,
+        // A consistent local status is not independent Agent verification or GitHub delivery.
+        ...this.recentAgentSpool(state, spoolNames, claimNames),
+        publication: 'not-checked',
       };
     } catch {
       return unavailable;

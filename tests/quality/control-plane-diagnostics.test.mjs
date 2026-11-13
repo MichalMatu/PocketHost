@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, symlinkSync, utimesSync, writeFileSync } from 'node:fs';
 import { ControlPlaneDiagnosticHost } from '../../src/modules/host/control-plane-diagnostics.ts';
 
 const a = 'a'.repeat(40), b = 'b'.repeat(40);
@@ -71,6 +71,8 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
     assert.equal(result.localAgent.claims, 0);
     assert.equal(result.localAgent.spooled, 0);
     assert.equal(result.localAgent.unspooledClaims, 0);
+    assert.equal(result.localAgent.orphanSpools, 0);
+    assert.equal(result.localAgent.lastResultAt, null);
     assert.equal(result.localAgent.publication, 'not-checked');
     assert.equal(result.localAgent.lastResult, 'unverified');
     assert.equal(result.pocketHost.owner.state, 'verified');
@@ -162,6 +164,7 @@ test('Local Agent STOP signal and spool counts are observed without reading priv
     assert.equal(observed.claims, 2);
     assert.equal(observed.spooled, 1);
     assert.equal(observed.unspooledClaims, 1);
+    assert.equal(observed.orphanSpools, 0);
     assert.equal(observed.lastResult, 'unverified');
     assert.equal(observed.publication, 'not-checked');
     assert.ok(!JSON.stringify(observed).includes('private data'));
@@ -251,6 +254,64 @@ test('Agent ignores non-JSON files and rejects symlinked claim entries', () => {
     const rejected = build(f).inspect().localAgent;
     assert.equal(rejected.claims, null);
     assert.equal(rejected.unspooledClaims, null);
+    assert.equal(rejected.orphanSpools, null);
     assert.equal(rejected.publication, 'not-checked');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('latest locally correlated Agent result reports outcome without leaking payloads', () => {
+  const f = fixture();
+  try {
+    const digest = 'd'.repeat(64);
+    const writePair = (id, status, when) => {
+      writeFileSync(path.join(f.agentState, 'claims', id + '.json'),
+        JSON.stringify({ version: 1, id, task_digest: digest,
+          status: 'execution_may_have_started' }));
+      const resultFile = path.join(f.agentState, 'results', id + '.json');
+      writeFileSync(resultFile,
+        JSON.stringify({ version: 1, id, status, task_digest: digest,
+          target_host_id: 'fixture-host', target_installation_id: 'fixture-install',
+          result: { id, status, secretOutput: 'private data' } }));
+      utimesSync(resultFile, new Date(when), new Date(when));
+    };
+    writePair('first', 'done', '2026-11-12T09:00:00Z');
+    writePair('second', 'unknown', '2026-11-13T09:00:00Z');
+    const observed = build(f).inspect().localAgent;
+    assert.equal(observed.lastResult, 'unknown');
+    assert.equal(observed.lastResultAt, '2026-11-13T09:00:00.000Z');
+    assert.equal(observed.orphanSpools, 0);
+    assert.equal(observed.publication, 'not-checked');
+    assert.ok(!JSON.stringify(observed).includes('private data'));
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('corrupt or orphaned latest Agent spool never becomes an authoritative result', () => {
+  const f = fixture();
+  try {
+    const id = 'unclaimed';
+    writeFileSync(path.join(f.agentState, 'results', id + '.json'),
+      JSON.stringify({ version: 1, id, status: 'done', secret: 'do not expose' }));
+    const observed = build(f).inspect().localAgent;
+    assert.equal(observed.orphanSpools, 1);
+    assert.equal(observed.lastResult, 'unverified');
+    assert.equal(observed.lastResultAt, null);
+    assert.equal(observed.publication, 'not-checked');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('mismatched digest and oversized local result fail closed', () => {
+  const f = fixture();
+  try {
+    const id = 'mismatch';
+    writeFileSync(path.join(f.agentState, 'claims', id + '.json'),
+      JSON.stringify({ version: 1, id, task_digest: 'a'.repeat(64),
+        status: 'execution_may_have_started' }));
+    const resultFile = path.join(f.agentState, 'results', id + '.json');
+    const item = { version: 1, id, status: 'done', task_digest: 'b'.repeat(64),
+      target_host_id: 'fixture-host', target_installation_id: 'fixture-install',
+      result: { id, status: 'done' } };
+    writeFileSync(resultFile, JSON.stringify(item));
+    assert.equal(build(f).inspect().localAgent.lastResult, 'unverified');
+    writeFileSync(resultFile, JSON.stringify({ ...item, task_digest: 'a'.repeat(64),
+      result: { id, status: 'done', largePayload: 'x'.repeat(300000) } }));
+    assert.equal(build(f).inspect().localAgent.lastResult, 'unverified');
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });

@@ -48,12 +48,16 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
             <p>Local claims: {data.localAgent.claims ?? "unverified"}</p>
             <p>Local result spools: {data.localAgent.spooled ?? "unverified"}</p>
             <p>Claims without local spool: {data.localAgent.unspooledClaims ?? "unverified"}</p>
-            <p>Last result outcome: {data.localAgent.lastResult}</p>
+            <p>Orphan local spools: {data.localAgent.orphanSpools ?? "unverified"}</p>
+            <p>Latest locally correlated result: {data.localAgent.lastResult}</p>
+            {data.localAgent.lastResultAt && <p>
+              Local spool modified: {new Date(data.localAgent.lastResultAt).toLocaleString()}
+            </p>}
             <p>Remote publication: {data.localAgent.publication}</p>
             <p className="text-xs text-muted-foreground">
               No STOP marker does not prove that task intake works. File counts do not prove
-              spool integrity, task completion or GitHub delivery. Missing spool records can
-              indicate execution still in progress or interrupted work; do not automatically replay.
+              remote delivery or authenticated Agent identity. Last result is matched to a local
+              claim only. Missing spools can indicate ongoing or interrupted work; never auto-replay.
             </p>
           </div>
           <div className="rounded-md border p-3 space-y-1">

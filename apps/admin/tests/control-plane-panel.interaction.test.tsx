@@ -9,7 +9,8 @@ const sample = {
   localAgent: {
     runit: { state: "running", uptimeSeconds: 120, error: null },
     intake: "stop-absent", claims: 4, spooled: 3, unspooledClaims: 1,
-    lastResult: "unverified", publication: "not-checked",
+    orphanSpools: 0, lastResult: "done", lastResultAt: "2026-11-13T20:00:00.000Z",
+    publication: "not-checked",
   },
   pocketHost: {
     runit: { state: "running", uptimeSeconds: 120, error: null },
@@ -39,6 +40,8 @@ describe("S4 Local Agent and PocketHost source panel", () => {
     expect(screen.getByText(/Local claims: 4/)).toBeTruthy()
     expect(screen.getByText(/Local result spools: 3/)).toBeTruthy()
     expect(screen.getByText(/Claims without local spool: 1/)).toBeTruthy()
+    expect(screen.getByText(/Orphan local spools: 0/)).toBeTruthy()
+    expect(screen.getByText(/Latest locally correlated result: done/)).toBeTruthy()
     expect(screen.getByText(/Remote publication: not-checked/)).toBeTruthy()
     expect(screen.getByText(/manual review required/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /restart|start|stop/i })).toBeNull()
