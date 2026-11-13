@@ -88,6 +88,9 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
     const folder = pending.pop()!;
     const names = readdirSync(folder).sort();
     for (const name of names) {
+      // The proof travels inside the published directory; exclude only this
+      // exact root-level metadata file from the content hash.
+      if (folder === root && name === PROOF_NAME) continue;
       const file = path.join(folder, name);
       const relative = path.relative(root, file);
       const stat = lstatSync(file);
@@ -150,7 +153,7 @@ export class NodeDependencyPreparer {
   ): { release: string; dependencyCount: number; verified: true } {
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release for verification');
     const verified = this.projects.release(projectId, releaseId);
-    const filename = path.join(verified.folder, PROOF_NAME);
+    const filename = path.join(verified.folder, 'node_modules', PROOF_NAME);
     const stat = lstatSync(filename);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
         stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 || stat.size > 2048)
@@ -220,8 +223,7 @@ export class NodeDependencyPreparer {
           this.releaseInUse(projectId, releaseId) !== false)
         throw new Error('Node dependency candidate changed during admission');
       const current = this.projects.release(projectId, releaseId);
-      if (existsSync(path.join(current.folder, PROOF_NAME)) ||
-          existsSync(path.join(current.folder, 'node_modules')))
+      if (existsSync(path.join(current.folder, 'node_modules')))
         throw new Error('Existing or ambiguous Node dependency installation refused');
       workspace = path.join(current.projectFolder, '.node-packages-' + randomUUID());
       mkdirSync(workspace, { mode: 0o700 });
@@ -241,13 +243,15 @@ export class NodeDependencyPreparer {
           this.releaseInUse(projectId, releaseId) !== false)
         throw new Error('Node candidate changed during package preparation');
       this.projects.release(projectId, releaseId);
-      renameSync(modules, path.join(current.folder, 'node_modules'));
-      writeFileSync(path.join(current.folder, PROOF_NAME), JSON.stringify({
+      // Write the attestation *inside* staged node_modules before a single
+      // atomic directory rename. Power loss cannot publish unproven modules.
+      writeFileSync(path.join(modules, PROOF_NAME), JSON.stringify({
         schema: 1, owner: 'pockethost-node-packages',
         release: releaseId, lockDigest: checksum(current.source.lock),
         dependencyCount: plan.dependencyCount,
         treeDigest: tree.treeDigest, entries: tree.entries, bytes: tree.bytes,
       }) + '\n', { flag: 'wx', mode: 0o600 });
+      renameSync(modules, path.join(current.folder, 'node_modules'));
       return { release: releaseId, dependencyCount: plan.dependencyCount, prepared: true };
     } finally {
       if (workspace) rmSync(workspace, { recursive: true, force: true });
