@@ -74,6 +74,34 @@ test('isolated, manually approved npm preparation uses fixed safe argv and never
   assert.equal(executed.length, 1);
 });
 
+test('build candidates prepare pinned dev dependencies without executing project scripts', async (t) => {
+  const { root, projects, project } = fixture(t);
+  const source = structuredClone(cleanSource);
+  source.packageJson.scripts.build = 'vite build';
+  source.packageJson.devDependencies = { vite: '7.0.0' };
+  source.packageLock.packages[''].devDependencies = { vite: '7.0.0' };
+  source.packageLock.packages['node_modules/vite'] = {
+    version: '7.0.0',
+    resolved: 'https://registry.npmjs.org/vite/-/vite-7.0.0.tgz',
+    integrity: 'sha512-' + 'B'.repeat(86) + '==',
+    dev: true,
+  };
+  const release = projects.stage(project.id, source).project.candidateRelease;
+  const commands = [];
+  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir, args) => {
+    commands.push([...args]);
+    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+  });
+  const result = await preparer.prepare(project.id, release, true);
+  assert.deepEqual(result, { release, dependencyCount: 2, prepared: true });
+  assert.deepEqual(commands, [[
+    'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--include=dev',
+  ]]);
+  assert.equal(preparer.verifyPrepared(project.id, release).verified, true);
+  assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'dist')), false);
+});
+
 test('dependency preparation refuses missing approval, active releases and stale candidates', async (t) => {
   const { root, projects, project, release } = fixture(t);
   let touched = 0;

@@ -25,6 +25,7 @@ import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import {
   reviewNodeToolchain,
   SAFE_NPM_CI_COMMAND,
+  SAFE_NPM_BUILD_CI_COMMAND,
   type NodeDependencyPlan,
 } from '../../shared/node-dependency-plan.ts';
 import { evaluateHealthPolicy, type HealthDecision } from '../../shared/hosting-health-policy.ts';
@@ -524,8 +525,7 @@ export class NodeRunitHost {
     };
   }
   /** Re-attest all installed bytes before any owned release activation. */
-  private dependenciesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
-    if (plan.commands.build !== null) return false;
+  private packagesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
     if (plan.dependencyCount === 0) return true;
     try {
       new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
@@ -534,6 +534,10 @@ export class NodeRunitHost {
     } catch {
       return false;
     }
+  }
+  private dependenciesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
+    // A build script is not executable by this runtime yet, even after npm ci.
+    return plan.commands.build === null && this.packagesReady(id, release, plan);
   }
   preview(id: string): {
     release: string | null;
@@ -631,8 +635,7 @@ export class NodeRunitHost {
     ];
     const installRequired = plan.dependencyCount > 0;
     const buildRequired = plan.commands.build !== null;
-    const prepared = installRequired && !buildRequired &&
-      this.dependenciesReady(id, candidate, plan);
+    const prepared = installRequired && this.packagesReady(id, candidate, plan);
     return {
       release: candidate,
       status: blockers.length ? 'blocked' :
@@ -643,7 +646,7 @@ export class NodeRunitHost {
       buildRequired,
       // These are proposed argv, never evaluated as shell or executed here.
       installCommand: installRequired ?
-        SAFE_NPM_CI_COMMAND : null,
+        (buildRequired ? SAFE_NPM_BUILD_CI_COMMAND : SAFE_NPM_CI_COMMAND) : null,
       buildCommand: buildRequired ? ['npm', 'run', 'build'] : null,
       blockers,
       executed: false,

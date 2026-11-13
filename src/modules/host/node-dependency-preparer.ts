@@ -6,13 +6,14 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
-import { SAFE_NPM_CI_COMMAND } from '../../shared/node-dependency-plan.ts';
+import { SAFE_NPM_CI_COMMAND, SAFE_NPM_BUILD_CI_COMMAND } from '../../shared/node-dependency-plan.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const RELEASE = /^r-[a-f0-9]{32}$/;
 const LOCK_NAME = '.node-ports.lock';
 const PROOF_NAME = '.pockethost-node-packages.json';
 const ARGS: readonly string[] = SAFE_NPM_CI_COMMAND.slice(1);
+const BUILD_ARGS: readonly string[] = SAFE_NPM_BUILD_CI_COMMAND.slice(1);
 const MAX_PACKAGES_BYTES = 96 * 1024 * 1024;
 const MAX_PACKAGES_ENTRIES = 16000;
 
@@ -213,8 +214,8 @@ export class NodeDependencyPreparer {
       throw new Error('Node candidate changed before package preparation');
     const verified = this.projects.release(projectId, releaseId);
     const { plan } = verified;
-    if (plan.dependencyCount === 0 || plan.commands.build !== null)
-      throw new Error('Only no-build Node dependency candidates can be prepared');
+    if (plan.dependencyCount === 0)
+      throw new Error('Node candidate has no dependencies to prepare');
     const issues = [
       ...plan.lockReview.missingDirectEntries,
       ...plan.lockReview.unreviewedSources,
@@ -246,7 +247,9 @@ export class NodeDependencyPreparer {
       writeFileSync(path.join(workspace, 'package-lock.json'), current.source.lock,
         { flag: 'wx', mode: 0o600 });
 
-      await this.execute(workspace, ARGS);
+      // Build-capable releases need devDependencies. This step still runs
+      // npm ci with lifecycle scripts and binary links disabled; no build runs.
+      await this.execute(workspace, plan.commands.build !== null ? BUILD_ARGS : ARGS);
       const modules = path.join(workspace, 'node_modules');
       const tree = attestPackageTree(modules);
       // No npm source or scripts may rewrite the verified input during preparation.

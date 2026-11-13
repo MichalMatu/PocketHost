@@ -400,6 +400,26 @@ test('M3 live health never probes or starts a project without verified runit own
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
 });
 
+test('build packages are attestable without granting build execution or deploy', async (t) => {
+  const { host, projects, project, root } = fixture(t);
+  const source = structuredClone(dependentSource);
+  source.packageJson.scripts.build = 'vite build';
+  const release = projects.stage(project.id, source).project.candidateRelease;
+  host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
+  const review = host.reviewDependencySetup(project.id);
+  assert.equal(review.buildRequired, true);
+  assert.equal(review.status, 'review-required');
+  assert.equal(review.installCommand.at(-1), '--include=dev');
+  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir) => {
+    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+  });
+  await preparer.prepare(project.id, release, true);
+  assert.equal(host.reviewDependencySetup(project.id).status, 'prepared');
+  assert.equal(host.preview(project.id).allowed, false);
+  await assert.rejects(host.deploy(project.id, release, true), /not authorized/);
+});
+
 test('installed dependencies become deployable only after SHA-256 attestation', async (t) => {
   const { root, projects, project, host } = fixture(t);
   const dependentSource = {
