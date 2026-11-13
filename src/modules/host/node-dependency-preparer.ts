@@ -265,7 +265,18 @@ export class NodeDependencyPreparer {
         dependencyCount: plan.dependencyCount,
         treeDigest: tree.treeDigest, entries: tree.entries, bytes: tree.bytes,
       }) + '\n', { flag: 'wx', mode: 0o600 });
-      renameSync(modules, path.join(current.folder, 'node_modules'));
+      const published = path.join(current.folder, 'node_modules');
+      renameSync(modules, published);
+      try {
+        // A successful npm exit is not proof: re-open the *published* tree
+        // and verify its attestation before acknowledging the operation.
+        this.verifyPrepared(projectId, releaseId);
+      } catch (error) {
+        // Only the directory freshly created under our exclusive lock may be
+        // removed here. No prior release or foreign service is affected.
+        rmSync(published, { recursive: true, force: true });
+        throw error;
+      }
       return { release: releaseId, dependencyCount: plan.dependencyCount, prepared: true };
     } finally {
       if (workspace) rmSync(workspace, { recursive: true, force: true });

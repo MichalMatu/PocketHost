@@ -896,7 +896,7 @@ it.each(["disabled", "approved", "blocked"] as const)(
           .toBe("owned-node-project")
         installed = true
         return { ok: true, json: async () => ({ dependencies: {
-          release: RELEASE, dependencyCount: 1, prepared: true,
+          release: RELEASE, dependencyCount: 1, prepared: true, verified: true,
         } }) }
       }
       throw new Error("Unexpected request " + url)

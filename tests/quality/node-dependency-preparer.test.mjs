@@ -165,6 +165,19 @@ test('installed packages re-attest exact bytes and reject later tampering', asyn
   assert.throws(() => host.verifyPrepared(project.id, release), /digest mismatch/);
 });
 
+test('failed post-publish re-attestation rolls back only newly installed dependencies', async (t) => {
+  const { root, projects, project, release } = fixture(t);
+  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir) => {
+    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+  });
+  preparer.verifyPrepared = () => { throw new Error('mock published tree mismatch'); };
+  await assert.rejects(preparer.prepare(project.id, release, true), /published tree mismatch/);
+  assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'node_modules')), false);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+  assert.equal(projects.release(project.id, release).folder.includes(release), true);
+});
+
 test('npm symlinks and oversized package trees refuse publication without proof', async (t) => {
   const { root, projects, project, release } = fixture(t);
   for (const scenario of ['symlink', 'too-large']) {

@@ -584,7 +584,12 @@ function nodeProjectApi(): Plugin {
               if (review.release !== body.release || review.status !== "review-required" ||
                   review.buildRequired || !review.installRequired || review.blockers.length > 0)
                 throw new Error("Dependency plan blocked or changed before installation")
-              return { dependencies: await preparer!.prepare(id!, body.release, true) }
+              const prepared = await preparer!.prepare(id!, body.release, true)
+              const verified = preparer!.verifyPrepared(id!, body.release)
+              if (verified.release !== prepared.release ||
+                  verified.dependencyCount !== prepared.dependencyCount)
+                throw new Error("Published Node dependency integrity mismatch")
+              return { dependencies: { ...prepared, verified: true } }
             }
             if (checkBuild) {
               const input = await readJson(request, 1024)

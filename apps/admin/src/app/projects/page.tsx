@@ -703,7 +703,7 @@ export default function ProjectsPage() {
                     }
                     const packages = result.dependencies as Record<string, unknown> | undefined
                     if (!packages || packages.release !== release || packages.prepared !== true ||
-                        packages.dependencyCount !== expectedCount)
+                        packages.verified !== true || packages.dependencyCount !== expectedCount)
                       throw new Error("Package installation response unverified. Review before retry.")
                     await loadRuntime(selected.id)
                     const checked = await getJson(api + "/" + selected.id + "/dependency-review")
