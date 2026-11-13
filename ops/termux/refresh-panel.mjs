@@ -118,12 +118,14 @@ export function assertPanelRunitIdentity(e) {
   );
   requireCondition(gateway.managedBy === owner.managedBy, 'Gateway owner manager mismatch');
   requireCondition(processUid === expectedUid, 'Unexpected process OS user');
+  const expectedArgv = [
+    prefix + '/bin/node',
+    root + '/apps/admin/node_modules/vite/bin/vite.js',
+    '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+  ];
   requireCondition(
-    argv[0] === prefix + '/bin/node' &&
-      argv[1] === root + '/apps/admin/node_modules/vite/bin/vite.js' &&
-      argv.includes('127.0.0.1') &&
-      argv.includes('8787') &&
-      argv.includes('--strictPort'),
+    Array.isArray(argv) && argv.length === expectedArgv.length &&
+      argv.every((arg, index) => arg === expectedArgv[index]),
     'Not the exact runit Node/Vite command',
   );
   return true;

@@ -61,3 +61,38 @@ test('invalid marker or non-UI drift cannot establish a valid preflight', () => 
     panelHttpOk: 'yes', protectedRunning: true,
   }));
 });
+
+test('owned panel evidence requires the canonical Vite argv, never substring matches', async () => {
+  const { assertPanelRunitIdentity } =
+    await import('../../ops/termux/refresh-panel.mjs');
+  const root = '/data/data/com.termux/files/home/Projects/PocketHost-Preview';
+  const cwd = root + '/apps/admin';
+  const pid = 415;
+  const ticks = '989898';
+  const sha = 'c'.repeat(40);
+  const expected = [
+    '/data/data/com.termux/files/usr/bin/node',
+    root + '/apps/admin/node_modules/vite/bin/vite.js',
+    '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+  ];
+  const evidence = {
+    owner: { managedBy: 'termux-runit/pockethost-panel', pid, startTicks: ticks,
+      cwd, sourceSha: sha, port: 8787 },
+    gateway: { managedBy: 'termux-runit/pockethost-panel', owner: 'PocketHost',
+      pid, startTicks: ticks, cwd, sourceSha: sha, adminPort: 18878, sitePort: 18879 },
+    root, head: sha, pid, servicePid: pid, ticks, cwd,
+    argv: expected, processUid: 1000, expectedUid: 1000,
+  };
+  assert.equal(assertPanelRunitIdentity(evidence), true);
+  const variants = [
+    [...expected, '--force'],
+    [...expected.slice(0, 4), '--port', '9999', '--strictPort', '8787'],
+    [expected[0], '/tmp/vite.js', ...expected.slice(2)],
+    [expected[0], expected[1], '--host', '0.0.0.0', '--port', '8787', '--strictPort'],
+    [expected[0], expected[1], '--port', '8787', '--host', '127.0.0.1', '--strictPort'],
+  ];
+  for (const argv of variants) {
+    assert.throws(() => assertPanelRunitIdentity({ ...evidence, argv }),
+      /Not the exact runit Node\/Vite command/);
+  }
+});
