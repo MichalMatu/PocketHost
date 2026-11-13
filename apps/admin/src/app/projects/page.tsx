@@ -656,7 +656,7 @@ export default function ProjectsPage() {
                         (review.installCommand !== null &&
                          (!Array.isArray(review.installCommand) ||
                           review.installCommand.join(" ") !==
-                            "npm ci --ignore-scripts --no-audit --no-fund")) ||
+                            "npm ci --ignore-scripts --no-bin-links --no-audit --no-fund --omit=dev")) ||
                         (review.buildCommand !== null &&
                          (!Array.isArray(review.buildCommand) ||
                           review.buildCommand.join(" ") !== "npm run build")) ||
