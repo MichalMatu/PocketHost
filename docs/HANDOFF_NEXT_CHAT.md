@@ -35,7 +35,8 @@ Basic is the fully functional official-Termux product (Node.js, GitHub,
 Cloudflare, SSH, per-site traffic analytics, backup). Pro is a
 technical category for functions needing extra Android apps/permissions,
 not a price tier. **Do not change the menu now.**
-Freeze Companion/Shizuku code without deleting it. Current tasks:
+Freeze Companion/Shizuku code without deleting it. **After the current
+service-dashboards sprint**, resume these prior product tasks:
 (1) finish owned Node.js Hosting + GitHub import/update/rollback;
 (2) integrate Hosting panel Cloudflare/domains/SSH/web analytics/backup.
 
@@ -81,7 +82,7 @@ Historical full G2 and H2 static Hosting evidence is unchanged.
 See [current Node panel checkpoint](checkpoints/2026-11-13-node-panel-preview-handoff.md)
 for the bounded evidence, browser path and next acceptance gates.
 
-## First actions
+## Deferred Node Hosting acceptance steps (after service panels)
 
 1. Verify current `main`, then read the two pending focused Samsung receipts
    (local folder UI and exact-source import/typecheck). If unavailable, stay
