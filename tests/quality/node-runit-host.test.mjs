@@ -324,6 +324,41 @@ test('M3 update refuses tampered last-good source before stopping its owned serv
   assert.equal((await import('node:fs')).existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
+test('M3 rollback preflight verifies previous release without runit mutation', (t) => {
+  const { host, project, projects, root, serviceRoot } = fixture(t);
+  assert.deepEqual(host.rollbackPreview(project.id), {
+    release: null, allowed: false, reason: 'no-previous-good-release',
+  });
+  const previous = projects.stage(project.id, source).project.candidateRelease;
+  const next = projects.stage(project.id, {
+    ...source, serverSource: source.serverSource + '\n// next',
+  }).project.candidateRelease;
+  host.record = () => ({
+    activeRelease: next, previousGoodRelease: previous,
+  });
+  host.status = () => ({ state: 'running' });
+  host.toolchain = () => ({
+    status: 'review-required', missingTools: [], conflicts: [],
+  });
+  assert.deepEqual(host.rollbackPreview(project.id), {
+    release: previous, allowed: true, reason: 'previous-release-verified',
+  });
+  host.status = () => ({ state: 'unknown' });
+  assert.equal(host.rollbackPreview(project.id).reason, 'owned-process-identity-unknown');
+  host.status = () => ({ state: 'stopped' });
+  host.toolchain = () => ({
+    status: 'blocked', missingTools: ['node'], conflicts: [],
+  });
+  assert.equal(host.rollbackPreview(project.id).reason, 'rollback-toolchain-blocked');
+  host.toolchain = () => ({
+    status: 'review-required', missingTools: [], conflicts: [],
+  });
+  writeFileSync(path.join(root, project.id, 'releases', previous, 'server.mjs'),
+    'console.log("tampered")');
+  assert.equal(host.rollbackPreview(project.id).reason, 'rollback-release-not-verifiable');
+  assert.deepEqual(readdirSync(serviceRoot), []);
+});
+
 test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
   const { projects, project, host } = fixture(t);
   const staged = projects.stage(project.id, source).project;

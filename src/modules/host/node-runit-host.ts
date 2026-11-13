@@ -1079,6 +1079,36 @@ export class NodeRunitHost {
       rmSync(globalLock, { force: true });
     }
   }
+  /** Read-only restore preflight. Never signals a service or changes the active release. */
+  rollbackPreview(id: string): {
+    release: string | null;
+    allowed: boolean;
+    reason: string;
+  } {
+    const state = this.record(id);
+    const target = state?.previousGoodRelease ?? null;
+    if (!target) return { release: null, allowed: false, reason: 'no-previous-good-release' };
+    if (state?.activeRelease === target)
+      return { release: target, allowed: false, reason: 'release-already-active' };
+    if (this.status(id).state === 'unknown')
+      return { release: target, allowed: false, reason: 'owned-process-identity-unknown' };
+    try {
+      const candidate = this.projects.release(id, target);
+      if (!this.dependenciesReady(id, target, candidate.plan)) {
+        return { release: target, allowed: false, reason: 'rollback-dependencies-or-build-unverified' };
+      }
+      if (this.toolchain(candidate.plan).status === 'blocked') {
+        return { release: target, allowed: false, reason: 'rollback-toolchain-blocked' };
+      }
+      if (this.checkReleaseSyntax(id, target).status !== 'syntax-valid') {
+        return { release: target, allowed: false, reason: 'rollback-source-syntax-invalid' };
+      }
+      return { release: target, allowed: true, reason: 'previous-release-verified' };
+    } catch {
+      return { release: target, allowed: false, reason: 'rollback-release-not-verifiable' };
+    }
+  }
+
   async rollback(id: string, approved: boolean): Promise<ReturnType<NodeRunitHost['status']>> {
     if (approved !== true) throw new Error('Explicit owned rollback approval required');
     const state = this.record(id);
