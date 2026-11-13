@@ -55,3 +55,50 @@ it("rejects invalid manifest, mismatched lock and unsupported entrypoint", async
   await expect(readLocalNodeFiles(fixture({ ...pkg, scripts: { start: "npm start" } })))
     .rejects.toThrow(/must be node server.mjs/)
 })
+
+
+function folderFile(contents: string | Uint8Array, path: string): File {
+  const file = new File([contents], path.split("/").at(-1)!)
+  Object.defineProperty(file, "webkitRelativePath", { value: "my-project/" + path })
+  return file
+}
+it("imports a bounded local multi-file frontend folder with binary assets", async () => {
+  const files = [
+    folderFile(JSON.stringify(pkg), "package.json"),
+    folderFile(JSON.stringify(lock), "package-lock.json"),
+    folderFile("console.log('local')", "server.mjs"),
+    folderFile("<html>ok</html>", "index.html"),
+    folderFile("export const ready = true", "src/main.ts"),
+    folderFile(Uint8Array.from(atob("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII="), c => c.charCodeAt(0)), "public/logo.png"),
+  ]
+  const { readLocalNodeFolder } = await import("@/lib/node-source-import")
+  const parsed = await readLocalNodeFolder(files)
+  expect(parsed.extraFiles["index.html"]).toContain("ok")
+  expect(parsed.extraFiles["src/main.ts"]).toContain("ready")
+  expect(parsed.assetFiles["public/logo.png"]).toBe("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=")
+  expect(JSON.parse(parsed.manifest)).toEqual(pkg)
+})
+it("rejects traversal, unsupported files and mixed roots before reading local folder", async () => {
+  const { readLocalNodeFolder } = await import("@/lib/node-source-import")
+  const files = [
+    folderFile(JSON.stringify(pkg), "package.json"),
+    folderFile(JSON.stringify(lock), "package-lock.json"),
+    folderFile("console.log(1)", "server.mjs"),
+  ]
+  await expect(readLocalNodeFolder([
+    ...files, folderFile("secrets", "src/.env"),
+  ])).rejects.toThrow(/Unsupported/)
+  await expect(readLocalNodeFolder([
+    ...files, folderFile("exec", "src/../oops.js"),
+  ])).rejects.toThrow(/Unsupported/)
+  await expect(readLocalNodeFolder([
+    ...files, folderFile("unknown", "public/virus.exe"),
+  ])).rejects.toThrow(/Unsupported/)
+  const second = folderFile("<html>x</html>", "index.html")
+  Object.defineProperty(second, "webkitRelativePath", {
+    value: "other-root/index.html", configurable: true,
+  })
+  await expect(readLocalNodeFolder([...files, second])).rejects.toThrow(/one local Node project/)
+  const bad = folderFile("not real png!", "public/logo.png")
+  await expect(readLocalNodeFolder([...files, bad])).rejects.toThrow(/does not match/)
+})
