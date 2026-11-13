@@ -457,10 +457,11 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
-        if (request.method === "GET" && (op === "preview" || op === "source") &&
+        if (request.method === "GET" &&
+            (op === "preview" || op === "source" || op === "dependency-review") &&
             request.headers["x-pockethost-lan-proxy"] === "1") {
           response.statusCode = 403
           response.end('{"error":"local-node-source-and-preview-only"}')
@@ -479,6 +480,7 @@ function nodeProjectApi(): Plugin {
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
+              id && op === "dependency-review" ? { review: runtime!.reviewDependencySetup(id) } :
               id && op === "logs" ? { logs: runtime!.logs(id) } :
               id && op === "preview" ? { preview: await runtime!.previewLocalResponse(id) } :
               id && op === "source" ? { source: host.candidateSource(id) } :
