@@ -111,10 +111,10 @@ export interface GitHubNodeSourcePreview {
  * explicitly deferred: never silently import an incomplete frontend.
  */
 async function pinnedExtraFiles(
-  base: string, commit: string, get: typeof fetch,
+  base: string, treeSha: string, commit: string, get: typeof fetch,
 ): Promise<Record<string, string>> {
   const treeData = record(await apiJson(
-    base + '/git/trees/' + commit + '?recursive=1', 256 * 1024, get,
+    base + '/git/trees/' + treeSha + '?recursive=1', 256 * 1024, get,
   ));
   if (treeData.truncated !== false || !Array.isArray(treeData.tree) ||
       treeData.tree.length > 1200)
@@ -201,8 +201,14 @@ export async function previewPublicGitHubNodeSource(
     throw new RangeError('GitHub Node entrypoint must be node server.mjs');
   if (!serverSource.trim() || serverSource.includes('\0'))
     throw new RangeError('Invalid GitHub Node source');
-  const extraFiles = plan.commands.build !== null ?
-    await pinnedExtraFiles(base, commit, get) : {};
+  let extraFiles: Record<string, string> = {};
+  if (plan.commands.build !== null) {
+    const nested = record(commitInfo.commit);
+    const tree = record(nested.tree);
+    if (typeof tree.sha !== 'string' || !SHA.test(tree.sha))
+      throw new RangeError('GitHub source tree SHA is invalid');
+    extraFiles = await pinnedExtraFiles(base, tree.sha, commit, get);
+  }
   if (total + Buffer.byteLength(JSON.stringify(extraFiles)) > MAX_TOTAL)
     throw new RangeError('GitHub Node source exceeds 320 KB');
   return {

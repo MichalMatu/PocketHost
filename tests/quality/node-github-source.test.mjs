@@ -3,6 +3,7 @@ import test from 'node:test';
 import { previewPublicGitHubNodeSource } from '../../src/modules/host/node-github-source.ts';
 
 const sha = 'a'.repeat(40);
+const treeSha = 'b'.repeat(40);
 const manifest = {
   name: 'public-test-node',
   version: '1.0.0',
@@ -83,8 +84,8 @@ test('GitHub build preview imports bounded frontend text files at one pinned SHA
     const part = url.split('/contents/')[1]?.split('?')[0];
     const obj = url.endsWith('/safe-node') ?
       { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-      url.endsWith('/commits/main') ? { sha } :
-      url.includes('/git/trees/' + sha) ? {
+      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
+      url.includes('/git/trees/' + treeSha) ? {
         truncated: false, tree: Object.entries(extras).map(([path, value]) => ({
           path, type: 'blob', mode: '100644', size: Buffer.byteLength(value),
         })),
@@ -107,7 +108,7 @@ test('GitHub build preview imports bounded frontend text files at one pinned SHA
   assert.deepEqual(result.source.extraFiles, extras);
   assert.equal(requests.length, 10);
   assert.ok(requests.slice(3).every(url => url.endsWith('?ref=' + sha) ||
-    url.endsWith('/git/trees/' + sha + '?recursive=1')));
+    url.endsWith('/git/trees/' + treeSha + '?recursive=1')));
 });
 
 test('GitHub build preview refuses symlink and binary file in public source tree', async () => {
@@ -116,7 +117,7 @@ test('GitHub build preview refuses symlink and binary file in public source tree
       const file = url.split('/contents/')[1]?.split('?')[0];
       const response = url.endsWith('/safe-node') ?
         { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-        url.endsWith('/commits/main') ? { sha } :
+        url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
         url.includes('/git/trees/') ? {
           truncated: false, tree: [{ path, type: 'blob',
             mode: path === 'src/config.ts' ? '120000' : '100644', size: 20 }],
