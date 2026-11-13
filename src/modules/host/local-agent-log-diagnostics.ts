@@ -42,7 +42,7 @@ const LABELS: Record<AgentLogKind, string> = {
 /** No captured group, original line, paths or user-supplied text crosses the API. */
 export function classifyAgentLogLine(line: string): AgentLogEvent | null {
   const kind: AgentLogKind | null =
-    /task_budget_exhausted|budget_exhausted|budget.?remaining/i.test(line) ? 'budget' :
+    /task_budget_exhausted|budget[ _-]+exhausted|budget[ _-]*remaining/i.test(line) ? 'budget' :
     /\b(timeout|timed.out|deadline.exceeded)\b/i.test(line) ? 'timeout' :
     /\b(unknown|suspend|interrupted|emergency.stop)\b/i.test(line) ? 'interrupted' :
     (/\b(failed|failure|error|exception|traceback|fatal)\b/i.test(line) ||

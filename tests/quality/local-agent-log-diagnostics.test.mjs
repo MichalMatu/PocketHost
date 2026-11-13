@@ -107,6 +107,7 @@ test('svlogd -tt UTC timestamps with underscores appear as real localizable time
   });
   const micro = classifyAgentLogLine(
     '2026-11-13_21:48:09.586576 [linux-agent] TASK BUDGET EXHAUSTED');
+  assert.equal(micro?.kind, 'budget');
   assert.equal(micro?.timestamp, '2026-11-13T21:48:09.586Z');
   const invalid = classifyAgentLogLine(
     '2026-13-99_21:58:57.311565 [linux-agent] task failed');
