@@ -96,3 +96,37 @@ test('logs are bounded and redacted; symlinks cannot read foreign logs', () => {
     assert.equal(host.inspect().logs.error, 'unsafe-log-entry');
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
+
+test('HTTP routes are fixed, read-only and probed only for a verified runit PID', async () => {
+  const f = fixture();
+  const paths = [];
+  try {
+    const host = new IleStoiDiagnosticHost(f.serviceRoot, f.svRoot, f.logRoot,
+      (_file, args) => ({ status: 0, stdout: 'run: ' + args[1] + ': (pid 42) 90s;' }),
+      proc, () => time, async route => {
+        paths.push(route);
+        return { state: 'ok', statusCode: 200, error: null };
+      });
+    const result = await host.inspectWithHttp();
+    assert.deepEqual(paths, ['/api/health/live', '/api/health/ready']);
+    assert.equal(result.health.state, 'measured');
+    assert.equal(result.health.live.statusCode, 200);
+    assert.equal(result.health.ready.state, 'ok');
+    assert.equal(result.health.attribution, 'http-route-not-process-attested');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('intermediate log symlink is refused before opening target', () => {
+  const f = fixture();
+  try {
+    const external = path.join(f.root, 'external');
+    mkdirSync(external);
+    mkdirSync(path.join(external, 'main'));
+    writeFileSync(path.join(external, 'main/current'), 'secret=LEAK');
+    symlinkSync(external, path.join(f.svRoot, 'wreckscanner/log'));
+    const host = new IleStoiDiagnosticHost(f.serviceRoot, f.svRoot, f.logRoot,
+      (_file, args) => ({ status: 0, stdout: 'down: ' + args[1] + ': 60s;' }));
+    const output = host.inspect();
+    assert.equal(output.logs.error, 'unsafe-log-entry');
+    assert.ok(!JSON.stringify(output).includes('LEAK'));
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});

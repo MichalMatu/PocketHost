@@ -17,7 +17,19 @@ export const ileStoiDiagnosticSchema = z.object({
     memoryState: availability, identity: z.literal("runit-consistent-not-owned"),
   }).strict().nullable(),
   health: z.object({
-    state: z.literal("unverified"), reason: z.literal("no-confirmed-local-http-route"),
+    state: z.enum(["unverified", "measured"]),
+    target: z.literal("127.0.0.1:8001"),
+    attribution: z.literal("http-route-not-process-attested"),
+    live: z.object({
+      state: z.enum(["ok", "unhealthy", "unavailable"]),
+      statusCode: z.number().int().min(100).max(599).nullable(),
+      error: z.enum(["http-status", "invalid-response", "timeout", "network-unavailable"]).nullable(),
+    }).strict().nullable(),
+    ready: z.object({
+      state: z.enum(["ok", "unhealthy", "unavailable"]),
+      statusCode: z.number().int().min(100).max(599).nullable(),
+      error: z.enum(["http-status", "invalid-response", "timeout", "network-unavailable"]).nullable(),
+    }).strict().nullable(),
   }).strict(),
   logs: z.object({
     state: availability, lines: z.array(z.string().max(200)).max(32),

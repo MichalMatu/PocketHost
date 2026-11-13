@@ -1,5 +1,7 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, fstatSync, lstatSync, openSync, readFileSync, readSync, realpathSync } from 'node:fs';
+import { request } from 'node:http';
+import os from 'node:os';
+import { closeSync, constants, fstatSync, lstatSync, openSync, readFileSync, readSync, realpathSync } from 'node:fs';
 import path from 'node:path';
 import { parseProcessName, parseProcessRss, parseProcessStat } from './observability-probes.ts';
 
@@ -11,6 +13,70 @@ type Command = (file: string, args: string[]) => {
   stdout?: string | Buffer; status?: number | null; error?: Error;
 };
 
+export type HealthReading = {
+  state: 'ok' | 'unhealthy' | 'unavailable';
+  statusCode: number | null;
+  error: 'http-status' | 'invalid-response' | 'timeout' | 'network-unavailable' | null;
+};
+type HealthRoute = '/api/health/live' | '/api/health/ready';
+
+/** Fixed local health routes verified against IleStoi source, no redirects or proxy. */
+export function probeIleStoiHttp(route: HealthRoute): Promise<HealthReading> {
+  return new Promise(resolve => {
+    let settled = false;
+    const finish = (value: HealthReading) => {
+      if (!settled) { settled = true; resolve(value); }
+    };
+    const fail = (error: HealthReading['error']) =>
+      finish({ state: 'unavailable', statusCode: null, error });
+    const req = request({
+      hostname: '127.0.0.1', port: 8001, path: route, method: 'GET',
+      agent: false, headers: { Accept: 'application/json' },
+    }, res => {
+      const statusCode = res.statusCode ?? null;
+      if (statusCode !== 200) {
+        res.resume();
+        finish({ state: 'unhealthy', statusCode, error: 'http-status' });
+        return;
+      }
+      let bytes = 0;
+      const chunks: Buffer[] = [];
+      res.on('data', (chunk: Buffer) => {
+        bytes += chunk.length;
+        if (bytes > 1024) {
+          finish({ state: 'unhealthy', statusCode, error: 'invalid-response' });
+          res.destroy();
+          return;
+        }
+        chunks.push(chunk);
+      });
+      res.on('end', () => {
+        try {
+          if (!String(res.headers['content-type'] ?? '').includes('application/json'))
+            throw Error('Wrong media type');
+          const payload: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+          if (!payload || typeof payload !== 'object' || Array.isArray(payload))
+            throw Error('Invalid health payload');
+          const value = payload as Record<string, unknown>;
+          const valid = value.status === 'ok' && (route === '/api/health/live' ||
+            (!!value.checks && typeof value.checks === 'object' &&
+             (value.checks as Record<string, unknown>).database === 'ok' &&
+             (value.checks as Record<string, unknown>).storage === 'ok'));
+          finish(valid
+            ? { state: 'ok', statusCode, error: null }
+            : { state: 'unhealthy', statusCode, error: 'invalid-response' });
+        } catch {
+          finish({ state: 'unhealthy', statusCode, error: 'invalid-response' });
+        }
+      });
+      res.on('error', () => fail('network-unavailable'));
+    });
+    req.setTimeout(1200, () => { fail('timeout'); req.destroy(); });
+    req.on('error', () => fail('network-unavailable'));
+    req.end();
+  });
+}
+
 export interface IleStoiDiagnostics {
   version: 1;
   mode: 'read-only';
@@ -21,7 +87,13 @@ export interface IleStoiDiagnostics {
     pid: number; startTicks: string; name: string | null; rssMiB: number | null;
     memoryState: Availability; identity: 'runit-consistent-not-owned';
   } | null;
-  health: { state: 'unverified'; reason: 'no-confirmed-local-http-route' };
+  health: {
+    state: 'unverified' | 'measured';
+    target: '127.0.0.1:8001';
+    attribution: 'http-route-not-process-attested';
+    live: HealthReading | null;
+    ready: HealthReading | null;
+  };
   logs: { state: Availability; lines: string[]; error: string | null };
   notice: 'external-protected-no-lifecycle-control';
 }
@@ -55,6 +127,7 @@ export class IleStoiDiagnosticHost {
     }),
     private readonly readProc: (file: string) => string = file => readFileSync(file, 'utf8'),
     private readonly now: () => string = () => new Date().toISOString(),
+    private readonly httpProbe: (route: HealthRoute) => Promise<HealthReading> = probeIleStoiHttp,
   ) {}
 
   private service(): { argument: string; resolved: string } {
@@ -95,19 +168,30 @@ export class IleStoiDiagnosticHost {
   }
 
   private logs(resolved: string): IleStoiDiagnostics['logs'] {
+    // The known official Termux runit script appends to $HOME/wreckscanner.log.
+    // Test fixtures with an alternate serviceRoot must never read live host logs.
     const candidates = [
       path.join(resolved, 'log/main/current'),
       path.join(this.logRoot, NAME, 'current'),
+      ...(this.serviceRoot === path.join(PREFIX, 'var/service')
+        ? [path.join(os.homedir(), 'wreckscanner.log')] : []),
     ];
     for (const file of candidates) {
       let fd: number | null = null;
       try {
-        const parent = lstatSync(path.dirname(file));
+        const parents = file === candidates[0]
+          ? [path.join(resolved, 'log'), path.join(resolved, 'log/main')]
+          : file === candidates[1]
+            ? [this.logRoot, path.join(this.logRoot, NAME)]
+            : [os.homedir()];
+        if (parents.some(folder => {
+          const info = lstatSync(folder);
+          return !info.isDirectory() || info.isSymbolicLink();
+        })) return { state: 'unavailable', lines: [], error: 'unsafe-log-entry' };
         const entry = lstatSync(file);
-        if (!parent.isDirectory() || parent.isSymbolicLink() ||
-            !entry.isFile() || entry.isSymbolicLink())
+        if (!entry.isFile() || entry.isSymbolicLink())
           return { state: 'unavailable', lines: [], error: 'unsafe-log-entry' };
-        fd = openSync(file, 'r');
+        fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
         const info = fstatSync(fd);
         if (!info.isFile() || info.size > 32 * 1024 * 1024)
           return { state: 'unavailable', lines: [], error: 'log-size-limit' };
@@ -128,12 +212,31 @@ export class IleStoiDiagnosticHost {
     return { state: 'unavailable', lines: [], error: 'log-not-found' };
   }
 
+  /** Only probe loopback after runit and /proc agree on a live PID. */
+  async inspectWithHttp(): Promise<IleStoiDiagnostics> {
+    const observation = this.inspect();
+    if (!observation.process) return observation;
+    const safeProbe = async (route: HealthRoute): Promise<HealthReading> => {
+      try { return await this.httpProbe(route); }
+      catch { return { state: 'unavailable', statusCode: null, error: 'network-unavailable' }; }
+    };
+    const [live, ready] = await Promise.all([
+      safeProbe('/api/health/live'), safeProbe('/api/health/ready'),
+    ]);
+    observation.health = {
+      state: 'measured', target: '127.0.0.1:8001',
+      attribution: 'http-route-not-process-attested', live, ready,
+    };
+    return observation;
+  }
+
   inspect(): IleStoiDiagnostics {
     const observation: IleStoiDiagnostics = {
       version: 1, mode: 'read-only', service: NAME, observedAt: this.now(),
       runit: { state: 'unknown', uptimeSeconds: null, error: 'service-unavailable' },
       process: null,
-      health: { state: 'unverified', reason: 'no-confirmed-local-http-route' },
+      health: { state: 'unverified', target: '127.0.0.1:8001',
+        attribution: 'http-route-not-process-attested', live: null, ready: null },
       logs: { state: 'unavailable', lines: [], error: 'service-unavailable' },
       notice: 'external-protected-no-lifecycle-control',
     };

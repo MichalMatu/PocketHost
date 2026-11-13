@@ -1448,7 +1448,7 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
-              mode === "ilestoi-diagnostics" && url.searchParams.size === 1 ? ileStoi.inspect() :
+              mode === "ilestoi-diagnostics" && url.searchParams.size === 1 ? await ileStoi.inspectWithHttp() :
               mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :

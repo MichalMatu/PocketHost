@@ -10,7 +10,10 @@ const sample = {
   runit: { state: "running", uptimeSeconds: 42, error: null },
   process: { pid: 43, startTicks: "555", name: "node", rssMiB: 2.5,
     memoryState: "ok", identity: "runit-consistent-not-owned" },
-  health: { state: "unverified", reason: "no-confirmed-local-http-route" },
+  health: { state: "measured", target: "127.0.0.1:8001",
+    attribution: "http-route-not-process-attested",
+    live: { state: "ok", statusCode: 200, error: null },
+    ready: { state: "ok", statusCode: 200, error: null } },
   logs: { state: "ok", lines: ["HTTP failed; token=[redacted]"], error: null },
   notice: "external-protected-no-lifecycle-control",
 }
@@ -23,7 +26,9 @@ describe("IleStoi protected service panel", () => {
     await screen.findByText("PID 43 · node")
     expect(screen.getByText("2.5 MiB")).toBeTruthy()
     expect(screen.getByText("42 seconds")).toBeTruthy()
-    expect(screen.getByText(/No confirmed local health route/)).toBeTruthy()
+    expect(screen.getByText(/Verified IleStoi routes/)).toBeTruthy()
+    expect(screen.getByText(/Liveness: ok/)).toBeTruthy()
+    expect(screen.getByText(/Readiness: ok/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Stop" })).toBeNull()
     expect(fetcher.mock.calls[0]?.[0]).toBe("/api/v1/termux-admin?mode=ilestoi-diagnostics")
     expect(fetcher.mock.calls[0]?.[1]?.method).toBe("GET")
