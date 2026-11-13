@@ -14,7 +14,8 @@ const sample = {
     runit: { state: "running", uptimeSeconds: 120, error: null },
     watch: { state: "running", uptimeSeconds: 120, error: null },
     owner: { state: "verified", pid: 98, startTicks: "555",
-      markerSha: "a".repeat(40), checkoutSha: "b".repeat(40),
+      markerSha: "a".repeat(40), gatewaySha: "a".repeat(40),
+      markerAgreement: "match", checkoutSha: "b".repeat(40),
       checkoutClean: true, revision: "mismatch", reason: null },
     updateReadiness: "hold-manual-review", restart: "blocked",
   },
@@ -28,6 +29,8 @@ describe("S4 Local Agent and PocketHost source panel", () => {
     render(<ControlPlanePanel />)
     expect(await screen.findByText("mismatch")).toBeTruthy()
     expect(screen.getByText(/Recorded startup SHA:/)).toBeTruthy()
+    expect(screen.getByText(/Gateway marker SHA:/)).toBeTruthy()
+    expect(screen.getByText(/Owner record agreement:/)).toBeTruthy()
     expect(screen.getByText(/manual review required/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /restart|start|stop/i })).toBeNull()
     expect(fetcher.mock.calls[0]?.[0]).toBe("/api/v1/termux-admin?mode=control-plane-diagnostics")

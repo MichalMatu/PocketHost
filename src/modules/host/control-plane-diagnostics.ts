@@ -12,7 +12,8 @@ type Run = (binary: string, args: string[]) => {
 type ServiceState = { state: 'running' | 'stopped' | 'unknown'; uptimeSeconds: number | null;
   error: 'unavailable' | 'unsafe-service' | 'timeout' | null };
 type Owner = { state: 'verified' | 'unverified'; pid: number | null;
-  startTicks: string | null; markerSha: string | null; checkoutSha: string | null;
+  startTicks: string | null; markerSha: string | null; gatewaySha: string | null;
+  markerAgreement: 'match' | 'mismatch' | 'unverified'; checkoutSha: string | null;
   checkoutClean: boolean | null; revision: 'match' | 'mismatch' | 'unverified';
   reason: 'unavailable' | 'invalid-owner' | 'untrusted-checkout' |
     'invalid-process' | 'invalid-source' | null };
@@ -105,7 +106,8 @@ export class ControlPlaneDiagnosticHost {
 
   private inspectOwner(): Owner {
     const value: Owner = { state: 'unverified', pid: null, startTicks: null,
-      markerSha: null, checkoutSha: null, checkoutClean: null,
+      markerSha: null, gatewaySha: null, markerAgreement: 'unverified',
+      checkoutSha: null, checkoutClean: null,
       revision: 'unverified', reason: 'unavailable' };
     try {
       const projects = path.join(this.home, 'Projects');
@@ -137,13 +139,19 @@ export class ControlPlaneDiagnosticHost {
       const argv = this.proc(proc + '/cmdline');
       const after = parseProcessStat(this.proc(proc + '/stat'), pid as number);
       if (!before || !after || before.startTicks !== ticks || after.startTicks !== ticks ||
-          activeCwd !== cwd || !argv.split('\0').some(item => /(^|\/)vite(?:\.mjs)?$/.test(item)))
+          activeCwd !== cwd || !argv.split('\0').some(item => /(^|\/)vite(?:\.mjs|\.js)?$/.test(item)))
         throw Error('invalid-process');
       value.pid = pid as number;
       value.startTicks = ticks;
       if (typeof marker.sourceSha !== 'string' || !SHA.test(marker.sourceSha))
         throw Error('invalid-source');
       value.markerSha = marker.sourceSha;
+      value.gatewaySha = typeof gateway.sourceSha === 'string' && SHA.test(gateway.sourceSha)
+        ? gateway.sourceSha : null;
+      value.markerAgreement = value.gatewaySha === null ? 'unverified' :
+        value.gatewaySha === value.markerSha ? 'match' : 'mismatch';
+      // A conflicting owner record must never produce a verified panel identity.
+      if (value.markerAgreement === 'mismatch') throw Error('invalid-source');
       const checkout = this.git(root, ['rev-parse', 'HEAD']);
       const origin = this.git(root, ['remote', 'get-url', 'origin']);
       if (!SHA.test(checkout) || ![

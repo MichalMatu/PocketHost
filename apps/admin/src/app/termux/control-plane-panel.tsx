@@ -60,6 +60,8 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
         <div className="rounded-md border p-3 space-y-1">
           <h3 className="font-medium">Source revision</h3>
           <p>Recorded startup SHA: <code>{short(data.pocketHost.owner.markerSha)}</code></p>
+          <p>Gateway marker SHA: <code>{short(data.pocketHost.owner.gatewaySha)}</code></p>
+          <p>Owner record agreement: <strong>{data.pocketHost.owner.markerAgreement}</strong></p>
           <p>Checkout HEAD: <code>{short(data.pocketHost.owner.checkoutSha)}</code></p>
           <p>Revision comparison: <strong>{data.pocketHost.owner.revision}</strong></p>
           <p>Checkout clean: {data.pocketHost.owner.checkoutClean === null

@@ -24,12 +24,13 @@ function fixture() {
   const marker = path.join(projects, 'PocketHost-P3-Preview-20261106.json');
   const gateway = path.join(gatewayFolder, 'lan-gateway.json');
   const m = { pid: 98, startTicks: '555', cwd: admin, port: 8787, sourceSha: a };
-  const g = { owner: 'PocketHost', pid: 98, startTicks: '555', cwd: admin, adminPort: 18878 };
+  const g = { owner: 'PocketHost', pid: 98, startTicks: '555', cwd: admin,
+    adminPort: 18878, sourceSha: a };
   writeFileSync(marker, JSON.stringify(m));
   writeFileSync(gateway, JSON.stringify(g));
   return { root, home, services, sv, admin, marker, gateway, m, g };
 }
-function build(f, calls = [], procCwd = f.admin) {
+function build(f, calls = [], procCwd = f.admin, argv = 'node\0vite\0') {
   const run = (bin, args) => {
     calls.push([bin, args]);
     if (bin.endsWith('/bin/sv')) return {
@@ -43,7 +44,7 @@ function build(f, calls = [], procCwd = f.admin) {
     throw Error('unexpected command');
   };
   return new ControlPlaneDiagnosticHost(f.services, f.sv, f.home, run,
-    file => file.endsWith('/stat') ? stat(98) : 'node\0vite\0',
+    file => file.endsWith('/stat') ? stat(98) : argv,
     file => file.startsWith('/proc/') ? procCwd : realpathSync(file),
     () => '2026-11-13T20:00:00.000Z');
 }
@@ -57,6 +58,8 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
     assert.equal(result.pocketHost.owner.state, 'verified');
     assert.equal(result.pocketHost.owner.revision, 'mismatch');
     assert.equal(result.pocketHost.owner.markerSha, a);
+    assert.equal(result.pocketHost.owner.gatewaySha, a);
+    assert.equal(result.pocketHost.owner.markerAgreement, 'match');
     assert.equal(result.pocketHost.owner.checkoutSha, b);
     assert.equal(result.pocketHost.restart, 'blocked');
     assert.equal(calls.filter(([bin]) => bin.endsWith('/bin/sv')).length, 3);
@@ -91,5 +94,31 @@ test('symlink owner marker, process drift, foreign checkout are rejected', () =>
     assert.equal(build(f, [], '/tmp/foreign').inspect().pocketHost.owner.reason, 'invalid-process');
     writeFileSync(f.marker, JSON.stringify({ ...f.m, cwd: '/tmp/foreign/apps/admin' }));
     assert.equal(build(f).inspect().pocketHost.owner.reason, 'invalid-owner');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('Vite JavaScript CLI process is accepted only with matching owner and start ticks', () => {
+  const f = fixture();
+  try {
+    const good = build(f, [], f.admin,
+      'node\0/data/data/com.termux/files/home/Projects/PocketHost-Preview/apps/admin/node_modules/vite/bin/vite.js\0').inspect();
+    assert.equal(good.pocketHost.owner.state, 'verified');
+    const bad = build(f, [], f.admin,
+      'node\0/data/data/com.termux/files/home/foreign/myvite.js\0').inspect();
+    assert.equal(bad.pocketHost.owner.state, 'unverified');
+    assert.equal(bad.pocketHost.owner.reason, 'invalid-process');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('conflicting gateway and panel SHA markers are visible and block verified ownership', () => {
+  const f = fixture(), calls = [];
+  try {
+    writeFileSync(f.gateway, JSON.stringify({ ...f.g, sourceSha: b }));
+    const result = build(f, calls).inspect();
+    assert.equal(result.pocketHost.owner.state, 'unverified');
+    assert.equal(result.pocketHost.owner.reason, 'invalid-source');
+    assert.equal(result.pocketHost.owner.markerAgreement, 'mismatch');
+    assert.equal(result.pocketHost.owner.gatewaySha, b);
+    assert.equal(result.pocketHost.restart, 'blocked');
+    assert.equal(calls.filter(([bin]) => bin.endsWith('/bin/git')).length, 0);
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
