@@ -55,6 +55,16 @@ type DependencyReview = {
   blockers: string[]
   executed: false
 }
+type BuildReview = {
+  release: string
+  status: "not-required" | "requires-dependencies" | "ready-to-build" | "verified" | "blocked"
+  buildRequired: boolean
+  script: string | null
+  dependencyCount: number
+  dependenciesPrepared: boolean
+  artifactVerified: boolean
+  blockers: string[]
+}
 type Candidate = {
   id: string
   active: false
@@ -144,6 +154,9 @@ export default function ProjectsPage() {
   const [dependencyReview, setDependencyReview] = React.useState<DependencyReview | null>(null)
   const [dependencyInstallEnabled, setDependencyInstallEnabled] = React.useState(false)
   const [dependencyApproved, setDependencyApproved] = React.useState(false)
+  const [buildReview, setBuildReview] = React.useState<BuildReview | null>(null)
+  const [buildEnabled, setBuildEnabled] = React.useState(false)
+  const [buildApproved, setBuildApproved] = React.useState(false)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -207,6 +220,9 @@ export default function ProjectsPage() {
     setDependencyReview(null)
     setDependencyApproved(false)
     setDependencyInstallEnabled(false)
+    setBuildReview(null)
+    setBuildApproved(false)
+    setBuildEnabled(false)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
@@ -625,6 +641,13 @@ export default function ProjectsPage() {
                 <p role="alert" className="text-sm text-destructive">{[
                   ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
                 ].join(", ")}</p>}
+              {buildReview && <p className="text-muted-foreground text-xs"
+                aria-label="Node build setup">
+                Build: {buildReview.status} · Script: {buildReview.script ?? "not required"} ·
+                Dependencies prepared: {String(buildReview.dependenciesPrepared)} ·
+                Artifact verified: {String(buildReview.artifactVerified)} ·
+                Blockers: {buildReview.blockers.length ? buildReview.blockers.join(", ") : "none"}
+              </p>}
               {dependencyReview && <p className="text-muted-foreground text-xs"
                 aria-label="Node dependency setup">
                 Setup: {dependencyReview.status} · Dependencies: {dependencyReview.dependencyCount} ·
@@ -718,6 +741,79 @@ export default function ProjectsPage() {
                       ? "Node build dependencies verified. Build execution is still disabled."
                       : "Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
                   })}>Install approved dependencies</Button>
+                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                  onClick={() => action(async () => {
+                    setBuildReview(null)
+                    setBuildApproved(false)
+                    setBuildEnabled(false)
+                    const result = await getJson(api + "/" + selected.id + "/build-review")
+                    const review = result.review as Partial<BuildReview> | undefined
+                    if (!review || review.release !== selected.candidateRelease ||
+                        !["not-required", "requires-dependencies", "ready-to-build", "verified", "blocked"]
+                          .includes(review.status ?? "") ||
+                        typeof review.buildRequired !== "boolean" ||
+                        typeof review.dependenciesPrepared !== "boolean" ||
+                        typeof review.artifactVerified !== "boolean" ||
+                        typeof review.dependencyCount !== "number" ||
+                        !Number.isSafeInteger(review.dependencyCount) ||
+                        review.dependencyCount < 0 || review.dependencyCount > 500 ||
+                        !Array.isArray(review.blockers) || review.blockers.length > 32 ||
+                        !review.blockers.every(value => typeof value === "string" && value.length <= 160) ||
+                        (review.script !== null &&
+                         (typeof review.script !== "string" || review.script.length > 256)) ||
+                        review.buildRequired !== (review.script !== null))
+                      throw new Error("Invalid Node build review")
+                    setBuildReview(review as BuildReview)
+                    setBuildEnabled(result.buildEnabled === true)
+                    setMessage(review.status === "verified"
+                      ? "Build artifact verified. Review the deployment plan."
+                      : "Build reviewed without running project code.")
+                  })}>Review Node build</Button>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" aria-label="Approve Node build execution"
+                    checked={buildApproved} onChange={value => setBuildApproved(value.target.checked)}
+                    disabled={busy || !buildEnabled || buildReview?.status !== "ready-to-build"} />
+                  I explicitly approve running the displayed build script from this trusted project.
+                  It runs as the Termux user; the private folder is not an OS sandbox.
+                </label>
+                <Button variant="outline" disabled={busy || editorDirty || !buildApproved ||
+                  !buildEnabled || !selected.candidateRelease ||
+                  buildReview?.release !== selected.candidateRelease ||
+                  buildReview.status !== "ready-to-build" ||
+                  !buildReview.dependenciesPrepared || !buildReview.buildRequired ||
+                  buildReview.blockers.length > 0}
+                  onClick={() => action(async () => {
+                    const release = selected.candidateRelease!
+                    setBuildApproved(false)
+                    setBuildReview(null)
+                    setBuildEnabled(false)
+                    setApproved(false)
+                    setPlan(null)
+                    let result: Record<string, unknown>
+                    try {
+                      result = await getJson(api + "/" + selected.id + "/build",
+                        "POST", { approved: true, release })
+                    } catch {
+                      throw new Error("Node build result unconfirmed. Review the artifact before retrying.")
+                    }
+                    const built = result.build as Record<string, unknown> | undefined
+                    if (!built || built.release !== release || built.prepared !== true ||
+                        built.verified !== true || typeof built.entries !== "number" ||
+                        !Number.isSafeInteger(built.entries) || built.entries < 1 ||
+                        built.entries > 512 || typeof built.bytes !== "number" ||
+                        !Number.isSafeInteger(built.bytes) || built.bytes < 0 ||
+                        built.bytes > 16 * 1024 * 1024)
+                      throw new Error("Unverified Node build result. Review before retrying.")
+                    await loadRuntime(selected.id)
+                    const checked = await getJson(api + "/" + selected.id + "/build-review")
+                    const review = checked.review as Partial<BuildReview> | undefined
+                    if (!review || review.release !== release || review.status !== "verified" ||
+                        review.artifactVerified !== true)
+                      throw new Error("Node build acknowledged but artifact integrity unconfirmed.")
+                    setBuildReview(review as BuildReview)
+                    setBuildEnabled(checked.buildEnabled === true)
+                    setMessage("Node build published privately and artifact integrity verified. Review deploy plan.")
+                  })}>Execute approved Node build</Button>
                 <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",
