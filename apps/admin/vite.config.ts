@@ -448,9 +448,16 @@ function nodeProjectApi(): Plugin {
           catch { /* A missing or changed tree never receives approval. */ }
         }
         let artifactVerified = false
+        let artifact: { entries: number; bytes: number; files: string[]; truncated: boolean } | null = null
         if (buildRequired) {
-          try { builder!.verifyBuilt(projectId, review.release); artifactVerified = true }
-          catch { /* No verified output yet. */ }
+          try {
+            const result = builder!.inspectBuilt(projectId, review.release)
+            artifact = {
+              entries: result.entries, bytes: result.bytes,
+              files: result.files, truncated: result.truncated,
+            }
+            artifactVerified = true
+          } catch { /* No verified output yet. */ }
         }
         const blockers = [...review.blockers]
         if (releaseInUse(projectId, review.release)) blockers.push("release-in-use")
@@ -462,7 +469,7 @@ function nodeProjectApi(): Plugin {
           release: review.release, status, buildRequired,
           script: buildRequired ? builder!.buildScript(projectId, review.release) : null,
           dependencyCount: plan.dependencyCount, dependenciesPrepared,
-          artifactVerified, blockers,
+          artifactVerified, artifact, blockers,
         }
       }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"

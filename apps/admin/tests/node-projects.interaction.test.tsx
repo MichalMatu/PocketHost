@@ -1016,6 +1016,7 @@ it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
             buildRequired: true, script: "node server.mjs --build",
             dependencyCount: 0, dependenciesPrepared: true,
             artifactVerified: built,
+            artifact: built ? { entries: 1, bytes: 14, files: ["index.html"], truncated: false } : null,
             blockers: scenario === "blocked" ? ["release-in-use"] : [],
           },
         }) }
@@ -1052,6 +1053,8 @@ it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
       if (scenario === "approved") {
         await screen.findByText("Node build published privately and artifact integrity verified. Review deploy plan.")
         expect(screen.getByLabelText("Node build setup").textContent).toContain("Build: verified")
+        expect(screen.getByLabelText("Node build setup").textContent).toContain("Files: index.html")
+        expect(screen.getByLabelText("Node build setup").textContent).toContain("Size: 14 bytes")
         expect(build.disabled).toBe(true)
       } else {
         await screen.findByText("Node build result unconfirmed. Review the artifact before retrying.")

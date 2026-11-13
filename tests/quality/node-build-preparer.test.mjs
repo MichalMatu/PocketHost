@@ -82,6 +82,9 @@ test('explicit build approval publishes only proven dist and not a service', asy
   assert.deepEqual(built, { release, entries: 1, bytes: 14, prepared: true });
   assert.equal(called.length, 1);
   assert.equal(host.verifyBuilt(project.id, release).verified, true);
+  assert.deepEqual(host.inspectBuilt(project.id, release), {
+    release, entries: 1, bytes: 14, files: ['index.html'], truncated: false,
+  });
   const output = path.join(projects.release(project.id, release).folder, 'dist');
   assert.equal(readFileSync(path.join(output, 'index.html'), 'utf8'), '<h1>Built</h1>');
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
@@ -94,6 +97,7 @@ test('tampered build output cannot be readmitted', async (t) => {
   await host.prepare(project.id, release, true);
   writeFileSync(path.join(projects.release(project.id, release).folder, 'dist', 'index.html'), 'tampered');
   assert.throws(() => host.verifyBuilt(project.id, release), /integrity mismatch/);
+  assert.throws(() => host.inspectBuilt(project.id, release), /integrity mismatch/);
 });
 
 test('failed or unsafe build leaves no dist or global lock', async (t) => {

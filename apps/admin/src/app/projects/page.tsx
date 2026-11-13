@@ -63,6 +63,7 @@ type BuildReview = {
   dependencyCount: number
   dependenciesPrepared: boolean
   artifactVerified: boolean
+  artifact?: { entries: number; bytes: number; files: string[]; truncated: boolean } | null
   blockers: string[]
 }
 type Candidate = {
@@ -646,6 +647,11 @@ export default function ProjectsPage() {
                 Build: {buildReview.status} · Script: {buildReview.script ?? "not required"} ·
                 Dependencies prepared: {String(buildReview.dependenciesPrepared)} ·
                 Artifact verified: {String(buildReview.artifactVerified)} ·
+                {buildReview.artifact && <>
+                  Files: {buildReview.artifact.files.join(", ") || "none"}
+                  {buildReview.artifact.truncated ? " (more files)" : ""} ·
+                  Size: {buildReview.artifact.bytes} bytes ·
+                </>}
                 Blockers: {buildReview.blockers.length ? buildReview.blockers.join(", ") : "none"}
               </p>}
               {dependencyReview && <p className="text-muted-foreground text-xs"
@@ -761,7 +767,21 @@ export default function ProjectsPage() {
                         !review.blockers.every(value => typeof value === "string" && value.length <= 160) ||
                         (review.script !== null &&
                          (typeof review.script !== "string" || review.script.length > 256)) ||
-                        review.buildRequired !== (review.script !== null))
+                        review.buildRequired !== (review.script !== null) ||
+                        (review.artifact !== null && review.artifact !== undefined && (
+                          !review.artifactVerified ||
+                          typeof review.artifact !== "object" ||
+                          !Number.isSafeInteger(review.artifact.entries) ||
+                          review.artifact.entries < 1 || review.artifact.entries > 512 ||
+                          !Number.isSafeInteger(review.artifact.bytes) ||
+                          review.artifact.bytes < 0 || review.artifact.bytes > 16 * 1024 * 1024 ||
+                          !Array.isArray(review.artifact.files) ||
+                          review.artifact.files.length > 24 ||
+                          !review.artifact.files.every(value =>
+                            typeof value === "string" && value.length <= 256 &&
+                            !value.startsWith("/") && !value.includes("..") && !value.includes("\\")) ||
+                          typeof review.artifact.truncated !== "boolean"
+                        )))
                       throw new Error("Invalid Node build review")
                     setBuildReview(review as BuildReview)
                     setBuildEnabled(result.buildEnabled === true)

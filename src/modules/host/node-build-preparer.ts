@@ -299,6 +299,45 @@ export class NodeBuildPreparer {
     return { release: releaseId, entries: output.entries, bytes: output.bytes, verified: true };
   }
 
+  /** Bounded, read-only artifact inventory for review before owned deployment. */
+  inspectBuilt(projectId: string, releaseId: string): {
+    release: string; entries: number; bytes: number; files: string[]; truncated: boolean
+  } {
+    const verified = this.verifyBuilt(projectId, releaseId);
+    const dist = path.join(this.projects.release(projectId, releaseId).folder, 'dist');
+    const pending = [{ directory: dist, prefix: '' }];
+    const files: string[] = [];
+    let fileCount = 0;
+    while (pending.length) {
+      const { directory, prefix } = pending.pop()!;
+      for (const name of readdirSync(directory).sort()) {
+        if (directory === dist && name === PROOF) continue;
+        const location = path.join(directory, name);
+        const stat = lstatSync(location);
+        if (stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile()))
+          throw new Error('Node build artifact changed during inspection');
+        const relative = prefix ? prefix + '/' + name : name;
+        if (relative.length > 256)
+          throw new Error('Node build artifact path exceeds preview limit');
+        if (stat.isDirectory()) {
+          pending.push({ directory: location, prefix: relative });
+        } else {
+          fileCount++;
+          if (files.length < 24) files.push(relative);
+        }
+        if (fileCount > MAX_ENTRIES)
+          throw new Error('Node build artifact inventory exceeds limit');
+      }
+    }
+    files.sort();
+    // Defend against mutations between the initial proof and listing.
+    this.verifyBuilt(projectId, releaseId);
+    return {
+      release: releaseId, entries: verified.entries, bytes: verified.bytes,
+      files, truncated: fileCount > files.length,
+    };
+  }
+
   async prepare(projectId: string, releaseId: string, approved: boolean): Promise<{
     release: string; entries: number; bytes: number; prepared: true
   }> {
