@@ -136,6 +136,59 @@ test('GitHub build preview refuses symlink and binary file in public source tree
     );
   }
 });
+
+test('GitHub pinned frontend tree loads media asset base64 without lossy UTF8 conversion', async () => {
+  const calls = [];
+  const get = async (url) => {
+    calls.push(url);
+    const name = url.split('/contents/')[1]?.split('?')[0];
+    const content = name === 'package.json' ?
+      JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
+      name === 'package-lock.json' ? JSON.stringify(lockfile) :
+      name === 'server.mjs' ? entry : '';
+    const result = url.endsWith('/safe-node') ?
+      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
+      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
+      url.includes('/git/trees/') ? { truncated: false, tree: [
+        { path: 'index.html', type: 'blob', mode: '100644', size: 24 },
+        { path: 'public/logo.png', type: 'blob', mode: '100644', size: 68 },
+      ] } :
+      name ? { type: 'file', name: name.split('/').at(-1), path: name, encoding: 'base64',
+        content: name === 'public/logo.png' ? 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' : Buffer.from(
+          name === 'index.html' ? '<img src="/logo.png">' : content,
+        ).toString('base64'),
+      } : {};
+    return new Response(JSON.stringify(result), { status: 200 });
+  };
+  const preview = await previewPublicGitHubNodeSource('example/safe-node', get);
+  assert.equal(preview.source.assetFiles['public/logo.png'], 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
+  assert.equal(preview.source.extraFiles['index.html'], '<img src="/logo.png">');
+  assert.ok(calls.every(url => url.startsWith('https://api.github.com/repos/')));
+  assert.ok(calls.filter(url => url.includes('/contents/')).every(url => url.endsWith('?ref=' + sha)));
+});
+test('GitHub pinned frontend tree rejects fake png content', async () => {
+  const get = async (url) => {
+    const file = url.split('/contents/')[1]?.split('?')[0];
+    const result = url.endsWith('/safe-node') ?
+      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
+      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
+      url.includes('/git/trees/') ? { truncated: false, tree: [
+        { path: 'public/logo.png', type: 'blob', mode: '100644', size: 20 },
+      ] } :
+      file ? { type: 'file', name: file.split('/').at(-1), path: file, encoding: 'base64',
+        content: Buffer.from(file === 'package.json' ?
+          JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
+          file === 'package-lock.json' ? JSON.stringify(lockfile) :
+          file === 'server.mjs' ? entry : 'not a valid png').toString('base64'),
+      } : {};
+    return new Response(JSON.stringify(result), { status: 200 });
+  };
+  await assert.rejects(
+    previewPublicGitHubNodeSource('example/safe-node', get),
+    /format mismatch/,
+  );
+});
+
 test('GitHub preview rejects URLs, nested paths and hostile repo names without requesting network', async () => {
   let accessed = 0;
   const get = async () => {

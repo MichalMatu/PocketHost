@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { planNodeDependencies, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
-import { validNodeExtraPath } from './node-project-host.ts';
+import { validNodeExtraPath, validNodeAssetPath, decodeNodeAsset } from './node-project-host.ts';
 
 const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37})$/;
 const REPO = /^[A-Za-z0-9._-]{1,100}$/;
@@ -8,7 +8,10 @@ const REF = /^[A-Za-z0-9._/-]{1,100}$/;
 const SHA = /^[a-f0-9]{40}$/;
 const FILES = ['package.json', 'package-lock.json', 'server.mjs'] as const;
 const MAX_SOURCE = 64 * 1024;
-const MAX_TOTAL = 320 * 1024;
+const MAX_TOTAL = 1100 * 1024;
+const MAX_ASSETS = 12;
+const MAX_ASSET_BYTES = 128 * 1024;
+const MAX_ASSET_TOTAL = 512 * 1024;
 const MAX_EXTRAS = 32;
 const MAX_EXTRA_BYTES = 96 * 1024;
 
@@ -99,20 +102,30 @@ function sourceText(value: unknown, name: string): string {
   }
 }
 
+function sourceAsset(value: unknown, name: string): string {
+  const data = record(value);
+  if (data.type !== 'file' || data.name !== name.split('/').at(-1) ||
+      data.path !== name || data.encoding !== 'base64' ||
+      typeof data.content !== 'string')
+    throw new RangeError('GitHub asset is not a regular source file');
+  const encoded = data.content.replace(/\s+/g, '');
+  return decodeNodeAsset(name, encoded).toString('base64');
+}
+
 export interface GitHubNodeSourcePreview {
   repository: string;
   commit: string;
   source: { packageJson: unknown; packageLock: unknown; serverSource: string;
-    extraFiles?: Record<string, string> };
+    extraFiles?: Record<string, string>; assetFiles?: Record<string, string> };
   plan: NodeDependencyPlan;
 }
 
-/** Inspect only pinned public text blobs. Binary assets and submodules are
- * explicitly deferred: never silently import an incomplete frontend.
+/** Inspect only pinned public allowlisted files. Submodules and unknown formats
+ * fail closed so a deployment never silently omits frontend resources.
  */
 async function pinnedExtraFiles(
   base: string, treeSha: string, commit: string, get: typeof fetch,
-): Promise<Record<string, string>> {
+): Promise<{ extraFiles: Record<string, string>; assetFiles: Record<string, string> }> {
   const treeData = record(await apiJson(
     base + '/git/trees/' + treeSha + '?recursive=1', 256 * 1024, get,
   ));
@@ -120,6 +133,7 @@ async function pinnedExtraFiles(
       treeData.tree.length > 1200)
     throw new RangeError('GitHub source tree is incomplete or too large');
   const relevant: string[] = [];
+  const assets: string[] = [];
   for (const item of treeData.tree as unknown[]) {
     const entry = record(item);
     if (typeof entry.path !== 'string' || typeof entry.type !== 'string')
@@ -128,18 +142,28 @@ async function pinnedExtraFiles(
     if (name.startsWith('src/') || name.startsWith('public/') ||
         /^(?:index\.html|vite\.config\.|tsconfig|postcss\.config|tailwind\.config)/.test(name)) {
       if (entry.type === 'tree') continue;
-      if (!validNodeExtraPath(name) || entry.type !== 'blob' ||
-          !['100644', '100755'].includes(String(entry.mode)) ||
-          !Number.isSafeInteger(entry.size) || (entry.size as number) < 1 ||
-          (entry.size as number) > 32 * 1024)
+      if (entry.type !== 'blob' || !['100644', '100755'].includes(String(entry.mode)) ||
+          !Number.isSafeInteger(entry.size) || (entry.size as number) < 1)
         throw new RangeError('Unsupported GitHub frontend source file or binary asset');
-      relevant.push(name);
+      if (validNodeAssetPath(name)) {
+        if ((entry.size as number) > MAX_ASSET_BYTES)
+          throw new RangeError('GitHub binary asset exceeds 128 KB');
+        assets.push(name);
+      } else {
+        if (!validNodeExtraPath(name) || (entry.size as number) > 32 * 1024)
+          throw new RangeError('Unsupported GitHub frontend source file or binary asset');
+        relevant.push(name);
+      }
     }
   }
   const names = [...new Set(relevant)].sort();
   if (names.length !== relevant.length || names.length > MAX_EXTRAS)
     throw new RangeError('GitHub frontend file budget exceeded');
+  const assetNames = [...new Set(assets)].sort();
+  if (assetNames.length !== assets.length || assetNames.length > MAX_ASSETS)
+    throw new RangeError('GitHub binary asset budget exceeded');
   const extras: Record<string, string> = {};
+  const assetFiles: Record<string, string> = {};
   let bytes = 0;
   for (const name of names) {
     const body = await apiJson(
@@ -152,7 +176,19 @@ async function pinnedExtraFiles(
       throw new RangeError('GitHub frontend source exceeds 96 KB');
     extras[name] = source;
   }
-  return extras;
+  let assetBytes = 0;
+  for (const name of assetNames) {
+    const body = await apiJson(
+      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') +
+      '?ref=' + commit, 280000, get,
+    );
+    const encoded = sourceAsset(body, name);
+    assetBytes += Buffer.byteLength(encoded, 'base64');
+    if (assetBytes > MAX_ASSET_TOTAL)
+      throw new RangeError('GitHub binary assets exceed 512 KB');
+    assetFiles[name] = encoded;
+  }
+  return { extraFiles: extras, assetFiles };
 }
 
 /** Inspect a public repository's pinned default-branch commit. */
@@ -202,20 +238,23 @@ export async function previewPublicGitHubNodeSource(
   if (!serverSource.trim() || serverSource.includes('\0'))
     throw new RangeError('Invalid GitHub Node source');
   let extraFiles: Record<string, string> = {};
+  let assetFiles: Record<string, string> = {};
   if (plan.commands.build !== null) {
     const nested = record(commitInfo.commit);
     const tree = record(nested.tree);
     if (typeof tree.sha !== 'string' || !SHA.test(tree.sha))
       throw new RangeError('GitHub source tree SHA is invalid');
-    extraFiles = await pinnedExtraFiles(base, tree.sha, commit, get);
+    ({ extraFiles, assetFiles } = await pinnedExtraFiles(base, tree.sha, commit, get));
   }
-  if (total + Buffer.byteLength(JSON.stringify(extraFiles)) > MAX_TOTAL)
-    throw new RangeError('GitHub Node source exceeds 320 KB');
+  if (total + Buffer.byteLength(JSON.stringify(extraFiles)) +
+      Buffer.byteLength(JSON.stringify(assetFiles)) > MAX_TOTAL)
+    throw new RangeError('GitHub Node source exceeds total budget');
   return {
     repository: owner + '/' + name,
     commit,
     source: { packageJson, packageLock, serverSource,
-      ...(Object.keys(extraFiles).length ? { extraFiles } : {}) },
+      ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
+      ...(Object.keys(assetFiles).length ? { assetFiles } : {}) },
     plan,
   };
 }
