@@ -12,7 +12,7 @@ const sample = '2026-11-13T20:45:00Z task_budget_exhausted PRIVATE_TOKEN=secret-
 
 function fixture() {
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-agent-log-'));
-  const folder = path.join(home, '.local/state/local-agent/termux/runit/log/termux-agent');
+  const folder = path.join(home, '.local/state/local-agent/termux/runit/logs/agent');
   mkdirSync(folder, { recursive: true });
   return { home, folder, current: path.join(folder, 'current') };
 }
@@ -80,5 +80,20 @@ test('also supports a private service-local svlogd main/current layout', () => {
     assert.equal(result.state, 'ok');
     assert.deepEqual(result.events.map(event => event.kind), ['budget']);
     assert.ok(!JSON.stringify(result).includes('PRIVATE_TOKEN'));
+  } finally { rmSync(f.home, { recursive: true, force: true }); }
+});
+
+test('installed Samsung svlogd path is preferred over legacy locations', () => {
+  const f = fixture();
+  try {
+    const legacy = path.join(f.home,
+      '.local/state/local-agent/termux/runit/log/termux-agent');
+    mkdirSync(legacy, { recursive: true });
+    writeFileSync(path.join(legacy, 'current'),
+      '2026-11-13T20:45:00Z task failed legacy-only secret=abc\n');
+    writeFileSync(f.current, sample + '\n');
+    const result = new LocalAgentLogHost(f.home).inspect();
+    assert.equal(result.state, 'ok');
+    assert.deepEqual(result.events.map(event => event.kind), ['budget']);
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });

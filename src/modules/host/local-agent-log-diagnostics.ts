@@ -84,6 +84,9 @@ export class LocalAgentLogHost {
       // only these fixed paths; never parse and execute the service log script.
       const base = path.join(root, 'runit');
       const candidates = [
+        // Verified on the installed Samsung: svlogd -tt <private runit>/logs/agent.
+        path.join(base, 'logs/agent/current'),
+        // Legacy dedicated runit configurations, never arbitrary filesystem roots.
         path.join(base, 'log/termux-agent/current'),
         path.join(base, 'log/termux-agent/main/current'),
         path.join(base, 'services/termux-agent/log/main/current'),
