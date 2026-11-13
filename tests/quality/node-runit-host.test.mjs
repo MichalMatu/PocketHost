@@ -107,7 +107,7 @@ test('M3 dependency setup review is inert, pinned and excludes package lifecycle
   assert.equal(review.status, 'review-required');
   assert.equal(review.dependencyCount, 1);
   assert.deepEqual(review.installCommand,
-    ['npm', 'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--omit=dev']);
+    ['npm', 'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--include=dev']);
   assert.deepEqual(review.buildCommand, ['npm', 'run', 'build']);
   assert.equal(review.executed, false);
   assert.deepEqual(review.blockers, []);
@@ -402,9 +402,26 @@ test('M3 live health never probes or starts a project without verified runit own
 
 test('build packages are attestable without granting build execution or deploy', async (t) => {
   const { host, projects, project, root } = fixture(t);
-  const source = structuredClone(dependentSource);
-  source.packageJson.scripts.build = 'vite build';
-  const release = projects.stage(project.id, source).project.candidateRelease;
+  const buildSource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      scripts: { start: 'node server.mjs', build: 'vite build' },
+      dependencies: { 'is-odd': '3.0.1' },
+    },
+    packageLock: {
+      ...source.packageLock,
+      packages: {
+        '': { ...source.packageLock.packages[''], dependencies: { 'is-odd': '3.0.1' } },
+        'node_modules/is-odd': {
+          version: '3.0.1',
+          resolved: 'https://registry.npmjs.org/is-odd/-/is-odd-3.0.1.tgz',
+          integrity: 'sha512-' + 'A'.repeat(86) + '==',
+        },
+      },
+    },
+  };
+  const release = projects.stage(project.id, buildSource).project.candidateRelease;
   host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
   const review = host.reviewDependencySetup(project.id);
   assert.equal(review.buildRequired, true);
