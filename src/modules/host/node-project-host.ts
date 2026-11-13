@@ -297,7 +297,7 @@ function verifySourceLayout(folder: string, extras: Readonly<Record<string, stri
   for (const name of [...Object.keys(extras), ...Object.keys(assets)]) {
     const parts = name.split('/');
     for (let i = 0; i < parts.length; i++) {
-      at(parts.slice(0, i).join('/'), parts[i]);
+      at(parts.slice(0, i).join('/'), parts[i]!);
     }
   }
   for (const [relative, entries] of expected) {
