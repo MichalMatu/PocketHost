@@ -300,6 +300,29 @@ test('M3 refuses redundant deploy of current Node release before touching runit'
   assert.equal((await import('node:fs')).existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
+test('M3 update refuses tampered last-good source before stopping its owned service', async (t) => {
+  const { host, projects, project, root, serviceRoot } = fixture(t);
+  const previous = projects.stage(project.id, source).project.candidateRelease;
+  const candidate = projects.stage(project.id, {
+    ...source, serverSource: source.serverSource + '\\n// second release',
+  }).project.candidateRelease;
+  const operations = [];
+  host.preview = () => ({ allowed: true, release: candidate });
+  host.toolchain = () => ({ status: 'review-required', missingTools: [], conflicts: [] });
+  host.record = () => ({
+    activeRelease: previous, lastGoodRelease: previous, previousGoodRelease: null,
+    desired: 'running', port: 19300,
+  });
+  host.halt = async () => { operations.push('halt'); };
+  host.initialize = async () => { operations.push('initialize'); };
+  writeFileSync(path.join(root, project.id, 'releases', previous, 'server.mjs'),
+    'console.log("tampered")');
+  await assert.rejects(host.deploy(project.id, candidate, true), /source digest mismatch/);
+  assert.deepEqual(operations, []);
+  assert.deepEqual(readdirSync(serviceRoot), []);
+  assert.equal((await import('node:fs')).existsSync(path.join(root, '.node-ports.lock')), false);
+});
+
 test('M3 rollback cannot manage a project without prior verified healthy release', async (t) => {
   const { projects, project, host } = fixture(t);
   const staged = projects.stage(project.id, source).project;

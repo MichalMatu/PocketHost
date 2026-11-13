@@ -915,6 +915,19 @@ export class NodeRunitHost {
       if (rollback && state?.previousGoodRelease !== release) {
         throw new Error('Rollback target changed during admission');
       }
+      // An update can fail after stopping the current service. Verify the
+      // entire fallback (source, packages, toolchain and syntax) *before*
+      // halting anything. Otherwise recovery might execute a tampered release.
+      const recoveryRelease = state?.lastGoodRelease;
+      if (recoveryRelease && recoveryRelease !== release) {
+        const recovery = this.projects.release(id, recoveryRelease);
+        if (
+          !this.dependenciesReady(id, recoveryRelease, recovery.plan) ||
+          this.toolchain(recovery.plan).status === 'blocked' ||
+          this.checkReleaseSyntax(id, recoveryRelease).status !== 'syntax-valid'
+        )
+          throw new Error('Previous healthy Node release is not recoverable: update refused');
+      }
       if (!state) {
         const reservations = new Set<number>();
         for (const otherProject of this.projects.list()) {
@@ -964,6 +977,15 @@ export class NodeRunitHost {
           if (result.result?.exit !== 0) throw new Error('Failed start cleanup refused');
         }
         if (prior) {
+          // The previous proof can change even while the new release starts.
+          // Never attempt an automatic rollback without re-attesting it.
+          const recovery = this.projects.release(id, prior);
+          if (
+            !this.dependenciesReady(id, prior, recovery.plan) ||
+            this.toolchain(recovery.plan).status === 'blocked' ||
+            this.checkReleaseSyntax(id, prior).status !== 'syntax-valid'
+          )
+            throw new Error('Rollback source no longer verified; manual recovery required');
           for (let n = 0; n < 40 && !(await portFree(state.port)); n++) await pause();
           if (!(await portFree(state.port))) throw new Error('Failed release still occupies port');
           const restoreNonce = randomBytes(24).toString('hex');
