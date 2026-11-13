@@ -78,7 +78,12 @@ function checksum(source: string): string {
  * Hash regular file bytes to detect changes when this release is later admitted.
  */
 function attestPackageTree(root: string): { treeDigest: string; entries: number; bytes: number } {
-  privateDirectory(root);
+  // npm creates node_modules with ordinary 0755 mode. Its 0700 parent
+  // provides the private boundary, but ownership and symlinks still matter.
+  const stat = lstatSync(root);
+  if (!stat.isDirectory() || stat.isSymbolicLink() ||
+      stat.uid !== process.getuid?.() || realpathSync(root) !== root)
+    throw new Error('Untrusted Node dependency directory');
   const hash = createHash('sha256');
   const pending = [root];
   const chunk = Buffer.allocUnsafe(64 * 1024);
