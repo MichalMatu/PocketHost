@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-12
+last_reviewed: 2026-11-13
 purpose: Compact, current PocketHost resumption contract; historical receipts stay in checkpoints and Git history
 ---
 
@@ -42,36 +42,48 @@ focused negative tests. **This does not activate migrations, managed
 services, new process control or public routes.** M2/M3 source candidates exist for owned lifecycle, staging and
 runit; disposable physical Node Hosting acceptance remains OPEN.
 
-## Evidence and outstanding gates
+## Current release candidate and acceptance — 2026-11-13
 
-Historical Samsung G2 PASS: source `bba2d625`, 282/282 Node
-and 111/111 UI tests, with the PocketHost-only panel refreshed.
-This **does not** validate newer main or physical G3.
-The current source-repair checks, live panel update, browser
-smoke and disposable Node physical acceptance remain OPEN/HOLD
-without exact-SHA Samsung terminal receipts.
+Code source checkpoint before this documentation update:
+`b7c8caffd8713b42334e991e5dd9df7e7b2e4043`. Re-fetch main HEAD on entry;
+the checkpoint SHA is **not** a claim about installed Samsung panel source.
 
-Read the [verified closeout](checkpoints/2026-11-11-system-ux-closeout-hosting-handoff.md),
-[System UX follow-up](checkpoints/2026-11-12-system-nine-screen-ux-source-audit.md)
-and [current repair checkpoint](checkpoints/2026-11-12-general-repository-repair-continuation.md)
-only when they affect the next action. Do not repeat historical G2.
+Node project UI now contains GitHub pinned-commit import, bounded local
+folder selection, text files and binary frontend assets, dependency/build
+review, read-only rollback review and explicit deployment actions.
+Source+runtime are **not certified live** at the current SHA.
+
+Native Samsung receipts: at older `40a8513`, 61/61 Node tests and focused
+UI passed, while TypeScript failed; source type fixes were committed later.
+At `631ed7c`, 40/42 native tests passed, and the two assertion mismatches
+were corrected at `602123d`; no newer terminal PASS may be inferred.
+Local-folder UI and import-closeout checks are **queued / terminal result
+missing**. Current source exact-SHA native QA, installed DEV panel source
+identity, visual review and disposable physical Node lifecycle remain **HOLD**.
+Historical full G2 and H2 static Hosting evidence is unchanged.
+
+See [current Node panel checkpoint](checkpoints/2026-11-13-node-panel-preview-handoff.md)
+for the bounded evidence, browser path and next acceptance gates.
 
 ## First actions
 
-1. Verify fresh main, current repair/test receipts and the real
-   Samsung Local Agent state before sending any task. Do not replay
-   already accepted tests or mistake published tasks for PASS.
-2. Continue **P0 Node.js + GitHub** using existing M1–M3 source
-   and runit adapter: disposable create/import, dependency plan,
-   owned start/readiness/logs, update and rollback. Obtain exact-SHA
-   Samsung tests and separate physical acceptance.
-3. Then continue **P0 Hosting integrations**: Cloudflare/domain/HTTPS,
-   SSH, per-site web analytics (not Android RX/TX), file/terminal and
-   Restic backup/restore. Never adopt observed foreign services.
-4. For docs-only edits run only relevant links/Markdown/format checks
-   on Samsung when available; do not build/restart the panel.
-   Preserve exact source receipts and OPEN/HOLD outcomes in a
-   relevant checkpoint rather than duplicating status in this file.
+1. Verify current `main`, then read the two pending focused Samsung receipts
+   (local folder UI and exact-source import/typecheck). If unavailable, stay
+   HOLD; do not duplicate the queued tasks. Fix only a confirmed regression.
+2. **Show the owner the actual `/projects` panel.** Historical trusted-LAN
+   admin URL: `http://192.168.0.100:18878/projects` (not current-verified).
+   Read-only check the existing panel owner, process, checkout SHA, feature
+   flags and HTTP route. Compare deployed SHA to latest main. Backend/config
+   changes mandate reviewed PocketHost-only sync; prefer existing Vite HMR
+   for UI; do not start a second panel or touch foreign services.
+3. After native QA and verified panel-only sync, obtain one actual browser
+   screenshot and owner acceptance of `/projects`: GitHub/folder import,
+   staged source/asset list, build/rollback review and feature-disabled states.
+   A screenshot is evidence of UI, **not** Node G3 runtime acceptance.
+4. Only after explicit approval, perform a **disposable user-owned** Node
+   GitHub → dependencies → build → start → readiness → update → rollback
+   lifecycle. Then continue Hosting Cloudflare/SSH/analytics/backup per ROADMAP.
+   Do not treat source proof as a working deployed application.
 
 ## Preserved boundaries
 

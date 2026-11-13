@@ -9,6 +9,10 @@ purpose: Index historical evidence without overloading the active documentation 
 
 These dated files are historical **exact-SHA evidence**, not instructions to rerun tests. Start with [Minimal Context](../START_HERE.md) and open **only the relevant checkpoint**. Keep old receipts here rather than copying entire status logs into active handoff/roadmap/quality documents.
 
+## 2026-11-13
+
+- [Node Hosting panel visual checkpoint and next-chat handoff](2026-11-13-node-panel-preview-handoff.md)
+
 ## 2026-11-12
 
 - [Retired S1 standalone APK experiment — historical build/device evidence](2026-11-12-s1-standalone-arm64-apk-first-build.md)
