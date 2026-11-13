@@ -47,7 +47,7 @@ export function IleStoiDiagnosticPanel({ refreshToken = 0 }: { refreshToken?: nu
           {data.health.state === "unverified" && <p className="text-muted-foreground text-xs">Not probed: a consistent live runit PID was not confirmed.</p>}
           {data.health.live && <p>Liveness: {data.health.live.state} {data.health.live.statusCode === null ? "" : "(HTTP " + data.health.live.statusCode + ")"}</p>}
           {data.health.ready && <p>Readiness: {data.health.ready.state} {data.health.ready.statusCode === null ? "" : "(HTTP " + data.health.ready.statusCode + ")"}</p>}
-          {(data.health.live?.error || data.health.ready?.error) && <p className="text-muted-foreground text-xs">HTTP diagnostic: {data.health.live?.error ?? "none"} / {data.health.ready?.error ?? "none"}</p>
+          {(data.health.live?.error || data.health.ready?.error) && <p className="text-muted-foreground text-xs">HTTP diagnostic: {data.health.live?.error ?? "none"} / {data.health.ready?.error ?? "none"}</p>}
         </div>
         <div className="rounded-md border p-3">
           <h3 className="font-medium">Recent service log · {data.logs.state}</h3>
