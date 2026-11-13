@@ -26,6 +26,8 @@ import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
+import { NodeDependencyPreparer } from "../../src/modules/host/node-dependency-preparer.ts"
+import os from "node:os"
 import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backup-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
@@ -420,6 +422,17 @@ function nodeProjectApi(): Plugin {
       const runtime = enabled ? new NodeRunitHost() : null
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
+      const dependencyInstallEnabled = process.env.POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV === "1"
+      const preparer = enabled ? new NodeDependencyPreparer(
+        host!,
+        path.join(os.homedir(), "PocketHost-NodeProjects"),
+        (projectId, releaseId) => {
+          const current = runtime!.status(projectId)
+          return current.state === "unknown" ||
+            [current.activeRelease, current.lastGoodRelease, current.previousGoodRelease]
+              .includes(releaseId)
+        },
+      ) : null
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
@@ -457,7 +470,7 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" &&
@@ -480,7 +493,9 @@ function nodeProjectApi(): Plugin {
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
-              id && op === "dependency-review" ? { review: runtime!.reviewDependencySetup(id) } :
+              id && op === "dependency-review" ? {
+                review: runtime!.reviewDependencySetup(id), dependencyInstallEnabled,
+              } :
               id && op === "logs" ? { logs: runtime!.logs(id) } :
               id && op === "preview" ? { preview: await runtime!.previewLocalResponse(id) } :
               id && op === "source" ? { source: host.candidateSource(id) } :
@@ -504,10 +519,12 @@ function nodeProjectApi(): Plugin {
         const restart = request.method === "POST" && !!id && op === "restart"
         const rollback = request.method === "POST" && !!id && op === "rollback"
         const checkBuild = request.method === "POST" && !!id && op === "check-build"
+        const installDependencies = request.method === "POST" && !!id && op === "install-dependencies"
         const createBackup = request.method === "POST" && route === "/backup/create"
         const restoreBackup = request.method === "POST" && route === "/backup/restore"
         if (!create && !githubPreview && !stage && !restore && !deploy && !start && !stop &&
-            !restart && !rollback && !checkBuild && !createBackup && !restoreBackup) {
+            !restart && !rollback && !checkBuild && !installDependencies &&
+            !createBackup && !restoreBackup) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
           return
@@ -552,6 +569,22 @@ function nodeProjectApi(): Plugin {
               const result = await nodeBackup!.restoreToStaging(input.snapshot, true)
               // Return a count, never the private Android filesystem path.
               return { restoredToStaging: true, verifiedProjects: result.verifiedProjects }
+            }
+            if (installDependencies) {
+              if (!dependencyInstallEnabled) throw new Error("Node dependency installation disabled")
+              const input = await readJson(request, 1024)
+              if (!input || typeof input !== "object" || Array.isArray(input))
+                throw new RangeError("Invalid dependency installation approval")
+              const body = input as Record<string, unknown>
+              if (Object.keys(body).sort().join(",") !== "approved,release" ||
+                  body.approved !== true || typeof body.release !== "string" ||
+                  !/^r-[a-f0-9]{32}$/.test(body.release))
+                throw new RangeError("Explicit pinned dependency installation approval required")
+              const review = runtime!.reviewDependencySetup(id!)
+              if (review.release !== body.release || review.status !== "review-required" ||
+                  review.buildRequired || !review.installRequired || review.blockers.length > 0)
+                throw new Error("Dependency plan blocked or changed before installation")
+              return { dependencies: await preparer!.prepare(id!, body.release, true) }
             }
             if (checkBuild) {
               const input = await readJson(request, 1024)

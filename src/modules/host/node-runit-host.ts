@@ -20,6 +20,7 @@ import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
+import { NodeDependencyPreparer } from './node-dependency-preparer.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import {
   reviewNodeToolchain,
@@ -522,6 +523,18 @@ export class NodeRunitHost {
       conflicts: tools.conflicts,
     };
   }
+  /** Re-attest all installed bytes before any owned release activation. */
+  private dependenciesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
+    if (plan.commands.build !== null) return false;
+    if (plan.dependencyCount === 0) return true;
+    try {
+      new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
+        .verifyPrepared(id, release);
+      return true;
+    } catch {
+      return false;
+    }
+  }
   preview(id: string): {
     release: string | null;
     port: number | null;
@@ -569,7 +582,7 @@ export class NodeRunitHost {
     }
     const tools = this.toolchain(plan);
     const { nodeVersion, npmVersion } = tools;
-    const clean = plan.dependencyCount === 0 && plan.commands.build === null;
+    const clean = this.dependenciesReady(id, release, plan);
     const dependencyIssues = [
       ...plan.lockReview.missingDirectEntries.map((name) => 'missing-lock:' + name),
       ...plan.lockReview.unreviewedSources.map((name) => 'source-review:' + name),
@@ -596,7 +609,7 @@ export class NodeRunitHost {
   /** Review immutable candidate dependencies without npm, network or service writes. */
   reviewDependencySetup(id: string): {
     release: string;
-    status: 'not-required' | 'review-required' | 'blocked';
+    status: 'not-required' | 'review-required' | 'prepared' | 'blocked';
     dependencyCount: number;
     installRequired: boolean;
     buildRequired: boolean;
@@ -618,9 +631,12 @@ export class NodeRunitHost {
     ];
     const installRequired = plan.dependencyCount > 0;
     const buildRequired = plan.commands.build !== null;
+    const prepared = installRequired && !buildRequired &&
+      this.dependenciesReady(id, candidate, plan);
     return {
       release: candidate,
       status: blockers.length ? 'blocked' :
+        prepared ? 'prepared' :
         installRequired || buildRequired ? 'review-required' : 'not-required',
       dependencyCount: plan.dependencyCount,
       installRequired,
@@ -679,8 +695,8 @@ export class NodeRunitHost {
       throw new Error('Node source admission unavailable');
     }
     const source = this.projects.release(id, release);
-    if (source.plan.dependencyCount !== 0 || source.plan.commands.build !== null) {
-      throw new Error('Node syntax check requires a dependency-free, no-build candidate');
+    if (!this.dependenciesReady(id, release, source.plan)) {
+      throw new Error('Node syntax check requires prepared dependencies and no build');
     }
     return this.checkReleaseSyntax(id, release);
   }
@@ -855,8 +871,7 @@ export class NodeRunitHost {
         throw new Error('No verified prior good release for rollback');
       const dependencyPlan = this.projects.release(id, release).plan;
       if (
-        dependencyPlan.dependencyCount !== 0 ||
-        dependencyPlan.commands.build !== null ||
+        !this.dependenciesReady(id, release, dependencyPlan) ||
         this.toolchain(dependencyPlan).status === 'blocked'
       )
         throw new Error('Rollback dependencies or Node toolchain unavailable');
@@ -881,7 +896,10 @@ export class NodeRunitHost {
       if (!rollback && this.projects.inspect(id).candidateRelease !== release) {
         throw new Error('Node source candidate changed during admission');
       }
-      this.projects.release(id, release); // Re-attest under the exclusive runtime lock.
+      const source = this.projects.release(id, release); // Re-attest under lock.
+      if (!this.dependenciesReady(id, release, source.plan) ||
+          this.toolchain(source.plan).status === 'blocked')
+        throw new Error('Release dependencies unverified: existing service retained');
       // Fail a malformed candidate *before* stopping the last working service.
       // Node --check parses source without executing it or installing packages.
       if (this.checkReleaseSyntax(id, release).status !== 'syntax-valid') {
@@ -991,8 +1009,7 @@ export class NodeRunitHost {
       if (!(await portFree(state.port))) throw new Error('Owned Node port is occupied');
       const release = this.projects.release(id, state.activeRelease);
       if (
-        release.plan.dependencyCount !== 0 ||
-        release.plan.commands.build !== null ||
+        !this.dependenciesReady(id, state.activeRelease, release.plan) ||
         this.toolchain(release.plan).status === 'blocked'
       )
         throw new Error('Node release dependencies or toolchain no longer supported');

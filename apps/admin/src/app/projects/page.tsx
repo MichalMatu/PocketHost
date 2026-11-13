@@ -46,7 +46,7 @@ type NodeHealth = {
 }
 type DependencyReview = {
   release: string
-  status: "not-required" | "review-required" | "blocked"
+  status: "not-required" | "review-required" | "prepared" | "blocked"
   dependencyCount: number
   installRequired: boolean
   buildRequired: boolean
@@ -142,6 +142,8 @@ export default function ProjectsPage() {
   const [preview, setPreview] = React.useState<{ release: string; body: string } | null>(null)
   const [health, setHealth] = React.useState<NodeHealth | null>(null)
   const [dependencyReview, setDependencyReview] = React.useState<DependencyReview | null>(null)
+  const [dependencyInstallEnabled, setDependencyInstallEnabled] = React.useState(false)
+  const [dependencyApproved, setDependencyApproved] = React.useState(false)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -203,6 +205,8 @@ export default function ProjectsPage() {
     setRuntime(observed)
     setHealth(null)
     setDependencyReview(null)
+    setDependencyApproved(false)
+    setDependencyInstallEnabled(false)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
@@ -627,7 +631,9 @@ export default function ProjectsPage() {
                 Install: {dependencyReview.installRequired ? dependencyReview.installCommand?.join(" ") : "not required"} ·
                 Build: {dependencyReview.buildRequired ? dependencyReview.buildCommand?.join(" ") : "not required"} ·
                 Blockers: {dependencyReview.blockers.length ? dependencyReview.blockers.join(", ") : "none"} ·
-                Not executed; installation/build requires separate approval.
+                {dependencyReview.status === "prepared"
+                  ? " Installed package bytes verified; no npm command executed during this review."
+                  : " Not executed; installation/build requires separate approval."}
               </p>}
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
@@ -641,10 +647,12 @@ export default function ProjectsPage() {
                 <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setDependencyReview(null)
+                    setDependencyApproved(false)
+                    setDependencyInstallEnabled(false)
                     const result = await getJson(api + "/" + selected.id + "/dependency-review")
                     const review = result.review as Partial<DependencyReview> | undefined
                     if (!review || review.release !== selected.candidateRelease ||
-                        !["not-required", "review-required", "blocked"].includes(review.status ?? "") ||
+                        !["not-required", "review-required", "prepared", "blocked"].includes(review.status ?? "") ||
                         typeof review.dependencyCount !== "number" ||
                         !Number.isSafeInteger(review.dependencyCount) ||
                         review.dependencyCount < 0 || review.dependencyCount > 500 ||
@@ -664,8 +672,48 @@ export default function ProjectsPage() {
                         (review.buildRequired !== (review.buildCommand !== null)))
                       throw new Error("Invalid Node dependency review")
                     setDependencyReview(review as DependencyReview)
-                    setMessage("Dependency setup reviewed without running npm or build.")
+                    setDependencyInstallEnabled(result.dependencyInstallEnabled === true)
+                    setMessage(review.status === "prepared"
+                      ? "Installed Node packages verified against the pinned release."
+                      : "Dependency setup reviewed without running npm or build.")
                   })}>Review dependency setup</Button>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" aria-label="Approve Node dependency install"
+                    checked={dependencyApproved} onChange={event => setDependencyApproved(event.target.checked)}
+                    disabled={busy || !dependencyInstallEnabled || dependencyReview?.status !== "review-required"} />
+                  I authorize one isolated npm ci for this PocketHost release (network downloads permitted).
+                </label>
+                <Button variant="outline" disabled={busy || editorDirty || !dependencyApproved ||
+                  !dependencyInstallEnabled || !selected.candidateRelease ||
+                  dependencyReview?.release !== selected.candidateRelease ||
+                  dependencyReview.status !== "review-required" || !dependencyReview.installRequired ||
+                  dependencyReview.buildRequired || dependencyReview.blockers.length > 0}
+                  onClick={() => action(async () => {
+                    const release = selected.candidateRelease!
+                    const expectedCount = dependencyReview!.dependencyCount
+                    setDependencyApproved(false)
+                    setDependencyReview(null)
+                    setDependencyInstallEnabled(false)
+                    let result: Record<string, unknown>
+                    try {
+                      result = await getJson(api + "/" + selected.id + "/install-dependencies",
+                        "POST", { approved: true, release })
+                    } catch {
+                      throw new Error("Package installation result unconfirmed. Review setup before retrying.")
+                    }
+                    const packages = result.dependencies as Record<string, unknown> | undefined
+                    if (!packages || packages.release !== release || packages.prepared !== true ||
+                        packages.dependencyCount !== expectedCount)
+                      throw new Error("Package installation response unverified. Review before retry.")
+                    await loadRuntime(selected.id)
+                    const checked = await getJson(api + "/" + selected.id + "/dependency-review")
+                    const verified = checked.review as Partial<DependencyReview> | undefined
+                    if (!verified || verified.release !== release || verified.status !== "prepared")
+                      throw new Error("Package installation acknowledged but integrity unconfirmed.")
+                    setDependencyReview(verified as DependencyReview)
+                    setDependencyInstallEnabled(checked.dependencyInstallEnabled === true)
+                    setMessage("Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
+                  })}>Install approved dependencies</Button>
                 <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",

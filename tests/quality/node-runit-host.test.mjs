@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readdirSync, rmSync, symlinkSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
+import { NodeDependencyPreparer } from '../../src/modules/host/node-dependency-preparer.ts';
 import {
   NodeRunitHost,
   probeOwnedNodeReadiness,
@@ -397,4 +398,40 @@ test('M3 live health never probes or starts a project without verified runit own
     ready: null,
   });
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});
+
+test('installed dependencies become deployable only after SHA-256 attestation', async (t) => {
+  const { root, projects, project, host } = fixture(t);
+  const dependentSource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      dependencies: { 'is-odd': '3.0.1' },
+    },
+    packageLock: {
+      ...source.packageLock,
+      packages: {
+        '': { name: 'node-example', version: '1.0.0', dependencies: { 'is-odd': '3.0.1' } },
+        'node_modules/is-odd': {
+          version: '3.0.1',
+          resolved: 'https://registry.npmjs.org/is-odd/-/is-odd-3.0.1.tgz',
+          integrity: 'sha512-' + 'A'.repeat(86) + '==',
+        },
+      },
+    },
+  };
+  const release = projects.stage(project.id, dependentSource).project.candidateRelease;
+  host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
+  assert.equal(host.preview(project.id).allowed, false);
+  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir) => {
+    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+  });
+  assert.equal(host.reviewDependencySetup(project.id).status, 'review-required');
+  await preparer.prepare(project.id, release, true);
+  assert.equal(host.reviewDependencySetup(project.id).status, 'prepared');
+  assert.equal(host.preview(project.id).allowed, true);
+  writeFileSync(path.join(root, project.id, 'releases', release, 'node_modules', 'index.js'), 'tampered');
+  assert.equal(host.preview(project.id).allowed, false);
+  assert.equal(host.reviewDependencySetup(project.id).status, 'review-required');
 });

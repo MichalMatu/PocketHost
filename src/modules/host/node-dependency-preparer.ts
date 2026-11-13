@@ -140,17 +140,25 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
 }
 
 /**
- * Never exposed to API by default. A future, separately approved endpoint
- * must supply exact live ownership (not a guessed PID) and an explicit opt-in.
- * Do not use this to install dependencies in the ChatGPT QA checkout.
+ * Isolated npm preparation for explicitly approved owned releases.
+ * Never called by the QA checkout or by service discovery.
  */
 export class NodeDependencyPreparer {
+  private readonly projects: NodeProjectHost;
+  private readonly projectRoot: string;
+  private readonly releaseInUse: (projectId: string, releaseId: string) => boolean;
+  private readonly execute: RunNpm;
   constructor(
-    private readonly projects: NodeProjectHost,
-    private readonly projectRoot: string,
-    private readonly releaseInUse: (projectId: string, releaseId: string) => boolean,
-    private readonly execute: RunNpm = runNpm,
-  ) {}
+    projects: NodeProjectHost,
+    projectRoot: string,
+    releaseInUse: (projectId: string, releaseId: string) => boolean,
+    execute: RunNpm = runNpm,
+  ) {
+    this.projects = projects;
+    this.projectRoot = projectRoot;
+    this.releaseInUse = releaseInUse;
+    this.execute = execute;
+  }
 
   /** Read-only re-attestation: a proof file without matching package bytes is not success. */
   verifyPrepared(
