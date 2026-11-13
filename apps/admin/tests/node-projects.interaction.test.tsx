@@ -977,3 +977,91 @@ it.each(["disabled", "approved", "blocked"] as const)(
       .toHaveLength(scenario === "approved" ? 1 : 0)
   },
 )
+
+
+it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
+  "build execution requires pinned separate approval: %s",
+  async scenario => {
+    const user = userEvent.setup()
+    const project = {
+      id: ID, name: "Build project", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+      previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+    }
+    let built = false
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "not-provisioned", desired: "stopped", port: null,
+          activeRelease: null, lastGoodRelease: null, previousGoodRelease: null,
+          history: [],
+        }, executionEnabled: false }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: RELEASE, port: null, missingTools: [], conflicts: [],
+          dependencyCount: 0, allowed: built, reason: built ? "ready-for-explicit-local-deploy" :
+            "build-artifact-not-verified",
+        }, executionEnabled: false }) }
+      if (url.endsWith("/build-review"))
+        return { ok: true, json: async () => ({
+          buildEnabled: scenario !== "disabled",
+          review: {
+            release: RELEASE, status: built ? "verified" :
+              scenario === "blocked" ? "blocked" : "ready-to-build",
+            buildRequired: true, script: "node server.mjs --build",
+            dependencyCount: 0, dependenciesPrepared: true,
+            artifactVerified: built,
+            blockers: scenario === "blocked" ? ["release-in-use"] : [],
+          },
+        }) }
+      if (url.endsWith("/build") && options?.method === "POST") {
+        expect(JSON.parse(String(options.body))).toEqual({ approved: true, release: RELEASE })
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"])
+          .toBe("owned-node-project")
+        if (scenario === "unconfirmed") return { ok: false, status: 409 }
+        built = true
+        return { ok: true, json: async () => ({ build: {
+          release: RELEASE, entries: 1, bytes: 14, prepared: true, verified: true,
+        } }) }
+      }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await user.click(await screen.findByRole("button", { name: "Build project" }))
+    await screen.findByText(/Runtime: not-provisioned/)
+    const approve = screen.getByLabelText("Approve Node build execution") as HTMLInputElement
+    const build = screen.getByRole("button", { name: "Execute approved Node build" }) as HTMLButtonElement
+    expect(build.disabled).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Review Node build" }))
+    await screen.findByText("Build reviewed without running project code.")
+    expect(screen.getByLabelText("Node build setup").textContent).toContain("Script: node server.mjs --build")
+    expect(build.disabled).toBe(true)
+    if (scenario === "disabled" || scenario === "blocked") {
+      expect(approve.disabled).toBe(true)
+    } else {
+      expect(approve.disabled).toBe(false)
+      await user.click(approve)
+      expect(build.disabled).toBe(false)
+      await user.click(build)
+      if (scenario === "approved") {
+        await screen.findByText("Node build published privately and artifact integrity verified. Review deploy plan.")
+        expect(screen.getByLabelText("Node build setup").textContent).toContain("Build: verified")
+        expect(build.disabled).toBe(true)
+      } else {
+        await screen.findByText("Node build result unconfirmed. Review the artifact before retrying.")
+        expect(build.disabled).toBe(true)
+        expect(screen.queryByLabelText("Node build setup")).toBeNull()
+      }
+    }
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/build")))
+      .toHaveLength(scenario === "approved" || scenario === "unconfirmed" ? 1 : 0)
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy")))
+      .toHaveLength(0)
+  },
+)

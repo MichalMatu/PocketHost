@@ -70,6 +70,16 @@ test('failed or unsafe build leaves no dist or global lock', async (t) => {
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
+test('post-publication proof failure removes only new dist, never source or services', async (t) => {
+  const { root, projects, project, release } = fixture(t);
+  const host = new NodeBuildPreparer(projects, root, () => false, async dir => artifact(dir));
+  host.verifyBuilt = () => { throw new Error('mock published artifact mismatch'); };
+  await assert.rejects(host.prepare(project.id, release, true), /published artifact mismatch/);
+  assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'dist')), false);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+  assert.equal(projects.release(project.id, release).source.server, "console.log('build example')");
+});
+
 test('stale or active candidate never executes build', async (t) => {
   const { root, projects, project, release, source } = fixture(t);
   let executed = false;
