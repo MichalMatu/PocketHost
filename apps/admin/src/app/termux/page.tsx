@@ -133,8 +133,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               </CardTitle></CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-xs text-muted-foreground">
-                  Monitoring-only observations, not another set of controls.
-                  Some may also appear above in the runit list.
+                  Monitoring-only observations; these services cannot be managed here.
+                  They may also appear in the runit list above.
                 </p>
                 <details>
                   <summary className="cursor-pointer text-sm font-medium">Show monitoring details</summary>
