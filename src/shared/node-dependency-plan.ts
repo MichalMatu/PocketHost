@@ -1,4 +1,7 @@
 /** M2 pure dependency preview. Never reads arbitrary directories or executes npm. */
+export const SAFE_NPM_CI_COMMAND = [
+  'npm', 'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--omit=dev',
+] as const;
 export interface NodeDependencyPlan {
   readonly status: 'review-required';
   readonly packageName: string;
