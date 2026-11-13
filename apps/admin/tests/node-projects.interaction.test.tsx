@@ -630,6 +630,70 @@ it("previews GitHub dependencies and required build without installing or stagin
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
 
+it.each(["review-required", "blocked", "malformed"] as const)(
+  "dependency setup review remains read-only with %s response",
+  async (scenario) => {
+    const user = userEvent.setup()
+    const project = {
+      id: ID, name: "Dependency plan Node", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+      previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "not-provisioned", desired: "stopped", port: null,
+          activeRelease: null, lastGoodRelease: null,
+          previousGoodRelease: null, history: [],
+        }, executionEnabled: false }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: RELEASE, port: null, nodeVersion: "v26.0.0", npmVersion: "11.0.0",
+          missingTools: [], conflicts: [], dependencyCount: 1,
+          allowed: false, reason: "dependencies-or-build-need-separate-approval",
+        }, executionEnabled: false }) }
+      if (url.endsWith("/dependency-review") && !options?.method)
+        return { ok: true, json: async () => ({ review: {
+          release: scenario === "malformed" ? "wrong-release" : RELEASE,
+          status: scenario === "blocked" ? "blocked" : "review-required",
+          dependencyCount: 1, installRequired: true, buildRequired: false,
+          installCommand: ["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"],
+          buildCommand: null,
+          blockers: scenario === "blocked" ? ["unreviewed-source:node_modules/untrusted"] : [],
+          executed: false,
+        } }) }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await screen.findByRole("button", { name: "Dependency plan Node" })
+    await user.click(screen.getByRole("button", { name: "Dependency plan Node" }))
+    await screen.findByText(/Runtime: not-provisioned/)
+    await user.click(screen.getByRole("button", { name: "Review dependency setup" }))
+    if (scenario === "malformed") {
+      await screen.findByText("Invalid Node dependency review")
+      expect(screen.queryByLabelText("Node dependency setup")).toBeNull()
+    } else {
+      await screen.findByText("Dependency setup reviewed without running npm or build.")
+      const details = screen.getByLabelText("Node dependency setup").textContent ?? ""
+      expect(details).toContain("Setup: " + scenario)
+      expect(details).toContain("npm ci --ignore-scripts --no-audit --no-fund")
+      expect(details).toContain("Not executed; installation/build requires separate approval.")
+      if (scenario === "blocked")
+        expect(details).toContain("unreviewed-source:node_modules/untrusted")
+    }
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/dependency-review")))
+      .toHaveLength(1)
+    expect(calls.mock.calls.filter(([url]) => /\/(stage|deploy|start|install|build)$/.test(String(url))))
+      .toHaveLength(0)
+  },
+)
+
 it("rejects malformed GitHub preview without changing the Node source editor", async () => {
   const user = userEvent.setup()
   const project = {
