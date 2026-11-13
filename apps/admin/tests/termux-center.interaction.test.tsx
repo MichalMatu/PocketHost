@@ -178,7 +178,7 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.queryByText("Local Agent & PocketHost")).toBeNull()
     expect(screen.queryByText(/Observed external services · read-only/)).toBeNull()
     const user = userEvent.setup()
-    const inventory = await screen.findByText(/Protected runit inventory \(2\)/)
+    const inventory = await screen.findByText(/Protected runit inventory \(3\)/)
     const details = inventory.closest("details")
     expect(details?.hasAttribute("open")).toBe(false)
     await user.click(inventory)
