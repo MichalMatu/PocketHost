@@ -21,7 +21,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
-import { reviewNodeToolchain, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
+import {
+  reviewNodeToolchain,
+  SAFE_NPM_CI_COMMAND,
+  type NodeDependencyPlan,
+} from '../../shared/node-dependency-plan.ts';
 import { evaluateHealthPolicy, type HealthDecision } from '../../shared/hosting-health-policy.ts';
 import {
   nodeHostingUnitName as unitName,
@@ -623,7 +627,7 @@ export class NodeRunitHost {
       buildRequired,
       // These are proposed argv, never evaluated as shell or executed here.
       installCommand: installRequired ?
-        ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'] : null,
+        SAFE_NPM_CI_COMMAND : null,
       buildCommand: buildRequired ? ['npm', 'run', 'build'] : null,
       blockers,
       executed: false,
