@@ -219,8 +219,9 @@ test('foreign Vite process, altered listening port and extra flags never verify 
     const variants = [
       original.replace('/apps/admin/node_modules/vite/bin/vite.js',
         '/apps/admin/node_modules/other/vite.js'),
-      original.replace('--port\08787', '--port\09999'),
-      original.replace('--host\0127.0.0.1', '--host\00.0.0.0'),
+      original.replace(['--port', '8787'].join('\\0'), ['--port', '9999'].join('\\0')),
+      original.replace(['--host', '127.0.0.1'].join('\\0'),
+        ['--host', '0.0.0.0'].join('\\0')),
       original.replace('--strictPort', '--strictPort\0--force'),
       original.replace('/bin/node\0', '/bin/bash\0'),
     ];
