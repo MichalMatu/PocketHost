@@ -27,6 +27,7 @@ import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
 import { NodeDependencyPreparer } from "../../src/modules/host/node-dependency-preparer.ts"
+import { NodeBuildPreparer } from "../../src/modules/host/node-build-preparer.ts"
 import os from "node:os"
 import { NodeProjectBackupHost } from "../../src/modules/host/node-project-backup-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
@@ -423,16 +424,47 @@ function nodeProjectApi(): Plugin {
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
       const dependencyInstallEnabled = process.env.POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV === "1"
+      const buildEnabled = process.env.POCKETHOST_ENABLE_NODE_BUILD_DEV === "1"
+      const releaseInUse = (projectId: string, releaseId: string): boolean => {
+        const current = runtime!.status(projectId)
+        return current.state === "unknown" ||
+          [current.activeRelease, current.lastGoodRelease, current.previousGoodRelease]
+            .includes(releaseId)
+      }
+      const nodeRoot = path.join(os.homedir(), "PocketHost-NodeProjects")
       const preparer = enabled ? new NodeDependencyPreparer(
-        host!,
-        path.join(os.homedir(), "PocketHost-NodeProjects"),
-        (projectId, releaseId) => {
-          const current = runtime!.status(projectId)
-          return current.state === "unknown" ||
-            [current.activeRelease, current.lastGoodRelease, current.previousGoodRelease]
-              .includes(releaseId)
-        },
+        host!, nodeRoot, releaseInUse,
       ) : null
+      const builder = enabled ? new NodeBuildPreparer(
+        host!, nodeRoot, releaseInUse,
+      ) : null
+      const buildReview = (projectId: string) => {
+        const review = runtime!.reviewDependencySetup(projectId)
+        const { plan } = host!.release(projectId, review.release)
+        const buildRequired = plan.commands.build !== null
+        let dependenciesPrepared = plan.dependencyCount === 0
+        if (!dependenciesPrepared) {
+          try { preparer!.verifyPrepared(projectId, review.release); dependenciesPrepared = true }
+          catch { /* A missing or changed tree never receives approval. */ }
+        }
+        let artifactVerified = false
+        if (buildRequired) {
+          try { builder!.verifyBuilt(projectId, review.release); artifactVerified = true }
+          catch { /* No verified output yet. */ }
+        }
+        const blockers = [...review.blockers]
+        if (releaseInUse(projectId, review.release)) blockers.push("release-in-use")
+        const status = !buildRequired ? "not-required" :
+          blockers.length ? "blocked" :
+          artifactVerified ? "verified" :
+          dependenciesPrepared ? "ready-to-build" : "requires-dependencies"
+        return {
+          release: review.release, status, buildRequired,
+          script: buildRequired ? builder!.buildScript(projectId, review.release) : null,
+          dependencyCount: plan.dependencyCount, dependenciesPrepared,
+          artifactVerified, blockers,
+        }
+      }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
@@ -470,11 +502,11 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" &&
-            (op === "preview" || op === "source" || op === "dependency-review") &&
+            (op === "preview" || op === "source" || op === "dependency-review" || op === "build-review") &&
             request.headers["x-pockethost-lan-proxy"] === "1") {
           response.statusCode = 403
           response.end('{"error":"local-node-source-and-preview-only"}')
@@ -495,6 +527,9 @@ function nodeProjectApi(): Plugin {
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
               id && op === "dependency-review" ? {
                 review: runtime!.reviewDependencySetup(id), dependencyInstallEnabled,
+              } :
+              id && op === "build-review" ? {
+                review: buildReview(id), buildEnabled,
               } :
               id && op === "logs" ? { logs: runtime!.logs(id) } :
               id && op === "preview" ? { preview: await runtime!.previewLocalResponse(id) } :
@@ -520,10 +555,11 @@ function nodeProjectApi(): Plugin {
         const rollback = request.method === "POST" && !!id && op === "rollback"
         const checkBuild = request.method === "POST" && !!id && op === "check-build"
         const installDependencies = request.method === "POST" && !!id && op === "install-dependencies"
+        const executeBuild = request.method === "POST" && !!id && op === "build"
         const createBackup = request.method === "POST" && route === "/backup/create"
         const restoreBackup = request.method === "POST" && route === "/backup/restore"
         if (!create && !githubPreview && !stage && !restore && !deploy && !start && !stop &&
-            !restart && !rollback && !checkBuild && !installDependencies &&
+            !restart && !rollback && !checkBuild && !installDependencies && !executeBuild &&
             !createBackup && !restoreBackup) {
           response.statusCode = 404
           response.end('{"error":"not-found"}')
@@ -590,6 +626,27 @@ function nodeProjectApi(): Plugin {
                   verified.dependencyCount !== prepared.dependencyCount)
                 throw new Error("Published Node dependency integrity mismatch")
               return { dependencies: { ...prepared, verified: true } }
+            }
+            if (executeBuild) {
+              if (!buildEnabled) throw new Error("Node build execution disabled")
+              const input = await readJson(request, 1024)
+              if (!input || typeof input !== "object" || Array.isArray(input))
+                throw new RangeError("Invalid build approval")
+              const body = input as Record<string, unknown>
+              if (Object.keys(body).sort().join(",") !== "approved,release" ||
+                  body.approved !== true || typeof body.release !== "string" ||
+                  !/^r-[a-f0-9]{32}$/.test(body.release))
+                throw new RangeError("Explicit pinned Node build approval required")
+              const review = buildReview(id!)
+              if (review.release !== body.release || review.status !== "ready-to-build" ||
+                  !review.buildRequired || !review.dependenciesPrepared)
+                throw new Error("Node build plan changed or is not ready")
+              const published = await builder!.prepare(id!, body.release, true)
+              const verified = builder!.verifyBuilt(id!, body.release)
+              if (verified.release !== published.release ||
+                  verified.entries !== published.entries || verified.bytes !== published.bytes)
+                throw new Error("Node build artifact integrity mismatch")
+              return { build: { ...published, verified: true } }
             }
             if (checkBuild) {
               const input = await readJson(request, 1024)
