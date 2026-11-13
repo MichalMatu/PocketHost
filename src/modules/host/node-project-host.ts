@@ -214,6 +214,47 @@ function cleanSource(input: unknown): {
   }
   return { manifest, lock, source: source.serverSource, plan, extraFiles };
 }
+
+/** An immutable source release cannot silently gain new modules/config files.
+ * Dependency packages and built dist have their own independent attestations.
+ */
+function verifySourceLayout(folder: string, extras: Readonly<Record<string, string>>): void {
+  const expected = new Map<string, Set<string>>();
+  const at = (location: string, entry: string) => {
+    if (!expected.has(location)) expected.set(location, new Set());
+    expected.get(location)!.add(entry);
+  };
+  for (const name of [
+    'package.json', 'package-lock.json', 'server.mjs', RELEASE_PROOF,
+    ...(Object.keys(extras).length ? [EXTRA_MANIFEST] : []),
+  ]) at('', name);
+  for (const name of Object.keys(extras)) {
+    const parts = name.split('/');
+    for (let i = 0; i < parts.length; i++) {
+      at(parts.slice(0, i).join('/'), parts[i]);
+    }
+  }
+  for (const [relative, entries] of expected) {
+    const target = relative ? path.join(folder, relative) : folder;
+    const actual = readdirSync(target);
+    // npm and a verified build may publish their own reserved directories,
+    // but only at the release root and never inside user source folders.
+    const allowed = relative === '' ?
+      new Set([...entries, 'node_modules', 'dist']) : entries;
+    if (actual.some(name => !allowed.has(name)))
+      throw new Error('Unexpected file in attested Node source release');
+    if (relative === '') {
+      for (const name of ['node_modules', 'dist']) {
+        const candidate = path.join(folder, name);
+        if (!existsSync(candidate)) continue;
+        const stat = lstatSync(candidate);
+        if (stat.isSymbolicLink() || !stat.isDirectory() || stat.uid !== process.getuid?.())
+          throw new Error('Unsafe Node release dependency or build directory');
+      }
+    }
+  }
+}
+
 function validateMarker(raw: string, id: string): NodeProjectRecord {
   const value: unknown = JSON.parse(raw);
   if (!value || typeof value !== 'object' || Array.isArray(value))
@@ -543,6 +584,7 @@ export class NodeProjectHost {
       }
       extraFiles = extras;
     }
+    verifySourceLayout(folder, extraFiles ?? {});
     const manifest = JSON.parse(manifestText);
     const lockfile = JSON.parse(lockText);
     const plan = planNodeDependencies(manifest, lockfile);

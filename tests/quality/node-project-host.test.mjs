@@ -91,6 +91,26 @@ test('M3 extra source allowlist blocks traversal, dotfiles, binaries and unsafe 
   }), /file count/);
   assert.equal(host.inspect(project.id).candidateRelease, null);
 });
+
+test('M3 refuses untracked source injections in both legacy and multi-file releases', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Reject injected modules');
+  const legacy = host.stage(project.id, source()).project.candidateRelease;
+  const legacyFolder = path.join(root, project.id, 'releases', legacy);
+  writeFileSync(path.join(legacyFolder, 'unexpected.mjs'), 'console.log("foreign")');
+  assert.throws(() => host.release(project.id, legacy), /Unexpected file/);
+  rmSync(path.join(legacyFolder, 'unexpected.mjs'));
+  const multi = host.stage(project.id, {
+    ...source('1.0.1'), extraFiles: { 'src/main.ts': 'export const ok = true' },
+  }).project.candidateRelease;
+  const multiFolder = path.join(root, project.id, 'releases', multi);
+  writeFileSync(path.join(multiFolder, 'src', 'injected.js'), 'export const bad = true');
+  assert.throws(() => host.release(project.id, multi), /Unexpected file/);
+  rmSync(path.join(multiFolder, 'src', 'injected.js'));
+  assert.deepEqual(host.release(project.id, multi).source.extraFiles,
+    { 'src/main.ts': 'export const ok = true' });
+});
+
 test('M3 source save is idempotent for an attested identical candidate', (t) => {
   const { host } = setup(t);
   const project = host.create('Retry safe Node');
