@@ -265,6 +265,64 @@ async function waitForDown() {
   throw new Error('Verified panel runit shutdown not completed');
 }
 
+
+/**
+ * Inspect a trusted, already-running PocketHost DEV panel without fetching,
+ * switching Git revisions, writing owner markers, signaling runit or restarting.
+ * This deliberately never grants authority to deploy.
+ */
+export async function preflightPanel() {
+  const root = realpathSync(process.cwd());
+  requireCondition(
+    root.startsWith(path.join(home, 'Projects/PocketHost-')) &&
+      !lstatSync(root).isSymbolicLink(),
+    'Not a dedicated PocketHost checkout',
+  );
+  requireCondition(
+    git(root, 'remote', 'get-url', 'origin') === 'https://github.com/MichalMatu/PocketHost.git',
+    'Unexpected Git remote',
+  );
+  requireCondition(git(root, 'status', '--porcelain') === '', 'Live checkout is dirty');
+  const checkoutSha = git(root, 'rev-parse', 'HEAD');
+  requireCondition(/^[a-f0-9]{40}$/.test(checkoutSha), 'Invalid checkout SHA');
+
+  // inspect() verifies immutable runit registration, real PID/ticks/cwd/UID,
+  // both owner markers and HMR-only SHA drift before returning.
+  const existing = inspect(root, checkoutSha);
+  const owner = readRecord(ownerFile);
+  const external = externalStates();
+  return summarizePreflight({
+    markerSha: owner.sourceSha,
+    checkoutSha,
+    panelHttpOk: await panelReady(existing.gatewayHost),
+    protectedRunning: Object.values(external).every((state) => state === 'run'),
+  });
+}
+
+/** No service paths, private data or arbitrary host details leave this summary. */
+export function summarizePreflight({ markerSha, checkoutSha, panelHttpOk, protectedRunning }) {
+  requireCondition(
+    /^[a-f0-9]{40}$/.test(markerSha) && /^[a-f0-9]{40}$/.test(checkoutSha),
+    'Invalid source markers',
+  );
+  requireCondition(typeof panelHttpOk === 'boolean' && typeof protectedRunning === 'boolean',
+    'Unverified readiness inputs');
+  const ready = panelHttpOk && protectedRunning;
+  return {
+    status: ready ? 'READ_ONLY_READY' : 'HOLD',
+    mode: 'read-only',
+    ownedPanel: 'verified',
+    markerSha,
+    checkoutSha,
+    sourceDrift: markerSha === checkoutSha ? 'same' : 'verified-ui-hmr-only',
+    panelHttp: panelHttpOk ? 'reachable' : 'unavailable',
+    protectedServices: protectedRunning ? 'running' : 'not-all-running',
+    deployment: 'not-performed',
+    restart: 'not-performed',
+    nextStep: 'operator-review-required',
+  };
+}
+
 async function refresh(target) {
   requireCondition(/^[a-f0-9]{40}$/.test(target ?? ''), 'Provide immutable full main SHA');
   const root = realpathSync(process.cwd());
@@ -358,10 +416,10 @@ async function refresh(target) {
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
-  refresh(process.argv[2])
+  (process.argv[2] === '--preflight' ? preflightPanel() : refresh(process.argv[2]))
     .then((out) => {
       console.log(JSON.stringify(out));
-      if (out.status !== 'PASS' && out.status !== 'CURRENT') process.exitCode = 1;
+      if (!['PASS', 'CURRENT', 'READ_ONLY_READY'].includes(out.status)) process.exitCode = 1;
     })
     .catch((err) => {
       console.log(
