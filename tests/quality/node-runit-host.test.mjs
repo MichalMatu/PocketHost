@@ -304,7 +304,7 @@ test('M3 update refuses tampered last-good source before stopping its owned serv
   const { host, projects, project, root, serviceRoot } = fixture(t);
   const previous = projects.stage(project.id, source).project.candidateRelease;
   const candidate = projects.stage(project.id, {
-    ...source, serverSource: source.serverSource + '\\n// second release',
+    ...source, serverSource: source.serverSource + '\n// second release',
   }).project.candidateRelease;
   const operations = [];
   host.preview = () => ({ allowed: true, release: candidate });
