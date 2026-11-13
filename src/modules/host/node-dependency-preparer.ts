@@ -96,7 +96,7 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
           stat.isSymbolicLink() || (!stat.isFile() && !stat.isDirectory()))
         throw new Error('Unsafe npm dependency tree');
       if (stat.isDirectory()) {
-        hash.update('D\\0' + relative + '\\0');
+        hash.update('D\0' + relative + '\0');
         pending.push(file);
         continue;
       }
@@ -111,7 +111,7 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
         if (current.ino !== stat.ino || current.dev !== stat.dev ||
             current.size !== stat.size || !current.isFile() || current.nlink !== 1)
           throw new Error('npm dependency file changed during verification');
-        hash.update('F\\0' + relative + '\\0' + stat.size + '\\0');
+        hash.update('F\0' + relative + '\0' + stat.size + '\0');
         let remaining = stat.size;
         while (remaining > 0) {
           const amount = readSync(fd, chunk, 0, Math.min(chunk.length, remaining), null);
