@@ -15,6 +15,8 @@ const LOCK_NAME = '.node-ports.lock';
 const PROOF = '.pockethost-node-build.json';
 const MAX_BYTES = 16 * 1024 * 1024;
 const MAX_ENTRIES = 512;
+const MAX_BIN_TOOLS = 64;
+const PACKAGE_BIN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,79}$/;
 type RunBuild = (workspace: string) => Promise<void>;
 
 function digest(contents: string): string {
@@ -138,6 +140,99 @@ function outputProof(folder: string): { treeDigest: string; bytes: number; entri
   return { treeDigest: hash.digest('hex'), bytes, entries };
 }
 
+
+function shellQuote(input: string): string {
+  return "'" + input.replaceAll("'", "'\\''") + "'";
+}
+
+/**
+ * npm ci --no-bin-links keeps the attested install free of symlinks. Rebuild
+ * just the reviewed package executables as short shell shims inside a
+ * *throwaway build copy*. Nothing is added to a published node_modules tree.
+ */
+export function stageNodeBuildBinaries(workspace: string): number {
+  privateDir(workspace);
+  const modules = path.join(workspace, 'node_modules');
+  if (!existsSync(modules)) return 0;
+  const stat = lstatSync(modules);
+  if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(modules) !== modules)
+    throw new Error('Unsafe temporary npm modules directory');
+  const bins = path.join(modules, '.bin');
+  if (existsSync(bins)) throw new Error('Untrusted pre-existing npm executable directory');
+  const packages: { dir: string; expected: string }[] = [];
+  for (const name of readdirSync(modules).sort()) {
+    if (name.startsWith('@')) {
+      if (!/^@[a-z0-9._-]+$/.test(name)) throw new Error('Invalid npm package scope');
+      const scope = path.join(modules, name);
+      const s = lstatSync(scope);
+      if (!s.isDirectory() || s.isSymbolicLink()) throw new Error('Unsafe npm scope');
+      for (const child of readdirSync(scope).sort()) {
+        if (!/^[a-z0-9._-]+$/.test(child)) throw new Error('Invalid scoped npm package');
+        packages.push({ dir: path.join(scope, child), expected: name + '/' + child });
+      }
+    } else if (/^[a-z0-9._-]+$/.test(name) && !name.startsWith('.')) {
+      packages.push({ dir: path.join(modules, name), expected: name });
+    }
+  }
+  let count = 0;
+  for (const item of packages) {
+    const directory = lstatSync(item.dir);
+    if (!directory.isDirectory() || directory.isSymbolicLink())
+      throw new Error('Unsafe installed npm package');
+    const manifest = path.join(item.dir, 'package.json');
+    if (!existsSync(manifest)) continue;
+    const source = lstatSync(manifest);
+    if (
+      !source.isFile() || source.isSymbolicLink() || source.nlink !== 1 ||
+      source.size > 64 * 1024 || source.uid !== process.getuid?.()
+    ) throw new Error('Unsafe installed npm package manifest');
+    const data: unknown = JSON.parse(readFileSync(manifest, 'utf8'));
+    if (!data || typeof data !== 'object' || Array.isArray(data))
+      throw new Error('Invalid installed package manifest');
+    const pkg = data as Record<string, unknown>;
+    if (pkg.name !== item.expected) throw new Error('Installed package identity mismatch');
+    if (pkg.bin === undefined) continue;
+    const declared: unknown = typeof pkg.bin === 'string'
+      ? { [item.expected.split('/').at(-1)!]: pkg.bin } : pkg.bin;
+    if (!declared || typeof declared !== 'object' || Array.isArray(declared) ||
+        Object.keys(declared).length > 16)
+      throw new Error('Invalid npm package bin map');
+    for (const [command, raw] of Object.entries(declared)) {
+      if (!PACKAGE_BIN.test(command) || typeof raw !== 'string')
+        throw new Error('Invalid npm command declaration');
+      const clean = raw.startsWith('./') ? raw.slice(2) : raw;
+      const parts = clean.split('/');
+      if (
+        parts.length > 8 || parts.some(part => !part || part === '.' || part === '..' ||
+          !/^[a-zA-Z0-9._-]+$/.test(part))
+      ) throw new Error('Unsafe npm bin target');
+      const target = path.join(item.dir, ...parts);
+      const targetStat = lstatSync(target);
+      if (
+        !targetStat.isFile() || targetStat.isSymbolicLink() || targetStat.nlink !== 1 ||
+        targetStat.uid !== process.getuid?.() || realpathSync(target) !== target
+      ) throw new Error('Unsafe npm bin entrypoint');
+      count++;
+      if (count > MAX_BIN_TOOLS) throw new Error('npm build bin command budget exceeded');
+      const fd = openSync(target, constants.O_RDONLY | constants.O_NOFOLLOW);
+      let isNode = /\.(?:cjs|mjs|js)$/.test(target);
+      try {
+        const prefix = Buffer.alloc(128);
+        const amount = readSync(fd, prefix, 0, 128, 0);
+        if (/^#![^\n]*\bnode\b/.test(prefix.toString('utf8', 0, amount))) isNode = true;
+      } finally { closeSync(fd); }
+      if (!isNode && (targetStat.mode & 0o111) === 0)
+        throw new Error('Npm executable lacks execute permission');
+      if (!existsSync(bins)) mkdirSync(bins, { mode: 0o700 });
+      const commandScript = '#!' + PREFIX + '/bin/sh\nexec ' +
+        (isNode ? shellQuote(PREFIX + '/bin/node') + ' ' : '') +
+        shellQuote(target) + ' "$@"\n';
+      writeFileSync(path.join(bins, command), commandScript, { flag: 'wx', mode: 0o700 });
+    }
+  }
+  return count;
+}
+
 /** Explicit, candidate-pinned build. Published dist is not activated here. */
 export class NodeBuildPreparer {
   private readonly projects: NodeProjectHost;
@@ -252,6 +347,7 @@ export class NodeBuildPreparer {
         new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
           .verifyPrepared(projectId, releaseId);
       }
+      stageNodeBuildBinaries(workspace);
       await this.execute(workspace);
       if (
         readFileSync(path.join(workspace, 'package.json'), 'utf8') !== current.source.manifest ||

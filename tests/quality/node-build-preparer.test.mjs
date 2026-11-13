@@ -4,7 +4,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, 
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeBuildPreparer } from '../../src/modules/host/node-build-preparer.ts';
+import { NodeBuildPreparer, stageNodeBuildBinaries } from '../../src/modules/host/node-build-preparer.ts';
 
 function fixture(t) {
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-node-build-'));
@@ -30,6 +30,43 @@ function artifact(dir) {
   mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
   writeFileSync(path.join(dir, 'dist', 'index.html'), '<h1>Built</h1>');
 }
+
+test('temporary npm CLI shims work without modifying published modules', (t) => {
+  const home = mkdtempSync(path.join(os.tmpdir(), 'ph-build-bins-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const modules = path.join(home, 'node_modules');
+  const pkg = path.join(modules, 'vite');
+  mkdirSync(path.join(pkg, 'bin'), { recursive: true, mode: 0o700 });
+  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
+    name: 'vite', version: '7.0.0', bin: { vite: 'bin/vite.js' },
+  }));
+  const entry = path.join(pkg, 'bin', 'vite.js');
+  writeFileSync(entry, "console.log('dev-only cli')");
+  assert.equal(stageNodeBuildBinaries(home), 1);
+  const cmd = readFileSync(path.join(modules, '.bin', 'vite'), 'utf8');
+  assert.match(cmd, /exec .*node.*vite\.js/);
+  assert.equal(readFileSync(entry, 'utf8'), "console.log('dev-only cli')");
+  assert.throws(() => stageNodeBuildBinaries(home), /pre-existing/);
+});
+
+test('unsafe npm build entrypoints fail before constructing command shims', (t) => {
+  const home = mkdtempSync(path.join(os.tmpdir(), 'ph-build-bin-deny-'));
+  t.after(() => rmSync(home, { recursive: true, force: true }));
+  const pkg = path.join(home, 'node_modules', 'example');
+  mkdirSync(pkg, { recursive: true, mode: 0o700 });
+  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
+    name: 'example', bin: { cmd: '../../outside.js' },
+  }));
+  assert.throws(() => stageNodeBuildBinaries(home), /Unsafe npm bin target/);
+  assert.equal(existsSync(path.join(home, 'node_modules', '.bin')), false);
+  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
+    name: 'example', bin: { cmd: 'bin/start.js' },
+  }));
+  mkdirSync(path.join(pkg, 'bin'), { mode: 0o700 });
+  symlinkSync(path.join(home, 'server.mjs'), path.join(pkg, 'bin', 'start.js'));
+  assert.throws(() => stageNodeBuildBinaries(home), /Unsafe npm bin entrypoint/);
+  assert.equal(existsSync(path.join(home, 'node_modules', '.bin')), false);
+});
 
 test('explicit build approval publishes only proven dist and not a service', async (t) => {
   const { root, projects, project, release } = fixture(t);
