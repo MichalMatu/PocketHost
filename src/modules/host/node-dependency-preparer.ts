@@ -143,6 +143,47 @@ export class NodeDependencyPreparer {
     private readonly execute: RunNpm = runNpm,
   ) {}
 
+  /** Read-only re-attestation: a proof file without matching package bytes is not success. */
+  verifyPrepared(
+    projectId: string,
+    releaseId: string,
+  ): { release: string; dependencyCount: number; verified: true } {
+    if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release for verification');
+    const verified = this.projects.release(projectId, releaseId);
+    const filename = path.join(verified.folder, PROOF_NAME);
+    const stat = lstatSync(filename);
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
+        stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 || stat.size > 2048)
+      throw new Error('Untrusted Node dependency proof');
+    const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
+    let contents: string;
+    try {
+      const live = fstatSync(fd);
+      if (live.ino !== stat.ino || live.dev !== stat.dev || live.size !== stat.size)
+        throw new Error('Node dependency proof changed');
+      contents = readFileSync(fd, 'utf8');
+    } finally {
+      closeSync(fd);
+    }
+    const proof: unknown = JSON.parse(contents);
+    if (!proof || typeof proof !== 'object' || Array.isArray(proof))
+      throw new Error('Invalid Node dependency proof');
+    const value = proof as Record<string, unknown>;
+    const expected = ['bytes', 'dependencyCount', 'entries', 'lockDigest', 'owner',
+      'release', 'schema', 'treeDigest'].join(',');
+    if (Object.keys(value).sort().join(',') !== expected ||
+        value.schema !== 1 || value.owner !== 'pockethost-node-packages' ||
+        value.release !== releaseId ||
+        value.dependencyCount !== verified.plan.dependencyCount ||
+        value.lockDigest !== checksum(verified.source.lock))
+      throw new Error('Node dependency proof does not match release');
+    const tree = attestPackageTree(path.join(verified.folder, 'node_modules'));
+    if (value.treeDigest !== tree.treeDigest ||
+        value.entries !== tree.entries || value.bytes !== tree.bytes)
+      throw new Error('Node installed dependency tree digest mismatch');
+    return { release: releaseId, dependencyCount: verified.plan.dependencyCount, verified: true };
+  }
+
   async prepare(
     projectId: string,
     releaseId: string,
