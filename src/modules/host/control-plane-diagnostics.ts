@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { lstatSync, readFileSync, realpathSync } from 'node:fs';
+import { lstatSync, readFileSync, readdirSync, realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseProcessStat } from './observability-probes.ts';
@@ -25,7 +25,14 @@ type Owner = { state: 'verified' | 'unverified'; pid: number | null;
     'invalid-process' | 'invalid-source' | null };
 export interface ControlPlaneDiagnostics {
   version: 1; mode: 'read-only'; observedAt: string;
-  localAgent: { runit: ServiceState; intake: 'unverified'; lastResult: 'unverified' };
+  localAgent: {
+    runit: ServiceState;
+    intake: 'stop-present' | 'stop-absent' | 'unverified';
+    claims: number | null;
+    spooled: number | null;
+    lastResult: 'unverified';
+    publication: 'not-checked';
+  };
   pocketHost: { runit: ServiceState; watch: ServiceState; owner: Owner;
     updateReadiness: 'hold-manual-review'; restart: 'blocked' };
   notice: 'no-lifecycle-authority';
@@ -92,6 +99,63 @@ export class ControlPlaneDiagnosticHost {
         return { state: 'stopped', uptimeSeconds: null, error: null };
     } catch { /* unavailable, do not infer healthy */ }
     return unknown('unavailable');
+  }
+
+  /** Only the installed Termux Agent's fixed private state, never its config or task contents. */
+  private localAgentState(): Omit<ControlPlaneDiagnostics['localAgent'], 'runit'> {
+    const unavailable = {
+      intake: 'unverified' as const, claims: null, spooled: null,
+      lastResult: 'unverified' as const, publication: 'not-checked' as const,
+    };
+    const state = path.join(this.home, '.local/state/local-agent/termux');
+    try {
+      const parents = [
+        this.home,
+        path.join(this.home, '.local'),
+        path.join(this.home, '.local/state'),
+        path.join(this.home, '.local/state/local-agent'),
+        state,
+      ];
+      for (const directory of parents) {
+        const entry = lstatSync(directory);
+        if (!entry.isDirectory() || entry.isSymbolicLink() ||
+            this.resolve(directory) !== directory) return unavailable;
+      }
+      let intake: 'stop-present' | 'stop-absent';
+      try {
+        // A dangling symlink is still an emergency stop signal, matching Agent.disabled().
+        lstatSync(path.join(state, 'EMERGENCY_STOP'));
+        intake = 'stop-present';
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return unavailable;
+        intake = 'stop-absent';
+      }
+      const count = (name: 'claims' | 'results'): number | null => {
+        const folder = path.join(state, name);
+        const entry = lstatSync(folder);
+        if (!entry.isDirectory() || entry.isSymbolicLink() ||
+            this.resolve(folder) !== folder) return null;
+        const items = readdirSync(folder, { withFileTypes: true });
+        if (items.length > 2048) return null;
+        let total = 0;
+        for (const item of items) {
+          if (!item.name.endsWith('.json')) continue;
+          if (!/^[A-Za-z0-9._-]{1,200}\.json$/.test(item.name) || !item.isFile())
+            return null;
+          total++;
+        }
+        return total;
+      };
+      const claims = count('claims');
+      const spooled = count('results');
+      return {
+        intake, claims, spooled,
+        // Presence is not proof of integrity, result outcome, or remote delivery.
+        lastResult: 'unverified', publication: 'not-checked',
+      };
+    } catch {
+      return unavailable;
+    }
   }
 
   private marker(file: string): Record<string, unknown> {
@@ -225,8 +289,7 @@ export class ControlPlaneDiagnosticHost {
   inspect(): ControlPlaneDiagnostics {
     return {
       version: 1, mode: 'read-only', observedAt: this.now(),
-      localAgent: { runit: this.status('termux-agent'),
-        intake: 'unverified', lastResult: 'unverified' },
+      localAgent: { runit: this.status('termux-agent'), ...this.localAgentState() },
       pocketHost: { runit: this.status('pockethost-panel'),
         watch: this.status('pockethost-panel-watch'),
         owner: this.inspectOwner(), updateReadiness: 'hold-manual-review',

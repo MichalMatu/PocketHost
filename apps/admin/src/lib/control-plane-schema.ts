@@ -12,7 +12,11 @@ export const controlPlaneSchema = z.object({
   mode: z.literal("read-only"),
   observedAt: z.string().datetime({ offset: true }),
   localAgent: z.object({
-    runit, intake: z.literal("unverified"), lastResult: z.literal("unverified"),
+    runit, intake: z.enum(["stop-present", "stop-absent", "unverified"]),
+    claims: z.number().int().nonnegative().nullable(),
+    spooled: z.number().int().nonnegative().nullable(),
+    lastResult: z.literal("unverified"),
+    publication: z.literal("not-checked"),
   }).strict(),
   pocketHost: z.object({
     runit, watch: runit,

@@ -8,7 +8,8 @@ const sample = {
   version: 1, mode: "read-only", observedAt: "2026-11-13T20:00:00.000Z",
   localAgent: {
     runit: { state: "running", uptimeSeconds: 120, error: null },
-    intake: "unverified", lastResult: "unverified",
+    intake: "stop-absent", claims: 4, spooled: 3,
+    lastResult: "unverified", publication: "not-checked",
   },
   pocketHost: {
     runit: { state: "running", uptimeSeconds: 120, error: null },
@@ -35,6 +36,9 @@ describe("S4 Local Agent and PocketHost source panel", () => {
     expect(screen.getByText(/Owner record agreement:/)).toBeTruthy()
     expect(screen.getByText(/Files changed: 12/)).toBeTruthy()
     expect(screen.getByText(/Git history: ancestor/)).toBeTruthy()
+    expect(screen.getByText(/Local claims: 4/)).toBeTruthy()
+    expect(screen.getByText(/Local result spools: 3/)).toBeTruthy()
+    expect(screen.getByText(/Remote publication: not-checked/)).toBeTruthy()
     expect(screen.getByText(/manual review required/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /restart|start|stop/i })).toBeNull()
     expect(fetcher.mock.calls[0]?.[0]).toBe("/api/v1/termux-admin?mode=control-plane-diagnostics")

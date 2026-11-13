@@ -44,9 +44,15 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
           <div className="rounded-md border p-3 space-y-1">
             <h3 className="font-medium">Local Agent</h3>
             <p>Runit: {status(data.localAgent.runit)}</p>
-            <p>Task intake: {data.localAgent.intake}</p>
-            <p>Last result: {data.localAgent.lastResult}</p>
-            <p className="text-xs text-muted-foreground">Runit does not prove Agent task intake.</p>
+            <p>Emergency STOP marker: {data.localAgent.intake}</p>
+            <p>Local claims: {data.localAgent.claims ?? "unverified"}</p>
+            <p>Local result spools: {data.localAgent.spooled ?? "unverified"}</p>
+            <p>Last result outcome: {data.localAgent.lastResult}</p>
+            <p>Remote publication: {data.localAgent.publication}</p>
+            <p className="text-xs text-muted-foreground">
+              No STOP marker does not prove that task intake works. File counts do not prove
+              spool integrity, task completion or GitHub delivery.
+            </p>
           </div>
           <div className="rounded-md border p-3 space-y-1">
             <h3 className="font-medium">PocketHost</h3>

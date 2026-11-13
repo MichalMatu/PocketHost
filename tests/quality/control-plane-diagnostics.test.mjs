@@ -16,7 +16,10 @@ function fixture() {
   const projects = path.join(home, 'Projects');
   const admin = path.join(projects, 'PocketHost-Preview/apps/admin');
   const gatewayFolder = path.join(home, '.local/state/pockethost');
-  for (const dir of [services, sv, admin, gatewayFolder]) mkdirSync(dir, { recursive: true });
+  const agentState = path.join(home, '.local/state/local-agent/termux');
+  for (const dir of [services, sv, admin, gatewayFolder,
+    path.join(agentState, 'claims'), path.join(agentState, 'results')])
+    mkdirSync(dir, { recursive: true });
   for (const name of ['termux-agent', 'pockethost-panel', 'pockethost-panel-watch']) {
     mkdirSync(path.join(sv, name));
     symlinkSync(path.join(sv, name), path.join(services, name));
@@ -28,7 +31,7 @@ function fixture() {
     adminPort: 18878, sourceSha: a };
   writeFileSync(marker, JSON.stringify(m));
   writeFileSync(gateway, JSON.stringify(g));
-  return { root, home, services, sv, admin, marker, gateway, m, g };
+  return { root, home, services, sv, admin, agentState, marker, gateway, m, g };
 }
 function build(f, calls = [], procCwd = f.admin, argv = 'node\0vite\0') {
   const run = (bin, args) => {
@@ -59,7 +62,10 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
   try {
     const result = build(f, calls).inspect();
     assert.equal(result.localAgent.runit.state, 'running');
-    assert.equal(result.localAgent.intake, 'unverified');
+    assert.equal(result.localAgent.intake, 'stop-absent');
+    assert.equal(result.localAgent.claims, 0);
+    assert.equal(result.localAgent.spooled, 0);
+    assert.equal(result.localAgent.publication, 'not-checked');
     assert.equal(result.localAgent.lastResult, 'unverified');
     assert.equal(result.pocketHost.owner.state, 'verified');
     assert.equal(result.pocketHost.owner.revision, 'mismatch');
@@ -131,5 +137,42 @@ test('conflicting gateway and panel SHA markers are visible and block verified o
     assert.equal(result.pocketHost.owner.gatewaySha, b);
     assert.equal(result.pocketHost.restart, 'blocked');
     assert.equal(calls.filter(([bin]) => bin.endsWith('/bin/git')).length, 0);
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('Local Agent STOP signal and spool counts are observed without reading private task data', () => {
+  const f = fixture(), calls = [];
+  try {
+    writeFileSync(path.join(f.agentState, 'claims', 'task-one.json'), '{secret}');
+    writeFileSync(path.join(f.agentState, 'results', 'task-one.json'), '{private data}');
+    symlinkSync('missing-target', path.join(f.agentState, 'EMERGENCY_STOP'));
+    const observed = build(f, calls).inspect().localAgent;
+    assert.equal(observed.intake, 'stop-present');
+    assert.equal(observed.claims, 1);
+    assert.equal(observed.spooled, 1);
+    assert.equal(observed.lastResult, 'unverified');
+    assert.equal(observed.publication, 'not-checked');
+    assert.ok(!JSON.stringify(observed).includes('private data'));
+    assert.ok(!JSON.stringify(observed).includes('secret'));
+    assert.ok(!calls.some(([bin]) => bin.includes('python')));
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('symlinked Local Agent state or results fail closed without following links', () => {
+  const f = fixture();
+  try {
+    const status = path.join(f.agentState, 'results');
+    rmSync(status, { recursive: true });
+    symlinkSync('/etc', status);
+    const observed = build(f).inspect().localAgent;
+    assert.equal(observed.claims, 0);
+    assert.equal(observed.spooled, null);
+    assert.equal(observed.publication, 'not-checked');
+    rmSync(status);
+    rmSync(f.agentState, { recursive: true });
+    symlinkSync('/etc', f.agentState);
+    const unknown = build(f).inspect().localAgent;
+    assert.equal(unknown.intake, 'unverified');
+    assert.equal(unknown.claims, null);
+    assert.equal(unknown.spooled, null);
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
