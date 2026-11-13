@@ -12,7 +12,6 @@ import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanels } from "@/app/termux/protected-services-panel"
-import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
@@ -23,9 +22,6 @@ async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal
   return parse(await response.json() as unknown)
 }
 
-function State({ value }: { value: string }) {
-  return <Badge variant="outline">{value}</Badge>
-}
 function GuardNotice({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground text-xs">{children}</p>
 }
@@ -52,7 +48,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
     setReading(true)
     const [observed, optional] = await Promise.allSettled([
-      ["packages", "services"].includes(section)
+      section === "packages"
         ? getData("/api/v1/observability", parseObservabilitySnapshot, signal)
         : Promise.resolve(null),
       ["backups", "terminal"].includes(section)
@@ -81,10 +77,10 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
 
   const restic = tools?.tools.find(item => item.id === "restic")
   const tooling = tools?.tools ?? []
-  const overviewTracked = ["packages", "services", "backups", "terminal"].includes(section)
-  const overviewFailed = (["packages", "services"].includes(section) && errors.snapshot) ||
+  const overviewTracked = ["packages", "backups", "terminal"].includes(section)
+  const overviewFailed = (section === "packages" && errors.snapshot) ||
     (["backups", "terminal"].includes(section) && errors.tools)
-  const overviewSource = ["packages", "services"].includes(section) ? "Observability" : "Tool inventory"
+  const overviewSource = section === "packages" ? "Observability" : "Tool inventory"
 
   return (
     <BaseLayout title={sectionTitles[section]} >
@@ -130,34 +126,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <IleStoiDiagnosticPanel refreshToken={sectionRefreshToken} />
             <CloudflareTunnelPanel refreshToken={sectionRefreshToken} />
             <ProtectedServicePanels refreshToken={sectionRefreshToken} />
-             <ControlPlanePanel refreshToken={sectionRefreshToken} />
             <RunitServiceActions refreshToken={sectionRefreshToken} />
-            <Card>
-              <CardHeader><CardTitle className="text-sm">
-                Observed external services · read-only
-                {snapshot && " (" + snapshot.host.services.length + ")"}
-              </CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-xs text-muted-foreground">
-                  Monitoring-only observations; these services cannot be managed here.
-                  They may also appear in the runit list above.
-                </p>
-                <details>
-                  <summary className="cursor-pointer text-sm font-medium">Show monitoring details</summary>
-                  <div className="mt-2 space-y-1">
-                    {errors.snapshot && <p role="alert">Service observations unavailable.</p>}
-                    {snapshot?.host.services.map(service => <div key={service.id}
-                      className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
-                      <span className="text-sm">{service.label}</span>
-                      <State value={service.state} />
-                    </div>)}
-                    {snapshot?.host.services.length === 0 &&
-                      <p className="text-sm text-muted-foreground">No observed external services.</p>}
-                    {!snapshot && !errors.snapshot && <p role="status">Reading service states…</p>}
-                  </div>
-                </details>
-              </CardContent>
-            </Card>
           </section>}
 
           {section === "backups" && <section className="space-y-4">

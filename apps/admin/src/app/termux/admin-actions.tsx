@@ -592,18 +592,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
       setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
     } finally { setBusy(false) }
   }
-  return <div className="space-y-3 rounded-md border p-3">
-    <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="text-sm font-medium">Runit services</h3>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
-    </div>
-    <p className="text-muted-foreground text-xs">
-      Register grants lifecycle controls (start, stop, restart, autostart); it does not start a service.
-      Protected services and the PocketHost panel/watch are read-only here.
-    </p>
-    {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
-    {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
-    {services?.map(service => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
+  const serviceRow = (service: RunitEntry) => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
         <p className="text-sm font-medium">{service.name}</p>
         <div className="flex flex-wrap gap-2" aria-label={"Status for " + service.name}>
@@ -629,7 +618,30 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           title="Grant lifecycle controls; this does not start the service"
           onClick={() => void perform("register", service)}>Register</Button>}
       </div>}
-    </div>)}
+  </div>
+  return <div className="space-y-3 rounded-md border p-3">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <h3 className="text-sm font-medium">Runit services</h3>
+      <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
+    </div>
+    <p className="text-muted-foreground text-xs">
+      Register grants lifecycle controls (start, stop, restart, autostart); it does not start a service.
+      Protected services and the PocketHost panel/watch are read-only here.
+    </p>
+    {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
+    {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
+    {services?.filter(service => !service.protected && !isPanelService(service)).map(serviceRow)}
+    {services && services.some(service => service.protected || isPanelService(service)) &&
+      <details className="rounded-md border p-2">
+        <summary className="cursor-pointer text-sm font-medium">
+          Protected runit inventory ({services.filter(service =>
+            service.protected || isPanelService(service)).length}) · read-only
+        </summary>
+        <p className="py-2 text-xs text-muted-foreground">
+          Detailed monitoring is available in Services and Local Agent; this is the runit registry.
+        </p>
+        {services.filter(service => service.protected || isPanelService(service)).map(serviceRow)}
+      </details>}
     {serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>
