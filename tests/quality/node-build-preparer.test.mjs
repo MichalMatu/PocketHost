@@ -128,6 +128,40 @@ test('approved pinned npm install and build form an attestable deploy candidate 
   assert.equal(runit.preview(project.id).allowed, false);
 });
 
+test('multi-file build receives attested src, config and entry HTML in isolated workspace', async (t) => {
+  const { root, projects, project, source } = fixture(t);
+  const extraFiles = {
+    'index.html': '<main>Hello from src</main>',
+    'src/main.ts': 'console.log("build input")',
+    'vite.config.ts': 'export default {}',
+  };
+  const release = projects.stage(project.id, { ...source, extraFiles }).project.candidateRelease;
+  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
+    for (const [name, value] of Object.entries(extraFiles)) {
+      assert.equal(readFileSync(path.join(workspace, name), 'utf8'), value);
+    }
+    artifact(workspace);
+  });
+  assert.equal((await host.prepare(project.id, release, true)).prepared, true);
+  assert.deepEqual(host.inspectBuilt(project.id, release).files, ['index.html']);
+  const original = projects.release(project.id, release).source.extraFiles;
+  assert.deepEqual(original, extraFiles);
+});
+
+test('build refuses any changes to attested extra source before publishing dist', async (t) => {
+  const { root, projects, project, source } = fixture(t);
+  const release = projects.stage(project.id, {
+    ...source, extraFiles: { 'src/main.ts': 'const original = true' },
+  }).project.candidateRelease;
+  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
+    writeFileSync(path.join(workspace, 'src', 'main.ts'), 'const original = false');
+    artifact(workspace);
+  });
+  await assert.rejects(host.prepare(project.id, release, true), /modified verified extra source/);
+  assert.equal(existsSync(path.join(projects.release(project.id, release).folder, 'dist')), false);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+});
+
 test('explicit build approval publishes only proven dist and not a service', async (t) => {
   const { root, projects, project, release } = fixture(t);
   const called = [];

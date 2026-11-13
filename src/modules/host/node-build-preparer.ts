@@ -378,6 +378,13 @@ export class NodeBuildPreparer {
         ['package-lock.json', current.source.lock],
         ['server.mjs', current.source.server],
       ] as const) writeFileSync(path.join(workspace, name), contents, { flag: 'wx', mode: 0o600 });
+      // Recreate only attested text source files in the disposable workspace.
+      // The live release retains the immutable originals under its proof.
+      for (const [name, contents] of Object.entries(current.source.extraFiles ?? {})) {
+        const filename = path.join(workspace, name);
+        mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
+        writeFileSync(filename, contents, { flag: 'wx', mode: 0o600 });
+      }
       if (current.plan.dependencyCount > 0) {
         const published = path.join(current.folder, 'node_modules');
         const copied = path.join(workspace, 'node_modules');
@@ -398,6 +405,10 @@ export class NodeBuildPreparer {
         readFileSync(path.join(workspace, 'package-lock.json'), 'utf8') !== current.source.lock ||
         readFileSync(path.join(workspace, 'server.mjs'), 'utf8') !== current.source.server
       ) throw new Error('Node build modified verified source input');
+      for (const [name, contents] of Object.entries(current.source.extraFiles ?? {})) {
+        if (readFileSync(path.join(workspace, name), 'utf8') !== contents)
+          throw new Error('Node build modified verified extra source');
+      }
       const dist = path.join(workspace, 'dist');
       if (existsSync(path.join(dist, PROOF)))
         throw new Error('Build output contains reserved proof filename');
