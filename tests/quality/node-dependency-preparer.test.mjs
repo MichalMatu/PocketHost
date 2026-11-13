@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync, writeFileSync } from 'node:fs';
+import {
+  mkdtempSync, mkdirSync, readFileSync, readdirSync, rmSync, existsSync, writeFileSync,
+  symlinkSync, truncateSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
@@ -145,3 +148,55 @@ test('failed source attestation prevents npm admission', async (t) => {
   await assert.rejects(host.prepare(project.id, release, true), /digest mismatch/);
   assert.equal(executed, 0);
 });
+
+test('installed packages re-attest exact bytes and reject later tampering', async (t) => {
+  const { root, projects, project, release } = fixture(t);
+  const host = new NodeDependencyPreparer(projects, root, () => false, async (directory) => {
+    mkdirSync(path.join(directory, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(directory, 'node_modules', 'index.js'), 'export default 1');
+  });
+  await assert.rejects(host.verifyPrepared(project.id, release), /ENOENT/);
+  await host.prepare(project.id, release, true);
+  assert.deepEqual(host.verifyPrepared(project.id, release), {
+    release, dependencyCount: 1, verified: true,
+  });
+  writeFileSync(path.join(root, project.id, 'releases', release, 'node_modules', 'index.js'),
+    'export default 2');
+  assert.throws(() => host.verifyPrepared(project.id, release), /digest mismatch/);
+});
+
+test('npm symlinks and oversized package trees refuse publication without proof', async (t) => {
+  const { root, projects, project, release } = fixture(t);
+  for (const scenario of ['symlink', 'too-large']) {
+    const host = new NodeDependencyPreparer(projects, root, () => false, async (directory) => {
+      const modules = path.join(directory, 'node_modules');
+      mkdirSync(modules, { mode: 0o700 });
+      if (scenario === 'symlink') symlinkSync('/dev/null', path.join(modules, 'foreign'));
+      else {
+        writeFileSync(path.join(modules, 'huge.bin'), '');
+        truncateSync(path.join(modules, 'huge.bin'), 96 * 1024 * 1024 + 1);
+      }
+    });
+    await assert.rejects(host.prepare(project.id, release, true),
+      scenario === 'symlink' ? /Unsafe npm dependency tree/ : /exceed 96 MiB/);
+    const candidate = projects.release(project.id, release).folder;
+    assert.equal(existsSync(path.join(candidate, 'node_modules')), false);
+    assert.equal(existsSync(path.join(candidate, '.pockethost-node-packages.json')), false);
+    assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+  }
+});
+
+test('candidate turning active during npm preparation refuses publish and cleans staging', async (t) => {
+  const { root, projects, project, release } = fixture(t);
+  let active = false;
+  const host = new NodeDependencyPreparer(projects, root, () => active, async (directory) => {
+    mkdirSync(path.join(directory, 'node_modules'), { mode: 0o700 });
+    writeFileSync(path.join(directory, 'node_modules', 'index.js'), 'export default 1');
+    active = true;
+  });
+  await assert.rejects(host.prepare(project.id, release, true),
+    /candidate changed during package preparation/);
+  assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'node_modules')), false);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+});
+
