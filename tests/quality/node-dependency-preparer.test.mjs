@@ -62,7 +62,7 @@ test('isolated, manually approved npm preparation uses fixed safe argv and never
   assert.equal(readFileSync(path.join(candidate, 'node_modules', 'index.js'), 'utf8'),
     'export default 1');
   const attestation = JSON.parse(readFileSync(
-    path.join(candidate, '.pockethost-node-packages.json'), 'utf8'));
+    path.join(candidate, 'node_modules', '.pockethost-node-packages.json'), 'utf8'));
   assert.equal(attestation.owner, 'pockethost-node-packages');
   assert.equal(attestation.release, release);
   assert.equal(attestation.dependencyCount, 1);
@@ -107,7 +107,7 @@ test('dependency installation errors clean private staging without installing in
   await assert.rejects(host.prepare(project.id, release, true), /mock npm failure/);
   const candidate = projects.release(project.id, release).folder;
   assert.ok(!existsSync(path.join(candidate, 'node_modules')));
-  assert.ok(!existsSync(path.join(candidate, '.pockethost-node-packages.json')));
+  assert.ok(!existsSync(path.join(candidate, 'node_modules', '.pockethost-node-packages.json')));
   assert.ok(!existsSync(path.join(root, '.node-ports.lock')));
   assert.ok(!readdirSync(path.join(root, project.id)).some((name) =>
     name.startsWith('.node-packages-')));
@@ -181,7 +181,7 @@ test('npm symlinks and oversized package trees refuse publication without proof'
       scenario === 'symlink' ? /Unsafe npm dependency tree/ : /exceed 96 MiB/);
     const candidate = projects.release(project.id, release).folder;
     assert.equal(existsSync(path.join(candidate, 'node_modules')), false);
-    assert.equal(existsSync(path.join(candidate, '.pockethost-node-packages.json')), false);
+    assert.equal(existsSync(path.join(candidate, 'node_modules', '.pockethost-node-packages.json')), false);
     assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
   }
 });
