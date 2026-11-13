@@ -662,7 +662,7 @@ it.each(["review-required", "blocked", "malformed"] as const)(
           release: scenario === "malformed" ? "wrong-release" : RELEASE,
           status: scenario === "blocked" ? "blocked" : "review-required",
           dependencyCount: 1, installRequired: true, buildRequired: false,
-          installCommand: ["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"],
+          installCommand: ["npm", "ci", "--ignore-scripts", "--no-bin-links", "--no-audit", "--no-fund", "--omit=dev"],
           buildCommand: null,
           blockers: scenario === "blocked" ? ["unreviewed-source:node_modules/untrusted"] : [],
           executed: false,
@@ -682,7 +682,7 @@ it.each(["review-required", "blocked", "malformed"] as const)(
       await screen.findByText("Dependency setup reviewed without running npm or build.")
       const details = screen.getByLabelText("Node dependency setup").textContent ?? ""
       expect(details).toContain("Setup: " + scenario)
-      expect(details).toContain("npm ci --ignore-scripts --no-audit --no-fund")
+      expect(details).toContain("npm ci --ignore-scripts --no-bin-links --no-audit --no-fund --omit=dev")
       expect(details).toContain("Not executed; installation/build requires separate approval.")
       if (scenario === "blocked")
         expect(details).toContain("unreviewed-source:node_modules/untrusted")
