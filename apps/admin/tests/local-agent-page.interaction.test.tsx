@@ -38,12 +38,14 @@ describe("read-only Local Agent menu page", () => {
       call[1]?.method === "GET")).toBe(true)
   })
   it("polls sanitized events every 5s, and pause stops automatic reads", async () => {
+    // Fake the polling interval before the effect registers it, but leave the
+    // testing-library async timers alone so the first fetch can settle.
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const getter = vi.fn(async () => ({ ok: true, json: async () => sample }))
     vi.stubGlobal("fetch", getter)
     render(<LocalAgentPage />)
     await screen.findByText(/Task stopped by execution budget/)
     expect(getter).toHaveBeenCalledTimes(1)
-    vi.useFakeTimers()
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(getter).toHaveBeenCalledTimes(2)
     fireEvent.click(screen.getByRole("button", { name: "Pause live" }))
