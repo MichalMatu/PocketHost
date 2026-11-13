@@ -94,9 +94,9 @@ it("rejects traversal, unsupported files and mixed roots before reading local fo
   await expect(readLocalNodeFolder([
     ...files, folderFile("unknown", "public/virus.exe"),
   ])).rejects.toThrow(/Unsupported/)
-  const second = folderFile("<html>x</html>", "index.html")
+  const second = new File(["<html>x</html>"], "index.html")
   Object.defineProperty(second, "webkitRelativePath", {
-    value: "other-root/index.html", configurable: true,
+    value: "other-root/index.html",
   })
   await expect(readLocalNodeFolder([...files, second])).rejects.toThrow(/one local Node project/)
   const bad = folderFile("not real png!", "public/logo.png")
