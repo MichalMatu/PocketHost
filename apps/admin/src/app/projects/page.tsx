@@ -66,6 +66,11 @@ type BuildReview = {
   artifact?: { entries: number; bytes: number; files: string[]; truncated: boolean } | null
   blockers: string[]
 }
+type RollbackPreflight = {
+  release: string | null
+  allowed: boolean
+  reason: string
+}
 type Candidate = {
   id: string
   active: false
@@ -158,6 +163,7 @@ export default function ProjectsPage() {
   const [buildReview, setBuildReview] = React.useState<BuildReview | null>(null)
   const [buildEnabled, setBuildEnabled] = React.useState(false)
   const [buildApproved, setBuildApproved] = React.useState(false)
+  const [rollbackPreflight, setRollbackPreflight] = React.useState<RollbackPreflight | null>(null)
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
@@ -224,6 +230,7 @@ export default function ProjectsPage() {
     setBuildReview(null)
     setBuildApproved(false)
     setBuildEnabled(false)
+    setRollbackPreflight(null)
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
@@ -863,8 +870,33 @@ export default function ProjectsPage() {
                     await runRuntimeAction(selected.id, "start", { approved: true },
                       "Previously verified Node release started and readiness confirmed.")
                   })}>Start stopped service</Button>
+                <Button variant="outline" disabled={busy || !runtime?.previousGoodRelease}
+                  onClick={() => action(async () => {
+                    setRollbackPreflight(null)
+                    const data = await getJson(api + "/" + selected.id + "/rollback-preview")
+                    const reviewed = data.rollbackPreview as Partial<RollbackPreflight> | undefined
+                    if (!reviewed ||
+                        reviewed.release !== runtime.previousGoodRelease ||
+                        typeof reviewed.allowed !== "boolean" ||
+                        ![
+                          "previous-release-verified", "release-already-active",
+                          "owned-process-identity-unknown",
+                          "rollback-dependencies-or-build-unverified",
+                          "rollback-toolchain-blocked", "rollback-source-syntax-invalid",
+                          "rollback-release-not-verifiable",
+                        ].includes(reviewed.reason ?? "") ||
+                        reviewed.allowed !== (reviewed.reason === "previous-release-verified"))
+                      throw new Error("Invalid Node rollback review")
+                    setRollbackPreflight(reviewed as RollbackPreflight)
+                    setMessage(reviewed.allowed
+                      ? "Previous Node release verified for explicit rollback."
+                      : "Rollback target is not safely recoverable.")
+                  })}>Review rollback target</Button>
                 <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
-                  !runtime?.previousGoodRelease || runtime.state === "unknown"}
+                  !runtime?.previousGoodRelease || runtime.state === "unknown" ||
+                  (rollbackPreflight !== null &&
+                    (!rollbackPreflight.allowed ||
+                      rollbackPreflight.release !== runtime.previousGoodRelease))}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "rollback", { approved: true },
                       "Previous verified Node release restored by host.")
@@ -911,6 +943,11 @@ export default function ProjectsPage() {
                   setLogLines(logs.lines); setMessage("Bounded runit logs loaded.")
                 })}>View logs</Button>
               </div>
+              {rollbackPreflight && <p className="text-muted-foreground text-xs"
+                aria-label="Node rollback preflight">
+                Rollback to {rollbackPreflight.release ?? "none"}:
+                {rollbackPreflight.allowed ? " verified" : " blocked"} · {rollbackPreflight.reason}.
+              </p>}
               {buildCheck && <p className="text-muted-foreground text-xs" role="status">
                 Candidate syntax: {buildCheck.status} · No project code executed.
               </p>}

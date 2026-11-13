@@ -509,11 +509,12 @@ function nodeProjectApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" &&
-            (op === "preview" || op === "source" || op === "dependency-review" || op === "build-review") &&
+            (op === "preview" || op === "source" || op === "dependency-review" ||
+             op === "build-review" || op === "rollback-preview") &&
             request.headers["x-pockethost-lan-proxy"] === "1") {
           response.statusCode = 403
           response.end('{"error":"local-node-source-and-preview-only"}')
@@ -537,6 +538,9 @@ function nodeProjectApi(): Plugin {
               } :
               id && op === "build-review" ? {
                 review: buildReview(id), buildEnabled,
+              } :
+              id && op === "rollback-preview" ? {
+                rollbackPreview: runtime!.rollbackPreview(id),
               } :
               id && op === "logs" ? { logs: runtime!.logs(id) } :
               id && op === "preview" ? { preview: await runtime!.previewLocalResponse(id) } :
