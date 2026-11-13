@@ -84,17 +84,33 @@ export function classifyProtectedLog(line: string): { kind: EventKind; timestamp
 
 /** Fixed runit observations only: no PID, path, command or service adoption through HTTP. */
 export class ProtectedServiceDiagnosticHost {
+  private readonly serviceRoot: string;
+  private readonly svRoot: string;
+  private readonly logRoot: string;
+  private readonly configRoot: string;
+  private readonly command: Command;
+  private readonly procRead: (file: string) => string;
+  private readonly now: () => string;
+
   constructor(
-    private readonly serviceRoot = path.join(PREFIX, 'var/service'),
-    private readonly svRoot = path.join(PREFIX, 'var/sv'),
-    private readonly logRoot = path.join(PREFIX, 'var/log/sv'),
-    private readonly configRoot = path.join(PREFIX, 'etc'),
-    private readonly command: Command = (binary, args) => spawnSync(binary, args, {
+    serviceRoot = path.join(PREFIX, 'var/service'),
+    svRoot = path.join(PREFIX, 'var/sv'),
+    logRoot = path.join(PREFIX, 'var/log/sv'),
+    configRoot = path.join(PREFIX, 'etc'),
+    command: Command = (binary, args) => spawnSync(binary, args, {
       encoding: 'utf8', shell: false, timeout: 1200, maxBuffer: 2048,
     }),
-    private readonly procRead: (file: string) => string = file => readFileSync(file, 'utf8'),
-    private readonly now: () => string = () => new Date().toISOString(),
-  ) {}
+    procRead: (file: string) => string = file => readFileSync(file, 'utf8'),
+    now: () => string = () => new Date().toISOString(),
+  ) {
+    this.serviceRoot = serviceRoot;
+    this.svRoot = svRoot;
+    this.logRoot = logRoot;
+    this.configRoot = configRoot;
+    this.command = command;
+    this.procRead = procRead;
+    this.now = now;
+  }
 
   private service(name: ProtectedDiagnosticService): { argument: string; resolved: string } {
     const root = lstatSync(this.serviceRoot);
