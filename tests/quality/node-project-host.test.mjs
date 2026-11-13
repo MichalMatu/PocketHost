@@ -111,6 +111,47 @@ test('M3 refuses untracked source injections in both legacy and multi-file relea
     { 'src/main.ts': 'export const ok = true' });
 });
 
+
+test('M3 new binary manifest is immutable and backward compatible with old releases', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Binary frontend');
+  const previous = host.stage(project.id, source()).project.candidateRelease;
+  const image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
+  const assets = { 'public/logo.png': image };
+  const current = host.stage(project.id, {
+    ...source('1.0.1'), extraFiles: { 'index.html': '<img src="/logo.png">' },
+    assetFiles: assets,
+  }).project.candidateRelease;
+  assert.deepEqual(host.release(project.id, current).source.assetFiles, assets);
+  assert.deepEqual(host.candidateSource(project.id).assetFiles, assets);
+  assert.equal(host.release(project.id, previous).source.assetFiles, undefined);
+  assert.equal(host.stage(project.id, {
+    ...source('1.0.1'), extraFiles: { 'index.html': '<img src="/logo.png">' },
+    assetFiles: assets,
+  }).unchanged, true);
+  writeFileSync(path.join(root, project.id, 'releases', current, 'public', 'logo.png'), 'tampered');
+  assert.throws(() => host.release(project.id, current), /digest mismatch/);
+});
+
+test('M3 unsafe, malformed and mislabeled binary assets are never staged', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Invalid media');
+  for (const files of [
+    { 'public/../logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    { 'public/.env.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    { 'src/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    { 'public/logo.js': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    { 'public/logo.jpg': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    { 'public/logo.png': 'not-base64!!' },
+    Object.fromEntries(Array.from({ length: 13 }, (_, i) =>
+      ['public/' + i + '.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII='])),
+  ]) {
+    assert.throws(() => host.stage(project.id, { ...source(), assetFiles: files }),
+      /asset|format|budget|binary/i);
+  }
+  assert.equal(host.inspect(project.id).candidateRelease, null);
+});
+
 test('M3 source save is idempotent for an attested identical candidate', (t) => {
   const { host } = setup(t);
   const project = host.create('Retry safe Node');

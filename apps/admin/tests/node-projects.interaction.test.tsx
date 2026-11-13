@@ -1128,6 +1128,7 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
     "src/main.tsx": "document.body.textContent = 'Hello'",
     "vite.config.ts": "export default {}",
   }
+  const assets = { "public/logo.png": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=" }
   const manifest = {
     name: "frontend-node", version: "1.0.0", scripts: {
       start: "node server.mjs", build: "vite build",
@@ -1164,14 +1165,15 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
       expect(JSON.parse(String(options?.body))).toEqual({ repository: "example/frontend-node" })
       return { ok: true, json: async () => ({ preview: {
         repository: "example/frontend-node", commit: "a".repeat(40),
-        source: { packageJson: manifest, packageLock: lock, serverSource, extraFiles: extras },
+        source: { packageJson: manifest, packageLock: lock, serverSource, extraFiles: extras,
+          assetFiles: assets },
         plan: { dependencyCount: 0, commands: { build: ["npm", "run", "build"] } },
       } }) }
     }
     if (url.endsWith("/stage") && options?.method === "POST") {
       expect(JSON.parse(String(options.body))).toEqual({
         packageJson: manifest, packageLock: lock, serverSource, extraFiles: extras,
-        expectedCandidate: null, expectedRevision: 0,
+        assetFiles: assets, expectedCandidate: null, expectedRevision: 0,
       })
       project = { ...project, state: "source-staged", candidateRelease: RELEASE,
         deploymentCount: 1 }
@@ -1180,7 +1182,7 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
     if (url.endsWith("/source"))
       return { ok: true, json: async () => ({ source: {
         release: RELEASE, manifest: JSON.stringify(manifest),
-        lockfile: JSON.stringify(lock), serverSource, extraFiles: extras,
+        lockfile: JSON.stringify(lock), serverSource, extraFiles: extras, assetFiles: assets,
       } }) }
     throw new Error("Unexpected endpoint " + url)
   })
@@ -1193,8 +1195,12 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
   await screen.findByText(/contains changes. Review and stage/)
   expect(screen.getByLabelText("Imported frontend files").textContent)
     .toContain("src/main.tsx")
+  expect(screen.getByLabelText("Imported binary assets").textContent)
+    .toContain("public/logo.png")
   expect(screen.getByLabelText("GitHub source changes").textContent)
     .toContain("Frontend files: 3")
+  expect(screen.getByLabelText("GitHub source changes").textContent)
+    .toContain("Binary assets: 1")
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
   await user.click(screen.getByRole("button", { name: "Load staged source" }))
