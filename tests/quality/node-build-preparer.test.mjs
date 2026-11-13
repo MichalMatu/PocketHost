@@ -5,6 +5,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 import { NodeBuildPreparer, stageNodeBuildBinaries } from '../../src/modules/host/node-build-preparer.ts';
+import { NodeDependencyPreparer } from '../../src/modules/host/node-dependency-preparer.ts';
+import { NodeRunitHost } from '../../src/modules/host/node-runit-host.ts';
 
 function fixture(t) {
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-node-build-'));
@@ -66,6 +68,64 @@ test('unsafe npm build entrypoints fail before constructing command shims', (t) 
   symlinkSync(path.join(home, 'server.mjs'), path.join(pkg, 'bin', 'start.js'));
   assert.throws(() => stageNodeBuildBinaries(home), /Unsafe npm bin entrypoint/);
   assert.equal(existsSync(path.join(home, 'node_modules', '.bin')), false);
+});
+
+test('approved pinned npm install and build form an attestable deploy candidate without starting runit', async (t) => {
+  const { root, projects, project, source } = fixture(t);
+  const dependencySource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      dependencies: { 'cli-helper': '1.0.0' },
+    },
+    packageLock: {
+      ...source.packageLock,
+      packages: {
+        '': {
+          ...source.packageLock.packages[''],
+          dependencies: { 'cli-helper': '1.0.0' },
+        },
+        'node_modules/cli-helper': {
+          version: '1.0.0',
+          resolved: 'https://registry.npmjs.org/cli-helper/-/cli-helper-1.0.0.tgz',
+          integrity: 'sha512-' + 'A'.repeat(86) + '==',
+        },
+      },
+    },
+  };
+  const release = projects.stage(project.id, dependencySource).project.candidateRelease;
+  const npm = new NodeDependencyPreparer(projects, root, () => false, async (workspace, args) => {
+    assert.equal(args.at(-1), '--include=dev');
+    const pkg = path.join(workspace, 'node_modules', 'cli-helper');
+    mkdirSync(path.join(pkg, 'bin'), { mode: 0o700, recursive: true });
+    writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
+      name: 'cli-helper', version: '1.0.0', bin: { helper: 'bin/cli.js' },
+    }));
+    writeFileSync(path.join(pkg, 'bin', 'cli.js'), "console.log('safe fixture')");
+  });
+  await npm.prepare(project.id, release, true);
+  assert.equal(npm.verifyPrepared(project.id, release).verified, true);
+  const built = new NodeBuildPreparer(projects, root, () => false, async workspace => {
+    const shim = path.join(workspace, 'node_modules', '.bin', 'helper');
+    assert.match(readFileSync(shim, 'utf8'), /cli\.js/);
+    assert.equal(existsSync(path.join(projects.release(project.id, release).folder,
+      'node_modules', '.bin')), false);
+    artifact(workspace);
+  });
+  await built.prepare(project.id, release, true);
+  assert.equal(built.verifyBuilt(project.id, release).verified, true);
+  const services = path.join(root, 'unit-services');
+  const logs = path.join(root, 'unit-logs');
+  mkdirSync(services, { mode: 0o700 });
+  mkdirSync(logs, { mode: 0o700 });
+  const runit = new NodeRunitHost(root, services, logs);
+  runit.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
+  assert.equal(runit.preview(project.id).allowed, true);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+  assert.deepEqual((await import('node:fs')).readdirSync(services), []);
+  writeFileSync(path.join(projects.release(project.id, release).folder, 'dist',
+    'index.html'), 'corrupted');
+  assert.equal(runit.preview(project.id).allowed, false);
 });
 
 test('explicit build approval publishes only proven dist and not a service', async (t) => {
