@@ -15,6 +15,7 @@ export const navGroups = [
       { title: "Packages & Software", url: "/packages", icon: Package },
       { title: "File Manager", url: "/files", icon: FolderOpen },
       { title: "Services", url: "/services", icon: ServerCog },
+      { title: "Local Agent", url: "/local-agent", icon: Bot },
       { title: "Terminal", url: "/terminal", icon: Terminal },
       { title: "Backups & Recovery", url: "/backups", icon: Archive },
     ],

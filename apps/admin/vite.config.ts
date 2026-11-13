@@ -6,6 +6,7 @@ import { IleStoiDiagnosticHost } from "../../src/modules/host/ilestoi-diagnostic
 import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflare-tunnel-diagnostics.ts"
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
+import { LocalAgentLogHost } from "../../src/modules/host/local-agent-log-diagnostics.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
@@ -1388,6 +1389,7 @@ function termuxAdminApi(): Plugin {
   const cloudflare = new CloudflareTunnelDiagnosticHost()
   const protectedServices = new ProtectedServiceDiagnosticHost()
   const controlPlane = new ControlPlaneDiagnosticHost()
+  const agentLogs = new LocalAgentLogHost()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
   const terminal = new TermuxTerminal()
@@ -1460,6 +1462,7 @@ function termuxAdminApi(): Plugin {
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
               mode === "healthwatch-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("ilestoi-healthwatch") :
               mode === "control-plane-diagnostics" && url.searchParams.size === 1 ? controlPlane.inspect() :
+              mode === "local-agent-logs" && url.searchParams.size === 1 ? agentLogs.inspect() :
                mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :

@@ -101,7 +101,7 @@ describe("H3 strict read-only contracts", () => {
   })
   it("promotes six real Termux routes and preserves upstream examples", () => {
     const mainItems = navGroups.flatMap(group => group.items)
-    for (const path of ["/packages", "/files", "/services", "/backups", "/terminal", "/agents"]) {
+    for (const path of ["/packages", "/files", "/services", "/local-agent", "/backups", "/terminal", "/agents"]) {
       expect(mainItems.some(item => item.url === path)).toBe(true)
       expect(routes.some(route => route.path === path)).toBe(true)
     }
