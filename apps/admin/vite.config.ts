@@ -2,6 +2,7 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
+import { IleStoiDiagnosticHost } from "../../src/modules/host/ilestoi-diagnostics.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
@@ -1380,6 +1381,7 @@ function termuxAdminApi(): Plugin {
   const files = new WorkspaceFiles()
   const backups = new WorkspaceBackups(files)
   const services = new TermuxServiceAdmin()
+  const ileStoi = new IleStoiDiagnosticHost()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
   const terminal = new TermuxTerminal()
@@ -1446,6 +1448,7 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
+              mode === "ilestoi-diagnostics" && url.searchParams.size === 1 ? ileStoi.inspect() :
               mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :

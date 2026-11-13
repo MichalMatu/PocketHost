@@ -9,6 +9,7 @@ import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/ob
 import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
+import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
@@ -123,6 +124,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           </section>}
 
           {section === "services" && <section className="space-y-3">
+            <IleStoiDiagnosticPanel refreshToken={sectionRefreshToken} />
             <RunitServiceActions refreshToken={sectionRefreshToken} />
             <Card>
               <CardHeader><CardTitle className="text-sm">
