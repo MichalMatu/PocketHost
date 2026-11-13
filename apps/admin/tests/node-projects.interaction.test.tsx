@@ -1210,3 +1210,73 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
+
+it("loads one local project folder including frontend assets and stages only after review", async () => {
+  const user = userEvent.setup()
+  const current = {
+    id: ID, name: "Local folder", kind: "node", state: "created",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: null,
+    previousCandidate: null, deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const pkg = { name: "folder-node", version: "1.0.0", scripts: { start: "node server.mjs" } }
+  const lock = {
+    name: "folder-node", version: "1.0.0", lockfileVersion: 3,
+    packages: { "": { name: "folder-node", version: "1.0.0" } },
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [current] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null, activeRelease: null,
+        lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: null, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: false, reason: "no-candidate",
+      }, executionEnabled: false }) }
+    if (url.endsWith("/stage") && options?.method === "POST") {
+      expect(JSON.parse(String(options.body))).toEqual({
+        packageJson: pkg, packageLock: lock, serverSource: "console.log('folder')",
+        extraFiles: { "index.html": "<main>Hello</main>" },
+        assetFiles: {
+          "public/logo.png": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=",
+        },
+        expectedCandidate: null, expectedRevision: 0,
+      })
+      return { ok: true, json: async () => ({ project: {
+        ...current, state: "source-staged", candidateRelease: RELEASE, deploymentCount: 1,
+      } }) }
+    }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  const make = (path: string, content: string | Uint8Array) => {
+    const file = new File([content], path.split("/").at(-1)!)
+    Object.defineProperty(file, "webkitRelativePath", { value: "my-project/" + path })
+    return file
+  }
+  const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII="
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await user.click(await screen.findByRole("button", { name: "Local folder" }))
+  await screen.findByText(/Runtime: not-provisioned/)
+  await user.upload(screen.getByLabelText("Load Node project folder"), [
+    make("package.json", JSON.stringify(pkg)),
+    make("package-lock.json", JSON.stringify(lock)),
+    make("server.mjs", "console.log('folder')"),
+    make("index.html", "<main>Hello</main>"),
+    make("public/logo.png", Uint8Array.from(atob(png), char => char.charCodeAt(0))),
+  ])
+  await screen.findByText("Local project folder reviewed. Validate and stage to save its files; no code executed.")
+  expect(screen.getByLabelText("Imported frontend files").textContent).toContain("index.html")
+  expect(screen.getByLabelText("Imported binary assets").textContent).toContain("public/logo.png")
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
+  await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
+  await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})

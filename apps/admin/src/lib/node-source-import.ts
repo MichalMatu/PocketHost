@@ -101,7 +101,7 @@ function readBinaryBase64(file: File): Promise<string> {
       }
       const match = /^data:[^,]*;base64,([A-Za-z0-9+/]+={0,2})$/.exec(reader.result)
       if (!match) reject(new Error("Invalid local binary encoding."))
-      else resolve(match[1])
+      else resolve(match[1]!)
     }
     reader.readAsDataURL(file)
   })
@@ -130,11 +130,11 @@ export async function readLocalNodeFolder(files: readonly File[]): Promise<Local
   let assetCount = 0
   for (const file of files) {
     const parts = file.webkitRelativePath.split("/")
-    if (parts.length < 2 || !/^[A-Za-z0-9_-]{1,60}$/.test(parts[0]) ||
+    if (parts.length < 2 || !/^[A-Za-z0-9_-]{1,60}$/.test(parts[0] ?? "") ||
         (root !== null && root !== parts[0])) {
       throw new Error("Select one local Node project folder.")
     }
-    root = parts[0]
+    root = parts[0]!
     const name = parts.slice(1).join("/")
     const required = FILES.some(value => value === name)
     const binary = BINARY_EXTRA.test(name)

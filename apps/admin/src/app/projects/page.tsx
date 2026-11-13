@@ -3,7 +3,7 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { readLocalNodeFiles } from "@/lib/node-source-import"
+import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 
 function validatedExtras(input: unknown): Record<string, string> {
   if (input === undefined) return {}
@@ -647,6 +647,29 @@ export default function ProjectsPage() {
                   setGithubReview(null)
                   setDependencyReview(null)
                   setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
+                })
+              }} />
+          </label>
+          <label className="grid gap-1 text-sm">Load Node project folder
+            <input type="file" aria-label="Load Node project folder" multiple
+              ref={element => { if (element) element.setAttribute("webkitdirectory", "") }}
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              onChange={event => {
+                const chosen = Array.from(event.currentTarget.files ?? [])
+                event.currentTarget.value = ""
+                if (!chosen.length) return
+                action(async () => {
+                  const local = await readLocalNodeFolder(chosen)
+                  setManifest(local.manifest)
+                  setLockfile(local.lockfile)
+                  setSource(local.source)
+                  setExtraFiles(local.extraFiles)
+                  setAssetFiles(local.assetFiles)
+                  setApproved(false); setBuildApproved(false); setBuildCheck(null)
+                  setPlan(null); setPreview(null); setBuildReview(null)
+                  setExecutionEnabled(false); setEditorDirty(true)
+                  setGithubReview(null); setDependencyReview(null)
+                  setMessage("Local project folder reviewed. Validate and stage to save its files; no code executed.")
                 })
               }} />
           </label>
