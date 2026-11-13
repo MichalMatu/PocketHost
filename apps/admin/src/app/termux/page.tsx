@@ -12,6 +12,7 @@ import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanels } from "@/app/termux/protected-services-panel"
+import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
@@ -129,6 +130,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <IleStoiDiagnosticPanel refreshToken={sectionRefreshToken} />
             <CloudflareTunnelPanel refreshToken={sectionRefreshToken} />
             <ProtectedServicePanels refreshToken={sectionRefreshToken} />
+             <ControlPlanePanel refreshToken={sectionRefreshToken} />
             <RunitServiceActions refreshToken={sectionRefreshToken} />
             <Card>
               <CardHeader><CardTitle className="text-sm">
