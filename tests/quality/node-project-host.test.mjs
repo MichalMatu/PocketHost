@@ -130,7 +130,7 @@ test('M3 new binary manifest is immutable and backward compatible with old relea
     assetFiles: assets,
   }).unchanged, true);
   writeFileSync(path.join(root, project.id, 'releases', current, 'public', 'logo.png'), 'tampered');
-  assert.throws(() => host.release(project.id, current), /digest mismatch/);
+  assert.throws(() => host.release(project.id, current), /Unsafe private Node binary asset|digest mismatch/);
 });
 
 test('M3 unsafe, malformed and mislabeled binary assets are never staged', (t) => {

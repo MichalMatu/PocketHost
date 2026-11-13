@@ -111,7 +111,7 @@ test('GitHub build preview imports bounded frontend text files at one pinned SHA
     url.endsWith('/git/trees/' + treeSha + '?recursive=1')));
 });
 
-test('GitHub build preview refuses symlink and binary file in public source tree', async () => {
+test('GitHub build preview refuses symlinks, unsafe paths and mislabeled binary source', async () => {
   for (const path of ['public/logo.png', 'src/secrets/.env', 'src/config.ts']) {
     const get = async url => {
       const file = url.split('/contents/')[1]?.split('?')[0];
@@ -132,7 +132,7 @@ test('GitHub build preview refuses symlink and binary file in public source tree
     };
     await assert.rejects(
       previewPublicGitHubNodeSource('example/safe-node', get),
-      /Unsupported GitHub frontend source/,
+      /Unsupported GitHub frontend source|Node binary asset format mismatch/,
     );
   }
 });
