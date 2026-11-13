@@ -39,6 +39,58 @@ test('M3 creates a private project, stages immutable source and preserves prior 
   assert.equal(host.restoreCandidate(created.id).candidateRelease, first.candidateRelease);
   assert.equal(host.inspect(created.id).activeRelease, null);
 });
+
+test('M3 preserves attested multi-file Node source and rejects tampered extras', (t) => {
+  const { host, root } = setup(t);
+  const project = host.create('Multi-file frontend');
+  const input = {
+    ...source(),
+    packageJson: {
+      ...source().packageJson,
+      scripts: { start: 'node server.mjs', build: 'vite build' },
+    },
+    extraFiles: {
+      'index.html': '<main id="root"></main>',
+      'src/main.tsx': 'import "./style.css"',
+      'src/style.css': 'body { margin: 0 }',
+      'vite.config.ts': 'export default {}',
+    },
+  };
+  const staged = host.stage(project.id, input);
+  const folder = path.join(root, project.id, 'releases', staged.project.candidateRelease);
+  const release = host.release(project.id, staged.project.candidateRelease);
+  assert.deepEqual(release.source.extraFiles, input.extraFiles);
+  assert.deepEqual(host.candidateSource(project.id).extraFiles, input.extraFiles);
+  assert.equal(readFileSync(path.join(folder, 'src', 'main.tsx'), 'utf8'), input.extraFiles['src/main.tsx']);
+  assert.equal(host.stage(project.id, input).unchanged, true);
+  const updated = { ...input, extraFiles: { ...input.extraFiles, 'src/style.css': 'body { color: red }' } };
+  assert.equal(host.stage(project.id, updated).unchanged, false);
+  writeFileSync(path.join(folder, 'src', 'main.tsx'), 'tampered');
+  assert.throws(() => host.release(project.id, staged.project.candidateRelease), /digest mismatch/);
+});
+
+test('M3 extra source allowlist blocks traversal, dotfiles, binaries and unsafe envelopes', (t) => {
+  const { host } = setup(t);
+  const project = host.create('Extra source validation');
+  for (const name of [
+    '../escape.js', '/tmp/out.js', 'src/../escape.js', 'src/.env', 'public/logo.png',
+    'src//main.tsx', 'node_modules/pkg/index.js', '.github/workflows/build.yml',
+    'src/deep/a/b/c/d/e/f/g/h.js',
+  ]) {
+    assert.throws(() => host.stage(project.id, {
+      ...source(), extraFiles: { [name]: 'data' },
+    }), /Unsafe extra Node source/);
+  }
+  assert.throws(() => host.stage(project.id, {
+    ...source(), extraFiles: { 'src/empty.ts': '' },
+  }), /Unsafe extra Node source/);
+  assert.throws(() => host.stage(project.id, {
+    ...source(), extraFiles: Object.fromEntries(
+      Array.from({ length: 33 }, (_, i) => ['src/' + i + '.js', 'ok']),
+    ),
+  }), /file count/);
+  assert.equal(host.inspect(project.id).candidateRelease, null);
+});
 test('M3 source save is idempotent for an attested identical candidate', (t) => {
   const { host } = setup(t);
   const project = host.create('Retry safe Node');

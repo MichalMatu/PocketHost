@@ -29,6 +29,36 @@ const MAX_RELEASES = 12;
 const MAX_INPUT = 320 * 1024;
 const MARKER = '.pockethost-node.json';
 const RELEASE_PROOF = '.pockethost-node-source.json';
+const EXTRA_MANIFEST = '.pockethost-node-extra-files.json';
+const MAX_EXTRA_FILES = 32;
+const MAX_EXTRA_TOTAL = 96 * 1024;
+/** Text-only source allowlist. No dotfiles, absolute paths or executable hooks. */
+export function validNodeExtraPath(name: string): boolean {
+  return name.length <= 160 && (
+    /^(?:src|public)\/(?:[A-Za-z0-9_-]+\/){0,6}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:js|jsx|ts|tsx|css|html|json|svg|txt|md)$/.test(name) ||
+    /^(?:index\.html|vite\.config\.(?:js|mjs|ts)|tsconfig(?:\.[a-z0-9_-]+)?\.json|postcss\.config\.(?:js|cjs)|tailwind\.config\.(?:js|ts))$/.test(name)
+  );
+}
+function cleanExtras(input: unknown): Record<string, string> {
+  if (!input || typeof input !== 'object' || Array.isArray(input))
+    throw new RangeError('Invalid extra Node source files');
+  const source = input as Record<string, unknown>;
+  const names = Object.keys(source).sort();
+  if (names.length > MAX_EXTRA_FILES) throw new RangeError('Extra Node file count exceeds limit');
+  const result: Record<string, string> = {};
+  let total = 0;
+  for (const name of names) {
+    const value = source[name];
+    if (!validNodeExtraPath(name) ||
+        typeof value !== 'string' || !value.trim() || value.includes('\0') ||
+        Buffer.byteLength(value) > 32 * 1024)
+      throw new RangeError('Unsafe extra Node source path or content');
+    total += Buffer.byteLength(name) + Buffer.byteLength(value);
+    if (total > MAX_EXTRA_TOTAL) throw new RangeError('Extra Node source exceeds 96 KB');
+    result[name] = value;
+  }
+  return result;
+}
 function digest(contents: string): string {
   return createHash('sha256').update(contents).digest('hex');
 }
@@ -59,6 +89,7 @@ export interface NodeSourceInput {
   packageJson: unknown;
   packageLock: unknown;
   serverSource: string;
+  extraFiles?: Record<string, string>;
 }
 export interface NodeCandidateRelease {
   id: string;
@@ -141,16 +172,21 @@ function cleanSource(input: unknown): {
   lock: string;
   source: string;
   plan: NodeDependencyPlan;
+  extraFiles: Record<string, string>;
 } {
   if (
     !input ||
     typeof input !== 'object' ||
     Array.isArray(input) ||
-    Object.keys(input).sort().join(',') !== 'packageJson,packageLock,serverSource'
+    !['packageJson,packageLock,serverSource',
+      'extraFiles,packageJson,packageLock,serverSource'].includes(
+        Object.keys(input).sort().join(','),
+      )
   ) {
     throw new RangeError('Invalid Node source envelope');
   }
   const source = input as NodeSourceInput;
+  const extraFiles = source.extraFiles === undefined ? {} : cleanExtras(source.extraFiles);
   if (
     typeof source.serverSource !== 'string' ||
     !source.serverSource.trim() ||
@@ -164,8 +200,8 @@ function cleanSource(input: unknown): {
   if (
     typeof manifest !== 'string' ||
     typeof lock !== 'string' ||
-    Buffer.byteLength(manifest) + Buffer.byteLength(lock) + Buffer.byteLength(source.serverSource) >
-      MAX_INPUT
+    Buffer.byteLength(manifest) + Buffer.byteLength(lock) + Buffer.byteLength(source.serverSource) +
+      Buffer.byteLength(JSON.stringify(extraFiles)) > MAX_INPUT
   ) {
     throw new RangeError('Node project payload exceeds limit');
   }
@@ -176,7 +212,7 @@ function cleanSource(input: unknown): {
   if (pkg.scripts?.start !== 'node server.mjs') {
     throw new RangeError('Node starter must use node server.mjs');
   }
-  return { manifest, lock, source: source.serverSource, plan };
+  return { manifest, lock, source: source.serverSource, plan, extraFiles };
 }
 function validateMarker(raw: string, id: string): NodeProjectRecord {
   const value: unknown = JSON.parse(raw);
@@ -351,7 +387,8 @@ export class NodeProjectHost {
           if (
             current.source.manifest === source.manifest &&
             current.source.lock === source.lock &&
-            current.source.server === source.source
+            current.source.server === source.source &&
+            JSON.stringify(current.source.extraFiles ?? {}) === JSON.stringify(source.extraFiles)
           ) {
             return { project: this.summary(marker), plan: source.plan, unchanged: true };
           }
@@ -373,15 +410,26 @@ export class NodeProjectHost {
         ] as const) {
           writeFileSync(path.join(stage, name), content, { flag: 'wx', mode: 0o600 });
         }
+        const extraNames = Object.keys(source.extraFiles);
+        if (extraNames.length) {
+          const extras = JSON.stringify(source.extraFiles);
+          writeFileSync(path.join(stage, EXTRA_MANIFEST), extras, { flag: 'wx', mode: 0o600 });
+          for (const name of extraNames) {
+            const filename = path.join(stage, name);
+            mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
+            writeFileSync(filename, source.extraFiles[name], { flag: 'wx', mode: 0o600 });
+          }
+        }
         writeFileSync(
           path.join(stage, RELEASE_PROOF),
           JSON.stringify({
-            schema: 1,
+            schema: extraNames.length ? 2 : 1,
             owner: 'pockethost-node-source',
             id: release,
             manifestDigest: digest(source.manifest),
             lockDigest: digest(source.lock),
             sourceDigest: digest(source.source),
+            ...(extraNames.length ? { extraFilesDigest: digest(JSON.stringify(source.extraFiles)) } : {}),
           }) + '\n',
           { flag: 'wx', mode: 0o600 },
         );
@@ -446,7 +494,7 @@ export class NodeProjectHost {
     folder: string;
     projectFolder: string;
     plan: NodeDependencyPlan;
-    source: { manifest: string; lock: string; server: string };
+    source: { manifest: string; lock: string; server: string; extraFiles?: Record<string, string> };
   } {
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release');
     const marker = this.record(id);
@@ -462,10 +510,12 @@ export class NodeProjectHost {
     if (!rawProof || typeof rawProof !== 'object' || Array.isArray(rawProof))
       throw new Error('Missing verified Node release source');
     const proof = rawProof as Record<string, unknown>;
+    const extended = proof.schema === 2;
     if (
-      Object.keys(proof).sort().join(',') !==
-        'id,lockDigest,manifestDigest,owner,schema,sourceDigest' ||
-      proof.schema !== 1 ||
+      Object.keys(proof).sort().join(',') !== (extended ?
+        'extraFilesDigest,id,lockDigest,manifestDigest,owner,schema,sourceDigest' :
+        'id,lockDigest,manifestDigest,owner,schema,sourceDigest') ||
+      (proof.schema !== 1 && proof.schema !== 2) ||
       proof.owner !== 'pockethost-node-source' ||
       proof.id !== releaseId ||
       proof.manifestDigest !== digest(manifestText) ||
@@ -473,6 +523,26 @@ export class NodeProjectHost {
       proof.sourceDigest !== digest(sourceText)
     )
       throw new Error('Node release source digest mismatch');
+    let extraFiles: Record<string, string> | undefined;
+    if (extended) {
+      const extraJson = privateFile(path.join(folder, EXTRA_MANIFEST), MAX_EXTRA_TOTAL + 4096);
+      const extras = cleanExtras(JSON.parse(extraJson));
+      if (!Object.keys(extras).length ||
+          digest(JSON.stringify(extras)) !== proof.extraFilesDigest ||
+          extraJson !== JSON.stringify(extras))
+        throw new Error('Node extra source manifest digest mismatch');
+      for (const [name, expected] of Object.entries(extras)) {
+        const parts = name.split('/');
+        let current = folder;
+        for (const part of parts.slice(0, -1)) {
+          current = path.join(current, part);
+          ownedDirectory(current);
+        }
+        if (privateFile(path.join(folder, name), 32 * 1024) !== expected)
+          throw new Error('Node extra source file digest mismatch');
+      }
+      extraFiles = extras;
+    }
     const manifest = JSON.parse(manifestText);
     const lockfile = JSON.parse(lockText);
     const plan = planNodeDependencies(manifest, lockfile);
@@ -484,7 +554,8 @@ export class NodeProjectHost {
       folder,
       projectFolder,
       plan,
-      source: { manifest: manifestText, lock: lockText, server: sourceText },
+      source: { manifest: manifestText, lock: lockText, server: sourceText,
+        ...(extraFiles ? { extraFiles } : {}) },
     };
   }
 
@@ -494,6 +565,7 @@ export class NodeProjectHost {
     manifest: string;
     lockfile: string;
     serverSource: string;
+    extraFiles?: Record<string, string>;
   } {
     const marker = this.record(id);
     if (!marker.candidateRelease) throw new RangeError('No staged Node source candidate');
@@ -503,6 +575,7 @@ export class NodeProjectHost {
       manifest: verified.source.manifest,
       lockfile: verified.source.lock,
       serverSource: verified.source.server,
+      ...(verified.source.extraFiles ? { extraFiles: verified.source.extraFiles } : {}),
     };
   }
 
