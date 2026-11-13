@@ -140,12 +140,21 @@ function outputProof(folder: string): { treeDigest: string; bytes: number; entri
 
 /** Explicit, candidate-pinned build. Published dist is not activated here. */
 export class NodeBuildPreparer {
+  private readonly projects: NodeProjectHost;
+  private readonly projectRoot: string;
+  private readonly releaseInUse: (projectId: string, release: string) => boolean;
+  private readonly execute: RunBuild;
   constructor(
-    private readonly projects: NodeProjectHost,
-    private readonly projectRoot: string,
-    private readonly releaseInUse: (projectId: string, release: string) => boolean,
-    private readonly execute: RunBuild = runBuild,
-  ) {}
+    projects: NodeProjectHost,
+    projectRoot: string,
+    releaseInUse: (projectId: string, release: string) => boolean,
+    execute: RunBuild = runBuild,
+  ) {
+    this.projects = projects;
+    this.projectRoot = projectRoot;
+    this.releaseInUse = releaseInUse;
+    this.execute = execute;
+  }
 
   buildScript(projectId: string, releaseId: string): string {
     const source = this.projects.release(projectId, releaseId);

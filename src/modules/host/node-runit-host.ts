@@ -21,6 +21,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
 import { NodeDependencyPreparer } from './node-dependency-preparer.ts';
+import { NodeBuildPreparer } from './node-build-preparer.ts';
 import { TermuxServiceAdmin } from './termux-service-admin.ts';
 import {
   reviewNodeToolchain,
@@ -536,8 +537,15 @@ export class NodeRunitHost {
     }
   }
   private dependenciesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
-    // A build script is not executable by this runtime yet, even after npm ci.
-    return plan.commands.build === null && this.packagesReady(id, release, plan);
+    if (!this.packagesReady(id, release, plan)) return false;
+    if (plan.commands.build === null) return true;
+    try {
+      new NodeBuildPreparer(this.projects, this.projectRoot, () => true)
+        .verifyBuilt(id, release);
+      return true;
+    } catch {
+      return false;
+    }
   }
   preview(id: string): {
     release: string | null;
@@ -607,7 +615,9 @@ export class NodeRunitHost {
           ? 'missing-or-unsupported-toolchain'
           : clean
             ? 'ready-for-explicit-local-deploy'
-            : 'dependencies-or-build-need-separate-approval',
+            : plan.commands.build !== null && this.packagesReady(id, release, plan)
+              ? 'build-artifact-not-verified'
+              : 'dependencies-or-build-need-separate-approval',
     };
   }
   /** Review immutable candidate dependencies without npm, network or service writes. */

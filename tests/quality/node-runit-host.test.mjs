@@ -6,6 +6,7 @@ import path from 'node:path';
 import { createServer } from 'node:http';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
 import { NodeDependencyPreparer } from '../../src/modules/host/node-dependency-preparer.ts';
+import { NodeBuildPreparer } from '../../src/modules/host/node-build-preparer.ts';
 import {
   NodeRunitHost,
   probeOwnedNodeReadiness,
@@ -421,6 +422,28 @@ test('M3 live health never probes or starts a project without verified runit own
     ready: null,
   });
   assert.deepEqual((await import('node:fs')).readdirSync(serviceRoot), []);
+});
+
+test('attested build artifacts allow deploy but tampered dist immediately blocks admission', async (t) => {
+  const { host, projects, project, root } = fixture(t);
+  const buildSource = {
+    ...source,
+    packageJson: {
+      ...source.packageJson,
+      scripts: { start: 'node server.mjs', build: 'node server.mjs --build' },
+    },
+  };
+  const release = projects.stage(project.id, buildSource).project.candidateRelease;
+  host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
+  assert.equal(host.preview(project.id).allowed, false);
+  const preparer = new NodeBuildPreparer(projects, root, () => false, async (dir) => {
+    mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
+    writeFileSync(path.join(dir, 'dist', 'index.html'), 'ok');
+  });
+  await preparer.prepare(project.id, release, true);
+  assert.equal(host.preview(project.id).allowed, true);
+  writeFileSync(path.join(root, project.id, 'releases', release, 'dist', 'index.html'), 'changed');
+  assert.equal(host.preview(project.id).allowed, false);
 });
 
 test('build packages are attestable without granting build execution or deploy', async (t) => {
