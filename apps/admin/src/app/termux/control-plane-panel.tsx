@@ -64,11 +64,20 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
           <p>Owner record agreement: <strong>{data.pocketHost.owner.markerAgreement}</strong></p>
           <p>Checkout HEAD: <code>{short(data.pocketHost.owner.checkoutSha)}</code></p>
           <p>Revision comparison: <strong>{data.pocketHost.owner.revision}</strong></p>
+          <p>Git history: {data.pocketHost.owner.revisionEvidence.state}</p>
+          {data.pocketHost.owner.revisionEvidence.areas && <p>
+            Files changed: {data.pocketHost.owner.revisionEvidence.changedFiles}
+            {" · Admin UI: "}{data.pocketHost.owner.revisionEvidence.areas.adminUI}
+            {" · Host: "}{data.pocketHost.owner.revisionEvidence.areas.hostBackend}
+            {" · Tests: "}{data.pocketHost.owner.revisionEvidence.areas.tests}
+            {" · Docs: "}{data.pocketHost.owner.revisionEvidence.areas.docs}
+            {" · Other: "}{data.pocketHost.owner.revisionEvidence.areas.other}
+          </p>}
           <p>Checkout clean: {data.pocketHost.owner.checkoutClean === null
             ? "unverified" : data.pocketHost.owner.checkoutClean ? "yes" : "no"}</p>
           {data.pocketHost.owner.reason && <p>Diagnostic: {data.pocketHost.owner.reason}</p>}
           <p className="text-xs text-muted-foreground">
-            Startup SHA and checkout HEAD do not prove loaded JavaScript revision.
+            Historical changes do not prove the JavaScript version loaded in memory.
           </p>
         </div>
         <p role="status">Update readiness: manual review required · restart blocked.</p>

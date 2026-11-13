@@ -24,6 +24,17 @@ export const controlPlaneSchema = z.object({
       markerAgreement: z.enum(["match", "mismatch", "unverified"]),
       checkoutSha: sha, checkoutClean: z.boolean().nullable(),
       revision: z.enum(["match", "mismatch", "unverified"]),
+      revisionEvidence: z.object({
+        state: z.enum(["same", "ancestor", "diverged", "unavailable"]),
+        changedFiles: z.number().int().nonnegative().nullable(),
+        areas: z.object({
+          adminUI: z.number().int().nonnegative(),
+          hostBackend: z.number().int().nonnegative(),
+          tests: z.number().int().nonnegative(),
+          docs: z.number().int().nonnegative(),
+          other: z.number().int().nonnegative(),
+        }).strict().nullable(),
+      }).strict(),
       reason: z.enum(["unavailable", "invalid-owner", "untrusted-checkout",
         "invalid-process", "invalid-source"]).nullable(),
     }).strict(),

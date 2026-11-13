@@ -37,6 +37,12 @@ function build(f, calls = [], procCwd = f.admin, argv = 'node\0vite\0') {
       status: 0, stdout: 'run: ' + args[1] + ': (pid 98) 120s; run: log',
     };
     if (args.includes('rev-parse')) return { status: 0, stdout: b + '\n' };
+    if (args.includes('cat-file')) return { status: 0, stdout: 'commit\n' };
+    if (args.includes('merge-base')) return { status: 0, stdout: '' };
+    if (args.includes('diff')) return { status: 0,
+      stdout: 'apps/admin/src/app/termux/page.tsx\n' +
+        'src/modules/host/control-plane-diagnostics.ts\n' +
+        'tests/quality/control-plane-diagnostics.test.mjs\n' };
     if (args.includes('get-url')) return {
       status: 0, stdout: 'https://github.com/MichalMatu/PocketHost.git\n',
     };
@@ -61,12 +67,16 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
     assert.equal(result.pocketHost.owner.gatewaySha, a);
     assert.equal(result.pocketHost.owner.markerAgreement, 'match');
     assert.equal(result.pocketHost.owner.checkoutSha, b);
+    assert.equal(result.pocketHost.owner.revisionEvidence.state, 'ancestor');
+    assert.equal(result.pocketHost.owner.revisionEvidence.changedFiles, 3);
+    assert.deepEqual(result.pocketHost.owner.revisionEvidence.areas,
+      { adminUI: 1, hostBackend: 1, tests: 1, docs: 0, other: 0 });
     assert.equal(result.pocketHost.restart, 'blocked');
     assert.equal(calls.filter(([bin]) => bin.endsWith('/bin/sv')).length, 3);
     assert.ok(calls.every(([bin, args]) => bin.endsWith('/bin/sv')
       ? args[0] === 'status' && args.length === 2
       : bin.endsWith('/bin/git') && args[0] === '-C' &&
-        ['rev-parse', 'remote', 'status'].includes(args[2])));
+        ['rev-parse', 'remote', 'status', 'cat-file', 'merge-base', 'diff'].includes(args[2])));
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
 test('spoofed service link and owner marker drift fail closed', () => {
@@ -116,6 +126,7 @@ test('conflicting gateway and panel SHA markers are visible and block verified o
     const result = build(f, calls).inspect();
     assert.equal(result.pocketHost.owner.state, 'unverified');
     assert.equal(result.pocketHost.owner.reason, 'invalid-source');
+    assert.equal(result.pocketHost.owner.revisionEvidence.state, 'unavailable');
     assert.equal(result.pocketHost.owner.markerAgreement, 'mismatch');
     assert.equal(result.pocketHost.owner.gatewaySha, b);
     assert.equal(result.pocketHost.restart, 'blocked');

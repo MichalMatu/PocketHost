@@ -16,7 +16,9 @@ const sample = {
     owner: { state: "verified", pid: 98, startTicks: "555",
       markerSha: "a".repeat(40), gatewaySha: "a".repeat(40),
       markerAgreement: "match", checkoutSha: "b".repeat(40),
-      checkoutClean: true, revision: "mismatch", reason: null },
+      checkoutClean: true, revision: "mismatch", reason: null,
+      revisionEvidence: { state: "ancestor", changedFiles: 12,
+        areas: { adminUI: 12, hostBackend: 0, tests: 0, docs: 0, other: 0 } } },
     updateReadiness: "hold-manual-review", restart: "blocked",
   },
   notice: "no-lifecycle-authority",
@@ -31,6 +33,8 @@ describe("S4 Local Agent and PocketHost source panel", () => {
     expect(screen.getByText(/Recorded startup SHA:/)).toBeTruthy()
     expect(screen.getByText(/Gateway marker SHA:/)).toBeTruthy()
     expect(screen.getByText(/Owner record agreement:/)).toBeTruthy()
+    expect(screen.getByText(/Files changed: 12/)).toBeTruthy()
+    expect(screen.getByText(/Git history: ancestor/)).toBeTruthy()
     expect(screen.getByText(/manual review required/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /restart|start|stop/i })).toBeNull()
     expect(fetcher.mock.calls[0]?.[0]).toBe("/api/v1/termux-admin?mode=control-plane-diagnostics")

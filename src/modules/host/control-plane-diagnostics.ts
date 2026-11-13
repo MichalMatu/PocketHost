@@ -11,10 +11,16 @@ type Run = (binary: string, args: string[]) => {
 };
 type ServiceState = { state: 'running' | 'stopped' | 'unknown'; uptimeSeconds: number | null;
   error: 'unavailable' | 'unsafe-service' | 'timeout' | null };
+type RevisionEvidence = {
+  state: 'same' | 'ancestor' | 'diverged' | 'unavailable';
+  changedFiles: number | null;
+  areas: { adminUI: number; hostBackend: number; tests: number; docs: number; other: number } | null;
+};
 type Owner = { state: 'verified' | 'unverified'; pid: number | null;
   startTicks: string | null; markerSha: string | null; gatewaySha: string | null;
   markerAgreement: 'match' | 'mismatch' | 'unverified'; checkoutSha: string | null;
   checkoutClean: boolean | null; revision: 'match' | 'mismatch' | 'unverified';
+  revisionEvidence: RevisionEvidence;
   reason: 'unavailable' | 'invalid-owner' | 'untrusted-checkout' |
     'invalid-process' | 'invalid-source' | null };
 export interface ControlPlaneDiagnostics {
@@ -104,11 +110,55 @@ export class ControlPlaneDiagnosticHost {
     return result.stdout.trim();
   }
 
+  /**
+   * Compare only pinned, verified revisions in the known PocketHost checkout.
+   * Return counts only: never expose paths, git configuration or raw diffs.
+   * Failure to inspect history is not evidence of a clean or safe update.
+   */
+  private revisionEvidence(root: string, saved: string, current: string): RevisionEvidence {
+    const unavailable: RevisionEvidence = {
+      state: 'unavailable', changedFiles: null, areas: null,
+    };
+    if (saved === current) {
+      return {
+        state: 'same', changedFiles: 0,
+        areas: { adminUI: 0, hostBackend: 0, tests: 0, docs: 0, other: 0 },
+      };
+    }
+    try {
+      if (this.git(root, ['cat-file', '-t', saved]) !== 'commit') return unavailable;
+      const ancestor = this.run(path.join(PREFIX, 'bin/git'),
+        ['-C', root, 'merge-base', '--is-ancestor', saved, current]);
+      if (ancestor.error || (ancestor.status !== 0 && ancestor.status !== 1))
+        return unavailable;
+      const raw = this.git(root, ['diff', '--name-only', '--no-renames',
+        '--no-ext-diff', saved, current]);
+      const names = raw ? raw.split('\n') : [];
+      if (names.length > 250 || names.some(name => !name || name.includes('\0')))
+        return unavailable;
+      const areas = { adminUI: 0, hostBackend: 0, tests: 0, docs: 0, other: 0 };
+      for (const name of names) {
+        if (name.startsWith('apps/admin/')) areas.adminUI++;
+        else if (name.startsWith('src/modules/host/')) areas.hostBackend++;
+        else if (name.startsWith('tests/') || name.includes('/tests/')) areas.tests++;
+        else if (name.startsWith('docs/')) areas.docs++;
+        else areas.other++;
+      }
+      return {
+        state: ancestor.status === 0 ? 'ancestor' : 'diverged',
+        changedFiles: names.length, areas,
+      };
+    } catch {
+      return unavailable;
+    }
+  }
+
   private inspectOwner(): Owner {
     const value: Owner = { state: 'unverified', pid: null, startTicks: null,
       markerSha: null, gatewaySha: null, markerAgreement: 'unverified',
       checkoutSha: null, checkoutClean: null,
-      revision: 'unverified', reason: 'unavailable' };
+      revision: 'unverified', reason: 'unavailable',
+      revisionEvidence: { state: 'unavailable', changedFiles: null, areas: null } };
     try {
       const projects = path.join(this.home, 'Projects');
       const state = path.join(this.home, '.local/state/pockethost');
@@ -161,6 +211,7 @@ export class ControlPlaneDiagnosticHost {
       value.checkoutSha = checkout;
       value.checkoutClean = this.git(root, ['status', '--porcelain']) === '';
       value.revision = marker.sourceSha === checkout ? 'match' : 'mismatch';
+      value.revisionEvidence = this.revisionEvidence(root, marker.sourceSha, checkout);
       value.state = 'verified';
       value.reason = null;
     } catch (error) {
