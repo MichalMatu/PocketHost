@@ -526,7 +526,7 @@ export class NodeProjectHost {
           for (const name of extraNames) {
             const filename = path.join(stage, name);
             mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
-            writeFileSync(filename, source.extraFiles[name], { flag: 'wx', mode: 0o600 });
+            writeFileSync(filename, source.extraFiles[name]!, { flag: 'wx', mode: 0o600 });
           }
         }
         if (assetNames.length) {
