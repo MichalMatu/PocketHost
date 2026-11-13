@@ -15,11 +15,17 @@ function readFile(file: File): Promise<string> {
     reader.onerror = () => reject(new Error("Could not read selected Node files."))
     reader.onabort = () => reject(new Error("Node file selection was interrupted."))
     reader.onload = () => {
-      if (typeof reader.result !== "string")
+      if (!(reader.result instanceof ArrayBuffer)) {
         reject(new Error("Could not read selected Node files."))
-      else resolve(reader.result)
+        return
+      }
+      try {
+        resolve(new TextDecoder("utf-8", { fatal: true }).decode(reader.result))
+      } catch {
+        reject(new Error("Selected Node text file is not valid UTF-8."))
+      }
     }
-    reader.readAsText(file, "utf-8")
+    reader.readAsArrayBuffer(file)
   })
 }
 

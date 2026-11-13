@@ -102,3 +102,19 @@ it("rejects traversal, unsupported files and mixed roots before reading local fo
   const bad = folderFile("not real png!", "public/logo.png")
   await expect(readLocalNodeFolder([...files, bad])).rejects.toThrow(/does not match/)
 })
+
+it("rejects invalid UTF-8 in the local entrypoint and imported frontend source", async () => {
+  const { readLocalNodeFolder } = await import("@/lib/node-source-import")
+  const invalid = Uint8Array.from([0xff, 0xfe, 0x00])
+  await expect(readLocalNodeFiles([
+    new File([JSON.stringify(pkg)], "package.json"),
+    new File([JSON.stringify(lock)], "package-lock.json"),
+    new File([invalid], "server.mjs"),
+  ])).rejects.toThrow(/UTF-8/)
+  await expect(readLocalNodeFolder([
+    folderFile(JSON.stringify(pkg), "package.json"),
+    folderFile(JSON.stringify(lock), "package-lock.json"),
+    folderFile("console.log(1)", "server.mjs"),
+    folderFile(invalid, "src/main.ts"),
+  ])).rejects.toThrow(/UTF-8/)
+})
