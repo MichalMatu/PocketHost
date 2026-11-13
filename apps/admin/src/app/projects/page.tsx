@@ -873,10 +873,12 @@ export default function ProjectsPage() {
                 <Button variant="outline" disabled={busy || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
+                    const target = runtime?.previousGoodRelease
+                    if (!target) throw new Error("No previous Node release to review")
                     const data = await getJson(api + "/" + selected.id + "/rollback-preview")
                     const reviewed = data.rollbackPreview as Partial<RollbackPreflight> | undefined
                     if (!reviewed ||
-                        reviewed.release !== runtime.previousGoodRelease ||
+                        reviewed.release !== target ||
                         typeof reviewed.allowed !== "boolean" ||
                         ![
                           "previous-release-verified", "release-already-active",

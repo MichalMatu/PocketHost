@@ -1068,3 +1068,55 @@ it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
       .toHaveLength(0)
   },
 )
+
+it.each([true, false])(
+  "read-only rollback review blocks unsafe targets before any mutation: verified=%s",
+  async verified => {
+    const user = userEvent.setup()
+    const NEXT = "r-" + "c".repeat(32)
+    const project = {
+      id: ID, name: "Rollback review", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: NEXT,
+      previousCandidate: RELEASE, deploymentCount: 2, createdAt: "2026-11-09T12:00:00Z",
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "running", desired: "running", port: 19302, activeRelease: NEXT,
+          lastGoodRelease: NEXT, previousGoodRelease: RELEASE, history: [],
+        }, executionEnabled: true }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: NEXT, port: 19302, missingTools: [], conflicts: [],
+          dependencyCount: 0, allowed: true, reason: "ready-for-explicit-local-deploy",
+        }, executionEnabled: true }) }
+      if (url.endsWith("/rollback-preview") && !options?.method)
+        return { ok: true, json: async () => ({ rollbackPreview: {
+          release: RELEASE, allowed: verified,
+          reason: verified ? "previous-release-verified" : "rollback-release-not-verifiable",
+        } }) }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await user.click(await screen.findByRole("button", { name: "Rollback review" }))
+    await screen.findByText(/Runtime: running/)
+    await user.click(screen.getByRole("button", { name: "Review rollback target" }))
+    await screen.findByText(verified ?
+      "Previous Node release verified for explicit rollback." :
+      "Rollback target is not safely recoverable.")
+    const rollback = screen.getByRole("button", { name: "Rollback active release" }) as HTMLButtonElement
+    expect(rollback.disabled).toBe(true)
+    await user.click(screen.getByLabelText("Approve local Node execution"))
+    expect(rollback.disabled).toBe(!verified)
+    expect(screen.getByLabelText("Node rollback preflight").textContent)
+      .toContain(verified ? "verified" : "blocked")
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/rollback")))
+      .toHaveLength(0)
+  },
+)
