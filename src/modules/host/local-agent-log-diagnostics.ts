@@ -45,7 +45,8 @@ export function classifyAgentLogLine(line: string): AgentLogEvent | null {
     /task_budget_exhausted|budget_exhausted|budget.?remaining/i.test(line) ? 'budget' :
     /\b(timeout|timed.out|deadline.exceeded)\b/i.test(line) ? 'timeout' :
     /\b(unknown|suspend|interrupted|emergency.stop)\b/i.test(line) ? 'interrupted' :
-    /\b(failed|failure|error|exception|traceback|fatal)\b/i.test(line) ? 'failed' :
+    (/\b(failed|failure|error|exception|traceback|fatal)\b/i.test(line) ||
+      /\bexec finished exit=[1-9]\d*\b/i.test(line)) ? 'failed' :
     /\b(published|publishing|publish.pending|result.publication)\b/i.test(line) ? 'published' :
     /\b(claimed|claiming|task.claim)\b/i.test(line) ? 'claim' :
     /\b(git.fetch|git.push|git.transport|remote.ref|git.error)\b/i.test(line) ? 'transport' :
