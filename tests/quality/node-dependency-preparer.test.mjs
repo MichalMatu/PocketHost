@@ -155,7 +155,7 @@ test('installed packages re-attest exact bytes and reject later tampering', asyn
     mkdirSync(path.join(directory, 'node_modules'), { mode: 0o700 });
     writeFileSync(path.join(directory, 'node_modules', 'index.js'), 'export default 1');
   });
-  await assert.rejects(host.verifyPrepared(project.id, release), /ENOENT/);
+  assert.throws(() => host.verifyPrepared(project.id, release), /ENOENT/);
   await host.prepare(project.id, release, true);
   assert.deepEqual(host.verifyPrepared(project.id, release), {
     release, dependencyCount: 1, verified: true,
