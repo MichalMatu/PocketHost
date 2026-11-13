@@ -589,6 +589,47 @@ export class NodeRunitHost {
             : 'dependencies-or-build-need-separate-approval',
     };
   }
+  /** Review immutable candidate dependencies without npm, network or service writes. */
+  reviewDependencySetup(id: string): {
+    release: string;
+    status: 'not-required' | 'review-required' | 'blocked';
+    dependencyCount: number;
+    installRequired: boolean;
+    buildRequired: boolean;
+    installCommand: readonly string[] | null;
+    buildCommand: readonly string[] | null;
+    blockers: string[];
+    executed: false;
+  } {
+    const candidate = this.projects.inspect(id).candidateRelease;
+    if (!candidate) throw new RangeError('Stage a Node candidate before dependency review');
+    const { plan } = this.projects.release(id, candidate); // Verify source hashes.
+    const toolchain = this.toolchain(plan);
+    const blockers = [
+      ...toolchain.missingTools.map((name) => 'missing-tool:' + name),
+      ...toolchain.conflicts,
+      ...plan.lockReview.missingDirectEntries.map((name) => 'missing-lock:' + name),
+      ...plan.lockReview.unreviewedSources.map((name) => 'unreviewed-source:' + name),
+      ...plan.lockReview.installScripts.map((name) => 'install-script:' + name),
+    ];
+    const installRequired = plan.dependencyCount > 0;
+    const buildRequired = plan.commands.build !== null;
+    return {
+      release: candidate,
+      status: blockers.length ? 'blocked' :
+        installRequired || buildRequired ? 'review-required' : 'not-required',
+      dependencyCount: plan.dependencyCount,
+      installRequired,
+      buildRequired,
+      // These are proposed argv, never evaluated as shell or executed here.
+      installCommand: installRequired ?
+        ['npm', 'ci', '--ignore-scripts', '--no-audit', '--no-fund'] : null,
+      buildCommand: buildRequired ? ['npm', 'run', 'build'] : null,
+      blockers,
+      executed: false,
+    };
+  }
+
   /** Fixed native syntax validation; reads a proven release but never executes its source. */
   private checkReleaseSyntax(
     id: string,
