@@ -1,8 +1,8 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  closeSync, existsSync, lstatSync, mkdirSync, openSync,
-  readFileSync, renameSync, rmSync, writeFileSync,
+  closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync,
+  readFileSync, readSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
@@ -12,6 +12,8 @@ const RELEASE = /^r-[a-f0-9]{32}$/;
 const LOCK_NAME = '.node-ports.lock';
 const PROOF_NAME = '.pockethost-node-packages.json';
 const ARGS = ['ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--omit=dev'] as const;
+const MAX_PACKAGES_BYTES = 96 * 1024 * 1024;
+const MAX_PACKAGES_ENTRIES = 16000;
 
 type RunNpm = (directory: string, args: readonly string[]) => Promise<void>;
 
@@ -63,12 +65,69 @@ async function runNpm(directory: string, args: readonly string[]): Promise<void>
 function privateDirectory(folder: string): void {
   const stat = lstatSync(folder);
   if (!path.isAbsolute(folder) || !stat.isDirectory() || stat.isSymbolicLink() ||
+      realpathSync(folder) !== folder ||
       stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0)
     throw new Error('Untrusted private Node dependency directory');
 }
 
 function checksum(source: string): string {
   return createHash('sha256').update(source).digest('hex');
+}
+
+/** Walk only the private npm output, disallow links/devices and cap disk usage.
+ * Hash regular file bytes to detect changes when this release is later admitted.
+ */
+function attestPackageTree(root: string): { treeDigest: string; entries: number; bytes: number } {
+  privateDirectory(root);
+  const hash = createHash('sha256');
+  const pending = [root];
+  const chunk = Buffer.allocUnsafe(64 * 1024);
+  let entries = 0;
+  let bytes = 0;
+  while (pending.length) {
+    const folder = pending.pop()!;
+    const names = readdirSync(folder).sort();
+    for (const name of names) {
+      const file = path.join(folder, name);
+      const relative = path.relative(root, file);
+      const stat = lstatSync(file);
+      entries++;
+      if (entries > MAX_PACKAGES_ENTRIES || stat.uid !== process.getuid?.() ||
+          stat.isSymbolicLink() || (!stat.isFile() && !stat.isDirectory()))
+        throw new Error('Unsafe npm dependency tree');
+      if (stat.isDirectory()) {
+        hash.update('D\\0' + relative + '\\0');
+        pending.push(file);
+        continue;
+      }
+      if (stat.nlink !== 1 || stat.size < 0 || !Number.isSafeInteger(stat.size))
+        throw new Error('Unsafe npm dependency file');
+      bytes += stat.size;
+      if (bytes > MAX_PACKAGES_BYTES)
+        throw new RangeError('Node dependencies exceed 96 MiB');
+      const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+      try {
+        const current = fstatSync(fd);
+        if (current.ino !== stat.ino || current.dev !== stat.dev ||
+            current.size !== stat.size || !current.isFile() || current.nlink !== 1)
+          throw new Error('npm dependency file changed during verification');
+        hash.update('F\\0' + relative + '\\0' + stat.size + '\\0');
+        let remaining = stat.size;
+        while (remaining > 0) {
+          const amount = readSync(fd, chunk, 0, Math.min(chunk.length, remaining), null);
+          if (amount <= 0) throw new Error('Incomplete npm dependency file');
+          hash.update(chunk.subarray(0, amount));
+          remaining -= amount;
+        }
+        const after = fstatSync(fd);
+        if (after.size !== current.size || after.mtimeMs !== current.mtimeMs)
+          throw new Error('npm dependency file changed during verification');
+      } finally {
+        closeSync(fd);
+      }
+    }
+  }
+  return { treeDigest: hash.digest('hex'), entries, bytes };
 }
 
 /**
@@ -132,9 +191,7 @@ export class NodeDependencyPreparer {
 
       await this.execute(workspace, ARGS);
       const modules = path.join(workspace, 'node_modules');
-      const info = lstatSync(modules);
-      if (!info.isDirectory() || info.isSymbolicLink() || info.uid !== process.getuid?.())
-        throw new Error('Unsafe npm installation result');
+      const tree = attestPackageTree(modules);
       // No npm source or scripts may rewrite the verified input during preparation.
       if (readFileSync(path.join(workspace, 'package.json'), 'utf8') !== current.source.manifest ||
           readFileSync(path.join(workspace, 'package-lock.json'), 'utf8') !== current.source.lock)
@@ -148,6 +205,7 @@ export class NodeDependencyPreparer {
         schema: 1, owner: 'pockethost-node-packages',
         release: releaseId, lockDigest: checksum(current.source.lock),
         dependencyCount: plan.dependencyCount,
+        treeDigest: tree.treeDigest, entries: tree.entries, bytes: tree.bytes,
       }) + '\n', { flag: 'wx', mode: 0o600 });
       return { release: releaseId, dependencyCount: plan.dependencyCount, prepared: true };
     } finally {
