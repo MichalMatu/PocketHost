@@ -6,12 +6,13 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
+import { SAFE_NPM_CI_COMMAND } from '../../shared/node-dependency-plan.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const RELEASE = /^r-[a-f0-9]{32}$/;
 const LOCK_NAME = '.node-ports.lock';
 const PROOF_NAME = '.pockethost-node-packages.json';
-const ARGS = ['ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--omit=dev'] as const;
+const ARGS: readonly string[] = SAFE_NPM_CI_COMMAND.slice(1);
 const MAX_PACKAGES_BYTES = 96 * 1024 * 1024;
 const MAX_PACKAGES_ENTRIES = 16000;
 
