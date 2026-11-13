@@ -703,7 +703,7 @@ function nodeProjectApi(): Plugin {
                 id!, body.expectedCandidate, body.expectedRevision as number,
               ) }
             }
-            const input = await readJson(request, stage ? 340 * 1024 : 1024)
+            const input = await readJson(request, stage ? 1200 * 1024 : 1024)
             if (create) {
               if (!input || typeof input !== "object" || Array.isArray(input) ||
                   Object.keys(input).join(",") !== "name") throw new RangeError("Invalid project")
@@ -716,6 +716,8 @@ function nodeProjectApi(): Plugin {
             if (![
                   "expectedCandidate,expectedRevision,packageJson,packageLock,serverSource",
                   "expectedCandidate,expectedRevision,extraFiles,packageJson,packageLock,serverSource",
+                  "assetFiles,expectedCandidate,expectedRevision,packageJson,packageLock,serverSource",
+                  "assetFiles,expectedCandidate,expectedRevision,extraFiles,packageJson,packageLock,serverSource",
                 ].includes(Object.keys(body).sort().join(",")) ||
                 (body.expectedCandidate !== null &&
                  (typeof body.expectedCandidate !== "string" ||
@@ -730,6 +732,7 @@ function nodeProjectApi(): Plugin {
               packageLock: body.packageLock,
               serverSource: body.serverSource,
               ...(body.extraFiles === undefined ? {} : { extraFiles: body.extraFiles }),
+              ...(body.assetFiles === undefined ? {} : { assetFiles: body.assetFiles }),
             }, body.expectedCandidate as string | null, body.expectedRevision as number)
           })
           if (createBackup) reportDashboardOwnedEvent("owned-backup-created")

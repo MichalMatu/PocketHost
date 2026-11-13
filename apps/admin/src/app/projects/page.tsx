@@ -28,6 +28,32 @@ function validatedExtras(input: unknown): Record<string, string> {
   return result
 }
 
+function validatedAssets(input: unknown): Record<string, string> {
+  if (input === undefined) return {}
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Invalid frontend binary assets")
+  const names = Object.keys(input).sort()
+  if (names.length > 12) throw new Error("Frontend binary asset limit exceeded")
+  const out: Record<string, string> = {}
+  let total = 0
+  for (const name of names) {
+    const value = (input as Record<string, unknown>)[name]
+    if (name.length > 160 ||
+      !/^(?:public|src\/assets)\/(?:[A-Za-z0-9_-]+\/){0,5}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:png|jpg|jpeg|webp|gif|ico|woff2)$/.test(name) ||
+      typeof value !== "string" || value.length < 16 ||
+      value.length > Math.ceil(128 * 1024 / 3) * 4 + 4 ||
+      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(value))
+      throw new Error("Invalid frontend binary asset path or encoding")
+    const bytes = Math.floor(value.length * 3 / 4) -
+      (value.endsWith("==") ? 2 : value.endsWith("=") ? 1 : 0)
+    if (bytes < 12 || bytes > 128 * 1024) throw new Error("Invalid binary asset size")
+    total += bytes
+    if (total > 512 * 1024) throw new Error("Frontend binary assets exceed 512 KB")
+    out[name] = value
+  }
+  return out
+}
+
 type Project = {
   id: string
   name: string
@@ -167,10 +193,11 @@ export default function ProjectsPage() {
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
   const [extraFiles, setExtraFiles] = React.useState<Record<string, string>>({})
+  const [assetFiles, setAssetFiles] = React.useState<Record<string, string>>({})
   const [githubRepository, setGithubRepository] = React.useState("")
   const [githubReview, setGithubReview] = React.useState<{
     repository: string; commit: string; changed: string[]
-    dependencies: number; buildRequired: boolean; extraCount: number
+    dependencies: number; buildRequired: boolean; extraCount: number; assetCount: number
   } | null>(null)
   const [editorDirty, setEditorDirty] = React.useState(false)
   const [releases, setReleases] = React.useState<Candidate[]>([])
@@ -485,7 +512,7 @@ export default function ProjectsPage() {
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
-                setExtraFiles({})
+                setExtraFiles({}); setAssetFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
                 setGithubRepository("")
@@ -534,6 +561,7 @@ export default function ProjectsPage() {
                     !contents.serverSource.trim() || contents.serverSource.length > 65536)
                   throw new Error("Invalid GitHub Node source preview")
                 const fetchedExtras = validatedExtras(contents.extraFiles)
+                const fetchedAssets = validatedAssets(contents.assetFiles)
                 const changed = ["package.json", "package-lock.json", "server.mjs"]
                 if (selected.candidateRelease) {
                   // Compare only with attested on-host source, never the editor buffer.
@@ -559,6 +587,9 @@ export default function ProjectsPage() {
                   const oldExtras = validatedExtras(staged.extraFiles)
                   if (JSON.stringify(oldExtras) !== JSON.stringify(fetchedExtras))
                     changed.push("frontend files")
+                  const oldAssets = validatedAssets(staged.assetFiles)
+                  if (JSON.stringify(oldAssets) !== JSON.stringify(fetchedAssets))
+                    changed.push("binary assets")
                   if (!changed.length) {
                     setGithubReview(null)
                     setMessage("GitHub commit " + data.commit.slice(0, 12) +
@@ -573,8 +604,10 @@ export default function ProjectsPage() {
                   dependencies: sourcePlan.dependencyCount as number,
                   buildRequired: commands.build !== null,
                   extraCount: Object.keys(fetchedExtras).length,
+                  assetCount: Object.keys(fetchedAssets).length,
                 })
                 setExtraFiles(fetchedExtras)
+                setAssetFiles(fetchedAssets)
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
@@ -587,7 +620,7 @@ export default function ProjectsPage() {
           </div>
           {githubReview && <p className="text-muted-foreground text-xs"
             aria-label="GitHub source changes">
-            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"} · Frontend files: {githubReview.extraCount}
+            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"} · Frontend files: {githubReview.extraCount} · Binary assets: {githubReview.assetCount}
             {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
               " · Staging only; package installation/build requires separate approval."}
           </p>}
@@ -604,6 +637,7 @@ export default function ProjectsPage() {
                   setLockfile(files.lockfile)
                   setSource(files.source)
                   setExtraFiles({})
+                  setAssetFiles({})
                   setApproved(false)
                   setBuildCheck(null)
                   setPlan(null)
@@ -629,9 +663,15 @@ export default function ProjectsPage() {
             Extra source files: {Object.keys(extraFiles).length ?
               Object.keys(extraFiles).sort().join(", ") : "none"}
           </p>
-          {Object.keys(extraFiles).length > 0 && <Button variant="outline"
+          <p className="text-muted-foreground text-xs" aria-label="Imported binary assets">
+            Binary assets: {Object.keys(assetFiles).length ?
+              Object.keys(assetFiles).sort().join(", ") : "none"}
+          </p>
+          {(Object.keys(extraFiles).length > 0 || Object.keys(assetFiles).length > 0) &&
+            <Button variant="outline"
             disabled={busy} onClick={() => {
               setExtraFiles({})
+              setAssetFiles({})
               setEditorDirty(true)
               setApproved(false)
               setGithubReview(null)
@@ -650,8 +690,10 @@ export default function ProjectsPage() {
                   typeof value.serverSource !== "string" || value.serverSource.length > 65536)
                   throw new Error("Invalid verified candidate source")
                 const verifiedExtras = validatedExtras(value.extraFiles)
+                const verifiedAssets = validatedAssets(value.assetFiles)
                 setManifest(value.manifest); setLockfile(value.lockfile)
-                setSource(value.serverSource); setExtraFiles(verifiedExtras); setApproved(false)
+                setSource(value.serverSource); setExtraFiles(verifiedExtras)
+                setAssetFiles(verifiedAssets); setApproved(false)
                 setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
                 setMessage("Verified staged source loaded into editor; no process changed.")
@@ -663,6 +705,7 @@ export default function ProjectsPage() {
                 packageLock: JSON.parse(lockfile) as unknown,
                 serverSource: source,
                 ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
+                ...(Object.keys(assetFiles).length ? { assetFiles } : {}),
                 expectedCandidate: selected.candidateRelease,
                 expectedRevision: selected.deploymentCount,
               })
