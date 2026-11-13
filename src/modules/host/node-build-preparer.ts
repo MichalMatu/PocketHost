@@ -6,7 +6,7 @@ import {
   rmSync, writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
-import { NodeProjectHost } from './node-project-host.ts';
+import { NodeProjectHost, decodeNodeAsset } from './node-project-host.ts';
 import { NodeDependencyPreparer, verifyCopiedNodePackages } from './node-dependency-preparer.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
@@ -385,6 +385,11 @@ export class NodeBuildPreparer {
         mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
         writeFileSync(filename, contents, { flag: 'wx', mode: 0o600 });
       }
+      for (const [name, encoded] of Object.entries(current.source.assetFiles ?? {})) {
+        const filename = path.join(workspace, name);
+        mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
+        writeFileSync(filename, decodeNodeAsset(name, encoded), { flag: 'wx', mode: 0o600 });
+      }
       if (current.plan.dependencyCount > 0) {
         const published = path.join(current.folder, 'node_modules');
         const copied = path.join(workspace, 'node_modules');
@@ -408,6 +413,13 @@ export class NodeBuildPreparer {
       for (const [name, contents] of Object.entries(current.source.extraFiles ?? {})) {
         if (readFileSync(path.join(workspace, name), 'utf8') !== contents)
           throw new Error('Node build modified verified extra source');
+      }
+      for (const [name, encoded] of Object.entries(current.source.assetFiles ?? {})) {
+        const filename = path.join(workspace, name);
+        const currentStat = lstatSync(filename);
+        if (!currentStat.isFile() || currentStat.isSymbolicLink() || currentStat.nlink !== 1 ||
+            !readFileSync(filename).equals(decodeNodeAsset(name, encoded)))
+          throw new Error('Node build modified verified binary asset');
       }
       const dist = path.join(workspace, 'dist');
       if (existsSync(path.join(dist, PROOF)))

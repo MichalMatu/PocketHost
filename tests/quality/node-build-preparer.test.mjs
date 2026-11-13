@@ -162,6 +162,36 @@ test('build refuses any changes to attested extra source before publishing dist'
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
+
+test('binary frontend asset is copied into approved build and original remains attested', async (t) => {
+  const { root, projects, project, source } = fixture(t);
+  const release = projects.stage(project.id, {
+    ...source, extraFiles: { 'index.html': '<img src="/logo.png">' },
+    assetFiles: { 'public/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+  }).project.candidateRelease;
+  const host = new NodeBuildPreparer(projects, root, () => false, async (workspace) => {
+    assert.equal(readFileSync(path.join(workspace, 'public', 'logo.png')).toString('base64'), 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
+    artifact(workspace);
+  });
+  assert.equal((await host.prepare(project.id, release, true)).prepared, true);
+  assert.equal(host.verifyBuilt(project.id, release).verified, true);
+  assert.equal(projects.release(project.id, release).source.assetFiles['public/logo.png'], 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
+});
+
+test('build cannot publish output after modifying source binary asset', async (t) => {
+  const { root, projects, project, source } = fixture(t);
+  const release = projects.stage(project.id, {
+    ...source, assetFiles: { 'public/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+  }).project.candidateRelease;
+  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
+    writeFileSync(path.join(workspace, 'public', 'logo.png'), 'modified');
+    artifact(workspace);
+  });
+  await assert.rejects(host.prepare(project.id, release, true), /modified verified binary asset/);
+  assert.equal(existsSync(path.join(projects.release(project.id, release).folder, 'dist')), false);
+  assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
+});
+
 test('explicit build approval publishes only proven dist and not a service', async (t) => {
   const { root, projects, project, release } = fixture(t);
   const called = [];
