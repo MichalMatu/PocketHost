@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { planNodeDependencies, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
+import { validNodeExtraPath } from './node-project-host.ts';
 
 const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37})$/;
 const REPO = /^[A-Za-z0-9._-]{1,100}$/;
@@ -8,6 +9,8 @@ const SHA = /^[a-f0-9]{40}$/;
 const FILES = ['package.json', 'package-lock.json', 'server.mjs'] as const;
 const MAX_SOURCE = 64 * 1024;
 const MAX_TOTAL = 320 * 1024;
+const MAX_EXTRAS = 32;
+const MAX_EXTRA_BYTES = 96 * 1024;
 
 /** Only a public GitHub API origin; redirects, caller URLs and credentials are forbidden. */
 function repositoryParts(value: unknown): { owner: string; name: string } {
@@ -77,14 +80,16 @@ function record(value: unknown): Record<string, unknown> {
 
 function sourceText(value: unknown, name: string): string {
   const data = record(value);
-  if (data.type !== 'file' || data.name !== name || data.path !== name ||
+  if (data.type !== 'file' ||
+      data.name !== name.split('/').at(-1) || data.path !== name ||
       data.encoding !== 'base64' || typeof data.content !== 'string')
     throw new RangeError('GitHub source is not a regular root file');
   const encoded = data.content.replace(/\s+/g, '');
   if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded))
     throw new RangeError('Invalid GitHub file encoding');
   const dataBytes = Buffer.from(encoded, 'base64');
-  const maximum = name === 'server.mjs' ? MAX_SOURCE : MAX_TOTAL;
+  const maximum = name === 'server.mjs' ? MAX_SOURCE :
+    validNodeExtraPath(name) ? 32 * 1024 : MAX_TOTAL;
   if (dataBytes.length < 1 || dataBytes.length > maximum)
     throw new RangeError('GitHub file exceeds source budget');
   try {
@@ -97,11 +102,60 @@ function sourceText(value: unknown, name: string): string {
 export interface GitHubNodeSourcePreview {
   repository: string;
   commit: string;
-  source: { packageJson: unknown; packageLock: unknown; serverSource: string };
+  source: { packageJson: unknown; packageLock: unknown; serverSource: string;
+    extraFiles?: Record<string, string> };
   plan: NodeDependencyPlan;
 }
 
-/** Inspect only three fixed files from the repository's pinned default-branch commit. */
+/** Inspect only pinned public text blobs. Binary assets and submodules are
+ * explicitly deferred: never silently import an incomplete frontend.
+ */
+async function pinnedExtraFiles(
+  base: string, commit: string, get: typeof fetch,
+): Promise<Record<string, string>> {
+  const treeData = record(await apiJson(
+    base + '/git/trees/' + commit + '?recursive=1', 256 * 1024, get,
+  ));
+  if (treeData.truncated !== false || !Array.isArray(treeData.tree) ||
+      treeData.tree.length > 1200)
+    throw new RangeError('GitHub source tree is incomplete or too large');
+  const relevant: string[] = [];
+  for (const item of treeData.tree as unknown[]) {
+    const entry = record(item);
+    if (typeof entry.path !== 'string' || typeof entry.type !== 'string')
+      throw new RangeError('Invalid GitHub source tree entry');
+    const name = entry.path;
+    if (name.startsWith('src/') || name.startsWith('public/') ||
+        /^(?:index\.html|vite\.config\.|tsconfig|postcss\.config|tailwind\.config)/.test(name)) {
+      if (entry.type === 'tree') continue;
+      if (!validNodeExtraPath(name) || entry.type !== 'blob' ||
+          !['100644', '100755'].includes(String(entry.mode)) ||
+          !Number.isSafeInteger(entry.size) || (entry.size as number) < 1 ||
+          (entry.size as number) > 32 * 1024)
+        throw new RangeError('Unsupported GitHub frontend source file or binary asset');
+      relevant.push(name);
+    }
+  }
+  const names = [...new Set(relevant)].sort();
+  if (names.length !== relevant.length || names.length > MAX_EXTRAS)
+    throw new RangeError('GitHub frontend file budget exceeded');
+  const extras: Record<string, string> = {};
+  let bytes = 0;
+  for (const name of names) {
+    const body = await apiJson(
+      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') +
+      '?ref=' + commit, 64000, get,
+    );
+    const source = sourceText(body, name);
+    bytes += Buffer.byteLength(name) + Buffer.byteLength(source);
+    if (bytes > MAX_EXTRA_BYTES)
+      throw new RangeError('GitHub frontend source exceeds 96 KB');
+    extras[name] = source;
+  }
+  return extras;
+}
+
+/** Inspect a public repository's pinned default-branch commit. */
 export async function previewPublicGitHubNodeSource(
   repository: unknown,
   get: typeof fetch = fetch,
@@ -147,10 +201,15 @@ export async function previewPublicGitHubNodeSource(
     throw new RangeError('GitHub Node entrypoint must be node server.mjs');
   if (!serverSource.trim() || serverSource.includes('\0'))
     throw new RangeError('Invalid GitHub Node source');
+  const extraFiles = plan.commands.build !== null ?
+    await pinnedExtraFiles(base, commit, get) : {};
+  if (total + Buffer.byteLength(JSON.stringify(extraFiles)) > MAX_TOTAL)
+    throw new RangeError('GitHub Node source exceeds 320 KB');
   return {
     repository: owner + '/' + name,
     commit,
-    source: { packageJson, packageLock, serverSource },
+    source: { packageJson, packageLock, serverSource,
+      ...(Object.keys(extraFiles).length ? { extraFiles } : {}) },
     plan,
   };
 }

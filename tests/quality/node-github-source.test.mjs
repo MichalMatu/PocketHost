@@ -66,6 +66,75 @@ test('GitHub preview pins 3 exact root files to one immutable public commit', as
   }
 });
 
+
+test('GitHub build preview imports bounded frontend text files at one pinned SHA', async () => {
+  const requests = [];
+  const buildManifest = {
+    ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' },
+  };
+  const extras = {
+    'index.html': '<main id="app"></main>',
+    'src/main.ts': 'document.body.textContent = "hello"',
+    'src/style.css': 'body { color: red }',
+    'vite.config.ts': 'export default {}',
+  };
+  const get = async (url, init) => {
+    requests.push(url);
+    const part = url.split('/contents/')[1]?.split('?')[0];
+    const obj = url.endsWith('/safe-node') ?
+      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
+      url.endsWith('/commits/main') ? { sha } :
+      url.includes('/git/trees/' + sha) ? {
+        truncated: false, tree: Object.entries(extras).map(([path, value]) => ({
+          path, type: 'blob', mode: '100644', size: Buffer.byteLength(value),
+        })),
+      } :
+      part ? {
+        type: 'file', name: part.split('/').at(-1), path: part, encoding: 'base64',
+        content: Buffer.from(
+          typeof ({ 'package.json': buildManifest, 'package-lock.json': lockfile,
+            'server.mjs': entry, ...extras })[part] === 'string' ?
+          ({ 'package.json': buildManifest, 'package-lock.json': lockfile,
+            'server.mjs': entry, ...extras })[part] :
+          JSON.stringify(({ 'package.json': buildManifest, 'package-lock.json': lockfile,
+            'server.mjs': entry, ...extras })[part]),
+        ).toString('base64'),
+      } : {};
+    return new Response(JSON.stringify(obj), { status: 200 });
+  };
+  const result = await previewPublicGitHubNodeSource('example/safe-node', get);
+  assert.equal(result.commit, sha);
+  assert.deepEqual(result.source.extraFiles, extras);
+  assert.equal(requests.length, 10);
+  assert.ok(requests.slice(3).every(url => url.endsWith('?ref=' + sha) ||
+    url.endsWith('/git/trees/' + sha + '?recursive=1')));
+});
+
+test('GitHub build preview refuses symlink and binary file in public source tree', async () => {
+  for (const path of ['public/logo.png', 'src/secrets/.env', 'src/config.ts']) {
+    const get = async url => {
+      const file = url.split('/contents/')[1]?.split('?')[0];
+      const response = url.endsWith('/safe-node') ?
+        { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
+        url.endsWith('/commits/main') ? { sha } :
+        url.includes('/git/trees/') ? {
+          truncated: false, tree: [{ path, type: 'blob',
+            mode: path === 'src/config.ts' ? '120000' : '100644', size: 20 }],
+        } :
+        file ? {
+          type: 'file', name: file.split('/').at(-1), path: file, encoding: 'base64',
+          content: Buffer.from(file === 'package.json' ?
+            JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
+            file === 'package-lock.json' ? JSON.stringify(lockfile) : entry).toString('base64'),
+        } : {};
+      return new Response(JSON.stringify(response), { status: 200 });
+    };
+    await assert.rejects(
+      previewPublicGitHubNodeSource('example/safe-node', get),
+      /Unsupported GitHub frontend source/,
+    );
+  }
+});
 test('GitHub preview rejects URLs, nested paths and hostile repo names without requesting network', async () => {
   let accessed = 0;
   const get = async () => {
