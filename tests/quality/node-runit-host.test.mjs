@@ -113,7 +113,7 @@ test('M3 dependency setup review is inert, pinned and excludes package lifecycle
   assert.deepEqual(readdirSync(serviceRoot), []);
 });
 
-test('M3 dependency setup review blocks untrusted lock sources and unsupported toolchain', (t) => {
+test('M3 dependency setup review blocks untrusted lock sources and unsupported toolchain', async (t) => {
   const { host, project, projects, root, serviceRoot } = fixture(t);
   const dependencySource = {
     ...source,
