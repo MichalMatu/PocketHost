@@ -694,6 +694,53 @@ it.each(["review-required", "blocked", "malformed"] as const)(
   },
 )
 
+it("accepts bounded build dependency approval without authorizing deploy or build", async () => {
+  const user = userEvent.setup()
+  const project = {
+    id: ID, name: "Build packages", kind: "node", state: "source-staged",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: RELEASE, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 2, allowed: false, reason: "dependencies-or-build-need-separate-approval",
+      }, executionEnabled: false }) }
+    if (url.endsWith("/dependency-review") && !options?.method)
+      return { ok: true, json: async () => ({ dependencyInstallEnabled: true, review: {
+        release: RELEASE, status: "review-required", dependencyCount: 2,
+        installRequired: true, buildRequired: true,
+        installCommand: ["npm", "ci", "--ignore-scripts", "--no-bin-links", "--no-audit", "--no-fund", "--include=dev"],
+        buildCommand: ["npm", "run", "build"], blockers: [], executed: false,
+      } }) }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<ProjectsPage />)
+  await user.click(await screen.findByRole("button", { name: "Build packages" }))
+  await user.click(screen.getByRole("button", { name: "Review dependency setup" }))
+  await screen.findByText("Dependency setup reviewed without running npm or build.")
+  const install = screen.getByRole("button", { name: "Install approved dependencies" }) as HTMLButtonElement
+  expect(install.disabled).toBe(true)
+  await user.click(screen.getByLabelText("Approve Node dependency install"))
+  expect(install.disabled).toBe(false)
+  expect((screen.getByRole("button", { name: "Deploy selected release" }) as HTMLButtonElement).disabled)
+    .toBe(true)
+  expect(calls.mock.calls.filter(([url]) => /install-dependencies|\/deploy$/.test(String(url))))
+    .toHaveLength(0)
+})
+
 it("rejects malformed GitHub preview without changing the Node source editor", async () => {
   const user = userEvent.setup()
   const project = {

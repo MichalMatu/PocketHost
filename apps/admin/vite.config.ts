@@ -582,7 +582,7 @@ function nodeProjectApi(): Plugin {
                 throw new RangeError("Explicit pinned dependency installation approval required")
               const review = runtime!.reviewDependencySetup(id!)
               if (review.release !== body.release || review.status !== "review-required" ||
-                  review.buildRequired || !review.installRequired || review.blockers.length > 0)
+                  !review.installRequired || review.blockers.length > 0)
                 throw new Error("Dependency plan blocked or changed before installation")
               const prepared = await preparer!.prepare(id!, body.release, true)
               const verified = preparer!.verifyPrepared(id!, body.release)

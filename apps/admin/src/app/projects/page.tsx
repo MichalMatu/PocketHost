@@ -663,8 +663,10 @@ export default function ProjectsPage() {
                         review.executed !== false ||
                         (review.installCommand !== null &&
                          (!Array.isArray(review.installCommand) ||
-                          review.installCommand.join(" ") !==
-                            "npm ci --ignore-scripts --no-bin-links --no-audit --no-fund --omit=dev")) ||
+                          ![
+                            "npm ci --ignore-scripts --no-bin-links --no-audit --no-fund --omit=dev",
+                            "npm ci --ignore-scripts --no-bin-links --no-audit --no-fund --include=dev",
+                          ].includes(review.installCommand.join(" ")))) ||
                         (review.buildCommand !== null &&
                          (!Array.isArray(review.buildCommand) ||
                           review.buildCommand.join(" ") !== "npm run build")) ||
@@ -687,7 +689,7 @@ export default function ProjectsPage() {
                   !dependencyInstallEnabled || !selected.candidateRelease ||
                   dependencyReview?.release !== selected.candidateRelease ||
                   dependencyReview.status !== "review-required" || !dependencyReview.installRequired ||
-                  dependencyReview.buildRequired || dependencyReview.blockers.length > 0}
+                  dependencyReview.blockers.length > 0}
                   onClick={() => action(async () => {
                     const release = selected.candidateRelease!
                     const expectedCount = dependencyReview!.dependencyCount
@@ -712,7 +714,9 @@ export default function ProjectsPage() {
                       throw new Error("Package installation acknowledged but integrity unconfirmed.")
                     setDependencyReview(verified as DependencyReview)
                     setDependencyInstallEnabled(checked.dependencyInstallEnabled === true)
-                    setMessage("Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
+                    setMessage(verified.buildRequired
+                      ? "Node build dependencies verified. Build execution is still disabled."
+                      : "Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
                   })}>Install approved dependencies</Button>
                 <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
