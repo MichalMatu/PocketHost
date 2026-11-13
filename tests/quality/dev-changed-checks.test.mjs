@@ -24,7 +24,9 @@ function command(plan, label) {
 
 test('documentation-only delta runs no source tests, builds or typechecks', () => {
   const plan = planChangedChecks(['AGENTS.md', 'docs/DEV_ITERATION.md'], deps);
-  assert.ok(command(plan, 'docs'));
+  assert.deepEqual(command(plan, 'docs').argv, [
+    'node', 'scripts/quality/check-docs.mjs', '--changed', 'AGENTS.md', 'docs/DEV_ITERATION.md',
+  ]);
   assert.ok(command(plan, 'changed markdown lint'));
   assert.ok(command(plan, 'changed-file format'));
   assert.equal(command(plan, 'node tests'), undefined);

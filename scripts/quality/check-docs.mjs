@@ -3,8 +3,29 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { repositoryRoot } from './check-structure.mjs';
 
-export function validateDocs(root = repositoryRoot) {
+/**
+ * Full audit is the default. DEV --changed validates only its explicitly
+ * modified Markdown paths; unrelated historical context-budget debt cannot
+ * block an otherwise verified source update.
+ */
+export function validateDocs(root = repositoryRoot, changed = null) {
   const errors = [];
+  const focused = changed !== null;
+  const requested = new Set();
+  if (focused) {
+    if (!Array.isArray(changed) || changed.length === 0) return ['Missing changed docs'];
+    for (const rel of changed) {
+      if (typeof rel !== 'string' || !rel.endsWith('.md') ||
+          !/^(?:docs\/|[A-Za-z0-9_-]+\/|AGENTS\.md$)/.test(rel) ||
+          rel.startsWith('apps/admin/') || rel.includes('\\') ||
+          rel.split('/').some(part => !part || part === '.' || part === '..')) {
+        errors.push('Invalid changed docs path');
+      } else {
+        requested.add(rel);
+      }
+    }
+    if (errors.length) return errors;
+  }
   const manifestPath = path.join(root, 'project.structure.json');
   if (!existsSync(manifestPath)) return ['Missing project.structure.json'];
   const { modules } = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -39,7 +60,13 @@ export function validateDocs(root = repositoryRoot) {
     }
   }
   walk(root);
+  if (focused) {
+    for (const rel of requested) {
+      if (!mdFiles.includes(rel)) errors.push('Changed docs missing or not regular: ' + rel);
+    }
+  }
   for (const rel of mdFiles) {
+    if (focused && !requested.has(rel)) continue;
     const full = path.join(root, rel);
     const content = readFileSync(full, 'utf8');
     const maxBytes = contextBudgetBytes.get(rel);
@@ -88,6 +115,7 @@ export function validateDocs(root = repositoryRoot) {
     ...modules.map((m) => `src/modules/${m}/AGENTS.md`),
   ];
   for (const rel of scopedAgents) {
+    if (focused && !requested.has(rel)) continue;
     const file = path.join(root, rel);
     if (!existsSync(file)) continue;
     const content = readFileSync(file, 'utf8');
@@ -95,15 +123,20 @@ export function validateDocs(root = repositoryRoot) {
       if (!content.includes(heading)) errors.push(`Missing agent section ${heading}: ${rel}`);
     }
   }
-  for (const moduleName of modules) {
-    if (!index.includes(`(modules/${moduleName}.md)`))
-      errors.push(`Missing module index: ${moduleName}`);
+  if (!focused || requested.has('docs/README.md')) {
+    for (const moduleName of modules) {
+      if (!index.includes(`(modules/${moduleName}.md)`))
+        errors.push(`Missing module index: ${moduleName}`);
+    }
   }
   return errors;
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const errors = validateDocs();
+  const argv = process.argv.slice(2);
+  const changed = argv.length === 0 ? null :
+    argv[0] === '--changed' && argv.length > 1 ? argv.slice(1) : [];
+  const errors = validateDocs(repositoryRoot, changed);
   if (errors.length) {
     console.error(errors.join('\n'));
     process.exitCode = 1;

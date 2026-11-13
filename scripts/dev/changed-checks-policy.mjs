@@ -89,6 +89,8 @@ export function planChangedChecks(
     if (file.startsWith('scripts/dev/ui-sync')) node.add('tests/quality/dev-ui-sync.test.mjs');
     if (file.startsWith('scripts/dev/changed-checks'))
       node.add('tests/quality/dev-changed-checks.test.mjs');
+    if (file === 'scripts/quality/check-docs.mjs')
+      node.add('tests/quality/dev-docs-changed.test.mjs');
     if (file.startsWith('scripts/dev/verify-changed'))
       node.add('tests/quality/dev-verify-changed.test.mjs');
 
@@ -115,7 +117,7 @@ export function planChangedChecks(
     commands.push({ label, cwd, argv });
   }
   if (structure) add('structure', '.', ['node', 'scripts/quality/check-structure.mjs']);
-  if (docs.length) add('docs', '.', ['node', 'scripts/quality/check-docs.mjs']);
+  if (docs.length) add('docs', '.', ['node', 'scripts/quality/check-docs.mjs', '--changed', ...docs]);
   if (boundaries) add('boundaries', '.', ['node', 'scripts/quality/check-boundaries.mjs']);
   if (node.size) add('node tests', '.', ['node', '--test', ...[...node].sort()]);
   if (ui.size) add('ui tests', 'apps/admin', ['npm', 'run', 'test:ui', '--', ...[...ui].sort()]);
