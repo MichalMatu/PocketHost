@@ -524,7 +524,7 @@ export default function ProjectsPage() {
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. The initial Node runtime supports dependency-free, no-build services on loopback through Termux runit; /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
+          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. Termux runit starts the verified server.mjs on loopback only after explicit approval. Build candidates require separate install/build review and SHA-256 verification; generated dist files are not served automatically—server.mjs must serve them. /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
               <Input aria-label="Public GitHub repository" placeholder="owner/repository"
