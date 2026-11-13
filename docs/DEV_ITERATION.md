@@ -30,6 +30,25 @@ No per-commit ESLint, complete UI suite, full G2, coverage or build.**
   Keep foreign services untouched. Missing evidence stays HOLD/OPEN,
   never reported as PASS.
 
+## Single-task verified fast flow
+
+For an owner-approved PocketHost DEV code refresh, pin current live `--base`
+and newly committed `--target` SHAs. Submit **one** host-command task to the
+existing Samsung Local Agent, using the established isolated QA checkout:
+
+1. Ensure clean QA checkout, `git fetch origin main`, verify `FETCH_HEAD` equals
+   target, then detach exactly target.
+2. Run `node ops/termux/fast-flow.mjs --base=<live-sha> --target=<target-sha> --apply`
+   **once**. Without `--apply`, it only checks.
+3. Read the **one terminal receipt**: exact-source impacted tests, owner
+   preflight, owned-panel guarded refresh/rollback, and HTTP route smoke.
+
+The script never deploys when QA fails or needs manual review; does not manage
+foreign services, install dependencies or restart unrelated processes. Do not
+create a second dependent QA/release task or re-run PASS gates per minor commit.
+Missing terminal receipt is HOLD, not permission to retry. Use a fresh live
+SHA and one new task only when the prior task is conclusively terminal.
+
 ## One normal iteration
 
 **Fresh main -> small coherent edit -> commit -> focused Samsung
