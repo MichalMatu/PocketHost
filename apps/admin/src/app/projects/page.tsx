@@ -640,6 +640,7 @@ export default function ProjectsPage() {
                 })}>Review plan</Button>
                 <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
+                    setDependencyReview(null)
                     const result = await getJson(api + "/" + selected.id + "/dependency-review")
                     const review = result.review as Partial<DependencyReview> | undefined
                     if (!review || review.release !== selected.candidateRelease ||
