@@ -38,11 +38,13 @@ const panelArgv = f =>
   ['/data/data/com.termux/files/usr/bin/node',
     path.join(path.dirname(path.dirname(f.admin)), 'apps/admin/node_modules/vite/bin/vite.js'),
     '--host', '127.0.0.1', '--port', '8787', '--strictPort'].join('\0') + '\0';
-function build(f, calls = [], procCwd = f.admin, argv = panelArgv(f)) {
+function build(f, calls = [], procCwd = f.admin, argv = panelArgv(f), agentStatus = null) {
   const run = (bin, args) => {
     calls.push([bin, args]);
     if (bin.endsWith('/bin/sv')) return {
-      status: 0, stdout: 'run: ' + args[1] + ': (pid 98) 120s; run: log',
+      status: 0, stdout: agentStatus && args[1] ===
+        path.join(f.agentState, 'runit/services/termux-agent')
+        ? agentStatus : 'run: ' + args[1] + ': (pid 98) 120s; run: log',
     };
     if (args.includes('rev-parse')) return { status: 0, stdout: b + '\n' };
     if (args.includes('cat-file')) return { status: 0, stdout: 'commit\n' };
@@ -313,5 +315,23 @@ test('mismatched digest and oversized local result fail closed', () => {
     writeFileSync(resultFile, JSON.stringify({ ...item, task_digest: 'a'.repeat(64),
       result: { id, status: 'done', largePayload: 'x'.repeat(300000) } }));
     assert.equal(build(f).inspect().localAgent.lastResult, 'unverified');
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('private Agent runit accepts real sv suffix with normally down and logger status', () => {
+  const f = fixture();
+  try {
+    const service = path.join(f.agentState, 'runit/services/termux-agent');
+    const full = 'run: ' + service +
+      ': (pid 31436) 392746s, normally down; run: log: (pid 31432) 392746s';
+    const healthy = build(f, [], f.admin, panelArgv(f), full).inspect().localAgent.runit;
+    assert.deepEqual(healthy, { state: 'running', uptimeSeconds: 392746, error: null });
+    const down = build(f, [], f.admin, panelArgv(f),
+      'down: ' + service + ': 18s, normally down; run: log').inspect().localAgent.runit;
+    assert.deepEqual(down, { state: 'stopped', uptimeSeconds: null, error: null });
+    const unknown = build(f, [], f.admin, panelArgv(f),
+      'run: /tmp/foreign: (pid 1) 5s, normally down').inspect().localAgent.runit;
+    assert.equal(unknown.state, 'unknown');
+    assert.equal(unknown.error, 'unavailable');
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });

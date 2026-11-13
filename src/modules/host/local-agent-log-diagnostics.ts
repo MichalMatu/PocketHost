@@ -51,11 +51,19 @@ export function classifyAgentLogLine(line: string): AgentLogEvent | null {
     /\b(git.fetch|git.push|git.transport|remote.ref|git.error)\b/i.test(line) ? 'transport' :
     /\b(started|starting|stopped|serving|polling|service.ready)\b/i.test(line) ? 'service' : null;
   if (!kind) return null;
-  const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))\b/.exec(line);
+  const iso = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))(?=\s|$)/.exec(line);
+  // svlogd -tt uses UTC YYYY-MM-DD_HH:MM:SS.fraction, not ISO T/Z.
+  const runit = /^(\d{4}-\d{2}-\d{2})_(\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(?=\s|$)/.exec(line);
+  const rawTime = iso?.[1] ?? (runit
+    ? runit[1] + 'T' + runit[2] +
+      '.' + (runit[3] ?? '0').padEnd(3, '0').slice(0, 3) + 'Z'
+    : null);
+  const parsed = rawTime === null ? NaN : Date.parse(rawTime);
+  const valid = Number.isFinite(parsed) && (!runit ||
+    new Date(parsed).toISOString().startsWith(runit[1] + 'T' + runit[2]));
   return {
     kind, message: LABELS[kind],
-    timestamp: match && Number.isFinite(Date.parse(match[1]!))
-      ? new Date(match[1]!).toISOString() : null,
+    timestamp: valid ? new Date(parsed).toISOString() : null,
   };
 }
 

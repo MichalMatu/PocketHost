@@ -97,3 +97,31 @@ test('installed Samsung svlogd path is preferred over legacy locations', () => {
     assert.deepEqual(result.events.map(event => event.kind), ['budget']);
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
+
+test('svlogd -tt UTC timestamps with underscores appear as real localizable times', () => {
+  const event = classifyAgentLogLine(
+    '2026-11-13_21:58:57.311565 [linux-agent] exec finished exit=1; secret=hidden');
+  assert.deepEqual(event, {
+    kind: 'failed', message: 'Agent reported an error or failed task',
+    timestamp: '2026-11-13T21:58:57.311Z',
+  });
+  const micro = classifyAgentLogLine(
+    '2026-11-13_21:48:09.586576 [linux-agent] TASK BUDGET EXHAUSTED');
+  assert.equal(micro?.timestamp, '2026-11-13T21:48:09.586Z');
+  const invalid = classifyAgentLogLine(
+    '2026-13-99_21:58:57.311565 [linux-agent] task failed');
+  assert.equal(invalid?.timestamp, null);
+  assert.equal(classifyAgentLogLine('private error token=hidden')?.timestamp, null);
+});
+test('installed svlogd current log renders a known timestamp without leaking payload', () => {
+  const f = fixture();
+  try {
+    writeFileSync(f.current,
+      '2026-11-13_21:58:57.311565 [linux-agent] exec finished exit=1 secret=hidden\\n');
+    const observed = new LocalAgentLogHost(f.home).inspect();
+    assert.equal(observed.state, 'ok');
+    assert.deepEqual(observed.events.map(e => e.timestamp),
+      ['2026-11-13T21:58:57.311Z']);
+    assert.ok(!JSON.stringify(observed).includes('secret=hidden'));
+  } finally { rmSync(f.home, { recursive: true, force: true }); }
+});

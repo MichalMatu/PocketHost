@@ -93,12 +93,12 @@ export class ControlPlaneDiagnosticHost {
       const prefix = 'run: ' + target + ': ';
       const down = 'down: ' + target + ': ';
       if (line.startsWith(prefix)) {
-        const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:;|$)/.exec(line.slice(prefix.length));
+        const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:[,;]|$)/.exec(line.slice(prefix.length));
         if (match && Number.isSafeInteger(Number(match[1])) &&
             Number.isSafeInteger(Number(match[2])))
           return { state: 'running', uptimeSeconds: Number(match[2]), error: null };
       }
-      if (line.startsWith(down) && /^\d+s(?:;|$)/.test(line.slice(down.length)))
+      if (line.startsWith(down) && /^\d+s(?:[,;]|$)/.test(line.slice(down.length)))
         return { state: 'stopped', uptimeSeconds: null, error: null };
     } catch { /* unavailable, do not infer healthy */ }
     return unknown('unavailable');
@@ -131,12 +131,12 @@ export class ControlPlaneDiagnosticHost {
       const prefix = 'run: ' + service + ': ';
       const down = 'down: ' + service + ': ';
       if (line.startsWith(prefix)) {
-        const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:;|$)/.exec(line.slice(prefix.length));
+        const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:[,;]|$)/.exec(line.slice(prefix.length));
         if (match && Number.isSafeInteger(Number(match[1])) &&
             Number.isSafeInteger(Number(match[2])))
           return { state: 'running', uptimeSeconds: Number(match[2]), error: null };
       }
-      if (line.startsWith(down) && /^\d+s(?:;|$)/.test(line.slice(down.length)))
+      if (line.startsWith(down) && /^\d+s(?:[,;]|$)/.test(line.slice(down.length)))
         return { state: 'stopped', uptimeSeconds: null, error: null };
     } catch { /* no guessed runit state without verified private path */ }
     return unknown('unavailable');
