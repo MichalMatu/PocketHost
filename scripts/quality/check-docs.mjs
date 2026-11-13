@@ -16,8 +16,8 @@ export function validateDocs(root = repositoryRoot, changed = null) {
     if (!Array.isArray(changed) || changed.length === 0) return ['Missing changed docs'];
     for (const rel of changed) {
       if (typeof rel !== 'string' || !rel.endsWith('.md') ||
-          !/^(?:docs\/|[A-Za-z0-9_-]+\/|AGENTS\.md$)/.test(rel) ||
-          rel.startsWith('apps/admin/') || rel.includes('\\') ||
+          rel.startsWith('/') || rel.startsWith('apps/admin/') ||
+          rel.includes('\\') || rel.includes('\0') ||
           rel.split('/').some(part => !part || part === '.' || part === '..')) {
         errors.push('Invalid changed docs path');
       } else {
