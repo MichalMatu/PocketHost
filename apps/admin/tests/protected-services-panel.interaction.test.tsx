@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen, within } from "@testing-library/react"
+import { render, screen } from "@testing-library/react"
 import { ProtectedServicePanels } from "@/app/termux/protected-services-panel"
 import { protectedServiceSchema } from "@/lib/protected-service-schema"
 
