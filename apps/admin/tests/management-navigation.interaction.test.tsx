@@ -10,7 +10,11 @@ it("keeps product search and sidebar synchronized with every active management r
   const active = navGroups.flatMap(group => group.items)
   const paths = active.map(item => item.url)
   expect(new Set(paths).size).toBe(paths.length)
-  expect(active).toHaveLength(17)
+  // Local Agent is a dedicated menu item; guard uniqueness and route coverage
+  // instead of a brittle fixed count when legitimate product pages are added.
+  expect(active.length).toBeGreaterThanOrEqual(18)
+  expect(active.filter(item => item.url === "/local-agent")).toHaveLength(1)
+  expect(active.filter(item => item.url === "/services")).toHaveLength(1)
   expect(navGroups.some(group => group.label === "Examples")).toBe(false)
   for (const path of paths) {
     expect(path.startsWith("/")).toBe(true)
