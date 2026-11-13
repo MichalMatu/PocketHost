@@ -846,3 +846,87 @@ it.each(["restored", "conflict"] as const)(
       .toHaveLength(0)
   },
 )
+
+it.each(["disabled", "approved", "blocked"] as const)(
+  "requires explicit and eligible npm dependency installation: %s",
+  async (scenario) => {
+    const user = userEvent.setup()
+    const project = {
+      id: ID, name: "Prepared Node", kind: "node", state: "source-staged",
+      runtime: "not-provisioned", activeRelease: null, candidateRelease: RELEASE,
+      previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+    }
+    let installed = false
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/node-projects")
+        return { ok: true, json: async () => ({ projects: [project] }) }
+      if (url.endsWith("/releases"))
+        return { ok: true, json: async () => ({ releases: [] }) }
+      if (url.endsWith("/runtime"))
+        return { ok: true, json: async () => ({ runtime: {
+          state: "not-provisioned", desired: "stopped", port: null,
+          activeRelease: null, lastGoodRelease: null, previousGoodRelease: null,
+          history: [],
+        }, executionEnabled: false }) }
+      if (url.endsWith("/plan"))
+        return { ok: true, json: async () => ({ plan: {
+          release: RELEASE, port: null, nodeVersion: "v26.13.0", npmVersion: "11.6.2",
+          missingTools: [], conflicts: [], dependencyCount: 1,
+          allowed: installed, reason: installed ? "ready-for-explicit-local-deploy"
+            : "dependencies-or-build-need-separate-approval",
+        }, executionEnabled: false }) }
+      if (url.endsWith("/dependency-review") && !options?.method)
+        return { ok: true, json: async () => ({
+          dependencyInstallEnabled: scenario !== "disabled",
+          review: {
+            release: RELEASE, status: installed ? "prepared" :
+              scenario === "blocked" ? "blocked" : "review-required",
+            dependencyCount: 1, installRequired: true, buildRequired: false,
+            installCommand: ["npm", "ci", "--ignore-scripts", "--no-bin-links", "--no-audit", "--no-fund", "--omit=dev"],
+            buildCommand: null,
+            blockers: scenario === "blocked" ? ["unreviewed-source:unsafe"] : [],
+            executed: false,
+          },
+        }) }
+      if (url.endsWith("/install-dependencies") && options?.method === "POST") {
+        const body = JSON.parse(String(options.body))
+        expect(body).toEqual({ approved: true, release: RELEASE })
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"])
+          .toBe("owned-node-project")
+        installed = true
+        return { ok: true, json: async () => ({ dependencies: {
+          release: RELEASE, dependencyCount: 1, prepared: true,
+        } }) }
+      }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<ProjectsPage />)
+    await screen.findByRole("button", { name: "Prepared Node" })
+    await user.click(screen.getByRole("button", { name: "Prepared Node" }))
+    await screen.findByText(/Runtime: not-provisioned/)
+    const approve = screen.getByLabelText("Approve Node dependency install") as HTMLInputElement
+    const install = screen.getByRole("button", { name: "Install approved dependencies" }) as HTMLButtonElement
+    expect(approve.disabled).toBe(true)
+    expect(install.disabled).toBe(true)
+    await user.click(screen.getByRole("button", { name: "Review dependency setup" }))
+    if (scenario === "approved") {
+      await screen.findByText("Dependency setup reviewed without running npm or build.")
+      expect(approve.disabled).toBe(false)
+      expect(install.disabled).toBe(true)
+      await user.click(approve)
+      expect(install.disabled).toBe(false)
+      await user.click(install)
+      await screen.findByText("Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
+      expect(screen.getByLabelText("Node dependency setup").textContent).toContain("Setup: prepared")
+      expect(install.disabled).toBe(true)
+    } else {
+      await screen.findByText("Dependency setup reviewed without running npm or build.")
+      expect(approve.disabled).toBe(true)
+      expect(install.disabled).toBe(true)
+    }
+    expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/install-dependencies")))
+      .toHaveLength(scenario === "approved" ? 1 : 0)
+  },
+)

@@ -535,7 +535,7 @@ export default function ProjectsPage() {
             {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"}
             {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
               " · Staging only; package installation/build requires separate approval."}
-          </p>
+          </p>}
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
               disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
