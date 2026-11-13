@@ -101,6 +101,44 @@ export class ControlPlaneDiagnosticHost {
     return unknown('unavailable');
   }
 
+
+  /**
+   * The Termux Agent owns an independent runit service below its private state,
+   * not the generic $PREFIX/var/service namespace used by PocketHost.
+   * An unrelated service named "termux-agent" must never stand in for it.
+   */
+  private agentRunit(): ServiceState {
+    const root = path.join(this.home, '.local/state/local-agent/termux');
+    const folder = path.join(root, 'runit/services');
+    const service = path.join(folder, 'termux-agent');
+    try {
+      for (const dir of [this.home, path.join(this.home, '.local'),
+        path.join(this.home, '.local/state'),
+        path.join(this.home, '.local/state/local-agent'),
+        root, path.join(root, 'runit'), folder, service]) {
+        const item = lstatSync(dir);
+        if (!item.isDirectory() || item.isSymbolicLink() ||
+            this.resolve(dir) !== dir) return unknown('unsafe-service');
+      }
+      const result = this.run(path.join(PREFIX, 'bin/sv'), ['status', service]);
+      if (result.error || result.status !== 0 || typeof result.stdout !== 'string')
+        return unknown((result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT'
+          ? 'timeout' : 'unavailable');
+      const line = result.stdout.trim();
+      const prefix = 'run: ' + service + ': ';
+      const down = 'down: ' + service + ': ';
+      if (line.startsWith(prefix)) {
+        const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:;|$)/.exec(line.slice(prefix.length));
+        if (match && Number.isSafeInteger(Number(match[1])) &&
+            Number.isSafeInteger(Number(match[2])))
+          return { state: 'running', uptimeSeconds: Number(match[2]), error: null };
+      }
+      if (line.startsWith(down) && /^\d+s(?:;|$)/.test(line.slice(down.length)))
+        return { state: 'stopped', uptimeSeconds: null, error: null };
+    } catch { /* no guessed runit state without verified private path */ }
+    return unknown('unavailable');
+  }
+
   /** Only the installed Termux Agent's fixed private state, never its config or task contents. */
   private localAgentState(): Omit<ControlPlaneDiagnostics['localAgent'], 'runit'> {
     const unavailable = {
@@ -289,7 +327,7 @@ export class ControlPlaneDiagnosticHost {
   inspect(): ControlPlaneDiagnostics {
     return {
       version: 1, mode: 'read-only', observedAt: this.now(),
-      localAgent: { runit: this.status('termux-agent'), ...this.localAgentState() },
+      localAgent: { runit: this.agentRunit(), ...this.localAgentState() },
       pocketHost: { runit: this.status('pockethost-panel'),
         watch: this.status('pockethost-panel-watch'),
         owner: this.inspectOwner(), updateReadiness: 'hold-manual-review',

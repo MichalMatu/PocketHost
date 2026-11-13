@@ -18,7 +18,8 @@ function fixture() {
   const gatewayFolder = path.join(home, '.local/state/pockethost');
   const agentState = path.join(home, '.local/state/local-agent/termux');
   for (const dir of [services, sv, admin, gatewayFolder,
-    path.join(agentState, 'claims'), path.join(agentState, 'results')])
+    path.join(agentState, 'claims'), path.join(agentState, 'results'),
+    path.join(agentState, 'runit/services/termux-agent')])
     mkdirSync(dir, { recursive: true });
   for (const name of ['termux-agent', 'pockethost-panel', 'pockethost-panel-watch']) {
     mkdirSync(path.join(sv, name));
@@ -78,7 +79,11 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
     assert.deepEqual(result.pocketHost.owner.revisionEvidence.areas,
       { adminUI: 1, hostBackend: 1, tests: 1, docs: 0, other: 0 });
     assert.equal(result.pocketHost.restart, 'blocked');
-    assert.equal(calls.filter(([bin]) => bin.endsWith('/bin/sv')).length, 3);
+    const runitCalls = calls.filter(([bin]) => bin.endsWith('/bin/sv'));
+    assert.equal(runitCalls.length, 3);
+    assert.ok(runitCalls.some(([, args]) =>
+      args[1] === path.join(f.agentState, 'runit/services/termux-agent')));
+    assert.ok(!runitCalls.some(([, args]) => args[1] === path.join(f.services, 'termux-agent')));
     assert.ok(calls.every(([bin, args]) => bin.endsWith('/bin/sv')
       ? args[0] === 'status' && args.length === 2
       : bin.endsWith('/bin/git') && args[0] === '-C' &&
@@ -88,9 +93,10 @@ test('fixed read-only observations and SHA mismatch block operations', () => {
 test('spoofed service link and owner marker drift fail closed', () => {
   const f = fixture(), calls = [];
   try {
-    rmSync(path.join(f.services, 'termux-agent'));
+    const privateService = path.join(f.agentState, 'runit/services/termux-agent');
+    rmSync(privateService, { recursive: true });
     mkdirSync(path.join(f.sv, 'impostor'));
-    symlinkSync(path.join(f.sv, 'impostor'), path.join(f.services, 'termux-agent'));
+    symlinkSync(path.join(f.sv, 'impostor'), privateService);
     writeFileSync(f.gateway, JSON.stringify({ ...f.g, pid: 77 }));
     const result = build(f, calls).inspect();
     assert.equal(result.localAgent.runit.error, 'unsafe-service');
@@ -174,5 +180,31 @@ test('symlinked Local Agent state or results fail closed without following links
     assert.equal(unknown.intake, 'unverified');
     assert.equal(unknown.claims, null);
     assert.equal(unknown.spooled, null);
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+
+test('missing Agent-owned runit directory stays unknown even if generic name is running', () => {
+  const f = fixture(), calls = [];
+  try {
+    rmSync(path.join(f.agentState, 'runit'), { recursive: true });
+    const observed = build(f, calls).inspect().localAgent;
+    assert.equal(observed.runit.state, 'unknown');
+    assert.equal(observed.runit.error, 'unavailable');
+    assert.equal(observed.intake, 'stop-absent');
+    assert.ok(!calls.some(([bin, args]) => bin.endsWith('/bin/sv') &&
+      args[1] === path.join(f.services, 'termux-agent')));
+  } finally { rmSync(f.root, { recursive: true, force: true }); }
+});
+test('Agent runit marker symlink cannot redirect status to a foreign service', () => {
+  const f = fixture(), calls = [];
+  try {
+    const privateRoot = path.join(f.agentState, 'runit');
+    rmSync(privateRoot, { recursive: true });
+    symlinkSync(f.sv, privateRoot);
+    const observed = build(f, calls).inspect().localAgent;
+    assert.equal(observed.runit.state, 'unknown');
+    assert.equal(observed.runit.error, 'unsafe-service');
+    assert.ok(!calls.some(([bin, args]) => bin.endsWith('/bin/sv') &&
+      args[1].includes('/runit/services/termux-agent')));
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
