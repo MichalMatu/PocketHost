@@ -6,10 +6,13 @@ Read this file, docs/START_HERE.md and only the nearest scoped AGENTS.md; use fr
 
 ## Execution
 
-- Main only. GitHub Connector is source/task transport; **only verified Samsung Termux Local Agent** runs tests, builds and device actions. Never Mac, ChatGPT sandbox, Codex, Work or GitHub Actions.
-- One edit → affected checks → owned panel HMR/guarded update → one terminal exact-SHA receipt. No duplicate tasks, retries without evidence or full audits for minor edits.
-- A commit or queued task is not a deployed PASS. Unknown result means HOLD.
-- Docs-only changes: changed-doc check; **no panel restart**. Preserve dependencies/caches.
+- Main only. GitHub Connector is source/task transport; **only verified Samsung Termux Local Agent** runs builds, device actions and any owner-authorized tests. Never Mac, ChatGPT sandbox, Codex, Work or GitHub Actions.
+- Default workflow, in **one agent task**: **code → deploy → verify**. Commit the change, perform the permitted guarded update of the verified PocketHost-owned DEV panel, then read back the running revision, process ownership and basic health. Report one terminal exact-SHA deployment receipt. Do not split these stages into multiple jobs or duplicate an existing job.
+- **No tests by default.** Unit, integration, E2E, regression, QA, smoke, lint, formatting, typecheck, test suites and documentation checks run **only when the owner explicitly says it is time for tests**. A code change or deployment request does not authorize tests. FAST FLOW must not run test commands implicitly.
+- Deployment safety checks remain mandatory: establish process ownership, live revision, protected-service isolation and rollback eligibility before updating. These operational safeguards are not authorization to run test suites. On unsafe state or unavailable Samsung agent, report HOLD; do not bypass guards or claim deployment.
+- **Verification is not testing:** read back live/installed SHA and basic read-only status and health evidence; do not run functional tests or smoke-test routes without explicit authorization.
+- A commit or queued task is not a deployed PASS. Unknown result means HOLD. No automatic retries.
+- Docs-only changes: commit to Git only; **no automatic documentation checks, build or panel restart**. Preserve dependencies/caches.
 
 ## Safety
 
@@ -19,4 +22,4 @@ Read this file, docs/START_HERE.md and only the nearest scoped AGENTS.md; use fr
 
 ## Product and gates
 
-Basic = full official-Termux Hosting (H2 static separate from Node). Pro/Companion/Shizuku expansion and unified APK deferred. Host/process/permission edits require targeted positive and negative tests. Source DEV ≠ G2/G3 physical release.
+Basic = full official-Termux Hosting (H2 static separate from Node). Pro/Companion/Shizuku expansion and unified APK deferred. Host/process/permission edits need targeted positive and negative tests **only when the owner explicitly authorizes testing**; never start them in the default cycle. Source DEV ≠ G2/G3 physical release.

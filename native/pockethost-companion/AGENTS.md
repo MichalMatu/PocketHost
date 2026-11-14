@@ -10,4 +10,4 @@ No fake privilege, extra approval queue for explicit owner Run, WAN listener, un
 
 ## Gate
 
-Root AGENTS applies: verified Samsung Termux Agent only; report real UID/errors and exact-SHA results.
+Root AGENTS applies: code → deploy → verify in one task on verified Samsung Termux Agent only, no tests unless the owner explicitly authorizes them. Preserve safety gates and report real UID/errors and exact-SHA results.
