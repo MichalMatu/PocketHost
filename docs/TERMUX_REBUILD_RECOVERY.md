@@ -90,15 +90,23 @@ were exported; no off-device or isolated-restore proof exists. Keep the
 stage private and leave services untouched. These copies are not a PASS for
 Termux erasure or reinstall.
 
-A Restic recovery password was generated locally on the exact Samsung
-installation by `termux-rebuild-local-restic-key-20261114-v1` (exit 0,
-mode 0600) at `~/.local/state/termux-recovery-secrets/restic-password`.
-No password content was transmitted through Git. **Off-phone password custody
-has NOT been verified**; do not initialize the Restic repository yet. The
-owner must read the password in their local Termux terminal and securely save
-it on a separate device/password manager. Never put it into Git tasks,
-remote command output, chat logs or shared Downloads. After escrow confirmation,
-perform encrypted full backup, off-device export and isolated restore.
+The initially generated password was visible in a chat screenshot and is
+therefore **retired**. Samsung exact-installation task
+`termux-rebuild-rotate-restic-password-preflight-20261114-v1` completed `done`
+with command exit 0, rotated the password in place, and confirmed mode 0600.
+The NEW password remains local in
+`~/.local/state/termux-recovery-secrets/restic-password`; its contents
+were not transmitted through Git. **Off-phone custody of the NEW password
+has NOT been verified; do not initialize Restic yet.** User must securely
+save it in a separate password manager/device without screenshots or sharing
+it in chat, Git tasks, output logs, or Downloads.
+
+Read-only preflight: `home=28,897,305 KiB`, `usr=4,983,619 KiB` (about
+32.3 GiB combined); available `121,394 MiB` on Android Downloads at task
+time. Five SQLite snapshots are present. No preexisting recovery Restic repo
+at the checked destination; no service changes. Size is not a proof of
+Restic success. After confirmed password escrow, initiate encrypted full
+backup, off-device export, and isolated restore.
 
 ## Next phase — Restic, export and proof (NOT YET EXECUTED)
 
