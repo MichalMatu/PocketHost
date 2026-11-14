@@ -50,6 +50,9 @@ test('preflight must be same owner baseline, healthy panel and unchanged service
     deployment: 'not-performed', restart: 'not-performed',
   };
   assert.equal(confirmPreflight(ok, base), true);
+  assert.equal(confirmPreflight({
+    ...ok, markerSha: target, sourceDrift: 'verified-ui-hmr-only',
+  }, base), true);
   for (const bad of [
     { ...ok, checkoutSha: target }, { ...ok, markerSha: target },
     { ...ok, sourceDrift: 'verified-ui-hmr-only' },

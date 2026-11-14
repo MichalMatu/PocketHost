@@ -53,9 +53,17 @@ export function confirmFocusedQa(receipt, base, target) {
 }
 
 export function confirmPreflight(info, liveSha) {
-  if (!info || info.status !== 'READ_ONLY_READY' || info.mode !== 'read-only' ||
-      info.ownedPanel !== 'verified' || info.markerSha !== liveSha ||
-      info.checkoutSha !== liveSha || info.sourceDrift !== 'same' ||
+  // The trusted refresh-panel preflight can attest clean UI-only HMR drift:
+  // the running startup marker is older, but checkout HEAD is the pinned base.
+  // It has already proven ancestry and allowlisted changed paths.
+  const validSource = info?.checkoutSha === liveSha && (
+    (info.markerSha === liveSha && info.sourceDrift === 'same') ||
+    (SHA.test(info.markerSha) && info.markerSha !== liveSha &&
+      info.sourceDrift === 'verified-ui-hmr-only')
+  );
+  if (!SHA.test(liveSha) || !validSource ||
+      info.status !== 'READ_ONLY_READY' || info.mode !== 'read-only' ||
+      info.ownedPanel !== 'verified' ||
       info.panelHttp !== 'reachable' || info.protectedServices !== 'running' ||
       info.deployment !== 'not-performed' || info.restart !== 'not-performed')
     throw Error('Owner or protected-services preflight refused');
