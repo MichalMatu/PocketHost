@@ -75,6 +75,14 @@ function ServiceCard({ service, title, mode, refreshToken }: {
   </Card>
 }
 
+/** Each dedicated page queries only its own protected service. */
+export function ProtectedServicePanel({ service, refreshToken = 0 }: {
+  service: Service; refreshToken?: number
+}) {
+  const entry = PANELS.find(item => item.service === service)
+  return entry ? <ServiceCard {...entry} refreshToken={refreshToken} /> : null
+}
+
 export function ProtectedServicePanels({ refreshToken = 0 }: { refreshToken?: number }) {
   return <>{PANELS.map(item => <ServiceCard key={item.service} {...item} refreshToken={refreshToken} />)}</>
 }

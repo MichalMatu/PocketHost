@@ -1,9 +1,10 @@
 import {
-  Activity, Archive, Bot, FolderOpen, Globe2, History, LayoutDashboard,
-  Network, Package, ScrollText, ServerCog, Settings, Smartphone, Terminal,
+  Activity, Archive, Bot, Cloud, FolderOpen, Globe2, HeartPulse, History,
+  LayoutDashboard, Network, Package, Radio, ScrollText, ServerCog, Settings,
+  Shield, Smartphone, Terminal,
 } from "lucide-react"
 
-/** System management is primary; hosting and AI are separate capabilities. */
+/** Individual service pages do not imply service ownership. */
 export const navGroups = [
   {
     label: "System",
@@ -14,8 +15,6 @@ export const navGroups = [
       { title: "Phone Settings", url: "/phone-settings", icon: Settings },
       { title: "Packages & Software", url: "/packages", icon: Package },
       { title: "File Manager", url: "/files", icon: FolderOpen },
-      { title: "Services", url: "/services", icon: ServerCog },
-      { title: "Local Agent", url: "/local-agent", icon: Bot },
       { title: "Terminal", url: "/terminal", icon: Terminal },
       { title: "Backups & Recovery", url: "/backups", icon: Archive },
     ],
@@ -39,6 +38,19 @@ export const navGroups = [
       { title: "Network access", url: "/settings/network", icon: Network },
       { title: "Project logs", url: "/runtime-logs", icon: ScrollText },
       { title: "Appearance", url: "/settings/appearance", icon: Settings },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
+      { title: "All services", url: "/services", icon: ServerCog },
+      { title: "Local Agent", url: "/local-agent", icon: Bot },
+      { title: "IleStoi", url: "/services/ilestoi", icon: Globe2 },
+      { title: "IleStoi Healthwatch", url: "/services/healthwatch", icon: HeartPulse },
+      { title: "PhotoMap (test)", url: "/managed-projects", icon: FolderOpen },
+      { title: "Cloudflare Tunnel", url: "/services/cloudflare", icon: Cloud },
+      { title: "SSH", url: "/services/ssh", icon: Shield },
+      { title: "Mosquitto MQTT", url: "/services/mqtt", icon: Radio },
     ],
   },
 ]

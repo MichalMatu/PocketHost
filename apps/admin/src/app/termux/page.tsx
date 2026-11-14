@@ -9,9 +9,6 @@ import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/ob
 import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
-import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
-import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
-import { ProtectedServicePanels } from "@/app/termux/protected-services-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
@@ -123,11 +120,12 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           </section>}
 
           {section === "services" && <section className="space-y-3">
-            <IleStoiDiagnosticPanel refreshToken={sectionRefreshToken} />
-            <CloudflareTunnelPanel refreshToken={sectionRefreshToken} />
-            <ProtectedServicePanels refreshToken={sectionRefreshToken} />
+            <p className="text-sm text-muted-foreground">
+              Select a service in the Services menu for its dedicated diagnostics.
+              The runit inventory below does not grant ownership of discovered processes.
+            </p>
             <RunitServiceActions refreshToken={sectionRefreshToken} />
-          </section>}
+          </section>
 
           {section === "backups" && <section className="space-y-4">
             <Card>

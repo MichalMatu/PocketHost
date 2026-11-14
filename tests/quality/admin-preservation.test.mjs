@@ -51,7 +51,7 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside twenty PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 20);
+  assert.equal(allPaths.length, originalPaths.length + 21);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -79,7 +79,7 @@ test('full 32-route upstream admin shell remains available beside twenty PocketH
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 17);
+  assert.equal(chunks.length, originalPaths.length + 18);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -97,21 +97,27 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
   assert.doesNotMatch(match[1], /maximum-scale\s*=\s*1(?:\.0)?(?:,|$)/i);
 });
 
-test('M0 keeps observed external services in System, not the Hosting project catalog', () => {
+test('Services is last and every external service has a single navigation link', () => {
   const systemGroup = navigation.split('label: "System",')[1]?.split('label: "Hosting",')[0] ?? '';
   const hostingGroup =
     navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
-  assert.match(systemGroup, /url: "\/services"/);
-  assert.doesNotMatch(systemGroup, /url: "\/host"/);
+  const serviceGroup = navigation.split('label: "Services",')[1] ?? '';
+  assert.doesNotMatch(systemGroup, /url: "\/services"/);
   assert.match(hostingGroup, /url: "\/host"/);
   assert.match(hostingGroup, /url: "\/sites"/);
   assert.match(hostingGroup, /url: "\/deployments"/);
   assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
-  assert.doesNotMatch(hostingGroup, /url: "\/settings\/network"/);
-  const platformGroup =
-    navigation.split('label: "Platform",')[1]?.split('label: "Examples",')[0] ?? '';
-  assert.match(platformGroup, /url: "\/settings\/network"/);
+  assert.ok(navigation.lastIndexOf('label: "Services",') > navigation.indexOf('label: "Platform",'));
+  for (const dest of ['/services', '/local-agent', '/managed-projects',
+    '/services/ilestoi', '/services/healthwatch', '/services/cloudflare',
+    '/services/ssh', '/services/mqtt']) {
+    assert.equal(navigation.split('url: "' + dest + '"').length - 1, 1, dest);
+    assert.ok(serviceGroup.includes('url: "' + dest + '"'), 'missing service: ' + dest);
+  }
+  assert.match(routes, /path: "\/services\/:serviceId"/);
   assert.match(routes, /path: "\/host"/);
+  const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Services",')[0] ?? '';
+  assert.match(platformGroup, /url: "\/settings\/network"/);
 });
 
 test('PocketHost dashboard is home and upstream charts stay available under examples', () => {
