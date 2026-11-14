@@ -92,7 +92,7 @@ test('failed local stages surface bounded diagnostics without stderr or secret o
   assert.equal(receiptFailure({ stdout: 'bad json', stderr: 'secret' }, 'Refresh'),
     'Refresh failed without a valid diagnostic');
   assert.equal(receiptFailure({ stdout: '{"reason":"line1\\nline2"}' }, 'Preflight'),
-    'Preflight failed without a valid diagnostic');
+    'line1 line2');
   assert.equal(receiptFailure({
     stdout: JSON.stringify({ error: 'x'.repeat(250) }),
   }, 'Refresh').length, 160);
