@@ -31,6 +31,14 @@ The first S1 increment changes that contract:
 
 **This is a foundation, not full S1 acceptance.** Still needed: a safe owner-visible workflow for creating/enrolling arbitrary app services (not blind adoption), immutable service identity and drift recovery, lifecycle and negative tests, status UX, and stage-level A8 owner acceptance. No tests run for this interim implementation per the approved fast-flow convention.
 
+## Next increment — revocation on source drift
+
+The H3 registry now stores a SHA-256 digest of the provisioned `run` script and rechecks its current safe file identity on service inventory and every runit/log action. A changed, missing, symlinked or unsafe script makes the unit **read-only** (`identity: changed`). Old records without a digest remain **legacy/read-only** until a trusted creator can attest them; no automatic migration. Registered names remain generic and independent of the `pockethost-` prefix.
+
+`NodeRunitHost` refreshes that digest only from its trusted in-process release code during its explicit update path, with both previous saved digest and new on-disk digest checked. No browser endpoint accepts a digest, executable path or arbitrary unit adoption. Services UI distinguishes verified/changed/legacy/unregistered/reserved units, and links to Projects as the existing creator of Node-managed services. This does not yet provide general-purpose manual provisioning, so S1 remains **IN_PROGRESS**.
+
+Existing older test fixtures that register by service name must be updated to use trusted provisioner evidence at the **complete Services closure test gate**; no test execution is permitted during interim FAST FLOW iterations. A guarded deployment status is not a functional test result.
+
 ## Invariants for next S1 slice
 
 - No browser or untrusted caller may select a process PID, arbitrary executable, unvalidated service script or foreign directory and call it owned.

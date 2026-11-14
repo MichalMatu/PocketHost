@@ -44,6 +44,8 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 
 **S1 checkpoint 2026-11-14:** commit `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, receipt `pockethost-a8-service-enrollment-provenance-20261114-v1`: terminal `PASS`, A8 DEV live SHA `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, panel PID 7904, HTTP 200, runit/Local Agent i usługi chronione bez zmian, `tests=not-run`. To jest wdrożona część S1, **nie** zamknięcie etapu; wszystkie pola S1–S6 pozostają `[ ]` do ich pełnego potwierdzenia i odbioru.
 
+**Kolejna iteracja S1 (nadal częściowa, bez `[x]`):** implementacja trwałej tożsamości `runSha256` dla usług utworzonych przez PocketHost, weryfikacji przy każdym odczycie/wywołaniu i automatycznej blokady sterowania po zmianie skryptu/ścieżki. Starsze rejestracje bez skrótu mają status `legacy` (tylko odczyt), a podmiana skryptu `changed` (brak uprawnień). Zaufany moduł Node aktualizuje zapisany digest po własnym wdrożeniu. UI pokazuje stany weryfikacji, zamiast mylić wykrycie z własnością; wejście do Projects to wskazówka istniejącej ścieżki tworzenia usług Node, nie nowy dowolny creator. S1 jako całość nadal **IN_PROGRESS** i testy/odbiór są przed nami.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

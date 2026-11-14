@@ -460,6 +460,10 @@ export class NodeRunitHost {
   }
   private script(id: string, release: string, port: number, nonce: string): void {
     const { service } = this.context(id);
+    // Preserve the old digest before replacing a previously attested run
+    // script; only this trusted creator can update the registry binding.
+    const runFile = path.join(service, 'run');
+    const previousRun = absent(runFile) ? null : privateText(runFile);
     const folder = this.projects.release(id, release).folder;
     const source = runScript(folder, port, nonce);
     const logSource = nodeLogRun(path.join(this.logRoot, unitName(id)));
@@ -480,6 +484,13 @@ export class NodeRunitHost {
         readinessNonce: nonce,
       }) + '\n',
     );
+    if (previousRun !== null) {
+      this.admin.refreshProvisioned(unitName(id), {
+        target: service,
+        previousRunSha256: digest(previousRun),
+        runSha256: digest(source),
+      });
+    }
   }
   private history(
     state: RuntimeRecord,

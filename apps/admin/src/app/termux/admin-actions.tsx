@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -532,7 +533,14 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
   </div>
 }
 
-type RunitEntry = { name: string; registered: boolean; protected: boolean; state: "running" | "stopped" | "unknown"; enabled?: boolean | null }
+type RunitEntry = {
+  name: string
+  registered: boolean
+  protected: boolean
+  identity?: "verified" | "unregistered" | "legacy" | "changed" | "reserved"
+  state: "running" | "stopped" | "unknown"
+  enabled?: boolean | null
+}
 
 // UI guard only: the panel and its watcher must not be stopped from this page.
 const isPanelService = (service: RunitEntry) =>
@@ -551,7 +559,9 @@ export function RunitServiceActions({
     if (!Array.isArray(data.services) || data.services.length > 100 ||
         !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
           typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
-          ["running", "stopped", "unknown"].includes(item.state)))
+          ["running", "stopped", "unknown"].includes(item.state) &&
+          (item.identity === undefined ||
+            ["verified", "unregistered", "legacy", "changed", "reserved"].includes(item.identity))))
       throw new Error("Invalid runit inventory")
     setServices(data.services)
     setError(null)
@@ -598,8 +608,9 @@ export function RunitServiceActions({
   const counts = services ? {
     owned: services.filter(isPanelService).length,
     managed: services.filter(item => item.registered && !item.protected).length,
-    protected: services.filter(item => item.protected && !isPanelService(item)).length,
-    observed: services.filter(item => !item.registered && !item.protected && !isPanelService(item)).length,
+    protected: services.filter(item => item.identity === "reserved" && !isPanelService(item)).length,
+    unverified: services.filter(item => !item.registered && !isPanelService(item) && item.identity !== "reserved").length,
+    changed: services.filter(item => item.identity === "changed").length,
   } : null
   const serviceRow = (service: RunitEntry) => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
@@ -608,7 +619,7 @@ export function RunitServiceActions({
           <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed" : "Unverified · read-only"}</Badge>
+          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed · attested" : service.identity === "changed" ? "Identity changed · blocked" : service.identity === "legacy" ? "Legacy record · needs reattestation" : service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
         </div>
       </div>
       {service.state === "unknown" && mode === "lifecycle" &&
@@ -655,13 +666,31 @@ export function RunitServiceActions({
     {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
       <Badge variant="outline">PocketHost-owned: {counts.owned}</Badge>
       <Badge variant="outline">Enrolled: {counts.managed}</Badge>
-      <Badge variant="outline">Protected or unverified: {counts.protected}</Badge>
-      <Badge variant="outline">Observed: {counts.observed}</Badge>
+      <Badge variant="outline">Protected: {counts.protected}</Badge>
+      <Badge variant="outline">Unverified: {counts.unverified}</Badge>
+      {counts.changed > 0 && <Badge variant="outline">Identity changed: {counts.changed}</Badge>}
     </div>}
+    {mode === "lifecycle" && services && counts?.managed === 0 && (
+      <div className="space-y-2 rounded-md border p-3">
+        <p className="text-sm font-medium">No attested managed services yet</p>
+        <p className="text-muted-foreground text-xs">
+          Run a PocketHost-provisioned Node project to create an owned runit unit.
+          An arbitrary discovered service cannot be adopted by renaming it or clicking Register.
+          General-purpose service provisioning is still part of S1.
+        </p>
+        <Button size="sm" variant="outline" render={<Link to="/projects" />}>Open Projects</Button>
+      </div>
+    )}
     {services?.filter(service => service.registered && !service.protected && !isPanelService(service)).map(serviceRow)}
     {services && services.some(service => service.protected || isPanelService(service)) &&
       <section className="rounded-md border p-2" aria-label="Protected and PocketHost-owned services">
         <h4 className="text-sm font-medium">Unverified or protected services · view only</h4>
+        {services.some(service => service.identity === "changed") && (
+          <p role="alert" className="text-xs">
+            A registered unit no longer matches its recorded run script or target.
+            Controls are blocked until independently reattested by its creator.
+          </p>
+        )}
         <p className="py-2 text-xs text-muted-foreground">
           Lifecycle state and autostart come from runit. Application health is independent.
         </p>
