@@ -1,6 +1,7 @@
 import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { LocalAgentLatencyHost, type LocalAgentLatencyDiagnostics } from './local-agent-latency-diagnostics.ts';
 
 /**
  * The installed Termux Agent's dedicated private svlogd current file.
@@ -26,6 +27,7 @@ export interface LocalAgentLogDiagnostics {
   unclassifiedLines: number;
   truncated: boolean;
   notice: 'sanitized-events-only-no-lifecycle-authority';
+  latency: LocalAgentLatencyDiagnostics;
 }
 
 const LABELS: Record<AgentLogKind, string> = {
@@ -85,6 +87,7 @@ export class LocalAgentLogHost {
       source: 'private-runit-svlogd',
       state: 'unavailable', events: [], unclassifiedLines: 0, truncated: false,
       notice: 'sanitized-events-only-no-lifecycle-authority',
+      latency: new LocalAgentLatencyHost(this.home).inspect(),
     };
     const root = path.join(this.home, '.local/state/local-agent/termux');
     let fd: number | null = null;
