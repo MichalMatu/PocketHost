@@ -16,8 +16,11 @@ or Termux:Boot hooks wholesale. Each newly owned service gets a dedicated
 PocketHost control page with one source of metadata, lifecycle, health,
 redacted logs, backup and rollback. Existing external services remain protected.
 
-**Inventory only is complete. No files have been copied to Downloads, no backup
-has been created, no service has been stopped and no reinstall is authorized.**
+**Inventory and private SQLite staging are complete. Five consistent SQLite
+snapshots were created and checked on 2026-11-14; they are NOT encrypted,
+exported, or sufficient disaster-recovery backups. No files have been copied
+to Downloads, no restic repository has been created, no service has been stopped
+and no reinstall is authorized.**
 Before any destructive step require verified backups, off-device copy, working
 restore and explicit owner approval. Never leak credentials, private photos or
 restic passwords into Git tasks/reports.
@@ -74,14 +77,30 @@ Independent host tasks (Git branch `MichalMatu/local-agent:agent-control`):
   default state is under `~/.local/state/pockethost/h3-restic`, inside
   Termux private storage; it is not an off-device backup.
 
-## Next phase — creation and proof (NOT YET EXECUTED)
+## SQLite staging completed (2026-11-14)
 
-1. **Consistent app snapshots first.** Use SQLite online backup APIs to
-   produce immutable staging copies of the *verified live* IleStoi database
-   and each PhotoMap version group; capture relevant WAL/SHM relationship,
-   schema and minimal integrity/row-count evidence. Back up media and
-   manifests with a consistent boundary; do not assume `cp` of a live DB
-   is safe. Do not stop current foreign services for preparation.
+Samsung exact-installation task `termux-rebuild-sqlite-snapshot-20261114-v1`
+finished `done` with command exit 0, five database snapshots, and SQLite
+`PRAGMA quick_check = ok` for each. Includes the running IleStoi DB and all
+four PhotoMap DB locations (both differing version groups) plus the exact
+461-package manifest. Private staging only:
+`~/.local/state/termux-recovery-prep/20261114-db-snapshot-v1`.
+Media and complete `home + usr` are NOT yet backed up; no password or keys
+were exported; no off-device or isolated-restore proof exists. Keep the
+stage private and leave services untouched. These copies are not a PASS for
+Termux erasure or reinstall.
+
+Before Restic init, establish a recovery password locally on the device and
+secure a separate off-phone copy in user custody. Never put it into Git tasks,
+command output, chat logs, or shared Downloads. After that, perform an
+encrypted full backup to Downloads, off-device export, and isolated restore.
+
+## Next phase — Restic, export and proof (NOT YET EXECUTED)
+
+1. **Consistent app snapshots completed.** Five online SQLite snapshots and
+   a package manifest are staged privately with quick-check evidence. Preserve
+   this immutable batch and capture media/content manifests before any export;
+   do not mistake these staged database files for the final recovery backup.
 2. **Encrypted full-rescue layer.** Make a fresh restic repository with
    independently escrowed recovery password; capture both
    `$HOME` and `$PREFIX` (with repository/cache recursion excluded),
