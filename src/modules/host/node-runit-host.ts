@@ -867,7 +867,19 @@ export class NodeRunitHost {
       history: [],
     };
     this.writeState(id, state);
-    await this.admin.apply('register', unit);
+    // Enrollment is only issued by the trusted creator after its own unit
+    // scripts and private runtime identity have been written. No HTTP call
+    // may claim a discovered runit service merely by naming it.
+    const unitMarker = JSON.parse(privateText(path.join(service, UNIT_MARKER))) as UnitRecord;
+    if (unitMarker.owner !== 'pockethost-node-runit' ||
+        unitMarker.unit !== unit || unitMarker.projectId !== id ||
+        !/^[a-f0-9]{64}$/.test(unitMarker.runDigest)) {
+      throw new Error('Owned Node service provenance is unavailable');
+    }
+    this.admin.registerProvisioned(unit, {
+      target: service,
+      runSha256: unitMarker.runDigest,
+    });
     return state;
   }
   async deploy(

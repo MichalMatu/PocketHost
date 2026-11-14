@@ -40,6 +40,8 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 - [ ] **S5 — Testy etapu Services:** bezpieczny syntetyczny serwis testowy należący do PocketHost; testy pozytywne i odmowy na cudzych usługach, restart/recovery i UI (uruchomić dopiero po domknięciu funkcji); udokumentować pokrycie i luki.
 - [ ] **S6 — Odbiór:** wdrożony panel A8, potwierdzony exact SHA + PID/start ticks + HTTP + LAN + izolacja usług, raport wyników, link do MacBooka i akceptacja użytkownika.
 
+**Postęp S1 (częściowy, NIE `[x]`):** odczyt upstream `termux-services` / `runit` potwierdza istniejący supervisor. W kodzie S1 zostaje wprowadzony zaufany, wewnętrzny `registerProvisioned` z kanoniczną ścieżką i skrótem skryptu zamiast rejestracji po samym prefiksie. Rejestracja z przeglądarki nie może przejąć znalezionej usługi. Kolejne: bezpieczne tworzenie i enrollment dowolnie nazwanego własnego serwisu, pełna diagnostyka tożsamości oraz testy na zamknięcie całego Services. Szczegóły: [S1 upstream reuse](S1_RUNIT_REUSE.md). Status nadal **IN_PROGRESS**. Przy normalnej iteracji nie uruchamiać testów.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

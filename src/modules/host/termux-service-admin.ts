@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
@@ -18,10 +18,10 @@ import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
-// Deny control of every unowned service by default; no hosted-project
-// names or service-specific exceptions belong in the generic product.
-// The PocketHost-owned runit namespace is still subject to explicit registry
-// enrollment and canonical target attestation.
+// A service name or the existence of a runit directory is never evidence of
+// PocketHost ownership. Only a trusted in-process provisioner can enroll a new
+// unit, and every subsequent operation re-attests its canonical target.
+// Preexisting service registrations keep their exact-target constraint.
 const SYSTEM_SERVICE_NAMES = new Set([
   'sshd', 'ssh-agent', 'termux-agent',
   'pockethost-panel', 'pockethost-panel-watch',
@@ -48,12 +48,9 @@ function valid(name: string): void {
   if (typeof name !== 'string' || !SERVICE_NAME.test(name))
     throw new RangeError('Invalid runit service name');
 }
-function isProtected(name: string, resolved?: string): boolean {
+function isReserved(name: string, resolved?: string): boolean {
   return SYSTEM_SERVICE_NAMES.has(name) ||
-    !name.startsWith('pockethost-') ||
-    (resolved !== undefined &&
-      (SYSTEM_SERVICE_NAMES.has(path.basename(resolved)) ||
-       !path.basename(resolved).startsWith('pockethost-')));
+    (resolved !== undefined && SYSTEM_SERVICE_NAMES.has(path.basename(resolved)));
 }
 function safeFile(file: string): string | null {
   try {
@@ -106,7 +103,7 @@ export class TermuxServiceAdmin {
         typeof value.target !== 'string' ||
         typeof value.addedAt !== 'string' ||
         !/^\d{4}-\d\d-\d\dT/.test(value.addedAt) ||
-        isProtected(value.name, value.target) ||
+        isReserved(value.name, value.target) ||
         names.has(value.name)
       )
         throw new Error('Unsafe runit registration');
@@ -142,7 +139,7 @@ export class TermuxServiceAdmin {
     const candidate = path.join(this.serviceRoot, name);
     if (!existsSync(candidate)) throw new Error('Runit service unavailable');
     const resolved = realpathSync(candidate);
-    if (isProtected(name, resolved)) throw new Error('Protected service');
+    if (isReserved(name, resolved)) throw new Error('Protected service');
     const canonicalServiceRoot = realpathSync(this.serviceRoot);
     const allowedRoots = [
       canonicalServiceRoot + path.sep,
@@ -154,6 +151,51 @@ export class TermuxServiceAdmin {
     )
       throw new Error('Service points outside accepted runit root');
     return resolved;
+  }
+
+  /**
+   * Only trusted PocketHost service creators may invoke this internal method.
+   * It is deliberately not exposed by the H3 HTTP API: a browser cannot
+   * establish process provenance by supplying a name or a path.
+   *
+   * The caller must create the unit itself and supply the exact canonical
+   * directory and expected source hash, independently established at creation.
+   * Runit remains responsible for process supervision after enrollment.
+   */
+  registerProvisioned(
+    name: string,
+    provenance: { target: string; runSha256: string },
+  ): { changed: boolean } {
+    valid(name);
+    if (
+      !provenance ||
+      typeof provenance.target !== 'string' ||
+      typeof provenance.runSha256 !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(provenance.runSha256)
+    ) throw new RangeError('Invalid service provenance');
+    const registrations = this.registry();
+    if (registrations.some((entry) => entry.name === name))
+      throw new Error('Already registered');
+    const target = this.target(name);
+    if (target !== provenance.target)
+      throw new Error('Service provenance target mismatch');
+    const current = lstatSync(target);
+    if (
+      !current.isDirectory() || current.isSymbolicLink() ||
+      current.uid !== process.getuid?.() || (current.mode & 0o022) !== 0
+    ) throw new Error('Untrusted provisioned service directory');
+    const runFile = path.join(target, 'run');
+    const script = lstatSync(runFile);
+    if (
+      !script.isFile() || script.isSymbolicLink() ||
+      script.uid !== process.getuid?.() || (script.mode & 0o022) !== 0 ||
+      (script.mode & 0o111) === 0 || script.size > 20000
+    ) throw new Error('Untrusted provisioned run script');
+    const actual = createHash('sha256').update(readFileSync(runFile)).digest('hex');
+    if (actual !== provenance.runSha256)
+      throw new Error('Provisioned run script identity mismatch');
+    this.save([...registrations, { name, target, addedAt: new Date().toISOString() }]);
+    return { changed: true };
   }
 
   private probe(name: string): TermuxService['state'] {
@@ -198,33 +240,33 @@ export class TermuxServiceAdmin {
       } catch {
         /* Missing/dangling entry remains unknown and cannot be controlled. */
       }
-      const protectedService = isProtected(name, resolved);
-      const registered =
-        !protectedService &&
+      const registered = !isReserved(name, resolved) &&
         registrations.some((item) => item.name === name && item.target === resolved);
+      // Unregistered units are read-only regardless of their spelling.
+      // Registered, exact-target units can use any safe service name.
+      const protectedService = !registered;
       return {
         name,
         registered,
         protected: protectedService,
         state: probe(name),
-        enabled: this.enabled(name),
+        enabled: this.enabled(name, registered),
       };
     });
   }
 
-  private enabled(name: string): boolean | null {
+  private enabled(name: string, registered: boolean): boolean | null {
     try {
       // Protected services remain read-only, but a fixed real runit
       // directory can reveal the autostart marker without granting control.
-      if (isProtected(name)) {
-        const root = lstatSync(this.serviceRoot);
-        const target = path.join(this.serviceRoot, name);
-        const entry = lstatSync(target);
-        if (!root.isDirectory() || root.isSymbolicLink() ||
-            !entry.isDirectory() || entry.isSymbolicLink()) return null;
-      } else {
-        this.target(name);
-      }
+      const root = lstatSync(this.serviceRoot);
+      const target = path.join(this.serviceRoot, name);
+      const entry = lstatSync(target);
+      if (!root.isDirectory() || root.isSymbolicLink() ||
+          !entry.isDirectory() || entry.isSymbolicLink()) return null;
+      // Only an enrolled exact target is eligible for a managed status.
+      // Observing a down marker on a foreign service confers no authority.
+      if (registered) this.target(name);
       const marker = path.join(this.serviceRoot, name, 'down');
       try {
         const state = lstatSync(marker);
@@ -290,7 +332,9 @@ export class TermuxServiceAdmin {
       )
     )
       throw new RangeError('Unsupported runit action');
-    if (isProtected(name)) throw new Error('Protected service');
+    if (isReserved(name)) throw new Error('Protected service');
+    if (operation === 'register')
+      throw new Error('Registration requires an attested PocketHost provisioner');
     const registrations = this.registry();
     const existing = registrations.find((item) => item.name === name);
     if (operation === 'unregister') {
@@ -299,11 +343,6 @@ export class TermuxServiceAdmin {
       return { changed: true };
     }
     const target = this.target(name);
-    if (operation === 'register') {
-      if (existing) throw new Error('Already registered');
-      this.save([...registrations, { name, target, addedAt: new Date().toISOString() }]);
-      return { changed: true };
-    }
     if (!existing || existing.target !== target)
       throw new Error('Service not explicitly registered or identity changed');
     if (operation === 'enable' || operation === 'disable') {

@@ -574,14 +574,12 @@ export function RunitServiceActions({
     } catch { setError("Registered runit service log unavailable.") }
     finally { setBusy(false) }
   }
-  const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
+  const perform = async (name: "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
     if (busy || service.protected || isPanelService(service) ||
         (mode === "autostart" && name !== "enable" && name !== "disable") ||
         (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
         !window.confirm(
-      name === "register" ?
-        "Register service " + service.name + " for PocketHost lifecycle control? Registration does not start or stop it." :
-        "Run " + name + " for explicitly registered runit service " + service.name + "?",
+      "Run " + name + " for explicitly registered runit service " + service.name + "?",
     )) return
     setBusy(true); setError(null); setDone(null)
     try {
@@ -610,7 +608,7 @@ export function RunitServiceActions({
           <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.protected ? "Protected external" : service.registered ? "PocketHost-managed" : "Observed · unmanaged"}</Badge>
+          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed" : "Unverified · read-only"}</Badge>
         </div>
       </div>
       {service.state === "unknown" && mode === "lifecycle" &&
@@ -629,9 +627,7 @@ export function RunitServiceActions({
             onClick={() => void readServiceLogs(service)}>Logs</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void perform("unregister", service)}>Unregister</Button>
-        </> : <Button size="sm" variant="outline" disabled={busy}
-          title="Grant lifecycle controls; this does not start the service"
-          onClick={() => void perform("register", service)}>Register</Button>) :
+        </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
           (service.registered ? <>
             <Button size="sm" variant="outline"
               disabled={busy || service.enabled !== false}
@@ -652,20 +648,20 @@ export function RunitServiceActions({
     <p className="text-muted-foreground text-xs">
       {mode === "autostart"
         ? "Enable or disable runit autostart for enrolled services only. This does not change the current running state, Termux:Boot permissions or the Android startup policy."
-        : "Register a verified PocketHost service, manage its lifecycle and view logs. SSH, Local Agent and all other external services remain protected. Process liveness is not application health."}
+        : "Only services provisioned and attested by PocketHost can be enrolled. Name prefixes never confer ownership; discovered services stay read-only. SSH and Local Agent remain protected. Process liveness is not application health."}
     </p>
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
       <Badge variant="outline">PocketHost-owned: {counts.owned}</Badge>
       <Badge variant="outline">Enrolled: {counts.managed}</Badge>
-      <Badge variant="outline">Protected external: {counts.protected}</Badge>
+      <Badge variant="outline">Protected or unverified: {counts.protected}</Badge>
       <Badge variant="outline">Observed: {counts.observed}</Badge>
     </div>}
-    {services?.filter(service => !service.protected && !isPanelService(service)).map(serviceRow)}
+    {services?.filter(service => service.registered && !service.protected && !isPanelService(service)).map(serviceRow)}
     {services && services.some(service => service.protected || isPanelService(service)) &&
       <section className="rounded-md border p-2" aria-label="Protected and PocketHost-owned services">
-        <h4 className="text-sm font-medium">PocketHost-owned and protected services · view only</h4>
+        <h4 className="text-sm font-medium">Unverified or protected services · view only</h4>
         <p className="py-2 text-xs text-muted-foreground">
           Lifecycle state and autostart come from runit. Application health is independent.
         </p>

@@ -1491,10 +1491,10 @@ function termuxAdminApi(): Plugin {
               return services.logs(input.path ?? "")
             }
             if (input.action === "service") {
-              if (!input.name || !["register","unregister","start","stop","restart","enable","disable"].includes(input.name))
+              if (!input.name || !["unregister","start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")
               return await services.apply(
-                input.name as "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable",
+                input.name as "unregister" | "start" | "stop" | "restart" | "enable" | "disable",
                 input.path ?? "",
               )
             }
