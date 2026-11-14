@@ -59,7 +59,8 @@ unit, not a fake status indicator:
   User code and foreign services are **never** adopted.
 - Creation leaves the worker **stopped and autostart-disabled**. Start,
   Stop and Restart reuse existing `sv` commands and exact script identity;
-  no background process is launched by creating the definition. The status
+  no application worker is started by creation. Runit can still launch its
+  own supervisor and logger for the published, down-marked definition. The status
   adapter accepts the standard `var/service` → `var/sv` symlink **only**
   when the target is already enrolled and re-attested; an external symlink
   cannot gain ownership or reveal a controllable autostart state.

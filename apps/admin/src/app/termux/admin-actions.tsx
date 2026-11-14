@@ -647,8 +647,8 @@ export function RunitServiceActions({
         !window.confirm("Restore archived " +
           (entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
           " service " + entry.name +
-          "? The restored service stays stopped with autostart disabled. " +
-          "No code will be executed.")) return
+          "? The application worker stays stopped with autostart disabled. " +
+          "Runit may launch only its own supervisor/logger.")) return
     setBusy(true); setError(null); setDone(null)
     try {
       await action({ action: "service-restore", name: entry.template, path: entry.name })
