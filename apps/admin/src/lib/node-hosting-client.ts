@@ -14,6 +14,13 @@ export interface NodeHistoryEntry {
 }
 export interface NodeRuntimeEntry extends NodeProjectEntry {
   state: "not-provisioned" | "stopped" | "running" | "unknown"
+  desired: "stopped" | "running"
+  port: number | null
+  healthDecision: {
+    action: "none" | "probe" | "start" | "timeout" | "blocked"
+    reason: string
+    nextEligibleAtMs: number | null
+  }
   activeRelease: string | null
   lastGoodRelease: string | null
   previousGoodRelease: string | null
@@ -67,7 +74,15 @@ export async function readNodeRuntime(id: string, signal?: AbortSignal): Promise
   if (!ID.test(id)) throw new Error("Invalid Node project ID")
   const raw = object(await get("/" + id + "/runtime", signal))
   const data = object(raw.runtime)
+  const decision = object(data.healthDecision)
   if (!["not-provisioned", "stopped", "running", "unknown"].includes(String(data.state)) ||
+    !["stopped", "running"].includes(String(data.desired)) ||
+    !(data.port === null || (Number.isSafeInteger(data.port) &&
+      Number(data.port) >= 1024 && Number(data.port) <= 65535)) ||
+    !["none", "probe", "start", "timeout", "blocked"].includes(String(decision.action)) ||
+    typeof decision.reason !== "string" || decision.reason.length > 100 ||
+    !(decision.nextEligibleAtMs === null ||
+      (Number.isSafeInteger(decision.nextEligibleAtMs) && Number(decision.nextEligibleAtMs) >= 0)) ||
     !release(data.activeRelease) || !release(data.lastGoodRelease) ||
     !release(data.previousGoodRelease) ||
     !Array.isArray(data.history) || data.history.length > 24) {
@@ -87,6 +102,13 @@ export async function readNodeRuntime(id: string, signal?: AbortSignal): Promise
     id,
     name: id,
     state: data.state as NodeRuntimeEntry["state"],
+    desired: data.desired as NodeRuntimeEntry["desired"],
+    port: data.port as number | null,
+    healthDecision: {
+      action: decision.action as NodeRuntimeEntry["healthDecision"]["action"],
+      reason: decision.reason as string,
+      nextEligibleAtMs: decision.nextEligibleAtMs as number | null,
+    },
     activeRelease: data.activeRelease,
     lastGoodRelease: data.lastGoodRelease,
     previousGoodRelease: data.previousGoodRelease,

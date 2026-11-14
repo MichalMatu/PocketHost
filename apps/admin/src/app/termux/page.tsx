@@ -13,6 +13,7 @@ import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
+import { HostingWorkloads } from "@/app/termux/hosting-workloads"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -150,7 +151,11 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               </p>
               <RunitServiceActions refreshToken={sectionRefreshToken} />
             </div>
-          </section>}
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">Hosting workloads</h2>
+              <HostingWorkloads refreshToken={sectionRefreshToken} />
+            </div>
+          </section>
 
           {section === "backups" && <section className="space-y-4">
             <Card>
