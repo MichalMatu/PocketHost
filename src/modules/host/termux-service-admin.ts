@@ -52,9 +52,9 @@ interface ArchivedWorker {
 export interface ArchivedWorkerSummary {
   name: string;
   template: WorkerTemplate;
-  identity: 'restorable' | 'changed';
+  identity: 'restorable' | 'changed' | 'conflict';
 }
-type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'reserved';
+type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
 export interface TermuxService {
@@ -339,11 +339,27 @@ export class TermuxServiceAdmin {
   }
 
   archivedWorkers(): ArchivedWorkerSummary[] {
-    return this.archivedRegistry().map((item) => ({
-      name: item.name,
-      template: item.template,
-      identity: this.offlineWorkerIdentity(item) ? 'restorable' : 'changed',
-    }));
+    const registrations = this.registry();
+    return this.archivedRegistry().map((item) => {
+      // A crash after journaling an archive but before unlink, or after
+      // re-enrolling a restored unit but before clearing the archive, is
+      // a conflict. Never pretend it is an ordinary recoverable archive.
+      let published = true;
+      try {
+        lstatSync(path.join(this.serviceRoot, item.name));
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') published = false;
+      }
+      const conflict = published ||
+        registrations.some((entry) => entry.name === item.name);
+      return {
+        name: item.name,
+        template: item.template,
+        identity: conflict ? 'conflict' as const
+          : this.offlineWorkerIdentity(item) ? 'restorable' as const
+          : 'changed' as const,
+      };
+    });
   }
 
   /**
@@ -625,6 +641,12 @@ export class TermuxServiceAdmin {
     registrations: Registration[],
   ): ServiceIdentity {
     if (isReserved(name, target)) return 'reserved';
+    // A pending archive and a live published unit must never both confer
+    // management capabilities. Both sides remain read-only after a crash.
+    // The ledger is private and independently validated; an unreadable
+    // ledger fails closed rather than silently granting service control.
+    if (this.archivedRegistry().some((item) => item.name === name))
+      return 'archive-conflict';
     const entry = registrations.find((item) => item.name === name);
     if (!entry) return 'unregistered';
     if (!target || entry.target !== target) return 'changed';

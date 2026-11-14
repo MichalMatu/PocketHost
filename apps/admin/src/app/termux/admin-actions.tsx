@@ -537,13 +537,13 @@ type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1"
 type ArchivedEntry = {
   name: string
   template: WorkerTemplate
-  identity: "restorable" | "changed"
+  identity: "restorable" | "changed" | "conflict"
 }
 type RunitEntry = {
   name: string
   registered: boolean
   protected: boolean
-  identity?: "verified" | "unregistered" | "legacy" | "changed" | "reserved"
+  identity?: "verified" | "unregistered" | "legacy" | "changed" | "archive-conflict" | "reserved"
   template?: WorkerTemplate
   state: "running" | "stopped" | "unknown"
   enabled?: boolean | null
@@ -572,14 +572,14 @@ export function RunitServiceActions({
           typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
           ["running", "stopped", "unknown"].includes(item.state) &&
           (item.identity === undefined ||
-            ["verified", "unregistered", "legacy", "changed", "reserved"].includes(item.identity)) &&
+            ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
           (item.template === undefined ||
             item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1")))
       throw new Error("Invalid runit inventory")
     if (!Array.isArray(data.archived) || data.archived.length > 4 ||
         !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
           ["heartbeat-worker-v1", "python-heartbeat-v1"].includes(item.template) &&
-          ["restorable", "changed"].includes(item.identity)))
+          ["restorable", "changed", "conflict"].includes(item.identity)))
       throw new Error("Invalid archived worker inventory")
     setArchived(data.archived)
     setServices(data.services)
@@ -688,7 +688,9 @@ export function RunitServiceActions({
     managed: services.filter(item => item.registered && !item.protected).length,
     protected: services.filter(item => item.identity === "reserved" && !isPanelService(item)).length,
     unverified: services.filter(item => !item.registered && !isPanelService(item) && item.identity !== "reserved").length,
-    changed: services.filter(item => item.identity === "changed").length,
+    changed: services.filter(item => item.identity === "changed" || item.identity === "archive-conflict").length,
+    conflicts: services.filter(item => item.identity === "archive-conflict").length +
+      archived.filter(item => item.identity === "conflict").length,
   } : null
   const serviceRow = (service: RunitEntry) => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
@@ -697,7 +699,7 @@ export function RunitServiceActions({
           <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed · attested" : service.identity === "changed" ? "Identity changed · blocked" : service.identity === "legacy" ? "Legacy record · needs reattestation" : service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
+          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed · attested" : service.identity === "archive-conflict" ? "Archive conflict · blocked" : service.identity === "changed" ? "Identity changed · blocked" : service.identity === "legacy" ? "Legacy record · needs reattestation" : service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
           {service.template && <Badge variant="outline">{service.template === "python-heartbeat-v1" ? "Python worker" : "Node.js worker"}</Badge>}
         </div>
       </div>
@@ -792,6 +794,7 @@ export function RunitServiceActions({
       <Badge variant="outline">Protected: {counts.protected}</Badge>
       <Badge variant="outline">Unverified: {counts.unverified}</Badge>
       {counts.changed > 0 && <Badge variant="outline">Identity changed: {counts.changed}</Badge>}
+      {counts.conflicts > 0 && <Badge variant="outline">Archive conflicts: {counts.conflicts}</Badge>}
     </div>}
     {mode === "lifecycle" && services && counts?.managed === 0 && (
       <div className="space-y-2 rounded-md border p-3">
@@ -816,6 +819,12 @@ export function RunitServiceActions({
             Controls are blocked until independently reattested by its creator.
           </p>
         )}
+        {services.some(service => service.identity === "archive-conflict") && (
+          <p role="alert" className="text-xs">
+            Archive and live service ownership records overlap. All lifecycle controls are
+            blocked until the partial operation is inspected and reconciled.
+          </p>
+        )}
         <p className="py-2 text-xs text-muted-foreground">
           Lifecycle state and autostart come from runit. Application health is independent.
         </p>
@@ -827,13 +836,15 @@ export function RunitServiceActions({
       <p className="text-xs text-muted-foreground">
         Archive retains service code and logs. Restore re-attests the exact original
         definition and returns it stopped with autostart disabled; it cannot adopt an external unit.
+        Entries in conflict or with changed identity are read-only and require inspection.
       </p>
       {archived.map(entry => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={entry.name}>
         <div className="space-y-1">
           <p className="text-sm font-medium">{entry.name}</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{entry.template === "python-heartbeat-v1" ? "Python" : "Node.js"}</Badge>
-            <Badge variant="outline">{entry.identity === "restorable" ? "Archived · verified" : "Identity changed · blocked"}</Badge>
+            <Badge variant="outline">{entry.identity === "restorable" ? "Archived · verified" :
+              entry.identity === "conflict" ? "Archive/live conflict · blocked" : "Identity changed · blocked"}</Badge>
           </div>
         </div>
         <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}

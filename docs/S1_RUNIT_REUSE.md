@@ -134,11 +134,28 @@ the exact original definition, passes it through `registerProvisioned`
 and removes the archive record. **It never starts the worker or enables
 autostart.** The four-unit quota counts archived definitions.
 
-Interruption and incomplete writes are fail-closed. A partially published
-unit is not automatically retried, adopted or restarted; a human must
-inspect the preserved owner and filesystem markers before any repair.
+Interruption and incomplete writes are fail-closed. In particular,
+if a crash leaves both an archived ledger entry and a still-published unit
+(or an active ownership registration), the service inventory reports
+`archive-conflict` and the archive list reports `conflict`. All lifecycle
+operations and Restore are disabled until an independent repair verifies
+both ledgers, the exact original symlink and the worker's identity.
+This applies to both an interrupted archive and an interrupted restore.
+Neither the browser nor a refresh silently repairs, adopts or restarts a unit.
+A human must inspect the preserved owner and filesystem markers first.
 This remains **unqualified on physical A8**, and the prior successful
 FAST FLOW receipts apply to earlier deployed code only.
+
+## Stage closure cases for interrupted operations
+
+Include negative tests for both failure windows before acceptance:
+(1) archiving wrote its private ledger but did not unlink the active
+service symlink, (2) restore re-created the symlink/registration but did
+not clear the archived ledger. Both must show a read-only conflict in
+the UI and refuse Start, Stop, Restart, Enable, Disable and Restore.
+Verify that neither case changes SSH, Local Agent, panel/watch or any
+unrelated project service. Only after reconciling state under a distinct
+controlled recovery gate may the unit become manageable again.
 
 ## Current incomplete acceptance points
 

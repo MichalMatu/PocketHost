@@ -94,6 +94,16 @@ Python na A8 nie zostało jeszcze potwierdzone**, więc pełne S1/S2
 pozostają `[ ]`. Zgodnie z planem testy funkcjonalne i akceptacja
 dopiero po ukończeniu całego etapu Services.
 
+**S1/S2 — odmowa sterowania przy konflikcie archiwizacji (kod, bez odbioru):**
+gdy aktywny rejestr i rejestr archiwum wskazują tę samą usługę
+(po przerwanym Archive lub Restore), jej stan staje się
+`archive-conflict` / `conflict`. Panel wyświetla ostrzeżenie,
+wyłącza Start/Stop/Restart/autostart/Restore, a adapter odmawia działania.
+Nie ma automatycznego „naprawiania” ani przejmowania obcej usługi.
+Scenariusze negatywne zapisano w [S1 runit reuse](S1_RUNIT_REUSE.md).
+**Kod na `main` nie jest jeszcze wdrożeniem A8 ani zaliczeniem testów.**
+S1/S2 pozostają `[ ]`.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
