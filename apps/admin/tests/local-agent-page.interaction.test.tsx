@@ -75,4 +75,51 @@ describe("read-only Local Agent menu page", () => {
     expect(await screen.findByRole("alert")).toBeTruthy()
     expect(screen.queryByText(/Task stopped by execution budget/)).toBeNull()
   })
+
+  it("shows event-driven p95, alerts and recent timings without exposing identifiers", async () => {
+    const observed = {
+      ...sample,
+      latency: {
+        version: 1, source: "termux-agent-local-task-spool", mode: "event-driven",
+        state: "ok", observedAt: "2026-11-14T12:00:00.000Z", sampleCount: 6,
+        medianSeconds: 21, p95Seconds: 420, latestSeconds: 420,
+        alerts: ["repeated-long-execution", "execution-timeout"],
+        recent: [{ at: "2026-11-14T12:00:00.000Z", seconds: 420, status: "failed" }],
+      },
+    }
+    const getter = vi.fn(async () => ({ ok: true, json: async () => observed }))
+    vi.stubGlobal("fetch", getter)
+    render(<LocalAgentPage />)
+    expect(await screen.findByText(/Performance attention required/)).toBeTruthy()
+    expect(screen.getByText("420 s")).toBeTruthy()
+    expect(screen.getByText(/At least three of five recent tasks/)).toBeTruthy()
+    expect(screen.getByText(/A recent task exceeded its execution budget/)).toBeTruthy()
+    expect(screen.getByText(/Times cover task execution only/)).toBeTruthy()
+    expect(getter).toHaveBeenCalledTimes(1)
+    expect(JSON.stringify(observed)).not.toContain("secret-command")
+  })
+  it("handles an uninstrumented Agent without inventing healthy timings", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => sample })))
+    render(<LocalAgentPage />)
+    expect(await screen.findByText(/Timing history is not available/)).toBeTruthy()
+    expect(screen.queryByText(/No active duration alerts/)).toBeNull()
+  })
+  it("rejects malformed timing payloads including identifiers and fake thresholds", () => {
+    const latency = {
+      version: 1, source: "termux-agent-local-task-spool", mode: "event-driven",
+      state: "ok", observedAt: "2026-11-14T12:00:00.000Z", sampleCount: 1,
+      medianSeconds: 12, p95Seconds: 12, latestSeconds: 12,
+      alerts: [], recent: [{ at: "2026-11-14T12:00:00.000Z", seconds: 12, status: "done" }],
+    }
+    expect(() => localAgentLogSchema.parse({
+      ...sample, latency: { ...latency, command: "private-shell" },
+    })).toThrow()
+    expect(() => localAgentLogSchema.parse({
+      ...sample, latency: { ...latency, p95Seconds: Infinity },
+    })).toThrow()
+    expect(() => localAgentLogSchema.parse({
+      ...sample, latency: { ...latency, alerts: ["restart-agent"] },
+    })).toThrow()
+  })
+
 })
