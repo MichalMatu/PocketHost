@@ -46,6 +46,8 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 
 **Kolejna iteracja S1 (nadal częściowa, bez `[x]`):** implementacja trwałej tożsamości `runSha256` dla usług utworzonych przez PocketHost, weryfikacji przy każdym odczycie/wywołaniu i automatycznej blokady sterowania po zmianie skryptu/ścieżki. Starsze rejestracje bez skrótu mają status `legacy` (tylko odczyt), a podmiana skryptu `changed` (brak uprawnień). Zaufany moduł Node aktualizuje zapisany digest po własnym wdrożeniu. UI pokazuje stany weryfikacji, zamiast mylić wykrycie z własnością; wejście do Projects to wskazówka istniejącej ścieżki tworzenia usług Node, nie nowy dowolny creator. S1 jako całość nadal **IN_PROGRESS** i testy/odbiór są przed nami.
 
+**S1 checkpoint — integralność skryptów wdrożona na A8:** commit `328f13191416fe5ba8d95a2cc12ccc306a77260d`, wynik `pockethost-a8-service-run-integrity-20261114-v1` `PASS` (live SHA `328f13191416fe5ba8d95a2cc12ccc306a77260d`, PID 18112, HTTP 200, chronione usługi bez zmian, `tests=not-run`). Kontrola digestu `run` odbywa się przy zarządzaniu; UI sygnalizuje `verified` / `changed` / `legacy` / `unregistered` / `reserved`. **Nadal brak ogólnego kreatora usług i odbioru S1/S2/S3/S4**; nie oznaczać etapu jako `[x]`.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
