@@ -170,7 +170,9 @@ describe("H3 strict read-only contracts", () => {
   it("keeps only the runit inventory, without loading individual service diagnostics", async () => {
     const calls = mount("services")
     expect(await screen.findByText("Runit services")).toBeTruthy()
-    expect(screen.getByText(/Select a service in the Services menu/)).toBeTruthy()
+    expect(screen.getByRole("navigation", { name: "Service workspaces" })).toBeTruthy()
+    expect(screen.getByRole("link", { name: /PhotoMap \(test\)/ }).getAttribute("href"))
+      .toBe("/services/photomap")
     expect(screen.queryByText("IleStoi / wreckscanner")).toBeNull()
     expect(screen.queryByText("Cloudflare Tunnel / cloudflared")).toBeNull()
     expect(screen.queryByText("SSH / sshd")).toBeNull()
