@@ -97,6 +97,61 @@ export default function LocalAgentPage() {
           </>}
         </CardContent>
       </Card>
+      <Card>
+        <CardHeader>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <CardTitle className="text-base">Task performance watchdog</CardTitle>
+            <Badge variant="outline">Event-driven · no extra polling</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {(!logs || !logs.latency) && <p role="status">
+            Timing history is not available from this installed Agent yet.
+          </p>}
+          {logs?.latency && logs.latency.state !== "ok" && <p role="status">
+            Timing history: {logs.latency.state}. No performance conclusion can be drawn.
+          </p>}
+          {logs?.latency?.state === "ok" && <>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              <p>Median: <strong>{logs.latency.medianSeconds === null
+                ? "not measured" : logs.latency.medianSeconds + " s"}</strong></p>
+              <p>P95: <strong>{logs.latency.p95Seconds === null
+                ? "not measured" : logs.latency.p95Seconds + " s"}</strong></p>
+              <p>Latest: <strong>{logs.latency.latestSeconds === null
+                ? "not measured" : logs.latency.latestSeconds + " s"}</strong></p>
+            </div>
+            <p>Completed task samples: {logs.latency.sampleCount} / 40</p>
+            <p>Last measurement: {logs.latency.observedAt
+              ? new Date(logs.latency.observedAt).toLocaleString() : "unavailable"}</p>
+            {logs.latency.alerts.length === 0
+              ? <p role="status">No active duration alerts in recorded samples.</p>
+              : <div role="alert" className="rounded-md border p-3">
+                <strong>Performance attention required</strong>
+                <ul className="mt-2 list-disc pl-5">
+                  {logs.latency.alerts.map(alert =>
+                    <li key={alert}>{({
+                      "uncertain-execution": "One recent task ended with uncertain effects (UNKNOWN).",
+                      "execution-timeout": "A recent task exceeded its execution budget.",
+                      "repeated-long-execution": "At least three of five recent tasks exceeded 300 seconds.",
+                      "execution-regression": "At least three of five tasks exceeded twice the preceding median.",
+                    } as const)[alert]}</li>)}
+                </ul>
+              </div>}
+            <ol aria-label="Recent task durations" className="max-h-48 space-y-1 overflow-auto">
+              {logs.latency.recent.map((sample, index) =>
+                <li key={index} className="flex flex-wrap justify-between gap-2 border-b py-1">
+                  <span>{sample.status} · {sample.seconds === null ? "unknown duration" : sample.seconds + " s"}</span>
+                  <span className="text-muted-foreground">{new Date(sample.at).toLocaleString()}</span>
+                </li>)}
+            </ol>
+          </>}
+          <p className="text-xs text-muted-foreground">
+            Times cover task execution only, not GitHub queue-to-start or result delivery.
+            Alerts update when tasks finish. They do not prove the Agent is online or
+            send notifications when this page is closed. No task IDs or commands are exposed.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   </BaseLayout>
 }
