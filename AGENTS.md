@@ -24,6 +24,13 @@ Read this file, docs/START_HERE.md and only the nearest scoped AGENTS.md; use fr
 
 Basic = universal official-Termux Hosting (H2 static separate from Node), without any hardcoded hosted project/domain/service. Panel-owned settings cover trusted LAN without login (never WAN), runit/Termux:Boot autostart, per-service health/recovery and SSH/Git/GitHub configuration; implement them with strict host/ownership gates, not hidden per-project scripts. Pro/Companion/Shizuku expansion and unified APK deferred. Host/process/permission edits need targeted positive and negative tests **only when the owner explicitly authorizes testing**; never start them in the default cycle. Source DEV ≠ G2/G3 physical release.
 
+## Services interface rule
+
+Services must remain independently navigable from the sidebar: overview only links
+to dedicated Runit lifecycle, Autostart, Hosting, Health, Local Agent, SSH and other
+service-specific pages. No single page should load or control the entire stack.
+The same backend owner and fail-closed safety gates apply in every subpage.
+
 ## Current Samsung target (A8 installed)
 
-The owner retired PocketHost on S22. **Only use the already-paired Galaxy A8 Local Agent for PocketHost execution.** A8 cold bootstrap and four guarded FAST FLOW updates returned terminal PASS on 14 November 2026; latest verified live SHA is `b3222b1a81a07dfe1b1cfe4348913f899e4b8381`. GitHub `main` may be newer than live after docs-only commits. Get exact installation identity and latest live SHA from the private A8 task/result, never infer from S22 or Git history. The owned panel/watch and global Termux runit are installed; boot autostart is configured but not reboot-verified. **PocketHost is the intended host-wide service coordinator** with verified enrollment, ownership, lifecycle, readiness, autostart, logs and recovery; do not silently adopt existing SSH/Local Agent or foreign services. No standing background scheduler, tests by default, or S22 changes. See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
+The owner retired PocketHost on S22. **Only use the already-paired Galaxy A8 Local Agent for PocketHost execution.** A8 cold bootstrap and five guarded FAST FLOW updates returned terminal PASS on 14 November 2026; latest verified live SHA is `2f53ec37bcc53f640a928b9e290e65a2cea8233a`. GitHub `main` may be newer than live after docs-only commits. Get exact installation identity and latest live SHA from the private A8 task/result, never infer from S22 or Git history. The owned panel/watch and global Termux runit are installed; boot autostart is configured but not reboot-verified. **PocketHost is the intended host-wide service coordinator** with verified enrollment, ownership, lifecycle, readiness, autostart, logs and recovery; do not silently adopt existing SSH/Local Agent or foreign services. No standing background scheduler, tests by default, or S22 changes. See [active handoff](docs/HANDOFF_NEXT_CHAT.md).

@@ -67,3 +67,16 @@ diagnostics and endpoints, plus the fixed external-service catalog. Live
 service observation now uses the device's runit inventory. This is *not*
 a claim that LAN boot acceptance, per-service health editing, SSH/GitHub
 configuration or external-service enrollment are complete.
+
+## Services navigation and UI ownership
+
+`/services` is a links-only overview. Separate routes and components must own
+Runit lifecycle/registration, service autostart, Node/static Hosting inventory,
+on-demand readiness/health, independent Local Agent, SSH and optional system
+services. A page only fetches its own data; the overview does not fan out
+across all service APIs. In-panel settings belong next to their owning area,
+not in a monolithic Services form. External service discovery alone remains
+read-only and never confers authority. Runit boot enablement is distinct
+from Android Termux:Boot qualification, and readiness is distinct from PID
+liveness. Do not introduce extra periodic health workers or fake status
+switches for absent settings.
