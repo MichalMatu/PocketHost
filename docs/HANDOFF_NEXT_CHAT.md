@@ -2,15 +2,15 @@
 status: active
 owner: core
 last_reviewed: 2026-11-14
-purpose: Minimal resumption and unresolved gates
+purpose: Minimal next-chat entry and ordered PocketHost sprint
 ---
 
-# PocketHost — next session
+# PocketHost — next chat
 
-Read fresh main, [root AGENTS](../AGENTS.md), [START_HERE](START_HERE.md) and only relevant source.
+**First action:** read fresh `main` HEAD and existing Samsung Local Agent result for `pockethost-md-final-check-da72da3-20261114-v1`; do not duplicate the pending check. Last verified live PocketHost: `f37d0bc` (revalidate). FAST FLOW source at `d801da7` was HOLD on formatting, **not deployed**.
 
-Last verified DEV deployment: `f37d0bc` (reconfirm live SHA). FAST FLOW at `d801da7` failed changed-file format and did **not** deploy. Do not create duplicate tasks; inspect terminal result, fix only real failure, use one-task cycle.
+**Six tasks in order:** (1) close docs formatting; (2) verify single-task FAST FLOW end-to-end; (3) disposable Node.js Hosting + GitHub import/build/run/update/rollback; (4) Hosting Cloudflare/HTTPS/SSH/per-site traffic/files/terminal/backup; (5) one-command official-Termux installer; (6) physical Samsung failure, recovery and isolation acceptance.
 
-After FAST FLOW: disposable Node.js Hosting + GitHub import/build/readiness/update/rollback, then Cloudflare/SSH/per-site analytics/backup. Do not touch H2 or protected external services.
+**Execution:** main-only; GitHub Connector + Samsung Termux Local Agent; one focused test/release cycle with a terminal exact-SHA result. Protect all foreign services and existing H2 static Hosting. No Mac, Codex, Work or GitHub Actions; no unnecessary full audits or duplicate tasks.
 
-[Roadmap](ROADMAP.md) · [Flow](DEV_ITERATION.md) · [Gates](QUALITY_GATES.md). Previous full handoff: `git show d801da7:docs/HANDOFF_NEXT_CHAT.md`.
+[Full checkpoint](checkpoints/2026-11-14-pocket-host-fast-flow-hosting-next-chat.md) · [FAST FLOW](DEV_ITERATION.md) · [Roadmap](ROADMAP.md) · [Quality](QUALITY_GATES.md). Git retains prior Markdown.

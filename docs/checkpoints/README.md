@@ -71,3 +71,4 @@ Original contents are in commit `d801da7`; do not preload all checkpoint files.
 - [2026-11-12-unified-apk-reuse-and-architecture-reaudit](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
 - [2026-11-13-node-panel-preview-handoff](2026-11-13-node-panel-preview-handoff.md)
 - [2026-11-13-termux-service-panels-next-chat](2026-11-13-termux-service-panels-next-chat.md)
+- [2026-11-14-pocket-host-fast-flow-hosting-next-chat](2026-11-14-pocket-host-fast-flow-hosting-next-chat.md)

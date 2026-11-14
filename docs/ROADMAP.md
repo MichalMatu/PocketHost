@@ -13,6 +13,8 @@ purpose: Canonical near-term milestones
 2. M2–M3 — disposable owned Node.js project: GitHub/files import → dependency review → build → runit/readiness → update/rollback.
 3. M4 — Hosting Cloudflare/domains/HTTPS, SSH, per-site **HTTP** analytics, files/terminal and backup/restore.
 4. M5 — multi-component projects, storage/secrets and coordinated recovery.
-5. M6–M7 — explicitly approved migration (Local Agent last), further runtimes and security/API. Unified APK deferred.
+5. After functional Hosting — versioned bundle and one-command installer for official Termux; no required Android helper APK.
+6. Physical device acceptance — Samsung end-to-end project, failures, rollback, recovery and isolation. G2/G3 separate.
+7. M6–M7 (later) — explicitly approved migration (Local Agent last), further runtimes and security/API. Unified APK deferred.
 
 Keep ModuleRegistry, ServiceRegistry and ProjectRegistry distinct. Never adopt discovered services. G2/G3 remain separate from DEV acceptance.
