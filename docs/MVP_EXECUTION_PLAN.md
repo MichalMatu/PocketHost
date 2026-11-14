@@ -71,6 +71,8 @@ usługi nie mogą stracić właściciela przez przypadek. To **nie** jest jeszcz
 pełne trwałe usuwanie ani przetestowany przepływ. Zakres i scenariusze testów:
 [S1 runit reuse](S1_RUNIT_REUSE.md). **Status S1/S2: IN_PROGRESS.**
 
+**Wdrożenie S1/S2 archiwizacji — 2026-11-15:** kod `7c19c3df189518e649a851dc74db17ea04f259fa`, zadanie `pockethost-a8-worker-archive-20261115-v1`, końcowy `PASS`: live SHA `7c19c3df189518e649a851dc74db17ea04f259fa`, PID 19987, HTTP 200, chronione usługi bez zmian, `tests=not-run`. W panelu jest `Archive worker` wyłącznie dla zweryfikowanego, zatrzymanego, bez autostartu workera szablonowego. Usługi Node/SSH/Local Agent nie udostępniają destrukcyjnej operacji; ogólny `unregister` zablokowany. Pliki i logi archiwum pozostają — brak trwałego usuwania, brak odzysku z archiwum i brak zakończenia testów. **Nie zmieniać S1–S6 na `[x]`**.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
