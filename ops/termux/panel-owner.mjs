@@ -20,7 +20,7 @@ const home = '/data/data/com.termux/files/home';
 const root = process.argv[2];
 const pid = Number(process.argv[3]);
 const admin = root && path.join(root, 'apps/admin');
-const ownerFile = path.join(home, 'Projects/PocketHost-P3-Preview-20261106.json');
+const ownerFile = path.join(home, '.local/state/pockethost/panel-owner.json');
 const gatewayFile = path.join(home, '.local/state/pockethost/lan-gateway.json');
 
 function requireCondition(value, reason) {
@@ -102,20 +102,29 @@ function main() {
       marker.startTicks === gateway.startTicks,
     'owner markers do not describe the same PocketHost DEV panel',
   );
-  requireCondition(
-    Number.isSafeInteger(marker.pid) && marker.pid > 1 && oldOwnerIsGone(marker.pid),
-    'previous owner still running or ambiguous',
-  );
+  // The only first-start exception is an explicit A8 cold-stage pair made by
+  // cold-bootstrap-a8.mjs. Null identities cannot authorize a restart.
+  const cold = marker.bootstrap === 'a8-cold-staged' &&
+    gateway.bootstrap === 'a8-cold-staged' &&
+    marker.pid === null && gateway.pid === null &&
+    marker.startTicks === null && gateway.startTicks === null &&
+    marker.sourceSha === sha && gateway.sourceSha === sha;
+  const restart = Number.isSafeInteger(marker.pid) && marker.pid > 1 &&
+    marker.bootstrap === undefined && gateway.bootstrap === undefined &&
+    oldOwnerIsGone(marker.pid);
+  requireCondition(cold || restart, 'previous owner live, unverified or not cold-staged');
   const ticks = statTicks(pid);
+  const { bootstrap: ignoredMarker, ...nextMarker } = marker;
+  const { bootstrap: ignoredGateway, ...nextGateway } = gateway;
   writeOwner(ownerFile, {
-    ...marker,
+    ...nextMarker,
     pid,
     startTicks: ticks,
     sourceSha: sha,
     managedBy: 'termux-runit/pockethost-panel',
   });
   writeOwner(gatewayFile, {
-    ...gateway,
+    ...nextGateway,
     pid,
     startTicks: ticks,
     sourceSha: sha,
