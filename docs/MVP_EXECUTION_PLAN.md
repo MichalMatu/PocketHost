@@ -42,6 +42,8 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 
 **Postęp S1 (częściowy, NIE `[x]`):** odczyt upstream `termux-services` / `runit` potwierdza istniejący supervisor. W kodzie S1 zostaje wprowadzony zaufany, wewnętrzny `registerProvisioned` z kanoniczną ścieżką i skrótem skryptu zamiast rejestracji po samym prefiksie. Rejestracja z przeglądarki nie może przejąć znalezionej usługi. Kolejne: bezpieczne tworzenie i enrollment dowolnie nazwanego własnego serwisu, pełna diagnostyka tożsamości oraz testy na zamknięcie całego Services. Szczegóły: [S1 upstream reuse](S1_RUNIT_REUSE.md). Status nadal **IN_PROGRESS**. Przy normalnej iteracji nie uruchamiać testów.
 
+**S1 checkpoint 2026-11-14:** commit `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, receipt `pockethost-a8-service-enrollment-provenance-20261114-v1`: terminal `PASS`, A8 DEV live SHA `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, panel PID 7904, HTTP 200, runit/Local Agent i usługi chronione bez zmian, `tests=not-run`. To jest wdrożona część S1, **nie** zamknięcie etapu; wszystkie pola S1–S6 pozostają `[ ]` do ich pełnego potwierdzenia i odbioru.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
