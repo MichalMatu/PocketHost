@@ -46,6 +46,7 @@ test('missing, symlinked, group-readable and oversized files fail closed', () =>
     assert.equal(host.inspect().state, 'unsafe');
     rmSync(f.file);
     writeFileSync(f.file, JSON.stringify(f.snapshot), { mode: 0o644 });
+    chmodSync(f.file, 0o644); // Termux's private umask may override create mode.
     assert.equal(host.inspect().state, 'unsafe');
     chmodSync(f.file, 0o600);
     assert.equal(host.inspect().state, 'ok');
@@ -59,7 +60,7 @@ test('schema corruption and forged performance alarms do not reach browser', () 
     const host = new LocalAgentLatencyHost(f.home);
     for (const bad of [
       { ...f.snapshot, alerts: ['fetch-private-secrets'] },
-      { ...f.snapshot, latestSeconds: Number.NaN },
+      { ...f.snapshot, latestSeconds: -1 },
       { ...f.snapshot, sampleCount: 9999 },
       { ...f.snapshot, recent: [{ at: 'not-date', seconds: 20, status: 'done' }] },
       { ...f.snapshot, version: 8 },
