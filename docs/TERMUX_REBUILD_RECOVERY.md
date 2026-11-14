@@ -90,10 +90,15 @@ were exported; no off-device or isolated-restore proof exists. Keep the
 stage private and leave services untouched. These copies are not a PASS for
 Termux erasure or reinstall.
 
-Before Restic init, establish a recovery password locally on the device and
-secure a separate off-phone copy in user custody. Never put it into Git tasks,
-command output, chat logs, or shared Downloads. After that, perform an
-encrypted full backup to Downloads, off-device export, and isolated restore.
+A Restic recovery password was generated locally on the exact Samsung
+installation by `termux-rebuild-local-restic-key-20261114-v1` (exit 0,
+mode 0600) at `~/.local/state/termux-recovery-secrets/restic-password`.
+No password content was transmitted through Git. **Off-phone password custody
+has NOT been verified**; do not initialize the Restic repository yet. The
+owner must read the password in their local Termux terminal and securely save
+it on a separate device/password manager. Never put it into Git tasks,
+remote command output, chat logs or shared Downloads. After escrow confirmation,
+perform encrypted full backup, off-device export and isolated restore.
 
 ## Next phase — Restic, export and proof (NOT YET EXECUTED)
 
