@@ -10,4 +10,4 @@ No foreign service changes, cross-module host internals or unrequested operation
 
 ## Gate
 
-Follow root **code → deploy → verify** in one agent task. Do not run tests, lint, formatting, typecheck, QA, smoke or documentation checks until the owner explicitly says it is time for tests. Deployment safety gates and read-only live-SHA verification still apply. A source commit alone is not a deployed release.
+Follow root **code → deploy → verify** in one A8 agent task. Owner expressly authorized focused tests **at full-stage closure** under `docs/MVP_EXECUTION_PLAN.md`, not for interim commits. Run guarded `--tests` only at that gate, report outcomes and obtain owner acceptance. No automatic tests/lint/QA during incomplete slices. Exact live-SHA, ownership and health safeguards always apply; a source commit is not a deployed release.
