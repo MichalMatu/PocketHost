@@ -32,3 +32,38 @@ and a Termux:Boot supervisor hook. Boot-time autostart has not yet been
 physically reboot-qualified. Subsequent M2-M5 work must use the common
 registry/health/lifecycle contract across static and Node Hosting, without
 merging their release and storage boundaries.
+
+## Project-agnostic product boundary (owner-approved)
+
+PocketHost is a **generic Termux and Hosting management product**. No hosted
+customer/application name, domain, process name, filesystem root, special
+health endpoint, launch script or per-project diagnostics may be hardcoded
+into active PocketHost UI, API, default inventory or platform configuration.
+Projects enter only via user-created declarations / registries and explicit
+ownership, not application-specific modules. Historical checkpoints/ADRs are
+kept as history and do not ship as runtime integration.
+
+A private-LAN **no-login** admin UI is intentional for the owner's trusted
+home network. Network Access in the panel must control enable/disable,
+eligible private interface/address, current LAN URL and boot behaviour.
+The admin must never be exposed to the WAN, port-forwarding, arbitrary
+interfaces or a public reverse proxy by default. No password does **not**
+make LAN peers trusted: maintain strict local-only management action gates,
+origin/CSRF protections, host allowlists, scope confirmation and recoverable
+loopback access. Do not silently weaken existing mutation restrictions.
+
+The panel owns all supported **settings surfaces**, not hidden host-specific
+scripts or hardcoded environment values: per-service desired/autostart state,
+restart budgets, readiness targets, health policies, logs and recovery; global
+runit/Termux:Boot configuration; SSH enablement, key-based access and listener
+policy; Git and GitHub repository association and secure credentials. Any
+secret material stays out of UI responses and task output. SSH/Local Agent
+remain independently protected until a separate, reversible owner action
+explicitly enrolls them. Persist changes as validated desired state with
+readback; `runit` is the sole process supervisor, not an extra scheduler.
+
+The 14 November 2026 genericization removed named hosted-app pages,
+diagnostics and endpoints, plus the fixed external-service catalog. Live
+service observation now uses the device's runit inventory. This is *not*
+a claim that LAN boot acceptance, per-service health editing, SSH/GitHub
+configuration or external-service enrollment are complete.
