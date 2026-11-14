@@ -98,6 +98,19 @@ function receipt(out, label) {
   catch { throw Error(label + ' did not produce one JSON receipt'); }
 }
 
+/** Bounded diagnostic from a trusted local tool, never raw stderr or paths. */
+export function receiptFailure(out, label) {
+  try {
+    const data = receipt(out, label);
+    const raw = data.error ?? data.reason ?? data.failedAt ?? data.status;
+    if (typeof raw === 'string' && raw.length > 0)
+      return raw.replace(/[\r\n\t]+/g, ' ').slice(0, 160);
+  } catch {
+    // The caller still reports the failed stage, not arbitrary process output.
+  }
+  return label + ' failed without a valid diagnostic';
+}
+
 function liveRoot() {
   const stat = lstatSync(OWNER_FILE);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size < 2 || stat.size > 16384)
@@ -121,6 +134,7 @@ async function fastFlow(options) {
     sourceSha: options.target, status: 'HOLD', stage: 'prerequisites',
     deployment: 'not-started', protectedServices: 'not-modified',
     tests: options.tests ? 'requested-by-owner' : 'not-run', qaChecks: [],
+    timingsMs: {},
   };
   try {
     const entryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -143,8 +157,12 @@ async function fastFlow(options) {
     if (ancestor.error || ancestor.status !== 0)
       throw Error('Pinned target is not a descendant of current panel');
 
+    report.timingsMs.prerequisites = Date.now() - started;
+    report.stage = 'owner-preflight';
     const pre = invoke(process.execPath, [RELEASE_SCRIPT, '--preflight'], live, 60000);
-    if (pre.error || pre.status !== 0) throw Error('Owner preflight refused');
+    report.timingsMs.preflight = pre.elapsedMs;
+    if (pre.error || pre.status !== 0)
+      throw Error('Owner preflight refused: ' + receiptFailure(pre, 'Preflight'));
     confirmPreflight(receipt(pre, 'Preflight'), options.base);
     if (options.tests) {
       // Never enter this branch in the default code → deploy → verify cycle.
@@ -163,6 +181,7 @@ async function fastFlow(options) {
       report.qaChecks = confirmFocusedQa(receipt(checks, 'Focused QA'),
         options.base, options.target);
       report.qaMs = checks.elapsedMs;
+      report.timingsMs.tests = checks.elapsedMs;
       report.tests = 'PASS';
     }
 
@@ -172,14 +191,18 @@ async function fastFlow(options) {
     const release = receipt(refreshed, 'Guarded refresh');
     report.refreshStatus = release.status;
     report.rollback = release.rollback ?? 'not-reported';
+    report.timingsMs.deployment = refreshed.elapsedMs;
     if (refreshed.error || refreshed.status !== 0)
-      throw Error('PocketHost guarded refresh failed');
+      throw Error('PocketHost guarded refresh failed: ' +
+        receiptFailure(refreshed, 'Guarded refresh'));
     confirmRelease(release, options.target);
     report.stage = 'read-only-verification';
+    const readbackStart = Date.now();
     const observedSha = git(live, 'rev-parse', 'HEAD');
     if (observedSha !== options.target)
       throw Error('Live checkout no longer matches approved revision');
     report.liveSha = observedSha;
+    report.timingsMs.readback = Date.now() - readbackStart;
     report.liveHealth = 'verified-by-guarded-refresh';
     report.releaseMs = refreshed.elapsedMs;
     report.deployment = 'applied';
@@ -187,7 +210,8 @@ async function fastFlow(options) {
     report.status = 'PASS';
     report.stage = 'complete';
   } catch (error) {
-    report.reason = String(error?.message ?? error).slice(0, 180);
+    report.failedStage = report.stage;
+    report.reason = String(error?.message ?? error).slice(0, 220);
   } finally {
     report.totalMs = Date.now() - started;
   }

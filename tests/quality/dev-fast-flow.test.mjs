@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseFastFlowArgs, confirmFocusedQa, confirmPreflight, confirmRelease,
+  receiptFailure,
 } from '../../ops/termux/fast-flow.mjs';
 import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
 
@@ -80,4 +81,19 @@ test('only the explicitly-reviewed orchestration entrypoint is auto-mapped', () 
     item.argv.includes('tests/quality/dev-fast-flow.test.mjs')));
   const other = planChangedChecks(['ops/termux/untrusted-command.mjs']);
   assert.ok(other.review.some(item => item.includes('Explicit impact review')));
+});
+
+
+test('failed local stages surface bounded diagnostics without stderr or secret output', () => {
+  assert.equal(receiptFailure({
+    stdout: '{"status":"HOLD","error":"protected service unavailable"}',
+    stderr: 'private-key-must-not-appear',
+  }, 'Preflight'), 'protected service unavailable');
+  assert.equal(receiptFailure({ stdout: 'bad json', stderr: 'secret' }, 'Refresh'),
+    'Refresh failed without a valid diagnostic');
+  assert.equal(receiptFailure({ stdout: '{"reason":"line1\\nline2"}' }, 'Preflight'),
+    'Preflight failed without a valid diagnostic');
+  assert.equal(receiptFailure({
+    stdout: JSON.stringify({ error: 'x'.repeat(250) }),
+  }, 'Refresh').length, 160);
 });
