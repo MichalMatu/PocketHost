@@ -51,7 +51,7 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside twenty PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 21);
+  assert.equal(allPaths.length, originalPaths.length + 22);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -79,7 +79,7 @@ test('full 32-route upstream admin shell remains available beside twenty PocketH
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 18);
+  assert.equal(chunks.length, originalPaths.length + 19);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -108,13 +108,14 @@ test('Services is last and every external service has a single navigation link',
   assert.match(hostingGroup, /url: "\/deployments"/);
   assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
   assert.ok(navigation.lastIndexOf('label: "Services",') > navigation.indexOf('label: "Platform",'));
-  for (const dest of ['/services', '/local-agent', '/managed-projects',
+  for (const dest of ['/services', '/local-agent', '/services/photomap',
     '/services/ilestoi', '/services/healthwatch', '/services/cloudflare',
     '/services/ssh', '/services/mqtt']) {
     assert.equal(navigation.split('url: "' + dest + '"').length - 1, 1, dest);
     assert.ok(serviceGroup.includes('url: "' + dest + '"'), 'missing service: ' + dest);
   }
   assert.match(routes, /path: "\/services\/:serviceId"/);
+  assert.match(routes, /path: "\/services\/photomap"/);
   assert.match(routes, /path: "\/host"/);
   const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Services",')[0] ?? '';
   assert.match(platformGroup, /url: "\/settings\/network"/);

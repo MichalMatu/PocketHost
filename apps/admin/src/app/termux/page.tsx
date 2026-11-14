@@ -2,6 +2,7 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { Archive, Boxes, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { navGroups } from "@/config/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -78,6 +79,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const overviewFailed = (section === "packages" && errors.snapshot) ||
     (["backups", "terminal"].includes(section) && errors.tools)
   const overviewSource = section === "packages" ? "Observability" : "Tool inventory"
+  const serviceLinks = navGroups.find(group => group.label === "Services")
+    ?.items.filter(item => item.url !== "/services") ?? []
 
   return (
     <BaseLayout title={sectionTitles[section]} >
@@ -119,13 +122,33 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             </Card>
           </section>}
 
-          {section === "services" && <section className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Select a service in the Services menu for its dedicated diagnostics.
-              The runit inventory below does not grant ownership of discovered processes.
-            </p>
-            <RunitServiceActions refreshToken={sectionRefreshToken} />
-          </section>
+          {section === "services" && <section className="space-y-4">
+            <div className="space-y-3">
+              <div>
+                <h2 className="text-sm font-semibold">Service workspaces</h2>
+                <p className="text-xs text-muted-foreground">
+                  Each service has its own page. External services remain read-only.
+                </p>
+              </div>
+              <nav aria-label="Service workspaces" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                {serviceLinks.map(({ title, url, icon: Icon }) =>
+                  <Link key={url} to={url}
+                    className="flex min-w-0 items-center gap-3 rounded-lg border px-3 py-3 text-sm
+                      transition-colors hover:bg-accent hover:text-accent-foreground">
+                    <Icon className="size-4 shrink-0 text-muted-foreground" />
+                    <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
+                    <span className="text-xs text-muted-foreground">Open</span>
+                  </Link>)}
+              </nav>
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-sm font-semibold">Runit inventory</h2>
+              <p className="text-xs text-muted-foreground">
+                Discovered processes are not automatically owned by PocketHost.
+              </p>
+              <RunitServiceActions refreshToken={sectionRefreshToken} />
+            </div>
+          </section>}
 
           {section === "backups" && <section className="space-y-4">
             <Card>

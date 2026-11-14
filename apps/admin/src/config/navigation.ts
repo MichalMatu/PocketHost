@@ -47,7 +47,7 @@ export const navGroups = [
       { title: "Local Agent", url: "/local-agent", icon: Bot },
       { title: "IleStoi", url: "/services/ilestoi", icon: Globe2 },
       { title: "IleStoi Healthwatch", url: "/services/healthwatch", icon: HeartPulse },
-      { title: "PhotoMap (test)", url: "/managed-projects", icon: FolderOpen },
+      { title: "PhotoMap (test)", url: "/services/photomap", icon: FolderOpen },
       { title: "Cloudflare Tunnel", url: "/services/cloudflare", icon: Cloud },
       { title: "SSH", url: "/services/ssh", icon: Shield },
       { title: "Mosquitto MQTT", url: "/services/mqtt", icon: Radio },

@@ -25,6 +25,7 @@ export const routes: RouteObject[] = [
   { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
   { path: "/files", lazy: page(() => import("@/app/termux/files-page")) },
   { path: "/services", lazy: page(() => import("@/app/termux/services-page")) },
+  { path: "/services/photomap", lazy: page(() => import("@/app/services/photomap-page")) },
   { path: "/services/:serviceId", lazy: page(() => import("@/app/services/service-detail-page")) },
   { path: "/local-agent", lazy: page(() => import("@/app/local-agent/page")) },
   { path: "/backups", lazy: page(() => import("@/app/termux/backups-page")) },
