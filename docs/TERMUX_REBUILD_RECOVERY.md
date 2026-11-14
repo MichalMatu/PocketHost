@@ -64,16 +64,20 @@ No initialized Restic repo was found at the checked recovery locations.
 **No application source database, live service, media or credential was
 modified or deleted.**
 
-## Full plaintext Termux archive (job submitted, result not yet verified)
+## Full plaintext Termux archive — first attempt HOLD
 
-Task: `termux-rebuild-plain-full-archive-20261114-v1`.
-
-This task attempts a single **unencrypted TAR** of `home + usr` to
-`Plain-20261114-v1/termux-home-usr.tar`, with SHA-256 file and required
-member checks. A published task is **not** proof of completion; record
-its exact terminal result and tar warnings before marking the archive
-present/valid. Live-file changes can degrade the TAR even while independent
-SQLite snapshots remain consistent.
+Samsung task `termux-rebuild-plain-full-archive-20261114-v1` has a terminal
+`failed` receipt (command exit 1). Internal `tar` returned 0 but emitted
+**16 warning lines**, so the safety wrapper deliberately refused to mark it
+ready. A `termux-home-usr.tar.partial` file remains; do **not** assume it is
+usable or delete it blindly. No validated `termux-home-usr.tar` or checksum
+has been confirmed. Snapshot DBs remain independently checked. The read-only
+BACKUPS folder scan task `termux-rebuild-backups-folder-scope-readonly-20261114-v1`
+failed before command startup (exit 125), so **21 GiB BACKUPS content is still
+unknown**. A scoped follow-up inventory
+`termux-rebuild-backups-diagnostics-readonly-20261114-v2` was submitted.
+Investigate partial TAR, its actual scope and backup directories before any
+space-consuming copy or cleanup.
 
 ## Remaining protection gates
 
