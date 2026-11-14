@@ -15,17 +15,19 @@ const goodQa = {
 };
 
 test('one pinned source and explicit --apply; reject duplicate or foreign flags', () => {
-  assert.deepEqual(parseFastFlowArgs(['--target=' + target, '--base=' + base]),
-    { base, target, apply: false });
-  assert.deepEqual(parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target]),
-    { base, target, apply: true });
+  assert.deepEqual(parseFastFlowArgs(['--target=' + target, '--base=' + base, '--apply']),
+    { base, target, apply: true, tests: false });
+  assert.deepEqual(parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target,
+    '--tests']), { base, target, apply: true, tests: true });
   for (const argv of [
-    ['--base=' + base, '--target=' + base],
-    ['--base=' + base, '--base=' + base, '--target=' + target],
+    ['--base=' + base, '--target=' + base, '--apply'],
+    ['--base=' + base, '--base=' + base, '--target=' + target, '--apply'],
     ['--base=' + base, '--target=' + target, '--apply', '--apply'],
-    ['--base=HEAD', '--target=' + target],
-    ['--target=' + target],
-    ['--base=' + base, '--target=' + target, '--restart-all'],
+    ['--base=HEAD', '--target=' + target, '--apply'],
+    ['--target=' + target, '--apply'],
+    ['--base=' + base, '--target=' + target],
+    ['--base=' + base, '--target=' + target, '--apply', '--tests', '--tests'],
+    ['--base=' + base, '--target=' + target, '--apply', '--restart-all'],
   ]) assert.throws(() => parseFastFlowArgs(argv));
 });
 

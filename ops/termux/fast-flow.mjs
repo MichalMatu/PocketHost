@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * One Samsung Local Agent task: exact-source focused checks, guarded DEV
- * PocketHost refresh, route smoke and one terminal JSON receipt.
+ * One Samsung Local Agent task: code → guarded DEV deployment → read-only
+ * live-revision verification and one terminal receipt. Tests are opt-in
+ * ONLY after the owner explicitly authorizes them.
  * Never installs dependencies, touches foreign services or runs a new server.
  */
 import { spawnSync } from 'node:child_process';
 import { lstatSync, readFileSync, realpathSync } from 'node:fs';
-import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,19 +20,21 @@ const OWNER_FILE = path.join(HOME, 'Projects/PocketHost-P3-Preview-20261106.json
 const RELEASE_SCRIPT = path.join(QA, 'ops/termux/refresh-panel.mjs');
 
 export function parseFastFlowArgs(argv) {
-  if (!Array.isArray(argv) || argv.length < 2 || argv.length > 3 ||
+  if (!Array.isArray(argv) || argv.length < 3 || argv.length > 4 ||
       argv.some(value => typeof value !== 'string') ||
       argv.filter(value => value.startsWith('--base=')).length !== 1 ||
       argv.filter(value => value.startsWith('--target=')).length !== 1 ||
-      argv.filter(value => value === '--apply').length > 1 ||
+      argv.filter(value => value === '--apply').length !== 1 ||
+      argv.filter(value => value === '--tests').length > 1 ||
       argv.some(value => !(value.startsWith('--base=') ||
-        value.startsWith('--target=') || value === '--apply')))
-    throw Error('Require unique --base=<40-hex-SHA> --target=<40-hex-SHA> [--apply]');
+        value.startsWith('--target=') || value === '--apply' ||
+        value === '--tests')))
+    throw Error('Require --base=<40-hex-SHA> --target=<40-hex-SHA> --apply [--tests]');
   const base = argv.find(value => value.startsWith('--base=')).slice(7);
   const target = argv.find(value => value.startsWith('--target=')).slice(9);
   if (!SHA.test(base) || !SHA.test(target) || base === target)
     throw Error('Source SHAs must be distinct and exactly 40 lowercase hex characters');
-  return { base, target, apply: argv.includes('--apply') };
+  return { base, target, apply: true, tests: argv.includes('--tests') };
 }
 
 export function confirmFocusedQa(receipt, base, target) {
@@ -104,26 +106,13 @@ function liveRoot() {
   return root;
 }
 
-function getStatus(pathname) {
-  return new Promise(resolve => {
-    const request = http.get({
-      hostname: '127.0.0.1', port: 8787, path: pathname, timeout: 4000,
-    }, response => {
-      response.resume();
-      response.on('end', () => resolve(response.statusCode));
-    });
-    request.on('timeout', () => request.destroy());
-    request.on('error', () => resolve(null));
-  });
-}
-
 async function fastFlow(options) {
   const started = Date.now();
   const report = {
     kind: 'PocketHostFastFlow', baseSha: options.base,
     sourceSha: options.target, status: 'HOLD', stage: 'prerequisites',
     deployment: 'not-started', protectedServices: 'not-modified',
-    qaChecks: [],
+    tests: options.tests ? 'requested-by-owner' : 'not-run', qaChecks: [],
   };
   try {
     const entryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -149,24 +138,24 @@ async function fastFlow(options) {
     const pre = invoke(process.execPath, [RELEASE_SCRIPT, '--preflight'], live, 60000);
     if (pre.error || pre.status !== 0) throw Error('Owner preflight refused');
     confirmPreflight(receipt(pre, 'Preflight'), options.base);
-    report.stage = 'focused-tests';
-    const checks = invoke(process.execPath,
-      ['scripts/dev/verify-changed.mjs', '--base=' + options.base], QA, 550000);
-    if (checks.error || checks.status !== 0) {
-      try {
-        const failed = receipt(checks, 'Focused QA');
-        report.failedCheck = failed.failedAt ?? null;
-        report.qaReason = String(failed.reason ?? failed.status ?? 'unknown').slice(0, 130);
-      } catch { report.qaReason = 'No valid QA result'; }
-      throw Error('Focused verification failed, release prohibited');
-    }
-    report.qaChecks = confirmFocusedQa(receipt(checks, 'Focused QA'),
-      options.base, options.target);
-    report.qaMs = checks.elapsedMs;
-    if (!options.apply) {
-      report.stage = 'complete'; report.status = 'PASS';
-      report.deployment = 'not-requested';
-      return report;
+    if (options.tests) {
+      // Never enter this branch in the default code → deploy → verify cycle.
+      // The caller must have explicit owner authorization for --tests.
+      report.stage = 'owner-authorized-tests';
+      const checks = invoke(process.execPath,
+        ['scripts/dev/verify-changed.mjs', '--base=' + options.base], QA, 550000);
+      if (checks.error || checks.status !== 0) {
+        try {
+          const failed = receipt(checks, 'Focused QA');
+          report.failedCheck = failed.failedAt ?? null;
+          report.qaReason = String(failed.reason ?? failed.status ?? 'unknown').slice(0, 130);
+        } catch { report.qaReason = 'No valid QA result'; }
+        throw Error('Owner-authorized tests failed; release prohibited');
+      }
+      report.qaChecks = confirmFocusedQa(receipt(checks, 'Focused QA'),
+        options.base, options.target);
+      report.qaMs = checks.elapsedMs;
+      report.tests = 'PASS';
     }
 
     report.stage = 'guarded-refresh';
@@ -178,19 +167,15 @@ async function fastFlow(options) {
     if (refreshed.error || refreshed.status !== 0)
       throw Error('PocketHost guarded refresh failed');
     confirmRelease(release, options.target);
-    if (git(live, 'rev-parse', 'HEAD') !== options.target)
+    report.stage = 'read-only-verification';
+    const observedSha = git(live, 'rev-parse', 'HEAD');
+    if (observedSha !== options.target)
       throw Error('Live checkout no longer matches approved revision');
+    report.liveSha = observedSha;
+    report.liveHealth = 'verified-by-guarded-refresh';
     report.releaseMs = refreshed.elapsedMs;
     report.deployment = 'applied';
     report.protectedServices = 'verified-unchanged-by-guarded-refresh';
-
-    report.stage = 'route-smoke';
-    const [services, localAgent] = await Promise.all([
-      getStatus('/services'), getStatus('/local-agent'),
-    ]);
-    report.routes = { services, localAgent };
-    if (services !== 200 || localAgent !== 200)
-      throw Error('Panel route smoke did not pass');
     report.status = 'PASS';
     report.stage = 'complete';
   } catch (error) {

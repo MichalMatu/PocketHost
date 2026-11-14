@@ -2,7 +2,8 @@
 /**
  * One-shot, operator-requested PocketHost DEV refresh. Never adopt a listener
  * or manage any service other than the already registered pockethost-panel.
- * All QA must complete on the Samsung before invoking this release operation.
+ * Requires verified owned-panel preflight, rollback and live readiness.
+ * Optional QA suites are separately owner-authorized, not a release prerequisite.
  */
 import { spawnSync } from 'node:child_process';
 import { readFileSync, lstatSync, realpathSync, statSync } from 'node:fs';

@@ -7,8 +7,10 @@ purpose: Exclusive host executor and trusted-task contract
 
 # Samsung Termux Local Agent
 
-Only the verified Samsung Termux Local Agent runs PocketHost tests, build and host operations. GitHub Connector transports source and tasks. Never Mac, Linux sandbox, Actions, Codex or Work.
+Only the verified Samsung Termux Local Agent runs PocketHost builds, guarded panel updates, verification and owner-authorized tests. GitHub Connector transports source and tasks. Never Mac, Linux sandbox, Actions, Codex or Work.
 
-Use fresh private host/installation evidence, existing clean QA checkout, cached dependencies and one bounded task. Terminal receipt with exact SHA is mandatory; do not duplicate pending tasks.
+Default: **one task for code → deploy → read-only verify**, with **no tests**. The owner must explicitly say it is time for tests before the agent may pass `--tests` to FAST FLOW or run any format, lint, typecheck, QA, smoke or documentation checks.
 
-Only positively owned PocketHost DEV panel may use runit refresh/rollback after PID/start ticks/cwd/source/foreign-service verification. Protect all unrelated services and keep Android loopback/private LAN.
+Use fresh private host/installation evidence, the existing clean QA checkout, cached dependencies and a single bounded task. Terminal receipt with exact live SHA is mandatory; do not duplicate pending tasks or retry automatically.
+
+Only the positively owned PocketHost DEV panel may use guarded runit refresh/rollback after PID/start ticks/cwd/source/foreign-service verification. Protect all unrelated services and keep Android loopback/private LAN.
