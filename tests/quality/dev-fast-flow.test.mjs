@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  parseFastFlowArgs, confirmFocusedQa, confirmPreflight, confirmRelease,
+  parseFastFlowArgs,
+  confirmFocusedQa,
+  confirmPreflight,
+  confirmRelease,
   receiptFailure,
 } from '../../ops/termux/fast-flow.mjs';
 import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
@@ -9,17 +12,27 @@ import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
 const base = 'a'.repeat(40);
 const target = 'b'.repeat(40);
 const goodQa = {
-  kind: 'PocketHostVerifyChanged', base, head: target, status: 'PASS',
+  kind: 'PocketHostVerifyChanged',
+  base,
+  head: target,
+  status: 'PASS',
   changed: ['apps/admin/src/app/termux/page.tsx'],
   plannedChecks: ['ui tests'],
-  checks: [{ label: 'ui tests', status: 'PASS' }], review: [],
+  checks: [{ label: 'ui tests', status: 'PASS' }],
+  review: [],
 };
 
 test('one pinned source and explicit --apply; reject duplicate or foreign flags', () => {
-  assert.deepEqual(parseFastFlowArgs(['--target=' + target, '--base=' + base, '--apply']),
-    { base, target, apply: true, tests: false });
-  assert.deepEqual(parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target,
-    '--tests']), { base, target, apply: true, tests: true });
+  assert.deepEqual(parseFastFlowArgs(['--target=' + target, '--base=' + base, '--apply']), {
+    base,
+    target,
+    apply: true,
+    tests: false,
+  });
+  assert.deepEqual(
+    parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target, '--tests']),
+    { base, target, apply: true, tests: true },
+  );
   for (const argv of [
     ['--base=' + base, '--target=' + base, '--apply'],
     ['--base=' + base, '--base=' + base, '--target=' + target, '--apply'],
@@ -29,38 +42,59 @@ test('one pinned source and explicit --apply; reject duplicate or foreign flags'
     ['--base=' + base, '--target=' + target],
     ['--base=' + base, '--target=' + target, '--apply', '--tests', '--tests'],
     ['--base=' + base, '--target=' + target, '--apply', '--restart-all'],
-  ]) assert.throws(() => parseFastFlowArgs(argv));
+  ])
+    assert.throws(() => parseFastFlowArgs(argv));
 });
 
 test('focused QA is bound to the exact diff, all planned checks and no manual review', () => {
   assert.deepEqual(confirmFocusedQa(goodQa, base, target), ['ui tests']);
   for (const bad of [
-    { ...goodQa, head: base }, { ...goodQa, status: 'MANUAL_REVIEW' },
-    { ...goodQa, changed: [] }, { ...goodQa, checks: [] },
+    { ...goodQa, head: base },
+    { ...goodQa, status: 'MANUAL_REVIEW' },
+    { ...goodQa, changed: [] },
+    { ...goodQa, checks: [] },
     { ...goodQa, plannedChecks: ['node tests'] },
     { ...goodQa, checks: [{ label: 'ui tests', status: 'FAIL' }] },
-    { ...goodQa, review: ['unmapped'] }, { ...goodQa, kind: 'wrong' },
-  ]) assert.throws(() => confirmFocusedQa(bad, base, target));
+    { ...goodQa, review: ['unmapped'] },
+    { ...goodQa, kind: 'wrong' },
+  ])
+    assert.throws(() => confirmFocusedQa(bad, base, target));
 });
 
 test('preflight must be same owner baseline, healthy panel and unchanged services', () => {
   const ok = {
-    status: 'READ_ONLY_READY', mode: 'read-only', ownedPanel: 'verified',
-    markerSha: base, checkoutSha: base, sourceDrift: 'same',
-    panelHttp: 'reachable', protectedServices: 'running',
-    deployment: 'not-performed', restart: 'not-performed',
+    status: 'READ_ONLY_READY',
+    mode: 'read-only',
+    ownedPanel: 'verified',
+    markerSha: base,
+    checkoutSha: base,
+    sourceDrift: 'same',
+    panelHttp: 'reachable',
+    protectedServices: 'running',
+    deployment: 'not-performed',
+    restart: 'not-performed',
   };
   assert.equal(confirmPreflight(ok, base), true);
-  assert.equal(confirmPreflight({
-    ...ok, markerSha: target, sourceDrift: 'verified-ui-hmr-only',
-  }, base), true);
+  assert.equal(
+    confirmPreflight(
+      {
+        ...ok,
+        markerSha: target,
+        sourceDrift: 'verified-ui-hmr-only',
+      },
+      base,
+    ),
+    true,
+  );
   for (const bad of [
-    { ...ok, checkoutSha: target }, { ...ok, markerSha: target },
+    { ...ok, checkoutSha: target },
+    { ...ok, markerSha: target },
     { ...ok, sourceDrift: 'verified-ui-hmr-only' },
     { ...ok, panelHttp: 'unavailable' },
     { ...ok, protectedServices: 'not-all-running' },
     { ...ok, ownedPanel: 'unverified' },
-  ]) assert.throws(() => confirmPreflight(bad, base));
+  ])
+    assert.throws(() => confirmPreflight(bad, base));
 });
 
 test('release must prove exact source, 200 loopback and same protected services', () => {
@@ -68,32 +102,54 @@ test('release must prove exact source, 200 loopback and same protected services'
   assert.equal(confirmRelease(valid, target), true);
   assert.equal(confirmRelease({ status: 'CURRENT', sha: target }, target), true);
   for (const bad of [
-    { ...valid, sha: base }, { ...valid, status: 'HOLD' },
-    { ...valid, lanHttp: 500 }, { ...valid, external: 'changed' },
+    { ...valid, sha: base },
+    { ...valid, status: 'HOLD' },
+    { ...valid, lanHttp: 500 },
+    { ...valid, external: 'changed' },
     { status: 'CURRENT', sha: base },
-  ]) assert.throws(() => confirmRelease(bad, target));
+  ])
+    assert.throws(() => confirmRelease(bad, target));
 });
 
 test('only the explicitly-reviewed orchestration entrypoint is auto-mapped', () => {
   const mapped = planChangedChecks(['ops/termux/fast-flow.mjs']);
   assert.deepEqual(mapped.review, []);
-  assert.ok(mapped.commands.some(item => item.label === 'node tests' &&
-    item.argv.includes('tests/quality/dev-fast-flow.test.mjs')));
+  assert.ok(
+    mapped.commands.some(
+      (item) =>
+        item.label === 'node tests' && item.argv.includes('tests/quality/dev-fast-flow.test.mjs'),
+    ),
+  );
   const other = planChangedChecks(['ops/termux/untrusted-command.mjs']);
-  assert.ok(other.review.some(item => item.includes('Explicit impact review')));
+  assert.ok(other.review.some((item) => item.includes('Explicit impact review')));
 });
 
-
 test('failed local stages surface bounded diagnostics without stderr or secret output', () => {
-  assert.equal(receiptFailure({
-    stdout: '{"status":"HOLD","error":"protected service unavailable"}',
-    stderr: 'private-key-must-not-appear',
-  }, 'Preflight'), 'protected service unavailable');
-  assert.equal(receiptFailure({ stdout: 'bad json', stderr: 'secret' }, 'Refresh'),
-    'Refresh failed without a valid diagnostic');
-  assert.equal(receiptFailure({ stdout: '{"reason":"line1\\nline2"}' }, 'Preflight'),
-    'line1 line2');
-  assert.equal(receiptFailure({
-    stdout: JSON.stringify({ error: 'x'.repeat(250) }),
-  }, 'Refresh').length, 160);
+  assert.equal(
+    receiptFailure(
+      {
+        stdout: '{"status":"HOLD","error":"protected service unavailable"}',
+        stderr: 'private-key-must-not-appear',
+      },
+      'Preflight',
+    ),
+    'protected service unavailable',
+  );
+  assert.equal(
+    receiptFailure({ stdout: 'bad json', stderr: 'secret' }, 'Refresh'),
+    'Refresh failed without a valid diagnostic',
+  );
+  assert.equal(
+    receiptFailure({ stdout: '{"reason":"line1\\nline2"}' }, 'Preflight'),
+    'line1 line2',
+  );
+  assert.equal(
+    receiptFailure(
+      {
+        stdout: JSON.stringify({ error: 'x'.repeat(250) }),
+      },
+      'Refresh',
+    ).length,
+    160,
+  );
 });

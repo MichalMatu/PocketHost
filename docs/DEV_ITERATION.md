@@ -12,10 +12,9 @@ purpose: Single-pass DEV update with owner-controlled testing
 3. Run `node ops/termux/fast-flow.mjs --base=<live-sha> --target=<target-sha> --apply`. Default: **no QA suites, format/lint/typecheck or route smoke**. It performs strict source/owner checks, read-only preflight, guarded PocketHost-only refresh with rollback, then read-only live revision/health verification.
 4. Read **one terminal JSON receipt**. Deployment PASS requires exact live target SHA, health, unchanged protected services and successful guarded refresh. Missing receipt or failed safety gate = HOLD, **no automatic retry**.
 
-**Tests only on explicit owner instruction:** add `--tests` to that same command *only after* the owner says it is time for tests. The optional focused QA runs before guarded deployment; it is never scheduled automatically.
+**Tests only on explicit owner instruction:** add `--tests` to that same command _only after_ the owner says it is time for tests. The optional focused QA runs before guarded deployment; it is never scheduled automatically.
 
 **Docs-only:** commit to Git; no automatic Markdown check, build, restart or deployment. Privileged/unknown ownership remains HOLD rather than a bypass. No service installs, WAN exposure or unrelated process changes. Samsung only, never CI/Mac/sandbox.
-
 
 ## Owner-authorized end-to-end flow qualification
 
@@ -40,3 +39,8 @@ runtime. Measure queue/publish delay separately from on-device test and
 release times using request/result commit timestamps. The selected
 Samsung agent release is an independent product; updating that service
 must be handled by an independent operator, never this flow.
+
+On a failed QA stage, inspect the existing private
+`.tmp/verify-changed-last.json` receipt in the pinned Samsung QA checkout.
+It includes the exact failed check and bounded error. Do not repeat an
+entire test pass just to retrieve diagnostics.
