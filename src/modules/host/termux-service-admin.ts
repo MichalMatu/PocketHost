@@ -23,6 +23,7 @@ const PROTECTED = new Set([
   'wreckscanner-backup',
   'cloudflared',
   'sshd',
+  'ssh-agent',
   'mosquitto',
   'ilestoi-healthwatch',
   'termux-agent',
@@ -213,10 +214,25 @@ export class TermuxServiceAdmin {
 
   private enabled(name: string): boolean | null {
     try {
-      this.target(name);
+      // Protected services remain read-only, but a fixed real runit
+      // directory can reveal the autostart marker without granting control.
+      if (isProtected(name)) {
+        const root = lstatSync(this.serviceRoot);
+        const target = path.join(this.serviceRoot, name);
+        const entry = lstatSync(target);
+        if (!root.isDirectory() || root.isSymbolicLink() ||
+            !entry.isDirectory() || entry.isSymbolicLink()) return null;
+      } else {
+        this.target(name);
+      }
       const marker = path.join(this.serviceRoot, name, 'down');
-      if (!existsSync(marker)) return true;
-      return lstatSync(marker).isSymbolicLink() ? null : false;
+      try {
+        const state = lstatSync(marker);
+        return state.isFile() && !state.isSymbolicLink() ? false : null;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
+        throw error;
+      }
     } catch {
       return null;
     }

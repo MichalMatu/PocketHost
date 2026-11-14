@@ -592,6 +592,12 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
       setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
     } finally { setBusy(false) }
   }
+  const counts = services ? {
+    owned: services.filter(isPanelService).length,
+    managed: services.filter(item => item.registered && !item.protected).length,
+    protected: services.filter(item => item.protected && !isPanelService(item)).length,
+    observed: services.filter(item => !item.registered && !item.protected && !isPanelService(item)).length,
+  } : null
   const serviceRow = (service: RunitEntry) => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
       <div className="space-y-1">
         <p className="text-sm font-medium">{service.name}</p>
@@ -599,7 +605,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{service.protected ? "Protected" : isPanelService(service) ? "Panel · read-only" : service.registered ? "Registered" : "Observed"}</Badge>
+          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.protected ? "Protected external" : service.registered ? "PocketHost-managed" : "Observed · unmanaged"}</Badge>
         </div>
       </div>
       {service.state === "unknown" && <p className="text-xs text-muted-foreground">
@@ -625,23 +631,27 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
       <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
     </div>
     <p className="text-muted-foreground text-xs">
-      Register grants lifecycle controls (start, stop, restart, autostart); it does not start a service.
-      Protected services and the PocketHost panel/watch are read-only here.
+      PocketHost coordinates its own services and explicitly enrolled runit services.
+      Register grants lifecycle controls; it does not start a service. SSH and Local Agent
+      remain protected until separately qualified. Runit liveness is not application health.
     </p>
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
+    {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
+      <Badge variant="outline">PocketHost-owned: {counts.owned}</Badge>
+      <Badge variant="outline">Enrolled: {counts.managed}</Badge>
+      <Badge variant="outline">Protected external: {counts.protected}</Badge>
+      <Badge variant="outline">Observed: {counts.observed}</Badge>
+    </div>}
     {services?.filter(service => !service.protected && !isPanelService(service)).map(serviceRow)}
     {services && services.some(service => service.protected || isPanelService(service)) &&
-      <details className="rounded-md border p-2">
-        <summary className="cursor-pointer text-sm font-medium">
-          Protected runit inventory ({services.filter(service =>
-            service.protected || isPanelService(service)).length}) · read-only
-        </summary>
+      <section className="rounded-md border p-2" aria-label="Protected and PocketHost-owned services">
+        <h4 className="text-sm font-medium">PocketHost-owned and protected services · view only</h4>
         <p className="py-2 text-xs text-muted-foreground">
-          Detailed monitoring is available in Services and Local Agent; this is the runit registry.
+          Lifecycle state and autostart come from runit. Application health is independent.
         </p>
         {services.filter(service => service.protected || isPanelService(service)).map(serviceRow)}
-      </details>}
+      </section>}
     {serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>

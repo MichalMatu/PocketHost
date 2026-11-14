@@ -127,7 +127,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               <div>
                 <h2 className="text-sm font-semibold">Service workspaces</h2>
                 <p className="text-xs text-muted-foreground">
-                  Each service has its own page. External services remain read-only.
+                  PocketHost coordinates installed and explicitly enrolled services. Protected external
+                  services remain observed until separately verified for management.
                 </p>
               </div>
               <nav aria-label="Service workspaces" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
@@ -144,7 +145,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
             <div className="space-y-2">
               <h2 className="text-sm font-semibold">Runit inventory</h2>
               <p className="text-xs text-muted-foreground">
-                Discovered processes are not automatically owned by PocketHost.
+                Lifecycle, autostart and logs are available for enrolled services. Discovery alone
+                never transfers ownership; application health requires a dedicated probe.
               </p>
               <RunitServiceActions refreshToken={sectionRefreshToken} />
             </div>
