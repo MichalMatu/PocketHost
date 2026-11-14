@@ -2,7 +2,6 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
-import { IleStoiDiagnosticHost } from "../../src/modules/host/ilestoi-diagnostics.ts"
 import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflare-tunnel-diagnostics.ts"
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
@@ -13,8 +12,6 @@ import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-fi
 import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
 import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
 import { ObservabilityHistory, parseObservabilityScope } from "../../src/modules/observability/overview.ts"
-import { ManagedPhotoMapRuntimeHost } from "../../src/modules/host/photomap-runtime-host.ts"
-import { readLegacyPhotoMapEvents } from "../../src/modules/host/photomap-legacy-events.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import { validateRemoteShellPayload } from "../../src/modules/host/remote-shell-contract.mjs"
@@ -25,7 +22,6 @@ import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 import { readHostSnapshot } from "../../src/modules/host/host-snapshot.ts"
 import { OwnedDemoHost } from "../../src/modules/host/owned-site-host.ts"
-import { ManagedPhotoMapHost } from "../../src/modules/host/managed-photomap-host.ts"
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
@@ -393,11 +389,6 @@ function ownedSiteFleetApi(): Plugin {
   }
 }
 
-/**
- * P4: a strictly read-only catalog for one verified imported project.
- * This does not enable PhotoMap launch, package mutations or rollback.
- */
-
 /** M3 source-only Node project wizard API: no process manager or implicit execution. */
 function nodeProjectApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
@@ -750,59 +741,6 @@ function nodeProjectApi(): Plugin {
           response.statusCode = error instanceof RangeError || error instanceof SyntaxError ? 400 : 409
           response.end(JSON.stringify({ error: response.statusCode === 400 ?
             "invalid-node-project-input" : "node-project-operation-refused" }))
-        }
-      })
-    },
-  }
-}
-
-function managedPhotoMapApi(): Plugin {
-  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
-  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
-  return {
-    name: "pockethost-photomap-catalog",
-    apply: "serve",
-    configureServer(server) {
-      server.middlewares.use("/api/v1/managed-photomap", (request, response) => {
-        response.setHeader("Cache-Control", "no-store")
-        response.setHeader("X-Content-Type-Options", "nosniff")
-        response.setHeader("Content-Security-Policy", "default-src 'none'")
-        response.setHeader("Content-Type", "application/json; charset=utf-8")
-        const remote = request.socket.remoteAddress
-        if (
-          !hosts.has(request.headers.host ?? "") ||
-          (request.headers.origin && !origins.has(request.headers.origin)) ||
-          request.headers["sec-fetch-site"] === "cross-site" ||
-          (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")
-        ) {
-          response.statusCode = 403
-          response.end(JSON.stringify({ error: "forbidden" }))
-          return
-        }
-        if (request.url !== "/" && request.url !== "/events") {
-          response.statusCode = 404
-          response.end("{}")
-          return
-        }
-        if (request.method !== "GET") {
-          response.setHeader("Allow", "GET")
-          response.statusCode = 405
-          response.end("{}")
-          return
-        }
-        try {
-          if (request.url === "/events") {
-            const diagnostics = readLegacyPhotoMapEvents(() => new ManagedPhotoMapRuntimeHost().readLogs())
-            response.statusCode = 200
-            response.end(JSON.stringify(diagnostics))
-            return
-          }
-          const project = new ManagedPhotoMapHost().inspect()
-          response.statusCode = 200
-          response.end(JSON.stringify({ project }))
-        } catch {
-          response.statusCode = 409
-          response.end(JSON.stringify({ error: "managed-project-unavailable" }))
         }
       })
     },
@@ -1385,7 +1323,6 @@ function termuxAdminApi(): Plugin {
   const files = new WorkspaceFiles()
   const backups = new WorkspaceBackups(files)
   const services = new TermuxServiceAdmin()
-  const ileStoi = new IleStoiDiagnosticHost()
   const cloudflare = new CloudflareTunnelDiagnosticHost()
   const protectedServices = new ProtectedServiceDiagnosticHost()
   const controlPlane = new ControlPlaneDiagnosticHost()
@@ -1456,11 +1393,9 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list() } :
-              mode === "ilestoi-diagnostics" && url.searchParams.size === 1 ? await ileStoi.inspectWithHttp() :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
-              mode === "healthwatch-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("ilestoi-healthwatch") :
               mode === "control-plane-diagnostics" && url.searchParams.size === 1 ? controlPlane.inspect() :
               mode === "local-agent-logs" && url.searchParams.size === 1 ? agentLogs.inspect() :
                mode === "file-roots" ? { roots: fileRoots.available() } :
@@ -1693,7 +1628,7 @@ function dashboardTelemetryApi(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), internetConnectivityApi(), dashboardTelemetryApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), managedPhotoMapApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
+  plugins: [react(), tailwindcss(), termuxReadOnlyApi(), internetConnectivityApi(), dashboardTelemetryApi(), ownedDemoApi(), ownedSiteFleetApi(), nodeProjectApi(), observabilityApi(), shizukuCompanionApi(), remoteShellApi(),
     androidActionApi(), networkAccessApi(), termuxToolsApi(), termuxAdminApi()],
   server: {
     host: "127.0.0.1",

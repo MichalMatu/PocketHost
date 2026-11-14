@@ -18,17 +18,13 @@ import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
-const PROTECTED = new Set([
-  'wreckscanner',
-  'wreckscanner-backup',
-  'cloudflared',
-  'sshd',
-  'ssh-agent',
-  'mosquitto',
-  'ilestoi-healthwatch',
-  'termux-agent',
-  'pockethost-panel',
-  'pockethost-panel-watch',
+// Deny control of every unowned service by default; no hosted-project
+// names or service-specific exceptions belong in the generic product.
+// The PocketHost-owned runit namespace is still subject to explicit registry
+// enrollment and canonical target attestation.
+const SYSTEM_SERVICE_NAMES = new Set([
+  'sshd', 'ssh-agent', 'termux-agent',
+  'pockethost-panel', 'pockethost-panel-watch',
 ]);
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
@@ -53,7 +49,11 @@ function valid(name: string): void {
     throw new RangeError('Invalid runit service name');
 }
 function isProtected(name: string, resolved?: string): boolean {
-  return PROTECTED.has(name) || (resolved !== undefined && PROTECTED.has(path.basename(resolved)));
+  return SYSTEM_SERVICE_NAMES.has(name) ||
+    !name.startsWith('pockethost-') ||
+    (resolved !== undefined &&
+      (SYSTEM_SERVICE_NAMES.has(path.basename(resolved)) ||
+       !path.basename(resolved).startsWith('pockethost-')));
 }
 function safeFile(file: string): string | null {
   try {

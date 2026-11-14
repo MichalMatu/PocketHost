@@ -34,9 +34,6 @@ export const routes: RouteObject[] = [
   { path: "/packages", lazy: page(() => import("@/app/termux/packages-page")) },
   { path: "/files", lazy: page(() => import("@/app/termux/files-page")) },
   { path: "/services", lazy: page(() => import("@/app/termux/services-page")) },
-  { path: "/services/photomap", lazy: page(() => import("@/app/services/photomap-page")) },
-  { path: "/services/ilestoi", lazy: servicePage("ilestoi") },
-  { path: "/services/healthwatch", lazy: servicePage("healthwatch") },
   { path: "/services/cloudflare", lazy: servicePage("cloudflare") },
   { path: "/services/ssh", lazy: servicePage("ssh") },
   { path: "/services/mqtt", lazy: servicePage("mqtt") },
@@ -51,8 +48,6 @@ export const routes: RouteObject[] = [
   { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
   { path: "/projects", lazy: page(() => import("@/app/projects/page")) },
   { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
-  // Legacy PhotoMap entry: one canonical page, no second inventory/read.
-  { path: "/managed-projects", element: <Navigate to="/services/photomap" replace /> },
   // PocketHost home dashboard, with the original upstream charts kept as an example.
   { path: "/dashboard", lazy: page(() => import("@/app/termux/system-page")) },
   { path: "/examples/dashboard", lazy: page(() => import("@/app/dashboard/page")) },

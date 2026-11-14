@@ -1,9 +1,10 @@
 import {
-  Bot, Cloud, FolderOpen, Globe2, HeartPulse, Radio, Shield,
+  Bot, Cloud, Radio, Shield,
 } from "lucide-react"
 
-/** One source for Services navigation, search, index and page metadata.
- * A page is an isolated read-only view, not a claim of process ownership.
+/** Generic host capabilities, never a catalog of the owner's hosted apps.
+ * Dynamically discovered services are rendered through the runit inventory.
+ * A page is a read-only view, not a claim of process ownership.
  */
 export const serviceWorkspaces = [
   {
@@ -11,24 +12,6 @@ export const serviceWorkspaces = [
     title: "Local Agent", url: "/local-agent",
     description: "Dedicated Termux Local Agent supervisor and sanitized logs",
     icon: Bot,
-  },
-  {
-    id: "ilestoi", kind: "diagnostic",
-    title: "IleStoi", url: "/services/ilestoi",
-    description: "Application health and redacted service logs",
-    icon: Globe2,
-  },
-  {
-    id: "healthwatch", kind: "diagnostic",
-    title: "IleStoi Healthwatch", url: "/services/healthwatch",
-    description: "Protected healthwatch diagnostics",
-    icon: HeartPulse,
-  },
-  {
-    id: "photomap", kind: "independent",
-    title: "PhotoMap (test)", url: "/services/photomap",
-    description: "Isolated read-only PhotoMap TEST inventory",
-    icon: FolderOpen,
   },
   {
     id: "cloudflare", kind: "diagnostic",

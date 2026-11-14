@@ -4,7 +4,6 @@ import { RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanel } from "@/app/termux/protected-services-panel"
 import { diagnosticServices, type DiagnosticServiceId } from "@/config/service-workspaces"
@@ -36,12 +35,9 @@ export default function ServiceDetailPage({ service: selectedService }: {
       {!item && <p role="alert" className="text-sm text-muted-foreground">
         Unknown service. No diagnostics were requested.
       </p>}
-      {service === "ilestoi" && <IleStoiDiagnosticPanel refreshToken={refreshToken} />}
       {service === "cloudflare" && <CloudflareTunnelPanel refreshToken={refreshToken} />}
       {service === "ssh" && <ProtectedServicePanel service="sshd" refreshToken={refreshToken} />}
       {service === "mqtt" && <ProtectedServicePanel service="mosquitto" refreshToken={refreshToken} />}
-      {service === "healthwatch" &&
-        <ProtectedServicePanel service="ilestoi-healthwatch" refreshToken={refreshToken} />}
     </div>
   </BaseLayout>
 }

@@ -2,11 +2,10 @@ import { spawnSync } from 'node:child_process';
 import { statfsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { SERVICE_CATALOG, type ServiceScope } from './observed-service-catalog.ts';
+import { TermuxServiceAdmin, type TermuxService } from './termux-service-admin.ts';
 
-// Preserve the public six-card API while keeping named units in a
-// compatibility-only catalog. Observing an external unit never grants control.
-export { SERVICE_CATALOG } from './observed-service-catalog.ts';
+// Host service inventory is discovered on this device, never configured with
+// product-specific unit names, project names or customer domains.
 
 export type ServiceState = 'running' | 'stopped' | 'unknown';
 
@@ -47,35 +46,29 @@ export function parseRunitStatus(output: string | null | undefined): ServiceStat
   return 'unknown';
 }
 
-/** Two audited locations; callers cannot choose an arbitrary filesystem path. */
-function runApprovedSvStatus(serviceName: string, scope: ServiceScope): string | null {
-  const binary = path.join(TERMUX_PREFIX, 'bin', 'sv');
-  const servicePath =
-    scope === 'local-agent'
-      ? path.join(os.homedir(), '.local/state/local-agent/termux/runit/services/termux-agent')
-      : path.join(TERMUX_PREFIX, 'var', 'service', serviceName);
-  try {
-    const result = spawnSync(binary, ['status', servicePath], {
-      encoding: 'utf8',
-      shell: false,
-      timeout: 1200,
-      maxBuffer: MAX_STATUS_OUTPUT,
-      stdio: ['ignore', 'pipe', 'ignore'],
-    });
-    return typeof result.stdout === 'string' ? result.stdout.slice(0, MAX_STATUS_OUTPUT) : null;
-  } catch {
-    return null;
-  }
-}
-
-/** Unknown identifiers are rejected before any external command can execute. */
+/** A read-only, bounded status probe cannot accept paths or shell expressions.
+ * Use the dynamic registry for discovery and only this fixed Termux runit root.
+ */
 export function probeServiceState(
   id: string,
-  readStatus: (serviceName: string, scope: ServiceScope) => string | null = runApprovedSvStatus,
+  readStatus: (serviceName: string) => string | null = (name) => {
+    try {
+      const result = spawnSync(path.join(TERMUX_PREFIX, 'bin', 'sv'), [
+        'status', path.join(TERMUX_PREFIX, 'var', 'service', name),
+      ], {
+        encoding: 'utf8', shell: false, timeout: 1200,
+        maxBuffer: MAX_STATUS_OUTPUT, stdio: ['ignore', 'pipe', 'ignore'],
+      });
+      return typeof result.stdout === 'string'
+        ? result.stdout.slice(0, MAX_STATUS_OUTPUT) : null;
+    } catch {
+      return null;
+    }
+  },
 ): ServiceState {
-  const service = SERVICE_CATALOG.find((item) => item.id === id);
-  if (!service) throw new RangeError('Service is not on the inspection allowlist');
-  return parseRunitStatus(readStatus(service.runit, service.scope));
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(id))
+    throw new RangeError('Invalid service identifier');
+  return parseRunitStatus(readStatus(id));
 }
 
 /** Only the filesystem containing Termux home is inspected; no filenames or paths are emitted. */
@@ -97,7 +90,7 @@ export function readStorageSnapshot(
 
 /** Fixed read-only probes; no request data, shell fragments or secret values in output. */
 export function readHostSnapshot(
-  readState: (id: string) => ServiceState = probeServiceState,
+  readServices: () => TermuxService[] = () => new TermuxServiceAdmin().list(),
   observedAt: () => string = () => new Date().toISOString(),
   readStorage: () => StorageSnapshot | null = readStorageSnapshot,
 ): HostSnapshot {
@@ -114,11 +107,11 @@ export function readHostSnapshot(
       freeMemoryMiB: Math.floor(os.freemem() / 1048576),
       storage: readStorage(),
     },
-    services: SERVICE_CATALOG.map((service) => ({
-      id: service.id,
-      label: service.label,
+    services: readServices().map((service) => ({
+      id: service.name,
+      label: service.name,
       ownership: 'external' as const,
-      state: readState(service.id),
+      state: service.state,
     })),
   };
 }

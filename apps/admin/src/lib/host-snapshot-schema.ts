@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-// The host API is read-only and serves only a fixed external-service allowlist.
+// The host API returns bounded, dynamically discovered runit services.
 const nonnegativeInt = z.number().int().nonnegative()
 const storage = z.object({
   totalMiB: nonnegativeInt,
@@ -8,7 +8,7 @@ const storage = z.object({
 }).strict().refine((value) => value.availableMiB <= value.totalMiB)
 
 const service = z.object({
-  id: z.enum(["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"]),
+  id: z.string().regex(/^[a-z][a-z0-9-]{1,63}$/),
   label: z.string().min(1).max(100),
   ownership: z.literal("external"),
   state: z.enum(["running", "stopped", "unknown"]),
@@ -27,7 +27,7 @@ export const hostSnapshotSchema = z.object({
     freeMemoryMiB: nonnegativeInt,
     storage: storage.nullable(),
   }).strict().refine((value) => value.freeMemoryMiB <= value.totalMemoryMiB),
-  services: z.array(service).length(6).refine((items) =>
+  services: z.array(service).max(100).refine((items) =>
     new Set(items.map((item) => item.id)).size === items.length
   ),
 }).strict()
