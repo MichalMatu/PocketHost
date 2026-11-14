@@ -1499,11 +1499,19 @@ function termuxAdminApi(): Plugin {
               }
               return services.createManagedWorker(input.path ?? "")
             }
+            if (input.action === "service-archive") {
+              // A separate, narrow route; never generic delete/unregister.
+              if (input.name !== "heartbeat-worker-v1" ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
+                throw new RangeError("Unsupported service archive");
+              }
+              return await services.archiveManagedWorker(input.path ?? "")
+            }
             if (input.action === "service") {
-              if (!input.name || !["unregister","start","stop","restart","enable","disable"].includes(input.name))
+              if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")
               return await services.apply(
-                input.name as "unregister" | "start" | "stop" | "restart" | "enable" | "disable",
+                input.name as "start" | "stop" | "restart" | "enable" | "disable",
                 input.path ?? "",
               )
             }

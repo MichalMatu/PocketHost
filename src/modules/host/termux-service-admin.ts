@@ -8,6 +8,8 @@ import {
   readdirSync,
   rmSync,
   realpathSync,
+  readlinkSync,
+  unlinkSync,
   symlinkSync,
   renameSync,
   statSync,
@@ -46,6 +48,8 @@ export interface TermuxService {
   registered: boolean;
   protected: boolean;
   identity: ServiceIdentity;
+  /** Only the fully attested built-in template grants archive capability. */
+  template?: 'heartbeat-worker-v1';
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
 }
@@ -248,6 +252,92 @@ export class TermuxServiceAdmin {
     return { changed: true, name, template: 'heartbeat-worker-v1' };
   }
 
+
+  /**
+   * A service can be archived only if it was created by the built-in
+   * standalone provisioner. An enrolled Node project, name prefix, or
+   * readable foreign marker never grants archive authority.
+   */
+  private isManagedWorker(
+    name: string,
+    target: string,
+    registrations: Registration[],
+  ): boolean {
+    if (this.identity(name, target, registrations) !== 'verified') return false;
+    const sourceRoot = path.join(PREFIX, 'var', 'sv');
+    if (target !== path.join(sourceRoot, name)) return false;
+    try {
+      const published = lstatSync(path.join(this.serviceRoot, name));
+      const directory = lstatSync(target);
+      if (!published.isSymbolicLink() ||
+          readlinkSync(path.join(this.serviceRoot, name)) !== target ||
+          !directory.isDirectory() || directory.isSymbolicLink() ||
+          directory.uid !== process.getuid?.() || (directory.mode & 0o022) !== 0) {
+        return false;
+      }
+      const markerFile = path.join(target, '.pockethost-service.json');
+      const markerStat = lstatSync(markerFile);
+      if (!markerStat.isFile() || markerStat.isSymbolicLink() ||
+          markerStat.nlink !== 1 || markerStat.uid !== process.getuid?.() ||
+          (markerStat.mode & 0o077) !== 0) return false;
+      const raw = safeFile(markerFile);
+      if (!raw) return false;
+      const marker: unknown = JSON.parse(raw);
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return false;
+      const proof = marker as Record<string, unknown>;
+      const record = registrations.find((entry) => entry.name === name);
+      return Object.keys(proof).sort().join(',') ===
+          'instanceId,name,owner,runSha256,schema,template' &&
+        proof.schema === 1 && proof.owner === 'pockethost' &&
+        proof.name === name && proof.template === 'heartbeat-worker-v1' &&
+        typeof proof.instanceId === 'string' &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
+        proof.runSha256 === record?.runSha256 &&
+        this.runSha256(target) === proof.runSha256;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Non-destructive retirement: exit the owned runsv supervisor, unpublish
+   * the exact original symlink and revoke registry authority. The worker's
+   * scripts and logs remain in the private Termux roots for explicit later
+   * cleanup; we do not recursively delete any service tree.
+   */
+  async archiveManagedWorker(
+    name: string,
+    run: Exec = executeFixed,
+  ): Promise<{ changed: boolean; archived: boolean; retainedFiles: boolean }> {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const registrations = this.registry();
+    const target = this.target(name);
+    if (!this.isManagedWorker(name, target, registrations)) {
+      throw new Error('Only an attested PocketHost template worker can be archived');
+    }
+    if (this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
+      throw new Error('Archive requires a stopped worker with autostart disabled');
+    }
+    const published = path.join(this.serviceRoot, name);
+    const result = await run(path.join(PREFIX, 'bin', 'sv'), ['exit', published], {
+      timeout: 20000, maxBuffer: 12000,
+    });
+    if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
+    if (this.probe(name) === 'running' ||
+        this.enabled(name, true) !== false ||
+        !this.isManagedWorker(name, target, this.registry())) {
+      throw new Error('Worker identity or stopped state changed during retirement');
+    }
+    // Remove only the exact symlink, never the directory it points to.
+    if (!lstatSync(published).isSymbolicLink() || readlinkSync(published) !== target) {
+      throw new Error('Published worker symlink identity changed');
+    }
+    unlinkSync(published);
+    this.save(registrations.filter((entry) => entry.name !== name));
+    return { changed: true, archived: true, retainedFiles: true };
+  }
+
   /** No digest or script validation means no lifecycle authority. */
   private runSha256(target: string): string | null {
     try {
@@ -396,6 +486,8 @@ export class TermuxServiceAdmin {
         registered,
         protected: protectedService,
         identity,
+        ...(registered && resolved && this.isManagedWorker(name, resolved, registrations)
+          ? { template: 'heartbeat-worker-v1' as const } : {}),
         state: probe(name),
         enabled: this.enabled(name, registered),
       };
@@ -487,19 +579,8 @@ export class TermuxServiceAdmin {
     if (operation === 'register')
       throw new Error('Registration requires an attested PocketHost provisioner');
     const registrations = this.registry();
-    const existing = registrations.find((item) => item.name === name);
-    if (operation === 'unregister') {
-      // Releasing ownership must never orphan a live or boot-enabled unit.
-      // This removes the authority record only; the runit unit and logs
-      // remain for explicit later cleanup under an independently safe gate.
-      const target = this.target(name);
-      if (!existing || this.identity(name, target, registrations) !== 'verified' ||
-          this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
-        throw new Error('Release control requires an attested, stopped and autostart-disabled service');
-      }
-      this.save(registrations.filter((item) => item.name !== name));
-      return { changed: true };
-    }
+    if (operation === 'unregister')
+      throw new Error('Unregister refused: use attested worker archive; project services remain owned');
     const target = this.target(name);
     if (this.identity(name, target, registrations) !== 'verified')
       throw new Error('Service not explicitly registered or identity changed');

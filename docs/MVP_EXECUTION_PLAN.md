@@ -61,6 +61,16 @@ Testy są zaplanowane na bramę zakończenia całego etapu Services.
 
 **Wdrożenie szablonu Add Service (2026-11-14):** commit `b4da49e` i poprawka `291a5ff`. A8 ostatni potwierdzony kod `291a5ff3f1713021e251cb0865cb6f84d481f1ad`, receipt `pockethost-a8-service-creator-symlink-20261114-v1`, `PASS`, PID 9787, HTTP 200, bez zmian chronionych usług, `tests=not-run`. Kreator z wbudowanym, bezpiecznym workerem jest w panelu, ale **nie sprawdzono jeszcze fizycznego stworzenia i uruchomienia takiej usługi**; user-supplied scripts, bezpieczne usuwanie i testy całości są otwarte. Status S1 nadal **IN_PROGRESS**.
 
+**Następny podetap S1/S2 — bezpieczne archiwizowanie workera:** implementacja
+`Archive worker` jest ograniczona do usług `heartbeat-worker-v1` utworzonych
+i nadal zweryfikowanych przez PocketHost. Wymaga zatrzymania i wyłączenia
+autostartu; runit dostaje `sv exit`, a system odpina **wyłącznie** własny
+symlink. Definicja i logi pozostają do późniejszego odzyskania. Ogólny
+`unregister` w panelu/API jest wycofany — usługi projektów Node i cudze
+usługi nie mogą stracić właściciela przez przypadek. To **nie** jest jeszcze
+pełne trwałe usuwanie ani przetestowany przepływ. Zakres i scenariusze testów:
+[S1 runit reuse](S1_RUNIT_REUSE.md). **Status S1/S2: IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

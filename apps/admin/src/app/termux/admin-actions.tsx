@@ -538,6 +538,7 @@ type RunitEntry = {
   registered: boolean
   protected: boolean
   identity?: "verified" | "unregistered" | "legacy" | "changed" | "reserved"
+  template?: "heartbeat-worker-v1"
   state: "running" | "stopped" | "unknown"
   enabled?: boolean | null
 }
@@ -563,7 +564,8 @@ export function RunitServiceActions({
           typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
           ["running", "stopped", "unknown"].includes(item.state) &&
           (item.identity === undefined ||
-            ["verified", "unregistered", "legacy", "changed", "reserved"].includes(item.identity))))
+            ["verified", "unregistered", "legacy", "changed", "reserved"].includes(item.identity)) &&
+          (item.template === undefined || item.template === "heartbeat-worker-v1")))
       throw new Error("Invalid runit inventory")
     setServices(data.services)
     setError(null)
@@ -586,16 +588,12 @@ export function RunitServiceActions({
     } catch { setError("Registered runit service log unavailable.") }
     finally { setBusy(false) }
   }
-  const perform = async (name: "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
+  const perform = async (name: "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
     if (busy || service.protected || isPanelService(service) ||
         (mode === "autostart" && name !== "enable" && name !== "disable") ||
         (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
         !window.confirm(
-      name === "unregister"
-        ? "Release control of " + service.name +
-          "? This requires the service stopped and autostart disabled. " +
-          "Its runit files and logs will remain; this does NOT delete the service."
-        : "Run " + name + " for explicitly registered runit service " + service.name + "?",
+      "Run " + name + " for explicitly registered runit service " + service.name + "?",
     )) return
     setBusy(true); setError(null); setDone(null)
     try {
@@ -609,6 +607,26 @@ export function RunitServiceActions({
       }
     } catch {
       setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
+    } finally { setBusy(false) }
+  }
+  const archiveWorker = async (service: RunitEntry) => {
+    if (busy || service.template !== "heartbeat-worker-v1" ||
+        !service.registered || service.protected ||
+        service.state !== "stopped" || service.enabled !== false ||
+        !window.confirm("Archive PocketHost worker " + service.name +
+          "? This detaches its own runit supervisor and removes it from the service inventory. " +
+          "The run script and logs are retained for recovery; no foreign files are deleted.")) return
+    setBusy(true); setError(null); setDone(null)
+    try {
+      await action({ action: "service-archive", name: "heartbeat-worker-v1", path: service.name })
+      try {
+        await refresh()
+        setDone(service.name + ": worker archived; script and logs retained")
+      } catch {
+        setError("Archive acknowledged but inventory refresh failed. Verify state before any follow-up.")
+      }
+    } catch {
+      setError("Archive refused or unconfirmed. Verify worker identity and stopped state before retrying.")
     } finally { setBusy(false) }
   }
   const createWorker = async () => {
@@ -662,10 +680,11 @@ export function RunitServiceActions({
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service)}>Logs</Button>
-          <Button size="sm" variant="outline"
-            disabled={busy || service.state !== "stopped" || service.enabled !== false}
-            title="Releases ownership only. Requires stopped and autostart disabled; does not remove files."
-            onClick={() => void perform("unregister", service)}>Release control</Button>
+          {service.template === "heartbeat-worker-v1" &&
+            <Button size="sm" variant="outline"
+              disabled={busy || service.state !== "stopped" || service.enabled !== false}
+              title="Archive only the attested PocketHost worker. Keeps its script and logs."
+              onClick={() => void archiveWorker(service)}>Archive worker</Button>}
         </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
           (service.registered ? <>
             <Button size="sm" variant="outline"
@@ -692,7 +711,7 @@ export function RunitServiceActions({
     {mode === "lifecycle" && <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs">
-          A standalone service needs no Project. First available template: safe, local heartbeat worker.
+          Standalone workers need no Project. Only PocketHost-created, attested services can be managed.
         </p>
         <Button size="sm" variant="outline" disabled={busy}
           onClick={() => setCreatorOpen(open => !open)}>
@@ -734,8 +753,9 @@ export function RunitServiceActions({
         <p className="text-muted-foreground text-xs">
           Run a PocketHost-provisioned Node project to create an owned runit unit.
           An arbitrary discovered service cannot be adopted by renaming it or clicking Register.
-          This first standalone template supports safe runit lifecycle qualification;
-          arbitrary application code and external enrollment remain future S1 work.
+          Use Add Service to create a bounded standalone heartbeat worker.
+          Node projects register their own runtimes separately.
+          Custom application code and external enrollment remain future S1 work.
         </p>
         <Button size="sm" variant="outline" render={<Link to="/projects" />}>Open Projects</Button>
       </div>

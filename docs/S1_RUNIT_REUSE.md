@@ -63,10 +63,22 @@ unit, not a fake status indicator:
   adapter accepts the standard `var/service` → `var/sv` symlink **only**
   when the target is already enrolled and re-attested; an external symlink
   cannot gain ownership or reveal a controllable autostart state.
-- Releasing a service from PocketHost management is deliberately distinct
-  from removing it. It is refused unless the service remains attested,
-  stopped and autostart-disabled. The runit files and logs remain for later
-  explicitly guarded cleanup; there is **no disguised delete**.
+- Generic `unregister` has been withdrawn from the browser and refused by
+  the adapter. It could strand an active runit definition without ownership,
+  especially when a service belongs to a Node project.
+- The only reversible retirement operation is **Archive worker** for the
+  built-in standalone template. Before touching a supervisor, PocketHost
+  rechecks the exact original `var/service` symlink, fixed canonical
+  `var/sv/<name>` directory, private creator marker (owner, name, instance,
+  template and run digest), stored registry digest, down state and disabled
+  autostart. It then sends runit's own fixed-argv `sv exit`, re-attests the
+  worker and unlinks **only** the exact published symlink. The registry
+  capability is revoked and the scripts and logs are **retained**, rather than
+  recursively deleting unknown files.
+- Archive is deliberately not presented as permanent deletion or cleanup.
+  Archived definitions still count against the four-worker quota, preventing
+  repeated create/archive from exhausting the host. Recovery/purge of archived
+  files, or cleanup of Node-project runtimes, needs a separate attested policy.
 - The first template is a bounded integration bridge, **not** arbitrary
   standalone app execution. User-controlled Node/Python programs need
   reviewed source declarations and a separate owner-authorization model
@@ -76,6 +88,17 @@ No host package was installed or updated; no unrelated service was changed.
 The complete positive/negative test matrix is reserved for the finished
 Services acceptance gate. S1 remains **IN_PROGRESS** until real application
 source enrollment and recovery/removal semantics are covered.
+
+## Current incomplete acceptance points
+
+The standalone lifecycle has a bounded create path and reversible archive
+path in source. Neither has been executed on a physical test unit yet.
+Do not assert completed S1/S2 or count this as tested merely from FAST FLOW
+build, SHA and HTTP checks. At the Services closure gate, run the approved
+positive/negative matrix: create, duplicate name, reserved-name refusal,
+attestation drift, Start/Stop/logs/autostart, archive prerequisites, and
+confirmation that protected SSH, Local Agent, panel/watch and Node project
+units cannot be archived. Physical reboot remains separate consent.
 
 ## Invariants for next S1 slice
 
