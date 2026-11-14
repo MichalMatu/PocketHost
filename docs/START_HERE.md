@@ -7,12 +7,14 @@ purpose: Smallest safe entrypoint
 
 # PocketHost — minimal context
 
-Read [AGENTS](../AGENTS.md), fresh `main` SHA and one nearest scoped AGENTS.md.
+Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 
-**Current device:** Galaxy A8 Termux is the **only selected PocketHost target**. S22 PocketHost services have been removed; S22 continues unrelated IleStoi services. Do not route further PocketHost commands to S22.
+**Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
-**Immediate goal:** [cold install on A8](HANDOFF_NEXT_CHAT.md), **then** resume product work. The previously implemented FAST FLOW assumes a running, owned panel and hard-coded historical QA checkout; it is **not** the initial A8 installer. A8's paired Local Agent completed a read-only task; Node/npm were absent at the last check.
+**A8 is installed and running.** Guarded cold install and two code → deploy → verify passes on 14 November 2026 returned terminal PASS. Last verified live panel SHA: **`c0777b2397c13c3f758e927f9e39e69da3d36d41`**, HTTP 200; official Termux runit supervises panel/watch. Boot autostart was configured, **not reboot-tested**. GitHub `main` may be ahead of live SHA after docs-only commits.
 
-**Default product flow after A8 install:** [single-pass code → deploy → verify](DEV_ITERATION.md), read actual live SHA and ownership; **no tests by default** until the owner explicitly requests them. Read terminal private agent results, never infer completion from a queue commit. No GitHub Actions, Codex, Work, background scheduler or S22 migration.
+**Immediate goal:** continue [M2–M5 Hosting and host-level service coordination](HANDOFF_NEXT_CHAT.md): registry/ownership, installation, lifecycle, autostart, readiness, log/rollback and SSH/Git management under explicit owner gates. Existing SSH/Local Agent remain protected; Local Agent independent task transport, not owned by panel.
 
-[Final S22/A8 reaudits](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md) · [Closed S22 checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Roadmap](ROADMAP.md).
+**Default workflow:** [single-pass code → deploy → verify](DEV_ITERATION.md) on A8, terminal exact-SHA owner and health readback; **no tests by default** until expressly requested. Docs-only changes never restart or deploy. No new scheduler, Mac, Codex, Work, GitHub Actions, S22 changes or automatic retries.
+
+[Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Historical A8/S22 checkpoint](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md).
