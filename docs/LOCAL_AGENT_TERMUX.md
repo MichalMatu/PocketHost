@@ -29,6 +29,25 @@ A v1 host task uses `mode: "commands"`, `target_host_id`, `target_installation_i
 5. Read the specific task-result path on the same private Git branch. Confirm the immutable ID, target host/installation, terminal `status`, command `exit_code` and its JSON `output`. For deployment PASS, require the nested exact-source receipt, actual live SHA, guarded refresh, healthy panel and unchanged external services. A queue commit, `done` alone or historic receipt is insufficient.
 6. Missing result = **unknown/pending**, not permission to replay. An interrupted or ambiguous command must never be resent with another ID as an automatic retry. Do not operate on unrelated services, expose the private LAN panel publicly or read raw secrets into task outputs.
 
+## Performance watchdog (optional Termux release)
+
+The Local Agent menu shows event-driven execution durations from the
+**selected Samsung** private state when its installed Termux bundle supports
+`observability/task-latency-v1.json`. The same existing read-only diagnostic
+GET exposes a sanitized aggregate of at most 40 task samples: last duration,
+median, p95 and the last 10 result statuses, plus fixed-code warnings.
+The API never serves task IDs, paths, commands or the private history file.
+
+Alerts for recent UNKNOWN/timeouts, repeated execution above five minutes,
+or doubling relative to earlier samples require recorded evidence. An absent
+history is **not healthy**; it is explicitly missing/uninstrumented. The menu's
+existing visible-page GET interval does not create another Agent poll or
+persistent watcher. Closing the page means no browser alert delivery.
+It does not measure queue-to-start or Git result delivery delay. Mac Local
+Agent history is on another machine and **not** claimed by this panel.
+Independent dead-process detection and off-page notification remain an
+uninstalled, separately qualified capability.
+
 ## Installed boundary
 
 Termux Agent uses its app-private runit installation and private Git checkout. Local project service endpoints such as `/api/v1/termux-admin` are **not** enrollment or Git task transport. The admin Local Agent view provides sanitized diagnostics, not a substitute for an authoritative private Git result.
