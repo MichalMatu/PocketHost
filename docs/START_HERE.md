@@ -15,4 +15,4 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and one nearest scoped AGENTS.md.
 
 **Default product flow after A8 install:** [single-pass code → deploy → verify](DEV_ITERATION.md), read actual live SHA and ownership; **no tests by default** until the owner explicitly requests them. Read terminal private agent results, never infer completion from a queue commit. No GitHub Actions, Codex, Work, background scheduler or S22 migration.
 
-[Closed S22 checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Roadmap](ROADMAP.md).
+[Final S22/A8 reaudits](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md) · [Closed S22 checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Roadmap](ROADMAP.md).
