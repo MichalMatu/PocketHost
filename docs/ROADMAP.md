@@ -9,7 +9,8 @@ purpose: Canonical near-term milestones
 
 **Basic:** official-Termux Hosting; **Pro:** optional Android-app capabilities, frozen. Static H2 and Node remain independent.
 
-1. P0 — finish one-task FAST FLOW: targeted QA, owner-only refresh/rollback and exact-SHA terminal result.
+0. **P0 — Galaxy A8 clean bootstrap first:** establish selected Local Agent identity, Node/npm, fresh source, owned-only runit and a verified private DEV panel before any FAST FLOW. Do not reuse the retired S22 panel/QA owner markers. [Handoff](HANDOFF_NEXT_CHAT.md).
+1. P0 — finish one-task FAST FLOW **on the installed A8 panel**: owner-only refresh/rollback and exact-SHA terminal result; focused QA is opt-in on owner instruction.
 2. M2–M3 — disposable owned Node.js project: GitHub/files import → dependency review → build → runit/readiness → update/rollback.
 3. M4 — Hosting Cloudflare/domains/HTTPS, SSH, per-site **HTTP** analytics, files/terminal and backup/restore.
 4. M5 — multi-component projects, storage/secrets and coordinated recovery.

@@ -1,11 +1,14 @@
 ---
-status: active
+status: archived
 owner: core
 last_reviewed: 2026-11-14
 purpose: Password-free Termux recovery checkpoint and safe clean bootstrap
 ---
 
 # Termux clean rebuild — plaintext recovery
+
+> **Superseded on 2026-11-14.** The owner cancelled the clean rebuild of S22 Termux, kept IleStoi and other services running, and selected Galaxy A8 as the fresh PocketHost host. After successful snapshots, the owner manually deleted the Android Downloads `Termux-Recovery` folders and emptied the bin; the final S22 read-only check confirmed those two recovery folders absent. The photoMap POC was removed and its useful tools/source archived to GitHub; Pi production and Pi backup remain. This document is preserved **only as historical evidence** and does not authorize rebuilding, restoring backups, changing S22 services or any standing backup task. See [current checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) and [A8 handoff](HANDOFF_NEXT_CHAT.md).
+
 
 ## Owner's explicit direction (2026-11-14)
 

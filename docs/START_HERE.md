@@ -7,12 +7,12 @@ purpose: Smallest safe entrypoint
 
 # PocketHost — minimal context
 
-Read [AGENTS](../AGENTS.md), fresh `main` and one scoped AGENTS.md.
+Read [AGENTS](../AGENTS.md), fresh `main` SHA and one nearest scoped AGENTS.md.
 
-**Active:** one-pass **code → deploy → verify**, without tests unless the owner explicitly requests them. Samsung Termux Agent is the normal PocketHost executor. The latest independently verified PocketHost panel revision before the next update is `7ba09e8c1010de867816fe5b891b552e6f774db7` (FAST FLOW accepted); **always recheck live ownership and installed SHA**. Git source may be ahead of the live panel.
+**Current device:** Galaxy A8 Termux is the **only selected PocketHost target**. S22 PocketHost services have been removed; S22 continues unrelated IleStoi services. Do not route further PocketHost commands to S22.
 
-**Remote execution:** [Termux task/result contract](LOCAL_AGENT_TERMUX.md), private `MichalMatu/local-agent` branch `agent-control`, exact Samsung installation only. Reject stale task receipts, duplicate IDs, incorrect shell targets, and ambiguous results. Owner-authorized tests are part of the pinned fast-flow task, never a scheduled job.
+**Immediate goal:** [cold install on A8](HANDOFF_NEXT_CHAT.md), **then** resume product work. The previously implemented FAST FLOW assumes a running, owned panel and hard-coded historical QA checkout; it is **not** the initial A8 installer. A8's paired Local Agent completed a read-only task; Node/npm were absent at the last check.
 
-**Current owner goal:** **zero passwords, zero backup encryption**. Two plaintext SQLite backups (one IleStoi, one PhotoMap) are verified in Android Downloads; five temporary duplicate snapshots and the unused Restic password were removed. Full plain `home + usr` TAR task `termux-rebuild-plain-full-archive-20261114-v1` is submitted but its terminal receipt must be checked. Copy off-phone and prove restore before clean-bootstrap with dedicated PocketHost controls. See [Termux rebuild plan](TERMUX_REBUILD_RECOVERY.md). No erase or service stop authorized yet. Preserve independent H2 static Hosting and all external services; Pro/unified APK deferred.
+**Default product flow after A8 install:** [single-pass code → deploy → verify](DEV_ITERATION.md), read actual live SHA and ownership; **no tests by default** until the owner explicitly requests them. Read terminal private agent results, never infer completion from a queue commit. No GitHub Actions, Codex, Work, background scheduler or S22 migration.
 
-[Fast flow](DEV_ITERATION.md) · [Termux Agent](LOCAL_AGENT_TERMUX.md) · [Roadmap](ROADMAP.md) · [Quality](QUALITY_GATES.md).
+[Closed S22 checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Roadmap](ROADMAP.md).

@@ -48,6 +48,13 @@ Agent history is on another machine and **not** claimed by this panel.
 Independent dead-process detection and off-page notification remain an
 uninstalled, separately qualified capability.
 
+
+## Current installation selection: Galaxy A8
+
+The owner selected **Galaxy A8 for all future PocketHost execution**. The old S22 PocketHost panel/watch services are unregistered; independent IleStoi and system services remain. Confirm A8's exact **private host and installation IDs** through the verified private task/result `pockethost-a8-prebootstrap-readonly-handoff-20261114-v1`; do not copy S22 credentials, enrollment, runit definitions or owner records. A8's task intake was verified while Node/npm were missing and SSH/run supervision was not established. Fresh preflight is mandatory.
+
+The existing `fast-flow.mjs` assumes an installed live panel and an S22-specific QA path. **Do not execute it on bare A8.** The first installation requires an owner-scoped, fail-closed cold-bootstrap that produces a new A8-only owner record and stages disabled PocketHost runit services before activation. The installed A8 version must be read back from the device, not inferred from a source commit. See [next-chat handoff](HANDOFF_NEXT_CHAT.md).
+
 ## Installed boundary
 
 Termux Agent uses its app-private runit installation and private Git checkout. Local project service endpoints such as `/api/v1/termux-admin` are **not** enrollment or Git task transport. The admin Local Agent view provides sanitized diagnostics, not a substitute for an authoritative private Git result.
