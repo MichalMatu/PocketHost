@@ -91,7 +91,7 @@ describe("read-only Local Agent menu page", () => {
     vi.stubGlobal("fetch", getter)
     render(<LocalAgentPage />)
     expect(await screen.findByText(/Performance attention required/)).toBeTruthy()
-    expect(screen.getByText("420 s")).toBeTruthy()
+    expect(screen.getAllByText("420 s").length).toBeGreaterThan(1)
     expect(screen.getByText(/At least three of five recent tasks/)).toBeTruthy()
     expect(screen.getByText(/A recent task exceeded its execution budget/)).toBeTruthy()
     expect(screen.getByText(/Times cover task execution only/)).toBeTruthy()
