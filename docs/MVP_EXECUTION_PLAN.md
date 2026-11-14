@@ -59,6 +59,8 @@ oznacza jeszcze obsługi własnego kodu JS/Python ani kompletnego przepływu
 usuwania/rollbacku, więc S1 i S2 nie są ukończone. [Kontrakt](S1_RUNIT_REUSE.md).
 Testy są zaplanowane na bramę zakończenia całego etapu Services.
 
+**Wdrożenie szablonu Add Service (2026-11-14):** commit `b4da49e` i poprawka `291a5ff`. A8 ostatni potwierdzony kod `291a5ff3f1713021e251cb0865cb6f84d481f1ad`, receipt `pockethost-a8-service-creator-symlink-20261114-v1`, `PASS`, PID 9787, HTTP 200, bez zmian chronionych usług, `tests=not-run`. Kreator z wbudowanym, bezpiecznym workerem jest w panelu, ale **nie sprawdzono jeszcze fizycznego stworzenia i uruchomienia takiej usługi**; user-supplied scripts, bezpieczne usuwanie i testy całości są otwarte. Status S1 nadal **IN_PROGRESS**.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
