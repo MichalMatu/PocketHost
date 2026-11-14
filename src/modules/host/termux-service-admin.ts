@@ -32,6 +32,7 @@ const SYSTEM_SERVICE_NAMES = new Set([
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
 const MAX_TEMPLATE_WORKERS = 4;
+export type WorkerTemplate = 'heartbeat-worker-v1' | 'python-heartbeat-v1';
 
 interface Registration {
   name: string;
@@ -49,7 +50,7 @@ export interface TermuxService {
   protected: boolean;
   identity: ServiceIdentity;
   /** Only the fully attested built-in template grants archive capability. */
-  template?: 'heartbeat-worker-v1';
+  template?: WorkerTemplate;
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
 }
@@ -181,8 +182,13 @@ export class TermuxServiceAdmin {
    * one symlink in /var/service and bind the expected script hash through
    * the trusted in-process registry. No additional process supervisor.
    */
-  createManagedWorker(name: string): { changed: boolean; name: string; template: 'heartbeat-worker-v1' } {
+  createManagedWorker(
+    name: string,
+    template: WorkerTemplate = 'heartbeat-worker-v1',
+  ): { changed: boolean; name: string; template: WorkerTemplate } {
     valid(name);
+    if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
+      throw new RangeError('Unsupported owned service template');
     if (isReserved(name)) throw new Error('Protected service');
     if (this.registry().length >= MAX_MANAGED) throw new RangeError('Managed service quota reached');
     const sourceRoot = path.join(PREFIX, 'var', 'sv');
@@ -195,8 +201,8 @@ export class TermuxServiceAdmin {
         throw new Error('Untrusted Termux service directory');
       }
     }
-    // Quota includes previously released definitions, so repeated
-    // create/release cannot fill the Termux filesystem from the LAN.
+    // Both templates share a quota, including already archived definitions,
+    // so LAN clients cannot repeatedly archive and allocate more services.
     const templateCount = readdirSync(sourceRoot).filter((unit) => {
       if (!SERVICE_NAME.test(unit)) return false;
       const marker = path.join(sourceRoot, unit, '.pockethost-service.json');
@@ -205,7 +211,10 @@ export class TermuxServiceAdmin {
         if (!raw) return false;
         const data: unknown = JSON.parse(raw);
         return !!data && typeof data === 'object' &&
-          (data as { template?: string }).template === 'heartbeat-worker-v1';
+          (data as { template?: string }).template !== undefined &&
+          ['heartbeat-worker-v1', 'python-heartbeat-v1'].includes(
+            (data as { template: string }).template,
+          );
       } catch {
         throw new Error('Managed worker inventory unverified');
       }
@@ -214,8 +223,7 @@ export class TermuxServiceAdmin {
     const published = path.join(this.serviceRoot, name);
     const target = path.join(sourceRoot, name);
     const logTarget = path.join(logRoot, name);
-    // Never overwrite, adopt, replace or repair existing directories.
-    // A failed preparation leaves at most an isolated (unpublished) unit.
+    // No adoption, overwrite, repair, remote repo or caller-supplied code.
     for (const location of [published, target, logTarget]) {
       try {
         lstatSync(location);
@@ -225,47 +233,58 @@ export class TermuxServiceAdmin {
       }
     }
     const sh = path.join(PREFIX, 'bin', 'sh');
+    const env = path.join(PREFIX, 'bin', 'env');
     const node = path.join(PREFIX, 'bin', 'node');
+    const python = path.join(PREFIX, 'bin', 'python');
     const svlogd = path.join(PREFIX, 'bin', 'svlogd');
-    for (const binary of [sh, node, svlogd]) {
+    const runtime = template === 'python-heartbeat-v1' ? python : node;
+    for (const binary of [sh, env, runtime, svlogd]) {
       const st = statSync(binary);
-      if (!st.isFile() || (st.mode & 0o111) === 0) throw new Error('Termux runtime unavailable');
+      if (!st.isFile() || (st.mode & 0o111) === 0)
+        throw new Error('Termux runtime unavailable');
     }
-    const runScript = '#!' + sh + '\n' +
-      'exec ' + node + ' -e ' +
-      "'console.log(\"PocketHost worker started\"); setInterval(() => console.log(\"PocketHost worker heartbeat\"), 60000)'\n";
+    const code = template === 'python-heartbeat-v1'
+      ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
+      : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
+    // Each implementation runs only fixed built-in code in an empty
+    // environment; never inherit panel secrets or execute a supplied command.
+    const runScript = '#!' + sh + '\nexec ' + env +
+      ' -i PATH=' + path.join(PREFIX, 'bin') +
+      ' HOME=' + target + ' TMPDIR=' + path.join(PREFIX, 'tmp') +
+      ' ' + runtime + (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
+      "'" + code + "'\n";
     const logScript = '#!' + sh + '\nexec ' + svlogd + ' -tt ' + logTarget + '\n';
     const digest = createHash('sha256').update(runScript).digest('hex');
     mkdirSync(target, { mode: 0o700 });
-    // Always materialize the runit down marker before the runnable script.
+    // Runit sees a stopped service immediately, never an incomplete
+    // executable definition or implicitly enabled autostart policy.
     writeFileSync(path.join(target, 'down'), '', { flag: 'wx', mode: 0o600 });
     mkdirSync(path.join(target, 'log'), { mode: 0o700 });
     mkdirSync(logTarget, { mode: 0o700 });
     writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
     writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
     writeFileSync(path.join(target, '.pockethost-service.json'), JSON.stringify({
-      schema: 1, owner: 'pockethost', name, template: 'heartbeat-worker-v1',
+      schema: 1, owner: 'pockethost', name, template,
       runSha256: digest, instanceId: randomUUID(),
     }) + '\n', { flag: 'wx', mode: 0o600 });
     symlinkSync(target, published);
     this.registerProvisioned(name, { target, runSha256: digest });
-    return { changed: true, name, template: 'heartbeat-worker-v1' };
+    return { changed: true, name, template };
   }
-
 
   /**
    * A service can be archived only if it was created by the built-in
    * standalone provisioner. An enrolled Node project, name prefix, or
    * readable foreign marker never grants archive authority.
    */
-  private isManagedWorker(
+  private managedWorkerTemplate(
     name: string,
     target: string,
     registrations: Registration[],
-  ): boolean {
-    if (this.identity(name, target, registrations) !== 'verified') return false;
+  ): WorkerTemplate | null {
+    if (this.identity(name, target, registrations) !== 'verified') return null;
     const sourceRoot = path.join(PREFIX, 'var', 'sv');
-    if (target !== path.join(sourceRoot, name)) return false;
+    if (target !== path.join(sourceRoot, name)) return null;
     try {
       const published = lstatSync(path.join(this.serviceRoot, name));
       const directory = lstatSync(target);
@@ -273,29 +292,32 @@ export class TermuxServiceAdmin {
           readlinkSync(path.join(this.serviceRoot, name)) !== target ||
           !directory.isDirectory() || directory.isSymbolicLink() ||
           directory.uid !== process.getuid?.() || (directory.mode & 0o022) !== 0) {
-        return false;
+        return null;
       }
       const markerFile = path.join(target, '.pockethost-service.json');
       const markerStat = lstatSync(markerFile);
       if (!markerStat.isFile() || markerStat.isSymbolicLink() ||
           markerStat.nlink !== 1 || markerStat.uid !== process.getuid?.() ||
-          (markerStat.mode & 0o077) !== 0) return false;
+          (markerStat.mode & 0o077) !== 0) return null;
       const raw = safeFile(markerFile);
-      if (!raw) return false;
+      if (!raw) return null;
       const marker: unknown = JSON.parse(raw);
-      if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return false;
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return null;
       const proof = marker as Record<string, unknown>;
       const record = registrations.find((entry) => entry.name === name);
-      return Object.keys(proof).sort().join(',') ===
+      const validProof = Object.keys(proof).sort().join(',') ===
           'instanceId,name,owner,runSha256,schema,template' &&
         proof.schema === 1 && proof.owner === 'pockethost' &&
-        proof.name === name && proof.template === 'heartbeat-worker-v1' &&
+        proof.name === name &&
+        (proof.template === 'heartbeat-worker-v1' ||
+          proof.template === 'python-heartbeat-v1') &&
         typeof proof.instanceId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
         proof.runSha256 === record?.runSha256 &&
         this.runSha256(target) === proof.runSha256;
+      return validProof ? (proof.template as WorkerTemplate) : null;
     } catch {
-      return false;
+      return null;
     }
   }
 
@@ -313,7 +335,7 @@ export class TermuxServiceAdmin {
     if (isReserved(name)) throw new Error('Protected service');
     const registrations = this.registry();
     const target = this.target(name);
-    if (!this.isManagedWorker(name, target, registrations)) {
+    if (!this.managedWorkerTemplate(name, target, registrations)) {
       throw new Error('Only an attested PocketHost template worker can be archived');
     }
     if (this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
@@ -326,7 +348,7 @@ export class TermuxServiceAdmin {
     if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
     if (this.probe(name) === 'running' ||
         this.enabled(name, true) !== false ||
-        !this.isManagedWorker(name, target, this.registry())) {
+        !this.managedWorkerTemplate(name, target, this.registry())) {
       throw new Error('Worker identity or stopped state changed during retirement');
     }
     // Remove only the exact symlink, never the directory it points to.
@@ -486,8 +508,12 @@ export class TermuxServiceAdmin {
         registered,
         protected: protectedService,
         identity,
-        ...(registered && resolved && this.isManagedWorker(name, resolved, registrations)
-          ? { template: 'heartbeat-worker-v1' as const } : {}),
+        ...(registered && resolved
+          ? (() => {
+              const template = this.managedWorkerTemplate(name, resolved, registrations);
+              return template ? { template } : {};
+            })()
+          : {}),
         state: probe(name),
         enabled: this.enabled(name, registered),
       };

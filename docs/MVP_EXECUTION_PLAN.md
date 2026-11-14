@@ -73,6 +73,16 @@ pełne trwałe usuwanie ani przetestowany przepływ. Zakres i scenariusze testó
 
 **Wdrożenie S1/S2 archiwizacji — 2026-11-15:** kod `7c19c3df189518e649a851dc74db17ea04f259fa`, zadanie `pockethost-a8-worker-archive-20261115-v1`, końcowy `PASS`: live SHA `7c19c3df189518e649a851dc74db17ea04f259fa`, PID 19987, HTTP 200, chronione usługi bez zmian, `tests=not-run`. W panelu jest `Archive worker` wyłącznie dla zweryfikowanego, zatrzymanego, bez autostartu workera szablonowego. Usługi Node/SSH/Local Agent nie udostępniają destrukcyjnej operacji; ogólny `unregister` zablokowany. Pliki i logi archiwum pozostają — brak trwałego usuwania, brak odzysku z archiwum i brak zakończenia testów. **Nie zmieniać S1–S6 na `[x]`**.
 
+**Bieżąca implementacja S1 — dwa typy własnego workera:** `Add Service`
+dopuszcza teraz ograniczone, wbudowane szablony Node.js i Python.
+Oba używają jednej rejestracji runit, kontroli integralności, autostartu,
+logów i archiwizacji; nie uruchamiają się automatycznie, dzielą limit
+czterech sztuk i nie przyjmują kodu ani komend przez panel LAN. To **nie**
+oznacza jeszcze wdrażania dowolnej aplikacji Python/Node z repozytorium.
+Rozszerzenie wymaga zatwierdzenia źródła, wersji i uprawnień uruchomienia.
+S1 pozostaje **IN_PROGRESS** do czasu testów i akceptacji całego Services.
+Szczegóły: [kontrakt i granice](S1_RUNIT_REUSE.md).
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

@@ -89,6 +89,30 @@ The complete positive/negative test matrix is reserved for the finished
 Services acceptance gate. S1 remains **IN_PROGRESS** until real application
 source enrollment and recovery/removal semantics are covered.
 
+## S1 fixed Node.js and Python service templates
+
+The standalone `Add Service` provisioner now supports two **fixed** runtime
+templates using the same runit registry, provenance digest, lifecycle controls,
+log path, autostart, and attested archive flow:
+
+- `heartbeat-worker-v1` — Node.js heartbeat
+- `python-heartbeat-v1` — Python heartbeat (isolated `python -I -u`)
+
+The browser can select **only** one of these IDs and a bounded unique
+service name. The run scripts contain the complete, fixed code; they are
+SHA-256-attested and launched with `env -i`, excluding inherited admin
+environment variables and secrets. They bind no network ports. Creation
+does not execute the worker and sets the runit `down` marker before the
+unit is published. The shared quota of four definitions includes archived
+workers, irrespective of runtime. The exact owner marker, path and script
+are checked before either runtime can be archived.
+
+This integrates the *runtime types*, **not arbitrary user application code**.
+For a real program, the next permission boundary is source provenance,
+reviewed execution declarations, immutable releases and an explicit approval
+to launch. Browser-posted shell/script text or a foreign process name
+will not be converted into authority merely because the LAN is trusted.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

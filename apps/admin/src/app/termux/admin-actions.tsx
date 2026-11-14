@@ -533,12 +533,13 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
   </div>
 }
 
+type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1"
 type RunitEntry = {
   name: string
   registered: boolean
   protected: boolean
   identity?: "verified" | "unregistered" | "legacy" | "changed" | "reserved"
-  template?: "heartbeat-worker-v1"
+  template?: WorkerTemplate
   state: "running" | "stopped" | "unknown"
   enabled?: boolean | null
 }
@@ -557,6 +558,7 @@ export function RunitServiceActions({
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
+  const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
   const refresh = React.useCallback(async () => {
     const data = await inspect<{ services: RunitEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
@@ -565,7 +567,8 @@ export function RunitServiceActions({
           ["running", "stopped", "unknown"].includes(item.state) &&
           (item.identity === undefined ||
             ["verified", "unregistered", "legacy", "changed", "reserved"].includes(item.identity)) &&
-          (item.template === undefined || item.template === "heartbeat-worker-v1")))
+          (item.template === undefined ||
+            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1")))
       throw new Error("Invalid runit inventory")
     setServices(data.services)
     setError(null)
@@ -610,7 +613,7 @@ export function RunitServiceActions({
     } finally { setBusy(false) }
   }
   const archiveWorker = async (service: RunitEntry) => {
-    if (busy || service.template !== "heartbeat-worker-v1" ||
+    if (busy || !service.template ||
         !service.registered || service.protected ||
         service.state !== "stopped" || service.enabled !== false ||
         !window.confirm("Archive PocketHost worker " + service.name +
@@ -618,7 +621,7 @@ export function RunitServiceActions({
           "The run script and logs are retained for recovery; no foreign files are deleted.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-archive", name: "heartbeat-worker-v1", path: service.name })
+      await action({ action: "service-archive", name: service.template, path: service.name })
       try {
         await refresh()
         setDone(service.name + ": worker archived; script and logs retained")
@@ -632,11 +635,12 @@ export function RunitServiceActions({
   const createWorker = async () => {
     const name = workerName.trim()
     if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
-      !window.confirm("Create a new stopped PocketHost-owned heartbeat worker " + name +
-        "? This creates one isolated runit service and does not start it.")) return
+      !window.confirm("Create a new stopped PocketHost-owned " +
+        (workerTemplate === "python-heartbeat-v1" ? "Python" : "Node.js") + " worker " +
+        name + "? It uses a fixed, isolated template and will not start automatically.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-create", name: "heartbeat-worker-v1", path: name })
+      await action({ action: "service-create", name: workerTemplate, path: name })
       try {
         await refresh()
         setDone(name + ": stopped worker provisioned; use Start after reviewing ownership")
@@ -664,6 +668,7 @@ export function RunitServiceActions({
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
           <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed · attested" : service.identity === "changed" ? "Identity changed · blocked" : service.identity === "legacy" ? "Legacy record · needs reattestation" : service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
+          {service.template && <Badge variant="outline">{service.template === "python-heartbeat-v1" ? "Python worker" : "Node.js worker"}</Badge>}
         </div>
       </div>
       {service.state === "unknown" && mode === "lifecycle" &&
@@ -680,7 +685,7 @@ export function RunitServiceActions({
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service)}>Logs</Button>
-          {service.template === "heartbeat-worker-v1" &&
+          {service.template &&
             <Button size="sm" variant="outline"
               disabled={busy || service.state !== "stopped" || service.enabled !== false}
               title="Archive only the attested PocketHost worker. Keeps its script and logs."
@@ -721,10 +726,21 @@ export function RunitServiceActions({
       {creatorOpen && <div className="space-y-3 rounded-md border p-3" aria-label="Add standalone service">
         <p className="text-sm font-medium">Create standalone service</p>
         <p className="text-muted-foreground text-xs">
-          Template: Node.js heartbeat worker. It uses fixed PocketHost code, starts stopped
-          and has no network listener or access to a Project. Maximum four built-in workers.
-          Custom scripts and adoption of existing services are not available here.
+          Choose a fixed Node.js or Python heartbeat worker. Both use isolated
+          built-in code, have no network listener and start stopped with autostart
+          disabled. Maximum four total workers. Importing custom scripts and
+          adopting external processes are not available through LAN.
         </p>
+        <div className="flex flex-wrap gap-2" aria-label="Worker runtime">
+          <Button size="sm" disabled={busy}
+            variant={workerTemplate === "heartbeat-worker-v1" ? "secondary" : "outline"}
+            aria-pressed={workerTemplate === "heartbeat-worker-v1"}
+            onClick={() => setWorkerTemplate("heartbeat-worker-v1")}>Node.js</Button>
+          <Button size="sm" disabled={busy}
+            variant={workerTemplate === "python-heartbeat-v1" ? "secondary" : "outline"}
+            aria-pressed={workerTemplate === "python-heartbeat-v1"}
+            onClick={() => setWorkerTemplate("python-heartbeat-v1")}>Python</Button>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}
@@ -753,9 +769,9 @@ export function RunitServiceActions({
         <p className="text-muted-foreground text-xs">
           Run a PocketHost-provisioned Node project to create an owned runit unit.
           An arbitrary discovered service cannot be adopted by renaming it or clicking Register.
-          Use Add Service to create a bounded standalone heartbeat worker.
-          Node projects register their own runtimes separately.
-          Custom application code and external enrollment remain future S1 work.
+          Use Add Service to create a bounded Node.js or Python service.
+          Owned Node projects register their runtimes separately; user code
+          and external adoption require source/ownership qualification.
         </p>
         <Button size="sm" variant="outline" render={<Link to="/projects" />}>Open Projects</Button>
       </div>

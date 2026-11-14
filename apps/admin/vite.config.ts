@@ -1491,17 +1491,16 @@ function termuxAdminApi(): Plugin {
               return services.logs(input.path ?? "")
             }
             if (input.action === "service-create") {
-              // Only this shipped fixed, non-user-programmable worker template.
-              // No browser-supplied command, source, path, executable or port.
-              if (input.name !== "heartbeat-worker-v1" ||
+              // Two fixed runtimes, no caller-supplied program, shell, path or port.
+              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service template");
               }
-              return services.createManagedWorker(input.path ?? "")
+              return services.createManagedWorker(input.path ?? "", input.name)
             }
             if (input.action === "service-archive") {
-              // A separate, narrow route; never generic delete/unregister.
-              if (input.name !== "heartbeat-worker-v1" ||
+              // Narrow non-destructive archive, never generic unlink or adoption.
+              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service archive");
               }
