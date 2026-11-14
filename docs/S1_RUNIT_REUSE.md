@@ -77,8 +77,9 @@ unit, not a fake status indicator:
   recursively deleting unknown files.
 - Archive is deliberately not presented as permanent deletion or cleanup.
   Archived definitions still count against the four-worker quota, preventing
-  repeated create/archive from exhausting the host. Recovery/purge of archived
-  files, or cleanup of Node-project runtimes, needs a separate attested policy.
+  repeated create/archive from exhausting the host. An attested **Restore service**
+  inverse now exists, but permanent purge of archived files and cleanup of
+  Node-project runtimes remain separately gated.
 - The first template is a bounded integration bridge, **not** arbitrary
   standalone app execution. User-controlled Node/Python programs need
   reviewed source declarations and a separate owner-authorization model
@@ -112,6 +113,31 @@ For a real program, the next permission boundary is source provenance,
 reviewed execution declarations, immutable releases and an explicit approval
 to launch. Browser-posted shell/script text or a foreign process name
 will not be converted into authority merely because the LAN is trusted.
+
+## S1/S2 archived-worker recovery contract (code complete, not qualified)
+
+The standalone Node.js and Python templates now share a **private archive ledger**
+separate from the active service authority registry. Archive first records
+the exact verified instance ID, canonical definition path, template and run
+digest before unpublishing the runit symlink. The script and logs remain
+unchanged. `Runit services` lists archived entries as **restorable** or
+**identity changed**.
+
+`Restore service` is the inverse of archive, not an import feature. It
+refuses any currently published name, active registration, missing or
+modified original marker, non-private definition, missing `down` marker,
+modified run-script digest, altered log supervisor or non-builtin source.
+The expected SHA-256 is recomputed from the fixed template, independently
+of both the marker and the saved archive record. A restore re-links only
+the exact original definition, passes it through `registerProvisioned`
+and removes the archive record. **It never starts the worker or enables
+autostart.** The four-unit quota counts archived definitions.
+
+Interruption and incomplete writes are fail-closed. A partially published
+unit is not automatically retried, adopted or restarted; a human must
+inspect the preserved owner and filesystem markers before any repair.
+This remains **unqualified on physical A8**, and the prior successful
+FAST FLOW receipts apply to earlier deployed code only.
 
 ## Current incomplete acceptance points
 

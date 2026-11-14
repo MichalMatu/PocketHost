@@ -534,6 +534,11 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
 }
 
 type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1"
+type ArchivedEntry = {
+  name: string
+  template: WorkerTemplate
+  identity: "restorable" | "changed"
+}
 type RunitEntry = {
   name: string
   registered: boolean
@@ -552,6 +557,7 @@ export function RunitServiceActions({
   refreshToken = 0, mode = "lifecycle",
 }: { refreshToken?: number; mode?: "lifecycle" | "autostart" }) {
   const [services, setServices] = React.useState<RunitEntry[] | null>(null)
+  const [archived, setArchived] = React.useState<ArchivedEntry[]>([])
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
@@ -560,7 +566,7 @@ export function RunitServiceActions({
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
   const refresh = React.useCallback(async () => {
-    const data = await inspect<{ services: RunitEntry[] }>("services")
+    const data = await inspect<{ services: RunitEntry[]; archived?: ArchivedEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
         !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
           typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
@@ -570,14 +576,18 @@ export function RunitServiceActions({
           (item.template === undefined ||
             item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1")))
       throw new Error("Invalid runit inventory")
+    if (!Array.isArray(data.archived) || data.archived.length > 4 ||
+        !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
+          ["heartbeat-worker-v1", "python-heartbeat-v1"].includes(item.template) &&
+          ["restorable", "changed"].includes(item.identity)))
+      throw new Error("Invalid archived worker inventory")
+    setArchived(data.archived)
     setServices(data.services)
     setError(null)
   }, [])
   React.useEffect(() => {
     let active = true
-    void inspect<{ services: RunitEntry[] }>("services").then(result => {
-      if (active) setServices(result.services)
-    }).catch(() => { if (active) setError("Runit services unavailable") })
+    void refresh().catch(() => { if (active) setError("Runit services unavailable") })
     return () => { active = false }
   }, [refreshToken])
   const readServiceLogs = async (service: RunitEntry) => {
@@ -630,6 +640,26 @@ export function RunitServiceActions({
       }
     } catch {
       setError("Archive refused or unconfirmed. Verify worker identity and stopped state before retrying.")
+    } finally { setBusy(false) }
+  }
+  const restoreWorker = async (entry: ArchivedEntry) => {
+    if (busy || entry.identity !== "restorable" ||
+        !window.confirm("Restore archived " +
+          (entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
+          " service " + entry.name +
+          "? The restored service stays stopped with autostart disabled. " +
+          "No code will be executed.")) return
+    setBusy(true); setError(null); setDone(null)
+    try {
+      await action({ action: "service-restore", name: entry.template, path: entry.name })
+      try {
+        await refresh()
+        setDone(entry.name + ": restored and stopped; verify ownership before starting")
+      } catch {
+        setError("Restore acknowledged but inventory refresh failed. Verify before any lifecycle action.")
+      }
+    } catch {
+      setError("Restore refused or unconfirmed. Check archived identity; do not retry automatically.")
     } finally { setBusy(false) }
   }
   const createWorker = async () => {
@@ -791,6 +821,25 @@ export function RunitServiceActions({
         </p>
         {services.filter(service => service.protected || isPanelService(service)).map(serviceRow)}
       </section>}
+    {mode === "lifecycle" && archived.length > 0 && <section className="space-y-2 rounded-md border p-3"
+      aria-label="Archived PocketHost workers">
+      <p className="text-sm font-medium">Archived workers ({archived.length})</p>
+      <p className="text-xs text-muted-foreground">
+        Archive retains service code and logs. Restore re-attests the exact original
+        definition and returns it stopped with autostart disabled; it cannot adopt an external unit.
+      </p>
+      {archived.map(entry => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={entry.name}>
+        <div className="space-y-1">
+          <p className="text-sm font-medium">{entry.name}</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline">{entry.template === "python-heartbeat-v1" ? "Python" : "Node.js"}</Badge>
+            <Badge variant="outline">{entry.identity === "restorable" ? "Archived · verified" : "Identity changed · blocked"}</Badge>
+          </div>
+        </div>
+        <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+          onClick={() => void restoreWorker(entry)}>Restore service</Button>
+      </div>)}
+    </section>}
     {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>

@@ -1392,7 +1392,7 @@ function termuxAdminApi(): Plugin {
             const mode = url.searchParams.get("mode")
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
-              mode === "services" ? { services: services.list() } :
+              mode === "services" ? { services: services.list(), archived: services.archivedWorkers() } :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
@@ -1505,6 +1505,15 @@ function termuxAdminApi(): Plugin {
                 throw new RangeError("Unsupported service archive");
               }
               return await services.archiveManagedWorker(input.path ?? "")
+            }
+            if (input.action === "service-restore") {
+              // Restore only a previously recorded, stopped and fully attested
+              // builtin worker; no browser-supplied path, run script or PID.
+              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
+                throw new RangeError("Unsupported service restoration");
+              }
+              return services.restoreArchivedWorker(input.path ?? "", input.name)
             }
             if (input.action === "service") {
               if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))

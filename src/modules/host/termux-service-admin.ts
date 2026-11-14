@@ -41,6 +41,19 @@ interface Registration {
   /** Missing only for pre-S1 legacy entries: these are read-only. */
   runSha256?: string;
 }
+interface ArchivedWorker {
+  name: string;
+  target: string;
+  template: WorkerTemplate;
+  instanceId: string;
+  runSha256: string;
+  archivedAt: string;
+}
+export interface ArchivedWorkerSummary {
+  name: string;
+  template: WorkerTemplate;
+  identity: 'restorable' | 'changed';
+}
 type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'reserved';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
@@ -53,6 +66,41 @@ export interface TermuxService {
   template?: WorkerTemplate;
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
+}
+
+/**
+ * Fixed, exact source identity for both available standalone templates.
+ * This function is the allowed execution policy, not merely a display
+ * label; recovery re-computes the same SHA-256 before re-enrollment.
+ */
+function builtinWorkerRunScript(template: WorkerTemplate, target: string): string {
+  if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
+    throw new RangeError('Invalid builtin worker');
+  if (target !== path.join(PREFIX, 'var', 'sv', path.basename(target)))
+    throw new Error('Unexpected builtin target path');
+  const sh = path.join(PREFIX, 'bin', 'sh');
+  const env = path.join(PREFIX, 'bin', 'env');
+  const runtime = path.join(PREFIX, 'bin', template === 'python-heartbeat-v1' ? 'python' : 'node');
+  const code = template === 'python-heartbeat-v1'
+    ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
+    : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
+  return '#!' + sh + '\nexec ' + env +
+    ' -i PATH=' + path.join(PREFIX, 'bin') +
+    ' HOME=' + target + ' TMPDIR=' + path.join(PREFIX, 'tmp') +
+    ' ' + runtime + (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
+    "'" + code + "'\n";
+}
+
+/**
+ * Runit's log child executes its own script. Reattest this exact fixed
+ * source as well: verifying only the main run script is insufficient.
+ */
+function builtinWorkerLogScript(name: string): string {
+  valid(name);
+  const sh = path.join(PREFIX, 'bin', 'sh');
+  const svlogd = path.join(PREFIX, 'bin', 'svlogd');
+  const logTarget = path.join(PREFIX, 'var', 'log', 'sv', name);
+  return '#!' + sh + '\nexec ' + svlogd + ' -tt ' + logTarget + '\n';
 }
 
 function valid(name: string): void {
@@ -83,6 +131,7 @@ function safeFile(file: string): string | null {
 export class TermuxServiceAdmin {
   private readonly serviceRoot: string;
   private readonly registerFile: string;
+  private readonly archiveFile: string;
   constructor(
     serviceRoot = path.join(PREFIX, 'var', 'service'),
     registerFile = path.join(
@@ -95,6 +144,7 @@ export class TermuxServiceAdmin {
   ) {
     this.serviceRoot = serviceRoot;
     this.registerFile = registerFile;
+    this.archiveFile = path.join(path.dirname(registerFile), 'h3-archived-workers.json');
   }
 
   private registry(): Registration[] {
@@ -152,6 +202,179 @@ export class TermuxServiceAdmin {
       }
       throw error;
     }
+  }
+
+  /**
+   * Private archive ledger is separate from live service authority. A marker
+   * alone can never adopt a foreign or abandoned service into the registry.
+   */
+  private archivedRegistry(): ArchivedWorker[] {
+    try {
+      const file = lstatSync(this.archiveFile);
+      if (!file.isFile() || file.isSymbolicLink() || file.nlink !== 1 ||
+          file.uid !== process.getuid?.() || (file.mode & 0o077) !== 0)
+        throw new Error('Unsafe archive ledger permissions');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+    const raw = safeFile(this.archiveFile);
+    if (raw === null) throw new Error('Archive ledger disappeared during read');
+    const value: unknown = JSON.parse(raw);
+    if (!Array.isArray(value) || value.length > MAX_TEMPLATE_WORKERS)
+      throw new Error('Invalid archived worker ledger');
+    const seen = new Set<string>();
+    return value.map((candidate: unknown) => {
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
+        throw new Error('Invalid archived worker entry');
+      const v = candidate as Record<string, unknown>;
+      if (Object.keys(v).sort().join(',') !==
+            'archivedAt,instanceId,name,runSha256,target,template' ||
+          typeof v.name !== 'string' || typeof v.target !== 'string' ||
+          typeof v.instanceId !== 'string' || typeof v.runSha256 !== 'string' ||
+          typeof v.archivedAt !== 'string' ||
+          (v.template !== 'heartbeat-worker-v1' && v.template !== 'python-heartbeat-v1') ||
+          !/^[0-9a-f-]{36}$/.test(v.instanceId) ||
+          !/^[a-f0-9]{64}$/.test(v.runSha256) ||
+          !Number.isFinite(Date.parse(v.archivedAt)) ||
+          v.target !== path.join(PREFIX, 'var', 'sv', v.name) ||
+          seen.has(v.name)) throw new Error('Untrusted archived worker entry');
+      valid(v.name);
+      if (isReserved(v.name)) throw new Error('Protected archive name');
+      seen.add(v.name);
+      return v as unknown as ArchivedWorker;
+    });
+  }
+
+  private saveArchived(items: ArchivedWorker[]): void {
+    if (items.length > MAX_TEMPLATE_WORKERS) throw new RangeError('Archive quota reached');
+    const folder = path.dirname(this.archiveFile);
+    mkdirSync(folder, { recursive: true, mode: 0o700 });
+    const parent = lstatSync(folder);
+    if (!parent.isDirectory() || parent.isSymbolicLink() ||
+        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0)
+      throw new Error('Unsafe archive state directory');
+    // Refuse an existing archive with unsafe permissions or identity.
+    this.archivedRegistry();
+    const temporary = path.join(folder, '.archived-worker-' + randomUUID());
+    writeFileSync(temporary, JSON.stringify(items) + '\n', { flag: 'wx', mode: 0o600 });
+    try {
+      renameSync(temporary, this.archiveFile);
+    } finally {
+      if (existsSync(temporary)) rmSync(temporary, { force: true });
+    }
+  }
+
+  /** Never trust an archival log subprocess without checking its source. */
+  private fixedWorkerLogIdentity(name: string, target: string): boolean {
+    try {
+      const logDir = path.join(target, 'log');
+      const logTarget = path.join(PREFIX, 'var', 'log', 'sv', name);
+      for (const folder of [logDir, logTarget]) {
+        const stat = lstatSync(folder);
+        if (!stat.isDirectory() || stat.isSymbolicLink() ||
+            stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0)
+          return false;
+      }
+      const script = path.join(logDir, 'run');
+      const stat = lstatSync(script);
+      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
+          stat.uid !== process.getuid?.() || (stat.mode & 0o022) !== 0 ||
+          (stat.mode & 0o111) === 0 || stat.size > 20000)
+        return false;
+      return readFileSync(script, 'utf8') === builtinWorkerLogScript(name);
+    } catch {
+      return false;
+    }
+  }
+
+  private offlineWorkerIdentity(record: ArchivedWorker): boolean {
+    try {
+      const name = record.name;
+      const target = path.join(PREFIX, 'var', 'sv', name);
+      if (target !== record.target || this.registry().some((item) => item.name === name))
+        return false;
+      const published = path.join(this.serviceRoot, name);
+      try {
+        lstatSync(published);
+        return false;
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') return false;
+      }
+      const root = lstatSync(this.serviceRoot);
+      const dir = lstatSync(target);
+      if (!root.isDirectory() || root.isSymbolicLink() ||
+          !dir.isDirectory() || dir.isSymbolicLink() ||
+          dir.uid !== process.getuid?.() || (dir.mode & 0o077) !== 0 ||
+          realpathSync(target) !== target ||
+          this.runSha256(target) !== record.runSha256 ||
+          createHash('sha256')
+            .update(builtinWorkerRunScript(record.template, target))
+            .digest('hex') !== record.runSha256 ||
+          !this.fixedWorkerLogIdentity(name, target))
+        return false;
+      const down = lstatSync(path.join(target, 'down'));
+      if (!down.isFile() || down.isSymbolicLink() ||
+          down.uid !== process.getuid?.() || (down.mode & 0o077) !== 0)
+        return false;
+      const markerFile = path.join(target, '.pockethost-service.json');
+      const markerStat = lstatSync(markerFile);
+      if (!markerStat.isFile() || markerStat.isSymbolicLink() ||
+          markerStat.nlink !== 1 || markerStat.uid !== process.getuid?.() ||
+          (markerStat.mode & 0o077) !== 0)
+        return false;
+      const markerRaw = safeFile(markerFile);
+      if (!markerRaw) return false;
+      const marker: unknown = JSON.parse(markerRaw);
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return false;
+      const m = marker as Record<string, unknown>;
+      return Object.keys(m).sort().join(',') ===
+          'instanceId,name,owner,runSha256,schema,template' &&
+        m.schema === 1 && m.owner === 'pockethost' &&
+        m.name === name && m.template === record.template &&
+        m.instanceId === record.instanceId && m.runSha256 === record.runSha256;
+    } catch {
+      return false;
+    }
+  }
+
+  archivedWorkers(): ArchivedWorkerSummary[] {
+    return this.archivedRegistry().map((item) => ({
+      name: item.name,
+      template: item.template,
+      identity: this.offlineWorkerIdentity(item) ? 'restorable' : 'changed',
+    }));
+  }
+
+  /**
+   * Restore only a previously archived, exact, private worker definition.
+   * The down marker remains in place: restoring grants ownership but does
+   * not start the process or enable Android/runit autostart.
+   */
+  restoreArchivedWorker(
+    name: string,
+    template: WorkerTemplate,
+  ): { changed: boolean; restored: boolean; started: false } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
+      throw new RangeError('Invalid archived worker template');
+    const archived = this.archivedRegistry();
+    const record = archived.find((item) => item.name === name);
+    if (!record || record.template !== template || !this.offlineWorkerIdentity(record))
+      throw new Error('Archived worker identity could not be attested');
+    if (this.registry().length >= MAX_MANAGED)
+      throw new RangeError('Managed service quota reached');
+    // Validate all state before publication. Never adopt an existing entry.
+    const published = path.join(this.serviceRoot, name);
+    symlinkSync(record.target, published);
+    // If registration unexpectedly fails, leave an inert down-marked unit
+    // for explicit investigation; no implicit retry or unsafe foreign unlink.
+    this.registerProvisioned(name, {
+      target: record.target, runSha256: record.runSha256,
+    });
+    this.saveArchived(archived.filter((item) => item.name !== name));
+    return { changed: true, restored: true, started: false };
   }
 
   private target(name: string): string {
@@ -243,17 +466,8 @@ export class TermuxServiceAdmin {
       if (!st.isFile() || (st.mode & 0o111) === 0)
         throw new Error('Termux runtime unavailable');
     }
-    const code = template === 'python-heartbeat-v1'
-      ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
-      : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
-    // Each implementation runs only fixed built-in code in an empty
-    // environment; never inherit panel secrets or execute a supplied command.
-    const runScript = '#!' + sh + '\nexec ' + env +
-      ' -i PATH=' + path.join(PREFIX, 'bin') +
-      ' HOME=' + target + ' TMPDIR=' + path.join(PREFIX, 'tmp') +
-      ' ' + runtime + (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
-      "'" + code + "'\n";
-    const logScript = '#!' + sh + '\nexec ' + svlogd + ' -tt ' + logTarget + '\n';
+    const runScript = builtinWorkerRunScript(template, target);
+    const logScript = builtinWorkerLogScript(name);
     const digest = createHash('sha256').update(runScript).digest('hex');
     mkdirSync(target, { mode: 0o700 });
     // Runit sees a stopped service immediately, never an incomplete
@@ -315,7 +529,14 @@ export class TermuxServiceAdmin {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
         proof.runSha256 === record?.runSha256 &&
         this.runSha256(target) === proof.runSha256;
-      return validProof ? (proof.template as WorkerTemplate) : null;
+      const expectedDigest = (proof.template === 'heartbeat-worker-v1' ||
+        proof.template === 'python-heartbeat-v1')
+        ? createHash('sha256')
+            .update(builtinWorkerRunScript(proof.template, target)).digest('hex')
+        : null;
+      return validProof && proof.runSha256 === expectedDigest &&
+        this.fixedWorkerLogIdentity(name, target)
+        ? (proof.template as WorkerTemplate) : null;
     } catch {
       return null;
     }
@@ -355,6 +576,28 @@ export class TermuxServiceAdmin {
     if (!lstatSync(published).isSymbolicLink() || readlinkSync(published) !== target) {
       throw new Error('Published worker symlink identity changed');
     }
+    const rawMarker = safeFile(path.join(target, '.pockethost-service.json'));
+    if (!rawMarker) throw new Error('Worker archive marker missing');
+    const marker: unknown = JSON.parse(rawMarker);
+    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+      throw new Error('Invalid worker archive marker');
+    const proof = marker as Record<string, unknown>;
+    const archived = this.archivedRegistry();
+    if (archived.some((item) => item.name === name) ||
+        archived.length >= MAX_TEMPLATE_WORKERS ||
+        !this.managedWorkerTemplate(name, target, this.registry()) ||
+        typeof proof.instanceId !== 'string' ||
+        typeof proof.runSha256 !== 'string' ||
+        (proof.template !== 'heartbeat-worker-v1' &&
+          proof.template !== 'python-heartbeat-v1')) {
+      throw new Error('Worker archiving identity or quota changed');
+    }
+    // Stage the immutable recovery record before unlinking the unit.
+    this.saveArchived([...archived, {
+      name, target, template: proof.template,
+      instanceId: proof.instanceId, runSha256: proof.runSha256,
+      archivedAt: new Date().toISOString(),
+    }]);
     unlinkSync(published);
     this.save(registrations.filter((entry) => entry.name !== name));
     return { changed: true, archived: true, retainedFiles: true };

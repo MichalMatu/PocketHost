@@ -83,6 +83,17 @@ Rozszerzenie wymaga zatwierdzenia źródła, wersji i uprawnień uruchomienia.
 S1 pozostaje **IN_PROGRESS** do czasu testów i akceptacji całego Services.
 Szczegóły: [kontrakt i granice](S1_RUNIT_REUSE.md).
 
+**S1/S2 — domknięcie przywracania archiwum (kod, bez odbioru):**
+dodano oddzielny prywatny rejestr archiwalnych workerów Node.js/Python,
+`Archived workers → Restore service` oraz weryfikację dokładnie tego
+samego skryptu głównego i logującego, identyfikatora instancji, ścieżki,
+skrótu i pliku `down`. Przywrócenie nie uruchamia usługi ani nie włącza
+autostartu. Przerwane operacje pozostają w stanie HOLD, bez automatycznego
+przejęcia usług lub ponowień. **Wdrożenie tej i poprzedniej zmiany
+Python na A8 nie zostało jeszcze potwierdzone**, więc pełne S1/S2
+pozostają `[ ]`. Zgodnie z planem testy funkcjonalne i akceptacja
+dopiero po ukończeniu całego etapu Services.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
