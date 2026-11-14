@@ -87,6 +87,37 @@ The deeper read-only inventory and full TAR member-list check
 Do not make another space-consuming archive or delete data until the result
 is checked.
 
+## BACKUPS legacy 7z and full-TAR listing results
+
+Detailed Samsung inspection (tasks
+`termux-rebuild-backups-deep-and-tar-readonly-20261114-v1` and
+`termux-rebuild-7z-and-full-tar-verify-20261114-v1`) established:
+
+- `/storage/emulated/0/BACKUPS/PhotoMap/PhotoMap.7z`:
+  9,766,147,653 bytes, dated 2026-08-07, 41,210 entries.
+- `/storage/emulated/0/BACKUPS/PhotoMap/backups.7z`:
+  9,301,142,643 bytes, dated 2026-08-07, 4,052 entries.
+- `/storage/emulated/0/BACKUPS/WreckScanner/WreckScanner.7z`:
+  2,893,034,596 bytes, dated 2026-08-07, 29,676 entries.
+
+The 7z tool listed all three without a password (`listExit=0`,
+`encryptedEntries=0`); do not infer payload integrity or deduplication
+from listing alone. These Android-shared archives are **not inside** the
+Termux private `home + usr` TAR. Keep them until the user approves cleanup
+after independent verified backup and unique-data review.
+
+The 33,027,737,600-byte partial TAR's entire 1,021,353-entry index
+was read successfully (`tar -tf` exit 0, no read warnings) and includes
+IleStoi DB, 778 field/390 private photo directory roots, PhotoMap managed
+media directory, Local Agent, SSH, Cloudflare, runit, PocketHost, and
+Termux `usr/etc`. This validates member headers and required path presence,
+not a complete file-by-file payload restore. Prior creation emitted 16 warnings
+without a nonzero TAR exit. A scoped task
+`termux-rebuild-promote-plain-tar-after-restore-samples-20261114-v1`
+was submitted to extract and verify two SQLite samples, SHA-256 the TAR,
+promote it only after success, and update the recovery manifest. **Do not
+claim promotion until its terminal receipt is checked.**
+
 ## Remaining protection gates
 
 1. Check full plaintext TAR terminal receipt, size, SHA-256 and representative
