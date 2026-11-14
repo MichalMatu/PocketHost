@@ -153,3 +153,69 @@ copy with checksum verification**; there is no evidence of this yet.
 
 No scheduler, GitHub Actions, Codex, Work, external service restarts or
 unapproved erasure. All backups for this recovery must remain password-free.
+
+## Owner-directed native plaintext backups and legacy cleanup (2026-11-14)
+
+**Do not use passworded Restic for new backups.** Native projects are authoritative:
+
+- **IleStoi** runs on Samsung. Its own
+  `scripts/backup_data.py zip --output ... --no-image-check` produces a
+  ZIP containing an SQLite online snapshot plus both photo trees, without
+  optional secrets, password, or encryption. Verified receipt
+  `termux-ilestoi-native-zip-plaintext-backup-20261114-v1`:
+  `PASS`, CRC check passed, 2,640,078,896 bytes, 1,042 field-media files,
+  390 private-media files, `secretEntries=[]`.
+  Android:
+  `Download/Termux-Recovery/Project-Native-20261114-v1/ilestoi-current-data-and-photos.zip`
+  and adjacent `.sha256`.
+- **PhotoMap production runs on Raspberry Pi Zero 2 W**, not on Samsung.
+  The native `scripts/backup_local_data.sh --apply --no-prune --json`
+  completed on the Pi, followed by replacing the script's copied SQLite file
+  inside the backup with a consistent SQLite Online Backup snapshot.
+  Receipt `pi-photomap-native-no-password-backup-20261114-v1`:
+  `PASS`, database 19,574,784 bytes, SHA256
+  `24814f4084ef6989e4e7966d77d9f7cf88f033cd619d8c37eb66516adf3f3ede`,
+  195 places, 1,082 photos, 1,098 private media files (4,084,122,798 bytes),
+  1,098 public media files (154,437,872 bytes).
+  Location **on Pi only**:
+  `/home/michal/src/PhotoMaps/backups/local-20261114-173500`.
+  Native backup is plain and no pruning of prior Pi backups occurred.
+  Direct trusted passwordless `ssh zero2` from Samsung failed (exit 255);
+  **no PhotoMap production backup transfer to Samsung has been confirmed**.
+- The owner-approved old Android
+  `/storage/emulated/0/BACKUPS` folder has been deleted by
+  `termux-delete-legacy-android-backups-after-native-pass-20261114-v1`.
+  Only exactly three verified August 2026 archives were removed
+  (`PhotoMap/PhotoMap.7z`, `PhotoMap/backups.7z`,
+  `WreckScanner/WreckScanner.7z`): 21,960,324,892 bytes total,
+  around 20.45 GiB. Receipt:
+  `Download/Termux-Recovery/Project-Native-20261114-v1/legacy-backups-removed.json`.
+  Old archive history is intentionally no longer available in that folder.
+- A *separate* historical passworded Restic repository existed inside
+  `~/WreckScanner/WreckScanner/.backups/wreckscanner-restic`, not in Android
+  `BACKUPS`. After the current IleStoi ZIP passed, its dedicated runit
+  `wreckscanner-backup` worker was put DOWN with a persistent `down`
+  marker (the boot hook respects this flag). First cleanup task halted
+  conservatively after detecting a possible process match; corrected task
+  `termux-ilestoi-retire-restic-repo-after-stop-20261114-v2` returned
+  `PASS`: historical Restic repo (~2,587,466 KiB) and
+  `.restic_password` removed, web service `wreckscanner` still running.
+  The old auto-backup worker must **not be restarted** unless the owner
+  explicitly requests migration; new backups are manual/plain.
+- **Caveat:** the previously validated 33 GB plaintext full Termux TAR
+  predates the Restic cleanup; it may still contain the historic repo and
+  password as data within an unencrypted TAR. The TAR itself has no password.
+  It remains an emergency rescue archive; do not overwrite or purge it without
+  an independently verified replacement. No device reinstall authorized.
+
+## Next gates
+
+1. PhotoMap Pi backup should be exported to an independent device/Android when
+   a verified secure transfer route is available. Do not call Pi-local storage
+   an off-device backup.
+2. Existing Samsung rescue TAR and IleStoi ZIP must be copied off the phone
+   and verified by SHA-256 before erasing Termux.
+3. A clean Termux rebuild remains separate and requires owner approval.
+4. Project documentation and future backup UI must reflect the choice of
+   **native plaintext backups**, not legacy passworded Restic automation.
+
