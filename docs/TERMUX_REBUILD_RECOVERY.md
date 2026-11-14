@@ -71,13 +71,21 @@ Samsung task `termux-rebuild-plain-full-archive-20261114-v1` has a terminal
 **16 warning lines**, so the safety wrapper deliberately refused to mark it
 ready. A `termux-home-usr.tar.partial` file remains; do **not** assume it is
 usable or delete it blindly. No validated `termux-home-usr.tar` or checksum
-has been confirmed. Snapshot DBs remain independently checked. The read-only
-BACKUPS folder scan task `termux-rebuild-backups-folder-scope-readonly-20261114-v1`
-failed before command startup (exit 125), so **21 GiB BACKUPS content is still
-unknown**. A scoped follow-up inventory
-`termux-rebuild-backups-diagnostics-readonly-20261114-v2` was submitted.
-Investigate partial TAR, its actual scope and backup directories before any
-space-consuming copy or cleanup.
+has been confirmed. Snapshot DBs remain independently checked. The first read-only
+BACKUPS scan `termux-rebuild-backups-folder-scope-readonly-20261114-v1`
+failed before command startup (exit 125). Follow-up task
+`termux-rebuild-backups-diagnostics-readonly-20261114-v2` completed PASS:
+Android `/storage/emulated/0/BACKUPS` contains `PhotoMap` (18,638,728 KiB)
+and `WreckScanner` (2,828,012 KiB), total 21,466,743 KiB. This folder is
+**outside** the private `home + usr` TAR and cannot be treated as disposable
+without deeper content comparison. Downloads `Plain-20261114-v1` contains
+2 checked SQLite files, a package list and manifest, plus an **unqualified**
+`termux-home-usr.tar.partial` of **33,027,737,600 bytes**; no final TAR and
+no checksum file. Android Downloads free at inspection: 89,890 MiB.
+The deeper read-only inventory and full TAR member-list check
+`termux-rebuild-backups-deep-and-tar-readonly-20261114-v1` were submitted.
+Do not make another space-consuming archive or delete data until the result
+is checked.
 
 ## Remaining protection gates
 
