@@ -59,7 +59,10 @@ unit, not a fake status indicator:
   User code and foreign services are **never** adopted.
 - Creation leaves the worker **stopped and autostart-disabled**. Start,
   Stop and Restart reuse existing `sv` commands and exact script identity;
-  no background process is launched by creating the definition.
+  no background process is launched by creating the definition. The status
+  adapter accepts the standard `var/service` → `var/sv` symlink **only**
+  when the target is already enrolled and re-attested; an external symlink
+  cannot gain ownership or reveal a controllable autostart state.
 - Releasing a service from PocketHost management is deliberately distinct
   from removing it. It is refused unless the service remains attested,
   stopped and autostart-disabled. The runit files and logs remain for later

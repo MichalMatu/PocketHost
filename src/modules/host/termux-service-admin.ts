@@ -409,10 +409,14 @@ export class TermuxServiceAdmin {
       const root = lstatSync(this.serviceRoot);
       const target = path.join(this.serviceRoot, name);
       const entry = lstatSync(target);
-      if (!root.isDirectory() || root.isSymbolicLink() ||
-          !entry.isDirectory() || entry.isSymbolicLink()) return null;
-      // Only an enrolled exact target is eligible for a managed status.
-      // Observing a down marker on a foreign service confers no authority.
+      if (!root.isDirectory() || root.isSymbolicLink()) return null;
+      // termux-services commonly publishes its units as symlinks from
+      // var/service to var/sv. A verified registered unit may use this
+      // canonical form, but an unregistered alias remains read-only.
+      if (entry.isSymbolicLink()) {
+        if (!registered) return null;
+      } else if (!entry.isDirectory()) return null;
+      // Re-attest the exact symlink target before reading its down marker.
       if (registered) this.target(name);
       const marker = path.join(this.serviceRoot, name, 'down');
       try {
