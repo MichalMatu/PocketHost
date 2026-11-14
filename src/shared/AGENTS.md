@@ -1,13 +1,10 @@
-# Shared Contracts Agent Instructions
+# src/shared agent rules
 
 ## Scope
-
-Future shared types, schemas and small pure utilities used by feature modules.
+Only src/shared; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No host I/O, shell, network or service container masquerading as a shared utility.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Pure unit tests, strict typing and dependency-boundary checks for each shared contract.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

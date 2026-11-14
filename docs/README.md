@@ -1,90 +1,52 @@
-# PocketHost Documentation
+# PocketHost documentation
 
-**Start here:** [minimal context](START_HERE.md) (about 2.4 KB),
-[root AGENTS](../AGENTS.md), then the one scoped AGENTS.md
-nearest the changed code. Do not load every link listed here
-into an Agent context.
+Read [START_HERE](START_HERE.md), root [AGENTS](../AGENTS.md), then only task-specific files. Full earlier Markdown: `git show d801da7:<path>`.
 
-## Find docs by reader intent (Diátaxis)
+- [ADMIN_MVP](ADMIN_MVP.md)
+- [ARCHITECTURE](ARCHITECTURE.md)
+- [CODE_MAP](CODE_MAP.md)
+- [DASHBOARD_TELEMETRY_MAP](DASHBOARD_TELEMETRY_MAP.md)
+- [DESIGN_SYSTEM](DESIGN_SYSTEM.md)
+- [DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md)
+- [DEV_ITERATION](DEV_ITERATION.md)
+- [HANDOFF_NEXT_CHAT](HANDOFF_NEXT_CHAT.md)
+- [LOCAL_AGENT_TERMUX](LOCAL_AGENT_TERMUX.md)
+- [MODULES](MODULES.md)
+- [PRODUCT](PRODUCT.md)
+- [QUALITY_GATES](QUALITY_GATES.md)
+- [ROADMAP](ROADMAP.md)
+- [SECURITY_MODEL](SECURITY_MODEL.md)
+- [START_HERE](START_HERE.md)
+- [TARGET_INFORMATION_ARCHITECTURE](TARGET_INFORMATION_ARCHITECTURE.md)
+- [TERMUX_INTEGRATION](TERMUX_INTEGRATION.md)
+- [TOOLING_EVALUATION](TOOLING_EVALUATION.md)
+- [UPSTREAM_REUSE_STRATEGY](UPSTREAM_REUSE_STRATEGY.md)
+- [adr/0001-foundation](adr/0001-foundation.md)
+- [adr/0002-upstream-termux](adr/0002-upstream-termux.md)
+- [adr/0003-termux-local-agent-execution](adr/0003-termux-local-agent-execution.md)
+- [adr/0004-ui-design-system-quality](adr/0004-ui-design-system-quality.md)
+- [adr/0005-desktop-first-admin-shell](adr/0005-desktop-first-admin-shell.md)
+- [adr/0006-private-lan-access](adr/0006-private-lan-access.md)
+- [adr/0007-photomap-managed-instance-layout](adr/0007-photomap-managed-instance-layout.md)
+- [adr/0008-photomap-p4-managed-catalog](adr/0008-photomap-p4-managed-catalog.md)
+- [adr/0009-photomap-isolated-runtime](adr/0009-photomap-isolated-runtime.md)
+- [adr/0010-read-only-observability](adr/0010-read-only-observability.md)
+- [adr/0011-h34-termux-administration](adr/0011-h34-termux-administration.md)
+- [adr/0012-private-ui-rapid-review](adr/0012-private-ui-rapid-review.md)
+- [adr/0013-shizuku-power-user](adr/0013-shizuku-power-user.md)
+- [adr/0014-termux-panel-supervision](adr/0014-termux-panel-supervision.md)
+- [adr/0015-unified-android-app-isolated-runtime](adr/0015-unified-android-app-isolated-runtime.md)
+- [adr/0016-web-first-basic-pro-unified-product](adr/0016-web-first-basic-pro-unified-product.md)
+- [adr/0017-termux-first-single-app-integration](adr/0017-termux-first-single-app-integration.md)
+- [modules/ai](modules/ai.md)
+- [modules/config](modules/config.md)
+- [modules/diagnostics](modules/diagnostics.md)
+- [modules/host](modules/host.md)
+- [modules/inventory](modules/inventory.md)
+- [modules/observability](modules/observability.md)
+- [modules/packages](modules/packages.md)
+- [modules/runtime](modules/runtime.md)
+- [modules/shizuku](modules/shizuku.md)
+- [modules/sites](modules/sites.md)
 
-Use Diátaxis as a **purpose guide**, not a folder migration or a reason to
-add new files. A document should answer one reader need:
-
-| Need                               | Existing entrypoints                                                                                 |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Learn by doing (tutorial)          | No standalone guided tutorial yet; add one only for a real learner workflow                          |
-| Accomplish a task (how-to)         | [Fast DEV workflow](DEV_ITERATION.md), [Local Agent operations](LOCAL_AGENT_TERMUX.md)               |
-| Look up facts (reference)          | [Code map](CODE_MAP.md), [quality gates](QUALITY_GATES.md), [module specifications](MODULES.md)      |
-| Understand decisions (explanation) | [Architecture](ARCHITECTURE.md), [security model](SECURITY_MODEL.md), [ADRs](adr/0001-foundation.md) |
-
-Keep one canonical active source per topic and link to it. Historical
-checkpoints are **evidence**, not tutorials or current operating instructions.
-Don't invent parallel documents just to fill all four categories.
-
-## Active reference — read only what changes
-
-- [Compact next-session handoff](HANDOFF_NEXT_CHAT.md)
-- [Code and test entrypoints](CODE_MAP.md)
-- [Fast DEV / selective checks](DEV_ITERATION.md)
-- [Termux Local Agent contract](LOCAL_AGENT_TERMUX.md)
-- [Current QA and release gates](QUALITY_GATES.md)
-- [Canonical Hosting-first Basic/Pro priorities and M0–M7 roadmap](ROADMAP.md)
-- [Small development plan](DEVELOPMENT_PLAN.md)
-- [Architecture boundaries](ARCHITECTURE.md)
-- [Module dependencies](MODULES.md)
-- [Target navigation and migration](TARGET_INFORMATION_ARCHITECTURE.md)
-- [Dashboard telemetry, services and buffering](DASHBOARD_TELEMETRY_MAP.md)
-
-## Reference — use for a specific decision
-
-- [Product and historical MVP scope](PRODUCT.md)
-- [Termux integration](TERMUX_INTEGRATION.md)
-- [Security model](SECURITY_MODEL.md)
-- [Upstream/license reuse matrix](UPSTREAM_REUSE_STRATEGY.md)
-- [Design system](DESIGN_SYSTEM.md)
-- [Admin template/import notes](ADMIN_MVP.md)
-- [Tooling evaluation](TOOLING_EVALUATION.md)
-
-## Module specifications
-
-- [Host](modules/host.md)
-- [Sites](modules/sites.md)
-- [Runtime](modules/runtime.md)
-- [Packages](modules/packages.md)
-- [Configuration](modules/config.md)
-- [Observability](modules/observability.md)
-- [Diagnostics](modules/diagnostics.md)
-- [Inventory](modules/inventory.md)
-- [Shizuku](modules/shizuku.md)
-- [AI API](modules/ai.md)
-
-## Decisions and history
-
-ADRs record the decision at its date; a newer owner-approved ADR
-can supersede older initial-MVP scope without changing historic
-evidence. The active product execution order lives in [ROADMAP](ROADMAP.md) and
-[DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md); root AGENTS.md defines
-execution/safety constraints.
-
-- [ADR-0001 foundation](adr/0001-foundation.md)
-- [ADR-0002 upstream Termux](adr/0002-upstream-termux.md)
-- [ADR-0003 Local Agent](adr/0003-termux-local-agent-execution.md)
-- [ADR-0004 UI design](adr/0004-ui-design-system-quality.md)
-- [ADR-0005 admin shell](adr/0005-desktop-first-admin-shell.md)
-- [ADR-0006 private LAN](adr/0006-private-lan-access.md)
-- [ADR-0007 PhotoMap layout](adr/0007-photomap-managed-instance-layout.md)
-- [ADR-0008 PhotoMap catalog](adr/0008-photomap-p4-managed-catalog.md)
-- [ADR-0009 PhotoMap runtime](adr/0009-photomap-isolated-runtime.md)
-- [ADR-0010 Observability](adr/0010-read-only-observability.md)
-- [ADR-0011 H3.4 Termux administration](adr/0011-h34-termux-administration.md)
-- [ADR-0012 private UI fast review](adr/0012-private-ui-rapid-review.md)
-- [ADR-0013 Shizuku power user](adr/0013-shizuku-power-user.md)
-- [ADR-0014 PocketHost-only runit](adr/0014-termux-panel-supervision.md)
-- [ADR-0017 future one-APK integration (deferred, not the Basic MVP)](adr/0017-termux-first-single-app-integration.md)
-- [ADR-0015 isolated APK runtime (superseded)](adr/0015-unified-android-app-isolated-runtime.md)
-- [ADR-0016 standalone S0–S10 sprints (superseded)](adr/0016-web-first-basic-pro-unified-product.md)
-
-[Checkpoint archive](checkpoints/README.md) preserves exact-SHA
-historical device evidence. Open a specific checkpoint by need,
-**not** every archived note during session startup. The former
-chronological front-page status list is intentionally retired.
+- [Historical checkpoint index](checkpoints/README.md)

@@ -1,13 +1,10 @@
-# Packages Module Agent Instructions
+# src/modules/packages agent rules
 
 ## Scope
-
-Present package availability and future curated installation plans. Contract: `../../../docs/modules/packages.md`.
+Only src/modules/packages; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No automatic `pkg install`, `pkg upgrade`, repository changes or arbitrary command execution. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover explicit approval, allowlist and no-op paths; installation remains disabled in first milestone. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

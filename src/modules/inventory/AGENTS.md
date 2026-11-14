@@ -1,13 +1,10 @@
-# Inventory Module Agent Instructions
+# src/modules/inventory agent rules
 
 ## Scope
-
-Observe services, endpoints and installed tools using the read-only host adapter. Contract: `../../../docs/modules/inventory.md`.
+Only src/modules/inventory; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No service actions, config writes, adoption of discovered processes or unbounded scans. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover missing tools, malformed outputs, permission errors, redaction and ownership = external/unknown. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

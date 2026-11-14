@@ -1,85 +1,10 @@
 ---
 status: accepted
 owner: core
-last_reviewed: 2026-11-08
-purpose: Owner-directed full power-user Android/Shizuku evolution
+last_reviewed: 2026-11-14
+purpose: Owner-directed native Android privileges
 ---
 
-# ADR-0013: Full-capability Shizuku integration as a PocketHost core module
+# ADR-0013 Shizuku
 
-## Decision
-
-PocketHost is an **Android/Termux power-user application**. Shizuku is a
-core integration, not a temporary diagnostic workaround. The owner explicitly
-rejects arbitrary feature caps, permanently read-only modules and
-self-imposed command/operation restrictions that prevent legitimate
-power-user tasks. The user should be able to request the complete
-spectrum of operations supported by the device's actual Android
-ADB or root privileges.
-
-The project must deliver working features instead of disabled buttons
-or endless QA gates. The iterative DEV loop applies unchanged.
-
-## Real privilege model
-
-Shizuku Manager is already installed on Samsung SM-S906B (Android 16).
-A prior Mac ADB read-only probe obtained a real
-`dumpsys cpuinfo` snapshot (31% TOTAL); this proves an **ADB**
-measurement, **not** PocketHost/Shizuku connection.
-Checking `pidof moe.shizuku.privileged.api` alone is not a reliable
-Shizuku Binder availability test. Native Binder handshake and
-authorization state are still unverified.
-
-The PocketHost browser/Termux Node process does not magically gain
-Shizuku privileges. Integrate a separately owned **native Android
-PocketHost Companion**, request access from Shizuku for that app,
-observe its server mode (ADB/root) and expose actual operation
-results through a typed local IPC bridge.
-
-No assumption that ADB means root, no forced rooted device, no fake
-permissions, and no pretending an action succeeded if Android rejected it.
-
-## Product scope — no artificial ceilings
-
-Capability negotiation is dynamic rather than a permanently fixed
-allowlist. The power-user roadmap includes CPU and process usage,
-packages and app management, permissions, system settings, services,
-background tasks, storage, backup, device diagnostics and
-user-initiated advanced shell commands. Expose capabilities when
-available; show real Android permission errors when unavailable.
-
-The owner may intentionally manage apps and services outside PocketHost.
-The UI must communicate selected targets and consequences. A button
-must not silently perform unrelated actions. This is user intent,
-not an arbitrary rule banning advanced controls.
-
-## Connectivity and security phase order — amended 2026-11-09
-
-The owner explicitly requires working Advanced Shell directly in the
-private-LAN browser, **without any pairing code, second confirmation on
-the phone, approval queue or product-level execution blocker**. The Run
-button is the user's requested action. The native Shizuku Binder and
-Android's actual shell/root UID remain the execution authority.
-
-Security hardening, owner identity, access policies and TLS are deferred
-to a separate final stage, after functional DEV acceptance. The interim
-login-free private-LAN HTTP shell is intentionally unauthenticated and
-unencrypted; document the exposure instead of pretending it is secure.
-Keep the existing exact private-LAN/Android-loopback binding and prevent
-public WAN exposure, unexpected autonomous execution and accidental changes
-to unrelated Termux services. Do not expand product restrictions merely
-because final-stage security controls have not yet been implemented.
-
-## Execution order
-
-1. Shizuku menu/route, typed session contract and architecture source.
-2. Native companion with Shizuku Binder permission prompt; reflect
-   service-running / authorization / ADB-vs-root state in the panel.
-3. Real CPU/process telemetry, with native Android/ADB evidence.
-4. Expand to the broader available Android controls and advanced shell,
-   adding useful UI one capability at a time with fast DEV feedback.
-5. Only after native bridge exists, replace the initial static
-   status with live authenticated capability discovery.
-
-**Current implementation is phase 1**, not a working Shizuku Binder
-connection.
+User-triggered actions use authorized Android-loopback Companion/Shizuku under actual ADB/root UID, never invented root. Private LAN DEV shell is unauthenticated and must not be exposed. Pro work currently frozen.

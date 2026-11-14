@@ -1,13 +1,10 @@
-# Diagnostics Module Agent Instructions
+# src/modules/diagnostics agent rules
 
 ## Scope
-
-Expose sanitized, bounded and attributable status/log summaries. Contract: `../../../docs/modules/diagnostics.md`.
+Only src/modules/diagnostics; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No unrestricted filesystem reads, secret dumps or hidden repairs. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover truncated output, permissions, timeouts, secret redaction. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

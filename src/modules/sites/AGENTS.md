@@ -1,13 +1,10 @@
-# Sites Module Agent Instructions
+# src/modules/sites agent rules
 
 ## Scope
-
-Define metadata for PocketHost-owned sites and future deployment versions. Contract: `../../../docs/modules/sites.md`.
+Only src/modules/sites; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-Do not import/adopt IleStoi.pl or mutate discovered document roots. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover path confinement, metadata validation and rollback once enabled. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

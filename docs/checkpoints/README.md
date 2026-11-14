@@ -1,115 +1,73 @@
 ---
-status: accepted-with-follow-up
+status: archived
 owner: core
-last_reviewed: 2026-11-09
-purpose: Index historical evidence without overloading the active documentation entrypoint
+last_reviewed: 2026-11-14
+purpose: Git-backed historical evidence locations
 ---
 
-# PocketHost checkpoint archive
+# Historical checkpoint index
 
-These dated files are historical **exact-SHA evidence**, not instructions to rerun tests. Start with [Minimal Context](../START_HERE.md) and open **only the relevant checkpoint**. Keep old receipts here rather than copying entire status logs into active handoff/roadmap/quality documents.
+Original contents are in commit `d801da7`; do not preload all checkpoint files.
 
-## 2026-11-13
-
-- [Current owner-priority: existing Termux service control panels / next-chat execution](2026-11-13-termux-service-panels-next-chat.md)
-- [Node Hosting panel visual checkpoint and next-chat handoff](2026-11-13-node-panel-preview-handoff.md)
-
-## 2026-11-12
-
-- [Retired S1 standalone APK experiment — historical build/device evidence](2026-11-12-s1-standalone-arm64-apk-first-build.md)
-- [Historical standalone APK risk/reuse audit — superseded by ADR-0017](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
-- [Repository repair source checkpoint and pending native gates](2026-11-12-general-repository-repair-continuation.md)
-- [Nine-screen System source audit and targeted fixes](2026-11-12-system-nine-screen-ux-source-audit.md)
-
-## 2026-11-11
-
-- [System UX G2 closeout and Hosting handoff](2026-11-11-system-ux-closeout-hosting-handoff.md)
-
-## 2026-11-10
-
-- [Monitoring closeout and universal static Hosting handoff](2026-11-10-monitoring-to-universal-static-hosting.md)
-- [M2/M3 guarded Node runit hosting source sprint](2026-11-10-m2-m3-node-runit-source-sprint.md)
-
-## 2026-11-09
-
-- [M2/M3 Node source candidate and Samsung focused acceptance](2026-11-09-m2-m3-node-source-sprint.md)
-
-- [M0/M1 recovered UI acceptance and targeted M1 repair](2026-11-09-m0-m1-native-focused-ui-pass-repairs.md)
-- [M0/M1 resumed native validation handoff](2026-11-09-m0-m1-resume-native-validation-handoff.md)
-
-- [M0 canonical formatting patches and M1 source-only ownership diagnostics](2026-11-09-m0-m1-ownership-and-canonical-style.md)
-
-- [Complete M0/M1 source, QA, safety and next-chat checkpoint](2026-11-09-m0-m1-complete-checkpoint-next-chat.md)
-
-- [M0 source QA result and verified handoff state](2026-11-09-m0-final-source-qa-handoff.md)
-
-- [M0 read-only generic service aliases, QA repair status and handoff](2026-11-09-m0-generic-services-prehandoff.md)
-
-- [M0 PhotoMap legacy read-only events isolated; source QA hold](2026-11-09-m0-photomap-diagnostics-isolation.md)
-
-- [M0 source implementation: system/hosting boundaries and pending Samsung checks](2026-11-09-m0-implementation-ui-separation-sprint.md)
-
-- [Autonomous final sprint QA and M0-M3 handoff](2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
-
-- [M0 pre-implementation readiness and file-by-file acceptance plan](2026-11-09-m0-preimplementation-readiness.md)
-
-- [M0 read-only source audit, reuse decisions and deferred decoupling gates](2026-11-09-m0-source-and-upstream-audit-readonly.md)
-
-- [Complete code, quality, structure and next-chat handoff](2026-11-09-code-quality-structure-handoff.md)
-- [Panel runit startup and recovery](2026-11-09-panel-runit-self-healing.md)
-- [Shizuku direct browser shell](2026-11-09-shizuku-direct-browser-shell.md)
-- [Shizuku MVP implementation](2026-11-09-shizuku-mvp-sprint.md)
-
-## 2026-11-08
-
-- [Shizuku companion and browser shell](2026-11-08-shizuku-browser-remote-shell.md)
-- [Shizuku seven-module device sprint](2026-11-08-shizuku-seven-module-sprint.md)
-- [UX architecture: Termux-first navigation and single File Manager](2026-11-08-ux-architecture-main-menu.md)
-
-- [H3.4 API, Restic and ttyd physical follow-up](2026-11-08-h34-api-restic-ttyd-acceptance.md)
-
-## 2026-11-07
-
-- [General repository audit and repair: Restic exit status and native follow-up](2026-11-07-general-repository-audit-repair.md)
-- [H3.4 Full Termux source and QA](2026-11-07-h34-full-termux-source.md)
-- [H3 Termux Control Center branch](2026-11-07-h3-termux-center-branch.md)
-
-- [H2.1 owner SSH G3 cutover PASS and Chrome screenshots](2026-11-07-h21-g3-owner-ssh-cutover.md)
-- [H2.1 version manager implementation candidate](2026-11-07-h21-release-manager-source.md)
-- [H2.1 G3 safety hold, terminal recheck and sprint evidence](2026-11-07-h21-g3-safety-hold-recheck.md)
-- [H2 multi-site static hosting native and LAN acceptance](2026-11-07-h2-static-hosting-source.md)
-- [H1 Hosting MVP source and device gate](2026-11-07-h1-hosting-mvp-source.md)
-
-- [O1 502 proxy live recovery](2026-11-07-o1-502-live-recovery.md)
-
-- [O1 Observability source checkpoint](2026-11-07-o1-observability-source.md)
-- [O1 and LAN Samsung live acceptance](2026-11-07-o1-lan-live-acceptance.md)
-
-- [Final native QA and handoff](2026-11-07-final-native-qa-handoff.md)
-- [Main-only runtime and quality sprint](2026-11-07-main-runtime-host-sprint.md)
-- [Quality hardening sprint](2026-11-07-quality-hardening-sprint.md)
-
-## 2026-11-06
-
-- [Local network access](2026-11-06-local-network-access.md)
-- [P4 live panel cutover](2026-11-06-p4-live-panel-cutover.md)
-- [P4 managed photomap catalog](2026-11-06-p4-managed-photomap-catalog.md)
-- [Photomap isolated rootfs python qa closeout](2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md)
-- [Photomap runit autorestart regression](2026-11-06-photomap-runit-autorestart-regression.md)
-- [Photomap runtime inert native](2026-11-06-photomap-runtime-inert-native.md)
-- [Pocket host new chat sprint checkpoint](2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
-- [Pocket host samsung source and handoff final](2026-11-06-pocket-host-samsung-source-and-handoff-final.md)
-
-## 2026-11-05
-
-- [Admin shell termux checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
-- [Appearance header menu](2026-11-05-appearance-header-menu.md)
-- [Commercial template cleanup](2026-11-05-commercial-template-cleanup.md)
-- [Foundation](2026-11-05-foundation.md)
-- [Host health work start](2026-11-05-host-health-work-start.md)
-- [Host overview work start](2026-11-05-host-overview-work-start.md)
-- [P3 mvp integration candidate](2026-11-05-p3-mvp-integration-candidate.md)
-- [P3 owned single site](2026-11-05-p3-owned-single-site.md)
-- [Pocket host full checkpoint](2026-11-05-pocket-host-full-checkpoint.md)
-- [Termux workflow](2026-11-05-termux-workflow.md)
-- [Ui tooling research](2026-11-05-ui-tooling-research.md)
+- [2026-11-05-admin-shell-termux-checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
+- [2026-11-05-appearance-header-menu](2026-11-05-appearance-header-menu.md)
+- [2026-11-05-commercial-template-cleanup](2026-11-05-commercial-template-cleanup.md)
+- [2026-11-05-foundation](2026-11-05-foundation.md)
+- [2026-11-05-host-health-work-start](2026-11-05-host-health-work-start.md)
+- [2026-11-05-host-overview-work-start](2026-11-05-host-overview-work-start.md)
+- [2026-11-05-p3-mvp-integration-candidate](2026-11-05-p3-mvp-integration-candidate.md)
+- [2026-11-05-p3-owned-single-site](2026-11-05-p3-owned-single-site.md)
+- [2026-11-05-pocket-host-full-checkpoint](2026-11-05-pocket-host-full-checkpoint.md)
+- [2026-11-05-termux-workflow](2026-11-05-termux-workflow.md)
+- [2026-11-05-ui-tooling-research](2026-11-05-ui-tooling-research.md)
+- [2026-11-06-local-network-access](2026-11-06-local-network-access.md)
+- [2026-11-06-p4-live-panel-cutover](2026-11-06-p4-live-panel-cutover.md)
+- [2026-11-06-p4-managed-photomap-catalog](2026-11-06-p4-managed-photomap-catalog.md)
+- [2026-11-06-photomap-isolated-rootfs-python-qa-closeout](2026-11-06-photomap-isolated-rootfs-python-qa-closeout.md)
+- [2026-11-06-photomap-runit-autorestart-regression](2026-11-06-photomap-runit-autorestart-regression.md)
+- [2026-11-06-photomap-runtime-inert-native](2026-11-06-photomap-runtime-inert-native.md)
+- [2026-11-06-pocket-host-new-chat-sprint-checkpoint](2026-11-06-pocket-host-new-chat-sprint-checkpoint.md)
+- [2026-11-06-pocket-host-samsung-source-and-handoff-final](2026-11-06-pocket-host-samsung-source-and-handoff-final.md)
+- [2026-11-07-final-native-qa-handoff](2026-11-07-final-native-qa-handoff.md)
+- [2026-11-07-general-repository-audit-repair](2026-11-07-general-repository-audit-repair.md)
+- [2026-11-07-h1-hosting-mvp-source](2026-11-07-h1-hosting-mvp-source.md)
+- [2026-11-07-h2-static-hosting-source](2026-11-07-h2-static-hosting-source.md)
+- [2026-11-07-h21-g3-owner-ssh-cutover](2026-11-07-h21-g3-owner-ssh-cutover.md)
+- [2026-11-07-h21-g3-safety-hold-recheck](2026-11-07-h21-g3-safety-hold-recheck.md)
+- [2026-11-07-h21-release-manager-source](2026-11-07-h21-release-manager-source.md)
+- [2026-11-07-h3-termux-center-branch](2026-11-07-h3-termux-center-branch.md)
+- [2026-11-07-h34-full-termux-source](2026-11-07-h34-full-termux-source.md)
+- [2026-11-07-main-runtime-host-sprint](2026-11-07-main-runtime-host-sprint.md)
+- [2026-11-07-o1-502-live-recovery](2026-11-07-o1-502-live-recovery.md)
+- [2026-11-07-o1-lan-live-acceptance](2026-11-07-o1-lan-live-acceptance.md)
+- [2026-11-07-o1-observability-source](2026-11-07-o1-observability-source.md)
+- [2026-11-07-quality-hardening-sprint](2026-11-07-quality-hardening-sprint.md)
+- [2026-11-08-h34-api-restic-ttyd-acceptance](2026-11-08-h34-api-restic-ttyd-acceptance.md)
+- [2026-11-08-shizuku-browser-remote-shell](2026-11-08-shizuku-browser-remote-shell.md)
+- [2026-11-08-shizuku-seven-module-sprint](2026-11-08-shizuku-seven-module-sprint.md)
+- [2026-11-08-ux-architecture-main-menu](2026-11-08-ux-architecture-main-menu.md)
+- [2026-11-09-autonomous-resume-quality-m0-m3-handoff](2026-11-09-autonomous-resume-quality-m0-m3-handoff.md)
+- [2026-11-09-code-quality-structure-handoff](2026-11-09-code-quality-structure-handoff.md)
+- [2026-11-09-m0-final-source-qa-handoff](2026-11-09-m0-final-source-qa-handoff.md)
+- [2026-11-09-m0-generic-services-prehandoff](2026-11-09-m0-generic-services-prehandoff.md)
+- [2026-11-09-m0-implementation-ui-separation-sprint](2026-11-09-m0-implementation-ui-separation-sprint.md)
+- [2026-11-09-m0-m1-complete-checkpoint-next-chat](2026-11-09-m0-m1-complete-checkpoint-next-chat.md)
+- [2026-11-09-m0-m1-native-focused-ui-pass-repairs](2026-11-09-m0-m1-native-focused-ui-pass-repairs.md)
+- [2026-11-09-m0-m1-ownership-and-canonical-style](2026-11-09-m0-m1-ownership-and-canonical-style.md)
+- [2026-11-09-m0-m1-resume-native-validation-handoff](2026-11-09-m0-m1-resume-native-validation-handoff.md)
+- [2026-11-09-m0-photomap-diagnostics-isolation](2026-11-09-m0-photomap-diagnostics-isolation.md)
+- [2026-11-09-m0-preimplementation-readiness](2026-11-09-m0-preimplementation-readiness.md)
+- [2026-11-09-m0-source-and-upstream-audit-readonly](2026-11-09-m0-source-and-upstream-audit-readonly.md)
+- [2026-11-09-m2-m3-node-source-sprint](2026-11-09-m2-m3-node-source-sprint.md)
+- [2026-11-09-panel-runit-self-healing](2026-11-09-panel-runit-self-healing.md)
+- [2026-11-09-shizuku-direct-browser-shell](2026-11-09-shizuku-direct-browser-shell.md)
+- [2026-11-09-shizuku-mvp-sprint](2026-11-09-shizuku-mvp-sprint.md)
+- [2026-11-10-m2-m3-node-runit-source-sprint](2026-11-10-m2-m3-node-runit-source-sprint.md)
+- [2026-11-10-monitoring-to-universal-static-hosting](2026-11-10-monitoring-to-universal-static-hosting.md)
+- [2026-11-11-system-ux-closeout-hosting-handoff](2026-11-11-system-ux-closeout-hosting-handoff.md)
+- [2026-11-12-general-repository-repair-continuation](2026-11-12-general-repository-repair-continuation.md)
+- [2026-11-12-s1-standalone-arm64-apk-first-build](2026-11-12-s1-standalone-arm64-apk-first-build.md)
+- [2026-11-12-system-nine-screen-ux-source-audit](2026-11-12-system-nine-screen-ux-source-audit.md)
+- [2026-11-12-unified-apk-reuse-and-architecture-reaudit](2026-11-12-unified-apk-reuse-and-architecture-reaudit.md)
+- [2026-11-13-node-panel-preview-handoff](2026-11-13-node-panel-preview-handoff.md)
+- [2026-11-13-termux-service-panels-next-chat](2026-11-13-termux-service-panels-next-chat.md)

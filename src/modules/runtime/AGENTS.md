@@ -1,13 +1,10 @@
-# Runtime Module Agent Instructions
+# src/modules/runtime agent rules
 
 ## Scope
-
-Manage lifecycle of explicitly PocketHost-owned server instances once ownership is implemented. Contract: `../../../docs/modules/runtime.md`.
+Only src/modules/runtime; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No action on processes discovered by inventory; no PID-only ownership; no implicit auto-restart. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover ownership proof, port collision, failed startup, shutdown and cleanup without touching other services. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

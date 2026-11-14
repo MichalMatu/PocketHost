@@ -1,34 +1,10 @@
-# Host Module Agent Instructions
+# src/modules/host agent rules
 
 ## Scope
-
-Only host adapter for Termux process/filesystem/runit,
-owned static-site lifecycle, private registry storage and
-Android Companion forwarding. Read the specific
-[host contract](../../../docs/modules/host.md) on demand.
+Only src/modules/host; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No scan outside explicitly approved roots, unknown-PID
-signalling, automatic package installs, credential dumps,
-service adoption or modification of external Termux
-workloads. Generic command execution is not an internal
-fallback. The owner-approved **direct Shizuku Advanced
-Shell** is a distinct explicit typed action through
-Android loopback, bounded by real Shizuku permissions,
-not a host-wide automatic arbitrary shell API.
-No WAN or wildcard listener.
+Never operate on unowned services; validate PID, start ticks, paths and rollback.
 
 ## Gate
-
-Only act on exact verified target ownership; deny symlinks,
-traversal, stale version/owner, mismatched start ticks/cwd
-and foreign processes. Add focused positive and negative
-tests for changed operations, timeout/failed exits and
-rollback where relevant. Execute tests exclusively via
-verified Samsung Termux Local Agent. Do not repeat
-unaffected suites.
-
-The existing **PocketHost DEV panel only** may autostart
-under owner-approved Termux runit; no hosted project or
-external service inherits that exception (ADR-0014).
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

@@ -1,13 +1,10 @@
-# Source Agent Instructions
+# src agent rules
 
 ## Scope
-
-Application code will live under `src/modules/`, `src/ui/` or `src/shared/`. No application feature code during the foundation phase. Maintain explicit typed contracts.
+Only src; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No cross-module internal imports, hidden shell execution, public admin listeners, hard-coded host paths or unowned lifecycle actions. The host adapter remains the only future command boundary.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Structure gate, unit/contract tests, ESLint, Prettier and TypeScript strict mode before merge.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

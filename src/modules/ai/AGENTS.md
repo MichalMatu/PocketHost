@@ -1,13 +1,10 @@
-# Ai Module Agent Instructions
+# src/modules/ai agent rules
 
 ## Scope
-
-Reserve a separately authenticated interface for future AI-assisted publishing. Contract: `../../../docs/modules/ai.md`.
+Only src/modules/ai; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-Do not enable external endpoints, shell access, privileged installs or unauthenticated deploys. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests eventually cover scoped token, payload validation, idempotency and rollback; no implementation in P0/P1. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

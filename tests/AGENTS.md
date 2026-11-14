@@ -1,21 +1,10 @@
-# Tests Agent Instructions
+# tests agent rules
 
 ## Scope
-
-Foundation quality tests and future module/unit/integration tests. Every PocketHost test must run on the exact Samsung Termux target through Local Agent; isolated on-device detached QA checkouts are allowed.
+Only tests; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-No physical production service mutations, network-dependent unit tests, unapproved device access, or false hardware pass claims.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Exercise both success and rejection paths. A safety invariant must have a negative test before introducing a privileged feature.
-
-## Incremental DEV gate
-
-For normal iterations, select tests affected by the changed source and
-changed test files using `npm run dev:changed -- --base=<sha>`. Reuse
-prior exact-SHA terminal receipts; do not rerun successful unrelated
-suites or skip an unmapped privileged change. The full suite and coverage
-are milestone/risk gates, not a per-commit default.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.

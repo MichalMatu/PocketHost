@@ -1,13 +1,10 @@
-# Config Module Agent Instructions
+# src/modules/config agent rules
 
 ## Scope
-
-Validate and persist PocketHost-specific settings; read external config only via inventory. Contract: `../../../docs/modules/config.md`.
+Only src/modules/config; typed contracts and root AGENTS.md.
 
 ## Forbidden
-
-Never overwrite other applications settings, Termux global files or environment secrets. Inherit all root `AGENTS.md` safety constraints.
+No foreign service changes, cross-module host internals or unrequested operations.
 
 ## Gate
-
-Tests cover schema failures, safe defaults and redaction. Run the foundation gates and add module-specific tests when implementation begins.
+Only affected Samsung Termux Local Agent checks; exact SHA receipt. No release claim from a source commit.
