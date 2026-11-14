@@ -6,7 +6,7 @@
  * Optional QA suites are separately owner-authorized, not a release prerequisite.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, lstatSync, realpathSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, lstatSync, realpathSync, statSync } from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -18,16 +18,11 @@ const home = os.homedir();
 const prefix = '/data/data/com.termux/files/usr';
 const service = prefix + '/var/service/pockethost-panel';
 const watchdog = prefix + '/var/service/pockethost-panel-watch';
-const ownerFile = path.join(home, 'Projects/PocketHost-P3-Preview-20261106.json');
+const ownerFile = path.join(home, '.local/state/pockethost/panel-owner.json');
 const gatewayFile = path.join(home, '.local/state/pockethost/lan-gateway.json');
-const protectedServices = new Map([
-  ['sshd', prefix + '/var/service/sshd'],
-  ['cloudflared', prefix + '/var/service/cloudflared'],
-  ['wreckscanner', prefix + '/var/service/wreckscanner'],
-  ['mosquitto', prefix + '/var/service/mosquitto'],
-  ['ilestoi-healthwatch', prefix + '/var/service/ilestoi-healthwatch'],
-  ['termux-agent', path.join(home, '.local/state/local-agent/termux/runit/services/termux-agent')],
-]);
+const agentService = path.join(home, '.local/state/local-agent/termux/runit/services/termux-agent');
+const globalServiceRoot = prefix + '/var/service';
+const a8LiveRoot = path.join(home, 'Projects/PocketHost-A8-DEV');
 
 function requireCondition(value, reason) {
   if (!value) throw new Error(reason);
@@ -54,6 +49,7 @@ function git(root, ...args) {
 
 function status(servicePath) {
   const text = command(prefix + '/bin/sv', ['status', servicePath], home, 8000);
+  requireCondition(/^(?:run|down):\s/.test(text), 'Ambiguous runit service state');
   const match = /^run:\s+\S+:\s+\(pid (\d+)\)/.exec(text);
   return { running: !!match, pid: match ? Number(match[1]) : null };
 }
@@ -196,7 +192,12 @@ function inspect(root, expectedHead) {
   const owner = readRecord(ownerFile);
   const gateway = readRecord(gatewayFile);
   const verifiedHead = verifiedMarkerHead(root, owner, gateway, expectedHead);
-  requireCondition(gateway.bind === '192.168.0.100', 'Unapproved gateway interface');
+  const privateLan = typeof gateway.bind === 'string' &&
+    (/^10\./.test(gateway.bind) || /^192\.168\./.test(gateway.bind) ||
+      /^172\.(1[6-9]|2\d|3[01])\./.test(gateway.bind)) &&
+    Object.values(os.networkInterfaces()).flat().some((iface) =>
+      iface?.family === 'IPv4' && !iface.internal && iface.address === gateway.bind);
+  requireCondition(gateway.bind === null || privateLan, 'Unapproved gateway interface');
   const rawArgv = readFileSync('/proc/' + pid + '/cmdline', 'utf8')
     .split('\0')
     .filter(Boolean);
@@ -219,12 +220,20 @@ function inspect(root, expectedHead) {
 }
 
 function externalStates() {
-  return Object.fromEntries(
-    [...protectedServices].map(([name, location]) => {
-      const state = status(location);
-      return [name, state.running ? 'run' : 'down'];
-    }),
-  );
+  const entries = readdirSync(globalServiceRoot).sort();
+  const states = {};
+  for (const name of entries) {
+    if (name === 'pockethost-panel' || name === 'pockethost-panel-watch') continue;
+    requireCondition(/^[a-z][a-z0-9-]{1,63}$/.test(name), 'Unexpected runit service name');
+    const target = path.join(globalServiceRoot, name);
+    const meta = lstatSync(target);
+    requireCondition(meta.isDirectory() && !meta.isSymbolicLink(), 'Unverified external runit entry');
+    const state = status(target);
+    states[name] = state.running ? 'run' : 'down';
+  }
+  const localAgent = status(agentService);
+  states['termux-agent-private'] = localAgent.running ? 'run' : 'down';
+  return states;
 }
 
 function probe(host, port, pathname) {
@@ -241,7 +250,7 @@ function probe(host, port, pathname) {
 async function panelReady(host) {
   const local = await probe('127.0.0.1', 8787, '/projects');
   if (local !== 200) return false;
-  return (await probe(host, 18878, '/projects')) === 200;
+  return host === null || (await probe(host, 18878, '/projects')) === 200;
 }
 
 async function waitForPanel(root, target, host, maxMs = 105000) {
@@ -277,7 +286,8 @@ async function waitForDown() {
 export async function preflightPanel() {
   const root = realpathSync(process.cwd());
   requireCondition(
-    root.startsWith(path.join(home, 'Projects/PocketHost-')) &&
+    process.platform === 'android' &&
+      root === a8LiveRoot &&
       !lstatSync(root).isSymbolicLink(),
     'Not a dedicated PocketHost checkout',
   );
@@ -298,19 +308,20 @@ export async function preflightPanel() {
     markerSha: owner.sourceSha,
     checkoutSha,
     panelHttpOk: await panelReady(existing.gatewayHost),
-    protectedRunning: Object.values(external).every((state) => state === 'run'),
+    protectedBaselineAttested: Object.values(external).every((state) =>
+      state === 'run' || state === 'down'),
   });
 }
 
 /** No service paths, private data or arbitrary host details leave this summary. */
-export function summarizePreflight({ markerSha, checkoutSha, panelHttpOk, protectedRunning }) {
+export function summarizePreflight({ markerSha, checkoutSha, panelHttpOk, protectedBaselineAttested }) {
   requireCondition(
     /^[a-f0-9]{40}$/.test(markerSha) && /^[a-f0-9]{40}$/.test(checkoutSha),
     'Invalid source markers',
   );
-  requireCondition(typeof panelHttpOk === 'boolean' && typeof protectedRunning === 'boolean',
+  requireCondition(typeof panelHttpOk === 'boolean' && typeof protectedBaselineAttested === 'boolean',
     'Unverified readiness inputs');
-  const ready = panelHttpOk && protectedRunning;
+  const ready = panelHttpOk && protectedBaselineAttested;
   return {
     status: ready ? 'READ_ONLY_READY' : 'HOLD',
     mode: 'read-only',
@@ -319,7 +330,7 @@ export function summarizePreflight({ markerSha, checkoutSha, panelHttpOk, protec
     checkoutSha,
     sourceDrift: markerSha === checkoutSha ? 'same' : 'verified-ui-hmr-only',
     panelHttp: panelHttpOk ? 'reachable' : 'unavailable',
-    protectedServices: protectedRunning ? 'running' : 'not-all-running',
+    protectedServices: protectedBaselineAttested ? 'baseline-attested' : 'unverified',
     deployment: 'not-performed',
     restart: 'not-performed',
     nextStep: 'operator-review-required',
@@ -330,7 +341,8 @@ async function refresh(target) {
   requireCondition(/^[a-f0-9]{40}$/.test(target ?? ''), 'Provide immutable full main SHA');
   const root = realpathSync(process.cwd());
   requireCondition(
-    root.startsWith(path.join(home, 'Projects/PocketHost-')) && !lstatSync(root).isSymbolicLink(),
+    process.platform === 'android' &&
+      root === a8LiveRoot && !lstatSync(root).isSymbolicLink(),
     'Not a dedicated PocketHost checkout',
   );
   requireCondition(
@@ -346,8 +358,8 @@ async function refresh(target) {
   );
   const externalBefore = externalStates();
   requireCondition(
-    Object.values(externalBefore).every((s) => s === 'run'),
-    'Unhealthy protected external service before refresh',
+    Object.values(externalBefore).every((s) => s === 'run' || s === 'down'),
+    'Ambiguous protected external service before refresh',
   );
   git(root, 'fetch', '--quiet', '--no-tags', 'origin', 'main');
   requireCondition(
@@ -390,7 +402,8 @@ async function refresh(target) {
       from: oldSha,
       sha: target,
       ownedPid: after.pid,
-      lanHttp: 200,
+      loopbackHttp: 200,
+      lanHttp: before.gatewayHost === null ? null : 200,
       external: 'unchanged',
     };
   } catch (error) {

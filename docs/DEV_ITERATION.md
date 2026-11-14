@@ -7,7 +7,7 @@ purpose: Single-pass DEV update with owner-controlled testing
 
 # FAST FLOW: code → deploy → verify
 
-**A8 cold-bootstrap gate:** These steps require an already installed, verified, owned PocketHost panel. As of the S22 retirement checkpoint no A8 panel was installed. Start with [A8 handoff](HANDOFF_NEXT_CHAT.md), create a guarded device-local cold-start path and obtain its exact live-SHA receipt before invoking `fast-flow.mjs`. The old QA path and owner markers belong to retired S22, not A8.
+**A8 cold-bootstrap gate: PASS on 14 November 2026.** Initial live SHA `1234603ed7c356cb6c05f57aacfcf260e79e4f5b`, runit panel/watch and loopback HTTP 200 were independently read back from the A8 Agent. Future changes must use a separate clean A8 QA checkout and a verified A8 live owner. The retired S22 QA path and marker must never be used. No default tests.
 
 1. Commit one coherent change on fresh `main`; read the actual live PocketHost panel SHA and verify its ownership. Do not infer it from Git history.
 2. In **one** verified Samsung Termux Local Agent task, reuse the existing clean QA checkout, fetch/pin the exact target and use cached dependencies.

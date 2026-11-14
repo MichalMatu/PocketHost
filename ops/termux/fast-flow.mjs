@@ -15,8 +15,9 @@ const SHA = /^[0-9a-f]{40}$/;
 const ORIGIN = 'https://github.com/MichalMatu/PocketHost.git';
 const HOME = os.homedir();
 const PREFIX = '/data/data/com.termux/files/usr';
-const QA = path.join(HOME, 'Projects/PocketHost-H3-QA-20261107');
-const OWNER_FILE = path.join(HOME, 'Projects/PocketHost-P3-Preview-20261106.json');
+const QA = path.join(HOME, 'Projects/PocketHost-A8-QA');
+const LIVE_ROOT = path.join(HOME, 'Projects/PocketHost-A8-DEV');
+const OWNER_FILE = path.join(HOME, '.local/state/pockethost/panel-owner.json');
 const RELEASE_SCRIPT = path.join(QA, 'ops/termux/refresh-panel.mjs');
 
 export function parseFastFlowArgs(argv) {
@@ -88,7 +89,7 @@ export function confirmPreflight(info, liveSha) {
     info.mode !== 'read-only' ||
     info.ownedPanel !== 'verified' ||
     info.panelHttp !== 'reachable' ||
-    info.protectedServices !== 'running' ||
+    info.protectedServices !== 'baseline-attested' ||
     info.deployment !== 'not-performed' ||
     info.restart !== 'not-performed'
   )
@@ -101,7 +102,7 @@ export function confirmRelease(info, sha) {
     !info ||
     !['PASS', 'CURRENT'].includes(info.status) ||
     info.sha !== sha ||
-    (info.status === 'PASS' && (info.lanHttp !== 200 || info.external !== 'unchanged'))
+    (info.status === 'PASS' && (info.loopbackHttp !== 200 || info.external !== 'unchanged'))
   )
     throw Error('Guarded refresh did not prove target and service invariants');
   return true;
@@ -158,6 +159,7 @@ function liveRoot() {
     !root.startsWith(path.join(HOME, 'Projects') + path.sep) ||
     !/^PocketHost-[a-zA-Z0-9-]+$/.test(path.basename(root)) ||
     owner.cwd !== path.join(root, 'apps/admin') ||
+    root !== LIVE_ROOT ||
     root === QA ||
     lstatSync(root).isSymbolicLink() ||
     realpathSync(root) !== root
@@ -188,7 +190,7 @@ async function fastFlow(options) {
       realpathSync(QA) !== QA ||
       realpathSync(entryRoot) !== QA
     )
-      throw Error('Only the existing verified Samsung Termux QA checkout can run this flow');
+      throw Error('Only the verified A8 target checkout can run this flow');
     if (
       git(QA, 'remote', 'get-url', 'origin') !== ORIGIN ||
       git(QA, 'rev-parse', '--show-toplevel') !== QA ||
