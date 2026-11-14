@@ -112,11 +112,17 @@ IleStoi DB, 778 field/390 private photo directory roots, PhotoMap managed
 media directory, Local Agent, SSH, Cloudflare, runit, PocketHost, and
 Termux `usr/etc`. This validates member headers and required path presence,
 not a complete file-by-file payload restore. Prior creation emitted 16 warnings
-without a nonzero TAR exit. A scoped task
+without a nonzero TAR exit. The promotion task
 `termux-rebuild-promote-plain-tar-after-restore-samples-20261114-v1`
-was submitted to extract and verify two SQLite samples, SHA-256 the TAR,
-promote it only after success, and update the recovery manifest. **Do not
-claim promotion until its terminal receipt is checked.**
+completed **done / exit 0 / PASS**. It successfully extracted and checked
+both SQLite databases from the TAR (`PRAGMA quick_check = ok`), computed
+SHA-256 of the 33,027,737,600-byte archive, then atomically renamed it to
+`termux-home-usr.tar`, wrote `termux-home-usr.sha256` and updated the manifest.
+SHA-256: `c6a4e363b3fa14e47d0870b14a1c408e9ce382098504917eebcd268221b05584`.
+The original creation emitted 16 warnings from live files; preserve separate
+online SQLite backups as the canonical database recovery source. **This is a
+verified TAR listing, sampled extraction and checksum, not a full isolated
+1:1 restore or a verified off-device disaster-recovery copy.**
 
 ## Remaining protection gates
 
