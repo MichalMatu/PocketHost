@@ -73,8 +73,6 @@ test('GitHub preview pins 3 exact root files to one immutable public commit', as
   }
 });
 
-
-
 test('GitHub non-build preview preserves pinned runtime modules', async () => {
   const moduleSource = 'export const ready = true;\n';
   const serverSource = "import './src/handler.js'\n";
