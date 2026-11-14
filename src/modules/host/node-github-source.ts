@@ -237,15 +237,13 @@ export async function previewPublicGitHubNodeSource(
     throw new RangeError('GitHub Node entrypoint must be node server.mjs');
   if (!serverSource.trim() || serverSource.includes('\0'))
     throw new RangeError('Invalid GitHub Node source');
-  let extraFiles: Record<string, string> = {};
-  let assetFiles: Record<string, string> = {};
-  if (plan.commands.build !== null) {
-    const nested = record(commitInfo.commit);
-    const tree = record(nested.tree);
-    if (typeof tree.sha !== 'string' || !SHA.test(tree.sha))
-      throw new RangeError('GitHub source tree SHA is invalid');
-    ({ extraFiles, assetFiles } = await pinnedExtraFiles(base, tree.sha, commit, get));
-  }
+  // Runtime imports need pinned source files even without an npm build.
+  // Skipping the tree would silently stage an incomplete runnable release.
+  const nested = record(commitInfo.commit);
+  const tree = record(nested.tree);
+  if (typeof tree.sha !== 'string' || !SHA.test(tree.sha))
+    throw new RangeError('GitHub source tree SHA is invalid');
+  const { extraFiles, assetFiles } = await pinnedExtraFiles(base, tree.sha, commit, get);
   if (total + Buffer.byteLength(JSON.stringify(extraFiles)) +
       Buffer.byteLength(JSON.stringify(assetFiles)) > MAX_TOTAL)
     throw new RangeError('GitHub Node source exceeds total budget');

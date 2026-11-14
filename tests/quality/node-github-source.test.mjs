@@ -28,7 +28,8 @@ function fixture(overrides = {}) {
     };
     let response = url === 'https://api.github.com/repos/example/safe-node'
       ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
-      : url.endsWith('/commits/main') ? { sha }
+      : url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } }
+      : url.includes('/git/trees/' + treeSha) ? { truncated: false, tree: [] }
       : name ? {
           type: 'file', name, path: name, encoding: 'base64',
           content: Buffer.from(
@@ -52,9 +53,14 @@ test('GitHub preview pins 3 exact root files to one immutable public commit', as
   assert.deepEqual(preview.source.packageLock, lockfile);
   assert.equal(preview.source.serverSource, entry);
   assert.equal(preview.plan.dependencyCount, 0);
-  assert.equal(seen.length, 5);
+  assert.equal(seen.length, 6);
+  assert.equal(
+    seen[5].url,
+    'https://api.github.com/repos/example/safe-node/git/trees/' +
+      treeSha + '?recursive=1',
+  );
   assert.deepEqual(
-    seen.slice(2).map((request) => request.url),
+    seen.slice(2, 5).map((request) => request.url),
     ['package.json', 'package-lock.json', 'server.mjs'].map(
       (name) => 'https://api.github.com/repos/example/safe-node/contents/' + name + '?ref=' + sha,
     ),
@@ -65,6 +71,50 @@ test('GitHub preview pins 3 exact root files to one immutable public commit', as
     assert.equal(init.redirect, 'error');
     assert.equal(init.headers.Authorization, undefined);
   }
+});
+
+
+
+test('GitHub non-build preview preserves pinned runtime modules', async () => {
+  const moduleSource = 'export const ready = true;\n';
+  const serverSource = "import './src/handler.js'\n";
+  const { seen, get } = fixture({
+    change: (url, data) => {
+      if (url.includes('/git/trees/' + treeSha)) return {
+        truncated: false,
+        tree: [{
+          path: 'src/handler.js', type: 'blob', mode: '100644',
+          size: Buffer.byteLength(moduleSource),
+        }],
+      };
+      if (url.includes('/contents/src/handler.js?')) return {
+        type: 'file', name: 'handler.js', path: 'src/handler.js', encoding: 'base64',
+        content: Buffer.from(moduleSource).toString('base64'),
+      };
+      if (url.includes('/contents/server.mjs?')) return {
+        ...data, content: Buffer.from(serverSource).toString('base64'),
+      };
+      return data;
+    },
+  });
+  const preview = await previewPublicGitHubNodeSource('example/safe-node', get);
+  assert.equal(preview.plan.commands.build, null);
+  assert.equal(preview.source.serverSource, serverSource);
+  assert.deepEqual(preview.source.extraFiles, { 'src/handler.js': moduleSource });
+  assert.ok(seen.some(({ url }) => url.endsWith('/contents/src/handler.js?ref=' + sha)));
+});
+
+test('GitHub non-build preview refuses unsafe runtime module symlinks', async () => {
+  const { get } = fixture({
+    change: (url, data) => url.includes('/git/trees/' + treeSha) ? {
+      truncated: false,
+      tree: [{ path: 'src/handler.js', type: 'blob', mode: '120000', size: 20 }],
+    } : data,
+  });
+  await assert.rejects(
+    previewPublicGitHubNodeSource('example/safe-node', get),
+    /Unsupported GitHub frontend source file/,
+  );
 });
 
 
