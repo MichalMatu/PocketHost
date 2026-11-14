@@ -124,6 +124,14 @@ online SQLite backups as the canonical database recovery source. **This is a
 verified TAR listing, sampled extraction and checksum, not a full isolated
 1:1 restore or a verified off-device disaster-recovery copy.**
 
+A user-facing plaintext restoration guide was additionally written to
+`Plain-20261114-v1/README-ODTWORZENIE.txt` by Samsung task
+`termux-rebuild-plain-restore-readme-20261114-v1` (done / exit 0 / PASS).
+The guide explicitly warns against restoring the old `usr` tree wholesale,
+explains SHA-256 and SQLite checks, and identifies Android `BACKUPS` as a
+separate archive tree. The **next external gate is an independent off-phone
+copy with checksum verification**; there is no evidence of this yet.
+
 ## Remaining protection gates
 
 1. Check full plaintext TAR terminal receipt, size, SHA-256 and representative
