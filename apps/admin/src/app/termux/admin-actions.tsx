@@ -538,7 +538,9 @@ type RunitEntry = { name: string; registered: boolean; protected: boolean; state
 const isPanelService = (service: RunitEntry) =>
   service.name === "pockethost-panel" || service.name === "pockethost-panel-watch"
 
-export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: number }) {
+export function RunitServiceActions({
+  refreshToken = 0, mode = "lifecycle",
+}: { refreshToken?: number; mode?: "lifecycle" | "autostart" }) {
   const [services, setServices] = React.useState<RunitEntry[] | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -573,7 +575,10 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
     finally { setBusy(false) }
   }
   const perform = async (name: "register" | "unregister" | "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
-    if (busy || service.protected || isPanelService(service) || !window.confirm(
+    if (busy || service.protected || isPanelService(service) ||
+        (mode === "autostart" && name !== "enable" && name !== "disable") ||
+        (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
+        !window.confirm(
       name === "register" ?
         "Register service " + service.name + " for PocketHost lifecycle control? Registration does not start or stop it." :
         "Run " + name + " for explicitly registered runit service " + service.name + "?",
@@ -608,32 +613,46 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
           <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.protected ? "Protected external" : service.registered ? "PocketHost-managed" : "Observed · unmanaged"}</Badge>
         </div>
       </div>
-      {service.state === "unknown" && <p className="text-xs text-muted-foreground">
-        Runtime state unknown. Start, Stop and Restart require a confirmed state.
-      </p>}
+      {service.state === "unknown" && mode === "lifecycle" &&
+        <p className="text-xs text-muted-foreground">
+          Runtime state unknown. Start, Stop and Restart require a confirmed state.
+        </p>}
       {!service.protected && !isPanelService(service) && <div className="flex flex-wrap gap-1">
-        {service.registered ? <>
-          <Button size="sm" disabled={busy || service.state !== "stopped"} onClick={() => void perform("start", service)}>Start</Button>
-          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("stop", service)}>Stop</Button>
-          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"} onClick={() => void perform("restart", service)}>Restart</Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("enable", service)}>Enable</Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("disable", service)}>Disable</Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void readServiceLogs(service)}>Logs</Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void perform("unregister", service)}>Unregister</Button>
+        {mode === "lifecycle" ? (service.registered ? <>
+          <Button size="sm" disabled={busy || service.state !== "stopped"}
+            onClick={() => void perform("start", service)}>Start</Button>
+          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
+            onClick={() => void perform("stop", service)}>Stop</Button>
+          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
+            onClick={() => void perform("restart", service)}>Restart</Button>
+          <Button size="sm" variant="outline" disabled={busy}
+            onClick={() => void readServiceLogs(service)}>Logs</Button>
+          <Button size="sm" variant="outline" disabled={busy}
+            onClick={() => void perform("unregister", service)}>Unregister</Button>
         </> : <Button size="sm" variant="outline" disabled={busy}
           title="Grant lifecycle controls; this does not start the service"
-          onClick={() => void perform("register", service)}>Register</Button>}
+          onClick={() => void perform("register", service)}>Register</Button>) :
+          (service.registered ? <>
+            <Button size="sm" variant="outline"
+              disabled={busy || service.enabled !== false}
+              onClick={() => void perform("enable", service)}>Enable autostart</Button>
+            <Button size="sm" variant="outline"
+              disabled={busy || service.enabled !== true}
+              onClick={() => void perform("disable", service)}>Disable autostart</Button>
+          </> : <span className="text-xs text-muted-foreground">
+            Not enrolled · register in Runit services first
+          </span>)}
       </div>}
   </div>
   return <div className="space-y-3 rounded-md border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
-      <h3 className="text-sm font-medium">Runit services</h3>
+      <h3 className="text-sm font-medium">{mode === "autostart" ? "Autostart registry" : "Runit services"}</h3>
       <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
     </div>
     <p className="text-muted-foreground text-xs">
-      PocketHost coordinates its own services and explicitly enrolled runit services.
-      Register grants lifecycle controls; it does not start a service. SSH and Local Agent
-      remain protected until separately qualified. Runit liveness is not application health.
+      {mode === "autostart"
+        ? "Enable or disable runit autostart for enrolled services only. This does not change the current running state, Termux:Boot permissions or the Android startup policy."
+        : "Register a verified PocketHost service, manage its lifecycle and view logs. SSH, Local Agent and all other external services remain protected. Process liveness is not application health."}
     </p>
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
@@ -652,7 +671,7 @@ export function RunitServiceActions({ refreshToken = 0 }: { refreshToken?: numbe
         </p>
         {services.filter(service => service.protected || isPanelService(service)).map(serviceRow)}
       </section>}
-    {serviceLogs && <div className="rounded-md border p-2">
+    {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>
     </div>}

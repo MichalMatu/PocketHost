@@ -1,7 +1,7 @@
 import {
   Activity, Archive, Bot, FolderOpen, Globe2, History,
   LayoutDashboard, Network, Package, ScrollText, ServerCog, Settings,
-  Smartphone, Terminal,
+  Smartphone, Terminal, Power, HeartPulse, Boxes, ListTree,
 } from "lucide-react"
 import { serviceWorkspaces } from "@/config/service-workspaces"
 
@@ -44,7 +44,11 @@ export const navGroups = [
   {
     label: "Services",
     items: [
-      { title: "All services", url: "/services", icon: ServerCog },
+      { title: "Overview", url: "/services", icon: ServerCog },
+      { title: "Runit services", url: "/services/runit", icon: ListTree },
+      { title: "Autostart", url: "/services/autostart", icon: Power },
+      { title: "Hosting workloads", url: "/services/hosting", icon: Boxes },
+      { title: "Health checks", url: "/services/health", icon: HeartPulse },
       ...serviceWorkspaces.map(({ title, url, icon }) => ({ title, url, icon })),
     ],
   },

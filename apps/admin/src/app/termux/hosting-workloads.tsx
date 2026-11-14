@@ -30,7 +30,9 @@ async function readNode(signal: AbortSignal): Promise<Catalog<NodeRuntimeEntry>>
  * runit registry. No discovered service grants lifecycle ownership.
  * HTTP readiness is checked only after an explicit button action.
  */
-export function HostingWorkloads({ refreshToken = 0 }: { refreshToken?: number }) {
+export function HostingWorkloads({
+  refreshToken = 0, view = "inventory",
+}: { refreshToken?: number; view?: "inventory" | "health" }) {
   const [staticSites, setStaticSites] = React.useState<Catalog<FleetSite>>({
     state: "loading", items: [],
   })
@@ -120,9 +122,9 @@ export function HostingWorkloads({ refreshToken = 0 }: { refreshToken?: number }
 
   return <div className="space-y-4">
     <p className="text-xs text-muted-foreground">
-      Owned Hosting workloads are listed separately from the runit service registry.
-      Runtime status is not an HTTP health check. No background polling, service
-      adoption or automatic restart occurs here.
+      {view === "health"
+        ? "Manually probe the current verified release. Unknown or stopped workloads cannot be marked healthy. No periodic health polling or restart is enabled."
+        : "PocketHost-owned Hosting workloads, independent of runit inventory. Runtime state does not prove HTTP readiness; health checks are on their own Services page."}
     </p>
     <section className="space-y-2" aria-label="Node Hosting workloads">
       <h3 className="text-sm font-medium">Node.js projects</h3>
@@ -144,23 +146,24 @@ export function HostingWorkloads({ refreshToken = 0 }: { refreshToken?: number }
           </div>
           <Badge variant="outline">Node · {project.state}</Badge>
         </div>
-        <p className="break-all text-xs text-muted-foreground">
-          Desired: {project.desired} · Observed: {project.state} · Port: {project.port ?? "not assigned"}
-        </p>
-        <p className="break-all text-xs text-muted-foreground">
-          Active release: {project.activeRelease ?? "none"} · Last good: {project.lastGoodRelease ?? "none"}
-        </p>
+        {view === "inventory" && <>
+          <p className="break-all text-xs text-muted-foreground">
+            Desired: {project.desired} · Observed: {project.state} · Port: {project.port ?? "not assigned"}
+          </p>
+          <p className="break-all text-xs text-muted-foreground">
+            Active release: {project.activeRelease ?? "none"} · Last good: {project.lastGoodRelease ?? "none"}
+          </p>
+        </>}
         {project.desired === "running" && project.state !== "running" &&
           <p role="alert" className="text-xs">
             Desired/observed state differs. Policy: {project.healthDecision.action}
             {" ("}{project.healthDecision.reason}{")."} No automatic recovery was requested.
           </p>}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {diagnostic("node", project.id, project.state === "running", project.activeRelease)}
+        {view === "health" ?
+          diagnostic("node", project.id, project.state === "running", project.activeRelease) :
           <Link className="text-xs underline underline-offset-4" to="/projects">
             Manage project
-          </Link>
-        </div>
+          </Link>}
         {project.state === "unknown" && <p role="alert" className="text-xs">
           Process identity is uncertain. Use the project page to review ownership before any action.
         </p>}
@@ -186,15 +189,15 @@ export function HostingWorkloads({ refreshToken = 0 }: { refreshToken?: number }
           </div>
           <Badge variant="outline">Static · {site.state}</Badge>
         </div>
-        <p className="break-all text-xs text-muted-foreground">
-          Active release: {site.activeRelease ?? "none"} · Releases: {site.releases}
-        </p>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          {diagnostic("static", site.id, site.state === "running", site.activeRelease)}
+        {view === "inventory" &&
+          <p className="break-all text-xs text-muted-foreground">
+            Active release: {site.activeRelease ?? "none"} · Releases: {site.releases}
+          </p>}
+        {view === "health" ?
+          diagnostic("static", site.id, site.state === "running", site.activeRelease) :
           <Link className="text-xs underline underline-offset-4" to="/sites">
             Manage site
-          </Link>
-        </div>
+          </Link>}
         {site.state === "unknown" && <p role="alert" className="text-xs">
           Process identity is uncertain. Review the site before any action.
         </p>}

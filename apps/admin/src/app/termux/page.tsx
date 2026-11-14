@@ -2,7 +2,6 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { Archive, Boxes, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
-import { navGroups } from "@/config/navigation"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,8 +11,7 @@ import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
-import { PackageManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
-import { HostingWorkloads } from "@/app/termux/hosting-workloads"
+import { PackageManager, WorkspaceBackupActions, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
   const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
@@ -25,12 +23,11 @@ function GuardNotice({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground text-xs">{children}</p>
 }
 
-export type TermuxSection = "packages" | "files" | "services" | "backups" | "terminal" | "agents"
+export type TermuxSection = "packages" | "files" | "backups" | "terminal" | "agents"
 
 const sectionTitles: Record<TermuxSection, string> = {
   packages: "Packages & Software",
   files: "File Manager",
-  services: "Services",
   backups: "Backups & Recovery",
   terminal: "Terminal",
   agents: "Agents & API",
@@ -80,8 +77,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   const overviewFailed = (section === "packages" && errors.snapshot) ||
     (["backups", "terminal"].includes(section) && errors.tools)
   const overviewSource = section === "packages" ? "Observability" : "Tool inventory"
-  const serviceLinks = navGroups.find(group => group.label === "Services")
-    ?.items.filter(item => item.url !== "/services") ?? []
 
   return (
     <BaseLayout title={sectionTitles[section]} >
@@ -122,40 +117,6 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
               </CardContent>
             </Card>
           </section>}
-
-          {section === "services" && <section className="space-y-4">
-            <div className="space-y-3">
-              <div>
-                <h2 className="text-sm font-semibold">Service workspaces</h2>
-                <p className="text-xs text-muted-foreground">
-                  PocketHost coordinates installed and explicitly enrolled services. Protected external
-                  services remain observed until separately verified for management.
-                </p>
-              </div>
-              <nav aria-label="Service workspaces" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {serviceLinks.map(({ title, url, icon: Icon }) =>
-                  <Link key={url} to={url}
-                    className="flex min-w-0 items-center gap-3 rounded-lg border px-3 py-3 text-sm
-                      transition-colors hover:bg-accent hover:text-accent-foreground">
-                    <Icon className="size-4 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate font-medium">{title}</span>
-                    <span className="text-xs text-muted-foreground">Open</span>
-                  </Link>)}
-              </nav>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold">Runit inventory</h2>
-              <p className="text-xs text-muted-foreground">
-                Lifecycle, autostart and logs are available for enrolled services. Discovery alone
-                never transfers ownership; application health requires a dedicated probe.
-              </p>
-              <RunitServiceActions refreshToken={sectionRefreshToken} />
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-sm font-semibold">Hosting workloads</h2>
-              <HostingWorkloads refreshToken={sectionRefreshToken} />
-            </div>
-          </section>
 
           {section === "backups" && <section className="space-y-4">
             <Card>
