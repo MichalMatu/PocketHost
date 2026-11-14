@@ -1,8 +1,9 @@
 import {
-  Activity, Archive, Bot, Cloud, FolderOpen, Globe2, HeartPulse, History,
-  LayoutDashboard, Network, Package, Radio, ScrollText, ServerCog, Settings,
-  Shield, Smartphone, Terminal,
+  Activity, Archive, Bot, FolderOpen, Globe2, History,
+  LayoutDashboard, Network, Package, ScrollText, ServerCog, Settings,
+  Smartphone, Terminal,
 } from "lucide-react"
+import { serviceWorkspaces } from "@/config/service-workspaces"
 
 /** Individual service pages do not imply service ownership. */
 export const navGroups = [
@@ -44,13 +45,7 @@ export const navGroups = [
     label: "Services",
     items: [
       { title: "All services", url: "/services", icon: ServerCog },
-      { title: "Local Agent", url: "/local-agent", icon: Bot },
-      { title: "IleStoi", url: "/services/ilestoi", icon: Globe2 },
-      { title: "IleStoi Healthwatch", url: "/services/healthwatch", icon: HeartPulse },
-      { title: "PhotoMap (test)", url: "/services/photomap", icon: FolderOpen },
-      { title: "Cloudflare Tunnel", url: "/services/cloudflare", icon: Cloud },
-      { title: "SSH", url: "/services/ssh", icon: Shield },
-      { title: "Mosquitto MQTT", url: "/services/mqtt", icon: Radio },
+      ...serviceWorkspaces.map(({ title, url, icon }) => ({ title, url, icon })),
     ],
   },
 ]

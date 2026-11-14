@@ -7,24 +7,16 @@ import { Button } from "@/components/ui/button"
 import { IleStoiDiagnosticPanel } from "@/app/termux/ilestoi-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanel } from "@/app/termux/protected-services-panel"
+import { diagnosticServices, type DiagnosticServiceId } from "@/config/service-workspaces"
 
-const details = {
-  ilestoi: { title: "IleStoi", description: "Application health and redacted service logs" },
-  healthwatch: { title: "IleStoi Healthwatch", description: "Protected healthwatch diagnostics" },
-  cloudflare: { title: "Cloudflare Tunnel", description: "Tunnel state and sanitized configuration" },
-  ssh: { title: "SSH", description: "Protected SSH service diagnostics" },
-  mqtt: { title: "Mosquitto MQTT", description: "Protected broker diagnostics" },
-} as const
-
-type ServiceId = keyof typeof details
-
-export default function ServiceDetailPage() {
+export default function ServiceDetailPage({ service: selectedService }: {
+  service?: DiagnosticServiceId
+}) {
+  // The explicit routes supply service; the legacy parameter is an unknown-slug fallback.
   const { serviceId } = useParams()
   const [refreshToken, setRefreshToken] = React.useState(0)
-  const known = serviceId !== undefined &&
-    Object.prototype.hasOwnProperty.call(details, serviceId)
-  const service = known ? serviceId as ServiceId : null
-  const item = service === null ? null : details[service]
+  const item = diagnosticServices.find(entry => entry.id === (selectedService ?? serviceId))
+  const service = item?.id ?? null
 
   return <BaseLayout title={item?.title ?? "Unknown service"} description={item?.description}>
     <div className="space-y-4 px-4 pb-8 lg:px-6">

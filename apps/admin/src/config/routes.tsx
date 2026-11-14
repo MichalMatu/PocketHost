@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import { Navigate, type RouteObject } from "react-router-dom"
+import type { DiagnosticServiceId } from "@/config/service-workspaces"
 
 /**
  * Every page is code-split. With the data router, a route's code is loaded
@@ -8,6 +9,14 @@ import { Navigate, type RouteObject } from "react-router-dom"
  */
 function page(load: () => Promise<{ default: ComponentType }>) {
   return async () => ({ Component: (await load()).default })
+}
+
+/** Dedicated service URLs share one rendering shell, never duplicated data requests. */
+function servicePage(service: DiagnosticServiceId) {
+  return async () => {
+    const { default: ServiceDetailPage } = await import("@/app/services/service-detail-page")
+    return { Component: () => <ServiceDetailPage service={service} /> }
+  }
 }
 
 export const routes: RouteObject[] = [
@@ -26,6 +35,11 @@ export const routes: RouteObject[] = [
   { path: "/files", lazy: page(() => import("@/app/termux/files-page")) },
   { path: "/services", lazy: page(() => import("@/app/termux/services-page")) },
   { path: "/services/photomap", lazy: page(() => import("@/app/services/photomap-page")) },
+  { path: "/services/ilestoi", lazy: servicePage("ilestoi") },
+  { path: "/services/healthwatch", lazy: servicePage("healthwatch") },
+  { path: "/services/cloudflare", lazy: servicePage("cloudflare") },
+  { path: "/services/ssh", lazy: servicePage("ssh") },
+  { path: "/services/mqtt", lazy: servicePage("mqtt") },
   { path: "/services/:serviceId", lazy: page(() => import("@/app/services/service-detail-page")) },
   { path: "/local-agent", lazy: page(() => import("@/app/local-agent/page")) },
   { path: "/backups", lazy: page(() => import("@/app/termux/backups-page")) },
@@ -37,8 +51,8 @@ export const routes: RouteObject[] = [
   { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
   { path: "/projects", lazy: page(() => import("@/app/projects/page")) },
   { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
-  // P4: explicit, read-only catalog for imported PhotoMap TEST
-  { path: "/managed-projects", lazy: page(() => import("@/app/managed-projects/page")) },
+  // Legacy PhotoMap entry: one canonical page, no second inventory/read.
+  { path: "/managed-projects", element: <Navigate to="/services/photomap" replace /> },
   // PocketHost home dashboard, with the original upstream charts kept as an example.
   { path: "/dashboard", lazy: page(() => import("@/app/termux/system-page")) },
   { path: "/examples/dashboard", lazy: page(() => import("@/app/dashboard/page")) },

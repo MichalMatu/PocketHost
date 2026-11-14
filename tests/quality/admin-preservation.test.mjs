@@ -51,7 +51,7 @@ const originalPaths = [
 
 test('full 32-route upstream admin shell remains available beside twenty PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 22);
+  assert.equal(allPaths.length, originalPaths.length + 27);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -108,14 +108,19 @@ test('Services is last and every external service has a single navigation link',
   assert.match(hostingGroup, /url: "\/deployments"/);
   assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
   assert.ok(navigation.lastIndexOf('label: "Services",') > navigation.indexOf('label: "Platform",'));
-  for (const dest of ['/services', '/local-agent', '/services/photomap',
-    '/services/ilestoi', '/services/healthwatch', '/services/cloudflare',
-    '/services/ssh', '/services/mqtt']) {
-    assert.equal(navigation.split('url: "' + dest + '"').length - 1, 1, dest);
-    assert.ok(serviceGroup.includes('url: "' + dest + '"'), 'missing service: ' + dest);
+  assert.equal(navigation.split('url: "/services"').length - 1, 1);
+  assert.match(serviceGroup, /serviceWorkspaces\.map/);
+  const catalog = readFileSync(path.join(root, 'apps/admin/src/config/service-workspaces.ts'), 'utf8');
+  for (const dest of ['/local-agent', '/services/photomap', '/services/ilestoi',
+    '/services/healthwatch', '/services/cloudflare', '/services/ssh', '/services/mqtt']) {
+    assert.equal(catalog.split('url: "' + dest + '"').length - 1, 1, dest);
   }
   assert.match(routes, /path: "\/services\/:serviceId"/);
   assert.match(routes, /path: "\/services\/photomap"/);
+  for (const id of ['ilestoi', 'healthwatch', 'cloudflare', 'ssh', 'mqtt']) {
+    assert.ok(routes.includes('path: "/services/' + id + '"'));
+  }
+  assert.match(routes, /path: "\/managed-projects", element: <Navigate to="\/services\/photomap"/);
   assert.match(routes, /path: "\/host"/);
   const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Services",')[0] ?? '';
   assert.match(platformGroup, /url: "\/settings\/network"/);
