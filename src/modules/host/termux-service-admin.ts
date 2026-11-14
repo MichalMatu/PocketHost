@@ -8,6 +8,7 @@ import {
   readdirSync,
   rmSync,
   realpathSync,
+  symlinkSync,
   renameSync,
   statSync,
   writeFileSync,
@@ -28,6 +29,7 @@ const SYSTEM_SERVICE_NAMES = new Set([
 ]);
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
+const MAX_TEMPLATE_WORKERS = 4;
 
 interface Registration {
   name: string;
@@ -164,6 +166,86 @@ export class TermuxServiceAdmin {
     )
       throw new Error('Service points outside accepted runit root');
     return resolved;
+  }
+
+  /**
+   * First standalone service template: an owned, stopped heartbeat worker.
+   * This does NOT accept user code, shell, source path, PID, service target,
+   * existing service adoption, or a network port. A name is only a label.
+   *
+   * Construct under /var/sv (not watched by runsvdir), then publish exactly
+   * one symlink in /var/service and bind the expected script hash through
+   * the trusted in-process registry. No additional process supervisor.
+   */
+  createManagedWorker(name: string): { changed: boolean; name: string; template: 'heartbeat-worker-v1' } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    if (this.registry().length >= MAX_MANAGED) throw new RangeError('Managed service quota reached');
+    const sourceRoot = path.join(PREFIX, 'var', 'sv');
+    const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
+    for (const folder of [this.serviceRoot, sourceRoot, logRoot]) {
+      const st = lstatSync(folder);
+      if (!st.isDirectory() || st.isSymbolicLink() ||
+          st.uid !== process.getuid?.() || (st.mode & 0o022) !== 0 ||
+          realpathSync(folder) !== folder) {
+        throw new Error('Untrusted Termux service directory');
+      }
+    }
+    // Quota includes previously released definitions, so repeated
+    // create/release cannot fill the Termux filesystem from the LAN.
+    const templateCount = readdirSync(sourceRoot).filter((unit) => {
+      if (!SERVICE_NAME.test(unit)) return false;
+      const marker = path.join(sourceRoot, unit, '.pockethost-service.json');
+      try {
+        const raw = safeFile(marker);
+        if (!raw) return false;
+        const data: unknown = JSON.parse(raw);
+        return !!data && typeof data === 'object' &&
+          (data as { template?: string }).template === 'heartbeat-worker-v1';
+      } catch {
+        throw new Error('Managed worker inventory unverified');
+      }
+    }).length;
+    if (templateCount >= MAX_TEMPLATE_WORKERS) throw new RangeError('Managed worker quota reached');
+    const published = path.join(this.serviceRoot, name);
+    const target = path.join(sourceRoot, name);
+    const logTarget = path.join(logRoot, name);
+    // Never overwrite, adopt, replace or repair existing directories.
+    // A failed preparation leaves at most an isolated (unpublished) unit.
+    for (const location of [published, target, logTarget]) {
+      try {
+        lstatSync(location);
+        throw new Error('Service name or log directory already exists');
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+    }
+    const sh = path.join(PREFIX, 'bin', 'sh');
+    const node = path.join(PREFIX, 'bin', 'node');
+    const svlogd = path.join(PREFIX, 'bin', 'svlogd');
+    for (const binary of [sh, node, svlogd]) {
+      const st = statSync(binary);
+      if (!st.isFile() || (st.mode & 0o111) === 0) throw new Error('Termux runtime unavailable');
+    }
+    const runScript = '#!' + sh + '\n' +
+      'exec ' + node + ' -e ' +
+      "'console.log(\"PocketHost worker started\"); setInterval(() => console.log(\"PocketHost worker heartbeat\"), 60000)'\n";
+    const logScript = '#!' + sh + '\nexec ' + svlogd + ' -tt ' + logTarget + '\n';
+    const digest = createHash('sha256').update(runScript).digest('hex');
+    mkdirSync(target, { mode: 0o700 });
+    // Always materialize the runit down marker before the runnable script.
+    writeFileSync(path.join(target, 'down'), '', { flag: 'wx', mode: 0o600 });
+    mkdirSync(path.join(target, 'log'), { mode: 0o700 });
+    mkdirSync(logTarget, { mode: 0o700 });
+    writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
+    writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
+    writeFileSync(path.join(target, '.pockethost-service.json'), JSON.stringify({
+      schema: 1, owner: 'pockethost', name, template: 'heartbeat-worker-v1',
+      runSha256: digest, instanceId: randomUUID(),
+    }) + '\n', { flag: 'wx', mode: 0o600 });
+    symlinkSync(target, published);
+    this.registerProvisioned(name, { target, runSha256: digest });
+    return { changed: true, name, template: 'heartbeat-worker-v1' };
   }
 
   /** No digest or script validation means no lifecycle authority. */
@@ -403,7 +485,14 @@ export class TermuxServiceAdmin {
     const registrations = this.registry();
     const existing = registrations.find((item) => item.name === name);
     if (operation === 'unregister') {
-      if (!existing) throw new Error('Service not registered');
+      // Releasing ownership must never orphan a live or boot-enabled unit.
+      // This removes the authority record only; the runit unit and logs
+      // remain for explicit later cleanup under an independently safe gate.
+      const target = this.target(name);
+      if (!existing || this.identity(name, target, registrations) !== 'verified' ||
+          this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
+        throw new Error('Release control requires an attested, stopped and autostart-disabled service');
+      }
       this.save(registrations.filter((item) => item.name !== name));
       return { changed: true };
     }

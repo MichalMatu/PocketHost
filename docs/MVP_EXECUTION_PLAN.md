@@ -48,6 +48,17 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 
 **S1 checkpoint — integralność skryptów wdrożona na A8:** commit `328f13191416fe5ba8d95a2cc12ccc306a77260d`, wynik `pockethost-a8-service-run-integrity-20261114-v1` `PASS` (live SHA `328f13191416fe5ba8d95a2cc12ccc306a77260d`, PID 18112, HTTP 200, chronione usługi bez zmian, `tests=not-run`). Kontrola digestu `run` odbywa się przy zarządzaniu; UI sygnalizuje `verified` / `changed` / `legacy` / `unregistered` / `reserved`. **Nadal brak ogólnego kreatora usług i odbioru S1/S2/S3/S4**; nie oznaczać etapu jako `[x]`.
 
+**S1 kolejny podetap (implementacja, nie odbiór):** `Runit services → Add Service` tworzy
+odrębną od Project usługę na podstawie **ograniczonego, wbudowanego szablonu
+`heartbeat-worker-v1`**. Nowy unit jest początkowo zatrzymany i z wyłączonym
+autostartem; istniejących jednostek nie można przejąć. Nazwa nie oznacza
+własności: zapis w rejestrze następuje dopiero po zweryfikowanym stworzeniu
+skryptu przez PocketHost. Zwolnienie kontroli wymaga zatrzymanej i
+wyłączonej usługi, pozostawia jej pliki i logi. Ten pierwszy szablon nie
+oznacza jeszcze obsługi własnego kodu JS/Python ani kompletnego przepływu
+usuwania/rollbacku, więc S1 i S2 nie są ukończone. [Kontrakt](S1_RUNIT_REUSE.md).
+Testy są zaplanowane na bramę zakończenia całego etapu Services.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

@@ -39,6 +39,41 @@ The H3 registry now stores a SHA-256 digest of the provisioned `run` script and 
 
 Existing older test fixtures that register by service name must be updated to use trusted provisioner evidence at the **complete Services closure test gate**; no test execution is permitted during interim FAST FLOW iterations. A guarded deployment status is not a functional test result.
 
+## S1 standalone service creator: a bounded first template
+
+The `Runit services → Add Service` action creates a **new**, isolated
+`heartbeat-worker-v1` service without creating a Project. It is a real runit
+unit, not a fake status indicator:
+
+- The browser supplies only a validated new service name and the exact built-in
+  template identifier. It cannot provide JavaScript, Python, shell, executable,
+  filesystem path, port or existing-service target.
+- The host requires the official Termux-owned service and log roots, refuses
+  every existing name/path or protected system service, bounds managed inventory
+  and caps this first template at **four** workers.
+- The host prepares an owner-only definition under `PREFIX/var/sv/<name>`,
+  creates a runit `down` marker **before** the executable script, writes a
+  fixed Node heartbeat script/logging unit and a private ownership marker.
+- Only after preparation does it publish a symlink into the watched
+  `PREFIX/var/service` directory and call the trusted provenance registry.
+  User code and foreign services are **never** adopted.
+- Creation leaves the worker **stopped and autostart-disabled**. Start,
+  Stop and Restart reuse existing `sv` commands and exact script identity;
+  no background process is launched by creating the definition.
+- Releasing a service from PocketHost management is deliberately distinct
+  from removing it. It is refused unless the service remains attested,
+  stopped and autostart-disabled. The runit files and logs remain for later
+  explicitly guarded cleanup; there is **no disguised delete**.
+- The first template is a bounded integration bridge, **not** arbitrary
+  standalone app execution. User-controlled Node/Python programs need
+  reviewed source declarations and a separate owner-authorization model
+  before being permitted through the no-login LAN UI.
+
+No host package was installed or updated; no unrelated service was changed.
+The complete positive/negative test matrix is reserved for the finished
+Services acceptance gate. S1 remains **IN_PROGRESS** until real application
+source enrollment and recovery/removal semantics are covered.
+
 ## Invariants for next S1 slice
 
 - No browser or untrusted caller may select a process PID, arbitrary executable, unvalidated service script or foreign directory and call it owned.

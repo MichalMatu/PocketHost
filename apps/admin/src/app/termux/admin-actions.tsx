@@ -554,6 +554,8 @@ export function RunitServiceActions({
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
+  const [creatorOpen, setCreatorOpen] = React.useState(false)
+  const [workerName, setWorkerName] = React.useState("")
   const refresh = React.useCallback(async () => {
     const data = await inspect<{ services: RunitEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
@@ -589,7 +591,11 @@ export function RunitServiceActions({
         (mode === "autostart" && name !== "enable" && name !== "disable") ||
         (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
         !window.confirm(
-      "Run " + name + " for explicitly registered runit service " + service.name + "?",
+      name === "unregister"
+        ? "Release control of " + service.name +
+          "? This requires the service stopped and autostart disabled. " +
+          "Its runit files and logs will remain; this does NOT delete the service."
+        : "Run " + name + " for explicitly registered runit service " + service.name + "?",
     )) return
     setBusy(true); setError(null); setDone(null)
     try {
@@ -603,6 +609,26 @@ export function RunitServiceActions({
       }
     } catch {
       setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
+    } finally { setBusy(false) }
+  }
+  const createWorker = async () => {
+    const name = workerName.trim()
+    if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
+      !window.confirm("Create a new stopped PocketHost-owned heartbeat worker " + name +
+        "? This creates one isolated runit service and does not start it.")) return
+    setBusy(true); setError(null); setDone(null)
+    try {
+      await action({ action: "service-create", name: "heartbeat-worker-v1", path: name })
+      try {
+        await refresh()
+        setDone(name + ": stopped worker provisioned; use Start after reviewing ownership")
+      } catch {
+        setDone(name + ": creation acknowledged, but inventory refresh failed")
+        setError("Verify service identity before attempting lifecycle commands.")
+      }
+      setCreatorOpen(false); setWorkerName("")
+    } catch {
+      setError("Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
     } finally { setBusy(false) }
   }
   const counts = services ? {
@@ -636,8 +662,10 @@ export function RunitServiceActions({
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service)}>Logs</Button>
-          <Button size="sm" variant="outline" disabled={busy}
-            onClick={() => void perform("unregister", service)}>Unregister</Button>
+          <Button size="sm" variant="outline"
+            disabled={busy || service.state !== "stopped" || service.enabled !== false}
+            title="Releases ownership only. Requires stopped and autostart disabled; does not remove files."
+            onClick={() => void perform("unregister", service)}>Release control</Button>
         </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
           (service.registered ? <>
             <Button size="sm" variant="outline"
@@ -661,6 +689,36 @@ export function RunitServiceActions({
         ? "Enable or disable runit autostart for enrolled services only. This does not change the current running state, Termux:Boot permissions or the Android startup policy."
         : "Only services provisioned and attested by PocketHost can be enrolled. Name prefixes never confer ownership; discovered services stay read-only. SSH and Local Agent remain protected. Process liveness is not application health."}
     </p>
+    {mode === "lifecycle" && <>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-muted-foreground text-xs">
+          A standalone service needs no Project. First available template: safe, local heartbeat worker.
+        </p>
+        <Button size="sm" variant="outline" disabled={busy}
+          onClick={() => setCreatorOpen(open => !open)}>
+          {creatorOpen ? "Close creator" : "Add Service"}
+        </Button>
+      </div>
+      {creatorOpen && <div className="space-y-3 rounded-md border p-3" aria-label="Add standalone service">
+        <p className="text-sm font-medium">Create standalone service</p>
+        <p className="text-muted-foreground text-xs">
+          Template: Node.js heartbeat worker. It uses fixed PocketHost code, starts stopped
+          and has no network listener or access to a Project. Maximum four built-in workers.
+          Custom scripts and adoption of existing services are not available here.
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
+            className="min-w-48 max-w-72" maxLength={64} disabled={busy}
+            value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
+          <Button size="sm" disabled={busy || !/^[a-z][a-z0-9-]{1,63}$/.test(workerName)}
+            onClick={() => void createWorker()}>Create stopped service</Button>
+        </div>
+        <p className="text-muted-foreground text-xs">
+          Names must be unique and 2–64 characters: lowercase letters, digits and hyphens.
+          Creating a service does not enable autostart or execute a script.
+        </p>
+      </div>}
+    </>}
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
@@ -676,7 +734,8 @@ export function RunitServiceActions({
         <p className="text-muted-foreground text-xs">
           Run a PocketHost-provisioned Node project to create an owned runit unit.
           An arbitrary discovered service cannot be adopted by renaming it or clicking Register.
-          General-purpose service provisioning is still part of S1.
+          This first standalone template supports safe runit lifecycle qualification;
+          arbitrary application code and external enrollment remain future S1 work.
         </p>
         <Button size="sm" variant="outline" render={<Link to="/projects" />}>Open Projects</Button>
       </div>

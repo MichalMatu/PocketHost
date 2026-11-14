@@ -1490,6 +1490,15 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service-logs") {
               return services.logs(input.path ?? "")
             }
+            if (input.action === "service-create") {
+              // Only this shipped fixed, non-user-programmable worker template.
+              // No browser-supplied command, source, path, executable or port.
+              if (input.name !== "heartbeat-worker-v1" ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
+                throw new RangeError("Unsupported service template");
+              }
+              return services.createManagedWorker(input.path ?? "")
+            }
             if (input.action === "service") {
               if (!input.name || !["unregister","start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")
