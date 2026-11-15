@@ -248,15 +248,45 @@ function isReserved(name: string, resolved?: string): boolean {
     (resolved !== undefined && SYSTEM_SERVICE_NAMES.has(path.basename(resolved)))
   );
 }
+/**
+ * Read an owner-sensitive small record only through the file inspected by
+ * lstat. A replaced symlink, hard link, inode or concurrently modified record
+ * must never become service enrollment, archive or source authority.
+ */
 function safeFile(file: string): string | null {
+  let fd: number | undefined;
   try {
-    const stat = lstatSync(file);
-    if (stat.isSymbolicLink() || !stat.isFile() || stat.size > 20000)
+    const initial = lstatSync(file);
+    if (!initial.isFile() || initial.isSymbolicLink() ||
+        initial.nlink !== 1 || initial.size > 20000 ||
+        initial.uid !== process.getuid?.() || (initial.mode & 0o022) !== 0)
       throw new Error('Unsafe runit registry');
-    return readFileSync(file, 'utf8');
+    // NONBLOCK also prevents a swapped-in FIFO from blocking this host process.
+    fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
+    const opened = fstatSync(fd);
+    if (!opened.isFile() || opened.dev !== initial.dev ||
+        opened.ino !== initial.ino || opened.size !== initial.size ||
+        opened.mtimeMs !== initial.mtimeMs || opened.mode !== initial.mode ||
+        opened.nlink !== 1 || opened.uid !== initial.uid)
+      throw new Error('Runit record changed while opening');
+    const bytes = readFileSync(fd);
+    const after = fstatSync(fd);
+    const current = lstatSync(file);
+    if (bytes.length !== initial.size || bytes.length > 20000 ||
+        after.dev !== initial.dev || after.ino !== initial.ino ||
+        after.size !== initial.size || after.mtimeMs !== initial.mtimeMs ||
+        after.mode !== initial.mode || after.nlink !== 1 ||
+        current.dev !== initial.dev || current.ino !== initial.ino ||
+        current.size !== initial.size || current.mtimeMs !== initial.mtimeMs ||
+        current.mode !== initial.mode || current.nlink !== 1 ||
+        current.uid !== initial.uid)
+      throw new Error('Runit record changed during read');
+    return bytes.toString('utf8');
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
     throw error;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
