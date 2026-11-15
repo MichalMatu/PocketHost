@@ -1309,8 +1309,9 @@ export class TermuxServiceAdmin {
     }
   }
 
-  /** No digest or script validation means no lifecycle authority. */
+  /** Re-attest the opened inode, never hash a path after a separate lstat. */
   private runSha256(target: string): string | null {
+    let fd: number | undefined;
     try {
       const file = path.join(target, 'run');
       const stat = lstatSync(file);
@@ -1324,9 +1325,42 @@ export class TermuxServiceAdmin {
         stat.size > 20000
       )
         return null;
-      return createHash('sha256').update(readFileSync(file)).digest('hex');
+      fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+      const opened = fstatSync(fd);
+      if (
+        !opened.isFile() ||
+        opened.dev !== stat.dev ||
+        opened.ino !== stat.ino ||
+        opened.size !== stat.size ||
+        opened.mtimeMs !== stat.mtimeMs ||
+        opened.mode !== stat.mode ||
+        opened.nlink !== 1 ||
+        opened.uid !== stat.uid
+      )
+        return null;
+      const bytes = readFileSync(fd);
+      const after = fstatSync(fd);
+      const current = lstatSync(file);
+      if (
+        bytes.length !== stat.size ||
+        after.dev !== stat.dev ||
+        after.ino !== stat.ino ||
+        after.size !== stat.size ||
+        after.mtimeMs !== stat.mtimeMs ||
+        current.dev !== stat.dev ||
+        current.ino !== stat.ino ||
+        current.size !== stat.size ||
+        current.mtimeMs !== stat.mtimeMs ||
+        current.mode !== stat.mode ||
+        current.nlink !== 1 ||
+        current.uid !== stat.uid
+      )
+        return null;
+      return createHash('sha256').update(bytes).digest('hex');
     } catch {
       return null;
+    } finally {
+      if (fd !== undefined) closeSync(fd);
     }
   }
 
