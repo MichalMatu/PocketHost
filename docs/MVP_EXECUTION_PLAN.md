@@ -125,6 +125,17 @@ Nie dodano schedulera ani samoczynnego restartu. S4 pozostaje `[ ]`:
 polityka limitowanych prób, odrębne readiness i recovery są nadal
 do implementacji i testów końca całego etapu.
 
+**Wdrożenia 2026-11-15 (A8 FAST FLOW, bez testów etapu):**
+S1/S2 `2c2b4e3` — archiwizacja, przywracanie i blokady konfliktów;
+S3 `839c397` — trwały odczyt zwrotny stanu autostartu;
+S4 `10f469ddb1f60dad89bb1b1a3d1641a50197e8d2` — ręczny odczyt runit/znacznika logu z rozróżnieniem
+PID od application readiness. Trzy terminalne wyniki `PASS`,
+ostatni live SHA `10f469ddb1f60dad89bb1b1a3d1641a50197e8d2`, PID 29180, HTTP 200, chronione
+usługi nietknięte, `tests=not-run`. **Nie jest to zatwierdzenie
+funkcjonalne S1–S4**. Następny krok: jawna polityka readiness/recovery
+dla zweryfikowanych usług i dopiero po pełnym zamknięciu Services
+testy pozytywne/negatywne oraz raport.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
