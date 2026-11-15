@@ -52,7 +52,7 @@ test('preflight must be same owner baseline, healthy panel and unchanged service
     checkoutSha: base,
     sourceDrift: 'same',
     panelHttp: 'reachable',
-    protectedServices: 'running',
+    protectedServices: 'baseline-attested',
     deployment: 'not-performed',
     restart: 'not-performed',
   };
@@ -80,13 +80,13 @@ test('preflight must be same owner baseline, healthy panel and unchanged service
 });
 
 test('release must prove exact source, 200 loopback and same protected services', () => {
-  const valid = { status: 'PASS', sha: target, lanHttp: 200, external: 'unchanged' };
+  const valid = { status: 'PASS', sha: target, loopbackHttp: 200, external: 'unchanged' };
   assert.equal(confirmRelease(valid, target), true);
   assert.equal(confirmRelease({ status: 'CURRENT', sha: target }, target), true);
   for (const bad of [
     { ...valid, sha: base },
     { ...valid, status: 'HOLD' },
-    { ...valid, lanHttp: 500 },
+    { ...valid, loopbackHttp: 500 },
     { ...valid, external: 'changed' },
     { status: 'CURRENT', sha: base },
   ])

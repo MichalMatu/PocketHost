@@ -74,6 +74,14 @@ export interface ArchivedWorkerSummary {
 }
 type ServiceIdentity =
   'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
+export type ServiceIdentityReason =
+  | 'run-sha-attested'
+  | 'no-enrollment'
+  | 'legacy-without-sha'
+  | 'service-target-changed'
+  | 'run-script-changed'
+  | 'archive-live-conflict'
+  | 'reserved-system-service';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
 interface RecoveryAttemptRecord {
@@ -112,6 +120,8 @@ export interface TermuxService {
   registered: boolean;
   protected: boolean;
   identity: ServiceIdentity;
+  /** Diagnostic only; never grants lifecycle authority. */
+  identityReason: ServiceIdentityReason;
   /** Only the fully attested built-in template grants archive capability. */
   template?: WorkerTemplate;
   /** Generic H3 controls never mutate units owned by a separate provisioner. */
@@ -1419,6 +1429,24 @@ export class TermuxServiceAdmin {
     return { changed: true };
   }
 
+  /** Explain failed enrollment without exposing a run path or source material. */
+  private identityReason(
+    name: string,
+    target: string | undefined,
+    registrations: Registration[],
+    identity: ServiceIdentity,
+  ): ServiceIdentityReason {
+    if (identity === 'reserved') return 'reserved-system-service';
+    if (identity === 'archive-conflict') return 'archive-live-conflict';
+    if (identity === 'unregistered') return 'no-enrollment';
+    if (identity === 'legacy') return 'legacy-without-sha';
+    if (identity === 'verified') return 'run-sha-attested';
+    const recorded = registrations.find((entry) => entry.name === name);
+    return !target || recorded?.target !== target
+      ? 'service-target-changed'
+      : 'run-script-changed';
+  }
+
   private probe(name: string): TermuxService['state'] {
     try {
       const result = spawnSync(
@@ -1450,6 +1478,7 @@ export class TermuxServiceAdmin {
         throw new Error('Invalid service directory');
       names = readdirSync(this.serviceRoot)
         .filter((name) => SERVICE_NAME.test(name))
+        .sort()
         .slice(0, MAX_ENTRIES);
     } catch {
       names = [];
@@ -1478,6 +1507,7 @@ export class TermuxServiceAdmin {
         registered,
         protected: !registered,
         identity,
+        identityReason: this.identityReason(name, resolved, registrations, identity),
         control,
         ...(template ? { template } : {}),
         state: probe(name),
