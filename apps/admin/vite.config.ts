@@ -1433,6 +1433,12 @@ function termuxAdminApi(): Plugin {
                 }
               })() :
               mode === "service-boot" && url.searchParams.size === 1 ? inspectTermuxBoot() :
+              mode === "service-http-readiness" && url.searchParams.size === 4 &&
+                url.searchParams.has("name") && url.searchParams.has("port") &&
+                url.searchParams.has("path") &&
+                /^[0-9]{4,5}$/.test(url.searchParams.get("port") ?? "") ?
+                  await services.inspectWorkerHttp(url.searchParams.get("name") ?? "",
+                    Number(url.searchParams.get("port")), url.searchParams.get("path") ?? "") :
               mode === "service-health-overview" && url.searchParams.size === 1 ?
                 services.inspectHealthOverview() :
               mode === "service-health" && url.searchParams.size === 2 &&
