@@ -302,6 +302,8 @@ W S5 sprawdzić podmianę źródła/markera, fałszywy runit, wyścig podczas
 odczytu, symlink, brak dostępu do obcych usług i UI. **To nie jest
 samodzielny mechanizm uruchamiania Python, S1–S4 nadal IN_PROGRESS.**
 
+**S1 Python source review — wdrożenie A8, 2026-11-15:** `pockethost-a8-python-source-review-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`, live `a58de87f2a0d438057c64bc509770a60840a08b6`, PID 15754, start ticks 16785809, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Kod dostarcza przycisk Review Python source i bezpieczny tylko-odczytowy endpoint. Nie wykonano Python ani testów funkcjonalnych; nowa ścieżka fizycznej autoryzacji jest nadal otwarta. **S1/S2/Services IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
