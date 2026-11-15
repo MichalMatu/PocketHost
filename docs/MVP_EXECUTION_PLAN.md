@@ -238,6 +238,15 @@ Nie rozszerzono uprawnień przez LAN. **S1/S2 wciąż `[ ]`**:
 brak testów etapowych i bezpiecznego pełnego enrollmentu rzeczywistych
 usług aplikacji przez użytkownika.
 
+**S1/S2 A8 — granica własności delegowanych usług, 2026-11-15:**
+`pockethost-a8-delegated-runit-scope-20261115-v1` — `PASS`, live
+`50e5195864157e1069c83019c368edf3753d9078`, PID 16796, start ticks 12137868, HTTP 200, chronione
+usługi bez zmian, `tests=not-run`. Runit `standalone` może być
+sterowany przez H3 wyłącznie po weryfikacji wzorca; `delegated` jest
+widoczny, lecz sterowanie pozostaje w module, który go utworzył.
+To nie zastępuje odbioru funkcjonalnego ani enrollmentu dowolnej
+aplikacji. S1/S2 pozostają `[ ]`.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
