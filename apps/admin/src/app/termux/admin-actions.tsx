@@ -545,6 +545,7 @@ type RunitEntry = {
   protected: boolean
   identity?: "verified" | "unregistered" | "legacy" | "changed" | "archive-conflict" | "reserved"
   template?: WorkerTemplate
+  control: "standalone" | "delegated" | "read-only"
   state: "running" | "stopped" | "unknown"
   enabled?: boolean | null
 }
@@ -570,6 +571,10 @@ export function RunitServiceActions({
     if (!Array.isArray(data.services) || data.services.length > 100 ||
         !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
           typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
+          ["standalone", "delegated", "read-only"].includes(item.control) &&
+          ((item.control === "read-only" && item.protected && !item.registered) ||
+            (item.control === "standalone" && !item.protected && item.registered && !!item.template) ||
+            (item.control === "delegated" && !item.protected && item.registered && !item.template)) &&
           ["running", "stopped", "unknown"].includes(item.state) &&
           (item.identity === undefined ||
             ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
@@ -603,7 +608,7 @@ export function RunitServiceActions({
     finally { setBusy(false) }
   }
   const perform = async (name: "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
-    if (busy || service.protected || isPanelService(service) ||
+    if (busy || service.control !== "standalone" || service.protected || isPanelService(service) ||
         (mode === "autostart" && name !== "enable" && name !== "disable") ||
         (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
         !window.confirm(
@@ -642,7 +647,7 @@ export function RunitServiceActions({
     } finally { setBusy(false) }
   }
   const archiveWorker = async (service: RunitEntry) => {
-    if (busy || !service.template ||
+    if (busy || !service.template || service.control !== "standalone" ||
         !service.registered || service.protected ||
         service.state !== "stopped" || service.enabled !== false ||
         !window.confirm("Archive PocketHost worker " + service.name +
@@ -704,7 +709,8 @@ export function RunitServiceActions({
   }
   const counts = services ? {
     owned: services.filter(isPanelService).length,
-    managed: services.filter(item => item.registered && !item.protected).length,
+    managed: services.filter(item => item.control === "standalone").length,
+    delegated: services.filter(item => item.control === "delegated").length,
     protected: services.filter(item => item.identity === "reserved" && !isPanelService(item)).length,
     unverified: services.filter(item => !item.registered && !isPanelService(item) && item.identity !== "reserved").length,
     changed: services.filter(item => item.identity === "changed" || item.identity === "archive-conflict").length,
@@ -718,7 +724,13 @@ export function RunitServiceActions({
           <Badge variant="outline">State: {service.state}</Badge>
           <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
             service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" : service.registered && !service.protected ? "PocketHost-managed · attested" : service.identity === "archive-conflict" ? "Archive conflict · blocked" : service.identity === "changed" ? "Identity changed · blocked" : service.identity === "legacy" ? "Legacy record · needs reattestation" : service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
+          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" :
+            service.control === "standalone" ? "Standalone · attested" :
+            service.control === "delegated" ? "Provisioner-owned · attested" :
+            service.identity === "archive-conflict" ? "Archive conflict · blocked" :
+            service.identity === "changed" ? "Identity changed · blocked" :
+            service.identity === "legacy" ? "Legacy record · needs reattestation" :
+            service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
           {service.template && <Badge variant="outline">{service.template === "python-heartbeat-v1" ? "Python worker" : "Node.js worker"}</Badge>}
         </div>
       </div>
@@ -726,7 +738,15 @@ export function RunitServiceActions({
         <p className="text-xs text-muted-foreground">
           Runtime state unknown. Start, Stop and Restart require a confirmed state.
         </p>}
-      {!service.protected && !isPanelService(service) && <div className="flex flex-wrap gap-1">
+      {service.control === "delegated" && <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-muted-foreground">
+          Managed by its creator. Generic runit actions are blocked to protect release identity.
+        </span>
+        <Link to="/projects" className="text-xs underline underline-offset-4">
+          Review Projects
+        </Link>
+      </div>}
+      {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {mode === "lifecycle" ? (service.registered ? <>
           <Button size="sm" disabled={busy || service.state !== "stopped"}
             onClick={() => void perform("start", service)}>Start</Button>
@@ -761,8 +781,8 @@ export function RunitServiceActions({
     </div>
     <p className="text-muted-foreground text-xs">
       {mode === "autostart"
-        ? "Set persistent runit autostart only for attested services. Each change is confirmed against the actual down marker. Enabling may start the service now; disabling may stop it. Android and Termux:Boot settings are separate and not changed here."
-        : "Only services provisioned and attested by PocketHost can be enrolled. Name prefixes never confer ownership; discovered services stay read-only. SSH and Local Agent remain protected. Process liveness is not application health."}
+        ? "Autostart changes apply only to PocketHost standalone workers. Project-created units are managed by their own provisioner. Each change is confirmed against the down marker; enable/disable may start/stop the worker. Android and Termux:Boot are separate."
+        : "Standalone workers are managed here. Other attested services remain visible but their lifecycle stays with the creating project or provisioner. Unregistered and protected services are read-only; process liveness is not readiness."}
     </p>
     {mode === "lifecycle" && <>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -809,7 +829,8 @@ export function RunitServiceActions({
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
       <Badge variant="outline">PocketHost-owned: {counts.owned}</Badge>
-      <Badge variant="outline">Enrolled: {counts.managed}</Badge>
+      <Badge variant="outline">Standalone: {counts.managed}</Badge>
+      <Badge variant="outline">Delegated: {counts.delegated}</Badge>
       <Badge variant="outline">Protected: {counts.protected}</Badge>
       <Badge variant="outline">Unverified: {counts.unverified}</Badge>
       {counts.changed > 0 && <Badge variant="outline">Identity changed: {counts.changed}</Badge>}

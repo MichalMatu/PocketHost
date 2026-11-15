@@ -225,6 +225,19 @@ od odczytu limitu po pojedyncze `sv up`; przerwana blokada zostaje
 do niezależnej weryfikacji. **S1–S4 nadal IN_PROGRESS.**
 Test współbieżnych żądań dopiero przy bramie odbiorczej Services.
 
+**S1/S2 — granica zarządzania usługami projektów (kod, przed odbiorem):**
+wspólny rejestr runit rozróżnia `standalone` (w pełni
+zweryfikowany wewnętrzny worker Node/Python), `delegated`
+(weryfikowana jednostka zarządzana osobną ścieżką, np. Node Hosting)
+i `read-only` (obce/niezweryfikowane/chronione). W Services
+Start/Stop/Restart/Autostart i odpowiadające im akcje API przyjmują
+wyłącznie `standalone`; projekt Node zachowuje własne bramy wydania,
+PID, health, rollback i uprawnienia. Panel pokazuje usługi delegowane
+z odnośnikiem do Projects zamiast pozornych przycisków sterowania.
+Nie rozszerzono uprawnień przez LAN. **S1/S2 wciąż `[ ]`**:
+brak testów etapowych i bezpiecznego pełnego enrollmentu rzeczywistych
+usług aplikacji przez użytkownika.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

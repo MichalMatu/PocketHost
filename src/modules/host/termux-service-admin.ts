@@ -107,6 +107,8 @@ export interface TermuxService {
   identity: ServiceIdentity;
   /** Only the fully attested built-in template grants archive capability. */
   template?: WorkerTemplate;
+  /** Generic H3 controls never mutate units owned by a separate provisioner. */
+  control: 'standalone' | 'delegated' | 'read-only';
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
 }
@@ -1015,18 +1017,20 @@ export class TermuxServiceAdmin {
       }
       const identity = this.identity(name, resolved, registrations);
       const registered = identity === 'verified';
-      const protectedService = !registered;
+      const template = registered && resolved
+        ? this.managedWorkerTemplate(name, resolved, registrations) : null;
+      // Enrollment is not authority for every frontend. Node Hosting has
+      // its own release/nonce/lock/port safety gates and must not be driven
+      // by the generic Services runit buttons.
+      const control: TermuxService['control'] = !registered ? 'read-only'
+        : template ? 'standalone' : 'delegated';
       return {
         name,
         registered,
-        protected: protectedService,
+        protected: !registered,
         identity,
-        ...(registered && resolved
-          ? (() => {
-              const template = this.managedWorkerTemplate(name, resolved, registrations);
-              return template ? { template } : {};
-            })()
-          : {}),
+        control,
+        ...(template ? { template } : {}),
         state: probe(name),
         enabled: this.enabled(name, registered),
       };
@@ -1211,6 +1215,28 @@ export class TermuxServiceAdmin {
           .slice(0, 240),
       );
     return { lines };
+  }
+
+  /**
+   * Browser H3 capability: commands are restricted to immutable, attested
+   * standalone templates. A service registered by Node Hosting (or another
+   * trusted provisioner) keeps its lifecycle with that provisioner.
+   * The internal apply method stays available for NodeRunitHost under its
+   * stronger process/release/health gates.
+   */
+  async applyStandalone(
+    operation: 'start' | 'stop' | 'restart' | 'enable' | 'disable',
+    name: string,
+    run: Exec = executeFixed,
+  ): Promise<{ changed: boolean; result?: HostCommandResult }> {
+    valid(name);
+    if (!['start', 'stop', 'restart', 'enable', 'disable'].includes(operation))
+      throw new RangeError('Unsupported standalone runit operation');
+    if (isReserved(name)) throw new Error('Protected service');
+    const target = this.target(name);
+    if (!this.managedWorkerTemplate(name, target, this.registry()))
+      throw new Error('Use the owning project provisioner for this service');
+    return this.apply(operation, name, run);
   }
 
   async apply(

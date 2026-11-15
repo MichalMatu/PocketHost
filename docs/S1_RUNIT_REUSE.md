@@ -292,6 +292,38 @@ identity, two-per-rolling-hour exhaustion, cooldown, and no effects
 on protected or foreign services. No test suite has been run for this
 increment and S4 remains **IN_PROGRESS**.
 
+## S1/S2 delegated service ownership boundary (partial)
+
+The shared runit inventory now differentiates three **control scopes**:
+
+- `standalone`: a currently verified, immutable PocketHost Node/Python
+  builtin worker, with separately attested creator marker, exact run digest
+  and original fixed logging script. Only these units expose generic
+  **Start / Stop / Restart / Autostart** in the Services H3 API.
+- `delegated`: a verified registry entry created by **another trusted
+  provisioner** (currently Node Hosting). Its running state is observable
+  in Services, but the generic LAN H3 controls are rejected by the host
+  even if a caller sends a direct request. The actual creator must use
+  its own release, process-identity, dependency and HTTP-readiness gates.
+- `read-only`: every unregistered, changed, legacy, protected or
+  identity-conflicted unit. These do not gain lifecycle authority.
+
+A unit being registered in the shared registry is **not** sufficient
+to grant all frontend operations. `TermuxServiceAdmin.applyStandalone`
+enforces the immutable standalone template check at the server action
+boundary. `NodeRunitHost` retains the internal `apply` path for its
+own verified deployments, one-shot starts, stops and rollback.
+The panel labels delegated units and navigates to Projects without
+offering generic runit mutation buttons. No arbitrary service enrollment,
+new process supervisor, shell input, or LAN Node Hosting mutation has
+been introduced.
+
+At the full Services closure gate test positive builtin unit controls
+and negative direct-API attempts against Node-project, SSH, Local Agent,
+panel/watch, unknown and changed units. Also verify Node Hosting can
+still perform its explicitly approved internal one-shot lifecycle
+through its own attested path. **S1/S2 are still IN_PROGRESS.**
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

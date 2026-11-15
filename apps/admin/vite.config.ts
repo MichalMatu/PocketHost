@@ -1541,7 +1541,10 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service") {
               if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")
-              return await services.apply(
+              // The generic LAN UI can only mutate verified builtin
+              // workers, never Node Hosting project processes, even though
+              // the latter are enrolled in the shared runit registry.
+              return await services.applyStandalone(
                 input.name as "start" | "stop" | "restart" | "enable" | "disable",
                 input.path ?? "",
               )
