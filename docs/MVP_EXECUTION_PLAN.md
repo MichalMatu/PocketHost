@@ -318,6 +318,18 @@ S1–S4 IN_PROGRESS; S5/testy i odbiór później.**
 
 **S1/S2 — wdrożone CAS źródła Python na A8, 2026-11-15:** owner reload `pockethost-a8-owner-panel-reload-20261115-v1` terminal PASS; następnie `pockethost-a8-python-source-revision-20261115-v1` terminal `done`, exit 0, FAST FLOW PASS, live `bd1ec507262710069b838421b349d8d1eeb0aa45`, PID 32301, start ticks 16859671, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Nowe `Replace staged Python source` zachowuje starszy kod w prywatnej historii, żąda dokładnego SHA i zabrania aktualizacji pracującej usługi; stan częściowy wymaga ręcznego sprawdzenia. Nie wykonano żadnego skryptu Python ani testu S5. **S1/S2/Services IN_PROGRESS**, brak owner-authenticated execution.
 
+**S1/S2 — historia źródła Python (częściowe, testy S5 otwarte):** Po sprawdzeniu
+`Review Python source` przycisk `Read saved revisions` wylicza najwyżej
+8 prywatnych kopii `worker.py` z SHA-256 i rozmiarem, bez ujawniania
+kodu/ścieżek. Każda kopia jest czytana przez deskryptor `O_NOFOLLOW`
+i weryfikowana przed/po odczycie. `Restore this source` żąda jawnego
+potwierdzenia nazwy, oczekiwanego aktualnego SHA i docelowego SHA,
+następnie używa już istniejącego mechanizmu CAS przy `stopped` i
+`autostart=false`, z zachowaniem aktualnego źródła w historii. Przy
+pełnych 8 zapisach przywracanie jest blokowane; nie usuwa niczego w
+tle. **Uruchamianie niemożliwe z LAN.** S1–S4 nadal IN_PROGRESS,
+S5 zawiera testy odmowy drift/niewłaściwej historii/pełnego quota.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

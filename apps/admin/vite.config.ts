@@ -1437,6 +1437,8 @@ function termuxAdminApi(): Plugin {
                 url.searchParams.has("name") ? services.reviewWorkerRecovery(url.searchParams.get("name") ?? "") :
               mode === "python-source-review" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectPythonSource(url.searchParams.get("name") ?? "") :
+              mode === "python-source-history" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.inspectPythonSourceHistory(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
@@ -1552,6 +1554,16 @@ function termuxAdminApi(): Plugin {
                 throw new RangeError("Unsupported service recovery action");
               }
               return await services.recoverWorkerOnce(input.path ?? "")
+            }
+            if (input.action === "service-python-restore") {
+              if (Object.keys(input).some(key =>
+                    !["action", "name", "path", "root", "destination"].includes(key)) ||
+                  typeof input.name !== "string" ||
+                  typeof input.root !== "string" ||
+                  typeof input.destination !== "string")
+                throw new RangeError("Invalid Python restore request");
+              return services.restorePythonSourceRevision(
+                input.path ?? "", input.name, input.root, input.destination)
             }
             if (input.action === "service-python-update") {
               // Compare-and-swap only the exact, stopped, attested source.

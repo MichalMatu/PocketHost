@@ -1447,6 +1447,141 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Inventory at most eight private previous versions of an attested Python
+   * worker. Never expose source bytes, arbitrary paths, or execution rights.
+   */
+  inspectPythonSourceHistory(name: string): {
+    name: string;
+    currentSha256: string;
+    revisions: { id: string; sourceSha256: string; bytes: number; savedAt: string }[];
+    execution: 'blocked';
+  } {
+    const active = this.inspectPythonSource(name);
+    const target = this.target(name);
+    const folder = path.join(target, '.python-source-history');
+    let names: string[];
+    try {
+      const dir = lstatSync(folder);
+      if (!dir.isDirectory() || dir.isSymbolicLink() ||
+          dir.uid !== process.getuid?.() || (dir.mode & 0o077) !== 0 ||
+          realpathSync(folder) !== folder)
+        throw new Error('Untrusted Python revision history');
+      names = readdirSync(folder);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      names = [];
+    }
+    if (names.length > 8 ||
+        names.some((entry) =>
+          !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.py$/.test(entry)))
+      throw new Error('Unexpected Python revision history contents');
+    const revisions = names.map((filename) => {
+      const file = path.join(folder, filename);
+      const initial = lstatSync(file);
+      if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
+          initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
+          initial.size < 1 || initial.size > 32 * 1024 ||
+          !Number.isFinite(initial.mtimeMs))
+        throw new Error('Unsafe Python revision');
+      const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+      let bytes: Buffer;
+      try {
+        const before = fstatSync(fd);
+        if (!before.isFile() || before.dev !== initial.dev ||
+            before.ino !== initial.ino || before.nlink !== 1 ||
+            before.size !== initial.size || before.mtimeMs !== initial.mtimeMs ||
+            before.uid !== initial.uid || (before.mode & 0o077) !== 0)
+          throw new Error('Python revision replaced during opening');
+        bytes = readFileSync(fd);
+        const after = fstatSync(fd);
+        const current = lstatSync(file);
+        if (bytes.length !== initial.size ||
+            after.dev !== initial.dev || after.ino !== initial.ino ||
+            current.dev !== initial.dev || current.ino !== initial.ino ||
+            after.size !== initial.size || current.size !== initial.size ||
+            after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
+            current.nlink !== 1 || current.uid !== initial.uid ||
+            (current.mode & 0o077) !== 0)
+          throw new Error('Python revision changed while reading');
+      } finally {
+        closeSync(fd);
+      }
+      return {
+        id: filename.slice(0, -3),
+        sourceSha256: createHash('sha256').update(bytes).digest('hex'),
+        bytes: bytes.length,
+        savedAt: new Date(initial.mtimeMs).toISOString(),
+      };
+    }).sort((a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id));
+    const confirmed = this.inspectPythonSource(name);
+    if (this.target(name) !== target ||
+        active.sourceSha256 !== confirmed.sourceSha256 ||
+        active.observed !== confirmed.observed ||
+        active.autostart !== confirmed.autostart)
+      throw new Error('Python worker identity changed while listing revisions');
+    return {
+      name, currentSha256: confirmed.sourceSha256, revisions, execution: 'blocked',
+    };
+  }
+
+  /**
+   * Restore a selected private snapshot through the existing digest-checked
+   * stopped-source updater. No direct mutation of runit or launch path.
+   */
+  restorePythonSourceRevision(
+    name: string, revisionId: string, expectedCurrentSha256: string,
+    expectedRevisionSha256: string,
+  ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
+    valid(name);
+    if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(revisionId) ||
+        !/^[a-f0-9]{64}$/.test(expectedCurrentSha256) ||
+        !/^[a-f0-9]{64}$/.test(expectedRevisionSha256))
+      throw new RangeError('Invalid Python revision selector');
+    const record = this.inspectPythonSourceHistory(name);
+    if (record.currentSha256 !== expectedCurrentSha256 ||
+        !record.revisions.some((item) =>
+          item.id === revisionId && item.sourceSha256 === expectedRevisionSha256))
+      throw new Error('Python revision selection is stale');
+    const folder = path.join(this.target(name), '.python-source-history');
+    const file = path.join(folder, revisionId + '.py');
+    const initial = lstatSync(file);
+    if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
+        initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
+        initial.size < 1 || initial.size > 32 * 1024)
+      throw new Error('Invalid retained Python file');
+    const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+    let bytes: Buffer;
+    try {
+      const before = fstatSync(fd);
+      if (before.dev !== initial.dev || before.ino !== initial.ino ||
+          before.nlink !== 1 || before.size !== initial.size ||
+          before.mtimeMs !== initial.mtimeMs || before.uid !== initial.uid ||
+          (before.mode & 0o077) !== 0)
+        throw new Error('Retained Python file changed during opening');
+      bytes = readFileSync(fd);
+      const after = fstatSync(fd);
+      const current = lstatSync(file);
+      if (bytes.length !== initial.size ||
+          after.dev !== initial.dev || after.ino !== initial.ino ||
+          current.dev !== initial.dev || current.ino !== initial.ino ||
+          after.size !== initial.size || current.size !== initial.size ||
+          after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
+          createHash('sha256').update(bytes).digest('hex') !== expectedRevisionSha256)
+        throw new Error('Retained Python source fingerprint changed');
+    } finally {
+      closeSync(fd);
+    }
+    const text = bytes.toString('utf8');
+    if (!text.trim() || text.includes(String.fromCharCode(0)) ||
+        !Buffer.from(text, 'utf8').equals(bytes))
+      throw new Error('Retained Python source is not valid UTF-8 text');
+    const result = this.updatePythonSource(name, expectedCurrentSha256, text);
+    if (result.sourceSha256 !== expectedRevisionSha256)
+      throw new Error('Restored Python source not attested');
+    return result;
+  }
+
+  /**
    * Read-only activation preflight for owner-staged Python. No source text,
    * authorization token, execution command or process identifier is exposed.
    * In particular, a browser TTY is not on-device owner authentication.

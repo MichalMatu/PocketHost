@@ -545,6 +545,14 @@ type PythonSourceReview = {
   ownerApproval: "not-configured"
   checkedAt: string
 }
+type PythonSourceHistory = {
+  name: string
+  currentSha256: string
+  revisions: {
+    id: string; sourceSha256: string; bytes: number; savedAt: string
+  }[]
+  execution: "blocked"
+}
 type ArchivedEntry = {
   name: string
   template: WorkerTemplate
@@ -576,6 +584,7 @@ export function RunitServiceActions({
   const [done, setDone] = React.useState<string | null>(null)
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
   const [sourceReview, setSourceReview] = React.useState<PythonSourceReview | null>(null)
+  const [sourceHistory, setSourceHistory] = React.useState<PythonSourceHistory | null>(null)
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
@@ -611,6 +620,7 @@ export function RunitServiceActions({
     setArchived(data.archived)
     setServices(data.services)
     setSourceReview(null)
+    setSourceHistory(null)
     setPythonReplacement("")
     setError(null)
     return data.services
@@ -622,7 +632,7 @@ export function RunitServiceActions({
   }, [refreshToken])
   const reviewPythonSource = async (name: string) => {
     if (busy) return
-    setBusy(true); setError(null); setSourceReview(null)
+    setBusy(true); setError(null); setSourceReview(null); setSourceHistory(null)
     try {
       const result = await inspect<PythonSourceReview>("python-source-review", name)
       if (result.name !== name || result.template !== "python-source-v1" ||
@@ -637,6 +647,51 @@ export function RunitServiceActions({
       setSourceReview(result)
     } catch {
       setError("Python source identity review refused or unavailable. Recheck ownership.")
+    } finally { setBusy(false) }
+  }
+  const loadPythonSourceHistory = async (name: string) => {
+    if (busy || sourceReview?.name !== name) return
+    setBusy(true); setError(null); setSourceHistory(null)
+    try {
+      const result = await inspect<PythonSourceHistory>("python-source-history", name)
+      if (result.name !== name || result.currentSha256 !== sourceReview.sourceSha256 ||
+          result.execution !== "blocked" || !Array.isArray(result.revisions) ||
+          result.revisions.length > 8 || result.revisions.some(item =>
+            !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(item.id) ||
+            !/^[a-f0-9]{64}$/.test(item.sourceSha256) ||
+            !Number.isSafeInteger(item.bytes) || item.bytes < 1 || item.bytes > 32768 ||
+            !Number.isFinite(Date.parse(item.savedAt))))
+        throw new Error("Revision history unavailable or stale")
+      setSourceHistory(result)
+    } catch {
+      setError("Python revision history unverified. Refresh the source review.")
+    } finally { setBusy(false) }
+  }
+  const restorePythonRevision = async (item: PythonSourceHistory["revisions"][number]) => {
+    const record = sourceReview, history = sourceHistory
+    if (busy || !record || !history || record.name !== history.name ||
+        record.sourceSha256 !== history.currentSha256 ||
+        record.observed !== "stopped" || record.autostart !== false) return
+    if (window.prompt("Restore saved Python revision " + item.id +
+        " for " + record.name + "? Type the exact service name.") !== record.name ||
+        !window.confirm("Restore SHA-256 " + item.sourceSha256 +
+          "? The current source will be retained and no Python code will execute.")) return
+    setBusy(true); setError(null); setDone(null)
+    setSourceHistory(null); setSourceReview(null)
+    try {
+      const result = await action<{
+        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
+      }>({ action: "service-python-restore", path: record.name,
+        name: item.id, root: record.sourceSha256, destination: item.sourceSha256 })
+      if (result.sourceSha256 !== item.sourceSha256 || result.execution !== "blocked" ||
+          typeof result.changed !== "boolean" ||
+          !Number.isSafeInteger(result.sourceBytes) ||
+          result.sourceBytes < 1 || result.sourceBytes > 32768)
+        throw new Error("Unexpected Python restore receipt")
+      await refresh()
+      setDone(record.name + ": previous Python source restored, execution still blocked")
+    } catch {
+      setError("Python source restore refused or unconfirmed. Refresh identity before any retry.")
     } finally { setBusy(false) }
   }
   const replacePythonSource = async () => {
@@ -1067,6 +1122,33 @@ export function RunitServiceActions({
           This proves file identity only, not safety or readiness. Starting Python code
           is blocked from LAN; device-owner authorization is not configured.
         </p>
+        <Button size="sm" variant="outline" disabled={busy}
+          onClick={() => void loadPythonSourceHistory(sourceReview.name)}>
+          Read saved revisions
+        </Button>
+        {sourceHistory?.name === sourceReview.name &&
+          sourceHistory.currentSha256 === sourceReview.sourceSha256 &&
+          <div className="space-y-1 rounded-md border p-2">
+            <p className="text-xs font-medium">Saved Python revisions ({sourceHistory.revisions.length})</p>
+            {sourceHistory.revisions.length === 0 &&
+              <p className="text-xs text-muted-foreground">No older revisions retained.</p>}
+            {sourceHistory.revisions.map(item =>
+              <div key={item.id} className="flex flex-wrap items-center gap-2 border-b py-2">
+                <div className="min-w-0 flex-1 text-xs">
+                  <p>{item.savedAt} · {item.bytes} bytes</p>
+                  <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
+                </div>
+                <Button size="sm" variant="outline"
+                  disabled={busy || sourceReview.observed !== "stopped" ||
+                    sourceReview.autostart !== false ||
+                    sourceHistory.revisions.length >= 8}
+                  onClick={() => void restorePythonRevision(item)}>Restore this source</Button>
+              </div>)}
+            {sourceHistory.revisions.length >= 8 &&
+              <p className="text-xs text-muted-foreground">
+                Revision history full. Restore is blocked to preserve existing files.
+              </p>}
+          </div>}
         {sourceReview.observed === "stopped" && sourceReview.autostart === false ? <>
           <label htmlFor="python-replacement-source" className="text-sm font-medium">
             Replace staged worker.py (full source)

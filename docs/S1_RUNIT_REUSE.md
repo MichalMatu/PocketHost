@@ -473,6 +473,26 @@ SHA, non-UTF8/corrupt marker, quota and write failures, symlink/inode
 replacement, stopped vs running refusal, history retention and
 UI's state invalidation on ambiguous receipts. S1–S4 IN_PROGRESS.
 
+## S1/S2 Python revision inventory and source restore (partial)
+
+Under **Review Python source**, the user can read up to eight privately
+retained prior `worker.py` versions as SHA-256, byte count and saved time
+without downloading or executing code. The host verifies exact worker
+ownership, canonical private history, regular single-link files, and
+descriptor inode/size/mtime before and after bounded reads. History with
+unexpected names/files fails closed. Restoring one previous version
+requires the exact current SHA, exact selected snapshot SHA and typed
+owner intent in the UI. The existing stopped, autostart-disabled Python
+CAS path stages the chosen content and saves the current source before
+switching. No global script path or local execution is exposed; with
+eight snapshots the restore button is deliberately disabled (no silent
+deletion). Partial commits still require manual investigation.
+
+Focused end-of-stage S5 checks: stale/malformed revision IDs, symlinks,
+history drift, target/source mismatch, UTF-8 corruption, quota limit,
+concurrent updates, stopped/autostart refusal, protected service isolation
+and browser stale-selection reset. S1/S2 remain IN_PROGRESS.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
