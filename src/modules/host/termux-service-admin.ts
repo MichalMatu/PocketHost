@@ -1320,7 +1320,7 @@ export class TermuxServiceAdmin {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
     if (!reattest()) throw new Error('Service identity changed during log read');
-    const lines = raw.slice(-20000)
+    const lines = raw.length === 0 ? [] : raw.slice(-20000)
       .split(/\r?\n/)
       .slice(-100)
       .map((line) =>
