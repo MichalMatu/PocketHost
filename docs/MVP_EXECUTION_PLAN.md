@@ -280,6 +280,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S2 — wycofanie archiwum (implementacja przed bramą S5):** `Retire definition` wymaga dwukrotnego potwierdzenia w UI, z dokładną nazwą. Po attestation `archivedRegistry` i `offlineWorkerIdentity` oraz blokadzie `O_EXCL` przenosi wyłącznie własny unit i jego logi do prywatnej, ograniczonej kwarantanny i na końcu usuwa możliwość `Restore` z rejestru. Bez `rm -r`, bez obcych usług, bez automatycznego retry. Crash/drift pozostawia stan wymagający ręcznej weryfikacji. Testy S5: collision, limit, symlink, drift, awarie rename i zapisu ledger, odzyskiwanie nazwy po retire, nienaruszenie chronionych usług. **S1/S2 nadal `[ ]`; żadnego workera nie wycofano na urządzeniu w tej iteracji.**
 
+**S2 — A8 wdrożenie kwarantanny definicji, 2026-11-15:** `pockethost-a8-archive-retirement-quarantine-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`; live `00cb9ad3d3c207a05c60eea0f7b74059e5b59118`, PID 22825, start ticks 16512056, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Funkcja `Retire definition` jest wdrożona, lecz **nie użyta na rzeczywistym workerze** i nie zastępuje testów negatywnych/pozytywnych S5. **S1/S2 nadal IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
