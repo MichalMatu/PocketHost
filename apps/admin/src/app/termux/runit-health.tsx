@@ -6,7 +6,7 @@ type VerifiedService = {
   name: string
   registered: boolean
   protected: boolean
-  template?: "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1"
+  template?: "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1"
 }
 type RecoveryReview = {
   name: string
@@ -85,7 +85,8 @@ export function RunitHealthPanel() {
           (service.template === undefined ||
             service.template === "heartbeat-worker-v1" ||
             service.template === "python-heartbeat-v1" ||
-            service.template === "python-source-v1"))) {
+            service.template === "python-source-v1" ||
+            service.template === "node-source-v1"))) {
       throw new Error("Invalid service inventory")
     }
     setServices(result.services.filter(service =>
@@ -106,6 +107,8 @@ export function RunitHealthPanel() {
     setBusy(service.name)
     setError(null)
     setReadback(null)
+    setRecovery(null)
+    setNotice(null)
     try {
       const result = await getJson<RunitHealth>(
         "?mode=service-health&name=" + encodeURIComponent(service.name))
@@ -139,7 +142,8 @@ export function RunitHealthPanel() {
   }
 
   const setHeartbeat = async (name: string, choice: "disabled" | "180" | "300" | "600") => {
-    if (busy || !services?.some(item => item.name === name && item.template &&
+    if (busy || !services?.some(item => item.name === name &&
+        (item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1") &&
         item.registered && !item.protected)) return
     setBusy(name)
     setError(null)
@@ -169,11 +173,13 @@ export function RunitHealthPanel() {
   }
 
   const reviewRecovery = async (service: VerifiedService) => {
-    if (busy || !service.template || service.template === "python-source-v1" ||
+    if (busy || (service.template !== "heartbeat-worker-v1" &&
+        service.template !== "python-heartbeat-v1") ||
         !service.registered || service.protected) return
     setBusy(service.name)
     setError(null)
     setRecovery(null)
+    setReadback(null)
     setNotice(null)
     try {
       const result = await getJson<RecoveryReview>(
@@ -203,6 +209,9 @@ export function RunitHealthPanel() {
 
   const recoverOnce = async () => {
     if (!recovery || busy || recovery.action !== "start" ||
+        recovery.observed !== "stopped" ||
+        !services?.some(item => item.name === recovery.name && item.registered &&
+          !item.protected && item.template === recovery.template) ||
         !window.confirm("Request one bounded recovery start for " + recovery.name +
           "? This changes only the attested builtin runit worker. " +
           "It does not verify application readiness and consumes one attempt even if it fails.")) return
@@ -211,18 +220,38 @@ export function RunitHealthPanel() {
     setNotice(null)
     setError(null)
     try {
+      // A saved browser review is not permission to act on a later state.
+      // The server independently re-attests ownership and the retry budget.
+      const before = await getJson<RecoveryReview>(
+        "?mode=service-recovery&name=" + encodeURIComponent(serviceName))
+      if (before.name !== serviceName || before.template !== recovery.template ||
+          before.action !== "start" || before.observed !== "stopped" ||
+          before.attempts !== recovery.attempts || before.maxAttempts !== recovery.maxAttempts)
+        throw new Error("Recovery review changed")
       const outcome = await postJson<{
         requested: true
         review: RecoveryReview
       }>({ action: "service-recover", name: "once", path: serviceName })
-      if (outcome.requested !== true || outcome.review?.name !== serviceName)
+      if (outcome.requested !== true || outcome.review?.name !== serviceName ||
+          outcome.review.template !== recovery.template ||
+          outcome.review.attempts <= before.attempts)
         throw new Error("Unconfirmed recovery receipt")
       setRecovery(outcome.review)
-      setReadback(null)
-      setNotice(serviceName + ": one recovery start requested. Inspect health to check observed state; readiness remains unverified.")
+      // One on-demand observation after the command. Never poll or infer
+      // application readiness from a runit process.
+      const observed = await getJson<RunitHealth>(
+        "?mode=service-health&name=" + encodeURIComponent(serviceName))
+      if (observed.name !== serviceName || observed.identity !== "verified" ||
+          observed.readiness !== "not-verified" ||
+          !["running", "stopped", "unknown"].includes(observed.observed))
+        throw new Error("Recovery state readback untrusted")
+      setReadback(observed)
+      setNotice(serviceName + ": one recovery attempt recorded; runit " +
+        observed.observed + ". Application readiness unverified.")
     } catch {
       setRecovery(null)
-      setError("Recovery failed, was refused or is unconfirmed. Attempt budget may have been consumed. Recheck before retrying.")
+      setReadback(null)
+      setError("Recovery refused or readback unconfirmed. Attempt budget may have been consumed. Inspect before retrying.")
     } finally {
       setBusy(null)
     }
@@ -237,7 +266,7 @@ export function RunitHealthPanel() {
       </Button>
     </div>
     <p className="text-xs text-muted-foreground">
-      Manual, read-only inspection of PocketHost-attested services only.
+      Health observations are manual and read-only; fixed-template recovery and heartbeat policy changes require an explicit action.
       Process state and recent log output are not application readiness.
       Recovery requires a separate manual review. It is limited to PocketHost's fixed
       Node.js/Python workers and never runs in the background.
@@ -256,7 +285,7 @@ export function RunitHealthPanel() {
           onClick={() => void inspect(service)}>
           {busy === service.name ? "Inspecting…" : "Inspect health"}
         </Button>
-        {service.template && service.template !== "python-source-v1" &&
+        {(service.template === "heartbeat-worker-v1" || service.template === "python-heartbeat-v1") &&
           <Button size="sm" variant="outline" disabled={busy !== null}
           onClick={() => void reviewRecovery(service)}>Review recovery</Button>}
       </div>
@@ -289,8 +318,8 @@ export function RunitHealthPanel() {
         <Badge variant="outline">Autostart: {readback.autostart === null
           ? "unknown" : readback.autostart ? "enabled" : "disabled"}</Badge>
       </div>
-      {services?.some(service => service.name === readback.name && service.template &&
-          service.template !== "python-source-v1") &&
+      {services?.some(service => service.name === readback.name &&
+          (service.template === "heartbeat-worker-v1" || service.template === "python-heartbeat-v1")) &&
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
             Built-in worker heartbeat threshold (manual checks only). Fresh logs prove
