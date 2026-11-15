@@ -1236,7 +1236,15 @@ export class TermuxServiceAdmin {
     const target = this.target(name);
     if (!this.managedWorkerTemplate(name, target, this.registry()))
       throw new Error('Use the owning project provisioner for this service');
-    return this.apply(operation, name, run);
+    const result = await this.apply(operation, name, run);
+    // Enrollment alone does not confer standalone authority. A concurrent
+    // archive, source change or marker replacement revokes the capability
+    // even if runit already acknowledged the command.
+    if (this.target(name) !== target ||
+        !this.managedWorkerTemplate(name, target, this.registry())) {
+      throw new Error('Standalone worker identity changed during lifecycle action');
+    }
+    return result;
   }
 
   async apply(
@@ -1298,6 +1306,14 @@ export class TermuxServiceAdmin {
         maxBuffer: 12000,
       },
     );
+    if (result.exit !== 0) throw new Error('Runit lifecycle action failed');
+    // A successful sv exit only acknowledges a command. It cannot prove
+    // application readiness, and a changed unit must not be reported as
+    // a successful operation under the original ownership grant.
+    if (this.target(name) !== target ||
+        this.identity(name, target, this.registry()) !== 'verified') {
+      throw new Error('Runit service identity changed during lifecycle action');
+    }
     return { changed: true, result };
   }
 }

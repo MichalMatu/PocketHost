@@ -247,6 +247,17 @@ widoczny, lecz sterowanie pozostaje w module, który go utworzył.
 To nie zastępuje odbioru funkcjonalnego ani enrollmentu dowolnej
 aplikacji. S1/S2 pozostają `[ ]`.
 
+
+**S2 — weryfikacja po wykonaniu polecenia (kod, bez odbioru):**
+Start/Stop/Restart/Once teraz wymagają poprawnego wyniku `sv` i ponownego
+potwierdzenia ścieżki oraz zapisanej tożsamości usługi po wywołaniu.
+Dodatkowo ścieżka ogólnego Services ponownie sprawdza niezmienny
+szablon własnego workera (marker, skrypty i logowanie) po wykonaniu.
+Wynik `sv` nie oznacza jeszcze osiągnięcia stanu aplikacji ani readiness.
+Do bramy testowej S5 dodać odmowę dla niezerowego exit, zmiany źródła
+w trakcie polecenia i cofnięcia własności po wywołaniu. **S2 pozostaje
+`[ ]` do testów i odbioru.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

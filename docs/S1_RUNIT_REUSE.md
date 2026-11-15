@@ -324,6 +324,22 @@ panel/watch, unknown and changed units. Also verify Node Hosting can
 still perform its explicitly approved internal one-shot lifecycle
 through its own attested path. **S1/S2 are still IN_PROGRESS.**
 
+
+## S2 lifecycle command acknowledgement and post-operation ownership
+
+The fixed runit Start/Stop/Restart/Once bridge now refuses a nonzero `sv`
+result and re-attests the same canonical path and registry digest **after**
+the command. Generic Services actions additionally require the original
+attested built-in worker marker, script and logger after completion. Drift
+or a competing archive returns an error rather than a false success. A runit
+command acknowledgement is not application readiness; it does not promise an
+immediate observed running/stopped state. The control surface remains limited
+to `standalone`; Node project runit stays delegated to its owner.
+
+At S5 stage closure test nonzero `sv` results, a changed run script during
+a held command, marker/log replacement, archive conflicts and unchanged
+protected-service state. This slice is not yet tested or accepted on A8.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
