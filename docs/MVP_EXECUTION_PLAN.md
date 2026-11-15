@@ -174,6 +174,14 @@ pozostaje odrębnym mechanizmem. S4 nadal `[ ]`: brak jeszcze
 konfigurowalnej readiness dowolnej aplikacji, rollback i
 kompletnego testu na A8.
 
+**S4 heartbeat — wdrożenie A8 2026-11-15:** commit `b975d1feb7011d24bd592aadc55e1a30d54a0e90`,
+zadanie `pockethost-a8-worker-heartbeat-policy-20261115-v1`, terminalny
+`PASS`, live SHA `b975d1feb7011d24bd592aadc55e1a30d54a0e90`, PID 27534, HTTP 200, chronione
+usługi bez zmian, `tests=not-run`. Zapis progu heartbeat (Off/3/5/10
+minut) jest przypisany do instancji workera i odczytywany po zapisie.
+Nie potwierdza to gotowości ogólnych aplikacji ani nie kończy S4;
+nadal brak pełnej polityki HTTP readiness/rollback i testów S5.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
