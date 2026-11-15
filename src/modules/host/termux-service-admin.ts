@@ -46,6 +46,7 @@ const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 const RECOVERY_MAX_ATTEMPTS = 2;
 export type WorkerTemplate = 'heartbeat-worker-v1' | 'python-heartbeat-v1' | 'python-source-v1';
+type FixedWorkerTemplate = Exclude<WorkerTemplate, 'python-source-v1'>;
 
 interface Registration {
   name: string;
