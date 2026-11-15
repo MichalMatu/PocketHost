@@ -1015,7 +1015,7 @@ export function RunitServiceActions({
             Stored privately without executing, dependencies or network listener.
             Start, Restart, Autostart and recovery are disabled from this page.
           </p>
-        </div>
+        </div>}
         <div className="flex flex-wrap items-center gap-2">
           <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}

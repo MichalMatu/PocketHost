@@ -1607,7 +1607,8 @@ function termuxAdminApi(): Plugin {
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service restoration");
               }
-              return services.restoreArchivedWorker(input.path ?? "", input.name)
+              return services.restoreArchivedWorker(input.path ?? "",
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1")
             }
             if (input.action === "service-retire") {
               // Never recursively delete a worker. Revoke only an attested
@@ -1616,7 +1617,8 @@ function termuxAdminApi(): Plugin {
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported worker retirement");
               }
-              return services.retireArchivedWorker(input.path ?? "", input.name)
+              return services.retireArchivedWorker(input.path ?? "",
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1")
             }
             if (input.action === "service") {
               if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))
