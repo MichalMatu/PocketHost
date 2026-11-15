@@ -2293,7 +2293,7 @@ export class TermuxServiceAdmin {
    * Restore a selected private snapshot through the existing digest-checked
    * stopped-source updater. No direct mutation of runit or launch path.
    */
-  restorePythonSourceRevision(
+  restoreNodeSourceRevision(
     name: string,
     revisionId: string,
     expectedCurrentSha256: string,
