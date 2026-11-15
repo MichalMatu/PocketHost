@@ -561,6 +561,7 @@ type ArchivedEntry = {
   identity: "restorable" | "changed" | "conflict"
 }
 type NodeSourceReview = Omit<PythonSourceReview, "template"> & { template: "node-source-v1" }
+type NodeSourceHistory = PythonSourceHistory
 type RunitEntry = {
   name: string
   registered: boolean
@@ -600,6 +601,8 @@ export function RunitServiceActions({
   const [sourceReview, setSourceReview] = React.useState<PythonSourceReview | null>(null)
   const [sourceHistory, setSourceHistory] = React.useState<PythonSourceHistory | null>(null)
   const [nodeSourceReview, setNodeSourceReview] = React.useState<NodeSourceReview | null>(null)
+  const [nodeSourceHistory, setNodeSourceHistory] = React.useState<NodeSourceHistory | null>(null)
+  const [nodeReplacement, setNodeReplacement] = React.useState("")
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
@@ -641,6 +644,7 @@ export function RunitServiceActions({
     setSourceReview(null)
     setSourceHistory(null)
     setNodeSourceReview(null)
+    setNodeSourceHistory(null)
     setPythonReplacement("")
     setError(null)
     return { services: data.services, archived: data.archived }
@@ -671,7 +675,7 @@ export function RunitServiceActions({
   }
   const reviewNodeSource = async (name: string) => {
     if (busy) return
-    setBusy(true); setError(null); setNodeSourceReview(null)
+    setBusy(true); setError(null); setNodeSourceReview(null); setNodeSourceHistory(null)
     try {
       const result = await inspect<NodeSourceReview>("node-source-review", name)
       if (result.name !== name || result.template !== "node-source-v1" ||
@@ -765,6 +769,87 @@ export function RunitServiceActions({
       setDone(review.name + ": source revision acknowledged. Review its new SHA before further changes.")
     } catch {
       setError("Python revision refused or unconfirmed. Inspect current source/marker; never retry blindly.")
+    } finally {
+      setBusy(false)
+    }
+  }
+  const loadNodeSourceHistory = async (name: string) => {
+    if (busy || nodeSourceReview?.name !== name) return
+    setBusy(true); setError(null); setNodeSourceHistory(null)
+    try {
+      const result = await inspect<NodeSourceHistory>("python-source-history", name)
+      if (result.name !== name || result.currentSha256 !== nodeSourceReview.sourceSha256 ||
+          result.execution !== "blocked" || !Array.isArray(result.revisions) ||
+          result.revisions.length > 8 || result.revisions.some(item =>
+            !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(item.id) ||
+            !/^[a-f0-9]{64}$/.test(item.sourceSha256) ||
+            !Number.isSafeInteger(item.bytes) || item.bytes < 1 || item.bytes > 32768 ||
+            !Number.isFinite(Date.parse(item.savedAt))))
+        throw new Error("Revision history unavailable or stale")
+      setNodeSourceHistory(result)
+    } catch {
+      setError("Node.js revision history unverified. Refresh the source review.")
+    } finally { setBusy(false) }
+  }
+  const restoreNodeRevision = async (item: NodeSourceHistory["revisions"][number]) => {
+    const record = nodeSourceReview, history = nodeSourceHistory
+    if (busy || !record || !history || record.name !== history.name ||
+        record.sourceSha256 !== history.currentSha256 ||
+        record.observed !== "stopped" || record.autostart !== false) return
+    if (window.prompt("Restore saved Node.js revision " + item.id +
+        " for " + record.name + "? Type the exact service name.") !== record.name ||
+        !window.confirm("Restore SHA-256 " + item.sourceSha256 +
+          "? The current source will be retained and no Node.js code will execute.")) return
+    setBusy(true); setError(null); setDone(null)
+    setNodeSourceHistory(null); setNodeSourceReview(null)
+    try {
+      const result = await action<{
+        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
+      }>({ action: "service-node-restore", path: record.name,
+        name: item.id, root: record.sourceSha256, destination: item.sourceSha256 })
+      if (result.sourceSha256 !== item.sourceSha256 || result.execution !== "blocked" ||
+          typeof result.changed !== "boolean" ||
+          !Number.isSafeInteger(result.sourceBytes) ||
+          result.sourceBytes < 1 || result.sourceBytes > 32768)
+        throw new Error("Unexpected Node.js restore receipt")
+      await refresh()
+      setDone(record.name + ": previous Node.js source restored, execution still blocked")
+    } catch {
+      setError("Node.js source restore refused or unconfirmed. Refresh identity before any retry.")
+    } finally { setBusy(false) }
+  }
+  const replaceNodeSource = async () => {
+    const review = nodeSourceReview
+    const bytes = new Blob([nodeReplacement]).size
+    if (busy || !review || review.observed !== "stopped" ||
+        review.autostart !== false || !nodeReplacement.trim() ||
+        bytes < 1 || bytes > 32 * 1024) return
+    if (window.prompt(
+      "Replace the source for " + review.name +
+      "? Enter the exact service name. The previous source is retained privately " +
+      "and the new source will NOT execute.",
+    ) !== review.name || !window.confirm(
+      "Commit new worker.mjs for " + review.name + " only if its SHA-256 remains " +
+      review.sourceSha256 + "? Start and autostart will stay blocked.",
+    )) return
+    setBusy(true); setError(null); setDone(null)
+    // Any uncertain response must invalidate the old digest, not retry.
+    setNodeSourceReview(null)
+    try {
+      const result = await action<{
+        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
+      }>({ action: "service-node-update", path: review.name,
+        destination: review.sourceSha256, content: nodeReplacement })
+      if (typeof result.changed !== "boolean" ||
+          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
+          !Number.isSafeInteger(result.sourceBytes) ||
+          result.sourceBytes < 1 || result.sourceBytes > 32 * 1024 ||
+          result.execution !== "blocked")
+        throw new Error("Node.js revision receipt invalid")
+      await refresh()
+      setDone(review.name + ": source revision acknowledged. Review its new SHA before further changes.")
+    } catch {
+      setError("Node.js revision refused or unconfirmed. Inspect current source/marker; never retry blindly.")
     } finally {
       setBusy(false)
     }
@@ -1209,10 +1294,55 @@ export function RunitServiceActions({
             nodeSourceReview.autostart ? "enabled" : "disabled"
         }</p>
         <p className="text-xs text-muted-foreground">
-          Inspected: {nodeSourceReview.checkedAt}. The source stays private on the device.
-          This verifies file identity, not application safety or readiness.
-          Node.js execution and autostart are blocked from LAN; owner activation is not configured.
+          Inspected: {nodeSourceReview.checkedAt}. Source text and credentials are not returned.
+          This proves file identity only, not safety or readiness. Starting Node.js code
+          is blocked from LAN; device-owner authorization is not configured.
         </p>
+        <Button size="sm" variant="outline" disabled={busy}
+          onClick={() => void loadNodeSourceHistory(nodeSourceReview.name)}>
+          Read saved revisions
+        </Button>
+        {nodeSourceHistory?.name === nodeSourceReview.name &&
+          nodeSourceHistory.currentSha256 === nodeSourceReview.sourceSha256 &&
+          <div className="space-y-1 rounded-md border p-2">
+            <p className="text-xs font-medium">Saved Node.js revisions ({nodeSourceHistory.revisions.length})</p>
+            {nodeSourceHistory.revisions.length === 0 &&
+              <p className="text-xs text-muted-foreground">No older revisions retained.</p>}
+            {nodeSourceHistory.revisions.map(item =>
+              <div key={item.id} className="flex flex-wrap items-center gap-2 border-b py-2">
+                <div className="min-w-0 flex-1 text-xs">
+                  <p>{item.savedAt} · {item.bytes} bytes</p>
+                  <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
+                </div>
+                <Button size="sm" variant="outline"
+                  disabled={busy || nodeSourceReview.observed !== "stopped" ||
+                    nodeSourceReview.autostart !== false ||
+                    nodeSourceHistory.revisions.length >= 8}
+                  onClick={() => void restoreNodeRevision(item)}>Restore this source</Button>
+              </div>)}
+            {nodeSourceHistory.revisions.length >= 8 &&
+              <p className="text-xs text-muted-foreground">
+                Revision history full. Restore is blocked to preserve existing files.
+              </p>}
+          </div>}
+        {nodeSourceReview.observed === "stopped" && nodeSourceReview.autostart === false ? <>
+          <label htmlFor="node-replacement-source" className="text-sm font-medium">
+            Replace staged worker.mjs (full source)
+          </label>
+          <Textarea id="node-replacement-source" rows={7}
+            value={nodeReplacement} onChange={event => setNodeReplacement(event.target.value)}
+            maxLength={32 * 1024} disabled={busy}
+            placeholder="Paste the complete revised Node.js source" />
+          <p className="text-xs text-muted-foreground">
+            Exact-SHA update only. Old code retained in private history (maximum eight revisions).
+            Failed partial writes require manual reconciliation. This does not run Node.js.
+          </p>
+          <Button size="sm" variant="outline" disabled={busy ||
+              !nodeReplacement.trim() || new Blob([nodeReplacement]).size > 32 * 1024}
+            onClick={() => void replaceNodeSource()}>Replace staged Node.js source</Button>
+        </> : <p className="text-xs text-muted-foreground">
+          Revision requires a confirmed stopped worker with autostart disabled.
+        </p>}
       </section>}
     {mode === "lifecycle" && sourceReview &&
       services?.some(service => service.name === sourceReview.name &&
