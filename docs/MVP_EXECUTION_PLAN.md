@@ -27,7 +27,7 @@ purpose: Canonical ordered MVP completion and acceptance tracker
 - [x] Usunięto aktywne sztywne integracje konkretnych hostowanych aplikacji, obserwacja runit jest dynamiczna; historycznych dokumentów nie usuwać.
 - [ ] Testy kompletnego hostingu, autostartu po realnym restarcie i polityk recovery — **nie były wykonywane**. Nie wynika z tego, że wcześniejsze punkty to ukończony Etap 1.
 
-**Baza live A8:** `e4838cd472a0db57bf0760ae2a384a97035fdc94` (receipt `pockethost-a8-framework-demo-menu-20261114-v2`, FAST FLOW PASS, HTTP 200, 2026-11-14). Aktualny live-SHA zawsze odczytaj ponownie przed następnym wdrożeniem.
+**Historyczna baza live A8:** `e4838cd472a0db57bf0760ae2a384a97035fdc94` (2026-11-14). **Ostatni potwierdzony live:** `4716e7f21fde1bea019bc87e52015030415ba181`, task `pockethost-a8-dashboard-manifest-release-4716-20261115-v1`, FAST FLOW PASS, `tests=PASS` (20 kontroli), PID 29198, start ticks 18333015, HTTP 200, chronione usługi bez zmian, 15.78 GiB free (2026-11-15). **To wdrożenie i testy regresji zmienionego zakresu, nie pełny odbiór Services S1–S4/S5.** Aktualny SHA zawsze odczytaj ponownie przed następnym wdrożeniem.
 
 ## 1. Services — jeden działający mechanizm zarządzania usługami
 
@@ -361,7 +361,7 @@ to produktowy design, **nie odbiór** — A8 release i QA nadal HOLD
 do dostarczenia lokalnego toolchain TypeScript (poprzedni gate
 `tsc: not found` w checkoutcie QA), bez omijania bramki.
 
-**A8 QA dependencies / Termux manifest (2026-11-15, code pending A8 qualification):**
+**A8 QA dependencies / Termux manifest (2026-11-15, wdrożone i QA PASS na A8):**
 `scripts/dev/termux-dependency-manifest.mjs` deklaruje wymagane pakiety
 Termux, dwa kompletne npm lockfile i dokładne lokalne CLI QA; Termux:API,
 PocketHost Companion i Shizuku pozostają opcjonalne. Instaluje się zależności
