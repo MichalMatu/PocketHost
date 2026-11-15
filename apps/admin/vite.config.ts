@@ -1552,16 +1552,24 @@ function termuxAdminApi(): Plugin {
               return await services.recoverWorkerOnce(input.path ?? "")
             }
             if (input.action === "service-create") {
-              // Two fixed runtimes, no caller-supplied program, shell, path or port.
-              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
-                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
-                throw new RangeError("Unsupported service template");
+              // A custom Python program is only staged. No browser action
+              // can enable/autostart/execute it without a separate owner gate.
+              const customPython = input.name === "python-source-v1"
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(
+                    input.name ?? "") ||
+                  Object.keys(input).some(key => !["action", "name", "path",
+                    ...(customPython ? ["content"] : [])].includes(key)) ||
+                  (customPython && (typeof input.content !== "string" ||
+                    Buffer.byteLength(input.content) > 32 * 1024))) {
+                throw new RangeError("Unsupported worker source or template");
               }
-              return services.createManagedWorker(input.path ?? "", input.name)
+              return services.createManagedWorker(input.path ?? "",
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1",
+                input.content)
             }
             if (input.action === "service-archive") {
               // Narrow non-destructive archive, never generic unlink or adoption.
-              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service archive");
               }
@@ -1570,7 +1578,7 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service-restore") {
               // Restore only a previously recorded, stopped and fully attested
               // builtin worker; no browser-supplied path, run script or PID.
-              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service restoration");
               }
@@ -1579,7 +1587,7 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service-retire") {
               // Never recursively delete a worker. Revoke only an attested
               // archive and retain its bytes in bounded private quarantine.
-              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported worker retirement");
               }

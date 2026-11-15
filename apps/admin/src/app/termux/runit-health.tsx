@@ -6,7 +6,7 @@ type VerifiedService = {
   name: string
   registered: boolean
   protected: boolean
-  template?: "heartbeat-worker-v1" | "python-heartbeat-v1"
+  template?: "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1"
 }
 type RecoveryReview = {
   name: string
@@ -84,7 +84,8 @@ export function RunitHealthPanel() {
           typeof service.protected === "boolean" &&
           (service.template === undefined ||
             service.template === "heartbeat-worker-v1" ||
-            service.template === "python-heartbeat-v1"))) {
+            service.template === "python-heartbeat-v1" ||
+            service.template === "python-source-v1"))) {
       throw new Error("Invalid service inventory")
     }
     setServices(result.services.filter(service =>
@@ -168,7 +169,8 @@ export function RunitHealthPanel() {
   }
 
   const reviewRecovery = async (service: VerifiedService) => {
-    if (busy || !service.template || !service.registered || service.protected) return
+    if (busy || !service.template || service.template === "python-source-v1" ||
+        !service.registered || service.protected) return
     setBusy(service.name)
     setError(null)
     setRecovery(null)
@@ -254,7 +256,8 @@ export function RunitHealthPanel() {
           onClick={() => void inspect(service)}>
           {busy === service.name ? "Inspecting…" : "Inspect health"}
         </Button>
-        {service.template && <Button size="sm" variant="outline" disabled={busy !== null}
+        {service.template && service.template !== "python-source-v1" &&
+          <Button size="sm" variant="outline" disabled={busy !== null}
           onClick={() => void reviewRecovery(service)}>Review recovery</Button>}
       </div>
     </div>)}
@@ -286,7 +289,8 @@ export function RunitHealthPanel() {
         <Badge variant="outline">Autostart: {readback.autostart === null
           ? "unknown" : readback.autostart ? "enabled" : "disabled"}</Badge>
       </div>
-      {services?.some(service => service.name === readback.name && service.template) &&
+      {services?.some(service => service.name === readback.name && service.template &&
+          service.template !== "python-source-v1") &&
         <div className="space-y-2">
           <p className="text-xs text-muted-foreground">
             Built-in worker heartbeat threshold (manual checks only). Fresh logs prove

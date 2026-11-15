@@ -413,6 +413,26 @@ arbitrary-code executor or Python importer. S1/S2 are IN_PROGRESS. The
 focused S5 gate must verify legitimate Node provenance, impostor unit names,
 source/marker drift, disabled feature and UI deep-link approval isolation.
 
+## S1 owner-staged Python source (partial)
+
+Add Service can now stage a private `worker.py` (maximum 32 KiB) as
+`python-source-v1`, with no user-selected executable, shell, PID or path.
+The fixed runit launcher and source are SHA-256 attested in the private marker;
+source identity is checked for live enrollment, log reads, archival, restore
+and retirement. This preserves the existing ownership lifecycle and quota.
+The new unit has its `down` marker, cannot automatically start and never
+executes during creation. **Generic browser/API Start, Restart and Enable
+autostart are denied for `python-source-v1`. Manual recovery and heartbeat
+automation are denied too.** Python `-I` is not an OS sandbox; there is no
+claim that the submitted code would be safe to execute if later authorized.
+A separately approved owner-authenticated executor and its security review
+are required before general Python application lifecycle can be enabled.
+
+S5 stage-close acceptance needs positive creation and archive/readback and
+negative input/owner/marker/source drift cases, permission and quota errors,
+failure and crash handling, lifecycle denial and protected-service isolation.
+No Python code is executed and no S5 tests are claimed in this slice.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

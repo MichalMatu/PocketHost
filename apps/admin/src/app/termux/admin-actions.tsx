@@ -533,7 +533,7 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
   </div>
 }
 
-type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1"
+type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1"
 type ArchivedEntry = {
   name: string
   template: WorkerTemplate
@@ -567,6 +567,7 @@ export function RunitServiceActions({
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
+  const [pythonSource, setPythonSource] = React.useState("")
   const refresh = React.useCallback(async () => {
     const data = await inspect<{ services: RunitEntry[]; archived?: ArchivedEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
@@ -580,7 +581,8 @@ export function RunitServiceActions({
           (item.identity === undefined ||
             ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
           (item.template === undefined ||
-            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1") &&
+            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1" ||
+            item.template === "python-source-v1") &&
           (item.project === undefined ||
             (item.control === "delegated" && !item.template &&
               typeof item.project === "object" && item.project !== null &&
@@ -590,7 +592,7 @@ export function RunitServiceActions({
       throw new Error("Invalid runit inventory")
     if (!Array.isArray(data.archived) || data.archived.length > 4 ||
         !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
-          ["heartbeat-worker-v1", "python-heartbeat-v1"].includes(item.template) &&
+          ["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(item.template) &&
           ["restorable", "changed", "conflict"].includes(item.identity)))
       throw new Error("Invalid archived worker inventory")
     setArchived(data.archived)
@@ -677,7 +679,8 @@ export function RunitServiceActions({
   const restoreWorker = async (entry: ArchivedEntry) => {
     if (busy || entry.identity !== "restorable" ||
         !window.confirm("Restore archived " +
-          (entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
+          (entry.template === "python-source-v1" ? "Python source" :
+            entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
           " service " + entry.name +
           "? The application worker stays stopped with autostart disabled. " +
           "Runit may launch only its own supervisor/logger.")) return
@@ -726,21 +729,32 @@ export function RunitServiceActions({
   }
   const createWorker = async () => {
     const name = workerName.trim()
+    const custom = workerTemplate === "python-source-v1"
     if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
-      !window.confirm("Create a new stopped PocketHost-owned " +
-        (workerTemplate === "python-heartbeat-v1" ? "Python" : "Node.js") + " worker " +
-        name + "? It uses a fixed, isolated template and will not start automatically.")) return
+        (custom && (!pythonSource.trim() ||
+          new Blob([pythonSource]).size > 32 * 1024)) ||
+      !window.confirm(custom
+        ? "Stage exact Python source for " + name +
+          "? Code will NOT execute from this LAN panel. The immutable file is saved" +
+          " with SHA-256 and requires a separately authorized owner executor."
+        : "Create a new stopped PocketHost-owned " +
+          (workerTemplate === "python-heartbeat-v1" ? "Python" : "Node.js") +
+          " heartbeat worker " + name +
+          "? It uses a fixed, isolated template and will not start automatically.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-create", name: workerTemplate, path: name })
+      await action({ action: "service-create", name: workerTemplate, path: name,
+        ...(custom ? { content: pythonSource } : {}) })
       try {
         await refresh()
-        setDone(name + ": stopped worker provisioned; use Start after reviewing ownership")
+        setDone(name + (custom
+          ? ": Python source staged and attested · execution blocked in LAN Services"
+          : ": stopped worker provisioned; use Start after reviewing ownership"))
       } catch {
         setDone(name + ": creation acknowledged, but inventory refresh failed")
         setError("Verify service identity before attempting lifecycle commands.")
       }
-      setCreatorOpen(false); setWorkerName("")
+      setCreatorOpen(false); setWorkerName(""); setPythonSource("")
     } catch {
       setError("Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
     } finally { setBusy(false) }
@@ -769,7 +783,8 @@ export function RunitServiceActions({
             service.identity === "changed" ? "Identity changed · blocked" :
             service.identity === "legacy" ? "Legacy record · needs reattestation" :
             service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
-          {service.template && <Badge variant="outline">{service.template === "python-heartbeat-v1" ? "Python worker" : "Node.js worker"}</Badge>}
+          {service.template && <Badge variant="outline">{service.template === "python-source-v1" ? "Python source · execution blocked" :
+            service.template === "python-heartbeat-v1" ? "Python heartbeat" : "Node.js heartbeat"}</Badge>}
           {service.project && <Badge variant="outline">Node project: {service.project.name}</Badge>}
         </div>
       </div>
@@ -788,11 +803,13 @@ export function RunitServiceActions({
       </div>}
       {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {mode === "lifecycle" ? (service.registered ? <>
-          <Button size="sm" disabled={busy || service.state !== "stopped"}
+          <Button size="sm" disabled={busy || service.state !== "stopped" ||
+              service.template === "python-source-v1"}
             onClick={() => void perform("start", service)}>Start</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
             onClick={() => void perform("stop", service)}>Stop</Button>
-          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
+          <Button size="sm" variant="outline" disabled={busy || service.state !== "running" ||
+              service.template === "python-source-v1"}
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service.name)}>Logs</Button>
@@ -804,7 +821,8 @@ export function RunitServiceActions({
         </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
           (service.registered ? <>
             <Button size="sm" variant="outline"
-              disabled={busy || service.enabled !== false}
+              disabled={busy || service.enabled !== false ||
+                service.template === "python-source-v1"}
               onClick={() => void perform("enable", service)}>Enable autostart</Button>
             <Button size="sm" variant="outline"
               disabled={busy || service.enabled !== true}
@@ -837,10 +855,11 @@ export function RunitServiceActions({
       {creatorOpen && <div className="space-y-3 rounded-md border p-3" aria-label="Add standalone service">
         <p className="text-sm font-medium">Create standalone service</p>
         <p className="text-muted-foreground text-xs">
-          Choose a fixed Node.js or Python heartbeat worker. Both use isolated
-          built-in code, have no network listener and start stopped with autostart
-          disabled. Maximum four total workers. Importing custom scripts and
-          adopting external processes are not available through LAN.
+          Create a fixed Node.js/Python heartbeat worker, or stage your own
+          immutable Python source. Source is never executed or enabled by
+          this LAN page; only a separately authorized local owner workflow
+          can review activation. Maximum four definitions and 32 KB per source.
+          No process adoption or arbitrary service path is allowed.
         </p>
         <div className="flex flex-wrap gap-2" aria-label="Worker runtime">
           <Button size="sm" disabled={busy}
@@ -850,18 +869,37 @@ export function RunitServiceActions({
           <Button size="sm" disabled={busy}
             variant={workerTemplate === "python-heartbeat-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "python-heartbeat-v1"}
-            onClick={() => setWorkerTemplate("python-heartbeat-v1")}>Python</Button>
+            onClick={() => setWorkerTemplate("python-heartbeat-v1")}>Python heartbeat</Button>
+          <Button size="sm" disabled={busy}
+            variant={workerTemplate === "python-source-v1" ? "secondary" : "outline"}
+            aria-pressed={workerTemplate === "python-source-v1"}
+            onClick={() => setWorkerTemplate("python-source-v1")}>My Python code</Button>
+        </div>
+        {workerTemplate === "python-source-v1" && <div className="space-y-2">
+          <label htmlFor="python-worker-source" className="text-sm font-medium">worker.py source</label>
+          <Textarea id="python-worker-source" value={pythonSource}
+            onChange={event => setPythonSource(event.target.value)}
+            maxLength={32 * 1024} rows={7} disabled={busy}
+            placeholder={'print("Hello from Python")'} />
+          <p className="text-xs text-muted-foreground">
+            Stored privately without executing, dependencies or network listener.
+            Start, Restart, Autostart and recovery are disabled from this page.
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}
             value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
-          <Button size="sm" disabled={busy || !/^[a-z][a-z0-9-]{1,63}$/.test(workerName)}
-            onClick={() => void createWorker()}>Create stopped service</Button>
+          <Button size="sm" disabled={busy || !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
+              (workerTemplate === "python-source-v1" &&
+                (!pythonSource.trim() || new Blob([pythonSource]).size > 32 * 1024))}
+            onClick={() => void createWorker()}>
+            {workerTemplate === "python-source-v1" ? "Stage Python source" : "Create stopped service"}
+          </Button>
         </div>
         <p className="text-muted-foreground text-xs">
           Names must be unique and 2–64 characters: lowercase letters, digits and hyphens.
-          Creating a service does not enable autostart or execute a script.
+          Creating a service never executes its Python source or enables autostart.
         </p>
       </div>}
     </>}
@@ -924,7 +962,8 @@ export function RunitServiceActions({
         <div className="space-y-1">
           <p className="text-sm font-medium">{entry.name}</p>
           <div className="flex flex-wrap gap-2">
-            <Badge variant="outline">{entry.template === "python-heartbeat-v1" ? "Python" : "Node.js"}</Badge>
+            <Badge variant="outline">{entry.template === "python-source-v1" ? "Python source" :
+              entry.template === "python-heartbeat-v1" ? "Python heartbeat" : "Node.js"}</Badge>
             <Badge variant="outline">{entry.identity === "restorable" ? "Archived · verified" :
               entry.identity === "conflict" ? "Archive/live conflict · blocked" : "Identity changed · blocked"}</Badge>
           </div>
