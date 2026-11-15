@@ -28,10 +28,16 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
   try {
     const observed = admin.list(() => 'running');
     assert.equal(observed.find((item) => item.name === 'site-worker')?.registered, false);
-    assert.equal(observed.find((item) => item.name === 'site-worker')?.identityReason, 'no-enrollment');
+    assert.equal(
+      observed.find((item) => item.name === 'site-worker')?.identityReason,
+      'no-enrollment',
+    );
     assert.equal(observed.find((item) => item.name === 'wreckscanner')?.registered, false);
     assert.equal(observed.find((item) => item.name === 'wreckscanner')?.protected, true);
-    assert.equal(observed.find((item) => item.name === 'wreckscanner')?.identityReason, 'no-enrollment');
+    assert.equal(
+      observed.find((item) => item.name === 'wreckscanner')?.identityReason,
+      'no-enrollment',
+    );
     await assert.rejects(admin.apply('start', 'site-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(admin.apply('stop', 'site-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(

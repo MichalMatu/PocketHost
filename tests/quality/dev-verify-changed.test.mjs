@@ -75,7 +75,10 @@ test('manual QA gathers cheap errors without running expensive suites', () => {
   assert.equal(result.status, 'FAIL');
   assert.deepEqual(result.failedChecks, ['changed-file format', 'docs']);
   assert.deepEqual(invoked, ['changed-file format', 'docs']);
-  assert.deepEqual(result.checks.map((x) => x.status), ['FAIL', 'FAIL', 'SKIPPED', 'SKIPPED']);
+  assert.deepEqual(
+    result.checks.map((x) => x.status),
+    ['FAIL', 'FAIL', 'SKIPPED', 'SKIPPED'],
+  );
 });
 
 test('successful focused checks produce one readable PASS receipt', () => {

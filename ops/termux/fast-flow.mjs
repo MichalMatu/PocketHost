@@ -23,14 +23,21 @@ const RELEASE_SCRIPT = path.join(QA, 'ops/termux/refresh-panel.mjs');
 export function parseFastFlowArgs(argv) {
   // Deliberately ONLY three deployment flags. No --tests, even after
   // user approval: tests use an independent manually invoked command.
-  if (!Array.isArray(argv) || argv.length !== 3 ||
-      argv.some((value) => typeof value !== 'string') ||
-      argv.filter((value) => value.startsWith('--base=')).length !== 1 ||
-      argv.filter((value) => value.startsWith('--target=')).length !== 1 ||
-      argv.filter((value) => value === '--apply').length !== 1 ||
-      argv.some((value) => !(value.startsWith('--base=') ||
-        value.startsWith('--target=') || value === '--apply'))) {
-    throw Error('Deployment only: --base=<40-hex-SHA> --target=<40-hex-SHA> --apply; tests require separate explicit owner consent');
+  if (
+    !Array.isArray(argv) ||
+    argv.length !== 3 ||
+    argv.some((value) => typeof value !== 'string') ||
+    argv.filter((value) => value.startsWith('--base=')).length !== 1 ||
+    argv.filter((value) => value.startsWith('--target=')).length !== 1 ||
+    argv.filter((value) => value === '--apply').length !== 1 ||
+    argv.some(
+      (value) =>
+        !(value.startsWith('--base=') || value.startsWith('--target=') || value === '--apply'),
+    )
+  ) {
+    throw Error(
+      'Deployment only: --base=<40-hex-SHA> --target=<40-hex-SHA> --apply; tests require separate explicit owner consent',
+    );
   }
   const base = argv.find((value) => value.startsWith('--base=')).slice(7);
   const target = argv.find((value) => value.startsWith('--target=')).slice(9);

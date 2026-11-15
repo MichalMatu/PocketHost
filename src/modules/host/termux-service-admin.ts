@@ -1442,9 +1442,7 @@ export class TermuxServiceAdmin {
     if (identity === 'legacy') return 'legacy-without-sha';
     if (identity === 'verified') return 'run-sha-attested';
     const recorded = registrations.find((entry) => entry.name === name);
-    return !target || recorded?.target !== target
-      ? 'service-target-changed'
-      : 'run-script-changed';
+    return !target || recorded?.target !== target ? 'service-target-changed' : 'run-script-changed';
   }
 
   private probe(name: string): TermuxService['state'] {

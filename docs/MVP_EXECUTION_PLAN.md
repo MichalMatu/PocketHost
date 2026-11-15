@@ -65,4 +65,4 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 3. Jedyny konieczny dowód: terminal PASS/HOLD, SHA, PID/start ticks, podstawowe HTTP, brak zmian w chronionych usługach. Przy HOLD nie uruchamiaj automatycznych ponowień.
 4. Dokumentuj tylko aktualny status, a szczegółowe logi trzymaj w receipt/Git. Dokumentacja-only: commit bez deploy, testów, restartu i formatowania.
 
-**Następny produktowy krok: S1 — domknięcie enrollmentu własnych usług.** 
+**Następny produktowy krok: S1 — domknięcie enrollmentu własnych usług.**

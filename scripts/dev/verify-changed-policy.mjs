@@ -70,8 +70,12 @@ export function runChangedVerification(checks, execute) {
   const failedChecks = [];
   // Even in a separately approved run, collect all inexpensive diagnostics.
   // If they fail, do not spend minutes on Node/UI regression.
-  const expensive = new Set(['root incremental typecheck', 'admin incremental typecheck',
-    'node tests', 'ui tests']);
+  const expensive = new Set([
+    'root incremental typecheck',
+    'admin incremental typecheck',
+    'node tests',
+    'ui tests',
+  ]);
   for (const check of checks) {
     if (failedChecks.length && expensive.has(check.label)) {
       results.push({ label: check.label, status: 'SKIPPED', reason: 'earlier-check-failed' });

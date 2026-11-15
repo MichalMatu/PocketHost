@@ -20,7 +20,7 @@ purpose: Permanent no-automatic-tests FAST FLOW policy
 
 ## Explicitly authorized, separate manual QA
 
-The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` are **read-only planners** unless the latter receives a double opt-in. If the owner explicitly requests a *specific* QA run for a *specific* target SHA, run on verified A8 only:
+The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` are **read-only planners** unless the latter receives a double opt-in. If the owner explicitly requests a _specific_ QA run for a _specific_ target SHA, run on verified A8 only:
 
 ```sh
 node scripts/dev/verify-changed.mjs --base=<verified-live-sha> --execute --approved-head=<exact-40-hex-target-sha>

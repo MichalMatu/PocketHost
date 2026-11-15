@@ -17,10 +17,12 @@ test('one pinned source and explicit --apply; reject duplicate or foreign flags'
     apply: true,
     tests: false,
   });
-  assert.deepEqual(
-    parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target]),
-    { base, target, apply: true, tests: false },
-  );
+  assert.deepEqual(parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target]), {
+    base,
+    target,
+    apply: true,
+    tests: false,
+  });
   for (const argv of [
     ['--base=' + base, '--target=' + base, '--apply'],
     ['--base=' + base, '--base=' + base, '--target=' + target, '--apply'],
@@ -36,10 +38,17 @@ test('one pinned source and explicit --apply; reject duplicate or foreign flags'
 });
 
 test('FAST FLOW never accepts test flags in a deployment', () => {
-  for (const extra of ['--tests', '--run', '--execute', '--admin-lint', '--approved-head=' + target]) {
-    assert.throws(() => parseFastFlowArgs([
-      '--base=' + base, '--target=' + target, '--apply', extra,
-    ]), /Deployment only/);
+  for (const extra of [
+    '--tests',
+    '--run',
+    '--execute',
+    '--admin-lint',
+    '--approved-head=' + target,
+  ]) {
+    assert.throws(
+      () => parseFastFlowArgs(['--base=' + base, '--target=' + target, '--apply', extra]),
+      /Deployment only/,
+    );
   }
 });
 

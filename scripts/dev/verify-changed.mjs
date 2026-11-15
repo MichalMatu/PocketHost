@@ -41,7 +41,9 @@ const optionsValid =
   /^[0-9a-f]{7,40}$/.test(base ?? '') &&
   executeFlags.length <= 1 &&
   approvalFlags.length <= 1 &&
-  (execute ? approvalFlags.length === 1 && /^[0-9a-f]{40}$/.test(approvedHead ?? '') : approvalFlags.length === 0) &&
+  (execute
+    ? approvalFlags.length === 1 && /^[0-9a-f]{40}$/.test(approvedHead ?? '')
+    : approvalFlags.length === 0) &&
   !(execute && argv.includes('--plan')) &&
   timeoutFlag.length <= 1 &&
   Number.isSafeInteger(timeoutMs) &&
