@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { MemoryRouter } from "react-router-dom"
 import userEvent from "@testing-library/user-event"
 import { PackageManager, WorkspaceManager, WorkspaceBackupActions, RunitServiceActions, ResticActions } from "@/app/termux/admin-actions"
 
@@ -174,42 +175,63 @@ describe("H3 additional native-tool integrations", () => {
   })
 })
 
-describe("H3 runit service registration UI", () => {
-  it("registers only explicitly selected non-protected services, then starts them", async () => {
+describe("H3 runit service enrollment UI", () => {
+  it("refuses discovered service adoption but can create and start an attested fixed worker", async () => {
     const user = userEvent.setup()
-    let registered = false
+    let created = false
+    let running = false
     const requests = vi.fn(async (url: string, options?: RequestInit) => {
       expect(url).toContain("/api/v1/termux-admin")
       if (options?.method === "POST") {
         const body = JSON.parse(String(options.body))
-        expect(body.action).toBe("service")
-        expect(body.path).toBe("site-worker")
-        registered = true
+        if (!created) {
+          expect(body).toEqual({
+            action: "service-create", name: "heartbeat-worker-v1", path: "site-worker",
+          })
+          created = true
+        } else {
+          expect(body).toEqual({
+            action: "service", name: "start", path: "site-worker",
+          })
+          running = true
+        }
         return { ok: true, json: async () => ({ changed: true }) }
       }
-      return { ok: true, json: async () => ({ services: [
-        { name: "wreckscanner", registered: false, protected: true, state: "running" },
-        { name: "site-worker", registered, protected: false, state: "stopped" },
-      ] }) }
+      return { ok: true, json: async () => ({
+        archived: [],
+        services: [
+          {
+            name: "wreckscanner", registered: false, protected: true,
+            control: "read-only", identity: "unregistered",
+            state: "running", enabled: null,
+          },
+          ...(created ? [{
+            name: "site-worker", registered: true, protected: false,
+            control: "standalone", identity: "verified",
+            template: "heartbeat-worker-v1",
+            state: running ? "running" : "stopped", enabled: false,
+          }] : []),
+        ],
+      }) }
     })
     vi.stubGlobal("fetch", requests)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    render(<RunitServiceActions />)
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>)
+    await screen.findByText("wreckscanner")
+    expect(screen.queryByRole("button", { name: "Register" })).toBeNull()
+    expect(screen.getByText(/No attested managed services yet/)).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Add Service" }))
+    await user.type(screen.getByRole("textbox", { name: "New service name" }), "site-worker")
+    await user.click(screen.getByRole("button", { name: "Create stopped service" }))
     await screen.findByText("site-worker")
-    const protectedDetails = screen.getByText("wreckscanner").closest("details")
-    expect(protectedDetails?.hasAttribute("open")).toBe(false)
-    expect(screen.getByText(/Protected runit inventory \(1\)/)).toBeTruthy()
-    await user.click(screen.getByText(/Protected runit inventory \(1\)/))
-    expect(protectedDetails?.hasAttribute("open")).toBe(true)
-    expect(screen.getByText("Protected")).toBeTruthy()
-    await user.click(screen.getByRole("button", { name: "Register" }))
-    await screen.findByText("Registered")
+    expect(screen.getByText("Standalone · attested")).toBeTruthy()
     await user.click(screen.getByRole("button", { name: "Start" }))
-    await screen.findByText(/start completed/)
-    const operations = requests.mock.calls.filter((call: [string, RequestInit?]) => call[1]?.method === "POST")
+    await screen.findByText(/site-worker: start acknowledged/)
+    const actions = requests.mock.calls.filter((call: [string, RequestInit?]) => call[1]?.method === "POST")
       .map((call: [string, RequestInit?]) => JSON.parse(String(call[1]?.body)))
-    expect(operations.map((operation: { name: string }) => operation.name)).toEqual(["register", "start"])
-    expect(operations.every((operation: { path: string }) => operation.path === "site-worker")).toBe(true)
+    expect(actions.map((action: { action: string }) => action.action))
+      .toEqual(["service-create", "service"])
+    expect(actions.every((action: { path: string }) => action.path === "site-worker")).toBe(true)
   })
 })
 
@@ -254,17 +276,23 @@ describe("System UX distinctions", () => {
     expect(screen.queryByText("Encrypted backups")).toBeNull()
   })
 
-  it("prevents Start when a service has no confirmed runtime state", async () => {
+  it("prevents lifecycle actions for an attested worker with an unknown runtime state", async () => {
     const user = userEvent.setup()
-    const calls = vi.fn(async () => ({ ok: true, json: async () => ({ services: [
-      { name: "site-worker", registered: true, protected: false, state: "unknown" },
-    ] }) }))
+    const calls = vi.fn(async () => ({ ok: true, json: async () => ({
+      archived: [],
+      services: [{
+        name: "site-worker", registered: true, protected: false,
+        control: "standalone", identity: "verified",
+        template: "heartbeat-worker-v1", enabled: false, state: "unknown",
+      }],
+    }) }))
     vi.stubGlobal("fetch", calls)
-    render(<RunitServiceActions />)
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>)
     await screen.findByText("site-worker")
-    expect((screen.getByRole("button", { name: "Start" }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole("button", { name: "Stop" }) as HTMLButtonElement).disabled).toBe(true)
-    expect((screen.getByRole("button", { name: "Restart" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText(/Runtime state unknown/)).toBeTruthy()
+    for (const name of ["Start", "Stop", "Restart"]) {
+      expect((screen.getByRole("button", { name }) as HTMLButtonElement).disabled).toBe(true)
+    }
     await user.click(screen.getByRole("button", { name: "Refresh services" }))
     expect(calls.mock.calls).toHaveLength(2)
   })
