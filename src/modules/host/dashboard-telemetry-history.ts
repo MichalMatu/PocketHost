@@ -592,13 +592,16 @@ export function withDashboardBatteryFallback(
 ): DashboardBattery {
   return {
     ...api,
-    batteryPercent: api.batteryPercent ??
+    batteryPercent:
+      api.batteryPercent ??
       (direct.state === 'ok' && validNumber(direct.value, 100) ? direct.value : null),
   };
 }
 export async function readDashboardBattery(): Promise<DashboardBattery> {
   let api: DashboardBattery = {
-    batteryPercent: null, batteryCharging: null, batteryTempC: null,
+    batteryPercent: null,
+    batteryCharging: null,
+    batteryTempC: null,
   };
   try {
     const result = await execFileAsync(BATTERY_COMMAND, [], {
@@ -612,7 +615,8 @@ export async function readDashboardBattery(): Promise<DashboardBattery> {
     // Optional Termux:API unavailable; use read-only sysfs percent below.
   }
   return api.batteryPercent !== null
-    ? api : withDashboardBatteryFallback(api, readBatteryPercent());
+    ? api
+    : withDashboardBatteryFallback(api, readBatteryPercent());
 }
 
 export type DashboardDns = { dnsMs: number | null; dnsFailed: boolean | null };

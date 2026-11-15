@@ -32,9 +32,15 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
     assert.equal(observed.find((item) => item.name === 'wreckscanner')?.protected, true);
     await assert.rejects(admin.apply('start', 'site-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(admin.apply('stop', 'site-worker', fakeRun), /not explicitly registered/);
-    await assert.rejects(admin.apply('restart', 'site-worker', fakeRun), /not explicitly registered/);
+    await assert.rejects(
+      admin.apply('restart', 'site-worker', fakeRun),
+      /not explicitly registered/,
+    );
     await assert.rejects(admin.apply('once', 'wreckscanner', fakeRun), /not explicitly registered/);
-    await assert.rejects(admin.apply('register', 'site-worker', fakeRun), /attested PocketHost provisioner/);
+    await assert.rejects(
+      admin.apply('register', 'site-worker', fakeRun),
+      /attested PocketHost provisioner/,
+    );
     await assert.rejects(admin.apply('unregister', 'site-worker', fakeRun), /Unregister refused/);
     assert.equal(admin.isRegistered('site-worker'), false);
     assert.deepEqual(calls, []);
@@ -56,13 +62,23 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
     for (const name of ['wreckscanner', 'wreckscanner-backup']) {
       assert.equal(admin.list(() => 'running').find((item) => item.name === name)?.protected, true);
       assert.equal(admin.isRegistered(name), false);
-      await assert.rejects(admin.apply('register', name, fakeRun), /attested PocketHost provisioner/);
+      await assert.rejects(
+        admin.apply('register', name, fakeRun),
+        /attested PocketHost provisioner/,
+      );
       await assert.rejects(admin.apply('stop', name, fakeRun), /not explicitly registered/);
     }
     for (const name of ['pockethost-panel', 'pockethost-panel-watch']) {
       assert.equal(admin.list(() => 'running').find((item) => item.name === name)?.protected, true);
       for (const operation of [
-        'register', 'unregister', 'start', 'stop', 'restart', 'once', 'enable', 'disable',
+        'register',
+        'unregister',
+        'start',
+        'stop',
+        'restart',
+        'once',
+        'enable',
+        'disable',
       ]) {
         await assert.rejects(admin.apply(operation, name, fakeRun), /Protected service/);
       }
@@ -75,7 +91,10 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
     await assert.rejects(admin.apply('stop', 'alias', fakeRun), /not explicitly registered/);
     symlinkSync(path.join(services, 'pockethost-panel'), path.join(services, 'protected-alias'));
     await assert.rejects(admin.apply('start', 'protected-alias', fakeRun), /Protected/);
-    await assert.rejects(admin.apply('register', 'not-present', fakeRun), /attested PocketHost provisioner/);
+    await assert.rejects(
+      admin.apply('register', 'not-present', fakeRun),
+      /attested PocketHost provisioner/,
+    );
     await assert.rejects(admin.apply('start', 'not-present', fakeRun), /unavailable/);
     assert.deepEqual(calls, []);
     assert.equal(existsSync(registry), false);
@@ -93,10 +112,19 @@ test('H3.4 runit enable/disable requires separately attested worker enrollment',
     return { exit: 0, output: '' };
   };
   try {
-    await assert.rejects(admin.apply('enable', 'site-worker', fakeRun), /not explicitly registered/);
-    await assert.rejects(admin.apply('disable', 'wreckscanner', fakeRun), /not explicitly registered/);
+    await assert.rejects(
+      admin.apply('enable', 'site-worker', fakeRun),
+      /not explicitly registered/,
+    );
+    await assert.rejects(
+      admin.apply('disable', 'wreckscanner', fakeRun),
+      /not explicitly registered/,
+    );
     await assert.rejects(admin.apply('disable', 'pockethost-panel', fakeRun), /Protected service/);
-    await assert.rejects(admin.apply('register', 'site-worker', fakeRun), /attested PocketHost provisioner/);
+    await assert.rejects(
+      admin.apply('register', 'site-worker', fakeRun),
+      /attested PocketHost provisioner/,
+    );
     assert.deepEqual(calls, []);
     assert.equal(existsSync(registry), false);
   } finally {

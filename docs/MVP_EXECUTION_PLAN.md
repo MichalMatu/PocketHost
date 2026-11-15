@@ -144,7 +144,7 @@ jawne `Request one recovery start`. Reużywamy istniejące
 gdy worker jest zatrzymany, autostart włączony, nie zmieniła się jego
 tożsamość, a limit wynosi **2 żądania w ciągu godziny** z
 **2-minutowym cooldownem**. Historia prób jest zapisywana w
-prywatnym rejestrze *przed* poleceniem; nieudane lub przerwane
+prywatnym rejestrze _przed_ poleceniem; nieudane lub przerwane
 wywołanie zużywa próbę. Przy `running` / `unknown` / `down`
 brak naprawy. Brak schedulera, samoczynnych działań, restartów usług
 projektów lub dowolnych procesów. **To limit próśb PocketHost, nie
@@ -246,7 +246,6 @@ sterowany przez H3 wyłącznie po weryfikacji wzorca; `delegated` jest
 widoczny, lecz sterowanie pozostaje w module, który go utworzył.
 To nie zastępuje odbioru funkcjonalnego ani enrollmentu dowolnej
 aplikacji. S1/S2 pozostają `[ ]`.
-
 
 **S2 — weryfikacja po wykonaniu polecenia (kod, bez odbioru):**
 Start/Stop/Restart/Once teraz wymagają poprawnego wyniku `sv` i ponownego
@@ -424,12 +423,12 @@ kontrakcie runnera, bez omijania bramki. Poprzedni gate fail
 
 ## Rejestr zakończeń
 
-| Data | Element | Status | Dowód / uwagi |
-| --- | --- | --- | --- |
+| Data       | Element                                | Status          | Dowód / uwagi                                                                                          |
+| ---------- | -------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
 | 2026-11-14 | Baza A8, menu i otwieranie na MacBooku | ACCEPTED (baza) | Właściciel: „ok działa jest ok”; A8 live `e4838cd`, HTTP 200, LAN `healthy`; bez pełnych testów etapów |
-| — | Etap 1 Services | IN_PROGRESS | S1–S6 otwarte |
-| — | Etap 2 Platform | NOT_STARTED | P1–P5 otwarte |
-| — | Etap 3 Hosting | NOT_STARTED | H1–H5 otwarte |
-| — | Etap 4 Stabilizacja | NOT_STARTED | M1–M4 otwarte |
+| —          | Etap 1 Services                        | IN_PROGRESS     | S1–S6 otwarte                                                                                          |
+| —          | Etap 2 Platform                        | NOT_STARTED     | P1–P5 otwarte                                                                                          |
+| —          | Etap 3 Hosting                         | NOT_STARTED     | H1–H5 otwarte                                                                                          |
+| —          | Etap 4 Stabilizacja                    | NOT_STARTED     | M1–M4 otwarte                                                                                          |
 
 **Następny punkt kodowania: S1 — uniwersalny, bezpieczny registry i enrollment usług.**

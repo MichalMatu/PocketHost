@@ -25,7 +25,11 @@ function command(plan, label) {
 test('documentation-only delta runs no source tests, builds or typechecks', () => {
   const plan = planChangedChecks(['AGENTS.md', 'docs/DEV_ITERATION.md'], deps);
   assert.deepEqual(command(plan, 'docs').argv, [
-    'node', 'scripts/quality/check-docs.mjs', '--changed', 'AGENTS.md', 'docs/DEV_ITERATION.md',
+    'node',
+    'scripts/quality/check-docs.mjs',
+    '--changed',
+    'AGENTS.md',
+    'docs/DEV_ITERATION.md',
   ]);
   assert.ok(command(plan, 'changed markdown lint'));
   assert.ok(command(plan, 'changed-file format'));
@@ -62,10 +66,10 @@ test('UI delta selects only dependent interaction test and incremental admin typ
 
 test('a changed UI test runs only itself, without admin lint, build or other suites', () => {
   const plan = planChangedChecks(['apps/admin/tests/shizuku-page.interaction.test.tsx'], deps);
-  assert.deepEqual(plan.commands.map((item) => item.label), [
-    'ui tests',
-    'changed-file format',
-  ]);
+  assert.deepEqual(
+    plan.commands.map((item) => item.label),
+    ['ui tests', 'changed-file format'],
+  );
   assert.deepEqual(command(plan, 'ui tests').argv.slice(-1), [
     'tests/shizuku-page.interaction.test.tsx',
   ]);
@@ -75,11 +79,7 @@ test('a changed UI test runs only itself, without admin lint, build or other sui
 test('a changed Node test does not automatically run unrelated structure or other tests', () => {
   const path = 'tests/quality/hosting-registry.test.mjs';
   const plan = planChangedChecks([path], deps);
-  assert.deepEqual(command(plan, 'node tests').argv, [
-    'node',
-    '--test',
-    path,
-  ]);
+  assert.deepEqual(command(plan, 'node tests').argv, ['node', '--test', path]);
   assert.equal(command(plan, 'structure'), undefined);
   assert.equal(command(plan, 'admin changed-file lint'), undefined);
   assert.equal(command(plan, 'ui tests'), undefined);

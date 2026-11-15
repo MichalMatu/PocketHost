@@ -71,15 +71,24 @@ test('M3 source validation and runtime inspection remain inert before explicit a
 test('M3 dependency setup review is inert, pinned and excludes package lifecycle scripts', (t) => {
   const { host, project, projects, serviceRoot } = fixture(t);
   host.toolchain = () => ({
-    status: 'review-required', missingTools: [], conflicts: [],
-    nodeVersion: 'v26.0.0', npmVersion: '11.0.0',
+    status: 'review-required',
+    missingTools: [],
+    conflicts: [],
+    nodeVersion: 'v26.0.0',
+    npmVersion: '11.0.0',
   });
   const staged = projects.stage(project.id, source).project;
   const empty = host.reviewDependencySetup(project.id);
   assert.deepEqual(empty, {
-    release: staged.candidateRelease, status: 'not-required',
-    dependencyCount: 0, installRequired: false, buildRequired: false,
-    installCommand: null, buildCommand: null, blockers: [], executed: false,
+    release: staged.candidateRelease,
+    status: 'not-required',
+    dependencyCount: 0,
+    installRequired: false,
+    buildRequired: false,
+    installCommand: null,
+    buildCommand: null,
+    blockers: [],
+    executed: false,
   });
   const nextSource = {
     ...source,
@@ -96,7 +105,8 @@ test('M3 dependency setup review is inert, pinned and excludes package lifecycle
           dependencies: { 'is-odd': '3.0.1' },
         },
         'node_modules/is-odd': {
-          version: '3.0.1', resolved: 'https://registry.npmjs.org/is-odd/-/is-odd-3.0.1.tgz',
+          version: '3.0.1',
+          resolved: 'https://registry.npmjs.org/is-odd/-/is-odd-3.0.1.tgz',
           integrity: 'sha512-' + 'A'.repeat(86) + '==',
         },
       },
@@ -107,8 +117,15 @@ test('M3 dependency setup review is inert, pinned and excludes package lifecycle
   assert.equal(review.release, updated.candidateRelease);
   assert.equal(review.status, 'review-required');
   assert.equal(review.dependencyCount, 1);
-  assert.deepEqual(review.installCommand,
-    ['npm', 'ci', '--ignore-scripts', '--no-bin-links', '--no-audit', '--no-fund', '--include=dev']);
+  assert.deepEqual(review.installCommand, [
+    'npm',
+    'ci',
+    '--ignore-scripts',
+    '--no-bin-links',
+    '--no-audit',
+    '--no-fund',
+    '--include=dev',
+  ]);
   assert.deepEqual(review.buildCommand, ['npm', 'run', 'build']);
   assert.equal(review.executed, false);
   assert.deepEqual(review.blockers, []);
@@ -131,16 +148,21 @@ test('M3 dependency setup review blocks untrusted lock sources and unsupported t
           dependencies: { 'sample-pkg': '1.0.0' },
         },
         'node_modules/sample-pkg': {
-          version: '1.0.0', resolved: 'file:../other-project',
-          integrity: 'bad-integrity', hasInstallScript: true,
+          version: '1.0.0',
+          resolved: 'file:../other-project',
+          integrity: 'bad-integrity',
+          hasInstallScript: true,
         },
       },
     },
   };
   const staged = projects.stage(project.id, dependencySource).project;
   host.toolchain = () => ({
-    status: 'blocked', missingTools: ['npm'], conflicts: ['node-requires-26-or-newer'],
-    nodeVersion: 'v22.0.0', npmVersion: null,
+    status: 'blocked',
+    missingTools: ['npm'],
+    conflicts: ['node-requires-26-or-newer'],
+    nodeVersion: 'v22.0.0',
+    npmVersion: null,
   });
   const result = host.reviewDependencySetup(project.id);
   assert.equal(result.status, 'blocked');
@@ -291,8 +313,12 @@ test('M3 refuses redundant deploy of current Node release before touching runit'
   host.preview = () => ({ allowed: true, release });
   host.checkReleaseSyntax = () => ({ release, status: 'syntax-valid', executed: false });
   host.record = () => ({ activeRelease: release, desired: 'running' });
-  host.halt = async () => { operations.push('halt'); };
-  host.initialize = async () => { operations.push('initialize'); };
+  host.halt = async () => {
+    operations.push('halt');
+  };
+  host.initialize = async () => {
+    operations.push('initialize');
+  };
   await assert.rejects(
     host.deploy(project.id, release, true),
     /already active; use Start or Restart/,
@@ -306,19 +332,29 @@ test('M3 update refuses tampered last-good source before stopping its owned serv
   const { host, projects, project, root, serviceRoot } = fixture(t);
   const previous = projects.stage(project.id, source).project.candidateRelease;
   const candidate = projects.stage(project.id, {
-    ...source, serverSource: source.serverSource + '\n// second release',
+    ...source,
+    serverSource: source.serverSource + '\n// second release',
   }).project.candidateRelease;
   const operations = [];
   host.preview = () => ({ allowed: true, release: candidate });
   host.toolchain = () => ({ status: 'review-required', missingTools: [], conflicts: [] });
   host.record = () => ({
-    activeRelease: previous, lastGoodRelease: previous, previousGoodRelease: null,
-    desired: 'running', port: 19300,
+    activeRelease: previous,
+    lastGoodRelease: previous,
+    previousGoodRelease: null,
+    desired: 'running',
+    port: 19300,
   });
-  host.halt = async () => { operations.push('halt'); };
-  host.initialize = async () => { operations.push('initialize'); };
-  writeFileSync(path.join(root, project.id, 'releases', previous, 'server.mjs'),
-    'console.log("tampered")');
+  host.halt = async () => {
+    operations.push('halt');
+  };
+  host.initialize = async () => {
+    operations.push('initialize');
+  };
+  writeFileSync(
+    path.join(root, project.id, 'releases', previous, 'server.mjs'),
+    'console.log("tampered")',
+  );
   await assert.rejects(host.deploy(project.id, candidate, true), /source digest mismatch/);
   assert.deepEqual(operations, []);
   assert.deepEqual(readdirSync(serviceRoot), []);
@@ -328,34 +364,48 @@ test('M3 update refuses tampered last-good source before stopping its owned serv
 test('M3 rollback preflight verifies previous release without runit mutation', (t) => {
   const { host, project, projects, root, serviceRoot } = fixture(t);
   assert.deepEqual(host.rollbackPreview(project.id), {
-    release: null, allowed: false, reason: 'no-previous-good-release',
+    release: null,
+    allowed: false,
+    reason: 'no-previous-good-release',
   });
   const previous = projects.stage(project.id, source).project.candidateRelease;
   const next = projects.stage(project.id, {
-    ...source, serverSource: source.serverSource + '\n// next',
+    ...source,
+    serverSource: source.serverSource + '\n// next',
   }).project.candidateRelease;
   host.record = () => ({
-    activeRelease: next, previousGoodRelease: previous,
+    activeRelease: next,
+    previousGoodRelease: previous,
   });
   host.status = () => ({ state: 'running' });
   host.toolchain = () => ({
-    status: 'review-required', missingTools: [], conflicts: [],
+    status: 'review-required',
+    missingTools: [],
+    conflicts: [],
   });
   assert.deepEqual(host.rollbackPreview(project.id), {
-    release: previous, allowed: true, reason: 'previous-release-verified',
+    release: previous,
+    allowed: true,
+    reason: 'previous-release-verified',
   });
   host.status = () => ({ state: 'unknown' });
   assert.equal(host.rollbackPreview(project.id).reason, 'owned-process-identity-unknown');
   host.status = () => ({ state: 'stopped' });
   host.toolchain = () => ({
-    status: 'blocked', missingTools: ['node'], conflicts: [],
+    status: 'blocked',
+    missingTools: ['node'],
+    conflicts: [],
   });
   assert.equal(host.rollbackPreview(project.id).reason, 'rollback-toolchain-blocked');
   host.toolchain = () => ({
-    status: 'review-required', missingTools: [], conflicts: [],
+    status: 'review-required',
+    missingTools: [],
+    conflicts: [],
   });
-  writeFileSync(path.join(root, project.id, 'releases', previous, 'server.mjs'),
-    'console.log("tampered")');
+  writeFileSync(
+    path.join(root, project.id, 'releases', previous, 'server.mjs'),
+    'console.log("tampered")',
+  );
   assert.equal(host.rollbackPreview(project.id).reason, 'rollback-release-not-verifiable');
   assert.deepEqual(readdirSync(serviceRoot), []);
 });
@@ -472,10 +522,15 @@ test('attested build artifacts allow deploy but tampered dist immediately blocks
   const release = projects.stage(project.id, buildSource).project.candidateRelease;
   host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
   assert.equal(host.preview(project.id).allowed, false);
-  const preparer = new NodeBuildPreparer(projects, root, () => false, async (dir) => {
-    mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
-    writeFileSync(path.join(dir, 'dist', 'index.html'), 'ok');
-  });
+  const preparer = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => {
+      mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
+      writeFileSync(path.join(dir, 'dist', 'index.html'), 'ok');
+    },
+  );
   await preparer.prepare(project.id, release, true);
   assert.equal(host.preview(project.id).allowed, true);
   writeFileSync(path.join(root, project.id, 'releases', release, 'dist', 'index.html'), 'changed');
@@ -509,10 +564,15 @@ test('build packages are attestable without granting build execution or deploy',
   assert.equal(review.buildRequired, true);
   assert.equal(review.status, 'review-required');
   assert.equal(review.installCommand.at(-1), '--include=dev');
-  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir) => {
-    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
-    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
-  });
+  const preparer = new NodeDependencyPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => {
+      mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+      writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+    },
+  );
   await preparer.prepare(project.id, release, true);
   assert.equal(host.reviewDependencySetup(project.id).status, 'prepared');
   assert.equal(host.preview(project.id).allowed, false);
@@ -542,15 +602,23 @@ test('installed dependencies become deployable only after SHA-256 attestation', 
   const release = projects.stage(project.id, dependentSource).project.candidateRelease;
   host.toolVersions = () => ({ nodeVersion: 'v26.13.0', npmVersion: '11.6.2' });
   assert.equal(host.preview(project.id).allowed, false);
-  const preparer = new NodeDependencyPreparer(projects, root, () => false, async (dir) => {
-    mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
-    writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
-  });
+  const preparer = new NodeDependencyPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => {
+      mkdirSync(path.join(dir, 'node_modules'), { mode: 0o700 });
+      writeFileSync(path.join(dir, 'node_modules', 'index.js'), 'export default 1');
+    },
+  );
   assert.equal(host.reviewDependencySetup(project.id).status, 'review-required');
   await preparer.prepare(project.id, release, true);
   assert.equal(host.reviewDependencySetup(project.id).status, 'prepared');
   assert.equal(host.preview(project.id).allowed, true);
-  writeFileSync(path.join(root, project.id, 'releases', release, 'node_modules', 'index.js'), 'tampered');
+  writeFileSync(
+    path.join(root, project.id, 'releases', release, 'node_modules', 'index.js'),
+    'tampered',
+  );
   assert.equal(host.preview(project.id).allowed, false);
   assert.equal(host.reviewDependencySetup(project.id).status, 'review-required');
 });

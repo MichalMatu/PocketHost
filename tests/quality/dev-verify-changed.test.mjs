@@ -105,19 +105,26 @@ test('Termux QA maps pinned check commands to node instead of absent /usr/bin/en
   ).checks;
   // Use the pure negative path without needing a dependency install here.
   assert.throws(
-    () => resolveTermuxCheckCommand(
-      { label: 'unknown command', cwd: '.', argv: ['npm', 'exec', '--no', '--', 'unknown'] },
-      root, '/data/data/com.termux/files/usr/bin/node', 'android',
-    ),
+    () =>
+      resolveTermuxCheckCommand(
+        { label: 'unknown command', cwd: '.', argv: ['npm', 'exec', '--no', '--', 'unknown'] },
+        root,
+        '/data/data/com.termux/files/usr/bin/node',
+        'android',
+      ),
     /Unsupported npm QA command/,
   );
   assert.deepEqual(
     resolveTermuxCheckCommand(
       { label: 'structure', cwd: '.', argv: ['node', 'scripts/quality/check-structure.mjs'] },
-      root, '/data/data/com.termux/files/usr/bin/node', 'android',
+      root,
+      '/data/data/com.termux/files/usr/bin/node',
+      'android',
     ),
-    { file: '/data/data/com.termux/files/usr/bin/node',
-      args: ['scripts/quality/check-structure.mjs'] },
+    {
+      file: '/data/data/com.termux/files/usr/bin/node',
+      args: ['scripts/quality/check-structure.mjs'],
+    },
   );
   assert.ok(checks.some((item) => item.label === 'admin incremental typecheck'));
 });

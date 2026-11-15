@@ -2,11 +2,7 @@
  * Dependency-aware, intentionally conservative PocketHost DEV gate planner.
  * Pure logic: no Git, filesystem or host operations.
  */
-export function planChangedChecks(
-  paths,
-  dependencies = {},
-  { includeAdminLint = false } = {},
-) {
+export function planChangedChecks(paths, dependencies = {}, { includeAdminLint = false } = {}) {
   const changes = [...new Set(paths)].sort();
   const node = new Set();
   const ui = new Set();
@@ -127,7 +123,8 @@ export function planChangedChecks(
     commands.push({ label, cwd, argv });
   }
   if (structure) add('structure', '.', ['node', 'scripts/quality/check-structure.mjs']);
-  if (docs.length) add('docs', '.', ['node', 'scripts/quality/check-docs.mjs', '--changed', ...docs]);
+  if (docs.length)
+    add('docs', '.', ['node', 'scripts/quality/check-docs.mjs', '--changed', ...docs]);
   if (boundaries) add('boundaries', '.', ['node', 'scripts/quality/check-boundaries.mjs']);
   if (node.size) add('node tests', '.', ['node', '--test', ...[...node].sort()]);
   if (ui.size) add('ui tests', 'apps/admin', ['npm', 'run', 'test:ui', '--', ...[...ui].sort()]);

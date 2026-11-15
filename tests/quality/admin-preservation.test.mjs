@@ -102,18 +102,32 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
 test('Services menu uses one generic registry without duplicated hosted-app navigation', () => {
   const labels = [...navigation.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
   assert.deepEqual(labels.slice(0, 6), [
-    'Overview', 'Hosting', 'Services', 'System & Tools', 'Automation', 'Settings',
+    'Overview',
+    'Hosting',
+    'Services',
+    'System & Tools',
+    'Automation',
+    'Settings',
   ]);
   assert.equal(labels.at(-1), 'Framework / CMS examples');
   assert.equal(labels.filter((name) => name === 'Services').length, 1);
-  const services = navigation.split('label: "Services",')[1]?.split('label: "System & Tools",')[0] ?? '';
-  for (const dest of ['/services', '/services/runit', '/services/autostart',
-    '/services/hosting', '/services/health']) {
+  const services =
+    navigation.split('label: "Services",')[1]?.split('label: "System & Tools",')[0] ?? '';
+  for (const dest of [
+    '/services',
+    '/services/runit',
+    '/services/autostart',
+    '/services/hosting',
+    '/services/health',
+  ]) {
     assert.equal(services.split('url: "' + dest + '"').length - 1, 1, dest);
     assert.ok(routes.includes('path: "' + dest + '"'), 'missing route: ' + dest);
   }
   assert.match(services, /serviceWorkspaces\.map/);
-  const catalog = readFileSync(path.join(root, 'apps/admin/src/config/service-workspaces.ts'), 'utf8');
+  const catalog = readFileSync(
+    path.join(root, 'apps/admin/src/config/service-workspaces.ts'),
+    'utf8',
+  );
   for (const dest of ['/local-agent', '/services/cloudflare', '/services/ssh', '/services/mqtt']) {
     assert.equal(catalog.split('url: "' + dest + '"').length - 1, 1, dest);
   }

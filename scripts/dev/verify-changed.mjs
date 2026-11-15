@@ -147,11 +147,7 @@ if (!optionsValid) {
       const result = runChangedVerification(prepared.checks, (check) => {
         const began = Date.now();
         const resolved = resolveTermuxCheckCommand(check, root, process.execPath);
-        const output = command(
-          resolved.file,
-          resolved.args,
-          path.join(root, check.cwd),
-        );
+        const output = command(resolved.file, resolved.args, path.join(root, check.cwd));
         const ok = !output.error && output.status === 0;
         const diagnosticOutput = [output.stdout, output.stderr, output.error?.message]
           .filter(Boolean)

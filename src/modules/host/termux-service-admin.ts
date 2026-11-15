@@ -36,8 +36,11 @@ const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
 // unit, and every subsequent operation re-attests its canonical target.
 // Preexisting service registrations keep their exact-target constraint.
 const SYSTEM_SERVICE_NAMES = new Set([
-  'sshd', 'ssh-agent', 'termux-agent',
-  'pockethost-panel', 'pockethost-panel-watch',
+  'sshd',
+  'ssh-agent',
+  'termux-agent',
+  'pockethost-panel',
+  'pockethost-panel-watch',
 ]);
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
@@ -69,7 +72,8 @@ export interface ArchivedWorkerSummary {
   template: WorkerTemplate;
   identity: 'restorable' | 'changed' | 'conflict';
 }
-type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
+type ServiceIdentity =
+  'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
 interface RecoveryAttemptRecord {
@@ -130,18 +134,45 @@ function builtinWorkerRunScript(template: WorkerTemplate, target: string): strin
   const env = path.join(PREFIX, 'bin', 'env');
   const runtime = path.join(PREFIX, 'bin', template !== 'heartbeat-worker-v1' ? 'python' : 'node');
   if (template === 'python-source-v1')
-    return '#!' + sh + '\nexec ' + env +
-      ' -i PATH=' + path.join(PREFIX, 'bin') +
-      ' HOME=' + target + ' TMPDIR=' + path.join(PREFIX, 'tmp') +
-      ' ' + runtime + ' -I -u ' + path.join(target, 'worker.py') + '\n';
-  const code = template === 'python-heartbeat-v1'
-    ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
-    : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
-  return '#!' + sh + '\nexec ' + env +
-    ' -i PATH=' + path.join(PREFIX, 'bin') +
-    ' HOME=' + target + ' TMPDIR=' + path.join(PREFIX, 'tmp') +
-    ' ' + runtime + (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
-    "'" + code + "'\n";
+    return (
+      '#!' +
+      sh +
+      '\nexec ' +
+      env +
+      ' -i PATH=' +
+      path.join(PREFIX, 'bin') +
+      ' HOME=' +
+      target +
+      ' TMPDIR=' +
+      path.join(PREFIX, 'tmp') +
+      ' ' +
+      runtime +
+      ' -I -u ' +
+      path.join(target, 'worker.py') +
+      '\n'
+    );
+  const code =
+    template === 'python-heartbeat-v1'
+      ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
+      : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
+  return (
+    '#!' +
+    sh +
+    '\nexec ' +
+    env +
+    ' -i PATH=' +
+    path.join(PREFIX, 'bin') +
+    ' HOME=' +
+    target +
+    ' TMPDIR=' +
+    path.join(PREFIX, 'tmp') +
+    ' ' +
+    runtime +
+    (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
+    "'" +
+    code +
+    "'\n"
+  );
 }
 
 /**
@@ -166,16 +197,26 @@ function pythonWorkerSourceHash(target: string): string | null {
   try {
     const file = path.join(target, 'worker.py');
     const stat = lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-        stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 ||
-        stat.size === 0 || stat.size > 32 * 1024)
+    if (
+      !stat.isFile() ||
+      stat.isSymbolicLink() ||
+      stat.nlink !== 1 ||
+      stat.uid !== process.getuid?.() ||
+      (stat.mode & 0o077) !== 0 ||
+      stat.size === 0 ||
+      stat.size > 32 * 1024
+    )
       return null;
     return createHash('sha256').update(readFileSync(file)).digest('hex');
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 function isReserved(name: string, resolved?: string): boolean {
-  return SYSTEM_SERVICE_NAMES.has(name) ||
-    (resolved !== undefined && SYSTEM_SERVICE_NAMES.has(path.basename(resolved)));
+  return (
+    SYSTEM_SERVICE_NAMES.has(name) ||
+    (resolved !== undefined && SYSTEM_SERVICE_NAMES.has(path.basename(resolved)))
+  );
 }
 function safeFile(file: string): string | null {
   try {
@@ -193,9 +234,14 @@ function safeFile(file: string): string | null {
 function releaseRecoveryLock(lockFd: number, lockPath: string): void {
   const lockProof = fstatSync(lockFd);
   const current = lstatSync(lockPath);
-  if (!current.isFile() || current.isSymbolicLink() ||
-      current.dev !== lockProof.dev || current.ino !== lockProof.ino ||
-      current.nlink !== 1 || current.uid !== process.getuid?.()) {
+  if (
+    !current.isFile() ||
+    current.isSymbolicLink() ||
+    current.dev !== lockProof.dev ||
+    current.ino !== lockProof.ino ||
+    current.nlink !== 1 ||
+    current.uid !== process.getuid?.()
+  ) {
     throw new Error('Recovery lock identity changed; refusing cleanup');
   }
   unlinkSync(lockPath);
@@ -295,8 +341,13 @@ export class TermuxServiceAdmin {
   private archivedRegistry(): ArchivedWorker[] {
     try {
       const file = lstatSync(this.archiveFile);
-      if (!file.isFile() || file.isSymbolicLink() || file.nlink !== 1 ||
-          file.uid !== process.getuid?.() || (file.mode & 0o077) !== 0)
+      if (
+        !file.isFile() ||
+        file.isSymbolicLink() ||
+        file.nlink !== 1 ||
+        file.uid !== process.getuid?.() ||
+        (file.mode & 0o077) !== 0
+      )
         throw new Error('Unsafe archive ledger permissions');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
@@ -312,22 +363,29 @@ export class TermuxServiceAdmin {
       if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
         throw new Error('Invalid archived worker entry');
       const v = candidate as Record<string, unknown>;
-      if (!['archivedAt,instanceId,name,runSha256,target,template',
-            'archivedAt,instanceId,name,runSha256,sourceSha256,target,template'].includes(
-              Object.keys(v).sort().join(',')) ||
-          typeof v.name !== 'string' || typeof v.target !== 'string' ||
-          typeof v.instanceId !== 'string' || typeof v.runSha256 !== 'string' ||
-          typeof v.archivedAt !== 'string' ||
-          !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
-            v.template as string) ||
-          (v.template === 'python-source-v1'
-            ? typeof v.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.sourceSha256)
-            : v.sourceSha256 !== undefined) ||
-          !/^[0-9a-f-]{36}$/.test(v.instanceId) ||
-          !/^[a-f0-9]{64}$/.test(v.runSha256) ||
-          !Number.isFinite(Date.parse(v.archivedAt)) ||
-          v.target !== path.join(PREFIX, 'var', 'sv', v.name) ||
-          seen.has(v.name)) throw new Error('Untrusted archived worker entry');
+      if (
+        ![
+          'archivedAt,instanceId,name,runSha256,target,template',
+          'archivedAt,instanceId,name,runSha256,sourceSha256,target,template',
+        ].includes(Object.keys(v).sort().join(',')) ||
+        typeof v.name !== 'string' ||
+        typeof v.target !== 'string' ||
+        typeof v.instanceId !== 'string' ||
+        typeof v.runSha256 !== 'string' ||
+        typeof v.archivedAt !== 'string' ||
+        !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
+          v.template as string,
+        ) ||
+        (v.template === 'python-source-v1'
+          ? typeof v.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.sourceSha256)
+          : v.sourceSha256 !== undefined) ||
+        !/^[0-9a-f-]{36}$/.test(v.instanceId) ||
+        !/^[a-f0-9]{64}$/.test(v.runSha256) ||
+        !Number.isFinite(Date.parse(v.archivedAt)) ||
+        v.target !== path.join(PREFIX, 'var', 'sv', v.name) ||
+        seen.has(v.name)
+      )
+        throw new Error('Untrusted archived worker entry');
       valid(v.name);
       if (isReserved(v.name)) throw new Error('Protected archive name');
       seen.add(v.name);
@@ -340,8 +398,12 @@ export class TermuxServiceAdmin {
     const folder = path.dirname(this.archiveFile);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     const parent = lstatSync(folder);
-    if (!parent.isDirectory() || parent.isSymbolicLink() ||
-        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0)
+    if (
+      !parent.isDirectory() ||
+      parent.isSymbolicLink() ||
+      parent.uid !== process.getuid?.() ||
+      (parent.mode & 0o077) !== 0
+    )
       throw new Error('Unsafe archive state directory');
     // Refuse an existing archive with unsafe permissions or identity.
     this.archivedRegistry();
@@ -361,15 +423,25 @@ export class TermuxServiceAdmin {
       const logTarget = path.join(PREFIX, 'var', 'log', 'sv', name);
       for (const folder of [logDir, logTarget]) {
         const stat = lstatSync(folder);
-        if (!stat.isDirectory() || stat.isSymbolicLink() ||
-            stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0)
+        if (
+          !stat.isDirectory() ||
+          stat.isSymbolicLink() ||
+          stat.uid !== process.getuid?.() ||
+          (stat.mode & 0o077) !== 0
+        )
           return false;
       }
       const script = path.join(logDir, 'run');
       const stat = lstatSync(script);
-      if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-          stat.uid !== process.getuid?.() || (stat.mode & 0o022) !== 0 ||
-          (stat.mode & 0o111) === 0 || stat.size > 20000)
+      if (
+        !stat.isFile() ||
+        stat.isSymbolicLink() ||
+        stat.nlink !== 1 ||
+        stat.uid !== process.getuid?.() ||
+        (stat.mode & 0o022) !== 0 ||
+        (stat.mode & 0o111) === 0 ||
+        stat.size > 20000
+      )
         return false;
       return readFileSync(script, 'utf8') === builtinWorkerLogScript(name);
     } catch {
@@ -392,43 +464,61 @@ export class TermuxServiceAdmin {
       }
       const root = lstatSync(this.serviceRoot);
       const dir = lstatSync(target);
-      if (!root.isDirectory() || root.isSymbolicLink() ||
-          !dir.isDirectory() || dir.isSymbolicLink() ||
-          dir.uid !== process.getuid?.() || (dir.mode & 0o077) !== 0 ||
-          realpathSync(target) !== target ||
-          this.runSha256(target) !== record.runSha256 ||
-          createHash('sha256')
-            .update(builtinWorkerRunScript(record.template, target))
-            .digest('hex') !== record.runSha256 ||
-          !this.fixedWorkerLogIdentity(name, target) ||
-          (record.template === 'python-source-v1' &&
-            (!record.sourceSha256 ||
-             pythonWorkerSourceHash(target) !== record.sourceSha256)))
+      if (
+        !root.isDirectory() ||
+        root.isSymbolicLink() ||
+        !dir.isDirectory() ||
+        dir.isSymbolicLink() ||
+        dir.uid !== process.getuid?.() ||
+        (dir.mode & 0o077) !== 0 ||
+        realpathSync(target) !== target ||
+        this.runSha256(target) !== record.runSha256 ||
+        createHash('sha256')
+          .update(builtinWorkerRunScript(record.template, target))
+          .digest('hex') !== record.runSha256 ||
+        !this.fixedWorkerLogIdentity(name, target) ||
+        (record.template === 'python-source-v1' &&
+          (!record.sourceSha256 || pythonWorkerSourceHash(target) !== record.sourceSha256))
+      )
         return false;
       const down = lstatSync(path.join(target, 'down'));
-      if (!down.isFile() || down.isSymbolicLink() ||
-          down.uid !== process.getuid?.() || (down.mode & 0o077) !== 0)
+      if (
+        !down.isFile() ||
+        down.isSymbolicLink() ||
+        down.uid !== process.getuid?.() ||
+        (down.mode & 0o077) !== 0
+      )
         return false;
       const markerFile = path.join(target, '.pockethost-service.json');
       const markerStat = lstatSync(markerFile);
-      if (!markerStat.isFile() || markerStat.isSymbolicLink() ||
-          markerStat.nlink !== 1 || markerStat.uid !== process.getuid?.() ||
-          (markerStat.mode & 0o077) !== 0)
+      if (
+        !markerStat.isFile() ||
+        markerStat.isSymbolicLink() ||
+        markerStat.nlink !== 1 ||
+        markerStat.uid !== process.getuid?.() ||
+        (markerStat.mode & 0o077) !== 0
+      )
         return false;
       const markerRaw = safeFile(markerFile);
       if (!markerRaw) return false;
       const marker: unknown = JSON.parse(markerRaw);
       if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return false;
       const m = marker as Record<string, unknown>;
-      return ['instanceId,name,owner,runSha256,schema,template',
-          'instanceId,name,owner,runSha256,schema,sourceSha256,template'].includes(
-            Object.keys(m).sort().join(',')) &&
+      return (
+        [
+          'instanceId,name,owner,runSha256,schema,template',
+          'instanceId,name,owner,runSha256,schema,sourceSha256,template',
+        ].includes(Object.keys(m).sort().join(',')) &&
         (record.template === 'python-source-v1'
           ? m.sourceSha256 === record.sourceSha256
           : m.sourceSha256 === undefined) &&
-        m.schema === 1 && m.owner === 'pockethost' &&
-        m.name === name && m.template === record.template &&
-        m.instanceId === record.instanceId && m.runSha256 === record.runSha256;
+        m.schema === 1 &&
+        m.owner === 'pockethost' &&
+        m.name === name &&
+        m.template === record.template &&
+        m.instanceId === record.instanceId &&
+        m.runSha256 === record.runSha256
+      );
     } catch {
       return false;
     }
@@ -446,18 +536,18 @@ export class TermuxServiceAdmin {
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') published = false;
       }
-      const conflict = published ||
-        registrations.some((entry) => entry.name === item.name);
+      const conflict = published || registrations.some((entry) => entry.name === item.name);
       return {
         name: item.name,
         template: item.template,
-        identity: conflict ? 'conflict' as const
-          : this.offlineWorkerIdentity(item) ? 'restorable' as const
-          : 'changed' as const,
+        identity: conflict
+          ? ('conflict' as const)
+          : this.offlineWorkerIdentity(item)
+            ? ('restorable' as const)
+            : ('changed' as const),
       };
     });
   }
-
 
   /**
    * Irreversible from the LAN surface: revoke an exact archived worker by
@@ -490,15 +580,17 @@ export class TermuxServiceAdmin {
       const owner = process.getuid?.();
       const trustedDirectory = (folder: string, privateOnly: boolean): void => {
         const st = lstatSync(folder);
-        if (!st.isDirectory() || st.isSymbolicLink() ||
-            st.uid !== owner || (st.mode & (privateOnly ? 0o077 : 0o022)) !== 0 ||
-            realpathSync(folder) !== folder)
+        if (
+          !st.isDirectory() ||
+          st.isSymbolicLink() ||
+          st.uid !== owner ||
+          (st.mode & (privateOnly ? 0o077 : 0o022)) !== 0 ||
+          realpathSync(folder) !== folder
+        )
           throw new Error('Untrusted retirement directory');
       };
-      for (const folder of [this.serviceRoot, sourceRoot, logRoot])
-        trustedDirectory(folder, false);
-      for (const folder of [source, logs])
-        trustedDirectory(folder, true);
+      for (const folder of [this.serviceRoot, sourceRoot, logRoot]) trustedDirectory(folder, false);
+      for (const folder of [source, logs]) trustedDirectory(folder, true);
       if (!this.offlineWorkerIdentity(record))
         throw new Error('Archived worker identity changed before retirement');
 
@@ -511,8 +603,12 @@ export class TermuxServiceAdmin {
       }
       trustedDirectory(this.retiredRoot, true);
       const entries = readdirSync(this.retiredRoot);
-      if (entries.length >= MAX_TEMPLATE_WORKERS ||
-          entries.some((entry) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(entry)))
+      if (
+        entries.length >= MAX_TEMPLATE_WORKERS ||
+        entries.some(
+          (entry) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(entry),
+        )
+      )
         throw new Error('Retired worker quarantine full or untrusted');
       const tombstone = path.join(this.retiredRoot, record.instanceId);
       const sourceProof = lstatSync(source);
@@ -520,13 +616,20 @@ export class TermuxServiceAdmin {
       // A fixed instance-specific tombstone prevents accidental overwrites.
       // No recursive copy, tree deletion or implicit rollback on ambiguity.
       mkdirSync(tombstone, { mode: 0o700 });
-      writeFileSync(path.join(tombstone, 'retirement.json'), JSON.stringify({
-        schema: 1, name, template, instanceId: record.instanceId,
-        runSha256: record.runSha256, ...(record.sourceSha256
-          ? { sourceSha256: record.sourceSha256 } : {}),
-        archivedAt: record.archivedAt,
-        retiredAt: new Date().toISOString(),
-      }) + '\n', { flag: 'wx', mode: 0o600 });
+      writeFileSync(
+        path.join(tombstone, 'retirement.json'),
+        JSON.stringify({
+          schema: 1,
+          name,
+          template,
+          instanceId: record.instanceId,
+          runSha256: record.runSha256,
+          ...(record.sourceSha256 ? { sourceSha256: record.sourceSha256 } : {}),
+          archivedAt: record.archivedAt,
+          retiredAt: new Date().toISOString(),
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
       if (!this.offlineWorkerIdentity(record))
         throw new Error('Archived worker identity changed before quarantine move');
       const retiredSource = path.join(tombstone, 'unit');
@@ -585,16 +688,15 @@ export class TermuxServiceAdmin {
       // If registration unexpectedly fails, leave an inert down-marked unit
       // for explicit investigation; no implicit retry or unsafe foreign unlink.
       this.registerProvisioned(name, {
-        target: record.target, runSha256: record.runSha256,
+        target: record.target,
+        runSha256: record.runSha256,
       });
       this.saveArchived(archived.filter((item) => item.name !== name));
       return { changed: true, restored: true, started: false };
     } finally {
       release();
     }
-
   }
-
 
   /**
    * Read-only recovery allowance. Uses the shared Hosting policy evaluator,
@@ -615,8 +717,10 @@ export class TermuxServiceAdmin {
     if (!marker || typeof marker !== 'object' || Array.isArray(marker))
       throw new Error('Untrusted worker identity marker');
     const instanceId = (marker as Record<string, unknown>).instanceId;
-    if (typeof instanceId !== 'string' ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId))
+    if (
+      typeof instanceId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId)
+    )
       throw new Error('Invalid worker instance identity');
     const nowMs = Date.now();
     const records = this.recoveryJournal();
@@ -626,42 +730,58 @@ export class TermuxServiceAdmin {
       throw new Error('Recovery history belongs to a different worker instance');
     if (item && item.attemptedAtMs.some((at) => at > nowMs))
       throw new Error('Recovery clock moved backwards; manual inspection required');
-    const recent = item
-      ? item.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
-      : [];
+    const recent = item ? item.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS) : [];
     const attempts = recent.length;
     const lastAttemptAtMs = recent.at(-1) ?? null;
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
-    const decision = evaluateHealthPolicy({
-      readinessTimeoutMs: 5000,
-      cooldownMs: RECOVERY_COOLDOWN_MS,
-      maxAttempts: RECOVERY_MAX_ATTEMPTS,
-    }, {
-      desired: autostart === true ? 'running' : 'stopped',
-      observed, ready: null, requestedAtMs: null,
-      lastAttemptAtMs, attempts, nowMs, owned: true,
-      manuallyDisabled: autostart !== true,
-    });
-    if (this.target(name) !== target ||
-        this.managedWorkerTemplate(name, target, this.registry()) !== template)
+    const decision = evaluateHealthPolicy(
+      {
+        readinessTimeoutMs: 5000,
+        cooldownMs: RECOVERY_COOLDOWN_MS,
+        maxAttempts: RECOVERY_MAX_ATTEMPTS,
+      },
+      {
+        desired: autostart === true ? 'running' : 'stopped',
+        observed,
+        ready: null,
+        requestedAtMs: null,
+        lastAttemptAtMs,
+        attempts,
+        nowMs,
+        owned: true,
+        manuallyDisabled: autostart !== true,
+      },
+    );
+    if (
+      this.target(name) !== target ||
+      this.managedWorkerTemplate(name, target, this.registry()) !== template
+    )
       throw new Error('Worker changed during recovery assessment');
     return {
-      name, template, observed, readiness: 'not-verified',
-      action: decision.action === 'start' ? 'start' :
-        decision.action === 'blocked' ? 'blocked' : 'none',
-      reason: decision.reason, attempts,
+      name,
+      template,
+      observed,
+      readiness: 'not-verified',
+      action:
+        decision.action === 'start' ? 'start' : decision.action === 'blocked' ? 'blocked' : 'none',
+      reason: decision.reason,
+      attempts,
       maxAttempts: RECOVERY_MAX_ATTEMPTS,
-      nextEligibleAt: decision.nextEligibleAtMs === null
-        ? null : new Date(decision.nextEligibleAtMs).toISOString(),
+      nextEligibleAt:
+        decision.nextEligibleAtMs === null
+          ? null
+          : new Date(decision.nextEligibleAtMs).toISOString(),
       windowEndsAt: recent.length ? new Date(recent[0]! + RECOVERY_WINDOW_MS).toISOString() : null,
       checkedAt: new Date(nowMs).toISOString(),
     };
   }
 
   /** Explicit, once-only recovery attempt. No timer or background worker. */
-  async recoverWorkerOnce(name: string, run: Exec = executeFixed):
-    Promise<{ requested: true; result: HostCommandResult; review: RunitRecoveryReview }> {
+  async recoverWorkerOnce(
+    name: string,
+    run: Exec = executeFixed,
+  ): Promise<{ requested: true; result: HostCommandResult; review: RunitRecoveryReview }> {
     // A per-process promise queue does not serialize another panel instance
     // or an independently invoked trusted host adapter. The fixed private
     // O_EXCL lock holds across policy review, journal write and runit command.
@@ -669,9 +789,13 @@ export class TermuxServiceAdmin {
     const folder = path.dirname(this.recoveryFile);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     const folderStat = lstatSync(folder);
-    if (!folderStat.isDirectory() || folderStat.isSymbolicLink() ||
-        folderStat.uid !== process.getuid?.() || (folderStat.mode & 0o077) !== 0 ||
-        realpathSync(folder) !== folder)
+    if (
+      !folderStat.isDirectory() ||
+      folderStat.isSymbolicLink() ||
+      folderStat.uid !== process.getuid?.() ||
+      (folderStat.mode & 0o077) !== 0 ||
+      realpathSync(folder) !== folder
+    )
       throw new Error('Unsafe recovery lock directory');
     const lockPath = path.join(folder, '.h3-worker-recovery.lock');
     let lockFd: number;
@@ -695,8 +819,7 @@ export class TermuxServiceAdmin {
       if (!marker || typeof marker !== 'object' || Array.isArray(marker))
         throw new Error('Recovery marker invalid');
       const instanceId = (marker as Record<string, unknown>).instanceId;
-      if (typeof instanceId !== 'string')
-        throw new Error('Recovery instance invalid');
+      if (typeof instanceId !== 'string') throw new Error('Recovery instance invalid');
       // Reassess immediately and consume the budget *before* sending sv up,
       // ensuring a crash or a failed command never triggers an unbounded retry.
       const fresh = this.reviewWorkerRecovery(name);
@@ -706,19 +829,23 @@ export class TermuxServiceAdmin {
         throw new Error('Recovery journal instance changed');
       if (old && old.attemptedAtMs.some((at) => at > nowMs))
         throw new Error('Recovery clock moved backwards');
-      const recent = old
-        ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
-        : [];
-      if (recent.length >= RECOVERY_MAX_ATTEMPTS ||
-          (recent.length > 0 && nowMs < recent[recent.length - 1]! + RECOVERY_COOLDOWN_MS))
+      const recent = old ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS) : [];
+      if (
+        recent.length >= RECOVERY_MAX_ATTEMPTS ||
+        (recent.length > 0 && nowMs < recent[recent.length - 1]! + RECOVERY_COOLDOWN_MS)
+      )
         throw new Error('Recovery attempt budget or cooldown changed');
       const next: RecoveryAttemptRecord = {
-        name, instanceId, attemptedAtMs: [...recent, nowMs],
+        name,
+        instanceId,
+        attemptedAtMs: [...recent, nowMs],
       };
       this.saveRecoveryJournal([...records.filter((item) => item.name !== name), next]);
-      const result = await run(path.join(PREFIX, 'bin', 'sv'),
+      const result = await run(
+        path.join(PREFIX, 'bin', 'sv'),
         ['up', path.join(this.serviceRoot, name)],
-        { timeout: 20000, maxBuffer: 12000 });
+        { timeout: 20000, maxBuffer: 12000 },
+      );
       if (result.exit !== 0)
         throw new Error('Runit rejected the recovery start; attempt budget was consumed');
       return { requested: true, result, review: this.reviewWorkerRecovery(name) };
@@ -737,8 +864,13 @@ export class TermuxServiceAdmin {
     let raw: string | null;
     try {
       const st = lstatSync(this.recoveryFile);
-      if (!st.isFile() || st.isSymbolicLink() || st.nlink !== 1 ||
-          st.uid !== process.getuid?.() || (st.mode & 0o077) !== 0)
+      if (
+        !st.isFile() ||
+        st.isSymbolicLink() ||
+        st.nlink !== 1 ||
+        st.uid !== process.getuid?.() ||
+        (st.mode & 0o077) !== 0
+      )
         throw new Error('Unsafe recovery journal');
       raw = safeFile(this.recoveryFile);
       if (raw === null) throw new Error('Recovery journal disappeared');
@@ -755,16 +887,23 @@ export class TermuxServiceAdmin {
         throw new Error('Invalid recovery entry');
       const v = candidate as Record<string, unknown>;
       const attempted = v.attemptedAtMs;
-      if (Object.keys(v).sort().join(',') !==
-          'attemptedAtMs,instanceId,name' ||
-          typeof v.name !== 'string' || typeof v.instanceId !== 'string' ||
-          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v.instanceId) ||
-          !Array.isArray(attempted) || attempted.length < 1 ||
-          attempted.length > RECOVERY_MAX_ATTEMPTS ||
-          !attempted.every((at: unknown, i: number) =>
-            typeof at === 'number' && Number.isSafeInteger(at) && at >= 0 &&
-            (i === 0 || (typeof attempted[i - 1] === 'number' && at > attempted[i - 1]))) ||
-          names.has(v.name))
+      if (
+        Object.keys(v).sort().join(',') !== 'attemptedAtMs,instanceId,name' ||
+        typeof v.name !== 'string' ||
+        typeof v.instanceId !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v.instanceId) ||
+        !Array.isArray(attempted) ||
+        attempted.length < 1 ||
+        attempted.length > RECOVERY_MAX_ATTEMPTS ||
+        !attempted.every(
+          (at: unknown, i: number) =>
+            typeof at === 'number' &&
+            Number.isSafeInteger(at) &&
+            at >= 0 &&
+            (i === 0 || (typeof attempted[i - 1] === 'number' && at > attempted[i - 1])),
+        ) ||
+        names.has(v.name)
+      )
         throw new Error('Untrusted recovery journal entry');
       valid(v.name);
       if (isReserved(v.name)) throw new Error('Protected recovery history');
@@ -778,8 +917,12 @@ export class TermuxServiceAdmin {
     const folder = path.dirname(this.recoveryFile);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     const parent = lstatSync(folder);
-    if (!parent.isDirectory() || parent.isSymbolicLink() ||
-        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0)
+    if (
+      !parent.isDirectory() ||
+      parent.isSymbolicLink() ||
+      parent.uid !== process.getuid?.() ||
+      (parent.mode & 0o077) !== 0
+    )
       throw new Error('Unsafe recovery state folder');
     this.recoveryJournal();
     const temp = path.join(folder, '.recovery-' + randomUUID());
@@ -820,9 +963,13 @@ export class TermuxServiceAdmin {
     const folder = path.dirname(this.registerFile);
     mkdirSync(folder, { recursive: true, mode: 0o700 });
     const parent = lstatSync(folder);
-    if (!parent.isDirectory() || parent.isSymbolicLink() ||
-        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0 ||
-        realpathSync(folder) !== folder)
+    if (
+      !parent.isDirectory() ||
+      parent.isSymbolicLink() ||
+      parent.uid !== process.getuid?.() ||
+      (parent.mode & 0o077) !== 0 ||
+      realpathSync(folder) !== folder
+    )
       throw new Error('Unsafe standalone worker lock directory');
     const lockPath = path.join(folder, '.h3-standalone-lifecycle.lock');
     let fd: number;
@@ -830,17 +977,24 @@ export class TermuxServiceAdmin {
       fd = openSync(lockPath, 'wx', 0o600);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-        throw new Error('Another standalone worker operation is in progress or needs reconciliation');
+        throw new Error(
+          'Another standalone worker operation is in progress or needs reconciliation',
+        );
       throw error;
     }
     return () => {
       try {
         const held = fstatSync(fd);
         const current = lstatSync(lockPath);
-        if (!current.isFile() || current.isSymbolicLink() ||
-            current.dev !== held.dev || current.ino !== held.ino ||
-            current.nlink !== 1 || current.uid !== process.getuid?.() ||
-            (current.mode & 0o077) !== 0)
+        if (
+          !current.isFile() ||
+          current.isSymbolicLink() ||
+          current.dev !== held.dev ||
+          current.ino !== held.ino ||
+          current.nlink !== 1 ||
+          current.uid !== process.getuid?.() ||
+          (current.mode & 0o077) !== 0
+        )
           throw new Error('Standalone worker lock changed; refusing cleanup');
         unlinkSync(lockPath);
       } finally {
@@ -868,8 +1022,12 @@ export class TermuxServiceAdmin {
       throw new RangeError('Unsupported owned service template');
     if (template === 'python-source-v1') {
       // Source is staged, not executed. Browser Start/Restart/Enable are denied.
-      if (typeof source !== 'string' || !source.trim() ||
-          source.includes(String.fromCharCode(0)) || Buffer.byteLength(source) > 32 * 1024)
+      if (
+        typeof source !== 'string' ||
+        !source.trim() ||
+        source.includes(String.fromCharCode(0)) ||
+        Buffer.byteLength(source) > 32 * 1024
+      )
         throw new RangeError('Invalid Python source or 32 KB limit exceeded');
     } else if (source !== undefined) {
       throw new RangeError('Custom source refused by fixed templates');
@@ -877,14 +1035,19 @@ export class TermuxServiceAdmin {
     if (isReserved(name)) throw new Error('Protected service');
     const release = this.acquireStandaloneLifecycleLock();
     try {
-      if (this.registry().length >= MAX_MANAGED) throw new RangeError('Managed service quota reached');
+      if (this.registry().length >= MAX_MANAGED)
+        throw new RangeError('Managed service quota reached');
       const sourceRoot = path.join(PREFIX, 'var', 'sv');
       const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
       for (const folder of [this.serviceRoot, sourceRoot, logRoot]) {
         const st = lstatSync(folder);
-        if (!st.isDirectory() || st.isSymbolicLink() ||
-            st.uid !== process.getuid?.() || (st.mode & 0o022) !== 0 ||
-            realpathSync(folder) !== folder) {
+        if (
+          !st.isDirectory() ||
+          st.isSymbolicLink() ||
+          st.uid !== process.getuid?.() ||
+          (st.mode & 0o022) !== 0 ||
+          realpathSync(folder) !== folder
+        ) {
           throw new Error('Untrusted Termux service directory');
         }
       }
@@ -897,16 +1060,20 @@ export class TermuxServiceAdmin {
           const raw = safeFile(marker);
           if (!raw) return false;
           const data: unknown = JSON.parse(raw);
-          return !!data && typeof data === 'object' &&
+          return (
+            !!data &&
+            typeof data === 'object' &&
             (data as { template?: string }).template !== undefined &&
             ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
               (data as { template: string }).template,
-            );
+            )
+          );
         } catch {
           throw new Error('Managed worker inventory unverified');
         }
       }).length;
-      if (templateCount >= MAX_TEMPLATE_WORKERS) throw new RangeError('Managed worker quota reached');
+      if (templateCount >= MAX_TEMPLATE_WORKERS)
+        throw new RangeError('Managed worker quota reached');
       const published = path.join(this.serviceRoot, name);
       const target = path.join(sourceRoot, name);
       const logTarget = path.join(logRoot, name);
@@ -927,8 +1094,7 @@ export class TermuxServiceAdmin {
       const runtime = template !== 'heartbeat-worker-v1' ? python : node;
       for (const binary of [sh, env, runtime, svlogd]) {
         const st = statSync(binary);
-        if (!st.isFile() || (st.mode & 0o111) === 0)
-          throw new Error('Termux runtime unavailable');
+        if (!st.isFile() || (st.mode & 0o111) === 0) throw new Error('Termux runtime unavailable');
       }
       const runScript = builtinWorkerRunScript(template, target);
       const logScript = builtinWorkerLogScript(name);
@@ -941,25 +1107,34 @@ export class TermuxServiceAdmin {
       mkdirSync(logTarget, { mode: 0o700 });
       writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
       writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
-      const sourceSha256 = template === 'python-source-v1' && source !== undefined
-        ? createHash('sha256').update(source).digest('hex') : null;
+      const sourceSha256 =
+        template === 'python-source-v1' && source !== undefined
+          ? createHash('sha256').update(source).digest('hex')
+          : null;
       if (sourceSha256) {
         writeFileSync(path.join(target, 'worker.py'), source!, { flag: 'wx', mode: 0o600 });
         if (pythonWorkerSourceHash(target) !== sourceSha256)
           throw new Error('Python source readback does not match staged bytes');
       }
-      writeFileSync(path.join(target, '.pockethost-service.json'), JSON.stringify({
-        schema: 1, owner: 'pockethost', name, template,
-        runSha256: digest, ...(sourceSha256 ? { sourceSha256 } : {}),
-        instanceId: randomUUID(),
-      }) + '\n', { flag: 'wx', mode: 0o600 });
+      writeFileSync(
+        path.join(target, '.pockethost-service.json'),
+        JSON.stringify({
+          schema: 1,
+          owner: 'pockethost',
+          name,
+          template,
+          runSha256: digest,
+          ...(sourceSha256 ? { sourceSha256 } : {}),
+          instanceId: randomUUID(),
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
       symlinkSync(target, published);
       this.registerProvisioned(name, { target, runSha256: digest });
       return { changed: true, name, template };
     } finally {
       release();
     }
-
   }
 
   /**
@@ -978,30 +1153,43 @@ export class TermuxServiceAdmin {
     try {
       const published = lstatSync(path.join(this.serviceRoot, name));
       const directory = lstatSync(target);
-      if (!published.isSymbolicLink() ||
-          readlinkSync(path.join(this.serviceRoot, name)) !== target ||
-          !directory.isDirectory() || directory.isSymbolicLink() ||
-          directory.uid !== process.getuid?.() || (directory.mode & 0o022) !== 0) {
+      if (
+        !published.isSymbolicLink() ||
+        readlinkSync(path.join(this.serviceRoot, name)) !== target ||
+        !directory.isDirectory() ||
+        directory.isSymbolicLink() ||
+        directory.uid !== process.getuid?.() ||
+        (directory.mode & 0o022) !== 0
+      ) {
         return null;
       }
       const markerFile = path.join(target, '.pockethost-service.json');
       const markerStat = lstatSync(markerFile);
-      if (!markerStat.isFile() || markerStat.isSymbolicLink() ||
-          markerStat.nlink !== 1 || markerStat.uid !== process.getuid?.() ||
-          (markerStat.mode & 0o077) !== 0) return null;
+      if (
+        !markerStat.isFile() ||
+        markerStat.isSymbolicLink() ||
+        markerStat.nlink !== 1 ||
+        markerStat.uid !== process.getuid?.() ||
+        (markerStat.mode & 0o077) !== 0
+      )
+        return null;
       const raw = safeFile(markerFile);
       if (!raw) return null;
       const marker: unknown = JSON.parse(raw);
       if (!marker || typeof marker !== 'object' || Array.isArray(marker)) return null;
       const proof = marker as Record<string, unknown>;
       const record = registrations.find((entry) => entry.name === name);
-      const validProof = ['instanceId,name,owner,runSha256,schema,template',
-          'instanceId,name,owner,runSha256,schema,sourceSha256,template'].includes(
-            Object.keys(proof).sort().join(',')) &&
-        proof.schema === 1 && proof.owner === 'pockethost' &&
+      const validProof =
+        [
+          'instanceId,name,owner,runSha256,schema,template',
+          'instanceId,name,owner,runSha256,schema,sourceSha256,template',
+        ].includes(Object.keys(proof).sort().join(',')) &&
+        proof.schema === 1 &&
+        proof.owner === 'pockethost' &&
         proof.name === name &&
         ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
-          proof.template as string) &&
+          proof.template as string,
+        ) &&
         (proof.template === 'python-source-v1'
           ? typeof proof.sourceSha256 === 'string' &&
             /^[a-f0-9]{64}$/.test(proof.sourceSha256) &&
@@ -1011,14 +1199,19 @@ export class TermuxServiceAdmin {
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
         proof.runSha256 === record?.runSha256 &&
         this.runSha256(target) === proof.runSha256;
-      const expectedDigest = (proof.template === 'heartbeat-worker-v1' ||
-        proof.template === 'python-heartbeat-v1' || proof.template === 'python-source-v1')
-        ? createHash('sha256')
-            .update(builtinWorkerRunScript(proof.template, target)).digest('hex')
-        : null;
-      return validProof && proof.runSha256 === expectedDigest &&
+      const expectedDigest =
+        proof.template === 'heartbeat-worker-v1' ||
+        proof.template === 'python-heartbeat-v1' ||
+        proof.template === 'python-source-v1'
+          ? createHash('sha256')
+              .update(builtinWorkerRunScript(proof.template, target))
+              .digest('hex')
+          : null;
+      return validProof &&
+        proof.runSha256 === expectedDigest &&
         this.fixedWorkerLogIdentity(name, target)
-        ? (proof.template as WorkerTemplate) : null;
+        ? (proof.template as WorkerTemplate)
+        : null;
     } catch {
       return null;
     }
@@ -1048,12 +1241,15 @@ export class TermuxServiceAdmin {
       }
       const published = path.join(this.serviceRoot, name);
       const result = await run(path.join(PREFIX, 'bin', 'sv'), ['exit', published], {
-        timeout: 20000, maxBuffer: 12000,
+        timeout: 20000,
+        maxBuffer: 12000,
       });
       if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
-      if (this.probe(name) === 'running' ||
-          this.enabled(name, true) !== false ||
-          !this.managedWorkerTemplate(name, target, this.registry())) {
+      if (
+        this.probe(name) === 'running' ||
+        this.enabled(name, true) !== false ||
+        !this.managedWorkerTemplate(name, target, this.registry())
+      ) {
         throw new Error('Worker identity or stopped state changed during retirement');
       }
       // Remove only the exact symlink, never the directory it points to.
@@ -1068,32 +1264,39 @@ export class TermuxServiceAdmin {
       const proof = marker as Record<string, unknown>;
       const archiveTemplate = proof.template;
       const archived = this.archivedRegistry();
-      if (archived.some((item) => item.name === name) ||
-          archived.length >= MAX_TEMPLATE_WORKERS ||
-          !this.managedWorkerTemplate(name, target, this.registry()) ||
-          typeof proof.instanceId !== 'string' ||
-          typeof proof.runSha256 !== 'string' ||
-          (archiveTemplate !== 'heartbeat-worker-v1' &&
-           archiveTemplate !== 'python-heartbeat-v1' &&
-           archiveTemplate !== 'python-source-v1')) {
+      if (
+        archived.some((item) => item.name === name) ||
+        archived.length >= MAX_TEMPLATE_WORKERS ||
+        !this.managedWorkerTemplate(name, target, this.registry()) ||
+        typeof proof.instanceId !== 'string' ||
+        typeof proof.runSha256 !== 'string' ||
+        (archiveTemplate !== 'heartbeat-worker-v1' &&
+          archiveTemplate !== 'python-heartbeat-v1' &&
+          archiveTemplate !== 'python-source-v1')
+      ) {
         throw new Error('Worker archiving identity or quota changed');
       }
       // Stage the immutable recovery record before unlinking the unit.
-      this.saveArchived([...archived, {
-        name, target, template: archiveTemplate,
-        instanceId: proof.instanceId, runSha256: proof.runSha256,
-        ...(archiveTemplate === 'python-source-v1' &&
-            typeof proof.sourceSha256 === 'string'
-          ? { sourceSha256: proof.sourceSha256 } : {}),
-        archivedAt: new Date().toISOString(),
-      }]);
+      this.saveArchived([
+        ...archived,
+        {
+          name,
+          target,
+          template: archiveTemplate,
+          instanceId: proof.instanceId,
+          runSha256: proof.runSha256,
+          ...(archiveTemplate === 'python-source-v1' && typeof proof.sourceSha256 === 'string'
+            ? { sourceSha256: proof.sourceSha256 }
+            : {}),
+          archivedAt: new Date().toISOString(),
+        },
+      ]);
       unlinkSync(published);
       this.save(registrations.filter((entry) => entry.name !== name));
       return { changed: true, archived: true, retainedFiles: true };
     } finally {
       release();
     }
-
   }
 
   /** No digest or script validation means no lifecycle authority. */
@@ -1102,10 +1305,15 @@ export class TermuxServiceAdmin {
       const file = path.join(target, 'run');
       const stat = lstatSync(file);
       if (
-        !stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-        stat.uid !== process.getuid?.() || (stat.mode & 0o022) !== 0 ||
-        (stat.mode & 0o111) === 0 || stat.size > 20000
-      ) return null;
+        !stat.isFile() ||
+        stat.isSymbolicLink() ||
+        stat.nlink !== 1 ||
+        stat.uid !== process.getuid?.() ||
+        (stat.mode & 0o022) !== 0 ||
+        (stat.mode & 0o111) === 0 ||
+        stat.size > 20000
+      )
+        return null;
       return createHash('sha256').update(readFileSync(file)).digest('hex');
     } catch {
       return null;
@@ -1122,8 +1330,7 @@ export class TermuxServiceAdmin {
     // management capabilities. Both sides remain read-only after a crash.
     // The ledger is private and independently validated; an unreadable
     // ledger fails closed rather than silently granting service control.
-    if (this.archivedRegistry().some((item) => item.name === name))
-      return 'archive-conflict';
+    if (this.archivedRegistry().some((item) => item.name === name)) return 'archive-conflict';
     const entry = registrations.find((item) => item.name === name);
     if (!entry) return 'unregistered';
     if (!target || entry.target !== target) return 'changed';
@@ -1150,24 +1357,31 @@ export class TermuxServiceAdmin {
       typeof provenance.target !== 'string' ||
       typeof provenance.runSha256 !== 'string' ||
       !/^[a-f0-9]{64}$/.test(provenance.runSha256)
-    ) throw new RangeError('Invalid service provenance');
+    )
+      throw new RangeError('Invalid service provenance');
     const registrations = this.registry();
-    if (registrations.some((entry) => entry.name === name))
-      throw new Error('Already registered');
+    if (registrations.some((entry) => entry.name === name)) throw new Error('Already registered');
     const target = this.target(name);
-    if (target !== provenance.target)
-      throw new Error('Service provenance target mismatch');
+    if (target !== provenance.target) throw new Error('Service provenance target mismatch');
     const current = lstatSync(target);
     if (
-      !current.isDirectory() || current.isSymbolicLink() ||
-      current.uid !== process.getuid?.() || (current.mode & 0o022) !== 0
-    ) throw new Error('Untrusted provisioned service directory');
+      !current.isDirectory() ||
+      current.isSymbolicLink() ||
+      current.uid !== process.getuid?.() ||
+      (current.mode & 0o022) !== 0
+    )
+      throw new Error('Untrusted provisioned service directory');
     if (this.runSha256(target) !== provenance.runSha256)
       throw new Error('Provisioned run script identity mismatch');
-    this.save([...registrations, {
-      name, target, runSha256: provenance.runSha256,
-      addedAt: new Date().toISOString(),
-    }]);
+    this.save([
+      ...registrations,
+      {
+        name,
+        target,
+        runSha256: provenance.runSha256,
+        addedAt: new Date().toISOString(),
+      },
+    ]);
     return { changed: true };
   }
 
@@ -1185,18 +1399,23 @@ export class TermuxServiceAdmin {
     valid(name);
     const registrations = this.registry();
     const existing = registrations.find((entry) => entry.name === name);
-    if (!existing || !existing.runSha256 ||
-        existing.runSha256 !== provenance.previousRunSha256) {
+    if (!existing || !existing.runSha256 || existing.runSha256 !== provenance.previousRunSha256) {
       throw new Error('Previous provisioned identity unverified');
     }
     const target = this.target(name);
-    if (target !== provenance.target || target !== existing.target ||
-        !/^[a-f0-9]{64}$/.test(provenance.runSha256) ||
-        this.runSha256(target) !== provenance.runSha256) {
+    if (
+      target !== provenance.target ||
+      target !== existing.target ||
+      !/^[a-f0-9]{64}$/.test(provenance.runSha256) ||
+      this.runSha256(target) !== provenance.runSha256
+    ) {
       throw new Error('Changed provisioned identity unverified');
     }
-    this.save(registrations.map((entry) =>
-      entry.name === name ? { ...entry, runSha256: provenance.runSha256 } : entry));
+    this.save(
+      registrations.map((entry) =>
+        entry.name === name ? { ...entry, runSha256: provenance.runSha256 } : entry,
+      ),
+    );
     return { changed: true };
   }
 
@@ -1244,13 +1463,16 @@ export class TermuxServiceAdmin {
       }
       const identity = this.identity(name, resolved, registrations);
       const registered = identity === 'verified';
-      const template = registered && resolved
-        ? this.managedWorkerTemplate(name, resolved, registrations) : null;
+      const template =
+        registered && resolved ? this.managedWorkerTemplate(name, resolved, registrations) : null;
       // Enrollment is not authority for every frontend. Node Hosting has
       // its own release/nonce/lock/port safety gates and must not be driven
       // by the generic Services runit buttons.
-      const control: TermuxService['control'] = !registered ? 'read-only'
-        : template ? 'standalone' : 'delegated';
+      const control: TermuxService['control'] = !registered
+        ? 'read-only'
+        : template
+          ? 'standalone'
+          : 'delegated';
       return {
         name,
         registered,
@@ -1310,8 +1532,7 @@ export class TermuxServiceAdmin {
     if (isReserved(name)) throw new Error('Protected service');
     const target = this.target(name);
     const template = this.managedWorkerTemplate(name, target, this.registry());
-    if (!template || template === 'python-source-v1' ||
-        !this.fixedWorkerLogIdentity(name, target))
+    if (!template || template === 'python-source-v1' || !this.fixedWorkerLogIdentity(name, target))
       throw new Error('Only fixed builtin heartbeat workers can configure heartbeat');
     const markerRaw = safeFile(path.join(target, '.pockethost-service.json'));
     if (!markerRaw) throw new Error('Worker instance marker unavailable');
@@ -1319,8 +1540,10 @@ export class TermuxServiceAdmin {
     if (!marker || typeof marker !== 'object' || Array.isArray(marker))
       throw new Error('Untrusted worker marker');
     const instanceId = (marker as Record<string, unknown>).instanceId;
-    if (typeof instanceId !== 'string' ||
-        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId))
+    if (
+      typeof instanceId !== 'string' ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId)
+    )
       throw new Error('Untrusted worker instance');
     return { template, instanceId, target };
   }
@@ -1330,18 +1553,28 @@ export class TermuxServiceAdmin {
    * Binding the policy to the instance blocks a replaced worker from using
    * the old heartbeat configuration.
    */
-  configureWorkerHeartbeat(name: string, seconds: HeartbeatThresholdSeconds | null):
-    { changed: boolean; heartbeat: HeartbeatReadback } {
+  configureWorkerHeartbeat(
+    name: string,
+    seconds: HeartbeatThresholdSeconds | null,
+  ): { changed: boolean; heartbeat: HeartbeatReadback } {
     const worker = this.builtinHeartbeatIdentity(name);
     const changed = this.heartbeatPolicy.configure(name, worker.instanceId, seconds);
     const after = this.builtinHeartbeatIdentity(name);
-    if (after.instanceId !== worker.instanceId ||
-        after.target !== worker.target || after.template !== worker.template)
+    if (
+      after.instanceId !== worker.instanceId ||
+      after.target !== worker.target ||
+      after.template !== worker.template
+    )
       throw new Error('Worker identity changed during heartbeat policy update');
     return {
       changed,
-      heartbeat: this.heartbeatPolicy.observe(name, after.instanceId, after.template,
-        this.probe(name), path.join(PREFIX, 'var', 'log', 'sv', name)),
+      heartbeat: this.heartbeatPolicy.observe(
+        name,
+        after.instanceId,
+        after.template,
+        this.probe(name),
+        path.join(PREFIX, 'var', 'log', 'sv', name),
+      ),
     };
   }
 
@@ -1353,13 +1586,19 @@ export class TermuxServiceAdmin {
    * manual reconciliation; it must never silently run a mismatched source.
    */
   updatePythonSource(
-    name: string, expectedSha256: string, source: string,
+    name: string,
+    expectedSha256: string,
+    source: string,
   ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
     valid(name);
-    if (isReserved(name) || !/^[a-f0-9]{64}$/.test(expectedSha256) ||
-        typeof source !== 'string' || !source.trim() ||
-        source.includes(String.fromCharCode(0)) ||
-        Buffer.byteLength(source) > 32 * 1024)
+    if (
+      isReserved(name) ||
+      !/^[a-f0-9]{64}$/.test(expectedSha256) ||
+      typeof source !== 'string' ||
+      !source.trim() ||
+      source.includes(String.fromCharCode(0)) ||
+      Buffer.byteLength(source) > 32 * 1024
+    )
       throw new RangeError('Invalid Python revision request');
     const release = this.acquireStandaloneLifecycleLock();
     try {
@@ -1374,32 +1613,51 @@ export class TermuxServiceAdmin {
 
       const nextSha256 = createHash('sha256').update(source).digest('hex');
       if (nextSha256 === expectedSha256)
-        return { changed: false, sourceSha256: nextSha256,
-          sourceBytes: Buffer.byteLength(source), execution: 'blocked' };
+        return {
+          changed: false,
+          sourceSha256: nextSha256,
+          sourceBytes: Buffer.byteLength(source),
+          execution: 'blocked',
+        };
 
       const sourcePath = path.join(target, 'worker.py');
       const markerPath = path.join(target, '.pockethost-service.json');
       const initial = lstatSync(sourcePath);
-      if (!initial.isFile() || initial.isSymbolicLink() ||
-          initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
-          (initial.mode & 0o077) !== 0 || initial.size > 32 * 1024)
+      if (
+        !initial.isFile() ||
+        initial.isSymbolicLink() ||
+        initial.nlink !== 1 ||
+        initial.uid !== process.getuid?.() ||
+        (initial.mode & 0o077) !== 0 ||
+        initial.size > 32 * 1024
+      )
         throw new Error('Untrusted old Python source');
       const fd = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
       let oldBytes: Buffer;
       try {
         const opened = fstatSync(fd);
-        if (opened.dev !== initial.dev || opened.ino !== initial.ino ||
-            opened.nlink !== 1 || opened.size !== initial.size ||
-            opened.mtimeMs !== initial.mtimeMs)
+        if (
+          opened.dev !== initial.dev ||
+          opened.ino !== initial.ino ||
+          opened.nlink !== 1 ||
+          opened.size !== initial.size ||
+          opened.mtimeMs !== initial.mtimeMs
+        )
           throw new Error('Python source changed while opening');
         oldBytes = readFileSync(fd);
         const after = fstatSync(fd);
         const current = lstatSync(sourcePath);
-        if (after.dev !== initial.dev || after.ino !== initial.ino ||
-            current.dev !== initial.dev || current.ino !== initial.ino ||
-            after.size !== initial.size || current.size !== initial.size ||
-            after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
-            createHash('sha256').update(oldBytes).digest('hex') !== expectedSha256)
+        if (
+          after.dev !== initial.dev ||
+          after.ino !== initial.ino ||
+          current.dev !== initial.dev ||
+          current.ino !== initial.ino ||
+          after.size !== initial.size ||
+          current.size !== initial.size ||
+          after.mtimeMs !== initial.mtimeMs ||
+          current.mtimeMs !== initial.mtimeMs ||
+          createHash('sha256').update(oldBytes).digest('hex') !== expectedSha256
+        )
           throw new Error('Python source changed while copying previous revision');
       } finally {
         closeSync(fd);
@@ -1407,9 +1665,13 @@ export class TermuxServiceAdmin {
       const markerRaw = safeFile(markerPath);
       if (!markerRaw) throw new Error('Python owner marker missing');
       const marker: unknown = JSON.parse(markerRaw);
-      if (!marker || typeof marker !== 'object' || Array.isArray(marker) ||
-          (marker as Record<string, unknown>).template !== 'python-source-v1' ||
-          (marker as Record<string, unknown>).sourceSha256 !== expectedSha256)
+      if (
+        !marker ||
+        typeof marker !== 'object' ||
+        Array.isArray(marker) ||
+        (marker as Record<string, unknown>).template !== 'python-source-v1' ||
+        (marker as Record<string, unknown>).sourceSha256 !== expectedSha256
+      )
         throw new Error('Python owner marker changed');
       const history = path.join(target, '.python-source-history');
       try {
@@ -1418,13 +1680,16 @@ export class TermuxServiceAdmin {
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       }
       const directory = lstatSync(history);
-      if (!directory.isDirectory() || directory.isSymbolicLink() ||
-          directory.uid !== process.getuid?.() || (directory.mode & 0o077) !== 0 ||
-          realpathSync(history) !== history)
+      if (
+        !directory.isDirectory() ||
+        directory.isSymbolicLink() ||
+        directory.uid !== process.getuid?.() ||
+        (directory.mode & 0o077) !== 0 ||
+        realpathSync(history) !== history
+      )
         throw new Error('Unsafe Python source history');
       const revisions = readdirSync(history);
-      if (revisions.length >= 8 ||
-          revisions.some((file) => !/^[0-9a-f-]{36}\.py$/.test(file)))
+      if (revisions.length >= 8 || revisions.some((file) => !/^[0-9a-f-]{36}\.py$/.test(file)))
         throw new Error('Python source revision history full or untrusted');
       const nonce = randomUUID();
       const backup = path.join(history, nonce + '.py');
@@ -1432,24 +1697,39 @@ export class TermuxServiceAdmin {
       const newMarker = path.join(target, '.marker-' + nonce + '.tmp');
       writeFileSync(backup, oldBytes, { flag: 'wx', mode: 0o600 });
       writeFileSync(newSource, source, { flag: 'wx', mode: 0o600 });
-      writeFileSync(newMarker, JSON.stringify({
-        ...(marker as Record<string, unknown>), sourceSha256: nextSha256,
-      }) + '\n', { flag: 'wx', mode: 0o600 });
+      writeFileSync(
+        newMarker,
+        JSON.stringify({
+          ...(marker as Record<string, unknown>),
+          sourceSha256: nextSha256,
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
       // One last active-source and runit readback under the lifecycle lock.
       // A failed second rename is deliberately not auto-retried.
-      if (this.target(name) !== target ||
-          this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1' ||
-          this.probe(name) !== 'stopped' || this.enabled(name, true) !== false ||
-          pythonWorkerSourceHash(target) !== expectedSha256)
+      if (
+        this.target(name) !== target ||
+        this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1' ||
+        this.probe(name) !== 'stopped' ||
+        this.enabled(name, true) !== false ||
+        pythonWorkerSourceHash(target) !== expectedSha256
+      )
         throw new Error('Python source changed before revision commit');
       renameSync(newSource, sourcePath);
       renameSync(newMarker, markerPath);
       const updated = this.inspectPythonSource(name);
-      if (updated.sourceSha256 !== nextSha256 || updated.observed !== 'stopped' ||
-          updated.autostart !== false)
+      if (
+        updated.sourceSha256 !== nextSha256 ||
+        updated.observed !== 'stopped' ||
+        updated.autostart !== false
+      )
         throw new Error('Python source revision write not attested');
-      return { changed: true, sourceSha256: nextSha256,
-        sourceBytes: updated.sourceBytes, execution: 'blocked' };
+      return {
+        changed: true,
+        sourceSha256: nextSha256,
+        sourceBytes: updated.sourceBytes,
+        execution: 'blocked',
+      };
     } finally {
       release();
     }
@@ -1471,65 +1751,99 @@ export class TermuxServiceAdmin {
     let names: string[];
     try {
       const dir = lstatSync(folder);
-      if (!dir.isDirectory() || dir.isSymbolicLink() ||
-          dir.uid !== process.getuid?.() || (dir.mode & 0o077) !== 0 ||
-          realpathSync(folder) !== folder)
+      if (
+        !dir.isDirectory() ||
+        dir.isSymbolicLink() ||
+        dir.uid !== process.getuid?.() ||
+        (dir.mode & 0o077) !== 0 ||
+        realpathSync(folder) !== folder
+      )
         throw new Error('Untrusted Python revision history');
       names = readdirSync(folder);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       names = [];
     }
-    if (names.length > 8 ||
-        names.some((entry) =>
-          !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.py$/.test(entry)))
+    if (
+      names.length > 8 ||
+      names.some(
+        (entry) =>
+          !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.py$/.test(entry),
+      )
+    )
       throw new Error('Unexpected Python revision history contents');
-    const revisions = names.map((filename) => {
-      const file = path.join(folder, filename);
-      const initial = lstatSync(file);
-      if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
-          initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
-          initial.size < 1 || initial.size > 32 * 1024 ||
-          !Number.isFinite(initial.mtimeMs))
-        throw new Error('Unsafe Python revision');
-      const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
-      let bytes: Buffer;
-      try {
-        const before = fstatSync(fd);
-        if (!before.isFile() || before.dev !== initial.dev ||
-            before.ino !== initial.ino || before.nlink !== 1 ||
-            before.size !== initial.size || before.mtimeMs !== initial.mtimeMs ||
-            before.uid !== initial.uid || (before.mode & 0o077) !== 0)
-          throw new Error('Python revision replaced during opening');
-        bytes = readFileSync(fd);
-        const after = fstatSync(fd);
-        const current = lstatSync(file);
-        if (bytes.length !== initial.size ||
-            after.dev !== initial.dev || after.ino !== initial.ino ||
-            current.dev !== initial.dev || current.ino !== initial.ino ||
-            after.size !== initial.size || current.size !== initial.size ||
-            after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
-            current.nlink !== 1 || current.uid !== initial.uid ||
-            (current.mode & 0o077) !== 0)
-          throw new Error('Python revision changed while reading');
-      } finally {
-        closeSync(fd);
-      }
-      return {
-        id: filename.slice(0, -3),
-        sourceSha256: createHash('sha256').update(bytes).digest('hex'),
-        bytes: bytes.length,
-        savedAt: new Date(initial.mtimeMs).toISOString(),
-      };
-    }).sort((a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id));
+    const revisions = names
+      .map((filename) => {
+        const file = path.join(folder, filename);
+        const initial = lstatSync(file);
+        if (
+          !initial.isFile() ||
+          initial.isSymbolicLink() ||
+          initial.nlink !== 1 ||
+          initial.uid !== process.getuid?.() ||
+          (initial.mode & 0o077) !== 0 ||
+          initial.size < 1 ||
+          initial.size > 32 * 1024 ||
+          !Number.isFinite(initial.mtimeMs)
+        )
+          throw new Error('Unsafe Python revision');
+        const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+        let bytes: Buffer;
+        try {
+          const before = fstatSync(fd);
+          if (
+            !before.isFile() ||
+            before.dev !== initial.dev ||
+            before.ino !== initial.ino ||
+            before.nlink !== 1 ||
+            before.size !== initial.size ||
+            before.mtimeMs !== initial.mtimeMs ||
+            before.uid !== initial.uid ||
+            (before.mode & 0o077) !== 0
+          )
+            throw new Error('Python revision replaced during opening');
+          bytes = readFileSync(fd);
+          const after = fstatSync(fd);
+          const current = lstatSync(file);
+          if (
+            bytes.length !== initial.size ||
+            after.dev !== initial.dev ||
+            after.ino !== initial.ino ||
+            current.dev !== initial.dev ||
+            current.ino !== initial.ino ||
+            after.size !== initial.size ||
+            current.size !== initial.size ||
+            after.mtimeMs !== initial.mtimeMs ||
+            current.mtimeMs !== initial.mtimeMs ||
+            current.nlink !== 1 ||
+            current.uid !== initial.uid ||
+            (current.mode & 0o077) !== 0
+          )
+            throw new Error('Python revision changed while reading');
+        } finally {
+          closeSync(fd);
+        }
+        return {
+          id: filename.slice(0, -3),
+          sourceSha256: createHash('sha256').update(bytes).digest('hex'),
+          bytes: bytes.length,
+          savedAt: new Date(initial.mtimeMs).toISOString(),
+        };
+      })
+      .sort((a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id));
     const confirmed = this.inspectPythonSource(name);
-    if (this.target(name) !== target ||
-        active.sourceSha256 !== confirmed.sourceSha256 ||
-        active.observed !== confirmed.observed ||
-        active.autostart !== confirmed.autostart)
+    if (
+      this.target(name) !== target ||
+      active.sourceSha256 !== confirmed.sourceSha256 ||
+      active.observed !== confirmed.observed ||
+      active.autostart !== confirmed.autostart
+    )
       throw new Error('Python worker identity changed while listing revisions');
     return {
-      name, currentSha256: confirmed.sourceSha256, revisions, execution: 'blocked',
+      name,
+      currentSha256: confirmed.sourceSha256,
+      revisions,
+      execution: 'blocked',
     };
   }
 
@@ -1538,53 +1852,81 @@ export class TermuxServiceAdmin {
    * stopped-source updater. No direct mutation of runit or launch path.
    */
   restorePythonSourceRevision(
-    name: string, revisionId: string, expectedCurrentSha256: string,
+    name: string,
+    revisionId: string,
+    expectedCurrentSha256: string,
     expectedRevisionSha256: string,
   ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
     valid(name);
-    if (!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(revisionId) ||
-        !/^[a-f0-9]{64}$/.test(expectedCurrentSha256) ||
-        !/^[a-f0-9]{64}$/.test(expectedRevisionSha256))
+    if (
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(revisionId) ||
+      !/^[a-f0-9]{64}$/.test(expectedCurrentSha256) ||
+      !/^[a-f0-9]{64}$/.test(expectedRevisionSha256)
+    )
       throw new RangeError('Invalid Python revision selector');
     const record = this.inspectPythonSourceHistory(name);
-    if (record.currentSha256 !== expectedCurrentSha256 ||
-        !record.revisions.some((item) =>
-          item.id === revisionId && item.sourceSha256 === expectedRevisionSha256))
+    if (
+      record.currentSha256 !== expectedCurrentSha256 ||
+      !record.revisions.some(
+        (item) => item.id === revisionId && item.sourceSha256 === expectedRevisionSha256,
+      )
+    )
       throw new Error('Python revision selection is stale');
     const folder = path.join(this.target(name), '.python-source-history');
     const file = path.join(folder, revisionId + '.py');
     const initial = lstatSync(file);
-    if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
-        initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
-        initial.size < 1 || initial.size > 32 * 1024)
+    if (
+      !initial.isFile() ||
+      initial.isSymbolicLink() ||
+      initial.nlink !== 1 ||
+      initial.uid !== process.getuid?.() ||
+      (initial.mode & 0o077) !== 0 ||
+      initial.size < 1 ||
+      initial.size > 32 * 1024
+    )
       throw new Error('Invalid retained Python file');
     const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
     let bytes: Buffer;
     try {
       const before = fstatSync(fd);
-      if (before.dev !== initial.dev || before.ino !== initial.ino ||
-          before.nlink !== 1 || before.size !== initial.size ||
-          before.mtimeMs !== initial.mtimeMs || before.uid !== initial.uid ||
-          (before.mode & 0o077) !== 0)
+      if (
+        before.dev !== initial.dev ||
+        before.ino !== initial.ino ||
+        before.nlink !== 1 ||
+        before.size !== initial.size ||
+        before.mtimeMs !== initial.mtimeMs ||
+        before.uid !== initial.uid ||
+        (before.mode & 0o077) !== 0
+      )
         throw new Error('Retained Python file changed during opening');
       bytes = readFileSync(fd);
       const after = fstatSync(fd);
       const current = lstatSync(file);
-      if (bytes.length !== initial.size ||
-          after.dev !== initial.dev || after.ino !== initial.ino ||
-          current.dev !== initial.dev || current.ino !== initial.ino ||
-          after.size !== initial.size || current.size !== initial.size ||
-          after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
-          current.nlink !== 1 || current.uid !== initial.uid ||
-          (current.mode & 0o077) !== 0 ||
-          createHash('sha256').update(bytes).digest('hex') !== expectedRevisionSha256)
+      if (
+        bytes.length !== initial.size ||
+        after.dev !== initial.dev ||
+        after.ino !== initial.ino ||
+        current.dev !== initial.dev ||
+        current.ino !== initial.ino ||
+        after.size !== initial.size ||
+        current.size !== initial.size ||
+        after.mtimeMs !== initial.mtimeMs ||
+        current.mtimeMs !== initial.mtimeMs ||
+        current.nlink !== 1 ||
+        current.uid !== initial.uid ||
+        (current.mode & 0o077) !== 0 ||
+        createHash('sha256').update(bytes).digest('hex') !== expectedRevisionSha256
+      )
         throw new Error('Retained Python source fingerprint changed');
     } finally {
       closeSync(fd);
     }
     const text = bytes.toString('utf8');
-    if (!text.trim() || text.includes(String.fromCharCode(0)) ||
-        !Buffer.from(text, 'utf8').equals(bytes))
+    if (
+      !text.trim() ||
+      text.includes(String.fromCharCode(0)) ||
+      !Buffer.from(text, 'utf8').equals(bytes)
+    )
       throw new Error('Retained Python source is not valid UTF-8 text');
     const result = this.updatePythonSource(name, expectedCurrentSha256, text);
     if (result.sourceSha256 !== expectedRevisionSha256)
@@ -1616,30 +1958,48 @@ export class TermuxServiceAdmin {
       throw new Error('Only attested owner-staged Python source can be reviewed');
     const sourcePath = path.join(target, 'worker.py');
     const initial = lstatSync(sourcePath);
-    if (!initial.isFile() || initial.isSymbolicLink() ||
-        initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
-        (initial.mode & 0o077) !== 0 ||
-        initial.size === 0 || initial.size > 32 * 1024)
+    if (
+      !initial.isFile() ||
+      initial.isSymbolicLink() ||
+      initial.nlink !== 1 ||
+      initial.uid !== process.getuid?.() ||
+      (initial.mode & 0o077) !== 0 ||
+      initial.size === 0 ||
+      initial.size > 32 * 1024
+    )
       throw new Error('Python source file not owner-private');
     const fd = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
     let bytes: Buffer;
     try {
       const before = fstatSync(fd);
-      if (!before.isFile() || before.nlink !== 1 ||
-          before.dev !== initial.dev || before.ino !== initial.ino ||
-          before.uid !== initial.uid || (before.mode & 0o077) !== 0 ||
-          before.size !== initial.size || before.mtimeMs !== initial.mtimeMs)
+      if (
+        !before.isFile() ||
+        before.nlink !== 1 ||
+        before.dev !== initial.dev ||
+        before.ino !== initial.ino ||
+        before.uid !== initial.uid ||
+        (before.mode & 0o077) !== 0 ||
+        before.size !== initial.size ||
+        before.mtimeMs !== initial.mtimeMs
+      )
         throw new Error('Python source changed while opening');
       bytes = readFileSync(fd);
       const after = fstatSync(fd);
       const current = lstatSync(sourcePath);
-      if (bytes.length !== before.size ||
-          after.dev !== before.dev || after.ino !== before.ino ||
-          after.size !== before.size || after.mtimeMs !== before.mtimeMs ||
-          current.dev !== before.dev || current.ino !== before.ino ||
-          current.size !== before.size || current.mtimeMs !== before.mtimeMs ||
-          current.nlink !== 1 || current.uid !== before.uid ||
-          (current.mode & 0o077) !== 0)
+      if (
+        bytes.length !== before.size ||
+        after.dev !== before.dev ||
+        after.ino !== before.ino ||
+        after.size !== before.size ||
+        after.mtimeMs !== before.mtimeMs ||
+        current.dev !== before.dev ||
+        current.ino !== before.ino ||
+        current.size !== before.size ||
+        current.mtimeMs !== before.mtimeMs ||
+        current.nlink !== 1 ||
+        current.uid !== before.uid ||
+        (current.mode & 0o077) !== 0
+      )
         throw new Error('Python source changed while reading');
     } finally {
       closeSync(fd);
@@ -1651,18 +2011,28 @@ export class TermuxServiceAdmin {
       throw new Error('Python worker identity invalid');
     const expected = (marker as Record<string, unknown>).sourceSha256;
     const sourceSha256 = createHash('sha256').update(bytes).digest('hex');
-    if (typeof expected !== 'string' || !/^[a-f0-9]{64}$/.test(expected) ||
-        expected !== sourceSha256)
+    if (
+      typeof expected !== 'string' ||
+      !/^[a-f0-9]{64}$/.test(expected) ||
+      expected !== sourceSha256
+    )
       throw new Error('Python source fingerprint changed');
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
-    if (this.target(name) !== target ||
-        this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1')
+    if (
+      this.target(name) !== target ||
+      this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1'
+    )
       throw new Error('Python worker identity changed during review');
     return {
-      name, template: 'python-source-v1', sourceSha256,
-      sourceBytes: bytes.length, observed, autostart,
-      canStartFromLan: false, ownerApproval: 'not-configured',
+      name,
+      template: 'python-source-v1',
+      sourceSha256,
+      sourceBytes: bytes.length,
+      observed,
+      autostart,
+      canStartFromLan: false,
+      ownerApproval: 'not-configured',
       checkedAt: new Date().toISOString(),
     };
   }
@@ -1683,53 +2053,74 @@ export class TermuxServiceAdmin {
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
     const template = this.managedWorkerTemplate(name, current, registrations);
-    const heartbeat: HeartbeatReadback = template && template !== 'python-source-v1'
-      ? (() => {
-          const worker = this.builtinHeartbeatIdentity(name);
-          return this.heartbeatPolicy.observe(name, worker.instanceId, worker.template,
-            observed, path.join(PREFIX, 'var', 'log', 'sv', name));
-        })()
-      : { mode: 'disabled', staleAfterSeconds: null,
-          status: 'disabled', lastOutputAt: null };
+    const heartbeat: HeartbeatReadback =
+      template && template !== 'python-source-v1'
+        ? (() => {
+            const worker = this.builtinHeartbeatIdentity(name);
+            return this.heartbeatPolicy.observe(
+              name,
+              worker.instanceId,
+              worker.template,
+              observed,
+              path.join(PREFIX, 'var', 'log', 'sv', name),
+            );
+          })()
+        : { mode: 'disabled', staleAfterSeconds: null, status: 'disabled', lastOutputAt: null };
     let logEvidence: RunitHealthReadback['logEvidence'] = 'no-log';
     let lastLogWriteAt: string | null = null;
     const logRoot = path.join(PREFIX, 'var', 'log', 'sv', name);
     try {
       const folder = lstatSync(logRoot);
-      if (!folder.isDirectory() || folder.isSymbolicLink() ||
-          folder.uid !== process.getuid?.() || (folder.mode & 0o022) !== 0) {
+      if (
+        !folder.isDirectory() ||
+        folder.isSymbolicLink() ||
+        folder.uid !== process.getuid?.() ||
+        (folder.mode & 0o022) !== 0
+      ) {
         logEvidence = 'untrusted';
       } else {
         const logFile = path.join(logRoot, 'current');
         try {
           const stat = lstatSync(logFile);
-          if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-              stat.uid !== process.getuid?.() || (stat.mode & 0o022) !== 0 ||
-              stat.size > 4 * 1024 * 1024 ||
-              !Number.isFinite(stat.mtimeMs) || stat.mtimeMs < 0 ||
-              stat.mtimeMs > Date.now() + 120000) {
+          if (
+            !stat.isFile() ||
+            stat.isSymbolicLink() ||
+            stat.nlink !== 1 ||
+            stat.uid !== process.getuid?.() ||
+            (stat.mode & 0o022) !== 0 ||
+            stat.size > 4 * 1024 * 1024 ||
+            !Number.isFinite(stat.mtimeMs) ||
+            stat.mtimeMs < 0 ||
+            stat.mtimeMs > Date.now() + 120000
+          ) {
             logEvidence = 'untrusted';
           } else {
             logEvidence = 'log-write';
             lastLogWriteAt = new Date(stat.mtimeMs).toISOString();
           }
         } catch (error) {
-          if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
-            logEvidence = 'untrusted';
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') logEvidence = 'untrusted';
         }
       }
     } catch (error) {
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
-        logEvidence = 'untrusted';
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') logEvidence = 'untrusted';
     }
     // Re-attest the identity *after* observing state. Concurrent archives,
     // script drift or registry changes invalidate the entire observation.
-    if (this.target(name) !== current ||
-        this.identity(name, current, this.registry()) !== 'verified')
+    if (
+      this.target(name) !== current ||
+      this.identity(name, current, this.registry()) !== 'verified'
+    )
       throw new Error('Service identity changed during health inspection');
     return {
-      name, identity: 'verified', observed, readiness: 'not-verified',
-      heartbeat, autostart, logEvidence, lastLogWriteAt,
+      name,
+      identity: 'verified',
+      observed,
+      readiness: 'not-verified',
+      heartbeat,
+      autostart,
+      logEvidence,
+      lastLogWriteAt,
       checkedAt: new Date().toISOString(),
     };
   }
@@ -1746,61 +2137,85 @@ export class TermuxServiceAdmin {
     let liveTarget: string | null = null;
     try {
       const target = this.target(name);
-      if (this.identity(name, target, this.registry()) === 'verified')
-        liveTarget = target;
+      if (this.identity(name, target, this.registry()) === 'verified') liveTarget = target;
     } catch {
       // A missing or changed live unit must independently prove an archive.
     }
-    const archived = liveTarget === null
-      ? this.archivedRegistry().find((entry) => entry.name === name)
-      : undefined;
+    const archived =
+      liveTarget === null
+        ? this.archivedRegistry().find((entry) => entry.name === name)
+        : undefined;
     if (liveTarget === null && (!archived || !this.offlineWorkerIdentity(archived)))
       throw new Error('Service or archived worker identity not verified');
     const reattest = (): boolean => {
       if (liveTarget !== null) {
         try {
-          return this.target(name) === liveTarget &&
-            this.identity(name, liveTarget, this.registry()) === 'verified';
+          return (
+            this.target(name) === liveTarget &&
+            this.identity(name, liveTarget, this.registry()) === 'verified'
+          );
         } catch {
           return false;
         }
       }
       if (!archived) return false;
       const record = this.archivedRegistry().find((entry) => entry.name === name);
-      return !!record && record.template === archived.template &&
+      return (
+        !!record &&
+        record.template === archived.template &&
         record.instanceId === archived.instanceId &&
         record.runSha256 === archived.runSha256 &&
         record.target === archived.target &&
-        this.offlineWorkerIdentity(record);
+        this.offlineWorkerIdentity(record)
+      );
     };
     const root = path.join(PREFIX, 'var', 'log', 'sv', name);
     const file = path.join(root, 'current');
     let raw = '';
     try {
       const folder = lstatSync(root);
-      if (!folder.isDirectory() || folder.isSymbolicLink() ||
-          folder.uid !== process.getuid?.() || (folder.mode & 0o022) !== 0 ||
-          realpathSync(root) !== root)
+      if (
+        !folder.isDirectory() ||
+        folder.isSymbolicLink() ||
+        folder.uid !== process.getuid?.() ||
+        (folder.mode & 0o022) !== 0 ||
+        realpathSync(root) !== root
+      )
         throw new Error('Unsafe service log directory');
       try {
         const initial = lstatSync(file);
-        if (!initial.isFile() || initial.isSymbolicLink() ||
-            initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
-            (initial.mode & 0o022) !== 0 || initial.size > 4 * 1024 * 1024)
+        if (
+          !initial.isFile() ||
+          initial.isSymbolicLink() ||
+          initial.nlink !== 1 ||
+          initial.uid !== process.getuid?.() ||
+          (initial.mode & 0o022) !== 0 ||
+          initial.size > 4 * 1024 * 1024
+        )
           throw new Error('Unsafe service log');
         const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
         try {
           const before = fstatSync(fd);
-          if (!before.isFile() || before.nlink !== 1 ||
-              before.uid !== initial.uid || before.dev !== initial.dev ||
-              before.ino !== initial.ino || before.size > 4 * 1024 * 1024)
+          if (
+            !before.isFile() ||
+            before.nlink !== 1 ||
+            before.uid !== initial.uid ||
+            before.dev !== initial.dev ||
+            before.ino !== initial.ino ||
+            before.size > 4 * 1024 * 1024
+          )
             throw new Error('Service log changed during opening');
           raw = readFileSync(fd, 'utf8');
           const after = fstatSync(fd);
           const current = lstatSync(file);
-          if (after.dev !== before.dev || after.ino !== before.ino ||
-              current.dev !== before.dev || current.ino !== before.ino ||
-              after.size > 4 * 1024 * 1024 || current.nlink !== 1)
+          if (
+            after.dev !== before.dev ||
+            after.ino !== before.ino ||
+            current.dev !== before.dev ||
+            current.ino !== before.ino ||
+            after.size > 4 * 1024 * 1024 ||
+            current.nlink !== 1
+          )
             throw new Error('Service log changed during reading');
         } finally {
           closeSync(fd);
@@ -1812,20 +2227,24 @@ export class TermuxServiceAdmin {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
     }
     if (!reattest()) throw new Error('Service identity changed during log read');
-    const lines = raw.length === 0 ? [] : raw.slice(-20000)
-      .split(/\r?\n/)
-      .slice(-100)
-      .map((line) =>
-        line
-          .replace(/(password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi, '$1=[redacted]')
-          .split('')
-          .filter((char) => {
-            const code = char.charCodeAt(0);
-            return code >= 32 && code !== 127;
-          })
-          .join('')
-          .slice(0, 240),
-      );
+    const lines =
+      raw.length === 0
+        ? []
+        : raw
+            .slice(-20000)
+            .split(/\r?\n/)
+            .slice(-100)
+            .map((line) =>
+              line
+                .replace(/(password|secret|token|api[_-]?key)\s*[:=]\s*\S+/gi, '$1=[redacted]')
+                .split('')
+                .filter((char) => {
+                  const code = char.charCodeAt(0);
+                  return code >= 32 && code !== 127;
+                })
+                .join('')
+                .slice(0, 240),
+            );
     return { lines };
   }
 
@@ -1849,24 +2268,23 @@ export class TermuxServiceAdmin {
     try {
       const target = this.target(name);
       const template = this.managedWorkerTemplate(name, target, this.registry());
-      if (!template)
-        throw new Error('Use the owning project provisioner for this service');
-      if (template === 'python-source-v1' &&
-          ['start', 'restart', 'enable'].includes(operation))
+      if (!template) throw new Error('Use the owning project provisioner for this service');
+      if (template === 'python-source-v1' && ['start', 'restart', 'enable'].includes(operation))
         throw new Error('Python source execution not authorized by unauthenticated LAN Services');
       const result = await this.apply(operation, name, run);
       // Enrollment alone does not confer standalone authority. A concurrent
       // archive, source change or marker replacement revokes the capability
       // even if runit already acknowledged the command.
-      if (this.target(name) !== target ||
-          !this.managedWorkerTemplate(name, target, this.registry())) {
+      if (
+        this.target(name) !== target ||
+        !this.managedWorkerTemplate(name, target, this.registry())
+      ) {
         throw new Error('Standalone worker identity changed during lifecycle action');
       }
       return result;
     } finally {
       release();
     }
-
   }
 
   async apply(
@@ -1886,7 +2304,9 @@ export class TermuxServiceAdmin {
       throw new Error('Registration requires an attested PocketHost provisioner');
     const registrations = this.registry();
     if (operation === 'unregister')
-      throw new Error('Unregister refused: use attested worker archive; project services remain owned');
+      throw new Error(
+        'Unregister refused: use attested worker archive; project services remain owned',
+      );
     const target = this.target(name);
     if (this.identity(name, target, registrations) !== 'verified')
       throw new Error('Service not explicitly registered or identity changed');
@@ -1905,9 +2325,11 @@ export class TermuxServiceAdmin {
       if (result.exit !== 0) throw new Error('Termux autostart action failed');
       // Recheck ownership and exact target as well as persistent on-disk
       // state before acknowledging. Fail closed on partial or drifted writes.
-      if (this.target(name) !== target ||
-          this.identity(name, target, this.registry()) !== 'verified' ||
-          this.enabled(name, true) !== desired) {
+      if (
+        this.target(name) !== target ||
+        this.identity(name, target, this.registry()) !== 'verified' ||
+        this.enabled(name, true) !== desired
+      ) {
         throw new Error('Autostart write acknowledged but persistent readback unverified');
       }
       return { changed: before !== desired, result };
@@ -1932,8 +2354,10 @@ export class TermuxServiceAdmin {
     // A successful sv exit only acknowledges a command. It cannot prove
     // application readiness, and a changed unit must not be reported as
     // a successful operation under the original ownership grant.
-    if (this.target(name) !== target ||
-        this.identity(name, target, this.registry()) !== 'verified') {
+    if (
+      this.target(name) !== target ||
+      this.identity(name, target, this.registry()) !== 'verified'
+    ) {
       throw new Error('Runit service identity changed during lifecycle action');
     }
     return { changed: true, result };
