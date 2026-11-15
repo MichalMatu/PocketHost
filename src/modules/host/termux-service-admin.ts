@@ -2613,7 +2613,8 @@ export class TermuxServiceAdmin {
       const result = spawnSync(command, ['status', unit], {
         encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 2048,
       });
-      if (result.error || result.status !== 0 || !result.stdout.startsWith(prefix))
+      if (result.error || result.status !== 0 ||
+          typeof result.stdout !== 'string' || !result.stdout.startsWith(prefix))
         return null;
       const match = /^([1-9][0-9]{0,8})\) ([0-9]{1,10})s(?:;|$)/.exec(
         result.stdout.slice(prefix.length),
@@ -2708,7 +2709,7 @@ export class TermuxServiceAdmin {
     if (this.identity(name, current, registrations) !== 'verified')
       throw new Error('Service identity unverified; health inspection refused');
     const observed = this.probe(name);
-    const process = this.observeRunitProcess(name, observed);
+    const runitProcess = this.observeRunitProcess(name, observed);
     const autostart = this.enabled(name, true);
     const template = this.managedWorkerTemplate(name, current, registrations);
     const heartbeat: HeartbeatReadback =
@@ -2775,7 +2776,7 @@ export class TermuxServiceAdmin {
       identity: 'verified',
       observed,
       readiness: 'not-verified',
-      process,
+      process: runitProcess,
       heartbeat,
       autostart,
       logEvidence,
