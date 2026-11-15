@@ -45,6 +45,15 @@ type RunitProcess = {
   startTicks: string | null
 }
 
+type HttpReadinessResult = {
+  name: string
+  status: "ready" | "not-ready" | "unverified"
+  httpStatus: number | null
+  reason: "http-2xx" | "http-other" | "process-unverified" |
+    "socket-owner-unverified" | "transport-unverified" | "worker-changed"
+  checkedAt: string
+}
+
 type RunitHealth = {
   name: string
   identity: "verified"
@@ -107,6 +116,9 @@ export function RunitHealthPanel() {
   const [recovery, setRecovery] = React.useState<RecoveryReview | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
   const [overview, setOverview] = React.useState<HealthOverview | null>(null)
+  const [httpPort, setHttpPort] = React.useState("")
+  const [httpPath, setHttpPath] = React.useState("/health")
+  const [httpResult, setHttpResult] = React.useState<HttpReadinessResult | null>(null)
 
   const refresh = React.useCallback(async () => {
     const result = await getJson<{ services: VerifiedService[] }>("?mode=services")
@@ -125,6 +137,7 @@ export function RunitHealthPanel() {
     setServices(result.services.filter(service =>
       service.registered && !service.protected))
     setOverview(null)
+    setHttpResult(null)
     setReadback(null)
     setRecovery(null)
     setNotice(null)
@@ -187,6 +200,7 @@ export function RunitHealthPanel() {
     setBusy(service.name)
     setError(null)
     setReadback(null)
+    setHttpResult(null)
     setRecovery(null)
     setNotice(null)
     try {
@@ -222,6 +236,42 @@ export function RunitHealthPanel() {
     }
   }
 
+  const inspectHttp = async () => {
+    if (!readback || busy !== null || !services?.some(service =>
+      service.name === readback.name && service.registered && !service.protected) ||
+      !/^[0-9]{4,5}$/.test(httpPort) || Number(httpPort) < 1024 ||
+      Number(httpPort) > 65535 ||
+      !/^\/(?:[a-zA-Z0-9._~-]|\/){0,96}$/.test(httpPath) ||
+      httpPath.startsWith("//") || httpPath.includes("/../") ||
+      httpPath.endsWith("/..")) return
+    const targetName = readback.name
+    setBusy("__http__")
+    setHttpResult(null)
+    setError(null)
+    try {
+      const result = await getJson<HttpReadinessResult>(
+        "?mode=service-http-readiness&name=" + encodeURIComponent(targetName) +
+        "&port=" + encodeURIComponent(httpPort) +
+        "&path=" + encodeURIComponent(httpPath))
+      if (!result || result.name !== targetName ||
+          !["ready", "not-ready", "unverified"].includes(result.status) ||
+          !["http-2xx", "http-other", "process-unverified", "socket-owner-unverified",
+            "transport-unverified", "worker-changed"].includes(result.reason) ||
+          (result.status === "unverified" ? result.httpStatus !== null :
+            !Number.isSafeInteger(result.httpStatus) ||
+            result.httpStatus! < 100 || result.httpStatus! > 599 ||
+            (result.status === "ready") !==
+              (result.httpStatus! >= 200 && result.httpStatus! <= 299)) ||
+          !Number.isFinite(Date.parse(result.checkedAt)))
+        throw new Error("Untrusted HTTP readiness response")
+      setHttpResult(result)
+    } catch {
+      setError("HTTP readiness refused or unverified. No conclusion about application health.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   const setHeartbeat = async (name: string, choice: "disabled" | "180" | "300" | "600") => {
     if (busy || !services?.some(item => item.name === name &&
         (item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1") &&
@@ -229,6 +279,7 @@ export function RunitHealthPanel() {
     setBusy(name)
     setError(null)
     setNotice(null)
+    setHttpResult(null)
     try {
       const result = await postJson<{ changed: boolean; heartbeat: HeartbeatPolicy }>({
         action: "service-heartbeat", name: choice, path: name,
@@ -300,6 +351,7 @@ export function RunitHealthPanel() {
     setBusy(serviceName)
     setNotice(null)
     setError(null)
+    setHttpResult(null)
     try {
       // A saved browser review is not permission to act on a later state.
       // The server independently re-attests ownership and the retry budget.
@@ -476,6 +528,44 @@ export function RunitHealthPanel() {
             Last matching heartbeat output: {new Date(readback.heartbeat.lastOutputAt).toLocaleString()}
           </p>}
         </div>}
+      <div className="space-y-2 rounded-md border p-3" aria-label="Manual HTTP readiness">
+        <p className="text-sm font-medium">Manual HTTP readiness · owned worker only</p>
+        <p className="text-xs text-muted-foreground">
+          The probe sends one GET to 127.0.0.1 only if the listener can be proven
+          to belong to this worker's corroborated PID. It never follows redirects,
+          supplies credentials, or stores a schedule. An unverified socket is never probed.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <label className="text-xs">Local port (1024–65535)
+            <input aria-label="Worker loopback port" type="number" min={1024} max={65535}
+              value={httpPort} onChange={event => { setHttpPort(event.target.value); setHttpResult(null) }}
+              className="mt-1 block w-32 rounded-md border bg-background p-2 text-sm"
+              placeholder="3000" />
+          </label>
+          <label className="text-xs">Path (no query parameters)
+            <input aria-label="Worker readiness path" type="text" maxLength={97}
+              value={httpPath} onChange={event => { setHttpPath(event.target.value); setHttpResult(null) }}
+              className="mt-1 block w-48 rounded-md border bg-background p-2 text-sm"
+              placeholder="/health" />
+          </label>
+        </div>
+        <Button size="sm" variant="outline" disabled={busy !== null ||
+          !/^[0-9]{4,5}$/.test(httpPort) ||
+          Number(httpPort) < 1024 || Number(httpPort) > 65535 ||
+          !/^\/(?:[a-zA-Z0-9._~-]|\/){0,96}$/.test(httpPath) ||
+          httpPath.startsWith("//") || httpPath.includes("/../") ||
+          httpPath.endsWith("/..")}
+          onClick={() => void inspectHttp()}>
+          {busy === "__http__" ? "Checking…" : "Check owned HTTP endpoint once"}
+        </Button>
+        {httpResult && <div role="status" className="space-y-1 text-xs">
+          <p>HTTP readiness: {httpResult.status}
+            {httpResult.httpStatus !== null ? " · HTTP " + httpResult.httpStatus : ""}
+            {" · " + httpResult.reason}</p>
+          <p>Observed: {new Date(httpResult.checkedAt).toLocaleString()}.
+            Readiness is a point-in-time result only.</p>
+        </div>}
+      </div>
       {readback.process.status === "observed" &&
         <p className="text-xs text-muted-foreground">
           Proc start ticks: {readback.process.startTicks} · same-UID process,
