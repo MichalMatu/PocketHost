@@ -11,6 +11,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
 import TermuxCenterPage from "@/app/termux/page"
+import ServicesOverviewPage from "@/app/services/services-overview-page"
 
 const time = "2026-11-07T13:00:00.000Z"
 const siteId = "site-" + "a".repeat(32)
@@ -167,31 +168,24 @@ describe("H3 strict read-only contracts", () => {
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
 
-  it("keeps only the runit inventory, without loading individual service diagnostics", async () => {
-    const calls = mount("services")
-    expect(await screen.findByText("Runit services")).toBeTruthy()
-    expect(screen.getByRole("navigation", { name: "Service workspaces" })).toBeTruthy()
-    expect(screen.getByRole("link", { name: /PhotoMap \(test\)/ }).getAttribute("href"))
-      .toBe("/services/photomap")
-    expect(screen.queryByText("IleStoi / wreckscanner")).toBeNull()
-    expect(screen.queryByText("Cloudflare Tunnel / cloudflared")).toBeNull()
-    expect(screen.queryByText("SSH / sshd")).toBeNull()
-    expect(screen.queryByText("Mosquitto / MQTT")).toBeNull()
-    expect(screen.queryByText("IleStoi / healthwatch")).toBeNull()
-    expect(screen.queryByText("Local Agent & PocketHost")).toBeNull()
-    const user = userEvent.setup()
-    const inventory = await screen.findByText(/Protected runit inventory \(3\)/)
-    const details = inventory.closest("details")
-    expect(details?.hasAttribute("open")).toBe(false)
-    await user.click(inventory)
-    expect(details?.hasAttribute("open")).toBe(true)
-    expect(screen.getByText("pockethost-panel")).toBeTruthy()
-    expect(screen.getAllByText("Panel · read-only")).toHaveLength(2)
-    const registerButtons = screen.getAllByRole("button", { name: "Register" })
-    expect(registerButtons).toHaveLength(1)
-    expect(registerButtons[0].getAttribute("title")).toMatch(/does not start/)
-    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/observability")).toBe(false)
-    expect(calls.mock.calls.some(call => String(call[0]).includes("diagnostics"))).toBe(false)
-    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
+  it("navigates from the generic Services overview without loading foreign inventories", () => {
+    const calls = vi.fn()
+    vi.stubGlobal("fetch", calls)
+    render(<MemoryRouter><ServicesOverviewPage /></MemoryRouter>)
+    expect(screen.getByRole("navigation", { name: "Service management areas" })).toBeTruthy()
+    for (const [label, url] of [
+      ["Runit services", "/services/runit"],
+      ["Autostart", "/services/autostart"],
+      ["Hosting workloads", "/services/hosting"],
+      ["Health checks", "/services/health"],
+      ["Local Agent", "/local-agent"],
+      ["Cloudflare Tunnel", "/services/cloudflare"],
+      ["SSH", "/services/ssh"],
+      ["Mosquitto MQTT", "/services/mqtt"],
+    ]) {
+      expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(url)
+    }
+    expect(screen.queryByText(/PhotoMap|IleStoi|wreckscanner/)).toBeNull()
+    expect(calls).not.toHaveBeenCalled()
   })
 })
