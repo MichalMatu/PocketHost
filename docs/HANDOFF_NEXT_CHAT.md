@@ -27,7 +27,7 @@ purpose: A8 development handoff with exact live SHA and QA release gate
 ## Next action
 
 1. **Global tests OFF — prior stage QA consent revoked.** On next code iteration, use fresh `main` and exact live SHA, then publish one guarded A8 FAST FLOW task **without** any test flag. Never run tests, lint, formatting, typecheck or smoke on your own.
-2. If owner wants tests, ask for a fresh, explicit one-run scope and exact SHA. Only then use the independent `verify-changed.mjs --execute --approved-head=<SHA>` on A8. Never bundle testing with deployment.
+2. If owner wants tests, ask for a fresh, explicit one-run scope and exact SHA. Only then use the independent `verify-changed.mjs --execute --approved-head=<SHA> --approved-checks=<explicit-categories>` on A8 (only categories agreed for that exact revision). Never bundle testing with deployment.
 3. On guarded deployment PASS, read exact SHA/PID/start ticks, basic HTTP and protected services; share [MVP plan](MVP_EXECUTION_PLAN.md) stage status. Failed ownership or unknown receipt means HOLD, not retry.
 
 **Stages S1–S4 remain IN_PROGRESS; full S5 acceptance is not complete.** A successful build or HTTP 200 alone is not product acceptance.
