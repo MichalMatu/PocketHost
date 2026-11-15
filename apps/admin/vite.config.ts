@@ -2,6 +2,7 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
+import { inspectTermuxBoot } from "../../src/modules/host/termux-boot-inspection.ts"
 import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflare-tunnel-diagnostics.ts"
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
@@ -1431,6 +1432,7 @@ function termuxAdminApi(): Plugin {
                   archived: services.archivedWorkers(),
                 }
               })() :
+              mode === "service-boot" && url.searchParams.size === 1 ? inspectTermuxBoot() :
               mode === "service-health" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
               mode === "service-recovery" && url.searchParams.size === 2 &&
