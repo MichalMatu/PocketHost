@@ -596,15 +596,16 @@ export function RunitServiceActions({
     void refresh().catch(() => { if (active) setError("Runit services unavailable") })
     return () => { active = false }
   }, [refreshToken])
-  const readServiceLogs = async (service: RunitEntry) => {
+  const readServiceLogs = async (name: string) => {
+    if (busy) return
     setBusy(true); setError(null)
     try {
-      const result = await action<{ lines: string[] }>({ action: "service-logs", path: service.name })
+      const result = await action<{ lines: string[] }>({ action: "service-logs", path: name })
       if (!Array.isArray(result.lines) || result.lines.length > 100 ||
           !result.lines.every(line => typeof line === "string" && line.length <= 240))
         throw new Error("Invalid runit logs")
-      setServiceLogs({ name: service.name, lines: result.lines })
-    } catch { setError("Registered runit service log unavailable.") }
+      setServiceLogs({ name, lines: result.lines })
+    } catch { setError("Attested service log unavailable. Verify archive identity before retrying.") }
     finally { setBusy(false) }
   }
   const perform = async (name: "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
@@ -755,7 +756,7 @@ export function RunitServiceActions({
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
-            onClick={() => void readServiceLogs(service)}>Logs</Button>
+            onClick={() => void readServiceLogs(service.name)}>Logs</Button>
           {service.template &&
             <Button size="sm" variant="outline"
               disabled={busy || service.state !== "stopped" || service.enabled !== false}
@@ -874,8 +875,9 @@ export function RunitServiceActions({
       aria-label="Archived PocketHost workers">
       <p className="text-sm font-medium">Archived workers ({archived.length})</p>
       <p className="text-xs text-muted-foreground">
-        Archive retains service code and logs. Restore re-attests the exact original
-        definition and returns it stopped with autostart disabled; it cannot adopt an external unit.
+        Archive retains service code and logs. Saved logs can be read only for an
+        independently attested archived definition. Restore returns it stopped with
+        autostart disabled; it cannot adopt an external unit.
         Entries in conflict or with changed identity are read-only and require inspection.
       </p>
       {archived.map(entry => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={entry.name}>
@@ -887,8 +889,12 @@ export function RunitServiceActions({
               entry.identity === "conflict" ? "Archive/live conflict · blocked" : "Identity changed · blocked"}</Badge>
           </div>
         </div>
-        <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
-          onClick={() => void restoreWorker(entry)}>Restore service</Button>
+        <div className="flex flex-wrap gap-1">
+          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+            onClick={() => void readServiceLogs(entry.name)}>Saved logs</Button>
+          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+            onClick={() => void restoreWorker(entry)}>Restore service</Button>
+        </div>
       </div>)}
     </section>}
     {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">

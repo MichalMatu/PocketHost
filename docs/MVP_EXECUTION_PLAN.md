@@ -274,6 +274,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S1/S2 — dostarczenie na A8, 2026-11-15:** kod `0659b5635f3af16b01c55986e1e5754afcf5e20d`, zadanie `pockethost-a8-standalone-lifecycle-lock-20261115-v1`: terminalne `done`, exit 0, `PocketHostFastFlow PASS`, live SHA `0659b5635f3af16b01c55986e1e5754afcf5e20d`, PID 16665, start ticks 16326083, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Blokada współbieżności jest wdrożona, lecz **bez testów funkcjonalnych** i nie zamyka S1/S2 ani Services.
 
+**S2 — odczyt logów z archiwum (kod przed testami):** `Runit services → Archived workers → Saved logs` odczytuje zachowany plik `current` bez przywracania workera, tylko po potwierdzeniu dokładnego wpisu archiwum i niezmienionych prywatnych skryptów/markera. Odczyt ma ograniczenie rozmiaru, symlink/owner/inode check oraz ponowną kontrolę tożsamości po czytaniu. Stan `changed`/`conflict` nie pozwala na odczyt ani restore. Testy negatywne: podmiana markera, link w logach, zniknięcie/przełączenie archiwum w trakcie czytania, brak logu, brak dotykania cudzych usług. **S2 IN_PROGRESS; etap Services nieodebrany.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

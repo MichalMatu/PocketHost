@@ -358,6 +358,23 @@ Start, contention while a command is held, replaced and crash-left locks,
 and protected service isolation. No interim suite or physical acceptance is
 claimed. S1/S2 stay IN_PROGRESS.
 
+## S2 archived worker log visibility (partial)
+
+Archived builtin workers retain their own `svlogd` files, but lose the live
+registration by design. The Services archive list now offers **Saved logs**
+without restoring or starting any process. `TermuxServiceAdmin.logs` grants
+read-only access only to an already-verified live service or an exact archive
+entry whose unpublished source, marker, logger and instance are independently
+attested. It opens `current` with `O_NOFOLLOW`, bounds the file size, verifies
+fd/path identity, sanitizes lines, and rechecks enrollment or archived
+identity after reading. A changed/conflicting entry or foreign service has
+no access. No polling, background work or extra execution.
+
+S5 tests pending: archived log present/missing, symlink/inode replacement,
+marker drift, concurrent archive/restore, foreign/protected unit denial and
+UI readback. Still not accepted as complete S2; separate safe permanent
+retirement and custom app enrollment are outstanding.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

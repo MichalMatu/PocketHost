@@ -2,6 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
+  constants,
   openSync,
   closeSync,
   fstatSync,
@@ -1241,23 +1242,85 @@ export class TermuxServiceAdmin {
     };
   }
 
+  /**
+   * Read the retained log of a registered service OR an exact, independently
+   * attested archived builtin worker. Archived units have no published runit
+   * symlink or registration, so ordinary live ownership would reject them.
+   * This grants read-only log access, never lifecycle or archive restoration.
+   */
   logs(name: string): { lines: string[] } {
     valid(name);
-    const registrations = this.registry();
-    const current = this.target(name);
-    if (this.identity(name, current, registrations) !== 'verified')
-      throw new Error('Service identity not verified');
+    if (isReserved(name)) throw new Error('Protected service');
+    let liveTarget: string | null = null;
+    try {
+      const target = this.target(name);
+      if (this.identity(name, target, this.registry()) === 'verified')
+        liveTarget = target;
+    } catch {
+      // A missing or changed live unit must independently prove an archive.
+    }
+    const archived = liveTarget === null
+      ? this.archivedRegistry().find((entry) => entry.name === name)
+      : undefined;
+    if (liveTarget === null && (!archived || !this.offlineWorkerIdentity(archived)))
+      throw new Error('Service or archived worker identity not verified');
+    const reattest = (): boolean => {
+      if (liveTarget !== null) {
+        try {
+          return this.target(name) === liveTarget &&
+            this.identity(name, liveTarget, this.registry()) === 'verified';
+        } catch {
+          return false;
+        }
+      }
+      if (!archived) return false;
+      const record = this.archivedRegistry().find((entry) => entry.name === name);
+      return !!record && record.template === archived.template &&
+        record.instanceId === archived.instanceId &&
+        record.runSha256 === archived.runSha256 &&
+        record.target === archived.target &&
+        this.offlineWorkerIdentity(record);
+    };
     const root = path.join(PREFIX, 'var', 'log', 'sv', name);
     const file = path.join(root, 'current');
-    if (!existsSync(root)) return { lines: [] };
-    if (!lstatSync(root).isDirectory() || lstatSync(root).isSymbolicLink())
-      throw new Error('Unsafe log folder');
-    if (!existsSync(file)) return { lines: [] };
-    const stat = lstatSync(file);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 4 * 1024 * 1024)
-      throw new Error('Unsafe service log');
-    const lines = readFileSync(file, 'utf8')
-      .slice(-20000)
+    let raw = '';
+    try {
+      const folder = lstatSync(root);
+      if (!folder.isDirectory() || folder.isSymbolicLink() ||
+          folder.uid !== process.getuid?.() || (folder.mode & 0o022) !== 0 ||
+          realpathSync(root) !== root)
+        throw new Error('Unsafe service log directory');
+      try {
+        const initial = lstatSync(file);
+        if (!initial.isFile() || initial.isSymbolicLink() ||
+            initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
+            (initial.mode & 0o022) !== 0 || initial.size > 4 * 1024 * 1024)
+          throw new Error('Unsafe service log');
+        const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+        try {
+          const before = fstatSync(fd);
+          if (!before.isFile() || before.nlink !== 1 ||
+              before.uid !== initial.uid || before.dev !== initial.dev ||
+              before.ino !== initial.ino || before.size > 4 * 1024 * 1024)
+            throw new Error('Service log changed during opening');
+          raw = readFileSync(fd, 'utf8');
+          const after = fstatSync(fd);
+          const current = lstatSync(file);
+          if (after.dev !== before.dev || after.ino !== before.ino ||
+              current.dev !== before.dev || current.ino !== before.ino ||
+              after.size > 4 * 1024 * 1024 || current.nlink !== 1)
+            throw new Error('Service log changed during reading');
+        } finally {
+          closeSync(fd);
+        }
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    }
+    if (!reattest()) throw new Error('Service identity changed during log read');
+    const lines = raw.slice(-20000)
       .split(/\r?\n/)
       .slice(-100)
       .map((line) =>
