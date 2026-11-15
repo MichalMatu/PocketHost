@@ -298,8 +298,9 @@ export default function SystemPage() {
   const storageAvailable = host?.runtime.storage?.availableMiB ?? null
   if (storageAvailable != null && storageAvailable <= 512)
     alerts.push("Low Termux storage · " + Math.round(storageAvailable) + " MiB left")
-  if (host?.services.some(service => service.state === "stopped"))
-    alerts.push("Observed service stopped · see Services")
+  const stoppedServices = host?.services.filter(service => service.state === "stopped").length ?? 0
+  if (stoppedServices > 0)
+    alerts.push(stoppedServices + " observed services stopped · verify desired state in Services")
   if (host?.services.some(service => service.state === "unknown"))
     alerts.push("Some service states unknown")
   if (internet?.state === "unreachable") alerts.push("Internet TCP probe failed")
@@ -320,9 +321,10 @@ export default function SystemPage() {
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
   const serviceUnknown = host?.services.some(service => service.state === "unknown") ?? false
   const active = !sampledAt && loading
-  const bridgeState = bridge?.connected && bridge.authorized
-    ? cpu === null ? "Android Bridge: CPU sample unavailable" : "Android Bridge: authorized"
-    : "Android Bridge: disconnected or unauthorized"
+  const bridgeState = !bridge ? "Android Bridge: status API unavailable"
+    : bridge.connected && bridge.authorized
+      ? cpu === null ? "Android Bridge: CPU sample unavailable" : "Android Bridge: authorized"
+      : "Android Bridge: disconnected or unauthorized"
   const bridgeHealth = !bridge ? "Bridge status API unavailable"
     : bridge.connected ? bridge.authorized ? "Connected · authorized" : "Connected · authorization required"
     : "Disconnected · last status received"
@@ -349,13 +351,13 @@ export default function SystemPage() {
           <SummaryCard title="Termux storage" value={host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null}
             icon={HardDrive} loading={active} detail="Free on the Termux home filesystem" />
           <SummaryCard title="Observed services" value={servicesRunning === null ? null : servicesRunning + " / " + host!.services.length}
-            icon={ServerCog} loading={active} detail={serviceUnknown ? "Some states unknown · read-only" : "External · read-only"} />
+            icon={ServerCog} loading={active} detail={serviceUnknown ? "Some states unknown · read-only" : "Observed runit units · read-only"} />
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
-              <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API</CardDescription>
+              <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API / sysfs</CardDescription>
               <CardTitle className="text-lg tabular-nums">{batteryPercent === null ? "Unavailable" : batteryPercent + "%"}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">

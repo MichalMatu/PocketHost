@@ -10,6 +10,7 @@ import {
   observeDashboardTelemetry,
   parseDashboardHistoryRoute,
   parseDashboardBattery,
+  withDashboardBatteryFallback,
   probeDashboardDns,
 } from '../../src/modules/host/dashboard-telemetry-history.ts';
 
@@ -191,6 +192,18 @@ test('Termux battery parser admits only bounded real percent, charge status and 
   for (const raw of ['{}', 'not-json', '[]', '{"percentage":-3}', '{"percentage":"88"}']) {
     assert.equal(parseDashboardBattery(raw).batteryPercent, null);
   }
+});
+
+test('battery fallback uses genuine sysfs percent without fabricating charging or temperature', () => {
+  const unavailable = { batteryPercent: null, batteryCharging: null, batteryTempC: null };
+  assert.deepEqual(withDashboardBatteryFallback(unavailable, { state: 'ok', value: 79 }), {
+    batteryPercent: 79, batteryCharging: null, batteryTempC: null,
+  });
+  assert.deepEqual(withDashboardBatteryFallback(unavailable, { state: 'permission-denied', value: null }), unavailable);
+  assert.deepEqual(withDashboardBatteryFallback(
+    { batteryPercent: 45, batteryCharging: true, batteryTempC: 35 },
+    { state: 'ok', value: 78 },
+  ), { batteryPercent: 45, batteryCharging: true, batteryTempC: 35 });
 });
 
 test('DNS measures valid response and reports failures without retaining an IP', async () => {

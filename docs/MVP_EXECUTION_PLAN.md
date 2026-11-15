@@ -332,6 +332,20 @@ S5 zawiera testy odmowy drift/niewłaściwej historii/pełnego quota.
 
 **S1/S2 Python history — potwierdzone wdrożenie 2026-11-15:** task `pockethost-a8-python-history-restore-20261115-v1` terminal `done`/exit 0, FAST FLOW PASS, live `a8287588bac3e631e36549fa7000427a6c3142eb`, PID 23909, start ticks 16959765, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Historia max 8 wersji, restore przez CAS ze stanem stopped/autostart disabled, bez wykonania skryptu. Brak weryfikacji UI/funkcji na konkretnym zapisanym workerze i brak IP LAN w receipt. Etap S1/S2/S3/S4 nadal `IN_PROGRESS`. **S5 dopiero po zamknięciu całego Services.**
 
+**Audyt Dashboard na A8 — poprawki przed kolejnym sprintem (2026-11-15):**
+Odczyt A8 (zadanie `pockethost-a8-dashboard-audit-20261115-v1`) potwierdził
+HTTP 200 dla host, history, network, monitoring, internet; bridge HTTP 503.
+Collector miał `state=ok`, 62 punkty ostatniej godziny, ale klient
+używał `z.record(z.enum(...))` w Zod v4 i odrzucał poprawne częściowe
+`serviceStates`. Poprawiono na `z.partialRecord` oraz dodano testy
+pustej i częściowej mapy, bez akceptowania dowolnych nazw.
+Collector baterii korzysta teraz z istniejącego read-only sysfs fallback,
+gdy brak opcjonalnego `termux-battery-status`; bez zgadywania statusu ładowania.
+UI rozróżnia brak API Bridge od rzeczywistej odmowy uprawnień oraz
+traktuje zatrzymane usługi jako stan wymagający sprawdzenia,
+nie automatycznie awarię. Backendowe testy bazowe zwróciły exit=0;
+pełne S5/odbiór i fizyczna kwalifikacja Bridge nadal otwarte.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

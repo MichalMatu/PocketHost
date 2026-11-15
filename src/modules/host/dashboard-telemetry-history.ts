@@ -6,6 +6,7 @@ import { lstatSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSy
 import os from 'node:os';
 import path from 'node:path';
 import { readHostSnapshot } from './host-snapshot.ts';
+import { readBatteryPercent } from './observability-probes.ts';
 import { readCompanionStatus } from './shizuku-companion.mjs';
 import { probeInternetConnectivity } from './internet-connectivity.ts';
 
@@ -582,8 +583,23 @@ export function parseDashboardBattery(raw: string): DashboardBattery {
   }
 }
 
-/** Reuse the already installed Termux:API, no package installation or shell. */
+/** Prefer Termux:API and use the independently available Android sysfs
+ * percent only when the optional Termux:API binary/permission is unavailable.
+ * A percent fallback never invents charging or temperature readings. */
+export function withDashboardBatteryFallback(
+  api: DashboardBattery,
+  direct: ReturnType<typeof readBatteryPercent>,
+): DashboardBattery {
+  return {
+    ...api,
+    batteryPercent: api.batteryPercent ??
+      (direct.state === 'ok' && validNumber(direct.value, 100) ? direct.value : null),
+  };
+}
 export async function readDashboardBattery(): Promise<DashboardBattery> {
+  let api: DashboardBattery = {
+    batteryPercent: null, batteryCharging: null, batteryTempC: null,
+  };
   try {
     const result = await execFileAsync(BATTERY_COMMAND, [], {
       timeout: 6000,
@@ -591,10 +607,12 @@ export async function readDashboardBattery(): Promise<DashboardBattery> {
       encoding: 'utf8',
       shell: false,
     });
-    return parseDashboardBattery(result.stdout);
+    api = parseDashboardBattery(result.stdout);
   } catch {
-    return { batteryPercent: null, batteryCharging: null, batteryTempC: null };
+    // Optional Termux:API unavailable; use read-only sysfs percent below.
   }
+  return api.batteryPercent !== null
+    ? api : withDashboardBatteryFallback(api, readBatteryPercent());
 }
 
 export type DashboardDns = { dnsMs: number | null; dnsFailed: boolean | null };
