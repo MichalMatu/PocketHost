@@ -23,6 +23,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.ts';
 import { evaluateHealthPolicy } from '../../shared/hosting-health-policy.ts';
+import { probeOwnedWorkerHttp, validHttpPort, validHttpPath,
+  type WorkerHttpReadiness } from './worker-loopback-readiness.ts';
 import {
   WorkerHeartbeatPolicy,
   type HeartbeatReadback,
@@ -2783,6 +2785,54 @@ export class TermuxServiceAdmin {
       lastLogWriteAt,
       checkedAt: new Date().toISOString(),
     };
+  }
+
+  /**
+   * Explicit, on-demand HTTP check for an attested standalone worker.
+   * The browser never supplies a hostname, PID, scheme, shell command or
+   * arbitrary URL. The probe itself verifies the 127.0.0.1 listener belongs
+   * to this worker's corroborated same-UID PID; unavailable proof means no GET.
+   * The worker identity and PID start ticks are checked again afterward.
+   * This request never saves a policy or starts a background check.
+   */
+  async inspectWorkerHttp(
+    name: string, port: number, urlPath: string,
+  ): Promise<WorkerHttpReadiness> {
+    valid(name);
+    if (isReserved(name) || !validHttpPort(port) || !validHttpPath(urlPath))
+      throw new RangeError('Unsafe worker HTTP readiness request');
+    const registrations = this.registry();
+    const target = this.target(name);
+    const template = this.managedWorkerTemplate(name, target, registrations);
+    if (!template) throw new Error('HTTP readiness requires an attested standalone worker');
+    const before = this.inspectHealth(name);
+    if (before.process.status !== 'observed' || !before.process.pid) {
+      return { name, status: 'unverified', httpStatus: null,
+        reason: 'process-unverified', checkedAt: new Date().toISOString() };
+    }
+    let check: WorkerHttpReadiness;
+    try {
+      check = await probeOwnedWorkerHttp(name, before.process.pid, port, urlPath);
+    } catch {
+      check = { name, status: 'unverified', httpStatus: null,
+        reason: 'transport-unverified', checkedAt: new Date().toISOString() };
+    }
+    try {
+      const after = this.inspectHealth(name);
+      if (after.process.status !== 'observed' ||
+          after.process.pid !== before.process.pid ||
+          after.process.startTicks !== before.process.startTicks ||
+          after.process.uptimeSeconds === null ||
+          before.process.uptimeSeconds === null ||
+          after.process.uptimeSeconds < before.process.uptimeSeconds ||
+          this.target(name) !== target ||
+          this.managedWorkerTemplate(name, target, this.registry()) !== template)
+        throw new Error('Worker identity changed during HTTP readiness check');
+      return check;
+    } catch {
+      return { name, status: 'unverified', httpStatus: null,
+        reason: 'worker-changed', checkedAt: new Date().toISOString() };
+    }
   }
 
   /**
