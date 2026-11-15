@@ -258,6 +258,8 @@ Do bramy testowej S5 dodać odmowę dla niezerowego exit, zmiany źródła
 w trakcie polecenia i cofnięcia własności po wywołaniu. **S2 pozostaje
 `[ ]` do testów i odbioru.**
 
+**S2 — wdrożenie i odczyt A8, 2026-11-15:** commit `fd171be3f5a532e2a639993f43bc09a6487080e5`; jednorazowe zadanie `pockethost-a8-runit-lifecycle-readback-20261115-v1` — terminalne `done`, `exit_code=0`, FAST FLOW `PASS`, uruchomiony dokładnie SHA `fd171be3f5a532e2a639993f43bc09a6487080e5`, PID 29908, start ticks 16238126, HTTP 200, usługi chronione bez zmian, `tests=not-run`. **S2 i cały etap Services pozostają IN_PROGRESS**; testy pozytywne/negatywne S5 dopiero przy zakończeniu funkcjonalności.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
