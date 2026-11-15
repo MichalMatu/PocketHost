@@ -61,6 +61,16 @@ export function planChangedChecks(
     } else if (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file)) {
       adminTypes = true;
       adminLint.push(file.slice('apps/admin/'.length));
+    } else if (file === 'apps/admin/vite.config.ts') {
+      // This is the exact DEV API registration boundary. Changes require
+      // typechecking, route-preservation and targeted service UI regression.
+      // Other config or dependency changes remain MANUAL_REVIEW.
+      adminTypes = true;
+      adminLint.push('vite.config.ts');
+      node.add('tests/quality/admin-preservation.test.mjs');
+      ui.add('tests/termux-admin.interaction.test.tsx');
+      ui.add('tests/protected-services-panel.interaction.test.tsx');
+      ui.add('tests/system-dashboard.interaction.test.tsx');
     } else if (file.startsWith('scripts/') && file.endsWith('.mjs')) {
       rootLint.push(file);
       structure = true;

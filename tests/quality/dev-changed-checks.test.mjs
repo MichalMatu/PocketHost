@@ -129,3 +129,16 @@ test('changed test is run once and invalid paths are rejected', () => {
   ]);
   assert.equal(plan.review.length, 1);
 });
+
+test('exact Vite DEV API config change requires targeted contract and UI checks', () => {
+  const plan = planChangedChecks(['apps/admin/vite.config.ts'], deps);
+  assert.deepEqual(plan.review, []);
+  assert.ok(command(plan, 'admin incremental typecheck'));
+  assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));
+  const ui = command(plan, 'ui tests').argv;
+  assert.ok(ui.includes('tests/termux-admin.interaction.test.tsx'));
+  assert.ok(ui.includes('tests/protected-services-panel.interaction.test.tsx'));
+  assert.ok(ui.includes('tests/system-dashboard.interaction.test.tsx'));
+  const unsafe = planChangedChecks(['apps/admin/unknown.config.ts'], deps);
+  assert.ok(unsafe.review.some((text) => text.includes('Explicit impact review')));
+});
