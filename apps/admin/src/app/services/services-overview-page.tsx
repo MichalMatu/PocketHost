@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { ChevronRight, ServerCog } from "lucide-react"
+import { ChevronRight } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { navGroups } from "@/config/navigation"
 
