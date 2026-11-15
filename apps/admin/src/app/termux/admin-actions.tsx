@@ -1055,6 +1055,21 @@ export function RunitServiceActions({
       setError("Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
     } finally { setBusy(false) }
   }
+  const autostartWorkers = services?.filter(item =>
+    item.control === "standalone" && item.registered && !item.protected &&
+    !isPanelService(item)) ?? []
+  const autostartReview = {
+    enabled: autostartWorkers.filter(item => item.enabled === true).length,
+    disabled: autostartWorkers.filter(item => item.enabled === false).length,
+    unknown: autostartWorkers.filter(item => item.enabled == null ||
+      item.state === "unknown").length,
+    mismatch: autostartWorkers.filter(item =>
+      item.enabled !== null && item.enabled !== undefined &&
+      ((item.enabled && item.state === "stopped") ||
+       (!item.enabled && item.state === "running"))).length,
+    staged: autostartWorkers.filter(item => item.template === "python-source-v1" ||
+      item.template === "node-source-v1").length,
+  }
   const counts = services ? {
     owned: services.filter(isPanelService).length,
     managed: services.filter(item => item.control === "standalone").length,
@@ -1096,6 +1111,25 @@ export function RunitServiceActions({
            service.identityReason === "no-enrollment" ? "Discovered only; no verified enrollment. Commands blocked." :
            "Protected system service. Commands blocked."}
         </p>}
+      {mode === "autostart" && service.control === "standalone" && <p
+        className="text-xs text-muted-foreground"
+        role={service.enabled == null ||
+          (service.enabled && service.state === "stopped") ||
+          (service.enabled === false && service.state === "running") ? "alert" : undefined}>
+        {service.enabled == null || service.state === "unknown"
+          ? "Runit policy or process state unverified. No action inferred."
+          : service.template === "python-source-v1" || service.template === "node-source-v1"
+            ? service.enabled || service.state === "running"
+              ? "Custom source is active despite LAN execution restrictions. Inspect locally; do not assume ownership of its process."
+              : "Custom source staged and stopped. LAN activation remains blocked."
+            : service.enabled && service.state === "running"
+              ? "Runit policy: start enabled; supervisor reports running. Application readiness not verified."
+              : service.enabled && service.state === "stopped"
+                ? "Policy/state mismatch: runit enabled, worker stopped. Inspect Health; no automatic recovery."
+                : !service.enabled && service.state === "running"
+                  ? "Policy/state mismatch: runit disabled, worker still running. Inspect before changing policy."
+                  : "Runit policy: manual stop recorded; worker stopped. Android boot behavior not verified."}
+      </p>}
       {service.state === "unknown" && mode === "lifecycle" &&
         <p className="text-xs text-muted-foreground">
           Runtime state unknown. Start, Stop and Restart require a confirmed state.
@@ -1153,9 +1187,29 @@ export function RunitServiceActions({
     </div>
     <p className="text-muted-foreground text-xs">
       {mode === "autostart"
-        ? "Autostart changes apply only to PocketHost standalone workers. Project-created units are managed by their own provisioner. Each change is confirmed against the down marker; enable/disable may start/stop the worker. Android and Termux:Boot are separate."
+        ? "Runit state is read live and compared with its saved policy. Only attested standalone workers have controls. Enabling may start a fixed worker immediately; custom source execution and Android boot changes are blocked. No automatic reconciliation."
         : "Standalone workers are managed here. Other attested services remain visible but their lifecycle stays with the creating project or provisioner. Unregistered and protected services are read-only; process liveness is not readiness."}
     </p>
+    {mode === "autostart" && services && <section className="space-y-2 rounded-md border p-3"
+      aria-label="Runit desired state reconciliation">
+      <h4 className="text-sm font-medium">Runit desired vs observed</h4>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline">Enabled: {autostartReview.enabled}</Badge>
+        <Badge variant="outline">Disabled: {autostartReview.disabled}</Badge>
+        <Badge variant="outline">Unknown: {autostartReview.unknown}</Badge>
+        <Badge variant="outline">Mismatched: {autostartReview.mismatch}</Badge>
+        <Badge variant="outline">Staged sources: {autostartReview.staged}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Counts cover attested standalone workers only. Desired policy comes from the runit down
+        marker; observed state comes from the current supervisor. This is not readiness or
+        Android boot verification. No automatic reconciliation is performed.
+      </p>
+      {autostartReview.mismatch > 0 && <p role="alert" className="text-xs">
+        At least one owned service differs from the saved runit policy. Inspect individually
+        before issuing commands; no corrective action was started.
+      </p>}
+    </section>}
     {mode === "lifecycle" && <>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-muted-foreground text-xs">
