@@ -178,10 +178,11 @@ test('M3 cannot adopt preexisting service directory or symlink', (t) => {
   assert.throws(() => host.preview(project.id), /collision/);
 });
 
-test('M2 existing runit refuses unregistered one-shot and protected service', async (t) => {
+test('M2 existing runit refuses protected and unregistered one-shot operations', async (t) => {
   const { home, serviceRoot } = fixture(t);
   const admin = new TermuxServiceAdmin(serviceRoot, path.join(home, 'registry.json'));
-  await assert.rejects(admin.apply('once', 'cloudflared'), /Protected/);
+  await assert.rejects(admin.apply('once', 'sshd'), /Protected/);
+  await assert.rejects(admin.apply('once', 'cloudflared'), /unavailable/);
   await assert.rejects(admin.apply('once', 'unknown-unit'), /unavailable/);
 });
 
