@@ -65,6 +65,51 @@ export function prepareChangedVerification(plan) {
   return { review: reasons, checks: reasons.length ? [] : sorted };
 }
 
+/**
+ * One manual run executes ONLY explicitly approved check categories from the
+ * prepared exact-SHA plan; no "all" or implicit suite expansion option.
+ * The consent itself remains a separate user decision, not a CLI capability.
+ */
+const approvalLabels = new Map([
+  ['format', 'changed-file format'],
+  ['structure', 'structure'],
+  ['boundaries', 'boundaries'],
+  ['docs', 'docs'],
+  ['markdown', 'changed markdown lint'],
+  ['root-lint', 'root changed-file lint'],
+  ['admin-lint', 'admin changed-file lint'],
+  ['root-types', 'root incremental typecheck'],
+  ['admin-types', 'admin incremental typecheck'],
+  ['node', 'node tests'],
+  ['ui', 'ui tests'],
+]);
+
+export function selectApprovedVerification(checks, scope) {
+  if (
+    !Array.isArray(checks) ||
+    typeof scope !== 'string' ||
+    !/^[a-z-]+(?:,[a-z-]+)*$/.test(scope) ||
+    scope.length > 160
+  )
+    throw new Error('Invalid explicit QA scope');
+  const ids = scope.split(',');
+  if (new Set(ids).size !== ids.length ||
+      ids.some((id) => id !== 'syntax' && !approvalLabels.has(id)))
+    throw new Error('Duplicate or unknown approved QA scope');
+  const matched = new Map(ids.map((id) => [id, 0]));
+  const selected = checks.filter((check) => {
+    const id = check.label.startsWith('syntax: ')
+      ? 'syntax'
+      : [...approvalLabels].find(([, label]) => label === check.label)?.[0];
+    if (!id || !matched.has(id)) return false;
+    matched.set(id, matched.get(id) + 1);
+    return true;
+  });
+  if (selected.length === 0 || [...matched.values()].some((count) => count === 0))
+    throw new Error('Approved QA scope is absent from this exact-source plan');
+  return selected;
+}
+
 export function runChangedVerification(checks, execute) {
   const results = [];
   const failedChecks = [];

@@ -9,7 +9,11 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { prepareChangedVerification, runChangedVerification } from './verify-changed-policy.mjs';
+import {
+  prepareChangedVerification,
+  runChangedVerification,
+  selectApprovedVerification,
+} from './verify-changed-policy.mjs';
 import { resolveTermuxCheckCommand } from './termux-check-command.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -17,8 +21,10 @@ const argv = process.argv.slice(2);
 const baseFlag = argv.filter((x) => x.startsWith('--base='));
 const executeFlags = argv.filter((x) => x === '--execute');
 const approvalFlags = argv.filter((x) => x.startsWith('--approved-head='));
+const scopeFlags = argv.filter((x) => x.startsWith('--approved-checks='));
 const execute = executeFlags.length === 1;
 const approvedHead = approvalFlags[0]?.slice('--approved-head='.length);
+const approvedScope = scopeFlags[0]?.slice('--approved-checks='.length);
 const planOnly = !execute;
 const adminLint = argv.includes('--admin-lint');
 const timeoutFlag = argv.filter((x) => x.startsWith('--timeout-ms='));
@@ -29,7 +35,8 @@ const allowed = argv.every(
     x === '--plan' ||
     x === '--admin-lint' ||
     x === '--execute' ||
-    x.startsWith('--approved-head='),
+    x.startsWith('--approved-head=') ||
+    x.startsWith('--approved-checks='),
 );
 const base = baseFlag[0]?.slice('--base='.length);
 const timeoutMs = timeoutFlag.length
@@ -41,9 +48,14 @@ const optionsValid =
   /^[0-9a-f]{7,40}$/.test(base ?? '') &&
   executeFlags.length <= 1 &&
   approvalFlags.length <= 1 &&
+  scopeFlags.length <= 1 &&
   (execute
-    ? approvalFlags.length === 1 && /^[0-9a-f]{40}$/.test(approvedHead ?? '')
-    : approvalFlags.length === 0) &&
+    ? approvalFlags.length === 1 &&
+      /^[0-9a-f]{40}$/.test(approvedHead ?? '') &&
+      scopeFlags.length === 1 &&
+      typeof approvedScope === 'string' &&
+      approvedScope.length > 0
+    : approvalFlags.length === 0 && scopeFlags.length === 0) &&
   !(execute && argv.includes('--plan')) &&
   timeoutFlag.length <= 1 &&
   Number.isSafeInteger(timeoutMs) &&
@@ -86,7 +98,7 @@ if (!optionsValid) {
     {
       status: 'INVALID_ARGUMENTS',
       reason:
-        'Plan only by default. Tests: --base=<sha> --execute --approved-head=<exact-40-hex-target-sha> (only after fresh explicit owner consent)',
+        'Plan only by default. Execution requires separate consent: --base=<sha> --execute --approved-head=<40-hex-sha> --approved-checks=<exact-check-ids>',
     },
     2,
   );
@@ -119,12 +131,16 @@ if (!optionsValid) {
     if (execute && plan.head !== approvedHead)
       throw new Error('Test approval is pinned to another source SHA; no tests executed');
     const prepared = prepareChangedVerification(plan);
+    const selectedChecks = execute
+      ? selectApprovedVerification(prepared.checks, approvedScope)
+      : prepared.checks;
     const common = {
       base,
       head: plan.head,
       changed: plan.changed,
       review: prepared.review,
-      plannedChecks: prepared.checks.map((x) => x.label),
+      plannedChecks: selectedChecks.map((x) => x.label),
+      ...(execute ? { approvedChecks: approvedScope } : {}),
       adminLint: adminLint ? 'opt-in' : 'deferred',
     };
     if (prepared.review.length) {
@@ -159,7 +175,7 @@ if (!optionsValid) {
       ) {
         throw new Error('Checkout changed after the plan; verification refused');
       }
-      const result = runChangedVerification(prepared.checks, (check) => {
+      const result = runChangedVerification(selectedChecks, (check) => {
         const began = Date.now();
         const resolved = resolveTermuxCheckCommand(check, root, process.execPath);
         const output = command(resolved.file, resolved.args, path.join(root, check.cwd));

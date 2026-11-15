@@ -5,6 +5,7 @@ import { resolveTermuxCheckCommand } from '../../scripts/dev/termux-check-comman
 import {
   prepareChangedVerification,
   runChangedVerification,
+  selectApprovedVerification,
 } from '../../scripts/dev/verify-changed-policy.mjs';
 
 const deps = {
@@ -18,6 +19,23 @@ function makePlan(changed, review = null) {
   const plan = planChangedChecks(changed, deps);
   return { ...plan, head: 'a'.repeat(40), review: review ?? plan.review };
 }
+
+test('manual QA requires exact explicit scope, never expands to every planned check', () => {
+  const planned = prepareChangedVerification(
+    makePlan(['apps/admin/src/app/screen/page.tsx']),
+  ).checks;
+  assert.deepEqual(
+    selectApprovedVerification(planned, 'ui').map((item) => item.label),
+    ['ui tests'],
+  );
+  assert.deepEqual(
+    selectApprovedVerification(planned, 'format,ui').map((item) => item.label),
+    ['changed-file format', 'ui tests'],
+  );
+  for (const bad of ['', 'all', 'ui,ui', 'ui,node', 'syntax', 'admin-lint']) {
+    assert.throws(() => selectApprovedVerification(planned, bad));
+  }
+});
 
 test('cheap format runs before expensive TypeScript and UI checks', () => {
   const check = prepareChangedVerification(makePlan(['apps/admin/src/app/screen/page.tsx']));

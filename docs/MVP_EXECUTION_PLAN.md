@@ -12,7 +12,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 ## Zasady nadrzędne
 
 - **QA / testy / lint / format / typecheck / smoke = OFF we wszystkich trybach, bezterminowo.** Zgoda z 2026-11-14 na testy po etapie została cofnięta 2026-11-15. Każde uruchomienie wymaga **nowej wyraźnej zgody** na jeden konkretny zakres i SHA. Samo zamknięcie etapu, „kontynuuj”, audyt ani deploy nie stanowią zgody.
-- **FAST FLOW to tylko code → deploy → verify.** `ops/termux/fast-flow.mjs` nie obsługuje `--tests`. Planner `changed-checks.mjs` nie obsługuje `--run`. `verify-changed.mjs` wyłącznie planuje, dopóki po nowym potwierdzeniu nie otrzyma osobnego `--execute --approved-head=<SHA>`. Patrz [DEV_ITERATION](DEV_ITERATION.md).
+- **FAST FLOW to tylko code → deploy → verify.** `ops/termux/fast-flow.mjs` nie obsługuje `--tests`. Planner `changed-checks.mjs` nie obsługuje `--run`. `verify-changed.mjs` wyłącznie planuje, dopóki po nowym potwierdzeniu nie otrzyma osobnego `--execute --approved-head=<SHA> --approved-checks=<kategorie>`. Patrz [DEV_ITERATION](DEV_ITERATION.md).
 - Weryfikacja wdrożenia (owner/PID/start ticks, exact SHA, nienaruszenie obcych usług, guarded rollback, bazowe HTTP) **zawsze obowiązuje** i nie jest testem funkcjonalnym. Błąd/niepewny wynik → **HOLD, bez automatycznej próby**.
 - **Szczególna zgoda** nadal wymagana na reboot, SSH, WAN, operacje na obcych procesach, fizyczne testy awarii, zmiany dostępu i dane użytkownika.
 - Etap `IN_PROGRESS` → `READY_FOR_ACCEPTANCE` po ukończeniu funkcjonalności i znanych dowodach → `ACCEPTED` tylko po potwierdzeniu właściciela. Bez osobnej zgody na testy wpisuj `TESTS NOT RUN`; nigdy nie udawaj przeprowadzonego QA.

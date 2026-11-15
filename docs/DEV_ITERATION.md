@@ -23,10 +23,10 @@ purpose: Permanent no-automatic-tests FAST FLOW policy
 The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` are **read-only planners** unless the latter receives a double opt-in. If the owner explicitly requests a _specific_ QA run for a _specific_ target SHA, run on verified A8 only:
 
 ```sh
-node scripts/dev/verify-changed.mjs --base=<verified-live-sha> --execute --approved-head=<exact-40-hex-target-sha>
+node scripts/dev/verify-changed.mjs --base=<verified-live-sha> --execute --approved-head=<exact-40-hex-target-sha> --approved-checks=docs,node
 ```
 
-The agent must have fresh human approval **before constructing this command**; flags are not proof of permission. An approval applies to **one run only** and is not inherited by a different SHA or a subsequent attempt. `changed-checks.mjs --run` and `fast-flow.mjs --tests` are rejected. A manual QA failure generates a bounded receipt, does not deploy anything and never retries automatically.
+Replace `docs,node` with exactly the approved check categories: `format,structure,boundaries,docs,markdown,root-lint,admin-lint,root-types,admin-types,node,ui,syntax`. Unrequested categories are not run; missing or duplicate selected categories are refused. A category such as `node` still contains the explicitly planned dependent test files, so inspect the plan and agree on its file list before approval. The agent must have fresh human approval **before constructing this command**; flags are not proof of permission. An approval applies to **one run only** and is not inherited by a different SHA or a subsequent attempt. `changed-checks.mjs --run` and `fast-flow.mjs --tests` are rejected. A manual QA failure generates a bounded receipt, does not deploy anything and never retries automatically.
 
 The manual planner orders cheap formatting, documentation, structure and lint checks before TypeScript and costly Node/UI tests; it collects inexpensive failures and skips expensive suites after a cheap failure. Reuse existing QA files and receipts; do not repeat entire passes merely to extract diagnostics.
 
