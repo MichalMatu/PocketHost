@@ -267,6 +267,31 @@ unauthenticated LAN proxy. The host still enforces source, dependencies,
 toolchain, syntax and exact ownership before a rollback can change
 a running project. S4 and stage tests remain open.
 
+## S4 cross-process recovery attempt exclusion (partial)
+
+The explicit one-shot worker recovery now holds a fixed, owner-only
+`O_EXCL` lock at `h3-worker-recovery.lock` in the private PocketHost
+state directory. This serializes the complete admission check, instance
+attestation, retry-budget write and single `sv up` request even if
+different privileged PocketHost adapters execute concurrently. The
+existing in-process HTTP mutation queue alone is not sufficient across
+two host processes.
+
+A duplicate or overlapping request is **refused**, not queued or
+automatically retried. The lock file can only be removed by the holder
+after checking its inode/device and owner again. A process crash leaves
+the lock in place for independent manual reconciliation; it never
+automatically reclaims a potentially live attempt. A refused lock
+acquisition does not consume a recovery attempt; a command error after
+the journal write does. This does **not** limit runit's own supervisor
+restart behavior or prove the service application became ready.
+
+At the Services closure gate, include competing-adapter requests,
+duplicate submissions, crash-left lock, malicious/replaced lock
+identity, two-per-rolling-hour exhaustion, cooldown, and no effects
+on protected or foreign services. No test suite has been run for this
+increment and S4 remains **IN_PROGRESS**.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

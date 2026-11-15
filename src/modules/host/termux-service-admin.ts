@@ -2,6 +2,9 @@ import { createHash, randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
+  openSync,
+  closeSync,
+  fstatSync,
   lstatSync,
   mkdirSync,
   readFileSync,
@@ -503,45 +506,82 @@ export class TermuxServiceAdmin {
   /** Explicit, once-only recovery attempt. No timer or background worker. */
   async recoverWorkerOnce(name: string, run: Exec = executeFixed):
     Promise<{ requested: true; result: HostCommandResult; review: RunitRecoveryReview }> {
-    const review = this.reviewWorkerRecovery(name);
-    if (review.action !== 'start' || review.observed !== 'stopped')
-      throw new Error('Recovery blocked by owner identity, manual stop, budget or cooldown');
-    const nowMs = Date.now();
-    const records = this.recoveryJournal();
-    const old = records.find((item) => item.name === name);
-    const markerRaw = safeFile(path.join(PREFIX, 'var', 'sv', name, '.pockethost-service.json'));
-    if (!markerRaw) throw new Error('Worker recovery marker missing');
-    const marker: unknown = JSON.parse(markerRaw);
-    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
-      throw new Error('Recovery marker invalid');
-    const instanceId = (marker as Record<string, unknown>).instanceId;
-    if (typeof instanceId !== 'string')
-      throw new Error('Recovery instance invalid');
-    // Reassess immediately and consume the budget *before* sending sv up,
-    // ensuring a crash or a failed command never triggers an unbounded retry.
-    const fresh = this.reviewWorkerRecovery(name);
-    if (fresh.action !== 'start' || fresh.observed !== 'stopped')
-      throw new Error('Recovery state changed before attempt');
-    if (old && old.instanceId !== instanceId)
-      throw new Error('Recovery journal instance changed');
-    if (old && old.attemptedAtMs.some((at) => at > nowMs))
-      throw new Error('Recovery clock moved backwards');
-    const recent = old
-      ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
-      : [];
-    if (recent.length >= RECOVERY_MAX_ATTEMPTS ||
-        (recent.length > 0 && nowMs < recent[recent.length - 1] + RECOVERY_COOLDOWN_MS))
-      throw new Error('Recovery attempt budget or cooldown changed');
-    const next: RecoveryAttemptRecord = {
-      name, instanceId, attemptedAtMs: [...recent, nowMs],
-    };
-    this.saveRecoveryJournal([...records.filter((item) => item.name !== name), next]);
-    const result = await run(path.join(PREFIX, 'bin', 'sv'),
-      ['up', path.join(this.serviceRoot, name)],
-      { timeout: 20000, maxBuffer: 12000 });
-    if (result.exit !== 0)
-      throw new Error('Runit rejected the recovery start; attempt budget was consumed');
-    return { requested: true, result, review: this.reviewWorkerRecovery(name) };
+    // A per-process promise queue does not serialize another panel instance
+    // or an independently invoked trusted host adapter. The fixed private
+    // O_EXCL lock holds across policy review, journal write and runit command.
+    // A crash leaves a lock and intentionally requires explicit inspection.
+    const folder = path.dirname(this.recoveryFile);
+    mkdirSync(folder, { recursive: true, mode: 0o700 });
+    const folderStat = lstatSync(folder);
+    if (!folderStat.isDirectory() || folderStat.isSymbolicLink() ||
+        folderStat.uid !== process.getuid?.() || (folderStat.mode & 0o077) !== 0 ||
+        realpathSync(folder) !== folder)
+      throw new Error('Unsafe recovery lock directory');
+    const lockPath = path.join(folder, '.h3-worker-recovery.lock');
+    let lockFd: number;
+    try {
+      lockFd = openSync(lockPath, 'wx', 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+        throw new Error('Another recovery attempt is in progress or needs manual reconciliation');
+      throw error;
+    }
+    try {
+      const review = this.reviewWorkerRecovery(name);
+      if (review.action !== 'start' || review.observed !== 'stopped')
+        throw new Error('Recovery blocked by owner identity, manual stop, budget or cooldown');
+      const nowMs = Date.now();
+      const records = this.recoveryJournal();
+      const old = records.find((item) => item.name === name);
+      const markerRaw = safeFile(path.join(PREFIX, 'var', 'sv', name, '.pockethost-service.json'));
+      if (!markerRaw) throw new Error('Worker recovery marker missing');
+      const marker: unknown = JSON.parse(markerRaw);
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+        throw new Error('Recovery marker invalid');
+      const instanceId = (marker as Record<string, unknown>).instanceId;
+      if (typeof instanceId !== 'string')
+        throw new Error('Recovery instance invalid');
+      // Reassess immediately and consume the budget *before* sending sv up,
+      // ensuring a crash or a failed command never triggers an unbounded retry.
+      const fresh = this.reviewWorkerRecovery(name);
+      if (fresh.action !== 'start' || fresh.observed !== 'stopped')
+        throw new Error('Recovery state changed before attempt');
+      if (old && old.instanceId !== instanceId)
+        throw new Error('Recovery journal instance changed');
+      if (old && old.attemptedAtMs.some((at) => at > nowMs))
+        throw new Error('Recovery clock moved backwards');
+      const recent = old
+        ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
+        : [];
+      if (recent.length >= RECOVERY_MAX_ATTEMPTS ||
+          (recent.length > 0 && nowMs < recent[recent.length - 1] + RECOVERY_COOLDOWN_MS))
+        throw new Error('Recovery attempt budget or cooldown changed');
+      const next: RecoveryAttemptRecord = {
+        name, instanceId, attemptedAtMs: [...recent, nowMs],
+      };
+      this.saveRecoveryJournal([...records.filter((item) => item.name !== name), next]);
+      const result = await run(path.join(PREFIX, 'bin', 'sv'),
+        ['up', path.join(this.serviceRoot, name)],
+        { timeout: 20000, maxBuffer: 12000 });
+      if (result.exit !== 0)
+        throw new Error('Runit rejected the recovery start; attempt budget was consumed');
+      return { requested: true, result, review: this.reviewWorkerRecovery(name) };
+    } finally {
+      // Never unlink a replacement lock created by an independent process.
+      // On any ambiguous identity, leave it for manual recovery inspection.
+      try {
+        const lockProof = fstatSync(lockFd);
+        const current = lstatSync(lockPath);
+        if (!current.isFile() || current.isSymbolicLink() ||
+            current.dev !== lockProof.dev || current.ino !== lockProof.ino ||
+            current.nlink !== 1 || current.uid !== process.getuid?.()) {
+          throw new Error('Recovery lock identity changed; refusing cleanup');
+        }
+        unlinkSync(lockPath);
+      } finally {
+        closeSync(lockFd);
+      }
+    }
   }
 
   private recoveryJournal(): RecoveryAttemptRecord[] {

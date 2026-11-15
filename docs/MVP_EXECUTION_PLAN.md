@@ -205,6 +205,17 @@ przechodzi na inne wydanie. Kandydat rollbacku jest informacją,
 nie autoryzacją — preflight i zapis lokalnie, istniejąca blokada
 mutacji przez LAN bez zmian. **S4 i testy S5 nadal otwarte.**
 
+**S4 — blokada równoczesnych żądań recovery (kod, bez odbioru):**
+ręczne `recoverWorkerOnce` obejmuje teraz prywatną, wyłączną
+blokadą plikową zarówno ponowną kwalifikację workera, jak i trwały
+zapis próby przed jedynym `sv up`. Dzięki temu różne instancje panelu
+nie mogą jednocześnie przekroczyć limitu 2 prób/godzinę.
+Konflikt blokady jest odrzucany, bez automatycznego ponawiania.
+Po awarii nieusu­nięta blokada oznacza HOLD do niezależnej
+weryfikacji; nie jest czyszczona automatycznie. Zasady
+readiness/rollback i testy zamknięcia Services nadal otwarte;
+**S4 pozostaje `[ ]`.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
