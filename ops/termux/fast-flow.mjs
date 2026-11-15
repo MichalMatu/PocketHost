@@ -72,11 +72,16 @@ export function confirmPreflight(info, liveSha) {
 }
 
 export function confirmRelease(info, sha) {
+  // A racing deployment can make refresh-panel return CURRENT without
+  // readback or protected-service evidence. Only a full PASS is proof.
   if (
     !info ||
-    !['PASS', 'CURRENT'].includes(info.status) ||
+    info.status !== 'PASS' ||
     info.sha !== sha ||
-    (info.status === 'PASS' && (info.loopbackHttp !== 200 || info.external !== 'unchanged'))
+    info.loopbackHttp !== 200 ||
+    info.external !== 'unchanged' ||
+    !Number.isSafeInteger(info.ownedPid) ||
+    info.ownedPid <= 0
   )
     throw Error('Guarded refresh did not prove target and service invariants');
   return true;
