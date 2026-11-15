@@ -23,7 +23,7 @@ async function action<T>(payload: { action: string; name?: string; root?: string
 async function inspect<T>(mode: string, location = ""): Promise<T> {
   const request = mode === "files" ? endpoint + "?mode=files&path=" + encodeURIComponent(location) :
     mode === "search-packages" ? endpoint + "?mode=search-packages&query=" + encodeURIComponent(location) :
-    (mode === "python-source-review" || mode === "python-source-history")
+    (["python-source-review", "python-source-history", "node-source-review", "node-source-history"].includes(mode))
       ? endpoint + "?mode=" + mode + "&name=" + encodeURIComponent(location) :
     endpoint + "?mode=" + mode
   const response = await fetch(request, { method: "GET", credentials: "same-origin", cache: "no-store" })
@@ -598,6 +598,8 @@ export function RunitServiceActions({
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
+  const [logQuery, setLogQuery] = React.useState("")
+  const [logLevel, setLogLevel] = React.useState<"all" | "errors" | "warnings">("all")
   const [sourceReview, setSourceReview] = React.useState<PythonSourceReview | null>(null)
   const [sourceHistory, setSourceHistory] = React.useState<PythonSourceHistory | null>(null)
   const [nodeSourceReview, setNodeSourceReview] = React.useState<NodeSourceReview | null>(null)
@@ -777,7 +779,7 @@ export function RunitServiceActions({
     if (busy || nodeSourceReview?.name !== name) return
     setBusy(true); setError(null); setNodeSourceHistory(null)
     try {
-      const result = await inspect<NodeSourceHistory>("python-source-history", name)
+      const result = await inspect<NodeSourceHistory>("node-source-history", name)
       if (result.name !== name || result.currentSha256 !== nodeSourceReview.sourceSha256 ||
           result.execution !== "blocked" || !Array.isArray(result.revisions) ||
           result.revisions.length > 8 || result.revisions.some(item =>
@@ -856,12 +858,13 @@ export function RunitServiceActions({
   }
   const readServiceLogs = async (name: string) => {
     if (busy) return
-    setBusy(true); setError(null)
+    setBusy(true); setError(null); setServiceLogs(null)
     try {
       const result = await action<{ lines: string[] }>({ action: "service-logs", path: name })
       if (!Array.isArray(result.lines) || result.lines.length > 100 ||
           !result.lines.every(line => typeof line === "string" && line.length <= 240))
         throw new Error("Invalid runit logs")
+      setLogQuery(""); setLogLevel("all")
       setServiceLogs({ name, lines: result.lines })
     } catch { setError("Attested service log unavailable. Verify archive identity before retrying.") }
     finally { setBusy(false) }
@@ -885,21 +888,34 @@ export function RunitServiceActions({
       await action({ action: "service", name, path: service.name })
       try {
         const live = await refresh()
+        const observed = live.services.find(item => item.name === service.name)
+        if (!observed || !observed.registered || observed.protected ||
+            observed.identity !== "verified" ||
+            observed.identityReason !== "run-sha-attested" ||
+            observed.control !== "standalone" ||
+            observed.template !== service.template) {
+          setError("Command acknowledged, but service ownership changed or was not read back. Do not retry.")
+          return
+        }
         if (name === "enable" || name === "disable") {
-          const observed = live.services.find(item => item.name === service.name)
-          if (!observed || !observed.registered || observed.protected ||
-              observed.enabled !== (name === "enable")) {
-            setError("Autostart command returned but persistent desired state was not verified.")
+          if (observed.enabled !== (name === "enable")) {
+            setError("Autostart command acknowledged, but persistent policy was not verified.")
             return
           }
           setDone(service.name + ": runit autostart " +
             (observed.enabled ? "enabled" : "disabled") + " · saved and verified")
         } else {
-          setDone(service.name + ": " + name + " acknowledged · inventory refreshed")
+          const expected = name === "stop" ? "stopped" : "running"
+          if (observed.state !== expected) {
+            setError("Runit " + name + " acknowledged, but current state is " +
+              observed.state + " (expected " + expected + "). Inspect before another action.")
+            return
+          }
+          setDone(service.name + ": runit " + name +
+            " confirmed " + observed.state + " · application readiness not verified")
         }
       } catch {
-        setDone(service.name + ": " + name + " acknowledged · status not refreshed")
-        setError("Service inventory refresh failed. Verify live state before another command.")
+        setError("Service command acknowledged, but inventory readback failed. Inspect before another command.")
       }
     } catch {
       setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
@@ -1408,10 +1424,44 @@ export function RunitServiceActions({
           Revision requires a confirmed stopped worker with autostart disabled.
         </p>}
       </section>}
-    {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">
-      <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
-      <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>
-    </div>}
+    {mode === "lifecycle" && serviceLogs && <section className="space-y-2 rounded-md border p-3"
+      aria-label={"Runit logs for " + serviceLogs.name}>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
+        <div className="flex flex-wrap gap-1">
+          <Button size="sm" variant="outline" disabled={busy}
+            onClick={() => void readServiceLogs(serviceLogs.name)}>Refresh logs</Button>
+          <Button size="sm" variant="outline" disabled={busy}
+            onClick={() => setServiceLogs(null)}>Close</Button>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <Input aria-label="Search service logs" placeholder="Search recent lines"
+          className="min-w-40 max-w-64" disabled={busy}
+          value={logQuery} onChange={event => setLogQuery(event.target.value)} />
+        {(["all", "errors", "warnings"] as const).map(level =>
+          <Button size="sm" key={level} disabled={busy} aria-pressed={logLevel === level}
+            variant={logLevel === level ? "secondary" : "outline"}
+            onClick={() => setLogLevel(level)}>
+            {level === "all" ? "All" : level === "errors" ? "Errors" : "Warnings"}
+          </Button>)}
+      </div>
+      {(() => {
+        const visible = serviceLogs.lines.filter(line =>
+          line.toLowerCase().includes(logQuery.trim().toLowerCase()) &&
+          (logLevel === "all" ||
+            (logLevel === "errors" ? /error|fatal|exception|failed|traceback/i.test(line) :
+              /warn|warning|deprecat/i.test(line))))
+        return <>
+          <p className="text-xs text-muted-foreground">
+            {visible.length} / {serviceLogs.lines.length} recent redacted lines · manual refresh only
+          </p>
+          <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">
+            {visible.length ? visible.join("\n") : "No matching log lines."}
+          </pre>
+        </>
+      })()}
+    </section>}
     <Feedback error={error} done={done} />
   </div>
 }
