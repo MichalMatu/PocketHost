@@ -284,6 +284,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S1 — Node project ↔ Runit provenance (częściowe):** lista Runit przypina właściciela projektu dopiero, gdy `NodeProjectHost.list` i `NodeRunitHost.status` zweryfikują jego prywatny marker, skrypt i wspólny registry digest. Nazwa jednostki nie stanowi dowodu. `Open owning project` otwiera dokładny projekt w `Projects` i odświeża runtime/release bez automatycznego zatwierdzenia zmian. Nie udostępnia komend runit z ogólnego UI. Brak oznaczenia właściciela przy niedostępnej funkcji Node, drift albo cudzej usłudze. Python nadal wymaga osobnej ścieżki własnego kodu; nie dodajemy niebezpiecznego wykonania dowolnego skryptu przez LAN bez logowania. Scenariusze do S5: zweryfikowany projekt, kolizja nazwy, drift markera, dostępność funkcji i zmiana projektu z deeplinkiem. **S1/S2 nadal IN_PROGRESS.**
 
+**S1 — dostarczenie powiązania Node na A8, 2026-11-15:** zadanie `pockethost-a8-node-owner-link-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`; live `e96a0b6a6ed5a6715619901eb053b1a6a01e1196`, PID 10144, start ticks 16605014, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Powiązanie projektu i przejście do Projects wdrożone, ale **nieprzetestowane funkcjonalnie** na konkretnym uruchomionym Node project. Nadal brak ogólnej rejestracji własnych aplikacji Python, pełnego testu S5 i odbioru S6. **S1/S2 Services pozostaje IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
