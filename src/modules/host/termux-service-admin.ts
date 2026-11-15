@@ -87,6 +87,7 @@ export type ServiceIdentityReason =
   | 'legacy-without-sha'
   | 'service-target-changed'
   | 'service-not-published'
+  | 'worker-provenance-changed'
   | 'run-script-changed'
   | 'archive-live-conflict'
   | 'reserved-system-service';
@@ -1591,13 +1592,23 @@ export class TermuxServiceAdmin {
           /* Missing/dangling entry remains unknown and cannot be controlled. */
         }
       }
-      const identity = this.identity(name, resolved, registrations);
-      const registered = identity === 'verified';
+      const runIdentity = this.identity(name, resolved, registrations);
       const template =
-        registered && resolved ? this.managedWorkerTemplate(name, resolved, registrations) : null;
-      // Enrollment is not authority for every frontend. Node Hosting has
-      // its own release/nonce/lock/port safety gates and must not be driven
-      // by the generic Services runit buttons.
+        runIdentity === 'verified' && resolved
+          ? this.managedWorkerTemplate(name, resolved, registrations)
+          : null;
+      // The built-in standalone creator publishes ONLY var/sv/<name>. An
+      // intact run SHA does not suffice if the private creator marker, fixed
+      // logger, source or publication symlink is gone or modified. Never
+      // silently relabel that unit as delegated to another provisioner.
+      // Node Hosting's independently-owned runit units live under the
+      // service root and keep their existing delegated control boundary.
+      const workerProvenanceChanged =
+        runIdentity === 'verified' &&
+        resolved === path.join(PREFIX, 'var', 'sv', name) &&
+        template === null;
+      const identity: ServiceIdentity = workerProvenanceChanged ? 'changed' : runIdentity;
+      const registered = identity === 'verified';
       const control: TermuxService['control'] = !registered
         ? 'read-only'
         : template
@@ -1608,7 +1619,9 @@ export class TermuxServiceAdmin {
         registered,
         protected: !registered,
         identity,
-        identityReason: this.identityReason(name, resolved, registrations, identity, visible.has(name)),
+        identityReason: workerProvenanceChanged
+          ? 'worker-provenance-changed'
+          : this.identityReason(name, resolved, registrations, identity, visible.has(name)),
         control,
         ...(template ? { template } : {}),
         // Never probe a vanished or unresolved service or report persisted
