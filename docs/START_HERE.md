@@ -11,7 +11,7 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 
 **Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
-**A8 is installed and running.** Guarded FAST FLOW returned PASS. Last verified live panel SHA: **`ceb7f07b96b15f41fd42f91b80a0e9a7364b573e`**, FAST FLOW PASS with no tests, PID 29592, HTTP 200; official Termux runit supervises panel/watch. Boot autostart was configured, **not reboot-tested**. GitHub `main` may be ahead of live SHA after docs-only commits.
+**A8 is installed and running.** Guarded FAST FLOW returned PASS. Last verified live panel SHA: **`ceb7f07b96b15f41fd42f91b80a0e9a7364b573e`**, last confirmed rollback readback with no tests, PID 19023, HTTP 200; official Termux runit supervises panel/watch. Boot autostart was configured, **not reboot-tested**. New HTTP readiness source `9bf224dc1b47fe9cd94be733690bb4bc137a9227` **is not deployed** (guarded refresh HOLD, rollback PASS). Do not infer success from main, repeat the failed deployment, or run QA without exact scope/SHA approval. GitHub `main` may be ahead of live SHA.
 
 **Product:** dynamic runit discovery, generic Node/static workloads; Hosting APIs remain feature-gated. Trusted LAN without login is the owner's requirement; WAN exposure remains forbidden, and LAN mutation safety must be preserved. Network Access has private-interface enable/disable, while boot behaviour acceptance and configurable SSH/GitHub/health/autostart policy remain to build.
 
