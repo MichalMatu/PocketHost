@@ -189,6 +189,18 @@ function safeFile(file: string): string | null {
   }
 }
 
+/** Release only this process's exact private recovery lock, never a replaced file. */
+function releaseRecoveryLock(lockFd: number, lockPath: string): void {
+  const lockProof = fstatSync(lockFd);
+  const current = lstatSync(lockPath);
+  if (!current.isFile() || current.isSymbolicLink() ||
+      current.dev !== lockProof.dev || current.ino !== lockProof.ino ||
+      current.nlink !== 1 || current.uid !== process.getuid?.()) {
+    throw new Error('Recovery lock identity changed; refusing cleanup');
+  }
+  unlinkSync(lockPath);
+}
+
 /**
  * No service is adopted by observation. Only an explicit registration of
  * an existing exact canonical runit target confers management capability.
@@ -711,17 +723,10 @@ export class TermuxServiceAdmin {
         throw new Error('Runit rejected the recovery start; attempt budget was consumed');
       return { requested: true, result, review: this.reviewWorkerRecovery(name) };
     } finally {
-      // Never unlink a replacement lock created by an independent process.
-      // On any ambiguous identity, leave it for manual recovery inspection.
+      // A replaced lock is never unlinked; explicit reconciliation remains
+      // required. No return or throw statement inside the finally block.
       try {
-        const lockProof = fstatSync(lockFd);
-        const current = lstatSync(lockPath);
-        if (!current.isFile() || current.isSymbolicLink() ||
-            current.dev !== lockProof.dev || current.ino !== lockProof.ino ||
-            current.nlink !== 1 || current.uid !== process.getuid?.()) {
-          throw new Error('Recovery lock identity changed; refusing cleanup');
-        }
-        unlinkSync(lockPath);
+        releaseRecoveryLock(lockFd, lockPath);
       } finally {
         closeSync(lockFd);
       }
