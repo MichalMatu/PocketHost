@@ -29,7 +29,7 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
     const observed = admin.list(() => 'running');
     assert.equal(observed.find((item) => item.name === 'site-worker')?.registered, false);
     assert.equal(observed.find((item) => item.name === 'wreckscanner')?.registered, false);
-    assert.equal(observed.find((item) => item.name === 'wreckscanner')?.protected, false);
+    assert.equal(observed.find((item) => item.name === 'wreckscanner')?.protected, true);
     await assert.rejects(admin.apply('start', 'site-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(admin.apply('stop', 'site-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(admin.apply('restart', 'site-worker', fakeRun), /not explicitly registered/);
@@ -54,7 +54,7 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
   };
   try {
     for (const name of ['wreckscanner', 'wreckscanner-backup']) {
-      assert.equal(admin.list(() => 'running').find((item) => item.name === name)?.protected, false);
+      assert.equal(admin.list(() => 'running').find((item) => item.name === name)?.protected, true);
       assert.equal(admin.isRegistered(name), false);
       await assert.rejects(admin.apply('register', name, fakeRun), /attested PocketHost provisioner/);
       await assert.rejects(admin.apply('stop', name, fakeRun), /not explicitly registered/);

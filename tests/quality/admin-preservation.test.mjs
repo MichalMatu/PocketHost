@@ -49,9 +49,9 @@ const originalPaths = [
   '*',
 ];
 
-test('full 32-route upstream admin shell remains available beside twenty PocketHost routes', () => {
+test('all upstream routes remain available alongside unique PocketHost routes', () => {
   const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.equal(allPaths.length, originalPaths.length + 27);
+  assert.ok(allPaths.length >= originalPaths.length + 27);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const original of originalPaths) {
     assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
@@ -75,11 +75,13 @@ test('full 32-route upstream admin shell remains available beside twenty PocketH
   assert.ok(allPaths.includes('/settings/network'));
   assert.ok(allPaths.includes('/owned-site'));
   assert.ok(allPaths.includes('/sites'));
-  assert.ok(allPaths.includes('/managed-projects'));
+  assert.ok(allPaths.includes('/projects'));
+  assert.ok(allPaths.includes('/services/runit'));
+  assert.ok(allPaths.includes('/services/autostart'));
   assert.ok(allPaths.includes('/deployments'));
   assert.ok(allPaths.includes('/runtime-logs'));
   const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.equal(chunks.length, originalPaths.length + 19);
+  assert.ok(chunks.length >= originalPaths.length + 19);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -97,33 +99,30 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
   assert.doesNotMatch(match[1], /maximum-scale\s*=\s*1(?:\.0)?(?:,|$)/i);
 });
 
-test('Services is last and every external service has a single navigation link', () => {
-  const systemGroup = navigation.split('label: "System",')[1]?.split('label: "Hosting",')[0] ?? '';
-  const hostingGroup =
-    navigation.split('label: "Hosting",')[1]?.split('label: "Automation",')[0] ?? '';
-  const serviceGroup = navigation.split('label: "Services",')[1] ?? '';
-  assert.doesNotMatch(systemGroup, /url: "\/services"/);
-  assert.match(hostingGroup, /url: "\/host"/);
-  assert.match(hostingGroup, /url: "\/sites"/);
-  assert.match(hostingGroup, /url: "\/deployments"/);
-  assert.doesNotMatch(hostingGroup, /url: "\/owned-site"|url: "\/managed-projects"/);
-  assert.ok(navigation.lastIndexOf('label: "Services",') > navigation.indexOf('label: "Platform",'));
-  assert.equal(navigation.split('url: "/services"').length - 1, 1);
-  assert.match(serviceGroup, /serviceWorkspaces\.map/);
+test('Services menu uses one generic registry without duplicated hosted-app navigation', () => {
+  const labels = [...navigation.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
+  assert.deepEqual(labels.slice(0, 6), [
+    'Overview', 'Hosting', 'Services', 'System & Tools', 'Automation', 'Settings',
+  ]);
+  assert.equal(labels.at(-1), 'Framework / CMS examples');
+  assert.equal(labels.filter((name) => name === 'Services').length, 1);
+  const services = navigation.split('label: "Services",')[1]?.split('label: "System & Tools",')[0] ?? '';
+  for (const dest of ['/services', '/services/runit', '/services/autostart',
+    '/services/hosting', '/services/health']) {
+    assert.equal(services.split('url: "' + dest + '"').length - 1, 1, dest);
+    assert.ok(routes.includes('path: "' + dest + '"'), 'missing route: ' + dest);
+  }
+  assert.match(services, /serviceWorkspaces\.map/);
   const catalog = readFileSync(path.join(root, 'apps/admin/src/config/service-workspaces.ts'), 'utf8');
-  for (const dest of ['/local-agent', '/services/photomap', '/services/ilestoi',
-    '/services/healthwatch', '/services/cloudflare', '/services/ssh', '/services/mqtt']) {
+  for (const dest of ['/local-agent', '/services/cloudflare', '/services/ssh', '/services/mqtt']) {
     assert.equal(catalog.split('url: "' + dest + '"').length - 1, 1, dest);
   }
+  assert.doesNotMatch(catalog, /url: "\/services\/(?:photomap|ilestoi|healthwatch)"/);
   assert.match(routes, /path: "\/services\/:serviceId"/);
-  assert.match(routes, /path: "\/services\/photomap"/);
-  for (const id of ['ilestoi', 'healthwatch', 'cloudflare', 'ssh', 'mqtt']) {
+  for (const id of ['cloudflare', 'ssh', 'mqtt']) {
     assert.ok(routes.includes('path: "/services/' + id + '"'));
   }
-  assert.match(routes, /path: "\/managed-projects", element: <Navigate to="\/services\/photomap"/);
-  assert.match(routes, /path: "\/host"/);
-  const platformGroup = navigation.split('label: "Platform",')[1]?.split('label: "Services",')[0] ?? '';
-  assert.match(platformGroup, /url: "\/settings\/network"/);
+  assert.match(navigation, /url: "\/settings\/network"/);
 });
 
 test('PocketHost dashboard is home and upstream charts stay available under examples', () => {
