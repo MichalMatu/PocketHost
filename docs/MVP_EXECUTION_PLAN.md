@@ -278,6 +278,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S2 — logi archiwum wdrożone na A8, 2026-11-15:** terminalne zadanie `pockethost-a8-archived-worker-logs-20261115-v1` = `PASS` (live `02d60255ebeb9869b6c56436074d6c1e91c0787e`, PID 4499, start ticks 16424935, HTTP 200, usługi chronione bez zmian, `tests=not-run`). W panelu działa kod do ręcznego odczytu logów zweryfikowanego archiwum bez `Restore`; **niezweryfikowane funkcjonalnie** na utworzonym workerze. Testy pozytywne/negatywne, trwałe bezpieczne wycofanie definicji oraz obsługa własnego kodu aplikacji nadal otwarte. **S1/S2/Services: IN_PROGRESS.**
 
+**S2 — wycofanie archiwum (implementacja przed bramą S5):** `Retire definition` wymaga dwukrotnego potwierdzenia w UI, z dokładną nazwą. Po attestation `archivedRegistry` i `offlineWorkerIdentity` oraz blokadzie `O_EXCL` przenosi wyłącznie własny unit i jego logi do prywatnej, ograniczonej kwarantanny i na końcu usuwa możliwość `Restore` z rejestru. Bez `rm -r`, bez obcych usług, bez automatycznego retry. Crash/drift pozostawia stan wymagający ręcznej weryfikacji. Testy S5: collision, limit, symlink, drift, awarie rename i zapisu ledger, odzyskiwanie nazwy po retire, nienaruszenie chronionych usług. **S1/S2 nadal `[ ]`; żadnego workera nie wycofano na urządzeniu w tej iteracji.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

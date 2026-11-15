@@ -1538,6 +1538,15 @@ function termuxAdminApi(): Plugin {
               }
               return services.restoreArchivedWorker(input.path ?? "", input.name)
             }
+            if (input.action === "service-retire") {
+              // Never recursively delete a worker. Revoke only an attested
+              // archive and retain its bytes in bounded private quarantine.
+              if ((input.name !== "heartbeat-worker-v1" && input.name !== "python-heartbeat-v1") ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
+                throw new RangeError("Unsupported worker retirement");
+              }
+              return services.retireArchivedWorker(input.path ?? "", input.name)
+            }
             if (input.action === "service") {
               if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))
                 throw new RangeError("Invalid runit operation")

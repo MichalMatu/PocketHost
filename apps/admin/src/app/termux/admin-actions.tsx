@@ -687,6 +687,36 @@ export function RunitServiceActions({
       setError("Restore refused or unconfirmed. Check archived identity; do not retry automatically.")
     } finally { setBusy(false) }
   }
+  const retireWorker = async (entry: ArchivedEntry) => {
+    if (busy || entry.identity !== "restorable") return
+    const typed = window.prompt(
+      "Retire " + entry.name + "? This permanently revokes restoration in PocketHost. " +
+      "The owned script and logs will be quarantined on the device, not deleted. " +
+      "Type the exact service name to confirm.",
+    )
+    if (typed !== entry.name ||
+        !window.confirm("Retire " + entry.name +
+          " from the PocketHost registry? The service cannot be restored from the panel. " +
+          "Files remain in private on-device quarantine for manual review.")) return
+    setBusy(true); setError(null); setDone(null)
+    try {
+      const response = await action<{
+        changed: boolean; retired: boolean; restorable: boolean; filesRetained: boolean
+      }>({ action: "service-retire", name: entry.template, path: entry.name })
+      if (response.changed !== true || response.retired !== true ||
+          response.restorable !== false || response.filesRetained !== true)
+        throw new Error("Unverified retirement receipt")
+      try {
+        await refresh()
+        setServiceLogs(previous => previous?.name === entry.name ? null : previous)
+        setDone(entry.name + ": retired from registry; definition and logs quarantined")
+      } catch {
+        setError("Retirement acknowledged but archive inventory is unavailable. Inspect before retrying.")
+      }
+    } catch {
+      setError("Retirement refused or unconfirmed. Do not repeat automatically; inspect archive state.")
+    } finally { setBusy(false) }
+  }
   const createWorker = async () => {
     const name = workerName.trim()
     if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
@@ -877,7 +907,8 @@ export function RunitServiceActions({
       <p className="text-xs text-muted-foreground">
         Archive retains service code and logs. Saved logs can be read only for an
         independently attested archived definition. Restore returns it stopped with
-        autostart disabled; it cannot adopt an external unit.
+        autostart disabled. Retire revokes future restoration and moves the
+        definition and logs to bounded private quarantine (no deletion).
         Entries in conflict or with changed identity are read-only and require inspection.
       </p>
       {archived.map(entry => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={entry.name}>
@@ -894,6 +925,8 @@ export function RunitServiceActions({
             onClick={() => void readServiceLogs(entry.name)}>Saved logs</Button>
           <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
             onClick={() => void restoreWorker(entry)}>Restore service</Button>
+          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+            onClick={() => void retireWorker(entry)}>Retire definition</Button>
         </div>
       </div>)}
     </section>}

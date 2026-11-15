@@ -375,6 +375,28 @@ marker drift, concurrent archive/restore, foreign/protected unit denial and
 UI readback. Still not accepted as complete S2; separate safe permanent
 retirement and custom app enrollment are outstanding.
 
+## S2 bounded retirement of archived worker definitions (partial)
+
+The explicit **Retire definition** action is available only on a fully attested
+archived builtin Node/Python worker, never on live, delegated, changed, conflicted
+or protected services. It requires typing the exact name and a second user
+confirmation. Under the shared cross-process standalone lifecycle lock, the
+host re-attests the exact unpublished unit and log directory, creates at most
+four private instance-keyed quarantine tombstones, moves both original
+directories by rename without traversing or deleting their contents, and only
+then revokes the archived registry entry. No arbitrary path/PID/shell access,
+automatic retry, recursive deletion or service restart. The original bytes
+remain for manual forensic review; this is not secure erasure. If any step
+fails, the archive is left un-restorable until the partial state is manually
+reconciled. The separate Node-project provisioner remains authoritative.
+
+S5 stage gate: archived owner positive path; name reuse after retirement;
+restoration denial after retirement; invalid template, protected name,
+foreign symlink and identity drift denials; tombstone quota/collision;
+rename and journal failure ambiguity; UI confirmations; isolation of SSH,
+Local Agent, panel/watch and Node Hosting. No worker retired in this
+implementation iteration. S1/S2 still IN_PROGRESS.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

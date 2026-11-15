@@ -179,6 +179,7 @@ export class TermuxServiceAdmin {
   private readonly registerFile: string;
   private readonly archiveFile: string;
   private readonly recoveryFile: string;
+  private readonly retiredRoot: string;
   private readonly heartbeatPolicy: WorkerHeartbeatPolicy;
   constructor(
     serviceRoot = path.join(PREFIX, 'var', 'service'),
@@ -194,6 +195,7 @@ export class TermuxServiceAdmin {
     this.registerFile = registerFile;
     this.archiveFile = path.join(path.dirname(registerFile), 'h3-archived-workers.json');
     this.recoveryFile = path.join(path.dirname(registerFile), 'h3-worker-recovery.json');
+    this.retiredRoot = path.join(path.dirname(registerFile), 'h3-retired-workers');
     this.heartbeatPolicy = new WorkerHeartbeatPolicy(path.dirname(registerFile));
   }
 
@@ -410,6 +412,104 @@ export class TermuxServiceAdmin {
           : 'changed' as const,
       };
     });
+  }
+
+
+  /**
+   * Irreversible from the LAN surface: revoke an exact archived worker by
+   * moving its unchanged definition and logs into owner-private quarantine.
+   * Never recursively delete service files or adopt a live/foreign unit.
+   * A partial rename remains blocked for explicit manual reconciliation.
+   */
+  retireArchivedWorker(
+    name: string,
+    template: WorkerTemplate,
+  ): { changed: true; retired: true; restorable: false; filesRetained: true } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
+      throw new RangeError('Invalid archived worker template');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const archived = this.archivedRegistry();
+      const record = archived.find((item) => item.name === name);
+      if (!record || record.template !== template || !this.offlineWorkerIdentity(record))
+        throw new Error('Only the exact attested archived worker can be retired');
+      if (this.registry().some((entry) => entry.name === name))
+        throw new Error('Active service registration prevents retirement');
+
+      const sourceRoot = path.join(PREFIX, 'var', 'sv');
+      const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
+      const source = path.join(sourceRoot, name);
+      const logs = path.join(logRoot, name);
+      if (source !== record.target) throw new Error('Archived worker source changed');
+      const owner = process.getuid?.();
+      const trustedDirectory = (folder: string, privateOnly: boolean): void => {
+        const st = lstatSync(folder);
+        if (!st.isDirectory() || st.isSymbolicLink() ||
+            st.uid !== owner || (st.mode & (privateOnly ? 0o077 : 0o022)) !== 0 ||
+            realpathSync(folder) !== folder)
+          throw new Error('Untrusted retirement directory');
+      };
+      for (const folder of [this.serviceRoot, sourceRoot, logRoot])
+        trustedDirectory(folder, false);
+      for (const folder of [source, logs])
+        trustedDirectory(folder, true);
+      if (!this.offlineWorkerIdentity(record))
+        throw new Error('Archived worker identity changed before retirement');
+
+      const privateParent = path.dirname(this.retiredRoot);
+      trustedDirectory(privateParent, true);
+      try {
+        mkdirSync(this.retiredRoot, { mode: 0o700 });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      }
+      trustedDirectory(this.retiredRoot, true);
+      const entries = readdirSync(this.retiredRoot);
+      if (entries.length >= MAX_TEMPLATE_WORKERS ||
+          entries.some((entry) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(entry)))
+        throw new Error('Retired worker quarantine full or untrusted');
+      const tombstone = path.join(this.retiredRoot, record.instanceId);
+      const sourceProof = lstatSync(source);
+      const logProof = lstatSync(logs);
+      // A fixed instance-specific tombstone prevents accidental overwrites.
+      // No recursive copy, tree deletion or implicit rollback on ambiguity.
+      mkdirSync(tombstone, { mode: 0o700 });
+      writeFileSync(path.join(tombstone, 'retirement.json'), JSON.stringify({
+        schema: 1, name, template, instanceId: record.instanceId,
+        runSha256: record.runSha256, archivedAt: record.archivedAt,
+        retiredAt: new Date().toISOString(),
+      }) + '\n', { flag: 'wx', mode: 0o600 });
+      if (!this.offlineWorkerIdentity(record))
+        throw new Error('Archived worker identity changed before quarantine move');
+      const retiredSource = path.join(tombstone, 'unit');
+      const retiredLogs = path.join(tombstone, 'logs');
+      renameSync(source, retiredSource);
+      const movedUnit = lstatSync(retiredSource);
+      if (movedUnit.dev !== sourceProof.dev || movedUnit.ino !== sourceProof.ino)
+        throw new Error('Retired worker unit identity changed during move');
+      renameSync(logs, retiredLogs);
+      const movedLogs = lstatSync(retiredLogs);
+      if (movedLogs.dev !== logProof.dev || movedLogs.ino !== logProof.ino)
+        throw new Error('Retired worker log identity changed during move');
+      for (const oldPath of [source, logs]) {
+        try {
+          lstatSync(oldPath);
+          throw new Error('Archived worker path republished during retirement');
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
+      }
+      if (this.registry().some((entry) => entry.name === name))
+        throw new Error('Archived worker was unexpectedly registered during retirement');
+      // Ledger removal is LAST. If any rename or journal write fails,
+      // the old entry remains un-restorable and requires manual review.
+      this.saveArchived(archived.filter((entry) => entry.name !== name));
+      return { changed: true, retired: true, restorable: false, filesRetained: true };
+    } finally {
+      release();
+    }
   }
 
   /**
