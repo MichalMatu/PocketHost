@@ -1435,6 +1435,8 @@ function termuxAdminApi(): Plugin {
                 url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
               mode === "service-recovery" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.reviewWorkerRecovery(url.searchParams.get("name") ?? "") :
+              mode === "python-source-review" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.inspectPythonSource(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :

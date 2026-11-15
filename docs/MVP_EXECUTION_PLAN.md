@@ -290,6 +290,18 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S1 Python source staging — wdrożone na A8, 2026-11-15:** zadanie `pockethost-a8-python-source-staging-20261115-v1` zwróciło terminalne `done` / exit 0, FAST FLOW `PASS`, live `3d9a870d3e01b5ebf21e034389f708d2e34cd85f`, PID 2998, start ticks 16730317, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Nie wykonano ani nie uruchomiono kodu użytkownika. GUI przechowuje źródło `worker.py` i wymusza porównanie digestu, lecz **uruchomienie nie jest udostępnione z LAN**; S1/S2 i etap Services wciąż `IN_PROGRESS`. Następne: owner-authenticated execution z minimalnymi uprawnieniami i celowane S5 po domknięciu pełnego Services.
 
+**S1 — przegląd źródła Python bez wykonania (kod przed odbiorem):**
+`Runit services → Review Python source` udostępnia wyłącznie odczyt
+rozmiaru, SHA-256, stanu runit i autostartu dokładnie zweryfikowanej
+własnej definicji `python-source-v1`. Backend czyta bez podążania za
+symlinkiem, porównuje descriptor/inode/mtime/rozmiar przed/po odczycie,
+marker oraz pełną tożsamość po obserwacji. Nie zwraca zawartości kodu
+ani sekretów. Nie ma tokenu, lokalnego TTY jako substytutu fizycznej
+autoryzacji, ani odblokowania Start z LAN. `ownerApproval=not-configured`.
+W S5 sprawdzić podmianę źródła/markera, fałszywy runit, wyścig podczas
+odczytu, symlink, brak dostępu do obcych usług i UI. **To nie jest
+samodzielny mechanizm uruchamiania Python, S1–S4 nadal IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

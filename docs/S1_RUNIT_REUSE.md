@@ -433,6 +433,25 @@ negative input/owner/marker/source drift cases, permission and quota errors,
 failure and crash handling, lifecycle denial and protected-service isolation.
 No Python code is executed and no S5 tests are claimed in this slice.
 
+## S1 Python source review before owner activation (partial)
+
+An attested `python-source-v1` worker now has a dedicated read-only
+**Review Python source** action. The API reveals only the exact source
+SHA-256, byte length, observed runit state, autostart marker and review
+timestamp; it does not return source content or approval material.
+The host opens `worker.py` with `O_NOFOLLOW`, requires an owner-private
+regular single-link file and compares descriptor/path inode, size, mtime
+and digest to the immutable marker, then re-attests the full worker
+identity. It never runs, restarts or enables the worker.
+
+The PocketHost browser terminal is itself a remote TTY, so a local
+terminal prompt alone **cannot** be treated as strong physical owner
+presence. Device-owner execution approval remains unimplemented and
+the generic LAN Start/Restart/Autostart/Recovery denies custom Python.
+At S5 test owner/source drift, symlink/inode replacement, query validation,
+foreign and protected services, stale UI and zero script execution.
+S1–S4 remain IN_PROGRESS; do not claim Python execution is authorized.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

@@ -534,6 +534,17 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
 }
 
 type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1"
+type PythonSourceReview = {
+  name: string
+  template: "python-source-v1"
+  sourceSha256: string
+  sourceBytes: number
+  observed: "running" | "stopped" | "unknown"
+  autostart: boolean | null
+  canStartFromLan: false
+  ownerApproval: "not-configured"
+  checkedAt: string
+}
 type ArchivedEntry = {
   name: string
   template: WorkerTemplate
@@ -564,6 +575,7 @@ export function RunitServiceActions({
   const [error, setError] = React.useState<string | null>(null)
   const [done, setDone] = React.useState<string | null>(null)
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
+  const [sourceReview, setSourceReview] = React.useState<PythonSourceReview | null>(null)
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
@@ -597,6 +609,7 @@ export function RunitServiceActions({
       throw new Error("Invalid archived worker inventory")
     setArchived(data.archived)
     setServices(data.services)
+    setSourceReview(null)
     setError(null)
     return data.services
   }, [])
@@ -605,6 +618,25 @@ export function RunitServiceActions({
     void refresh().catch(() => { if (active) setError("Runit services unavailable") })
     return () => { active = false }
   }, [refreshToken])
+  const reviewPythonSource = async (name: string) => {
+    if (busy) return
+    setBusy(true); setError(null); setSourceReview(null)
+    try {
+      const result = await inspect<PythonSourceReview>("python-source-review", name)
+      if (result.name !== name || result.template !== "python-source-v1" ||
+          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
+          !Number.isSafeInteger(result.sourceBytes) || result.sourceBytes < 1 ||
+          result.sourceBytes > 32 * 1024 ||
+          !["running", "stopped", "unknown"].includes(result.observed) ||
+          ![true, false, null].includes(result.autostart) ||
+          result.canStartFromLan !== false || result.ownerApproval !== "not-configured" ||
+          !Number.isFinite(Date.parse(result.checkedAt)))
+        throw new Error("Invalid Python source review")
+      setSourceReview(result)
+    } catch {
+      setError("Python source identity review refused or unavailable. Recheck ownership.")
+    } finally { setBusy(false) }
+  }
   const readServiceLogs = async (name: string) => {
     if (busy) return
     setBusy(true); setError(null)
@@ -813,6 +845,9 @@ export function RunitServiceActions({
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service.name)}>Logs</Button>
+          {service.template === "python-source-v1" &&
+            <Button size="sm" variant="outline" disabled={busy}
+              onClick={() => void reviewPythonSource(service.name)}>Review Python source</Button>}
           {service.template &&
             <Button size="sm" variant="outline"
               disabled={busy || service.state !== "stopped" || service.enabled !== false}
@@ -978,6 +1013,23 @@ export function RunitServiceActions({
         </div>
       </div>)}
     </section>}
+    {mode === "lifecycle" && sourceReview &&
+      services?.some(service => service.name === sourceReview.name &&
+        service.registered && service.control === "standalone" &&
+        service.template === "python-source-v1") &&
+      <section className="space-y-1 rounded-md border p-3" aria-label="Python source identity review">
+        <p className="text-sm font-medium">Python source review: {sourceReview.name}</p>
+        <p className="break-all font-mono text-xs">SHA-256: {sourceReview.sourceSha256}</p>
+        <p className="text-xs">Size: {sourceReview.sourceBytes} bytes · runit: {sourceReview.observed} · autostart: {
+          sourceReview.autostart === null ? "unknown" :
+            sourceReview.autostart ? "enabled" : "disabled"
+        }</p>
+        <p className="text-xs text-muted-foreground">
+          Inspected: {sourceReview.checkedAt}. Source text and credentials are not returned.
+          This proves file identity only, not safety or readiness. Starting Python code
+          is blocked from LAN; device-owner authorization is not configured.
+        </p>
+      </section>}
     {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
       <pre className="max-h-56 overflow-auto whitespace-pre-wrap text-xs">{serviceLogs.lines.join("\n")}</pre>

@@ -1337,6 +1337,81 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Read-only activation preflight for owner-staged Python. No source text,
+   * authorization token, execution command or process identifier is exposed.
+   * In particular, a browser TTY is not on-device owner authentication.
+   */
+  inspectPythonSource(name: string): {
+    name: string;
+    template: 'python-source-v1';
+    sourceSha256: string;
+    sourceBytes: number;
+    observed: 'running' | 'stopped' | 'unknown';
+    autostart: boolean | null;
+    canStartFromLan: false;
+    ownerApproval: 'not-configured';
+    checkedAt: string;
+  } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const target = this.target(name);
+    const registration = this.registry();
+    if (this.managedWorkerTemplate(name, target, registration) !== 'python-source-v1')
+      throw new Error('Only attested owner-staged Python source can be reviewed');
+    const sourcePath = path.join(target, 'worker.py');
+    const initial = lstatSync(sourcePath);
+    if (!initial.isFile() || initial.isSymbolicLink() ||
+        initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
+        (initial.mode & 0o077) !== 0 ||
+        initial.size === 0 || initial.size > 32 * 1024)
+      throw new Error('Python source file not owner-private');
+    const fd = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+    let bytes: Buffer;
+    try {
+      const before = fstatSync(fd);
+      if (!before.isFile() || before.nlink !== 1 ||
+          before.dev !== initial.dev || before.ino !== initial.ino ||
+          before.uid !== initial.uid || (before.mode & 0o077) !== 0 ||
+          before.size !== initial.size || before.mtimeMs !== initial.mtimeMs)
+        throw new Error('Python source changed while opening');
+      bytes = readFileSync(fd);
+      const after = fstatSync(fd);
+      const current = lstatSync(sourcePath);
+      if (bytes.length !== before.size ||
+          after.dev !== before.dev || after.ino !== before.ino ||
+          after.size !== before.size || after.mtimeMs !== before.mtimeMs ||
+          current.dev !== before.dev || current.ino !== before.ino ||
+          current.size !== before.size || current.mtimeMs !== before.mtimeMs ||
+          current.nlink !== 1 || current.uid !== before.uid ||
+          (current.mode & 0o077) !== 0)
+        throw new Error('Python source changed while reading');
+    } finally {
+      closeSync(fd);
+    }
+    const markerRaw = safeFile(path.join(target, '.pockethost-service.json'));
+    if (!markerRaw) throw new Error('Python worker identity unavailable');
+    const marker: unknown = JSON.parse(markerRaw);
+    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+      throw new Error('Python worker identity invalid');
+    const expected = (marker as Record<string, unknown>).sourceSha256;
+    const sourceSha256 = createHash('sha256').update(bytes).digest('hex');
+    if (typeof expected !== 'string' || !/^[a-f0-9]{64}$/.test(expected) ||
+        expected !== sourceSha256)
+      throw new Error('Python source fingerprint changed');
+    const observed = this.probe(name);
+    const autostart = this.enabled(name, true);
+    if (this.target(name) !== target ||
+        this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1')
+      throw new Error('Python worker identity changed during review');
+    return {
+      name, template: 'python-source-v1', sourceSha256,
+      sourceBytes: bytes.length, observed, autostart,
+      canStartFromLan: false, ownerApproval: 'not-configured',
+      checkedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
    * Manual, read-only runit health observation for attested services.
    * Unlike Node hosting readiness, this does not claim application health
    * from runit PID or from logs. Never checks or acts on a foreign service.
