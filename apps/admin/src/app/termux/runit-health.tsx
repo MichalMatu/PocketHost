@@ -38,11 +38,19 @@ type HealthOverview = {
   rows: HealthOverviewRow[]
 }
 
+type RunitProcess = {
+  status: "observed" | "stopped" | "unverified"
+  pid: number | null
+  uptimeSeconds: number | null
+  startTicks: string | null
+}
+
 type RunitHealth = {
   name: string
   identity: "verified"
   observed: "running" | "stopped" | "unknown"
   readiness: "not-verified"
+  process: RunitProcess
   heartbeat: HeartbeatPolicy
   autostart: boolean | null
   logEvidence: "log-write" | "no-log" | "untrusted"
@@ -52,6 +60,19 @@ type RunitHealth = {
 
 const base = "/api/v1/termux-admin"
 const serviceName = /^[a-z][a-z0-9-]{1,63}$/
+
+function validProcess(value: RunitProcess | undefined, observed: RunitHealth["observed"]): boolean {
+  if (!value || !["observed", "stopped", "unverified"].includes(value.status)) return false
+  if (value.status === "observed") {
+    return observed === "running" && Number.isSafeInteger(value.pid) &&
+      value.pid! > 1 && Number.isSafeInteger(value.uptimeSeconds) &&
+      value.uptimeSeconds! >= 0 && typeof value.startTicks === "string" &&
+      /^[0-9]{1,24}$/.test(value.startTicks) && !/^0+$/.test(value.startTicks)
+  }
+  return value.pid === null && value.uptimeSeconds === null &&
+    value.startTicks === null &&
+    (value.status === "stopped" ? observed === "stopped" : observed !== "stopped")
+}
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(base + path, {
@@ -136,6 +157,7 @@ export function RunitHealthPanel() {
                row.health.name === row.name && row.health.identity === "verified" &&
                row.health.readiness === "not-verified" &&
                ["running", "stopped", "unknown"].includes(row.health.observed) &&
+               validProcess(row.health.process, row.health.observed) &&
                ["log-write", "no-log", "untrusted"].includes(row.health.logEvidence) &&
                ["disabled", "log-heartbeat"].includes(row.health.heartbeat?.mode) &&
                ["disabled", "fresh", "stale", "missing", "unknown"].includes(
@@ -153,6 +175,7 @@ export function RunitHealthPanel() {
 
   const needsAttention = (health: RunitHealth): boolean =>
     health.observed === "unknown" ||
+    (health.observed === "running" && health.process.status !== "observed") ||
     (health.autostart === true && health.observed === "stopped") ||
     health.logEvidence === "untrusted" ||
     (health.heartbeat.mode === "log-heartbeat" &&
@@ -173,6 +196,7 @@ export function RunitHealthPanel() {
           result.identity !== "verified" ||
           !["running", "stopped", "unknown"].includes(result.observed) ||
           result.readiness !== "not-verified" ||
+          !validProcess(result.process, result.observed) ||
           !result.heartbeat ||
           !["disabled", "log-heartbeat"].includes(result.heartbeat.mode) ||
           !["disabled", "fresh", "stale", "missing", "unknown"].includes(result.heartbeat.status) ||
@@ -357,6 +381,10 @@ export function RunitHealthPanel() {
                 <Badge variant="outline">Runit: {row.health.observed}</Badge>
                 <Badge variant="outline">Heartbeat: {row.health.heartbeat.mode === "disabled"
                   ? "off" : row.health.heartbeat.status}</Badge>
+                <Badge variant="outline">Process: {row.health.process.status === "observed"
+                  ? "PID " + row.health.process.pid + " · " +
+                    row.health.process.uptimeSeconds + "s"
+                  : row.health.process.status}</Badge>
                 <Badge variant="outline">{needsAttention(row.health)
                   ? "Needs inspection" : "Observed · readiness unverified"}</Badge>
               </div>}
@@ -417,6 +445,9 @@ export function RunitHealthPanel() {
       <p className="text-sm font-medium">{readback.name}</p>
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline">Runit: {readback.observed}</Badge>
+        <Badge variant="outline">Process: {readback.process.status === "observed"
+          ? "PID " + readback.process.pid + " · " + readback.process.uptimeSeconds + "s"
+          : readback.process.status}</Badge>
         <Badge variant="outline">App readiness: unverified</Badge>
         <Badge variant="outline">Worker heartbeat: {readback.heartbeat.mode === "disabled"
           ? "off" : readback.heartbeat.status}</Badge>
@@ -445,6 +476,11 @@ export function RunitHealthPanel() {
             Last matching heartbeat output: {new Date(readback.heartbeat.lastOutputAt).toLocaleString()}
           </p>}
         </div>}
+      {readback.process.status === "observed" &&
+        <p className="text-xs text-muted-foreground">
+          Proc start ticks: {readback.process.startTicks} · same-UID process,
+          corroborated by runit and /proc. This does not attest application code or HTTP readiness.
+        </p>}
       <p className="text-xs text-muted-foreground">
         Log write: {readback.logEvidence === "log-write" && readback.lastLogWriteAt
           ? new Date(readback.lastLogWriteAt).toLocaleString()

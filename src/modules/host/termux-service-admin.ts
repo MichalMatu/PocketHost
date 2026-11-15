@@ -112,12 +112,20 @@ export interface RunitRecoveryReview {
   windowEndsAt: string | null;
   checkedAt: string;
 }
+export interface RunitProcessObservation {
+  /** PID and start ticks are evidence only, not source or app readiness. */
+  status: 'observed' | 'stopped' | 'unverified';
+  pid: number | null;
+  uptimeSeconds: number | null;
+  startTicks: string | null;
+}
 export interface RunitHealthReadback {
   name: string;
   identity: 'verified';
   observed: 'running' | 'stopped' | 'unknown';
   /** Runit process liveness does not confer application readiness. */
   readiness: 'not-verified';
+  process: RunitProcessObservation;
   heartbeat: HeartbeatReadback;
   autostart: boolean | null;
   logEvidence: 'log-write' | 'no-log' | 'untrusted';
@@ -2582,6 +2590,75 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Read-only process corroboration for an already-attested worker. The
+   * supervisor's PID alone is not ownership proof: compare owner uid, procfs
+   * start ticks and two runit reports; never read cmdline or execute code.
+   * Any error or concurrent restart results in unverified rather than a PID.
+   */
+  private observeRunitProcess(
+    name: string,
+    observed: TermuxService['state'],
+  ): RunitProcessObservation {
+    const unavailable: RunitProcessObservation = {
+      status: observed === 'stopped' ? 'stopped' : 'unverified',
+      pid: null,
+      uptimeSeconds: null,
+      startTicks: null,
+    };
+    if (observed !== 'running') return unavailable;
+    const command = path.join(PREFIX, 'bin', 'sv');
+    const unit = path.join(this.serviceRoot, name);
+    const prefix = 'run: ' + unit + ': (pid ';
+    const readSupervisor = (): { pid: number; uptimeSeconds: number } | null => {
+      const result = spawnSync(command, ['status', unit], {
+        encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 2048,
+      });
+      if (result.error || result.status !== 0 || !result.stdout.startsWith(prefix))
+        return null;
+      const match = /^([1-9][0-9]{0,8})\) ([0-9]{1,10})s(?:;|$)/.exec(
+        result.stdout.slice(prefix.length),
+      );
+      if (!match) return null;
+      const pid = Number(match[1]);
+      const uptimeSeconds = Number(match[2]);
+      if (!Number.isSafeInteger(pid) || pid <= 1 ||
+          !Number.isSafeInteger(uptimeSeconds)) return null;
+      return { pid, uptimeSeconds };
+    };
+    try {
+      const first = readSupervisor();
+      if (!first || typeof process.getuid?.() !== 'number') return unavailable;
+      const procDir = path.join('/proc', String(first.pid));
+      const directory = lstatSync(procDir);
+      if (!directory.isDirectory() || directory.isSymbolicLink() ||
+          directory.uid !== process.getuid?.()) return unavailable;
+      const stat = readFileSync(path.join(procDir, 'stat'), 'utf8');
+      if (stat.length > 4096) return unavailable;
+      const open = stat.indexOf(' (');
+      const close = stat.lastIndexOf(') ');
+      if (open < 1 || close <= open || Number(stat.slice(0, open)) !== first.pid)
+        return unavailable;
+      // After "(comm)", index 0 is proc stat field 3; index 19 is starttime (22).
+      const fields = stat.slice(close + 2).trim().split(/\s+/);
+      const startTicks = fields[19];
+      if (!startTicks || !/^[0-9]{1,24}$/.test(startTicks) ||
+          /^0+$/.test(startTicks)) return unavailable;
+      const second = readSupervisor();
+      if (!second || second.pid !== first.pid ||
+          second.uptimeSeconds < first.uptimeSeconds) return unavailable;
+      const confirm = readFileSync(path.join(procDir, 'stat'), 'utf8');
+      const confirmClose = confirm.lastIndexOf(') ');
+      if (confirm.length > 4096 || confirmClose < 0 ||
+          confirm.slice(confirmClose + 2).trim().split(/\s+/)[19] !== startTicks)
+        return unavailable;
+      return { status: 'observed', pid: first.pid,
+        uptimeSeconds: second.uptimeSeconds, startTicks };
+    } catch {
+      return unavailable;
+    }
+  }
+
+  /**
    * Manual snapshot of PocketHost standalone worker health. Never probes a
    * delegated project through the generic Services authority or exposes
    * unregistered/foreign service names. Failed re-attestation is an unavailable
@@ -2631,6 +2708,7 @@ export class TermuxServiceAdmin {
     if (this.identity(name, current, registrations) !== 'verified')
       throw new Error('Service identity unverified; health inspection refused');
     const observed = this.probe(name);
+    const process = this.observeRunitProcess(name, observed);
     const autostart = this.enabled(name, true);
     const template = this.managedWorkerTemplate(name, current, registrations);
     const heartbeat: HeartbeatReadback =
@@ -2697,6 +2775,7 @@ export class TermuxServiceAdmin {
       identity: 'verified',
       observed,
       readiness: 'not-verified',
+      process,
       heartbeat,
       autostart,
       logEvidence,
