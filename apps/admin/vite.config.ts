@@ -1494,6 +1494,16 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service-logs") {
               return services.logs(input.path ?? "")
             }
+            if (input.action === "service-heartbeat") {
+              // Persist only one of three built-in heartbeat freshness limits,
+              // or disable the policy. No remote URL, script, port or command.
+              if (!["disabled", "180", "300", "600"].includes(input.name ?? "") ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key)))
+                throw new RangeError("Unsupported worker heartbeat policy");
+              const seconds = input.name === "disabled"
+                ? null : Number(input.name) as 180 | 300 | 600;
+              return services.configureWorkerHeartbeat(input.path ?? "", seconds)
+            }
             if (input.action === "service-recover") {
               // One explicit user-reviewed attempt for attested builtin workers.
               // The host enforces stop state, desired autostart and durable budget.

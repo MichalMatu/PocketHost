@@ -19,6 +19,11 @@ import os from 'node:os';
 import path from 'node:path';
 import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.ts';
 import { evaluateHealthPolicy } from '../../shared/hosting-health-policy.ts';
+import {
+  WorkerHeartbeatPolicy,
+  type HeartbeatReadback,
+  type HeartbeatThresholdSeconds,
+} from './worker-heartbeat-policy.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
@@ -86,6 +91,7 @@ export interface RunitHealthReadback {
   observed: 'running' | 'stopped' | 'unknown';
   /** Runit process liveness does not confer application readiness. */
   readiness: 'not-verified';
+  heartbeat: HeartbeatReadback;
   autostart: boolean | null;
   logEvidence: 'log-write' | 'no-log' | 'untrusted';
   lastLogWriteAt: string | null;
@@ -167,6 +173,7 @@ export class TermuxServiceAdmin {
   private readonly registerFile: string;
   private readonly archiveFile: string;
   private readonly recoveryFile: string;
+  private readonly heartbeatPolicy: WorkerHeartbeatPolicy;
   constructor(
     serviceRoot = path.join(PREFIX, 'var', 'service'),
     registerFile = path.join(
@@ -181,6 +188,7 @@ export class TermuxServiceAdmin {
     this.registerFile = registerFile;
     this.archiveFile = path.join(path.dirname(registerFile), 'h3-archived-workers.json');
     this.recoveryFile = path.join(path.dirname(registerFile), 'h3-worker-recovery.json');
+    this.heartbeatPolicy = new WorkerHeartbeatPolicy(path.dirname(registerFile));
   }
 
   private registry(): Registration[] {
@@ -1021,6 +1029,50 @@ export class TermuxServiceAdmin {
     return this.identity(name, target, this.registry()) === 'verified';
   }
 
+  /** Only this provisioner and its exact immutable script may configure a heartbeat. */
+  private builtinHeartbeatIdentity(name: string): {
+    template: WorkerTemplate;
+    instanceId: string;
+    target: string;
+  } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const target = this.target(name);
+    const template = this.managedWorkerTemplate(name, target, this.registry());
+    if (!template || !this.fixedWorkerLogIdentity(name, target))
+      throw new Error('Only attested builtin workers can configure heartbeat');
+    const markerRaw = safeFile(path.join(target, '.pockethost-service.json'));
+    if (!markerRaw) throw new Error('Worker instance marker unavailable');
+    const marker: unknown = JSON.parse(markerRaw);
+    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+      throw new Error('Untrusted worker marker');
+    const instanceId = (marker as Record<string, unknown>).instanceId;
+    if (typeof instanceId !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId))
+      throw new Error('Untrusted worker instance');
+    return { template, instanceId, target };
+  }
+
+  /**
+   * Policy changes only: no process restart, no network probes and no shell.
+   * Binding the policy to the instance blocks a replaced worker from using
+   * the old heartbeat configuration.
+   */
+  configureWorkerHeartbeat(name: string, seconds: HeartbeatThresholdSeconds | null):
+    { changed: boolean; heartbeat: HeartbeatReadback } {
+    const worker = this.builtinHeartbeatIdentity(name);
+    const changed = this.heartbeatPolicy.configure(name, worker.instanceId, seconds);
+    const after = this.builtinHeartbeatIdentity(name);
+    if (after.instanceId !== worker.instanceId ||
+        after.target !== worker.target || after.template !== worker.template)
+      throw new Error('Worker identity changed during heartbeat policy update');
+    return {
+      changed,
+      heartbeat: this.heartbeatPolicy.observe(name, after.instanceId, after.template,
+        this.probe(name), path.join(PREFIX, 'var', 'log', 'sv', name)),
+    };
+  }
+
   /**
    * Manual, read-only runit health observation for attested services.
    * Unlike Node hosting readiness, this does not claim application health
@@ -1036,6 +1088,15 @@ export class TermuxServiceAdmin {
       throw new Error('Service identity unverified; health inspection refused');
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
+    const template = this.managedWorkerTemplate(name, current, registrations);
+    const heartbeat: HeartbeatReadback = template
+      ? (() => {
+          const worker = this.builtinHeartbeatIdentity(name);
+          return this.heartbeatPolicy.observe(name, worker.instanceId, worker.template,
+            observed, path.join(PREFIX, 'var', 'log', 'sv', name));
+        })()
+      : { mode: 'disabled', staleAfterSeconds: null,
+          status: 'disabled', lastOutputAt: null };
     let logEvidence: RunitHealthReadback['logEvidence'] = 'no-log';
     let lastLogWriteAt: string | null = null;
     const logRoot = path.join(PREFIX, 'var', 'log', 'sv', name);
@@ -1074,7 +1135,7 @@ export class TermuxServiceAdmin {
       throw new Error('Service identity changed during health inspection');
     return {
       name, identity: 'verified', observed, readiness: 'not-verified',
-      autostart, logEvidence, lastLogWriteAt,
+      heartbeat, autostart, logEvidence, lastLogWriteAt,
       checkedAt: new Date().toISOString(),
     };
   }

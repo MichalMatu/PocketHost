@@ -21,11 +21,18 @@ type RecoveryReview = {
   windowEndsAt: string | null
   checkedAt: string
 }
+type HeartbeatPolicy = {
+  mode: "disabled" | "log-heartbeat"
+  staleAfterSeconds: 180 | 300 | 600 | null
+  status: "disabled" | "fresh" | "stale" | "missing" | "unknown"
+  lastOutputAt: string | null
+}
 type RunitHealth = {
   name: string
   identity: "verified"
   observed: "running" | "stopped" | "unknown"
   readiness: "not-verified"
+  heartbeat: HeartbeatPolicy
   autostart: boolean | null
   logEvidence: "log-write" | "no-log" | "untrusted"
   lastLogWriteAt: string | null
@@ -43,7 +50,10 @@ async function getJson<T>(path: string): Promise<T> {
   return await response.json() as T
 }
 
-async function postJson<T>(payload: { action: "service-recover"; name: "once"; path: string }): Promise<T> {
+async function postJson<T>(payload:
+  | { action: "service-recover"; name: "once"; path: string }
+  | { action: "service-heartbeat"; name: "disabled" | "180" | "300" | "600"; path: string }
+): Promise<T> {
   const response = await fetch(base, {
     method: "POST",
     headers: {
@@ -102,6 +112,15 @@ export function RunitHealthPanel() {
           result.identity !== "verified" ||
           !["running", "stopped", "unknown"].includes(result.observed) ||
           result.readiness !== "not-verified" ||
+          !result.heartbeat ||
+          !["disabled", "log-heartbeat"].includes(result.heartbeat.mode) ||
+          !["disabled", "fresh", "stale", "missing", "unknown"].includes(result.heartbeat.status) ||
+          (result.heartbeat.mode === "disabled"
+            ? result.heartbeat.staleAfterSeconds !== null
+            : ![180, 300, 600].includes(result.heartbeat.staleAfterSeconds as number)) ||
+          (result.heartbeat.lastOutputAt !== null &&
+            (typeof result.heartbeat.lastOutputAt !== "string" ||
+              !Number.isFinite(Date.parse(result.heartbeat.lastOutputAt)))) ||
           (result.autostart !== null && typeof result.autostart !== "boolean") ||
           !["log-write", "no-log", "untrusted"].includes(result.logEvidence) ||
           (result.lastLogWriteAt !== null &&
@@ -113,6 +132,36 @@ export function RunitHealthPanel() {
       setReadback(result)
     } catch {
       setError("Health observation refused or unavailable; do not infer readiness.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const setHeartbeat = async (name: string, choice: "disabled" | "180" | "300" | "600") => {
+    if (busy || !services?.some(item => item.name === name && item.template &&
+        item.registered && !item.protected)) return
+    setBusy(name)
+    setError(null)
+    setNotice(null)
+    try {
+      const result = await postJson<{ changed: boolean; heartbeat: HeartbeatPolicy }>({
+        action: "service-heartbeat", name: choice, path: name,
+      })
+      if (!result || !result.heartbeat ||
+          !["disabled", "log-heartbeat"].includes(result.heartbeat.mode))
+        throw new Error("Heartbeat policy confirmation missing")
+      const current = await getJson<RunitHealth>(
+        "?mode=service-health&name=" + encodeURIComponent(name))
+      if (current.name !== name || current.identity !== "verified" ||
+          current.readiness !== "not-verified" ||
+          current.heartbeat?.mode !== result.heartbeat.mode ||
+          current.heartbeat.staleAfterSeconds !== result.heartbeat.staleAfterSeconds)
+        throw new Error("Heartbeat policy readback mismatch")
+      setReadback(current)
+      setNotice(name + ": worker heartbeat policy saved and confirmed.")
+    } catch {
+      setError("Heartbeat policy refused or readback unconfirmed. Refresh before another change.")
+      setReadback(null)
     } finally {
       setBusy(null)
     }
@@ -231,10 +280,33 @@ export function RunitHealthPanel() {
       <p className="text-sm font-medium">{readback.name}</p>
       <div className="flex flex-wrap gap-2">
         <Badge variant="outline">Runit: {readback.observed}</Badge>
-        <Badge variant="outline">Readiness: unverified</Badge>
+        <Badge variant="outline">App readiness: unverified</Badge>
+        <Badge variant="outline">Worker heartbeat: {readback.heartbeat.mode === "disabled"
+          ? "off" : readback.heartbeat.status}</Badge>
         <Badge variant="outline">Autostart: {readback.autostart === null
           ? "unknown" : readback.autostart ? "enabled" : "disabled"}</Badge>
       </div>
+      {services?.some(service => service.name === readback.name && service.template) &&
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground">
+            Built-in worker heartbeat threshold (manual checks only). Fresh logs prove
+            worker output, not HTTP readiness. No background monitor or restart.
+          </p>
+          <div className="flex flex-wrap gap-2" aria-label="Worker heartbeat policy">
+            {(["disabled", "180", "300", "600"] as const).map(choice => <Button
+              key={choice} size="sm" variant={
+                (choice === "disabled" && readback.heartbeat.mode === "disabled") ||
+                (choice !== "disabled" && readback.heartbeat.staleAfterSeconds === Number(choice))
+                  ? "secondary" : "outline"}
+              disabled={busy !== null}
+              onClick={() => void setHeartbeat(readback.name, choice)}>
+              {choice === "disabled" ? "Off" : Number(choice) / 60 + " min"}
+            </Button>)}
+          </div>
+          {readback.heartbeat.lastOutputAt && <p className="text-xs text-muted-foreground">
+            Last matching heartbeat output: {new Date(readback.heartbeat.lastOutputAt).toLocaleString()}
+          </p>}
+        </div>}
       <p className="text-xs text-muted-foreground">
         Log write: {readback.logEvidence === "log-write" && readback.lastLogWriteAt
           ? new Date(readback.lastLogWriteAt).toLocaleString()

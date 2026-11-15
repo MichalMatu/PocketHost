@@ -161,6 +161,19 @@ nie mechanizmu restartów runit. **Status S1–S4 nadal IN_PROGRESS.**
 Następne: konfiguracja readiness, polityka rollback i testy
 całego etapu przed odbiorem.
 
+**S4 — konfigurowalny heartbeat własnych workerów (częściowo, bez odbioru):**
+`Health checks` obsługuje dla własnych, ponownie zweryfikowanych
+szablonów Node.js/Python progi 3/5/10 minut lub Off. Prywatny zapis
+polityki jest związany z identyfikatorem konkretnej instancji;
+kontrola na żądanie wymaga końcowej linii `svlogd -tt` z ustalonym
+tekstem heartbeat oraz świeżego czasu zapisu logu. **To dowód
+aktywności workera, nie pełna readiness aplikacji ani HTTP**.
+Brak ingerencji w obce serwisy, brak nowych schedulerów, brak
+automatycznych restartów; istniejące Node Hosting HTTP readiness
+pozostaje odrębnym mechanizmem. S4 nadal `[ ]`: brak jeszcze
+konfigurowalnej readiness dowolnej aplikacji, rollback i
+kompletnego testu na A8.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

@@ -225,6 +225,31 @@ semantics and the scoped positive/negative Tests S5 closure gate.
 The physical A8 cannot be considered functionally qualified by merely
 deploying this code without execution of that gate.
 
+## S4 built-in worker heartbeat policy (partial readiness)
+
+A fixed Node.js/Python heartbeat worker can now opt into an **on-demand
+log-heartbeat check** with an explicit freshness threshold: 3, 5 or
+10 minutes, or Off. The policy is stored privately, bound to the exact
+verified worker instance UUID and rejected if that instance changes.
+The browser supplies only a fixed policy ID and an enrolled service name;
+there is no shell, command, HTTP URL, port or executable injection.
+
+The check requires the original PocketHost template and log-run script
+attested against their source, and a trusted owner-only log. It inspects
+only the **last complete** `svlogd -tt` record, which must match the
+runtime-specific fixed heartbeat text. A recent file modification time
+within the chosen threshold provides **worker-output evidence**, not a
+proof of full application readiness. Missing, stale, unknown or unsafe
+logs never become a healthy signal. The existing distinct Node Hosting
+HTTP readiness with nonce identity remains authoritative for web apps.
+For services without an explicit built-in worker template, application
+readiness stays `not-verified`.
+
+The UI re-reads the actual persisted policy after each change. No
+watchdog, scheduler or automatic recovery action is added. S4 still
+requires general app readiness configuration, clearly scoped rollback
+semantics, functional stage tests and acceptance.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
