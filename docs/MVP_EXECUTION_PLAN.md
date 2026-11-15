@@ -33,7 +33,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 - [ ] **S5: Ręcznie autoryzowane QA.** **Nie uruchamiać domyślnie**, nawet po S1–S4. Najpierw przedstawić zakres testów pozytywnych/negatywnych/UI/API/host i poprosić o osobną zgodę na jedno uruchomienie.
 - [ ] **S6: Odbiór użytkownika.** Aktualny panel, exact SHA, bezpieczny receipt, lista potwierdzonych/niepotwierdzonych funkcji, link MacBook; `ACCEPTED` dopiero po decyzji właściciela.
 
-**Python:** w panelu można zapisać i przywracać własny `worker.py` (max 32 KiB). Start/Restart/autostart/recovery dowolnego kodu Python przez niezabezpieczony LAN nadal są **zablokowane**. `-I` nie jest sandboxem. Nie uruchamiaj niezweryfikowanego kodu na A8.
+**Własne aplikacje — kod zapisany, wdrożenie niepotwierdzone:** można przygotować prywatny `worker.py` lub `worker.mjs` (max 32 KiB), z hashem SHA-256 i weryfikacją źródła. Dla obu typów Start/Restart/autostart/recovery przez niezabezpieczony LAN są **zablokowane**. Node.js i `python -I` nie stanowią sandboxa. Rzeczywisty start własnego kodu wymaga osobnego, uwierzytelnionego mechanizmu właściciela i odbioru bezpieczeństwa. Testy QA na końcu.
 
 ## 2. Platform — NOT_STARTED jako całość
 
