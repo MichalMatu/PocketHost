@@ -211,10 +211,19 @@ blokadą plikową zarówno ponowną kwalifikację workera, jak i trwały
 zapis próby przed jedynym `sv up`. Dzięki temu różne instancje panelu
 nie mogą jednocześnie przekroczyć limitu 2 prób/godzinę.
 Konflikt blokady jest odrzucany, bez automatycznego ponawiania.
-Po awarii nieusu­nięta blokada oznacza HOLD do niezależnej
+Po awarii nieusunięta blokada oznacza HOLD do niezależnej
 weryfikacji; nie jest czyszczona automatycznie. Zasady
 readiness/rollback i testy zamknięcia Services nadal otwarte;
 **S4 pozostaje `[ ]`.**
+
+**S4 A8 2026-11-15 — wzajemne wykluczanie recovery:** kod `db72ddd03240bd589076e44a618e08575745b9bf`,
+receipt `pockethost-a8-cross-process-recovery-lock-20261115-v1`,
+terminalny `PASS`, live `db72ddd03240bd589076e44a618e08575745b9bf`, PID 17795, start ticks 11979838,
+HTTP 200, chronione usługi bez zmian, `tests=not-run`.
+Blokada plikowa działa na granicy wielu procesów właściciela:
+od odczytu limitu po pojedyncze `sv up`; przerwana blokada zostaje
+do niezależnej weryfikacji. **S1–S4 nadal IN_PROGRESS.**
+Test współbieżnych żądań dopiero przy bramie odbiorczej Services.
 
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
