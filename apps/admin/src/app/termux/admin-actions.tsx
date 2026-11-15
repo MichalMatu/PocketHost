@@ -579,6 +579,14 @@ type RunitEntry = {
 const isPanelService = (service: RunitEntry) =>
   service.name === "pockethost-panel" || service.name === "pockethost-panel-watch"
 
+// A successful write receipt is not proof of enrollment. Trust only a fresh,
+// server-attested inventory entry with the intended template and safe state.
+const confirmedStoppedWorker = (items: RunitEntry[], name: string, template: WorkerTemplate) =>
+  items.some(item => item.name === name && item.registered === true &&
+    item.protected === false && item.identity === "verified" &&
+    item.identityReason === "run-sha-attested" && item.control === "standalone" &&
+    item.template === template && item.state === "stopped" && item.enabled === false)
+
 export function RunitServiceActions({
   refreshToken = 0, mode = "lifecycle",
 }: { refreshToken?: number; mode?: "lifecycle" | "autostart" }) {
@@ -632,7 +640,7 @@ export function RunitServiceActions({
     setSourceHistory(null)
     setPythonReplacement("")
     setError(null)
-    return data.services
+    return { services: data.services, archived: data.archived }
   }, [])
   React.useEffect(() => {
     let active = true
@@ -771,7 +779,7 @@ export function RunitServiceActions({
       try {
         const live = await refresh()
         if (name === "enable" || name === "disable") {
-          const observed = live.find(item => item.name === service.name)
+          const observed = live.services.find(item => item.name === service.name)
           if (!observed || !observed.registered || observed.protected ||
               observed.enabled !== (name === "enable")) {
             setError("Autostart command returned but persistent desired state was not verified.")
@@ -799,10 +807,20 @@ export function RunitServiceActions({
           "The run script and logs are retained for recovery; no foreign files are deleted.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-archive", name: service.template, path: service.name })
+      const receipt = await action<{ changed: boolean; archived: boolean; retainedFiles: boolean }>(
+        { action: "service-archive", name: service.template, path: service.name })
+      if (receipt.changed !== true || receipt.archived !== true || receipt.retainedFiles !== true)
+        throw new Error("Archive receipt incomplete")
       try {
-        await refresh()
-        setDone(service.name + ": worker archived; script and logs retained")
+        const snapshot = await refresh()
+        const saved = snapshot.archived.find(item => item.name === service.name)
+        if (snapshot.services.some(item => item.name === service.name) ||
+            saved?.template !== service.template || saved.identity !== "restorable") {
+          setError("Archive acknowledged, but ownership or archive readback is inconsistent. Do not retry.")
+          return
+        }
+        setServiceLogs(previous => previous?.name === service.name ? null : previous)
+        setDone(service.name + ": worker archived and verified; script and logs retained")
       } catch {
         setError("Archive acknowledged but inventory refresh failed. Verify state before any follow-up.")
       }
@@ -820,10 +838,18 @@ export function RunitServiceActions({
           "Runit may launch only its own supervisor/logger.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-restore", name: entry.template, path: entry.name })
+      const receipt = await action<{ changed: boolean; restored: boolean; started: boolean }>(
+        { action: "service-restore", name: entry.template, path: entry.name })
+      if (receipt.changed !== true || receipt.restored !== true || receipt.started !== false)
+        throw new Error("Restore receipt incomplete")
       try {
-        await refresh()
-        setDone(entry.name + ": restored and stopped; verify ownership before starting")
+        const snapshot = await refresh()
+        if (!confirmedStoppedWorker(snapshot.services, entry.name, entry.template) ||
+            snapshot.archived.some(item => item.name === entry.name)) {
+          setError("Restore acknowledged, but verified stopped ownership was not read back. Do not retry.")
+          return
+        }
+        setDone(entry.name + ": restored, verified and stopped; autostart disabled")
       } catch {
         setError("Restore acknowledged but inventory refresh failed. Verify before any lifecycle action.")
       }
@@ -851,7 +877,12 @@ export function RunitServiceActions({
           response.restorable !== false || response.filesRetained !== true)
         throw new Error("Unverified retirement receipt")
       try {
-        await refresh()
+        const snapshot = await refresh()
+        if (snapshot.archived.some(item => item.name === entry.name) ||
+            snapshot.services.some(item => item.name === entry.name)) {
+          setError("Retirement acknowledged, but service or archive remains visible. Inspect before retrying.")
+          return
+        }
         setServiceLogs(previous => previous?.name === entry.name ? null : previous)
         setDone(entry.name + ": retired from registry; definition and logs quarantined")
       } catch {
@@ -877,18 +908,25 @@ export function RunitServiceActions({
           "? It uses a fixed, isolated template and will not start automatically.")) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service-create", name: workerTemplate, path: name,
-        ...(custom ? { content: pythonSource } : {}) })
+      const receipt = await action<{ changed: boolean; name: string; template: WorkerTemplate }>(
+        { action: "service-create", name: workerTemplate, path: name,
+          ...(custom ? { content: pythonSource } : {}) })
+      if (receipt.changed !== true || receipt.name !== name || receipt.template !== workerTemplate)
+        throw new Error("Creation receipt incomplete")
       try {
-        await refresh()
+        const snapshot = await refresh()
+        if (!confirmedStoppedWorker(snapshot.services, name, workerTemplate) ||
+            snapshot.archived.some(item => item.name === name)) {
+          setError("Service created, but stopped ownership and autostart were not verified. Inspect before retrying.")
+          return
+        }
         setDone(name + (custom
-          ? ": Python source staged and attested · execution blocked in LAN Services"
-          : ": stopped worker provisioned; use Start after reviewing ownership"))
+          ? ": Python source staged, verified and stopped · execution blocked in LAN Services"
+          : ": verified stopped worker · autostart disabled"))
+        setCreatorOpen(false); setWorkerName(""); setPythonSource("")
       } catch {
-        setDone(name + ": creation acknowledged, but inventory refresh failed")
-        setError("Verify service identity before attempting lifecycle commands.")
+        setError("Creation acknowledged but inventory refresh failed. Verify identity before retrying.")
       }
-      setCreatorOpen(false); setWorkerName(""); setPythonSource("")
     } catch {
       setError("Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
     } finally { setBusy(false) }
