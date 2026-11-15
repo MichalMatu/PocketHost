@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
+import { resolveTermuxCheckCommand } from '../../scripts/dev/termux-check-command.mjs';
 import {
   prepareChangedVerification,
   runChangedVerification,
@@ -95,4 +96,28 @@ test('empty diff never introduces a full-suite fallback', () => {
   const prepared = prepareChangedVerification(makePlan([]));
   assert.deepEqual(prepared.checks, []);
   assert.deepEqual(prepared.review, []);
+});
+
+test('Termux QA maps pinned check commands to node instead of absent /usr/bin/env', () => {
+  const root = '/tmp/fake-checkout';
+  const checks = prepareChangedVerification(
+    makePlan(['apps/admin/src/app/screen/page.tsx']),
+  ).checks;
+  // Use the pure negative path without needing a dependency install here.
+  assert.throws(
+    () => resolveTermuxCheckCommand(
+      { label: 'unknown command', cwd: '.', argv: ['npm', 'exec', '--no', '--', 'unknown'] },
+      root, '/data/data/com.termux/files/usr/bin/node', 'android',
+    ),
+    /Unsupported npm QA command/,
+  );
+  assert.deepEqual(
+    resolveTermuxCheckCommand(
+      { label: 'structure', cwd: '.', argv: ['node', 'scripts/quality/check-structure.mjs'] },
+      root, '/data/data/com.termux/files/usr/bin/node', 'android',
+    ),
+    { file: '/data/data/com.termux/files/usr/bin/node',
+      args: ['scripts/quality/check-structure.mjs'] },
+  );
+  assert.ok(checks.some((item) => item.label === 'admin incremental typecheck'));
 });

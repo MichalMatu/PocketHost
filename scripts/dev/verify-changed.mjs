@@ -9,6 +9,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { prepareChangedVerification, runChangedVerification } from './verify-changed-policy.mjs';
+import { resolveTermuxCheckCommand } from './termux-check-command.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
@@ -145,10 +146,10 @@ if (!optionsValid) {
       }
       const result = runChangedVerification(prepared.checks, (check) => {
         const began = Date.now();
-        const [file, ...args] = check.argv;
+        const resolved = resolveTermuxCheckCommand(check, root, process.execPath);
         const output = command(
-          file === 'node' ? process.execPath : file,
-          args,
+          resolved.file,
+          resolved.args,
           path.join(root, check.cwd),
         );
         const ok = !output.error && output.status === 0;

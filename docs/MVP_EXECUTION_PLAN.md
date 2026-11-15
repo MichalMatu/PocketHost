@@ -362,6 +362,19 @@ to produktowy design, **nie odbiór** — A8 release i QA nadal HOLD
 do dostarczenia lokalnego toolchain TypeScript (poprzedni gate
 `tsc: not found` w checkoutcie QA), bez omijania bramki.
 
+**A8 QA dependencies / Termux manifest (2026-11-15, code pending A8 qualification):**
+`scripts/dev/termux-dependency-manifest.mjs` deklaruje wymagane pakiety
+Termux, dwa kompletne npm lockfile i dokładne lokalne CLI QA; Termux:API,
+PocketHost Companion i Shizuku pozostają opcjonalne. Instaluje się zależności
+projektowe tylko w izolowanym QA przez `npm ci --ignore-scripts`
+zgodnie z lockfile, bez globalnych instalacji. `verify-changed` wywołuje
+znane narzędzia TypeScript/ESLint/Vitest/Prettier bezpośrednio przez
+`process.execPath`, bo shebang `/usr/bin/env node` nie działa w Termux.
+Nieznane komendy lub brak pliku fail-closed; QA nie zmienia live, a
+FAST FLOW wdraża tylko po rzeczywistym PASS. Testy skoncentrowane na
+kontrakcie runnera, bez omijania bramki. Poprzedni gate fail
+`tsc: not found` był efektem shebang, nie braku zainstalowanego tsc.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
