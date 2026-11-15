@@ -2021,6 +2021,362 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Replace a stopped, owner-staged Node.js file only with an exact expected
+   * SHA. Keep one bounded private previous revision per update. No execution,
+   * package scripts, runit commands or inferred ownership is permitted.
+   * A crash between the two atomic renames leaves the unit unverified until
+   * manual reconciliation; it must never silently run a mismatched source.
+   */
+  updateNodeSource(
+    name: string,
+    expectedSha256: string,
+    source: string,
+  ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
+    valid(name);
+    if (
+      isReserved(name) ||
+      !/^[a-f0-9]{64}$/.test(expectedSha256) ||
+      typeof source !== 'string' ||
+      !source.trim() ||
+      source.includes(String.fromCharCode(0)) ||
+      Buffer.byteLength(source) > 32 * 1024
+    )
+      throw new RangeError('Invalid Node.js revision request');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const review = this.inspectNodeSource(name);
+      if (review.sourceSha256 !== expectedSha256)
+        throw new Error('Node.js source revision changed; review latest SHA before retry');
+      if (review.observed !== 'stopped' || review.autostart !== false)
+        throw new Error('Node.js replacement requires a stopped, autostart-disabled worker');
+      const target = this.target(name);
+      if (this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1')
+        throw new Error('Node.js source ownership changed');
+
+      const nextSha256 = createHash('sha256').update(source).digest('hex');
+      if (nextSha256 === expectedSha256)
+        return {
+          changed: false,
+          sourceSha256: nextSha256,
+          sourceBytes: Buffer.byteLength(source),
+          execution: 'blocked',
+        };
+
+      const sourcePath = path.join(target, 'worker.mjs');
+      const markerPath = path.join(target, '.pockethost-service.json');
+      const initial = lstatSync(sourcePath);
+      if (
+        !initial.isFile() ||
+        initial.isSymbolicLink() ||
+        initial.nlink !== 1 ||
+        initial.uid !== process.getuid?.() ||
+        (initial.mode & 0o077) !== 0 ||
+        initial.size > 32 * 1024
+      )
+        throw new Error('Untrusted old Node.js source');
+      const fd = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+      let oldBytes: Buffer;
+      try {
+        const opened = fstatSync(fd);
+        if (
+          opened.dev !== initial.dev ||
+          opened.ino !== initial.ino ||
+          opened.nlink !== 1 ||
+          opened.size !== initial.size ||
+          opened.mtimeMs !== initial.mtimeMs
+        )
+          throw new Error('Node.js source changed while opening');
+        oldBytes = readFileSync(fd);
+        const after = fstatSync(fd);
+        const current = lstatSync(sourcePath);
+        if (
+          after.dev !== initial.dev ||
+          after.ino !== initial.ino ||
+          current.dev !== initial.dev ||
+          current.ino !== initial.ino ||
+          after.size !== initial.size ||
+          current.size !== initial.size ||
+          after.mtimeMs !== initial.mtimeMs ||
+          current.mtimeMs !== initial.mtimeMs ||
+          createHash('sha256').update(oldBytes).digest('hex') !== expectedSha256
+        )
+          throw new Error('Node.js source changed while copying previous revision');
+      } finally {
+        closeSync(fd);
+      }
+      const markerRaw = safeFile(markerPath);
+      if (!markerRaw) throw new Error('Node.js owner marker missing');
+      const marker: unknown = JSON.parse(markerRaw);
+      if (
+        !marker ||
+        typeof marker !== 'object' ||
+        Array.isArray(marker) ||
+        (marker as Record<string, unknown>).template !== 'node-source-v1' ||
+        (marker as Record<string, unknown>).sourceSha256 !== expectedSha256
+      )
+        throw new Error('Node.js owner marker changed');
+      const history = path.join(target, '.node-source-history');
+      try {
+        mkdirSync(history, { mode: 0o700 });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      }
+      const directory = lstatSync(history);
+      if (
+        !directory.isDirectory() ||
+        directory.isSymbolicLink() ||
+        directory.uid !== process.getuid?.() ||
+        (directory.mode & 0o077) !== 0 ||
+        realpathSync(history) !== history
+      )
+        throw new Error('Unsafe Node.js source history');
+      const revisions = readdirSync(history);
+      if (revisions.length >= 8 || revisions.some((file) => !/^[0-9a-f-]{36}\.mjs$/.test(file)))
+        throw new Error('Node.js source revision history full or untrusted');
+      const nonce = randomUUID();
+      const backup = path.join(history, nonce + '.mjs');
+      const newSource = path.join(target, '.worker-' + nonce + '.tmp');
+      const newMarker = path.join(target, '.marker-' + nonce + '.tmp');
+      writeFileSync(backup, oldBytes, { flag: 'wx', mode: 0o600 });
+      writeFileSync(newSource, source, { flag: 'wx', mode: 0o600 });
+      writeFileSync(
+        newMarker,
+        JSON.stringify({
+          ...(marker as Record<string, unknown>),
+          sourceSha256: nextSha256,
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
+      // One last active-source and runit readback under the lifecycle lock.
+      // A failed second rename is deliberately not auto-retried.
+      if (
+        this.target(name) !== target ||
+        this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1' ||
+        this.probe(name) !== 'stopped' ||
+        this.enabled(name, true) !== false ||
+        stagedWorkerSourceHash(target, 'node-source-v1') !== expectedSha256
+      )
+        throw new Error('Node.js source changed before revision commit');
+      renameSync(newSource, sourcePath);
+      renameSync(newMarker, markerPath);
+      const updated = this.inspectNodeSource(name);
+      if (
+        updated.sourceSha256 !== nextSha256 ||
+        updated.observed !== 'stopped' ||
+        updated.autostart !== false
+      )
+        throw new Error('Node.js source revision write not attested');
+      return {
+        changed: true,
+        sourceSha256: nextSha256,
+        sourceBytes: updated.sourceBytes,
+        execution: 'blocked',
+      };
+    } finally {
+      release();
+    }
+  }
+
+  /**
+   * Inventory at most eight private previous versions of an attested Python
+   * worker. Never expose source bytes, arbitrary paths, or execution rights.
+   */
+  inspectNodeSourceHistory(name: string): {
+    name: string;
+    currentSha256: string;
+    revisions: { id: string; sourceSha256: string; bytes: number; savedAt: string }[];
+    execution: 'blocked';
+  } {
+    const active = this.inspectNodeSource(name);
+    const target = this.target(name);
+    const folder = path.join(target, '.node-source-history');
+    let names: string[];
+    try {
+      const dir = lstatSync(folder);
+      if (
+        !dir.isDirectory() ||
+        dir.isSymbolicLink() ||
+        dir.uid !== process.getuid?.() ||
+        (dir.mode & 0o077) !== 0 ||
+        realpathSync(folder) !== folder
+      )
+        throw new Error('Untrusted Node.js revision history');
+      names = readdirSync(folder);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      names = [];
+    }
+    if (
+      names.length > 8 ||
+      names.some(
+        (entry) =>
+          !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.mjs$/.test(entry),
+      )
+    )
+      throw new Error('Unexpected Node.js revision history contents');
+    const revisions = names
+      .map((filename) => {
+        const file = path.join(folder, filename);
+        const initial = lstatSync(file);
+        if (
+          !initial.isFile() ||
+          initial.isSymbolicLink() ||
+          initial.nlink !== 1 ||
+          initial.uid !== process.getuid?.() ||
+          (initial.mode & 0o077) !== 0 ||
+          initial.size < 1 ||
+          initial.size > 32 * 1024 ||
+          !Number.isFinite(initial.mtimeMs)
+        )
+          throw new Error('Unsafe Node.js revision');
+        const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+        let bytes: Buffer;
+        try {
+          const before = fstatSync(fd);
+          if (
+            !before.isFile() ||
+            before.dev !== initial.dev ||
+            before.ino !== initial.ino ||
+            before.nlink !== 1 ||
+            before.size !== initial.size ||
+            before.mtimeMs !== initial.mtimeMs ||
+            before.uid !== initial.uid ||
+            (before.mode & 0o077) !== 0
+          )
+            throw new Error('Node.js revision replaced during opening');
+          bytes = readFileSync(fd);
+          const after = fstatSync(fd);
+          const current = lstatSync(file);
+          if (
+            bytes.length !== initial.size ||
+            after.dev !== initial.dev ||
+            after.ino !== initial.ino ||
+            current.dev !== initial.dev ||
+            current.ino !== initial.ino ||
+            after.size !== initial.size ||
+            current.size !== initial.size ||
+            after.mtimeMs !== initial.mtimeMs ||
+            current.mtimeMs !== initial.mtimeMs ||
+            current.nlink !== 1 ||
+            current.uid !== initial.uid ||
+            (current.mode & 0o077) !== 0
+          )
+            throw new Error('Node.js revision changed while reading');
+        } finally {
+          closeSync(fd);
+        }
+        return {
+          id: filename.slice(0, -4),
+          sourceSha256: createHash('sha256').update(bytes).digest('hex'),
+          bytes: bytes.length,
+          savedAt: new Date(initial.mtimeMs).toISOString(),
+        };
+      })
+      .sort((a, b) => b.savedAt.localeCompare(a.savedAt) || a.id.localeCompare(b.id));
+    const confirmed = this.inspectNodeSource(name);
+    if (
+      this.target(name) !== target ||
+      active.sourceSha256 !== confirmed.sourceSha256 ||
+      active.observed !== confirmed.observed ||
+      active.autostart !== confirmed.autostart
+    )
+      throw new Error('Node.js worker identity changed while listing revisions');
+    return {
+      name,
+      currentSha256: confirmed.sourceSha256,
+      revisions,
+      execution: 'blocked',
+    };
+  }
+
+  /**
+   * Restore a selected private snapshot through the existing digest-checked
+   * stopped-source updater. No direct mutation of runit or launch path.
+   */
+  restorePythonSourceRevision(
+    name: string,
+    revisionId: string,
+    expectedCurrentSha256: string,
+    expectedRevisionSha256: string,
+  ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
+    valid(name);
+    if (
+      !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(revisionId) ||
+      !/^[a-f0-9]{64}$/.test(expectedCurrentSha256) ||
+      !/^[a-f0-9]{64}$/.test(expectedRevisionSha256)
+    )
+      throw new RangeError('Invalid Node.js revision selector');
+    const record = this.inspectNodeSourceHistory(name);
+    if (
+      record.currentSha256 !== expectedCurrentSha256 ||
+      !record.revisions.some(
+        (item) => item.id === revisionId && item.sourceSha256 === expectedRevisionSha256,
+      )
+    )
+      throw new Error('Node.js revision selection is stale');
+    const folder = path.join(this.target(name), '.node-source-history');
+    const file = path.join(folder, revisionId + '.mjs');
+    const initial = lstatSync(file);
+    if (
+      !initial.isFile() ||
+      initial.isSymbolicLink() ||
+      initial.nlink !== 1 ||
+      initial.uid !== process.getuid?.() ||
+      (initial.mode & 0o077) !== 0 ||
+      initial.size < 1 ||
+      initial.size > 32 * 1024
+    )
+      throw new Error('Invalid retained Node.js file');
+    const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+    let bytes: Buffer;
+    try {
+      const before = fstatSync(fd);
+      if (
+        before.dev !== initial.dev ||
+        before.ino !== initial.ino ||
+        before.nlink !== 1 ||
+        before.size !== initial.size ||
+        before.mtimeMs !== initial.mtimeMs ||
+        before.uid !== initial.uid ||
+        (before.mode & 0o077) !== 0
+      )
+        throw new Error('Retained Node.js file changed during opening');
+      bytes = readFileSync(fd);
+      const after = fstatSync(fd);
+      const current = lstatSync(file);
+      if (
+        bytes.length !== initial.size ||
+        after.dev !== initial.dev ||
+        after.ino !== initial.ino ||
+        current.dev !== initial.dev ||
+        current.ino !== initial.ino ||
+        after.size !== initial.size ||
+        current.size !== initial.size ||
+        after.mtimeMs !== initial.mtimeMs ||
+        current.mtimeMs !== initial.mtimeMs ||
+        current.nlink !== 1 ||
+        current.uid !== initial.uid ||
+        (current.mode & 0o077) !== 0 ||
+        createHash('sha256').update(bytes).digest('hex') !== expectedRevisionSha256
+      )
+        throw new Error('Retained Node.js source fingerprint changed');
+    } finally {
+      closeSync(fd);
+    }
+    const text = bytes.toString('utf8');
+    if (
+      !text.trim() ||
+      text.includes(String.fromCharCode(0)) ||
+      !Buffer.from(text, 'utf8').equals(bytes)
+    )
+      throw new Error('Retained Node.js source is not valid UTF-8 text');
+    const result = this.updateNodeSource(name, expectedCurrentSha256, text);
+    if (result.sourceSha256 !== expectedRevisionSha256)
+      throw new Error('Restored Node.js source not attested');
+    return result;
+  }
+
+  /**
    * Read-only activation preflight for owner-staged Python. No source text,
    * authorization token, execution command or process identifier is exposed.
    * In particular, a browser TTY is not on-device owner authentication.
