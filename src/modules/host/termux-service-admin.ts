@@ -124,6 +124,15 @@ export interface RunitHealthReadback {
   lastLogWriteAt: string | null;
   checkedAt: string;
 }
+export interface WorkerHealthOverview {
+  checkedAt: string;
+  blockedRegistrations: number;
+  truncated: boolean;
+  rows: Array<
+    | { name: string; template: WorkerTemplate; status: 'observed'; health: RunitHealthReadback }
+    | { name: string; template: WorkerTemplate; status: 'unavailable' }
+  >;
+}
 export interface TermuxService {
   name: string;
   registered: boolean;
@@ -2570,6 +2579,42 @@ export class TermuxServiceAdmin {
       sourceBytes: file.size, observed, autostart,
       canStartFromLan: false, ownerApproval: 'not-configured',
       checkedAt: new Date().toISOString() };
+  }
+
+  /**
+   * Manual snapshot of PocketHost standalone worker health. Never probes a
+   * delegated project through the generic Services authority or exposes
+   * unregistered/foreign service names. Failed re-attestation is an unavailable
+   * row, never a success or trigger for automatic repair.
+   */
+  inspectHealthOverview(): WorkerHealthOverview {
+    const inventory = this.list();
+    const registeredNames = new Set(this.registry().map((item) => item.name));
+    const blockedRegistrations = inventory.filter((item) =>
+      registeredNames.has(item.name) && !item.registered).length;
+    const workers = inventory.filter((item) =>
+      item.control === 'standalone' &&
+      item.registered && !item.protected && !!item.template);
+    const rows: WorkerHealthOverview['rows'] = workers.slice(0, MAX_TEMPLATE_WORKERS)
+      .map((item) => {
+        const name = item.name;
+        const template = item.template!;
+        try {
+          const health = this.inspectHealth(name);
+          if (
+            this.managedWorkerTemplate(name, this.target(name), this.registry()) !== template
+          ) throw new Error('Worker changed during batch readback');
+          return { name, template, status: 'observed' as const, health };
+        } catch {
+          return { name, template, status: 'unavailable' as const };
+        }
+      });
+    return {
+      checkedAt: new Date().toISOString(),
+      blockedRegistrations,
+      truncated: workers.length > MAX_TEMPLATE_WORKERS,
+      rows,
+    };
   }
 
   /**

@@ -1433,6 +1433,8 @@ function termuxAdminApi(): Plugin {
                 }
               })() :
               mode === "service-boot" && url.searchParams.size === 1 ? inspectTermuxBoot() :
+              mode === "service-health-overview" && url.searchParams.size === 1 ?
+                services.inspectHealthOverview() :
               mode === "service-health" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
               mode === "service-recovery" && url.searchParams.size === 2 &&

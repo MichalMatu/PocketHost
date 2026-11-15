@@ -27,6 +27,17 @@ type HeartbeatPolicy = {
   status: "disabled" | "fresh" | "stale" | "missing" | "unknown"
   lastOutputAt: string | null
 }
+type HealthOverviewRow =
+  | { name: string; template: VerifiedService["template"]; status: "observed"; health: RunitHealth }
+  | { name: string; template: VerifiedService["template"]; status: "unavailable" }
+
+type HealthOverview = {
+  checkedAt: string
+  blockedRegistrations: number
+  truncated: boolean
+  rows: HealthOverviewRow[]
+}
+
 type RunitHealth = {
   name: string
   identity: "verified"
@@ -74,6 +85,7 @@ export function RunitHealthPanel() {
   const [readback, setReadback] = React.useState<RunitHealth | null>(null)
   const [recovery, setRecovery] = React.useState<RecoveryReview | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
+  const [overview, setOverview] = React.useState<HealthOverview | null>(null)
 
   const refresh = React.useCallback(async () => {
     const result = await getJson<{ services: VerifiedService[] }>("?mode=services")
@@ -91,6 +103,7 @@ export function RunitHealthPanel() {
     }
     setServices(result.services.filter(service =>
       service.registered && !service.protected))
+    setOverview(null)
     setReadback(null)
     setRecovery(null)
     setNotice(null)
@@ -100,6 +113,50 @@ export function RunitHealthPanel() {
   React.useEffect(() => {
     void refresh().catch(() => setError("Service inventory unavailable"))
   }, [refresh])
+
+  const refreshOverview = async () => {
+    if (busy !== null) return
+    setBusy("__overview__")
+    setError(null)
+    setNotice(null)
+    setOverview(null)
+    try {
+      const result = await getJson<HealthOverview>("?mode=service-health-overview")
+      if (!result || !Array.isArray(result.rows) || result.rows.length > 4 ||
+          !Number.isSafeInteger(result.blockedRegistrations) ||
+          result.blockedRegistrations < 0 || result.blockedRegistrations > 32 ||
+          typeof result.truncated !== "boolean" ||
+          !Number.isFinite(Date.parse(result.checkedAt)) ||
+          !result.rows.every(row =>
+            serviceName.test(row.name) &&
+            ["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1",
+             "node-source-v1"].includes(row.template ?? "") &&
+            (row.status === "unavailable" ||
+              (row.status === "observed" && row.health &&
+               row.health.name === row.name && row.health.identity === "verified" &&
+               row.health.readiness === "not-verified" &&
+               ["running", "stopped", "unknown"].includes(row.health.observed) &&
+               ["log-write", "no-log", "untrusted"].includes(row.health.logEvidence) &&
+               ["disabled", "log-heartbeat"].includes(row.health.heartbeat?.mode) &&
+               ["disabled", "fresh", "stale", "missing", "unknown"].includes(
+                 row.health.heartbeat?.status) &&
+               (row.health.autostart === null || typeof row.health.autostart === "boolean") &&
+               Number.isFinite(Date.parse(row.health.checkedAt))))))
+        throw new Error("Untrusted health overview")
+      setOverview(result)
+    } catch {
+      setError("Worker health overview unavailable or changed during observation. No repair was attempted.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const needsAttention = (health: RunitHealth): boolean =>
+    health.observed === "unknown" ||
+    (health.autostart === true && health.observed === "stopped") ||
+    health.logEvidence === "untrusted" ||
+    (health.heartbeat.mode === "log-heartbeat" &&
+      ["stale", "missing", "unknown"].includes(health.heartbeat.status))
 
   const inspect = async (service: VerifiedService) => {
     if (busy || !service.registered || service.protected ||
@@ -271,6 +328,54 @@ export function RunitHealthPanel() {
       Recovery requires a separate manual review. It is limited to PocketHost's fixed
       Node.js/Python workers and never runs in the background.
     </p>
+    <section className="space-y-2 rounded-md border p-3" aria-label="Standalone worker health overview">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-sm font-medium">Standalone workers · health snapshot</h4>
+        <Button size="sm" variant="outline" disabled={busy !== null}
+          onClick={() => void refreshOverview()}>
+          {busy === "__overview__" ? "Reading…" : "Inspect all workers"}
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        One manual read of up to four verified PocketHost workers. No polling,
+        HTTP readiness claim or automatic recovery.
+      </p>
+      {overview && <>
+        <div className="flex flex-wrap gap-2">
+          <Badge variant="outline">Workers: {overview.rows.length}</Badge>
+          <Badge variant="outline">Needs attention: {overview.rows.filter(row =>
+            row.status === "unavailable" || needsAttention(row.health)).length}</Badge>
+          <Badge variant="outline">Unverified registrations: {overview.blockedRegistrations}</Badge>
+        </div>
+        {overview.rows.map(row => <div key={row.name}
+          className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">{row.name}</p>
+            {row.status === "unavailable" ?
+              <p role="alert" className="text-xs">Ownership or observation changed · no health claim</p> :
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="outline">Runit: {row.health.observed}</Badge>
+                <Badge variant="outline">Heartbeat: {row.health.heartbeat.mode === "disabled"
+                  ? "off" : row.health.heartbeat.status}</Badge>
+                <Badge variant="outline">{needsAttention(row.health)
+                  ? "Needs inspection" : "Observed · readiness unverified"}</Badge>
+              </div>}
+          </div>
+          {row.status === "observed" && <Button size="sm" variant="outline"
+            disabled={busy !== null} onClick={() => {
+              const service = services?.find(item => item.name === row.name)
+              if (service) void inspect(service)
+            }}>Details</Button>}
+        </div>)}
+        {overview.rows.length === 0 && <p className="text-xs">No attested standalone workers.</p>}
+        {overview.truncated && <p role="alert" className="text-xs">
+          Worker limit exceeded; snapshot incomplete.
+        </p>}
+        <p className="text-xs text-muted-foreground">
+          Observed {new Date(overview.checkedAt).toLocaleString()} · no automatic refresh
+        </p>
+      </>}
+    </section>
     {error && <p role="alert" className="text-xs">{error}</p>}
     {notice && <p role="status" className="text-xs">{notice}</p>}
     {services === null && !error && <p className="text-xs text-muted-foreground">Loading verified services…</p>}
