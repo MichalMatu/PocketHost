@@ -136,6 +136,21 @@ funkcjonalne S1–S4**. Następny krok: jawna polityka readiness/recovery
 dla zweryfikowanych usług i dopiero po pełnym zamknięciu Services
 testy pozytywne/negatywne oraz raport.
 
+**S4 — ręczne, limitowane odzyskiwanie workera (częściowo, bez odbioru):**
+strona `Services → Health checks` udostępnia dla w pełni
+zweryfikowanych workerów Node.js/Python `Review recovery` oraz
+jawne `Request one recovery start`. Reużywamy istniejące
+`evaluateHealthPolicy`; wolno uruchomić pojedyncze `sv up` tylko,
+gdy worker jest zatrzymany, autostart włączony, nie zmieniła się jego
+tożsamość, a limit wynosi **2 żądania w ciągu godziny** z
+**2-minutowym cooldownem**. Historia prób jest zapisywana w
+prywatnym rejestrze *przed* poleceniem; nieudane lub przerwane
+wywołanie zużywa próbę. Przy `running` / `unknown` / `down`
+brak naprawy. Brak schedulera, samoczynnych działań, restartów usług
+projektów lub dowolnych procesów. **To limit próśb PocketHost, nie
+mechanizmu restartów samego runit.** HTTP readiness/rollback
+dla ogólnych usług oraz pełne testy etapu pozostają otwarte.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

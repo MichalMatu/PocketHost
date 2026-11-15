@@ -18,6 +18,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.ts';
+import { evaluateHealthPolicy } from '../../shared/hosting-health-policy.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
@@ -32,6 +33,9 @@ const SYSTEM_SERVICE_NAMES = new Set([
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
 const MAX_TEMPLATE_WORKERS = 4;
+const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
+const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
+const RECOVERY_MAX_ATTEMPTS = 2;
 export type WorkerTemplate = 'heartbeat-worker-v1' | 'python-heartbeat-v1';
 
 interface Registration {
@@ -57,6 +61,25 @@ export interface ArchivedWorkerSummary {
 type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
+interface RecoveryAttemptRecord {
+  name: string;
+  instanceId: string;
+  /** Sorted timestamps; enforce a true rolling-hour budget. */
+  attemptedAtMs: number[];
+}
+export interface RunitRecoveryReview {
+  name: string;
+  template: WorkerTemplate;
+  observed: 'running' | 'stopped' | 'unknown';
+  readiness: 'not-verified';
+  action: 'start' | 'none' | 'blocked';
+  reason: string;
+  attempts: number;
+  maxAttempts: number;
+  nextEligibleAt: string | null;
+  windowEndsAt: string | null;
+  checkedAt: string;
+}
 export interface RunitHealthReadback {
   name: string;
   identity: 'verified';
@@ -143,6 +166,7 @@ export class TermuxServiceAdmin {
   private readonly serviceRoot: string;
   private readonly registerFile: string;
   private readonly archiveFile: string;
+  private readonly recoveryFile: string;
   constructor(
     serviceRoot = path.join(PREFIX, 'var', 'service'),
     registerFile = path.join(
@@ -156,6 +180,7 @@ export class TermuxServiceAdmin {
     this.serviceRoot = serviceRoot;
     this.registerFile = registerFile;
     this.archiveFile = path.join(path.dirname(registerFile), 'h3-archived-workers.json');
+    this.recoveryFile = path.join(path.dirname(registerFile), 'h3-worker-recovery.json');
   }
 
   private registry(): Registration[] {
@@ -402,6 +427,170 @@ export class TermuxServiceAdmin {
     });
     this.saveArchived(archived.filter((item) => item.name !== name));
     return { changed: true, restored: true, started: false };
+  }
+
+
+  /**
+   * Read-only recovery allowance. Uses the shared Hosting policy evaluator,
+   * but never offers automated healing or readiness claims. Restrict to
+   * a fully attested builtin unit: project recovery belongs to NodeRunitHost.
+   */
+  reviewWorkerRecovery(name: string): RunitRecoveryReview {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const registrations = this.registry();
+    const target = this.target(name);
+    const template = this.managedWorkerTemplate(name, target, registrations);
+    if (!template) throw new Error('Recovery only available for attested builtin worker');
+    const raw = safeFile(path.join(target, '.pockethost-service.json'));
+    if (!raw) throw new Error('Worker identity marker missing');
+    const marker: unknown = JSON.parse(raw);
+    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+      throw new Error('Untrusted worker identity marker');
+    const instanceId = (marker as Record<string, unknown>).instanceId;
+    if (typeof instanceId !== 'string' ||
+        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId))
+      throw new Error('Invalid worker instance identity');
+    const nowMs = Date.now();
+    const records = this.recoveryJournal();
+    const item = records.find((entry) => entry.name === name);
+    // Instance mismatch is not a route for bypassing retry limits.
+    if (item && item.instanceId !== instanceId)
+      throw new Error('Recovery history belongs to a different worker instance');
+    if (item && item.attemptedAtMs.some((at) => at > nowMs))
+      throw new Error('Recovery clock moved backwards; manual inspection required');
+    const recent = item
+      ? item.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
+      : [];
+    const attempts = recent.length;
+    const lastAttemptAtMs = recent.length ? recent[recent.length - 1] : null;
+    const observed = this.probe(name);
+    const autostart = this.enabled(name, true);
+    const decision = evaluateHealthPolicy({
+      readinessTimeoutMs: 5000,
+      cooldownMs: RECOVERY_COOLDOWN_MS,
+      maxAttempts: RECOVERY_MAX_ATTEMPTS,
+    }, {
+      desired: autostart === true ? 'running' : 'stopped',
+      observed, ready: null, requestedAtMs: null,
+      lastAttemptAtMs, attempts, nowMs, owned: true,
+      manuallyDisabled: autostart !== true,
+    });
+    if (this.target(name) !== target ||
+        this.managedWorkerTemplate(name, target, this.registry()) !== template)
+      throw new Error('Worker changed during recovery assessment');
+    return {
+      name, template, observed, readiness: 'not-verified',
+      action: decision.action === 'start' ? 'start' :
+        decision.action === 'blocked' ? 'blocked' : 'none',
+      reason: decision.reason, attempts,
+      maxAttempts: RECOVERY_MAX_ATTEMPTS,
+      nextEligibleAt: decision.nextEligibleAtMs === null
+        ? null : new Date(decision.nextEligibleAtMs).toISOString(),
+      windowEndsAt: recent.length ? new Date(recent[0] + RECOVERY_WINDOW_MS).toISOString() : null,
+      checkedAt: new Date(nowMs).toISOString(),
+    };
+  }
+
+  /** Explicit, once-only recovery attempt. No timer or background worker. */
+  async recoverWorkerOnce(name: string, run: Exec = executeFixed):
+    Promise<{ requested: true; result: HostCommandResult; review: RunitRecoveryReview }> {
+    const review = this.reviewWorkerRecovery(name);
+    if (review.action !== 'start' || review.observed !== 'stopped')
+      throw new Error('Recovery blocked by owner identity, manual stop, budget or cooldown');
+    const nowMs = Date.now();
+    const records = this.recoveryJournal();
+    const old = records.find((item) => item.name === name);
+    const markerRaw = safeFile(path.join(PREFIX, 'var', 'sv', name, '.pockethost-service.json'));
+    if (!markerRaw) throw new Error('Worker recovery marker missing');
+    const marker: unknown = JSON.parse(markerRaw);
+    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+      throw new Error('Recovery marker invalid');
+    const instanceId = (marker as Record<string, unknown>).instanceId;
+    if (typeof instanceId !== 'string')
+      throw new Error('Recovery instance invalid');
+    // Reassess immediately and consume the budget *before* sending sv up,
+    // ensuring a crash or a failed command never triggers an unbounded retry.
+    const fresh = this.reviewWorkerRecovery(name);
+    if (fresh.action !== 'start' || fresh.observed !== 'stopped')
+      throw new Error('Recovery state changed before attempt');
+    if (old && old.instanceId !== instanceId)
+      throw new Error('Recovery journal instance changed');
+    if (old && old.attemptedAtMs.some((at) => at > nowMs))
+      throw new Error('Recovery clock moved backwards');
+    const recent = old
+      ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
+      : [];
+    if (recent.length >= RECOVERY_MAX_ATTEMPTS ||
+        (recent.length > 0 && nowMs < recent[recent.length - 1] + RECOVERY_COOLDOWN_MS))
+      throw new Error('Recovery attempt budget or cooldown changed');
+    const next: RecoveryAttemptRecord = {
+      name, instanceId, attemptedAtMs: [...recent, nowMs],
+    };
+    this.saveRecoveryJournal([...records.filter((item) => item.name !== name), next]);
+    const result = await run(path.join(PREFIX, 'bin', 'sv'),
+      ['up', path.join(this.serviceRoot, name)],
+      { timeout: 20000, maxBuffer: 12000 });
+    if (result.exit !== 0)
+      throw new Error('Runit rejected the recovery start; attempt budget was consumed');
+    return { requested: true, result, review: this.reviewWorkerRecovery(name) };
+  }
+
+  private recoveryJournal(): RecoveryAttemptRecord[] {
+    let raw: string | null;
+    try {
+      const st = lstatSync(this.recoveryFile);
+      if (!st.isFile() || st.isSymbolicLink() || st.nlink !== 1 ||
+          st.uid !== process.getuid?.() || (st.mode & 0o077) !== 0)
+        throw new Error('Unsafe recovery journal');
+      raw = safeFile(this.recoveryFile);
+      if (raw === null) throw new Error('Recovery journal disappeared');
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
+      throw error;
+    }
+    const value: unknown = JSON.parse(raw);
+    if (!Array.isArray(value) || value.length > MAX_TEMPLATE_WORKERS)
+      throw new Error('Untrusted recovery journal');
+    const names = new Set<string>();
+    return value.map((candidate: unknown) => {
+      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
+        throw new Error('Invalid recovery entry');
+      const v = candidate as Record<string, unknown>;
+      if (Object.keys(v).sort().join(',') !==
+          'attemptedAtMs,instanceId,name' ||
+          typeof v.name !== 'string' || typeof v.instanceId !== 'string' ||
+          !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v.instanceId) ||
+          !Array.isArray(v.attemptedAtMs) || v.attemptedAtMs.length < 1 ||
+          v.attemptedAtMs.length > RECOVERY_MAX_ATTEMPTS ||
+          !v.attemptedAtMs.every((at: unknown, i: number) =>
+            typeof at === 'number' && Number.isSafeInteger(at) && at >= 0 &&
+            (i === 0 || at > v.attemptedAtMs[i - 1])) ||
+          names.has(v.name))
+        throw new Error('Untrusted recovery journal entry');
+      valid(v.name);
+      if (isReserved(v.name)) throw new Error('Protected recovery history');
+      names.add(v.name);
+      return v as unknown as RecoveryAttemptRecord;
+    });
+  }
+
+  private saveRecoveryJournal(records: RecoveryAttemptRecord[]): void {
+    if (records.length > MAX_TEMPLATE_WORKERS) throw new RangeError('Recovery history full');
+    const folder = path.dirname(this.recoveryFile);
+    mkdirSync(folder, { recursive: true, mode: 0o700 });
+    const parent = lstatSync(folder);
+    if (!parent.isDirectory() || parent.isSymbolicLink() ||
+        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0)
+      throw new Error('Unsafe recovery state folder');
+    this.recoveryJournal();
+    const temp = path.join(folder, '.recovery-' + randomUUID());
+    writeFileSync(temp, JSON.stringify(records) + '\n', { flag: 'wx', mode: 0o600 });
+    try {
+      renameSync(temp, this.recoveryFile);
+    } finally {
+      if (existsSync(temp)) rmSync(temp, { force: true });
+    }
   }
 
   private target(name: string): string {

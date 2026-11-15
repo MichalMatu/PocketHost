@@ -6,6 +6,20 @@ type VerifiedService = {
   name: string
   registered: boolean
   protected: boolean
+  template?: "heartbeat-worker-v1" | "python-heartbeat-v1"
+}
+type RecoveryReview = {
+  name: string
+  template: "heartbeat-worker-v1" | "python-heartbeat-v1"
+  observed: "running" | "stopped" | "unknown"
+  readiness: "not-verified"
+  action: "start" | "none" | "blocked"
+  reason: string
+  attempts: number
+  maxAttempts: number
+  nextEligibleAt: string | null
+  windowEndsAt: string | null
+  checkedAt: string
 }
 type RunitHealth = {
   name: string
@@ -29,11 +43,27 @@ async function getJson<T>(path: string): Promise<T> {
   return await response.json() as T
 }
 
+async function postJson<T>(payload: { action: "service-recover"; name: "once"; path: string }): Promise<T> {
+  const response = await fetch(base, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-PocketHost-Intent": "termux-admin",
+    },
+    credentials: "same-origin",
+    body: JSON.stringify(payload),
+  })
+  if (!response.ok) throw new Error("Recovery command refused")
+  return await response.json() as T
+}
+
 export function RunitHealthPanel() {
   const [services, setServices] = React.useState<VerifiedService[] | null>(null)
   const [busy, setBusy] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [readback, setReadback] = React.useState<RunitHealth | null>(null)
+  const [recovery, setRecovery] = React.useState<RecoveryReview | null>(null)
+  const [notice, setNotice] = React.useState<string | null>(null)
 
   const refresh = React.useCallback(async () => {
     const result = await getJson<{ services: VerifiedService[] }>("?mode=services")
@@ -41,12 +71,17 @@ export function RunitHealthPanel() {
         !result.services.every(service =>
           serviceName.test(service.name) &&
           typeof service.registered === "boolean" &&
-          typeof service.protected === "boolean")) {
+          typeof service.protected === "boolean" &&
+          (service.template === undefined ||
+            service.template === "heartbeat-worker-v1" ||
+            service.template === "python-heartbeat-v1"))) {
       throw new Error("Invalid service inventory")
     }
     setServices(result.services.filter(service =>
       service.registered && !service.protected))
     setReadback(null)
+    setRecovery(null)
+    setNotice(null)
     setError(null)
   }, [])
 
@@ -83,6 +118,65 @@ export function RunitHealthPanel() {
     }
   }
 
+  const reviewRecovery = async (service: VerifiedService) => {
+    if (busy || !service.template || !service.registered || service.protected) return
+    setBusy(service.name)
+    setError(null)
+    setRecovery(null)
+    setNotice(null)
+    try {
+      const result = await getJson<RecoveryReview>(
+        "?mode=service-recovery&name=" + encodeURIComponent(service.name))
+      if (!result || result.name !== service.name || result.template !== service.template ||
+          !["running", "stopped", "unknown"].includes(result.observed) ||
+          result.readiness !== "not-verified" ||
+          !["start", "none", "blocked"].includes(result.action) ||
+          typeof result.reason !== "string" || result.reason.length > 120 ||
+          !Number.isInteger(result.attempts) || result.attempts < 0 ||
+          result.maxAttempts !== 2 || result.attempts > result.maxAttempts ||
+          (result.nextEligibleAt !== null &&
+            (typeof result.nextEligibleAt !== "string" ||
+              !Number.isFinite(Date.parse(result.nextEligibleAt)))) ||
+          (result.windowEndsAt !== null &&
+            (typeof result.windowEndsAt !== "string" ||
+              !Number.isFinite(Date.parse(result.windowEndsAt)))) ||
+          !Number.isFinite(Date.parse(result.checkedAt)))
+        throw new Error("Invalid recovery review")
+      setRecovery(result)
+    } catch {
+      setError("Recovery eligibility unavailable or refused; no command was issued.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const recoverOnce = async () => {
+    if (!recovery || busy || recovery.action !== "start" ||
+        !window.confirm("Request one bounded recovery start for " + recovery.name +
+          "? This changes only the attested builtin runit worker. " +
+          "It does not verify application readiness and consumes one attempt even if it fails.")) return
+    const serviceName = recovery.name
+    setBusy(serviceName)
+    setNotice(null)
+    setError(null)
+    try {
+      const outcome = await postJson<{
+        requested: true
+        review: RecoveryReview
+      }>({ action: "service-recover", name: "once", path: serviceName })
+      if (outcome.requested !== true || outcome.review?.name !== serviceName)
+        throw new Error("Unconfirmed recovery receipt")
+      setRecovery(outcome.review)
+      setReadback(null)
+      setNotice(serviceName + ": one recovery start requested. Inspect health to check observed state; readiness remains unverified.")
+    } catch {
+      setRecovery(null)
+      setError("Recovery failed, was refused or is unconfirmed. Attempt budget may have been consumed. Recheck before retrying.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
   return <section className="space-y-3 rounded-md border p-3" aria-label="Runit health observations">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Runit process observations</h3>
@@ -94,9 +188,11 @@ export function RunitHealthPanel() {
     <p className="text-xs text-muted-foreground">
       Manual, read-only inspection of PocketHost-attested services only.
       Process state and recent log output are not application readiness.
-      No automatic restart, timer or foreign-service probe.
+      Recovery requires a separate manual review. It is limited to PocketHost's fixed
+      Node.js/Python workers and never runs in the background.
     </p>
     {error && <p role="alert" className="text-xs">{error}</p>}
+    {notice && <p role="status" className="text-xs">{notice}</p>}
     {services === null && !error && <p className="text-xs text-muted-foreground">Loading verified services…</p>}
     {services?.length === 0 && <p className="text-xs text-muted-foreground">
       No verified runit services to inspect. Add a PocketHost-owned service under Runit services.
@@ -104,11 +200,33 @@ export function RunitHealthPanel() {
     {services?.map(service => <div key={service.name}
       className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
       <span className="text-sm">{service.name}</span>
-      <Button size="sm" variant="outline" disabled={busy !== null}
-        onClick={() => void inspect(service)}>
-        {busy === service.name ? "Inspecting…" : "Inspect health"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" variant="outline" disabled={busy !== null}
+          onClick={() => void inspect(service)}>
+          {busy === service.name ? "Inspecting…" : "Inspect health"}
+        </Button>
+        {service.template && <Button size="sm" variant="outline" disabled={busy !== null}
+          onClick={() => void reviewRecovery(service)}>Review recovery</Button>}
+      </div>
     </div>)}
+    {recovery && <div className="space-y-2 rounded-md border p-3" aria-label="Reviewed recovery eligibility">
+      <p className="text-sm font-medium">Recovery review: {recovery.name}</p>
+      <div className="flex flex-wrap gap-2">
+        <Badge variant="outline">Runit: {recovery.observed}</Badge>
+        <Badge variant="outline">Recovery: {recovery.action === "start" ? "eligible" : "blocked"}</Badge>
+        <Badge variant="outline">Attempts: {recovery.attempts}/{recovery.maxAttempts}</Badge>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Reason: {recovery.reason}. Application readiness remains unverified.
+        {recovery.nextEligibleAt && " Cooldown ends: " +
+          new Date(recovery.nextEligibleAt).toLocaleString() + "."}
+        {recovery.windowEndsAt && " Retry window ends: " +
+          new Date(recovery.windowEndsAt).toLocaleString() + "."}
+      </p>
+      {recovery.action === "start" && <Button size="sm" variant="outline"
+        disabled={busy !== null}
+        onClick={() => void recoverOnce()}>Request one recovery start</Button>}
+    </div>}
     {readback && <div className="space-y-2 rounded-md border p-3" role="status">
       <p className="text-sm font-medium">{readback.name}</p>
       <div className="flex flex-wrap gap-2">

@@ -193,6 +193,38 @@ automatic recovery. S4 still needs a separately approved desired-state
 and bounded recovery policy, reliable application readiness, and
 positive/negative A8 stage tests before qualification.
 
+## S4 explicitly reviewed, durable-budget recovery (partial)
+
+The existing pure `evaluateHealthPolicy` evaluator is reused for
+**explicit, manual recovery** of already attested builtin Node.js/Python
+workers. This is deliberately separate from the established Node Hosting
+project release/rollback policy and does not grant recovery authority to
+other enrolled services or foreign processes.
+
+`Review recovery` reads the exact worker identity, runit state,
+persistent `down` marker and a private, bounded per-instance recovery
+ledger. A request can be eligible only when the unit is **stopped**,
+autostart is **enabled**, the recorded digest still matches, and the
+allowance is under **two starts per rolling one-hour window**, with at
+least **two minutes between starts**. Unknown/running state, manual
+disablement, identity change, stale clock or exhausted allowance block
+the request.
+
+`Request one recovery start` requires a fresh server-side review and
+an explicit browser confirmation. The allowance is persisted atomically
+**before** the sole fixed `sv up` command; command errors and interrupted
+attempts still consume the allowance. Returning from `sv up` does
+not certify application readiness. No interval polling, scheduler,
+background watchdog, automatic restart or loopback HTTP probe is added.
+The allowance only bounds **PocketHost-requested starts**; the existing
+runit supervisor has its own independent process restart behavior.
+
+S4 remains incomplete without owner-defined readiness configurations,
+a broader recovery policy for eligible projects, explicit rollback
+semantics and the scoped positive/negative Tests S5 closure gate.
+The physical A8 cannot be considered functionally qualified by merely
+deploying this code without execution of that gate.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

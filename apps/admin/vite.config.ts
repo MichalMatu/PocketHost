@@ -1395,6 +1395,8 @@ function termuxAdminApi(): Plugin {
               mode === "services" ? { services: services.list(), archived: services.archivedWorkers() } :
               mode === "service-health" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
+              mode === "service-recovery" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.reviewWorkerRecovery(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
@@ -1491,6 +1493,15 @@ function termuxAdminApi(): Plugin {
             }
             if (input.action === "service-logs") {
               return services.logs(input.path ?? "")
+            }
+            if (input.action === "service-recover") {
+              // One explicit user-reviewed attempt for attested builtin workers.
+              // The host enforces stop state, desired autostart and durable budget.
+              if (input.name !== "once" ||
+                  Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
+                throw new RangeError("Unsupported service recovery action");
+              }
+              return await services.recoverWorkerOnce(input.path ?? "")
             }
             if (input.action === "service-create") {
               // Two fixed runtimes, no caller-supplied program, shell, path or port.
