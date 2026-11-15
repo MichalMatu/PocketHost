@@ -19,12 +19,12 @@ function makePlan(changed, review = null) {
   return { ...plan, head: 'a'.repeat(40), review: review ?? plan.review };
 }
 
-test('typecheck runs before UI interaction tests, formatting runs last', () => {
+test('cheap format runs before expensive TypeScript and UI checks', () => {
   const check = prepareChangedVerification(makePlan(['apps/admin/src/app/screen/page.tsx']));
   assert.deepEqual(check.review, []);
   assert.deepEqual(
     check.checks.map((x) => x.label),
-    ['admin incremental typecheck', 'ui tests', 'changed-file format'],
+    ['changed-file format', 'admin incremental typecheck', 'ui tests'],
   );
 });
 
@@ -40,9 +40,9 @@ test('a changed interaction test runs itself but does not trigger a full UI suit
   );
   assert.deepEqual(
     check.checks.map((x) => x.label),
-    ['ui tests', 'changed-file format'],
+    ['changed-file format', 'ui tests'],
   );
-  assert.deepEqual(check.checks[0].argv.slice(-1), ['tests/screen.interaction.test.tsx']);
+  assert.deepEqual(check.checks[1].argv.slice(-1), ['tests/screen.interaction.test.tsx']);
 });
 
 test('unknown package/config changes fail closed, before running commands', () => {
@@ -60,26 +60,22 @@ test('invalid or unrecognized check specifications cannot execute', () => {
   assert.deepEqual(prepared.checks, []);
 });
 
-test('execution stops at first failed gate and reports which gate failed', () => {
-  let invoked = [];
+test('manual QA gathers cheap errors without running expensive suites', () => {
+  const invoked = [];
   const steps = [
+    { label: 'changed-file format' },
+    { label: 'docs' },
     { label: 'admin incremental typecheck' },
     { label: 'ui tests' },
-    { label: 'changed-file format' },
   ];
   const result = runChangedVerification(steps, (step) => {
     invoked.push(step.label);
-    return {
-      ok: step.label !== 'admin incremental typecheck',
-      code: 2,
-      elapsedMs: 7,
-      error: 'TSX parse error',
-    };
+    return { ok: false, code: 2, elapsedMs: 7, error: 'format or docs error' };
   });
   assert.equal(result.status, 'FAIL');
-  assert.equal(result.failedAt, 'admin incremental typecheck');
-  assert.deepEqual(invoked, ['admin incremental typecheck']);
-  assert.equal(result.checks[0].error, 'TSX parse error');
+  assert.deepEqual(result.failedChecks, ['changed-file format', 'docs']);
+  assert.deepEqual(invoked, ['changed-file format', 'docs']);
+  assert.deepEqual(result.checks.map((x) => x.status), ['FAIL', 'FAIL', 'SKIPPED', 'SKIPPED']);
 });
 
 test('successful focused checks produce one readable PASS receipt', () => {

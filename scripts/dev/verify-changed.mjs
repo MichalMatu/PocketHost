@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * One-shot Samsung Local Agent gate. Reuses the existing changed-checks
- * dependency graph, stops at the first failure, and emits one JSON receipt.
+ * dependency graph. PLAN ONLY unless an independent, owner-approved exact-SHA
+ * --execute invocation is provided. Never called by FAST FLOW deployment.
  * NEVER installs packages, deploys, restarts processes, or changes services.
  */
 import { spawnSync } from 'node:child_process';
@@ -14,7 +15,11 @@ import { resolveTermuxCheckCommand } from './termux-check-command.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const argv = process.argv.slice(2);
 const baseFlag = argv.filter((x) => x.startsWith('--base='));
-const planOnly = argv.includes('--plan');
+const executeFlags = argv.filter((x) => x === '--execute');
+const approvalFlags = argv.filter((x) => x.startsWith('--approved-head='));
+const execute = executeFlags.length === 1;
+const approvedHead = approvalFlags[0]?.slice('--approved-head='.length);
+const planOnly = !execute;
 const adminLint = argv.includes('--admin-lint');
 const timeoutFlag = argv.filter((x) => x.startsWith('--timeout-ms='));
 const allowed = argv.every(
@@ -22,7 +27,9 @@ const allowed = argv.every(
     x.startsWith('--base=') ||
     x.startsWith('--timeout-ms=') ||
     x === '--plan' ||
-    x === '--admin-lint',
+    x === '--admin-lint' ||
+    x === '--execute' ||
+    x.startsWith('--approved-head='),
 );
 const base = baseFlag[0]?.slice('--base='.length);
 const timeoutMs = timeoutFlag.length
@@ -32,6 +39,10 @@ const optionsValid =
   allowed &&
   baseFlag.length === 1 &&
   /^[0-9a-f]{7,40}$/.test(base ?? '') &&
+  executeFlags.length <= 1 &&
+  approvalFlags.length <= 1 &&
+  (execute ? approvalFlags.length === 1 && /^[0-9a-f]{40}$/.test(approvedHead ?? '') : approvalFlags.length === 0) &&
+  !(execute && argv.includes('--plan')) &&
   timeoutFlag.length <= 1 &&
   Number.isSafeInteger(timeoutMs) &&
   timeoutMs >= 30000 &&
@@ -73,7 +84,7 @@ if (!optionsValid) {
     {
       status: 'INVALID_ARGUMENTS',
       reason:
-        'Usage: npm run verify:changed -- --base=<verified-sha> [--plan] [--admin-lint] [--timeout-ms=180000]',
+        'Plan only by default. Tests: --base=<sha> --execute --approved-head=<exact-40-hex-target-sha> (only after fresh explicit owner consent)',
     },
     2,
   );
@@ -82,7 +93,7 @@ if (!optionsValid) {
     {
       status: 'HOLD',
       reason:
-        'Execution is allowed only on Samsung Termux through Local Agent. Use --plan for inspection.',
+        'Manual testing is allowed only on Samsung Termux through Local Agent with fresh owner approval.',
     },
     2,
   );
@@ -103,6 +114,8 @@ if (!optionsValid) {
     }
     const plan = JSON.parse(preview.stdout);
     if (!/^[0-9a-f]{40}$/.test(plan.head ?? '')) throw new Error('Invalid planned HEAD');
+    if (execute && plan.head !== approvedHead)
+      throw new Error('Test approval is pinned to another source SHA; no tests executed');
     const prepared = prepareChangedVerification(plan);
     const common = {
       base,

@@ -3,17 +3,18 @@
  * The existing changed-checks-policy.mjs remains the single dependency mapper.
  */
 const priority = new Map([
-  ['root incremental typecheck', 0],
-  ['admin incremental typecheck', 0],
+  // Cheap failures first; no multi-minute UI suite before formatting.
+  ['changed-file format', 0],
   ['structure', 1],
   ['boundaries', 1],
-  ['node tests', 2],
-  ['ui tests', 2],
-  ['root changed-file lint', 3],
-  ['admin changed-file lint', 3],
-  ['docs', 3],
-  ['changed markdown lint', 3],
-  ['changed-file format', 4],
+  ['docs', 1],
+  ['changed markdown lint', 1],
+  ['root changed-file lint', 1],
+  ['admin changed-file lint', 1],
+  ['root incremental typecheck', 2],
+  ['admin incremental typecheck', 2],
+  ['node tests', 3],
+  ['ui tests', 3],
 ]);
 
 export function prepareChangedVerification(plan) {
@@ -66,7 +67,16 @@ export function prepareChangedVerification(plan) {
 
 export function runChangedVerification(checks, execute) {
   const results = [];
+  const failedChecks = [];
+  // Even in a separately approved run, collect all inexpensive diagnostics.
+  // If they fail, do not spend minutes on Node/UI regression.
+  const expensive = new Set(['root incremental typecheck', 'admin incremental typecheck',
+    'node tests', 'ui tests']);
   for (const check of checks) {
+    if (failedChecks.length && expensive.has(check.label)) {
+      results.push({ label: check.label, status: 'SKIPPED', reason: 'earlier-check-failed' });
+      continue;
+    }
     const outcome = execute(check);
     const status = outcome?.ok === true ? 'PASS' : 'FAIL';
     results.push({
@@ -76,7 +86,9 @@ export function runChangedVerification(checks, execute) {
       elapsedMs: outcome?.elapsedMs ?? null,
       ...(status === 'FAIL' ? { error: outcome?.error ?? 'Check failed' } : {}),
     });
-    if (status === 'FAIL') return { status: 'FAIL', failedAt: check.label, checks: results };
+    if (status === 'FAIL') failedChecks.push(check.label);
   }
-  return { status: 'PASS', checks: results };
+  return failedChecks.length
+    ? { status: 'FAIL', failedAt: failedChecks[0], failedChecks, checks: results }
+    : { status: 'PASS', checks: results };
 }

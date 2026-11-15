@@ -2,7 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseFastFlowArgs,
-  confirmFocusedQa,
   confirmPreflight,
   confirmRelease,
   receiptFailure,
@@ -11,17 +10,6 @@ import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
 
 const base = 'a'.repeat(40);
 const target = 'b'.repeat(40);
-const goodQa = {
-  kind: 'PocketHostVerifyChanged',
-  base,
-  head: target,
-  status: 'PASS',
-  changed: ['apps/admin/src/app/termux/page.tsx'],
-  plannedChecks: ['ui tests'],
-  checks: [{ label: 'ui tests', status: 'PASS' }],
-  review: [],
-};
-
 test('one pinned source and explicit --apply; reject duplicate or foreign flags', () => {
   assert.deepEqual(parseFastFlowArgs(['--target=' + target, '--base=' + base, '--apply']), {
     base,
@@ -30,8 +18,8 @@ test('one pinned source and explicit --apply; reject duplicate or foreign flags'
     tests: false,
   });
   assert.deepEqual(
-    parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target, '--tests']),
-    { base, target, apply: true, tests: true },
+    parseFastFlowArgs(['--apply', '--base=' + base, '--target=' + target]),
+    { base, target, apply: true, tests: false },
   );
   for (const argv of [
     ['--base=' + base, '--target=' + base, '--apply'],
@@ -40,25 +28,19 @@ test('one pinned source and explicit --apply; reject duplicate or foreign flags'
     ['--base=HEAD', '--target=' + target, '--apply'],
     ['--target=' + target, '--apply'],
     ['--base=' + base, '--target=' + target],
+    ['--base=' + base, '--target=' + target, '--apply', '--tests'],
     ['--base=' + base, '--target=' + target, '--apply', '--tests', '--tests'],
     ['--base=' + base, '--target=' + target, '--apply', '--restart-all'],
   ])
     assert.throws(() => parseFastFlowArgs(argv));
 });
 
-test('focused QA is bound to the exact diff, all planned checks and no manual review', () => {
-  assert.deepEqual(confirmFocusedQa(goodQa, base, target), ['ui tests']);
-  for (const bad of [
-    { ...goodQa, head: base },
-    { ...goodQa, status: 'MANUAL_REVIEW' },
-    { ...goodQa, changed: [] },
-    { ...goodQa, checks: [] },
-    { ...goodQa, plannedChecks: ['node tests'] },
-    { ...goodQa, checks: [{ label: 'ui tests', status: 'FAIL' }] },
-    { ...goodQa, review: ['unmapped'] },
-    { ...goodQa, kind: 'wrong' },
-  ])
-    assert.throws(() => confirmFocusedQa(bad, base, target));
+test('FAST FLOW never accepts test flags in a deployment', () => {
+  for (const extra of ['--tests', '--run', '--execute', '--admin-lint', '--approved-head=' + target]) {
+    assert.throws(() => parseFastFlowArgs([
+      '--base=' + base, '--target=' + target, '--apply', extra,
+    ]), /Deployment only/);
+  }
 });
 
 test('preflight must be same owner baseline, healthy panel and unchanged services', () => {

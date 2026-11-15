@@ -2,7 +2,8 @@
 /**
  * Run only checks affected by an exact Git revision range.
  * Execution is permitted ONLY inside the verified Samsung Termux checkout
- * via the installed Local Agent; --plan is the default.
+ * via the installed Local Agent. This entrypoint is permanently PLAN ONLY;
+ * no --run path may execute tests, lint, format or typecheck.
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -13,15 +14,15 @@ import { planChangedChecks } from './changed-checks-policy.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const flags = process.argv.slice(2);
 const baseArg = flags.find((arg) => arg.startsWith('--base='));
-const run = flags.includes('--run');
+// Do not add an execution mode here; only the separately approved verify runner can execute.
 const includeAdminLint = flags.includes('--admin-lint');
 if (
   !baseArg ||
   !/^--base=[0-9a-f]{7,40}$/.test(baseArg) ||
-  flags.some((arg) => arg !== baseArg && arg !== '--run' && arg !== '--admin-lint')
+  flags.some((arg) => arg !== baseArg && arg !== '--admin-lint')
 ) {
   console.error(
-    'Usage: node scripts/dev/changed-checks.mjs --base=<verified-sha> [--run] [--admin-lint]',
+    'Usage: node scripts/dev/changed-checks.mjs --base=<verified-sha> [--admin-lint] (plan only)',
   );
   process.exit(2);
 }
@@ -154,45 +155,14 @@ function main() {
         base,
         head,
         ...plan,
-        mode: run ? 'run' : 'plan',
+        mode: 'plan',
         adminLint: includeAdminLint ? 'requested' : 'deferred',
       },
       null,
       2,
     ),
   );
-  if (!run) return;
-  // Keep the incremental TypeScript cache across Local Agent invocations.
-  mkdirSync(path.join(root, '.tmp'), { recursive: true });
-  for (const check of plan.commands) {
-    const [command, ...args] = check.argv;
-    const result = spawnSync(command, args, {
-      cwd: path.join(root, check.cwd),
-      encoding: 'utf8',
-      timeout: 180000,
-      maxBuffer: 1024 * 1024,
-    });
-    const ok = !result.error && result.status === 0;
-    console.log(
-      JSON.stringify({
-        label: check.label,
-        status: ok ? 'PASS' : 'FAIL',
-        code: result.status,
-        error: result.error?.message ?? null,
-        output: ok
-          ? (result.stdout ?? '').slice(-900)
-          : ((result.stdout ?? '') + (result.stderr ?? '')).slice(-5000),
-      }),
-    );
-    if (!ok) {
-      process.exitCode = 1;
-      return;
-    }
-  }
-  if (plan.review.length) {
-    console.error('MANUAL_REVIEW required: ' + plan.review.join('; '));
-    process.exitCode = 2;
-  }
+  // Planning never invokes a check. Execution is a separate, explicit action.
 }
 try {
   main();

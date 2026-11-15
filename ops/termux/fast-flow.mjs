@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * One Samsung Local Agent task: code → guarded DEV deployment → read-only
- * live-revision verification and one terminal receipt. Tests are opt-in
- * ONLY after the owner explicitly authorizes them.
+ * live-revision verification and one terminal receipt. No test-runner
+ * integration exists in this deployment tool; --tests is forbidden.
  * Never installs dependencies, touches foreign services or runs a new server.
  */
 import { spawnSync } from 'node:child_process';
@@ -21,55 +21,22 @@ const OWNER_FILE = path.join(HOME, '.local/state/pockethost/panel-owner.json');
 const RELEASE_SCRIPT = path.join(QA, 'ops/termux/refresh-panel.mjs');
 
 export function parseFastFlowArgs(argv) {
-  if (
-    !Array.isArray(argv) ||
-    argv.length < 3 ||
-    argv.length > 4 ||
-    argv.some((value) => typeof value !== 'string') ||
-    argv.filter((value) => value.startsWith('--base=')).length !== 1 ||
-    argv.filter((value) => value.startsWith('--target=')).length !== 1 ||
-    argv.filter((value) => value === '--apply').length !== 1 ||
-    argv.filter((value) => value === '--tests').length > 1 ||
-    argv.some(
-      (value) =>
-        !(
-          value.startsWith('--base=') ||
-          value.startsWith('--target=') ||
-          value === '--apply' ||
-          value === '--tests'
-        ),
-    )
-  )
-    throw Error('Require --base=<40-hex-SHA> --target=<40-hex-SHA> --apply [--tests]');
+  // Deliberately ONLY three deployment flags. No --tests, even after
+  // user approval: tests use an independent manually invoked command.
+  if (!Array.isArray(argv) || argv.length !== 3 ||
+      argv.some((value) => typeof value !== 'string') ||
+      argv.filter((value) => value.startsWith('--base=')).length !== 1 ||
+      argv.filter((value) => value.startsWith('--target=')).length !== 1 ||
+      argv.filter((value) => value === '--apply').length !== 1 ||
+      argv.some((value) => !(value.startsWith('--base=') ||
+        value.startsWith('--target=') || value === '--apply'))) {
+    throw Error('Deployment only: --base=<40-hex-SHA> --target=<40-hex-SHA> --apply; tests require separate explicit owner consent');
+  }
   const base = argv.find((value) => value.startsWith('--base=')).slice(7);
   const target = argv.find((value) => value.startsWith('--target=')).slice(9);
   if (!SHA.test(base) || !SHA.test(target) || base === target)
     throw Error('Source SHAs must be distinct and exactly 40 lowercase hex characters');
-  return { base, target, apply: true, tests: argv.includes('--tests') };
-}
-
-export function confirmFocusedQa(receipt, base, target) {
-  if (
-    !receipt ||
-    receipt.kind !== 'PocketHostVerifyChanged' ||
-    receipt.status !== 'PASS' ||
-    receipt.base !== base ||
-    receipt.head !== target ||
-    !Array.isArray(receipt.changed) ||
-    receipt.changed.length === 0 ||
-    !Array.isArray(receipt.checks) ||
-    receipt.checks.length === 0 ||
-    !Array.isArray(receipt.plannedChecks) ||
-    receipt.plannedChecks.length !== receipt.checks.length ||
-    receipt.plannedChecks.some(
-      (label, index) =>
-        label !== receipt.checks[index]?.label || receipt.checks[index]?.status !== 'PASS',
-    ) ||
-    !Array.isArray(receipt.review) ||
-    receipt.review.length !== 0
-  )
-    throw Error('Missing or mismatched exact-source QA evidence');
-  return receipt.checks.map((item) => item.label);
+  return { base, target, apply: true, tests: false };
 }
 
 export function confirmPreflight(info, liveSha) {
@@ -178,7 +145,7 @@ async function fastFlow(options) {
     stage: 'prerequisites',
     deployment: 'not-started',
     protectedServices: 'not-modified',
-    tests: options.tests ? 'requested-by-owner' : 'not-run',
+    tests: 'not-run',
     qaChecks: [],
     timingsMs: {},
   };
@@ -221,36 +188,6 @@ async function fastFlow(options) {
     if (pre.error || pre.status !== 0)
       throw Error('Owner preflight refused: ' + receiptFailure(pre, 'Preflight'));
     confirmPreflight(receipt(pre, 'Preflight'), options.base);
-    if (options.tests) {
-      // Never enter this branch in the default code → deploy → verify cycle.
-      // The caller must have explicit owner authorization for --tests.
-      report.stage = 'owner-authorized-tests';
-      const checks = invoke(
-        process.execPath,
-        ['scripts/dev/verify-changed.mjs', '--base=' + options.base],
-        QA,
-        550000,
-      );
-      if (checks.error || checks.status !== 0) {
-        try {
-          const failed = receipt(checks, 'Focused QA');
-          report.failedCheck = failed.failedAt ?? null;
-          report.qaReason = String(failed.reason ?? failed.status ?? 'unknown').slice(0, 130);
-        } catch {
-          report.qaReason = 'No valid QA result';
-        }
-        throw Error('Owner-authorized tests failed; release prohibited');
-      }
-      report.qaChecks = confirmFocusedQa(
-        receipt(checks, 'Focused QA'),
-        options.base,
-        options.target,
-      );
-      report.qaMs = checks.elapsedMs;
-      report.timingsMs.tests = checks.elapsedMs;
-      report.tests = 'PASS';
-    }
-
     report.stage = 'guarded-refresh';
     report.deployment = 'attempted';
     const refreshed = invoke(process.execPath, [RELEASE_SCRIPT, options.target], live, 490000);
