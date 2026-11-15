@@ -157,6 +157,23 @@ Verify that neither case changes SSH, Local Agent, panel/watch or any
 unrelated project service. Only after reconciling state under a distinct
 controlled recovery gate may the unit become manageable again.
 
+## S3 runit autostart readback (partial)
+
+The existing official Termux `sv-enable` / `sv-disable` operations are
+the only writers of desired per-service autostart state. For an attested
+unit, PocketHost now verifies the fixed command exit, canonical service
+target, current ownership digest and the persisted `down` marker **after**
+the command returns. A mismatched or unreadable marker is an unconfirmed
+operation (fail closed), not success. The UI re-reads inventory and only
+displays successful persistent state when the observed value agrees.
+
+Unlike a pure configuration toggle, enabling runit may **start the service
+immediately**, and disabling may stop it. This is stated in the
+confirmation and status text. This slice does not modify the OS boot
+policy, Termux:Boot permissions or any protected service. Boot recovery,
+actual phone reboot and stage regression tests remain **OPEN**; no
+background polling/scheduler was added.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

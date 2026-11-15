@@ -584,6 +584,7 @@ export function RunitServiceActions({
     setArchived(data.archived)
     setServices(data.services)
     setError(null)
+    return data.services
   }, [])
   React.useEffect(() => {
     let active = true
@@ -606,14 +607,32 @@ export function RunitServiceActions({
         (mode === "autostart" && name !== "enable" && name !== "disable") ||
         (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
         !window.confirm(
-      "Run " + name + " for explicitly registered runit service " + service.name + "?",
+      name === "enable"
+        ? "Enable persistent runit autostart for " + service.name +
+          "? Removing its down marker can also start the service now. " +
+          "This does not configure Android/Termux:Boot."
+        : name === "disable"
+          ? "Disable persistent runit autostart for " + service.name +
+            "? This records the down marker and may stop the service now."
+          : "Run " + name + " for explicitly registered runit service " + service.name + "?",
     )) return
     setBusy(true); setError(null); setDone(null)
     try {
       await action({ action: "service", name, path: service.name })
       try {
-        await refresh()
-        setDone(service.name + ": " + name + " completed")
+        const live = await refresh()
+        if (name === "enable" || name === "disable") {
+          const observed = live.find(item => item.name === service.name)
+          if (!observed || !observed.registered || observed.protected ||
+              observed.enabled !== (name === "enable")) {
+            setError("Autostart command returned but persistent desired state was not verified.")
+            return
+          }
+          setDone(service.name + ": runit autostart " +
+            (observed.enabled ? "enabled" : "disabled") + " · saved and verified")
+        } else {
+          setDone(service.name + ": " + name + " acknowledged · inventory refreshed")
+        }
       } catch {
         setDone(service.name + ": " + name + " acknowledged · status not refreshed")
         setError("Service inventory refresh failed. Verify live state before another command.")
@@ -742,7 +761,7 @@ export function RunitServiceActions({
     </div>
     <p className="text-muted-foreground text-xs">
       {mode === "autostart"
-        ? "Enable or disable runit autostart for enrolled services only. This does not change the current running state, Termux:Boot permissions or the Android startup policy."
+        ? "Set persistent runit autostart only for attested services. Each change is confirmed against the actual down marker. Enabling may start the service now; disabling may stop it. Android and Termux:Boot settings are separate and not changed here."
         : "Only services provisioned and attested by PocketHost can be enrolled. Name prefixes never confer ownership; discovered services stay read-only. SSH and Local Agent remain protected. Process liveness is not application health."}
     </p>
     {mode === "lifecycle" && <>

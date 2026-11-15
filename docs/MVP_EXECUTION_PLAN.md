@@ -104,6 +104,15 @@ Scenariusze negatywne zapisano w [S1 runit reuse](S1_RUNIT_REUSE.md).
 **Kod na `main` nie jest jeszcze wdrożeniem A8 ani zaliczeniem testów.**
 S1/S2 pozostają `[ ]`.
 
+**S3 — zapis i odczyt zwrotny autostartu runit (częściowe, NIE `[x]`):**
+backend wywołuje istniejące `sv-enable` / `sv-disable` tylko dla zweryfikowanych
+usług, sprawdza wynik, następnie ponownie sprawdza tożsamość jednostki
+i faktyczny plik `down`. UI potwierdza sukces dopiero po odczycie z
+inwentarza. Zmiana może od razu uruchomić lub zatrzymać proces pod runit,
+dlatego panel komunikuje ten efekt. **Termux:Boot i autostart po fizycznym
+restarcie Androida pozostają osobnym, jeszcze nieprzetestowanym punktem**.
+Nie ma nowego supervisora ani schedulera. Testy S3 na zakończenie Services.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

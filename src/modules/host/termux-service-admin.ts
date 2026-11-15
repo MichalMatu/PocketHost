@@ -876,12 +876,26 @@ export class TermuxServiceAdmin {
     if (this.identity(name, target, registrations) !== 'verified')
       throw new Error('Service not explicitly registered or identity changed');
     if (operation === 'enable' || operation === 'disable') {
+      // The official Termux sv-enable/sv-disable scripts persist desired
+      // runit state by removing/creating the "down" marker. A zero exit
+      // code does not itself prove the requested policy is now recorded.
+      const desired = operation === 'enable';
+      const before = this.enabled(name, true);
+      if (before === null) throw new Error('Autostart state cannot be attested');
       const result = await run(
-        path.join(PREFIX, 'bin', operation === 'enable' ? 'sv-enable' : 'sv-disable'),
+        path.join(PREFIX, 'bin', desired ? 'sv-enable' : 'sv-disable'),
         [name],
         { timeout: 20000, maxBuffer: 12000, env: { ...process.env, SVDIR: this.serviceRoot } },
       );
-      return { changed: true, result };
+      if (result.exit !== 0) throw new Error('Termux autostart action failed');
+      // Recheck ownership and exact target as well as persistent on-disk
+      // state before acknowledging. Fail closed on partial or drifted writes.
+      if (this.target(name) !== target ||
+          this.identity(name, target, this.registry()) !== 'verified' ||
+          this.enabled(name, true) !== desired) {
+        throw new Error('Autostart write acknowledged but persistent readback unverified');
+      }
+      return { changed: before !== desired, result };
     }
     const command =
       operation === 'start'
