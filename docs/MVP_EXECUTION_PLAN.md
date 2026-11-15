@@ -276,6 +276,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S2 — odczyt logów z archiwum (kod przed testami):** `Runit services → Archived workers → Saved logs` odczytuje zachowany plik `current` bez przywracania workera, tylko po potwierdzeniu dokładnego wpisu archiwum i niezmienionych prywatnych skryptów/markera. Odczyt ma ograniczenie rozmiaru, symlink/owner/inode check oraz ponowną kontrolę tożsamości po czytaniu. Stan `changed`/`conflict` nie pozwala na odczyt ani restore. Testy negatywne: podmiana markera, link w logach, zniknięcie/przełączenie archiwum w trakcie czytania, brak logu, brak dotykania cudzych usług. **S2 IN_PROGRESS; etap Services nieodebrany.**
 
+**S2 — logi archiwum wdrożone na A8, 2026-11-15:** terminalne zadanie `pockethost-a8-archived-worker-logs-20261115-v1` = `PASS` (live `02d60255ebeb9869b6c56436074d6c1e91c0787e`, PID 4499, start ticks 16424935, HTTP 200, usługi chronione bez zmian, `tests=not-run`). W panelu działa kod do ręcznego odczytu logów zweryfikowanego archiwum bez `Restore`; **niezweryfikowane funkcjonalnie** na utworzonym workerze. Testy pozytywne/negatywne, trwałe bezpieczne wycofanie definicji oraz obsługa własnego kodu aplikacji nadal otwarte. **S1/S2/Services: IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
