@@ -330,6 +330,8 @@ pełnych 8 zapisach przywracanie jest blokowane; nie usuwa niczego w
 tle. **Uruchamianie niemożliwe z LAN.** S1–S4 nadal IN_PROGRESS,
 S5 zawiera testy odmowy drift/niewłaściwej historii/pełnego quota.
 
+**S1/S2 Python history — potwierdzone wdrożenie 2026-11-15:** task `pockethost-a8-python-history-restore-20261115-v1` terminal `done`/exit 0, FAST FLOW PASS, live `a8287588bac3e631e36549fa7000427a6c3142eb`, PID 23909, start ticks 16959765, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Historia max 8 wersji, restore przez CAS ze stanem stopped/autostart disabled, bez wykonania skryptu. Brak weryfikacji UI/funkcji na konkretnym zapisanym workerze i brak IP LAN w receipt. Etap S1/S2/S3/S4 nadal `IN_PROGRESS`. **S5 dopiero po zamknięciu całego Services.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
