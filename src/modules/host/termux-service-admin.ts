@@ -1566,6 +1566,8 @@ export class TermuxServiceAdmin {
           current.dev !== initial.dev || current.ino !== initial.ino ||
           after.size !== initial.size || current.size !== initial.size ||
           after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
+          current.nlink !== 1 || current.uid !== initial.uid ||
+          (current.mode & 0o077) !== 0 ||
           createHash('sha256').update(bytes).digest('hex') !== expectedRevisionSha256)
         throw new Error('Retained Python source fingerprint changed');
     } finally {

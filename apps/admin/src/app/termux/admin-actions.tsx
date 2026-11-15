@@ -10,7 +10,7 @@ type FileInfo = { name: string; kind: "directory" | "file"; bytes: number }
 type SnapshotInfo = { name: string; createdAt: string; files: number }
 const endpoint = "/api/v1/termux-admin"
 
-async function action<T>(payload: { action: string; name?: string; path?: string; destination?: string; content?: string; base64?: string }): Promise<T> {
+async function action<T>(payload: { action: string; name?: string; root?: string; path?: string; destination?: string; content?: string; base64?: string }): Promise<T> {
   const response = await fetch(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-PocketHost-Intent": "termux-admin" },
@@ -23,6 +23,8 @@ async function action<T>(payload: { action: string; name?: string; path?: string
 async function inspect<T>(mode: string, location = ""): Promise<T> {
   const request = mode === "files" ? endpoint + "?mode=files&path=" + encodeURIComponent(location) :
     mode === "search-packages" ? endpoint + "?mode=search-packages&query=" + encodeURIComponent(location) :
+    (mode === "python-source-review" || mode === "python-source-history")
+      ? endpoint + "?mode=" + mode + "&name=" + encodeURIComponent(location) :
     endpoint + "?mode=" + mode
   const response = await fetch(request, { method: "GET", credentials: "same-origin", cache: "no-store" })
   if (!response.ok) throw new Error("Inventory cannot be inspected.")
