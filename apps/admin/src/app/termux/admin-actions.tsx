@@ -568,7 +568,7 @@ type RunitEntry = {
   protected: boolean
   identity?: "verified" | "unregistered" | "legacy" | "changed" | "archive-conflict" | "reserved"
   identityReason?: "run-sha-attested" | "no-enrollment" | "legacy-without-sha" |
-    "service-target-changed" | "run-script-changed" | "archive-live-conflict" |
+    "service-target-changed" | "service-not-published" | "run-script-changed" | "archive-live-conflict" |
     "reserved-system-service"
   template?: WorkerTemplate
   control: "standalone" | "delegated" | "read-only"
@@ -622,7 +622,7 @@ export function RunitServiceActions({
             ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
           (item.identityReason === undefined ||
             ["run-sha-attested", "no-enrollment", "legacy-without-sha",
-             "service-target-changed", "run-script-changed", "archive-live-conflict",
+             "service-target-changed", "service-not-published", "run-script-changed", "archive-live-conflict",
              "reserved-system-service"].includes(item.identityReason)) &&
           (item.template === undefined ||
             item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1" ||
@@ -1071,7 +1071,8 @@ export function RunitServiceActions({
       </div>
       {service.control === "read-only" && service.identityReason &&
         <p className="text-xs text-muted-foreground" aria-label={"Ownership for " + service.name}>
-          {service.identityReason === "service-target-changed" ? "Recorded service path no longer matches. Commands blocked." :
+          {service.identityReason === "service-not-published" ? "Enrolled service is missing from runit. No commands allowed; inspect before repair." :
+           service.identityReason === "service-target-changed" ? "Recorded service path no longer matches. Commands blocked." :
            service.identityReason === "run-script-changed" ? "Recorded run script SHA-256 no longer matches. Commands blocked." :
            service.identityReason === "legacy-without-sha" ? "Old enrollment lacks a verified script digest. Commands blocked." :
            service.identityReason === "archive-live-conflict" ? "Archived and live enrollment conflict. Commands blocked." :

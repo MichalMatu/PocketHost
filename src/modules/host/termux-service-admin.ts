@@ -86,6 +86,7 @@ export type ServiceIdentityReason =
   | 'no-enrollment'
   | 'legacy-without-sha'
   | 'service-target-changed'
+  | 'service-not-published'
   | 'run-script-changed'
   | 'archive-live-conflict'
   | 'reserved-system-service';
@@ -1523,12 +1524,14 @@ export class TermuxServiceAdmin {
     target: string | undefined,
     registrations: Registration[],
     identity: ServiceIdentity,
+    published: boolean,
   ): ServiceIdentityReason {
     if (identity === 'reserved') return 'reserved-system-service';
     if (identity === 'archive-conflict') return 'archive-live-conflict';
     if (identity === 'unregistered') return 'no-enrollment';
     if (identity === 'legacy') return 'legacy-without-sha';
     if (identity === 'verified') return 'run-sha-attested';
+    if (!published) return 'service-not-published';
     const recorded = registrations.find((entry) => entry.name === name);
     return !target || recorded?.target !== target ? 'service-target-changed' : 'run-script-changed';
   }
@@ -1605,7 +1608,7 @@ export class TermuxServiceAdmin {
         registered,
         protected: !registered,
         identity,
-        identityReason: this.identityReason(name, resolved, registrations, identity),
+        identityReason: this.identityReason(name, resolved, registrations, identity, visible.has(name)),
         control,
         ...(template ? { template } : {}),
         // Never probe a vanished or unresolved service or report persisted
