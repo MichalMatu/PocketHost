@@ -1557,24 +1557,36 @@ export class TermuxServiceAdmin {
     probe: (name: string) => TermuxService['state'] = (name) => this.probe(name),
   ): TermuxService[] {
     const registrations = this.registry();
-    let names: string[];
+    let published: string[];
     try {
       const stat = lstatSync(this.serviceRoot);
       if (!stat.isDirectory() || stat.isSymbolicLink())
         throw new Error('Invalid service directory');
-      names = readdirSync(this.serviceRoot)
+      published = readdirSync(this.serviceRoot)
         .filter((name) => SERVICE_NAME.test(name))
         .sort()
         .slice(0, MAX_ENTRIES);
     } catch {
-      names = [];
+      published = [];
     }
-    return names.sort().map((name) => {
+    const visible = new Set(published);
+    // Never hide an enrolled unit merely because its runit link disappeared.
+    // Missing units are diagnostic rows, not executable capabilities.
+    // Prefer at most 32 registry entries over unregistered discovery when the
+    // inventory reaches its 100-entry UI/API cap.
+    const enrolled = registrations.map((item) => item.name).sort();
+    const names = [
+      ...enrolled,
+      ...published.filter((name) => !enrolled.includes(name)),
+    ].slice(0, MAX_ENTRIES).sort();
+    return names.map((name) => {
       let resolved: string | undefined;
-      try {
-        resolved = realpathSync(path.join(this.serviceRoot, name));
-      } catch {
-        /* Missing/dangling entry remains unknown and cannot be controlled. */
+      if (visible.has(name)) {
+        try {
+          resolved = realpathSync(path.join(this.serviceRoot, name));
+        } catch {
+          /* Missing/dangling entry remains unknown and cannot be controlled. */
+        }
       }
       const identity = this.identity(name, resolved, registrations);
       const registered = identity === 'verified';
@@ -1596,8 +1608,10 @@ export class TermuxServiceAdmin {
         identityReason: this.identityReason(name, resolved, registrations, identity),
         control,
         ...(template ? { template } : {}),
-        state: probe(name),
-        enabled: this.enabled(name, registered),
+        // Never probe a vanished or unresolved service or report persisted
+        // autostart from its stale registry record.
+        state: resolved ? probe(name) : 'unknown',
+        enabled: resolved ? this.enabled(name, registered) : null,
       };
     });
   }
