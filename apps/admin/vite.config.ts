@@ -1553,6 +1553,17 @@ function termuxAdminApi(): Plugin {
               }
               return await services.recoverWorkerOnce(input.path ?? "")
             }
+            if (input.action === "service-python-update") {
+              // Compare-and-swap only the exact, stopped, attested source.
+              // No release execution, runtime enable or arbitrary file path.
+              if (typeof input.content !== "string" ||
+                  typeof input.destination !== "string" ||
+                  Object.keys(input).some(key => !["action", "path", "destination", "content"].includes(key))) {
+                throw new RangeError("Invalid Python revision request");
+              }
+              return services.updatePythonSource(
+                input.path ?? "", input.destination, input.content)
+            }
             if (input.action === "service-create") {
               // A custom Python program is only staged. No browser action
               // can enable/autostart/execute it without a separate owner gate.

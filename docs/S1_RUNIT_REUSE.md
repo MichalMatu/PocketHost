@@ -452,6 +452,27 @@ At S5 test owner/source drift, symlink/inode replacement, query validation,
 foreign and protected services, stale UI and zero script execution.
 S1–S4 remain IN_PROGRESS; do not claim Python execution is authorized.
 
+## S1/S2 Python source revision flow (partial)
+
+A verified stopped Python worker can now **Replace staged Python source**
+after a read-only exact-SHA review. A single private lifecycle lock prevents
+competing PocketHost Create/Archive/Restore/Retire mutations. The host
+requires `stopped`, `autostart=false`, matching digest and trusted
+owner-private source, saves the previous source as one of at most eight
+private 32 KiB history entries, prepares bounded staged files, then
+updates worker.py and its SHA-256 marker through separate atomic renames.
+A crash between renames intentionally leaves `changed` ownership
+requiring manual reconciliation; there is no automatic retry or shell
+execution. Source history remains inside the exact owned service unit,
+and archive/retire retain it. A successful revision re-attests source,
+runit identity and disabled autostart before reporting success.
+
+The LAN interface cannot Start/Restart/Enable/recover custom Python;
+this adds editing only. Focused S5 acceptance must cover stale expected
+SHA, non-UTF8/corrupt marker, quota and write failures, symlink/inode
+replacement, stopped vs running refusal, history retention and
+UI's state invalidation on ambiguous receipts. S1–S4 IN_PROGRESS.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

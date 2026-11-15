@@ -1337,6 +1337,116 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Replace a stopped, owner-staged Python file only with an exact expected
+   * SHA. Keep one bounded private previous revision per update. No execution,
+   * package scripts, runit commands or inferred ownership is permitted.
+   * A crash between the two atomic renames leaves the unit unverified until
+   * manual reconciliation; it must never silently run a mismatched source.
+   */
+  updatePythonSource(
+    name: string, expectedSha256: string, source: string,
+  ): { changed: boolean; sourceSha256: string; sourceBytes: number; execution: 'blocked' } {
+    valid(name);
+    if (isReserved(name) || !/^[a-f0-9]{64}$/.test(expectedSha256) ||
+        typeof source !== 'string' || !source.trim() ||
+        source.includes(String.fromCharCode(0)) ||
+        Buffer.byteLength(source) > 32 * 1024)
+      throw new RangeError('Invalid Python revision request');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const review = this.inspectPythonSource(name);
+      if (review.sourceSha256 !== expectedSha256)
+        throw new Error('Python source revision changed; review latest SHA before retry');
+      if (review.observed !== 'stopped' || review.autostart !== false)
+        throw new Error('Python replacement requires a stopped, autostart-disabled worker');
+      const target = this.target(name);
+      if (this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1')
+        throw new Error('Python source ownership changed');
+
+      const nextSha256 = createHash('sha256').update(source).digest('hex');
+      if (nextSha256 === expectedSha256)
+        return { changed: false, sourceSha256: nextSha256,
+          sourceBytes: Buffer.byteLength(source), execution: 'blocked' };
+
+      const sourcePath = path.join(target, 'worker.py');
+      const markerPath = path.join(target, '.pockethost-service.json');
+      const initial = lstatSync(sourcePath);
+      if (!initial.isFile() || initial.isSymbolicLink() ||
+          initial.nlink !== 1 || initial.uid !== process.getuid?.() ||
+          (initial.mode & 0o077) !== 0 || initial.size > 32 * 1024)
+        throw new Error('Untrusted old Python source');
+      const fd = openSync(sourcePath, constants.O_RDONLY | constants.O_NOFOLLOW);
+      let oldBytes: Buffer;
+      try {
+        const opened = fstatSync(fd);
+        if (opened.dev !== initial.dev || opened.ino !== initial.ino ||
+            opened.nlink !== 1 || opened.size !== initial.size ||
+            opened.mtimeMs !== initial.mtimeMs)
+          throw new Error('Python source changed while opening');
+        oldBytes = readFileSync(fd);
+        const after = fstatSync(fd);
+        const current = lstatSync(sourcePath);
+        if (after.dev !== initial.dev || after.ino !== initial.ino ||
+            current.dev !== initial.dev || current.ino !== initial.ino ||
+            after.size !== initial.size || current.size !== initial.size ||
+            after.mtimeMs !== initial.mtimeMs || current.mtimeMs !== initial.mtimeMs ||
+            createHash('sha256').update(oldBytes).digest('hex') !== expectedSha256)
+          throw new Error('Python source changed while copying previous revision');
+      } finally {
+        closeSync(fd);
+      }
+      const markerRaw = safeFile(markerPath);
+      if (!markerRaw) throw new Error('Python owner marker missing');
+      const marker: unknown = JSON.parse(markerRaw);
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker) ||
+          (marker as Record<string, unknown>).template !== 'python-source-v1' ||
+          (marker as Record<string, unknown>).sourceSha256 !== expectedSha256)
+        throw new Error('Python owner marker changed');
+      const history = path.join(target, '.python-source-history');
+      try {
+        mkdirSync(history, { mode: 0o700 });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+      }
+      const directory = lstatSync(history);
+      if (!directory.isDirectory() || directory.isSymbolicLink() ||
+          directory.uid !== process.getuid?.() || (directory.mode & 0o077) !== 0 ||
+          realpathSync(history) !== history)
+        throw new Error('Unsafe Python source history');
+      const revisions = readdirSync(history);
+      if (revisions.length >= 8 ||
+          revisions.some((file) => !/^[0-9a-f-]{36}\.py$/.test(file)))
+        throw new Error('Python source revision history full or untrusted');
+      const nonce = randomUUID();
+      const backup = path.join(history, nonce + '.py');
+      const newSource = path.join(target, '.worker-' + nonce + '.tmp');
+      const newMarker = path.join(target, '.marker-' + nonce + '.tmp');
+      writeFileSync(backup, oldBytes, { flag: 'wx', mode: 0o600 });
+      writeFileSync(newSource, source, { flag: 'wx', mode: 0o600 });
+      writeFileSync(newMarker, JSON.stringify({
+        ...(marker as Record<string, unknown>), sourceSha256: nextSha256,
+      }) + '\n', { flag: 'wx', mode: 0o600 });
+      // One last active-source and runit readback under the lifecycle lock.
+      // A failed second rename is deliberately not auto-retried.
+      if (this.target(name) !== target ||
+          this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1' ||
+          this.probe(name) !== 'stopped' || this.enabled(name, true) !== false ||
+          pythonWorkerSourceHash(target) !== expectedSha256)
+        throw new Error('Python source changed before revision commit');
+      renameSync(newSource, sourcePath);
+      renameSync(newMarker, markerPath);
+      const updated = this.inspectPythonSource(name);
+      if (updated.sourceSha256 !== nextSha256 || updated.observed !== 'stopped' ||
+          updated.autostart !== false)
+        throw new Error('Python source revision write not attested');
+      return { changed: true, sourceSha256: nextSha256,
+        sourceBytes: updated.sourceBytes, execution: 'blocked' };
+    } finally {
+      release();
+    }
+  }
+
+  /**
    * Read-only activation preflight for owner-staged Python. No source text,
    * authorization token, execution command or process identifier is exposed.
    * In particular, a browser TTY is not on-device owner authentication.

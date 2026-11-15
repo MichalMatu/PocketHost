@@ -580,6 +580,7 @@ export function RunitServiceActions({
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
   const [pythonSource, setPythonSource] = React.useState("")
+  const [pythonReplacement, setPythonReplacement] = React.useState("")
   const refresh = React.useCallback(async () => {
     const data = await inspect<{ services: RunitEntry[]; archived?: ArchivedEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
@@ -610,6 +611,7 @@ export function RunitServiceActions({
     setArchived(data.archived)
     setServices(data.services)
     setSourceReview(null)
+    setPythonReplacement("")
     setError(null)
     return data.services
   }, [])
@@ -636,6 +638,42 @@ export function RunitServiceActions({
     } catch {
       setError("Python source identity review refused or unavailable. Recheck ownership.")
     } finally { setBusy(false) }
+  }
+  const replacePythonSource = async () => {
+    const review = sourceReview
+    const bytes = new Blob([pythonReplacement]).size
+    if (busy || !review || review.observed !== "stopped" ||
+        review.autostart !== false || !pythonReplacement.trim() ||
+        bytes < 1 || bytes > 32 * 1024) return
+    if (window.prompt(
+      "Replace the source for " + review.name +
+      "? Enter the exact service name. The previous source is retained privately " +
+      "and the new source will NOT execute.",
+    ) !== review.name || !window.confirm(
+      "Commit new worker.py for " + review.name + " only if its SHA-256 remains " +
+      review.sourceSha256 + "? Start and autostart will stay blocked.",
+    )) return
+    setBusy(true); setError(null); setDone(null)
+    // Any uncertain response must invalidate the old digest, not retry.
+    setSourceReview(null)
+    try {
+      const result = await action<{
+        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
+      }>({ action: "service-python-update", path: review.name,
+        destination: review.sourceSha256, content: pythonReplacement })
+      if (typeof result.changed !== "boolean" ||
+          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
+          !Number.isSafeInteger(result.sourceBytes) ||
+          result.sourceBytes < 1 || result.sourceBytes > 32 * 1024 ||
+          result.execution !== "blocked")
+        throw new Error("Python revision receipt invalid")
+      await refresh()
+      setDone(review.name + ": source revision acknowledged. Review its new SHA before further changes.")
+    } catch {
+      setError("Python revision refused or unconfirmed. Inspect current source/marker; never retry blindly.")
+    } finally {
+      setBusy(false)
+    }
   }
   const readServiceLogs = async (name: string) => {
     if (busy) return
@@ -1029,6 +1067,24 @@ export function RunitServiceActions({
           This proves file identity only, not safety or readiness. Starting Python code
           is blocked from LAN; device-owner authorization is not configured.
         </p>
+        {sourceReview.observed === "stopped" && sourceReview.autostart === false ? <>
+          <label htmlFor="python-replacement-source" className="text-sm font-medium">
+            Replace staged worker.py (full source)
+          </label>
+          <Textarea id="python-replacement-source" rows={7}
+            value={pythonReplacement} onChange={event => setPythonReplacement(event.target.value)}
+            maxLength={32 * 1024} disabled={busy}
+            placeholder="Paste the complete revised Python source" />
+          <p className="text-xs text-muted-foreground">
+            Exact-SHA update only. Old code retained in private history (maximum eight revisions).
+            Failed partial writes require manual reconciliation. This does not run Python.
+          </p>
+          <Button size="sm" variant="outline" disabled={busy ||
+              !pythonReplacement.trim() || new Blob([pythonReplacement]).size > 32 * 1024}
+            onClick={() => void replacePythonSource()}>Replace staged Python source</Button>
+        </> : <p className="text-xs text-muted-foreground">
+          Revision requires a confirmed stopped worker with autostart disabled.
+        </p>}
       </section>}
     {mode === "lifecycle" && serviceLogs && <div className="rounded-md border p-2">
       <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
