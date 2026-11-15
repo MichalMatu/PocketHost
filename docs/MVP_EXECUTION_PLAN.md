@@ -182,6 +182,20 @@ minut) jest przypisany do instancji workera i odczytywany po zapisie.
 Nie potwierdza to gotowości ogólnych aplikacji ani nie kończy S4;
 nadal brak pełnej polityki HTTP readiness/rollback i testów S5.
 
+**S4 — odczyt HTTP readiness i historia rollbacku Node Hosting (częściowo):**
+`Services → Health checks` pokazuje teraz stan HTTP wyłącznie jako
+ręcznie pobraną migawkę z czasem pomiaru, przypisaną do konkretnego
+aktywnego wydania; przy zmianie wydania nie odziedziczy starego
+`ready`. Osobno pokazuje zapisany identyfikator wcześniejszego dobrego
+wydania i link do `Projects`. To **kandydat**, nie gotowość do rollbacku:
+sprawdzenie kodu, zależności i uprawnień odbywa się w istniejącej,
+ograniczonej do lokalnej konsoli ścieżce Node Hosting. UI nie
+udostępnia nowej mutacji ani nie otwiera wcześniejszego
+`rollback-preview` na niezabezpieczonym LAN. Nie dodawano
+schedulera, sond cyklicznych ani restartów. **S4 nadal `[ ]`**:
+pozostają testy całego przepływu i decyzja o polityce readiness
+dla innych rodzajów usług.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

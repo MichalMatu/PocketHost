@@ -10,6 +10,7 @@ type Catalog<T> = {
   items: T[]
 }
 type Probe = "checking" | "ready" | "not-ready" | "unavailable"
+type ProbeSample = { state: Probe; release: string | null; checkedAtMs: number | null }
 
 async function readStatic(signal: AbortSignal): Promise<Catalog<FleetSite>> {
   const response = await fetch("/api/v1/sites", {
@@ -39,7 +40,7 @@ export function HostingWorkloads({
   const [nodeProjects, setNodeProjects] = React.useState<Catalog<NodeRuntimeEntry>>({
     state: "loading", items: [],
   })
-  const [probes, setProbes] = React.useState<Record<string, Probe>>({})
+  const [probes, setProbes] = React.useState<Record<string, ProbeSample>>({})
   const current = React.useRef<AbortController | null>(null)
 
   React.useEffect(() => {
@@ -70,8 +71,12 @@ export function HostingWorkloads({
     const controller = current.current
     if (!controller) return
     const key = kind + ":" + id
-    if (probes[key] === "checking") return
-    setProbes(previous => ({ ...previous, [key]: "checking" }))
+    if (probes[key]?.state === "checking") return
+    // A readiness sample is valid only for the exact active release
+    // selected at the time of the explicit user request.
+    setProbes(previous => ({ ...previous, [key]: {
+      state: "checking", release, checkedAtMs: null,
+    } }))
     try {
       const url = kind === "node"
         ? "/api/v1/node-projects/" + id + "/health"
@@ -96,24 +101,34 @@ export function HostingWorkloads({
         ready = result.ready
       }
       if (!controller.signal.aborted)
-        setProbes(previous => ({ ...previous, [key]: ready ? "ready" : "not-ready" }))
+        setProbes(previous => ({ ...previous, [key]: {
+          state: ready ? "ready" : "not-ready", release,
+          checkedAtMs: Date.now(),
+        } }))
     } catch {
       if (!controller.signal.aborted)
-        setProbes(previous => ({ ...previous, [key]: "unavailable" }))
+        setProbes(previous => ({ ...previous, [key]: {
+          state: "unavailable", release, checkedAtMs: Date.now(),
+        } }))
     }
   }
 
   const diagnostic = (kind: "node" | "static", id: string, running: boolean,
     release: string | null) => {
-    const value = probes[kind + ":" + id]
+    const sample = probes[kind + ":" + id]
+    const value = sample?.release === release ? sample : null
     return <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs text-muted-foreground" role="status">
-        HTTP readiness: {value === "checking" ? "checking…" :
-          value === "ready" ? "ready" : value === "not-ready" ? "not ready" :
-          value === "unavailable" ? "unavailable / identity uncertain" : "not checked"}
+        HTTP readiness snapshot: {value?.state === "checking" ? "checking…" :
+          value?.state === "ready" ? "ready at last check" :
+          value?.state === "not-ready" ? "not ready at last check" :
+          value?.state === "unavailable" ? "unavailable / identity uncertain" :
+          "not checked for this release"}
+        {value?.checkedAtMs !== null && value?.checkedAtMs !== undefined &&
+          " · " + new Date(value.checkedAtMs).toLocaleTimeString()}
       </span>
       <Button variant="outline" size="sm"
-        disabled={!running || !release || value === "checking"}
+        disabled={!running || !release || value?.state === "checking"}
         onClick={() => void health(kind, id, release)}>
         Check health
       </Button>
@@ -159,8 +174,32 @@ export function HostingWorkloads({
             Desired/observed state differs. Policy: {project.healthDecision.action}
             {" ("}{project.healthDecision.reason}{")."} No automatic recovery was requested.
           </p>}
-        {view === "health" ?
-          diagnostic("node", project.id, project.state === "running", project.activeRelease) :
+        {view === "health" ? <>
+          {diagnostic("node", project.id, project.state === "running", project.activeRelease)}
+          <div className="space-y-1 border-t pt-2">
+            <p className="text-xs text-muted-foreground">
+              Rollback record: {project.previousGoodRelease &&
+                project.previousGoodRelease !== project.activeRelease &&
+                project.state !== "unknown"
+                  ? "previous release recorded; local preflight required"
+                  : project.state === "unknown"
+                    ? "blocked: process identity unknown"
+                    : "no distinct previous good release recorded"}.
+            </p>
+            {project.previousGoodRelease &&
+              project.previousGoodRelease !== project.activeRelease &&
+              <p className="break-all font-mono text-xs text-muted-foreground">
+                Candidate: {project.previousGoodRelease}
+              </p>}
+            <Link className="text-xs underline underline-offset-4" to="/projects">
+              Review deployment and rollback in Projects
+            </Link>
+            <p className="text-xs text-muted-foreground">
+              This is an inventory hint, not rollback approval. Source/dependency
+              preflight and explicit local-only deployment remain required.
+            </p>
+          </div>
+        </> :
           <Link className="text-xs underline underline-offset-4" to="/projects">
             Manage project
           </Link>}

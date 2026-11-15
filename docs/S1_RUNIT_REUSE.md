@@ -250,6 +250,23 @@ watchdog, scheduler or automatic recovery action is added. S4 still
 requires general app readiness configuration, clearly scoped rollback
 semantics, functional stage tests and acceptance.
 
+## S4 Node Hosting release-bound readiness and rollback navigation
+
+The existing Node runtime owns and checks HTTP readiness on the fixed
+loopback endpoint, with the current release nonce, process PID and
+start-tick reattestation. On-demand readiness samples in Services now
+carry their exact release ID and local observation time: a new release
+cannot inherit a previous release's cached `ready` label. No background
+polling or health scheduler was introduced.
+
+The health view also exposes only the **recorded previous-good-release
+candidate** and navigates to Projects for a proper rollback review.
+This inventory hint is not a safety approval: the existing local-only
+`rollback-preview` and mutation gate stay inaccessible from the
+unauthenticated LAN proxy. The host still enforces source, dependencies,
+toolchain, syntax and exact ownership before a rollback can change
+a running project. S4 and stage tests remain open.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
