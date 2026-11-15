@@ -1437,6 +1437,8 @@ function termuxAdminApi(): Plugin {
                 url.searchParams.has("name") ? services.reviewWorkerRecovery(url.searchParams.get("name") ?? "") :
               mode === "python-source-review" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectPythonSource(url.searchParams.get("name") ?? "") :
+              mode === "node-source-review" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.inspectNodeSource(url.searchParams.get("name") ?? "") :
               mode === "python-source-history" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectPythonSourceHistory(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
@@ -1577,24 +1579,24 @@ function termuxAdminApi(): Plugin {
                 input.path ?? "", input.destination, input.content)
             }
             if (input.action === "service-create") {
-              // A custom Python program is only staged. No browser action
-              // can enable/autostart/execute it without a separate owner gate.
-              const customPython = input.name === "python-source-v1"
-              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(
-                    input.name ?? "") ||
+              // Custom Node.js/Python source is staged only. The LAN cannot
+              // authorize Start, Restart, Autostart or Recovery for it.
+              const customSource = input.name === "python-source-v1" || input.name === "node-source-v1"
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1",
+                    "node-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path",
-                    ...(customPython ? ["content"] : [])].includes(key)) ||
-                  (customPython && (typeof input.content !== "string" ||
+                    ...(customSource ? ["content"] : [])].includes(key)) ||
+                  (customSource && (typeof input.content !== "string" ||
                     Buffer.byteLength(input.content) > 32 * 1024))) {
                 throw new RangeError("Unsupported worker source or template");
               }
               return services.createManagedWorker(input.path ?? "",
-                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1",
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1",
                 input.content)
             }
             if (input.action === "service-archive") {
               // Narrow non-destructive archive, never generic unlink or adoption.
-              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1", "node-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service archive");
               }
@@ -1603,22 +1605,22 @@ function termuxAdminApi(): Plugin {
             if (input.action === "service-restore") {
               // Restore only a previously recorded, stopped and fully attested
               // builtin worker; no browser-supplied path, run script or PID.
-              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1", "node-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported service restoration");
               }
               return services.restoreArchivedWorker(input.path ?? "",
-                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1")
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1")
             }
             if (input.action === "service-retire") {
               // Never recursively delete a worker. Revoke only an attested
               // archive and retain its bytes in bounded private quarantine.
-              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(input.name ?? "") ||
+              if (!["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1", "node-source-v1"].includes(input.name ?? "") ||
                   Object.keys(input).some(key => !["action", "name", "path"].includes(key))) {
                 throw new RangeError("Unsupported worker retirement");
               }
               return services.retireArchivedWorker(input.path ?? "",
-                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1")
+                input.name as "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1")
             }
             if (input.action === "service") {
               if (!input.name || !["start","stop","restart","enable","disable"].includes(input.name))
