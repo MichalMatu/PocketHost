@@ -113,6 +113,18 @@ dlatego panel komunikuje ten efekt. **Termux:Boot i autostart po fizycznym
 restarcie Androida pozostają osobnym, jeszcze nieprzetestowanym punktem**.
 Nie ma nowego supervisora ani schedulera. Testy S3 na zakończenie Services.
 
+**S4 — ręczna obserwacja stanu runit (częściowo, nie DONE):**
+strona `Services → Health checks` oferuje teraz odczyt na żądanie
+dla usług wyraźnie zweryfikowanych przez PocketHost. Backend
+ponownie sprawdza źródło/skrót i rejestr przed oraz po odczycie,
+zwraca stan `running/stopped/unknown`, autostart, znacznik
+ostatniego zapisu logów (jeśli bezpieczny) i jawne
+`readiness: not-verified`. Obcy proces jest odrzucany,
+a wpis w logach **nie** oznacza gotowości aplikacji.
+Nie dodano schedulera ani samoczynnego restartu. S4 pozostaje `[ ]`:
+polityka limitowanych prób, odrębne readiness i recovery są nadal
+do implementacji i testów końca całego etapu.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

@@ -1393,6 +1393,8 @@ function termuxAdminApi(): Plugin {
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? { services: services.list(), archived: services.archivedWorkers() } :
+              mode === "service-health" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :

@@ -57,6 +57,17 @@ export interface ArchivedWorkerSummary {
 type ServiceIdentity = 'verified' | 'unregistered' | 'legacy' | 'changed' | 'archive-conflict' | 'reserved';
 export type ServiceOperation =
   'register' | 'unregister' | 'start' | 'stop' | 'restart' | 'once' | 'enable' | 'disable';
+export interface RunitHealthReadback {
+  name: string;
+  identity: 'verified';
+  observed: 'running' | 'stopped' | 'unknown';
+  /** Runit process liveness does not confer application readiness. */
+  readiness: 'not-verified';
+  autostart: boolean | null;
+  logEvidence: 'log-write' | 'no-log' | 'untrusted';
+  lastLogWriteAt: string | null;
+  checkedAt: string;
+}
 export interface TermuxService {
   name: string;
   registered: boolean;
@@ -819,6 +830,64 @@ export class TermuxServiceAdmin {
     valid(name);
     const target = this.target(name);
     return this.identity(name, target, this.registry()) === 'verified';
+  }
+
+  /**
+   * Manual, read-only runit health observation for attested services.
+   * Unlike Node hosting readiness, this does not claim application health
+   * from runit PID or from logs. Never checks or acts on a foreign service.
+   * The log mtime is only evidence of output, not a readiness signal.
+   */
+  inspectHealth(name: string): RunitHealthReadback {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const registrations = this.registry();
+    const current = this.target(name);
+    if (this.identity(name, current, registrations) !== 'verified')
+      throw new Error('Service identity unverified; health inspection refused');
+    const observed = this.probe(name);
+    const autostart = this.enabled(name, true);
+    let logEvidence: RunitHealthReadback['logEvidence'] = 'no-log';
+    let lastLogWriteAt: string | null = null;
+    const logRoot = path.join(PREFIX, 'var', 'log', 'sv', name);
+    try {
+      const folder = lstatSync(logRoot);
+      if (!folder.isDirectory() || folder.isSymbolicLink() ||
+          folder.uid !== process.getuid?.() || (folder.mode & 0o022) !== 0) {
+        logEvidence = 'untrusted';
+      } else {
+        const logFile = path.join(logRoot, 'current');
+        try {
+          const stat = lstatSync(logFile);
+          if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
+              stat.uid !== process.getuid?.() || (stat.mode & 0o022) !== 0 ||
+              stat.size > 4 * 1024 * 1024 ||
+              !Number.isFinite(stat.mtimeMs) || stat.mtimeMs < 0 ||
+              stat.mtimeMs > Date.now() + 120000) {
+            logEvidence = 'untrusted';
+          } else {
+            logEvidence = 'log-write';
+            lastLogWriteAt = new Date(stat.mtimeMs).toISOString();
+          }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
+            logEvidence = 'untrusted';
+        }
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT')
+        logEvidence = 'untrusted';
+    }
+    // Re-attest the identity *after* observing state. Concurrent archives,
+    // script drift or registry changes invalidate the entire observation.
+    if (this.target(name) !== current ||
+        this.identity(name, current, this.registry()) !== 'verified')
+      throw new Error('Service identity changed during health inspection');
+    return {
+      name, identity: 'verified', observed, readiness: 'not-verified',
+      autostart, logEvidence, lastLogWriteAt,
+      checkedAt: new Date().toISOString(),
+    };
   }
 
   logs(name: string): { lines: string[] } {

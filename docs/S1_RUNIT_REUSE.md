@@ -174,6 +174,25 @@ policy, Termux:Boot permissions or any protected service. Boot recovery,
 actual phone reboot and stage regression tests remain **OPEN**; no
 background polling/scheduler was added.
 
+## S4 on-demand process observation (partial)
+
+`Services → Health checks` now also shows a separate, manual runit
+inspection for services currently attested by PocketHost. The GET route
+`/api/v1/termux-admin?mode=service-health&name=<owned-unit>`
+accepts a bounded service name, refuses reserved and unregistered
+targets, and re-attests the exact canonical target and registry digest
+after inspecting. It reports runit process state, the existing down
+marker and bounded log-write metadata. Reading metadata neither
+executes nor restarts a service. Unsafe log paths never become proof.
+Application readiness is **always** reported as `not-verified`,
+because a running PID and an updated log are insufficient.
+
+This does not duplicate Hosting's existing explicit HTTP readiness
+probe. It adds no polling, timer, scheduler, background monitor or
+automatic recovery. S4 still needs a separately approved desired-state
+and bounded recovery policy, reliable application readiness, and
+positive/negative A8 stage tests before qualification.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
