@@ -617,7 +617,7 @@ export class TermuxServiceAdmin {
       ? item.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
       : [];
     const attempts = recent.length;
-    const lastAttemptAtMs = recent.length ? recent[recent.length - 1] : null;
+    const lastAttemptAtMs = recent.at(-1) ?? null;
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
     const decision = evaluateHealthPolicy({
@@ -641,7 +641,7 @@ export class TermuxServiceAdmin {
       maxAttempts: RECOVERY_MAX_ATTEMPTS,
       nextEligibleAt: decision.nextEligibleAtMs === null
         ? null : new Date(decision.nextEligibleAtMs).toISOString(),
-      windowEndsAt: recent.length ? new Date(recent[0] + RECOVERY_WINDOW_MS).toISOString() : null,
+      windowEndsAt: recent.length ? new Date(recent[0]! + RECOVERY_WINDOW_MS).toISOString() : null,
       checkedAt: new Date(nowMs).toISOString(),
     };
   }
@@ -697,7 +697,7 @@ export class TermuxServiceAdmin {
         ? old.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS)
         : [];
       if (recent.length >= RECOVERY_MAX_ATTEMPTS ||
-          (recent.length > 0 && nowMs < recent[recent.length - 1] + RECOVERY_COOLDOWN_MS))
+          (recent.length > 0 && nowMs < recent[recent.length - 1]! + RECOVERY_COOLDOWN_MS))
         throw new Error('Recovery attempt budget or cooldown changed');
       const next: RecoveryAttemptRecord = {
         name, instanceId, attemptedAtMs: [...recent, nowMs],
@@ -748,15 +748,16 @@ export class TermuxServiceAdmin {
       if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
         throw new Error('Invalid recovery entry');
       const v = candidate as Record<string, unknown>;
+      const attempted = v.attemptedAtMs;
       if (Object.keys(v).sort().join(',') !==
           'attemptedAtMs,instanceId,name' ||
           typeof v.name !== 'string' || typeof v.instanceId !== 'string' ||
           !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v.instanceId) ||
-          !Array.isArray(v.attemptedAtMs) || v.attemptedAtMs.length < 1 ||
-          v.attemptedAtMs.length > RECOVERY_MAX_ATTEMPTS ||
-          !v.attemptedAtMs.every((at: unknown, i: number) =>
+          !Array.isArray(attempted) || attempted.length < 1 ||
+          attempted.length > RECOVERY_MAX_ATTEMPTS ||
+          !attempted.every((at: unknown, i: number) =>
             typeof at === 'number' && Number.isSafeInteger(at) && at >= 0 &&
-            (i === 0 || at > v.attemptedAtMs[i - 1])) ||
+            (i === 0 || (typeof attempted[i - 1] === 'number' && at > attempted[i - 1]))) ||
           names.has(v.name))
         throw new Error('Untrusted recovery journal entry');
       valid(v.name);
@@ -1059,21 +1060,23 @@ export class TermuxServiceAdmin {
       if (!marker || typeof marker !== 'object' || Array.isArray(marker))
         throw new Error('Invalid worker archive marker');
       const proof = marker as Record<string, unknown>;
+      const archiveTemplate = proof.template;
       const archived = this.archivedRegistry();
       if (archived.some((item) => item.name === name) ||
           archived.length >= MAX_TEMPLATE_WORKERS ||
           !this.managedWorkerTemplate(name, target, this.registry()) ||
           typeof proof.instanceId !== 'string' ||
           typeof proof.runSha256 !== 'string' ||
-          !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
-            proof.template as string)) {
+          (archiveTemplate !== 'heartbeat-worker-v1' &&
+           archiveTemplate !== 'python-heartbeat-v1' &&
+           archiveTemplate !== 'python-source-v1')) {
         throw new Error('Worker archiving identity or quota changed');
       }
       // Stage the immutable recovery record before unlinking the unit.
       this.saveArchived([...archived, {
-        name, target, template: proof.template,
+        name, target, template: archiveTemplate,
         instanceId: proof.instanceId, runSha256: proof.runSha256,
-        ...(proof.template === 'python-source-v1' &&
+        ...(archiveTemplate === 'python-source-v1' &&
             typeof proof.sourceSha256 === 'string'
           ? { sourceSha256: proof.sourceSha256 } : {}),
         archivedAt: new Date().toISOString(),
@@ -1293,7 +1296,7 @@ export class TermuxServiceAdmin {
 
   /** Only this provisioner and its exact immutable script may configure a heartbeat. */
   private builtinHeartbeatIdentity(name: string): {
-    template: WorkerTemplate;
+    template: FixedWorkerTemplate;
     instanceId: string;
     target: string;
   } {
