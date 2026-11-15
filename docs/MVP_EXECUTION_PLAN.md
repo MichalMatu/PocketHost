@@ -1,434 +1,68 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-14
-purpose: Canonical ordered MVP completion and acceptance tracker
+last_reviewed: 2026-11-15
+purpose: Short authoritative MVP stage tracker; no automatic test permission
 ---
 
-# PocketHost — plan domykania MVP i odbiorów
-
-**Obowiązujący plan realizacji.** Po zmianie kodu aktualizuj checklistę i dowody w tym pliku w tym samym commicie lub bezpośrednio po potwierdzonym wdrożeniu. Kolejność można zmienić tylko po nowej decyzji właściciela. **Nie buduj nowych pustych szkieletów funkcji; domykaj rozpoczęte elementy jako pełne pionowe flow.**
-
-## Statusy i reguła ukończenia
-
-- `[x]` = faktycznie wykonane i potwierdzone wskazanym dowodem; `[ ]` = brak pełnego dowodu, nawet gdy część kodu już istnieje.
-- Etap: **IN_PROGRESS** → **READY_FOR_ACCEPTANCE** (funkcje + uruchomione testy + raport + działający aktualny panel) → **ACCEPTED** (właściciel potwierdził odbiór).
-- **Nie oznaczaj etapu jako ACCEPTED ani wszystkich jego punktów `[x]` bez potwierdzenia użytkownika.** W razie błędów testów lub niepewnego wdrożenia: **HOLD**, poprawka i ponowny odbiór wyłącznie po ustaleniu stanu, bez automatycznych prób.
-- **Wszystkie testy wyłączone domyślnie we wszystkich trybach, również podczas odbioru etapu.** Właściciel cofnął 2026-11-15 poprzednią ogólną zgodę na testy etapowe. Każde QA, testy Node/UI, lint, typecheck, formatowanie i smoke wymaga nowego, wyraźnego zatwierdzenia konkretnego zakresu oraz jednej wersji SHA. Bez zgody raportuj `TESTS NOT RUN`, nie uruchamiaj bramki. Niezależne zabezpieczenia wdrożenia: SHA, własność, rollback i podstawowe HTTP nadal obowiązują.
-- Operacje fizyczne lub ryzykowne (np. prawdziwy reboot, zmiana SSH dostępności, usługi spoza PocketHost, zmiana sieci, WAN, danych) wymagają **odrębnej, konkretnej zgody**. Sama zgoda na testy etapu nie upoważnia do nich.
-- Nie mylić statusu procesu z HTTP readiness; nie mylić wpisu w UI z działającym backendem; nie mylić `git main` z wdrożonym A8 SHA.
-
-## 0. Zaakceptowana baza — stan wykonania
-
-- [x] Samsung A8: panel PocketHost uruchomiony pod nadzorem własnego runit, watchdog, znana tożsamość i live-SHA; wcześniejsze potwierdzone deployment receipts.
-- [x] Panel dostępny na MacBooku przez prywatny Wi-Fi LAN bez hasła; właściciel potwierdził, że działa (2026-11-14); brama A8 zwróciła `healthy` i HTTP 200. **Nie dowodzi to jeszcze autostartu po reboot.**
-- [x] Główne menu uporządkowane: Overview → Hosting → Services → System & Tools → Automation → Settings; przykłady framework/CMS zachowane na samym dole. Właściciel potwierdził wygląd i działanie (2026-11-14).
-- [x] Osobne strony Services: przegląd (tylko nawigacja), Runit, Autostart, Hosting workloads, Health checks, Local Agent, SSH, Cloudflare i MQTT. Istniejące strony `/services` nie wykonują wszystkich odczytów naraz.
-- [x] Usunięto aktywne sztywne integracje konkretnych hostowanych aplikacji, obserwacja runit jest dynamiczna; historycznych dokumentów nie usuwać.
-- [ ] Testy kompletnego hostingu, autostartu po realnym restarcie i polityk recovery — **nie były wykonywane**. Nie wynika z tego, że wcześniejsze punkty to ukończony Etap 1.
-
-**Historyczna baza live A8:** `e4838cd472a0db57bf0760ae2a384a97035fdc94` (2026-11-14). **Ostatni potwierdzony live:** `4716e7f21fde1bea019bc87e52015030415ba181`, task `pockethost-a8-dashboard-manifest-release-4716-20261115-v1`, FAST FLOW PASS, `tests=PASS` (20 kontroli), PID 29198, start ticks 18333015, HTTP 200, chronione usługi bez zmian, 15.78 GiB free (2026-11-15). **To wdrożenie i testy regresji zmienionego zakresu, nie pełny odbiór Services S1–S4/S5.** Aktualny SHA zawsze odczytaj ponownie przed następnym wdrożeniem.
-
-## 1. Services — jeden działający mechanizm zarządzania usługami
-
-**Status: IN_PROGRESS. Priorytet nr 1.** Uniwersalny system; żadnych nazw, domen i ścieżek cudzych projektów wpisanych na stałe.
-
-- [ ] **S1 — Inventory + ownership:** dynamiczna lista, jawna rejestracja **dowolnie nazwanej** usługi po weryfikacji ścieżek, pochodzenia i odzyskiwalnego prawa kontroli; chronione/usługi zewnętrzne tylko do odczytu bez zapisanej zgody. Istnieje lista i częściowa rejestracja, ale prefiks `pockethost-` ogranicza uniwersalność.
-- [ ] **S2 — Lifecycle + logs:** Create/enroll → Start/Stop/Restart → readback własności/stanu → logi → bezpieczne unregister. Część endpointów i przycisków istnieje, ale pełny przepływ nie jest zamknięty.
-- [ ] **S3 — Autostart:** jawny, zapisywany w panelu desired state, runit enable/disable, integracja z Termux:Boot oraz diagnoza po restarcie; brak niepotrzebnego własnego supervisora.
-- [ ] **S4 — Health / recovery:** konfiguracja readiness dla usługi, interwał obserwacji, limitowane restarty, rozróżnienie PID/HTTP/UNKNOWN, ochrona przed restart-loop, widoczny wynik i polityka rollback. Nie dodawaj niezatwierdzonego background schedulera.
-- [ ] **S5 — Testy etapu Services (wyłącznie po nowej, wyraźnej zgodzie):** właściciel decyduje o konkretnym jednorazowym teście syntetycznej usługi PocketHost i odmowach na cudzych usługach. Samo zakończenie S1–S4 nie uruchamia niczego; bez zgody `TESTS NOT RUN`, status etapu nadal oczekuje na odbiór.
-- [ ] **S6 — Odbiór:** wdrożony panel A8, potwierdzony exact SHA + PID/start ticks + HTTP + LAN + izolacja usług, raport wyników, link do MacBooka i akceptacja użytkownika.
-
-**Postęp S1 (częściowy, NIE `[x]`):** odczyt upstream `termux-services` / `runit` potwierdza istniejący supervisor. W kodzie S1 zostaje wprowadzony zaufany, wewnętrzny `registerProvisioned` z kanoniczną ścieżką i skrótem skryptu zamiast rejestracji po samym prefiksie. Rejestracja z przeglądarki nie może przejąć znalezionej usługi. Kolejne: bezpieczne tworzenie i enrollment dowolnie nazwanego własnego serwisu, pełna diagnostyka tożsamości oraz testy na zamknięcie całego Services. Szczegóły: [S1 upstream reuse](S1_RUNIT_REUSE.md). Status nadal **IN_PROGRESS**. Przy normalnej iteracji nie uruchamiać testów.
-
-**S1 checkpoint 2026-11-14:** commit `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, receipt `pockethost-a8-service-enrollment-provenance-20261114-v1`: terminal `PASS`, A8 DEV live SHA `0d2493f2d5bfa9b41ba8bf9e1c87e74d67950a82`, panel PID 7904, HTTP 200, runit/Local Agent i usługi chronione bez zmian, `tests=not-run`. To jest wdrożona część S1, **nie** zamknięcie etapu; wszystkie pola S1–S6 pozostają `[ ]` do ich pełnego potwierdzenia i odbioru.
-
-**Kolejna iteracja S1 (nadal częściowa, bez `[x]`):** implementacja trwałej tożsamości `runSha256` dla usług utworzonych przez PocketHost, weryfikacji przy każdym odczycie/wywołaniu i automatycznej blokady sterowania po zmianie skryptu/ścieżki. Starsze rejestracje bez skrótu mają status `legacy` (tylko odczyt), a podmiana skryptu `changed` (brak uprawnień). Zaufany moduł Node aktualizuje zapisany digest po własnym wdrożeniu. UI pokazuje stany weryfikacji, zamiast mylić wykrycie z własnością; wejście do Projects to wskazówka istniejącej ścieżki tworzenia usług Node, nie nowy dowolny creator. S1 jako całość nadal **IN_PROGRESS** i testy/odbiór są przed nami.
-
-**S1 checkpoint — integralność skryptów wdrożona na A8:** commit `328f13191416fe5ba8d95a2cc12ccc306a77260d`, wynik `pockethost-a8-service-run-integrity-20261114-v1` `PASS` (live SHA `328f13191416fe5ba8d95a2cc12ccc306a77260d`, PID 18112, HTTP 200, chronione usługi bez zmian, `tests=not-run`). Kontrola digestu `run` odbywa się przy zarządzaniu; UI sygnalizuje `verified` / `changed` / `legacy` / `unregistered` / `reserved`. **Nadal brak ogólnego kreatora usług i odbioru S1/S2/S3/S4**; nie oznaczać etapu jako `[x]`.
-
-**S1 kolejny podetap (implementacja, nie odbiór):** `Runit services → Add Service` tworzy
-odrębną od Project usługę na podstawie **ograniczonego, wbudowanego szablonu
-`heartbeat-worker-v1`**. Nowy unit jest początkowo zatrzymany i z wyłączonym
-autostartem; istniejących jednostek nie można przejąć. Nazwa nie oznacza
-własności: zapis w rejestrze następuje dopiero po zweryfikowanym stworzeniu
-skryptu przez PocketHost. Zwolnienie kontroli wymaga zatrzymanej i
-wyłączonej usługi, pozostawia jej pliki i logi. Ten pierwszy szablon nie
-oznacza jeszcze obsługi własnego kodu JS/Python ani kompletnego przepływu
-usuwania/rollbacku, więc S1 i S2 nie są ukończone. [Kontrakt](S1_RUNIT_REUSE.md).
-Testy są zaplanowane na bramę zakończenia całego etapu Services.
-
-**Wdrożenie szablonu Add Service (2026-11-14):** commit `b4da49e` i poprawka `291a5ff`. A8 ostatni potwierdzony kod `291a5ff3f1713021e251cb0865cb6f84d481f1ad`, receipt `pockethost-a8-service-creator-symlink-20261114-v1`, `PASS`, PID 9787, HTTP 200, bez zmian chronionych usług, `tests=not-run`. Kreator z wbudowanym, bezpiecznym workerem jest w panelu, ale **nie sprawdzono jeszcze fizycznego stworzenia i uruchomienia takiej usługi**; user-supplied scripts, bezpieczne usuwanie i testy całości są otwarte. Status S1 nadal **IN_PROGRESS**.
-
-**Następny podetap S1/S2 — bezpieczne archiwizowanie workera:** implementacja
-`Archive worker` jest ograniczona do usług `heartbeat-worker-v1` utworzonych
-i nadal zweryfikowanych przez PocketHost. Wymaga zatrzymania i wyłączenia
-autostartu; runit dostaje `sv exit`, a system odpina **wyłącznie** własny
-symlink. Definicja i logi pozostają do późniejszego odzyskania. Ogólny
-`unregister` w panelu/API jest wycofany — usługi projektów Node i cudze
-usługi nie mogą stracić właściciela przez przypadek. To **nie** jest jeszcze
-pełne trwałe usuwanie ani przetestowany przepływ. Zakres i scenariusze testów:
-[S1 runit reuse](S1_RUNIT_REUSE.md). **Status S1/S2: IN_PROGRESS.**
-
-**Wdrożenie S1/S2 archiwizacji — 2026-11-15:** kod `7c19c3df189518e649a851dc74db17ea04f259fa`, zadanie `pockethost-a8-worker-archive-20261115-v1`, końcowy `PASS`: live SHA `7c19c3df189518e649a851dc74db17ea04f259fa`, PID 19987, HTTP 200, chronione usługi bez zmian, `tests=not-run`. W panelu jest `Archive worker` wyłącznie dla zweryfikowanego, zatrzymanego, bez autostartu workera szablonowego. Usługi Node/SSH/Local Agent nie udostępniają destrukcyjnej operacji; ogólny `unregister` zablokowany. Pliki i logi archiwum pozostają — brak trwałego usuwania, brak odzysku z archiwum i brak zakończenia testów. **Nie zmieniać S1–S6 na `[x]`**.
-
-**Bieżąca implementacja S1 — dwa typy własnego workera:** `Add Service`
-dopuszcza teraz ograniczone, wbudowane szablony Node.js i Python.
-Oba używają jednej rejestracji runit, kontroli integralności, autostartu,
-logów i archiwizacji; nie uruchamiają się automatycznie, dzielą limit
-czterech sztuk i nie przyjmują kodu ani komend przez panel LAN. To **nie**
-oznacza jeszcze wdrażania dowolnej aplikacji Python/Node z repozytorium.
-Rozszerzenie wymaga zatwierdzenia źródła, wersji i uprawnień uruchomienia.
-S1 pozostaje **IN_PROGRESS** do czasu testów i akceptacji całego Services.
-Szczegóły: [kontrakt i granice](S1_RUNIT_REUSE.md).
-
-**S1/S2 — domknięcie przywracania archiwum (kod, bez odbioru):**
-dodano oddzielny prywatny rejestr archiwalnych workerów Node.js/Python,
-`Archived workers → Restore service` oraz weryfikację dokładnie tego
-samego skryptu głównego i logującego, identyfikatora instancji, ścieżki,
-skrótu i pliku `down`. Przywrócenie nie uruchamia usługi ani nie włącza
-autostartu. Przerwane operacje pozostają w stanie HOLD, bez automatycznego
-przejęcia usług lub ponowień. **Wdrożenie tej i poprzedniej zmiany
-Python na A8 nie zostało jeszcze potwierdzone**, więc pełne S1/S2
-pozostają `[ ]`. Zgodnie z planem testy funkcjonalne i akceptacja
-dopiero po ukończeniu całego etapu Services.
-
-**S1/S2 — odmowa sterowania przy konflikcie archiwizacji (kod, bez odbioru):**
-gdy aktywny rejestr i rejestr archiwum wskazują tę samą usługę
-(po przerwanym Archive lub Restore), jej stan staje się
-`archive-conflict` / `conflict`. Panel wyświetla ostrzeżenie,
-wyłącza Start/Stop/Restart/autostart/Restore, a adapter odmawia działania.
-Nie ma automatycznego „naprawiania” ani przejmowania obcej usługi.
-Scenariusze negatywne zapisano w [S1 runit reuse](S1_RUNIT_REUSE.md).
-**Kod na `main` nie jest jeszcze wdrożeniem A8 ani zaliczeniem testów.**
-S1/S2 pozostają `[ ]`.
-
-**S3 — zapis i odczyt zwrotny autostartu runit (częściowe, NIE `[x]`):**
-backend wywołuje istniejące `sv-enable` / `sv-disable` tylko dla zweryfikowanych
-usług, sprawdza wynik, następnie ponownie sprawdza tożsamość jednostki
-i faktyczny plik `down`. UI potwierdza sukces dopiero po odczycie z
-inwentarza. Zmiana może od razu uruchomić lub zatrzymać proces pod runit,
-dlatego panel komunikuje ten efekt. **Termux:Boot i autostart po fizycznym
-restarcie Androida pozostają osobnym, jeszcze nieprzetestowanym punktem**.
-Nie ma nowego supervisora ani schedulera. Testy S3 na zakończenie Services.
-
-**S4 — ręczna obserwacja stanu runit (częściowo, nie DONE):**
-strona `Services → Health checks` oferuje teraz odczyt na żądanie
-dla usług wyraźnie zweryfikowanych przez PocketHost. Backend
-ponownie sprawdza źródło/skrót i rejestr przed oraz po odczycie,
-zwraca stan `running/stopped/unknown`, autostart, znacznik
-ostatniego zapisu logów (jeśli bezpieczny) i jawne
-`readiness: not-verified`. Obcy proces jest odrzucany,
-a wpis w logach **nie** oznacza gotowości aplikacji.
-Nie dodano schedulera ani samoczynnego restartu. S4 pozostaje `[ ]`:
-polityka limitowanych prób, odrębne readiness i recovery są nadal
-do implementacji i testów końca całego etapu.
-
-**Wdrożenia 2026-11-15 (A8 FAST FLOW, bez testów etapu):**
-S1/S2 `2c2b4e3` — archiwizacja, przywracanie i blokady konfliktów;
-S3 `839c397` — trwały odczyt zwrotny stanu autostartu;
-S4 `10f469ddb1f60dad89bb1b1a3d1641a50197e8d2` — ręczny odczyt runit/znacznika logu z rozróżnieniem
-PID od application readiness. Trzy terminalne wyniki `PASS`,
-ostatni live SHA `10f469ddb1f60dad89bb1b1a3d1641a50197e8d2`, PID 29180, HTTP 200, chronione
-usługi nietknięte, `tests=not-run`. **Nie jest to zatwierdzenie
-funkcjonalne S1–S4**. Następny krok: jawna polityka readiness/recovery
-dla zweryfikowanych usług i dopiero po pełnym zamknięciu Services
-testy pozytywne/negatywne oraz raport.
-
-**S4 — ręczne, limitowane odzyskiwanie workera (częściowo, bez odbioru):**
-strona `Services → Health checks` udostępnia dla w pełni
-zweryfikowanych workerów Node.js/Python `Review recovery` oraz
-jawne `Request one recovery start`. Reużywamy istniejące
-`evaluateHealthPolicy`; wolno uruchomić pojedyncze `sv up` tylko,
-gdy worker jest zatrzymany, autostart włączony, nie zmieniła się jego
-tożsamość, a limit wynosi **2 żądania w ciągu godziny** z
-**2-minutowym cooldownem**. Historia prób jest zapisywana w
-prywatnym rejestrze _przed_ poleceniem; nieudane lub przerwane
-wywołanie zużywa próbę. Przy `running` / `unknown` / `down`
-brak naprawy. Brak schedulera, samoczynnych działań, restartów usług
-projektów lub dowolnych procesów. **To limit próśb PocketHost, nie
-mechanizmu restartów samego runit.** HTTP readiness/rollback
-dla ogólnych usług oraz pełne testy etapu pozostają otwarte.
-
-**Wdrożenie ręcznego recovery na A8 — 2026-11-15:** commit `0047af4a455c799086cc5f708b6add8d60462e56`,
-zadanie `pockethost-a8-runit-manual-recovery-20261115-v1`, terminalny
-`PASS`, live `0047af4a455c799086cc5f708b6add8d60462e56`, PID 28494, HTTP 200,
-chronione usługi bez zmian, `tests=not-run`.
-Przywracanie gotowości aplikacji nie jest potwierdzone przez samo
-`sv up`; limit dotyczy wyłącznie ręcznych prób PocketHost,
-nie mechanizmu restartów runit. **Status S1–S4 nadal IN_PROGRESS.**
-Następne: konfiguracja readiness, polityka rollback i testy
-całego etapu przed odbiorem.
-
-**S4 — konfigurowalny heartbeat własnych workerów (częściowo, bez odbioru):**
-`Health checks` obsługuje dla własnych, ponownie zweryfikowanych
-szablonów Node.js/Python progi 3/5/10 minut lub Off. Prywatny zapis
-polityki jest związany z identyfikatorem konkretnej instancji;
-kontrola na żądanie wymaga końcowej linii `svlogd -tt` z ustalonym
-tekstem heartbeat oraz świeżego czasu zapisu logu. **To dowód
-aktywności workera, nie pełna readiness aplikacji ani HTTP**.
-Brak ingerencji w obce serwisy, brak nowych schedulerów, brak
-automatycznych restartów; istniejące Node Hosting HTTP readiness
-pozostaje odrębnym mechanizmem. S4 nadal `[ ]`: brak jeszcze
-konfigurowalnej readiness dowolnej aplikacji, rollback i
-kompletnego testu na A8.
-
-**S4 heartbeat — wdrożenie A8 2026-11-15:** commit `b975d1feb7011d24bd592aadc55e1a30d54a0e90`,
-zadanie `pockethost-a8-worker-heartbeat-policy-20261115-v1`, terminalny
-`PASS`, live SHA `b975d1feb7011d24bd592aadc55e1a30d54a0e90`, PID 27534, HTTP 200, chronione
-usługi bez zmian, `tests=not-run`. Zapis progu heartbeat (Off/3/5/10
-minut) jest przypisany do instancji workera i odczytywany po zapisie.
-Nie potwierdza to gotowości ogólnych aplikacji ani nie kończy S4;
-nadal brak pełnej polityki HTTP readiness/rollback i testów S5.
-
-**S4 — odczyt HTTP readiness i historia rollbacku Node Hosting (częściowo):**
-`Services → Health checks` pokazuje teraz stan HTTP wyłącznie jako
-ręcznie pobraną migawkę z czasem pomiaru, przypisaną do konkretnego
-aktywnego wydania; przy zmianie wydania nie odziedziczy starego
-`ready`. Osobno pokazuje zapisany identyfikator wcześniejszego dobrego
-wydania i link do `Projects`. To **kandydat**, nie gotowość do rollbacku:
-sprawdzenie kodu, zależności i uprawnień odbywa się w istniejącej,
-ograniczonej do lokalnej konsoli ścieżce Node Hosting. UI nie
-udostępnia nowej mutacji ani nie otwiera wcześniejszego
-`rollback-preview` na niezabezpieczonym LAN. Nie dodawano
-schedulera, sond cyklicznych ani restartów. **S4 nadal `[ ]`**:
-pozostają testy całego przepływu i decyzja o polityce readiness
-dla innych rodzajów usług.
-
-**S4 HTTP readiness/rollback UI — A8 2026-11-15:** kod `65696ec2de1df8723adb29081d2af9b976377679`;
-`pockethost-a8-node-health-rollback-snapshot-20261115-v1` zakończył
-`PASS`: live SHA `65696ec2de1df8723adb29081d2af9b976377679`, PID 21351, HTTP 200, usługi
-chronione nietknięte, `tests=not-run`. Wynik gotowości to próbka
-konkretnego wydania z czasem obserwacji; historyczne `ready` nie
-przechodzi na inne wydanie. Kandydat rollbacku jest informacją,
-nie autoryzacją — preflight i zapis lokalnie, istniejąca blokada
-mutacji przez LAN bez zmian. **S4 i testy S5 nadal otwarte.**
-
-**S4 — blokada równoczesnych żądań recovery (kod, bez odbioru):**
-ręczne `recoverWorkerOnce` obejmuje teraz prywatną, wyłączną
-blokadą plikową zarówno ponowną kwalifikację workera, jak i trwały
-zapis próby przed jedynym `sv up`. Dzięki temu różne instancje panelu
-nie mogą jednocześnie przekroczyć limitu 2 prób/godzinę.
-Konflikt blokady jest odrzucany, bez automatycznego ponawiania.
-Po awarii nieusunięta blokada oznacza HOLD do niezależnej
-weryfikacji; nie jest czyszczona automatycznie. Zasady
-readiness/rollback i testy zamknięcia Services nadal otwarte;
-**S4 pozostaje `[ ]`.**
-
-**S4 A8 2026-11-15 — wzajemne wykluczanie recovery:** kod `db72ddd03240bd589076e44a618e08575745b9bf`,
-receipt `pockethost-a8-cross-process-recovery-lock-20261115-v1`,
-terminalny `PASS`, live `db72ddd03240bd589076e44a618e08575745b9bf`, PID 17795, start ticks 11979838,
-HTTP 200, chronione usługi bez zmian, `tests=not-run`.
-Blokada plikowa działa na granicy wielu procesów właściciela:
-od odczytu limitu po pojedyncze `sv up`; przerwana blokada zostaje
-do niezależnej weryfikacji. **S1–S4 nadal IN_PROGRESS.**
-Test współbieżnych żądań dopiero przy bramie odbiorczej Services.
-
-**S1/S2 — granica zarządzania usługami projektów (kod, przed odbiorem):**
-wspólny rejestr runit rozróżnia `standalone` (w pełni
-zweryfikowany wewnętrzny worker Node/Python), `delegated`
-(weryfikowana jednostka zarządzana osobną ścieżką, np. Node Hosting)
-i `read-only` (obce/niezweryfikowane/chronione). W Services
-Start/Stop/Restart/Autostart i odpowiadające im akcje API przyjmują
-wyłącznie `standalone`; projekt Node zachowuje własne bramy wydania,
-PID, health, rollback i uprawnienia. Panel pokazuje usługi delegowane
-z odnośnikiem do Projects zamiast pozornych przycisków sterowania.
-Nie rozszerzono uprawnień przez LAN. **S1/S2 wciąż `[ ]`**:
-brak testów etapowych i bezpiecznego pełnego enrollmentu rzeczywistych
-usług aplikacji przez użytkownika.
-
-**S1/S2 A8 — granica własności delegowanych usług, 2026-11-15:**
-`pockethost-a8-delegated-runit-scope-20261115-v1` — `PASS`, live
-`50e5195864157e1069c83019c368edf3753d9078`, PID 16796, start ticks 12137868, HTTP 200, chronione
-usługi bez zmian, `tests=not-run`. Runit `standalone` może być
-sterowany przez H3 wyłącznie po weryfikacji wzorca; `delegated` jest
-widoczny, lecz sterowanie pozostaje w module, który go utworzył.
-To nie zastępuje odbioru funkcjonalnego ani enrollmentu dowolnej
-aplikacji. S1/S2 pozostają `[ ]`.
-
-**S2 — weryfikacja po wykonaniu polecenia (kod, bez odbioru):**
-Start/Stop/Restart/Once teraz wymagają poprawnego wyniku `sv` i ponownego
-potwierdzenia ścieżki oraz zapisanej tożsamości usługi po wywołaniu.
-Dodatkowo ścieżka ogólnego Services ponownie sprawdza niezmienny
-szablon własnego workera (marker, skrypty i logowanie) po wykonaniu.
-Wynik `sv` nie oznacza jeszcze osiągnięcia stanu aplikacji ani readiness.
-Do bramy testowej S5 dodać odmowę dla niezerowego exit, zmiany źródła
-w trakcie polecenia i cofnięcia własności po wywołaniu. **S2 pozostaje
-`[ ]` do testów i odbioru.**
-
-**S2 — wdrożenie i odczyt A8, 2026-11-15:** commit `fd171be3f5a532e2a639993f43bc09a6487080e5`; jednorazowe zadanie `pockethost-a8-runit-lifecycle-readback-20261115-v1` — terminalne `done`, `exit_code=0`, FAST FLOW `PASS`, uruchomiony dokładnie SHA `fd171be3f5a532e2a639993f43bc09a6487080e5`, PID 29908, start ticks 16238126, HTTP 200, usługi chronione bez zmian, `tests=not-run`. **S2 i cały etap Services pozostają IN_PROGRESS**; testy pozytywne/negatywne S5 dopiero przy zakończeniu funkcjonalności.
-
-**S1/S2 — blokada współbieżnych operacji workera (kod, przed odbiorem):**
-Tworzenie, przywracanie, archiwizacja oraz Start/Stop/Restart/autostart
-własnych szablonów korzystają z jednej prywatnej blokady `O_EXCL` między
-procesami. Obejmuje ona odczyt, kontrolę pochodzenia, zapis w rejestrach
-i polecenie `sv`; przy konflikcie odmawia działania, a po przerwaniu
-pozostawia blokadę do ręcznej weryfikacji, bez ponowienia. Nie dotyczy
-ścieżki usług projektów Node, która zachowuje odrębne bramy.
-Przy zamknięciu Services przetestować dwa równoczesne żądania na różnych
-workerach, podwójną rejestrację, konflikt Archive/Restore/Start,
-pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
-**S1/S2 nadal `[ ]`, bez testów w tej iteracji.**
-
-**S1/S2 — dostarczenie na A8, 2026-11-15:** kod `0659b5635f3af16b01c55986e1e5754afcf5e20d`, zadanie `pockethost-a8-standalone-lifecycle-lock-20261115-v1`: terminalne `done`, exit 0, `PocketHostFastFlow PASS`, live SHA `0659b5635f3af16b01c55986e1e5754afcf5e20d`, PID 16665, start ticks 16326083, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Blokada współbieżności jest wdrożona, lecz **bez testów funkcjonalnych** i nie zamyka S1/S2 ani Services.
-
-**S2 — odczyt logów z archiwum (kod przed testami):** `Runit services → Archived workers → Saved logs` odczytuje zachowany plik `current` bez przywracania workera, tylko po potwierdzeniu dokładnego wpisu archiwum i niezmienionych prywatnych skryptów/markera. Odczyt ma ograniczenie rozmiaru, symlink/owner/inode check oraz ponowną kontrolę tożsamości po czytaniu. Stan `changed`/`conflict` nie pozwala na odczyt ani restore. Testy negatywne: podmiana markera, link w logach, zniknięcie/przełączenie archiwum w trakcie czytania, brak logu, brak dotykania cudzych usług. **S2 IN_PROGRESS; etap Services nieodebrany.**
-
-**S2 — logi archiwum wdrożone na A8, 2026-11-15:** terminalne zadanie `pockethost-a8-archived-worker-logs-20261115-v1` = `PASS` (live `02d60255ebeb9869b6c56436074d6c1e91c0787e`, PID 4499, start ticks 16424935, HTTP 200, usługi chronione bez zmian, `tests=not-run`). W panelu działa kod do ręcznego odczytu logów zweryfikowanego archiwum bez `Restore`; **niezweryfikowane funkcjonalnie** na utworzonym workerze. Testy pozytywne/negatywne, trwałe bezpieczne wycofanie definicji oraz obsługa własnego kodu aplikacji nadal otwarte. **S1/S2/Services: IN_PROGRESS.**
-
-**S2 — wycofanie archiwum (implementacja przed bramą S5):** `Retire definition` wymaga dwukrotnego potwierdzenia w UI, z dokładną nazwą. Po attestation `archivedRegistry` i `offlineWorkerIdentity` oraz blokadzie `O_EXCL` przenosi wyłącznie własny unit i jego logi do prywatnej, ograniczonej kwarantanny i na końcu usuwa możliwość `Restore` z rejestru. Bez `rm -r`, bez obcych usług, bez automatycznego retry. Crash/drift pozostawia stan wymagający ręcznej weryfikacji. Testy S5: collision, limit, symlink, drift, awarie rename i zapisu ledger, odzyskiwanie nazwy po retire, nienaruszenie chronionych usług. **S1/S2 nadal `[ ]`; żadnego workera nie wycofano na urządzeniu w tej iteracji.**
-
-**S2 — A8 wdrożenie kwarantanny definicji, 2026-11-15:** `pockethost-a8-archive-retirement-quarantine-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`; live `00cb9ad3d3c207a05c60eea0f7b74059e5b59118`, PID 22825, start ticks 16512056, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Funkcja `Retire definition` jest wdrożona, lecz **nie użyta na rzeczywistym workerze** i nie zastępuje testów negatywnych/pozytywnych S5. **S1/S2 nadal IN_PROGRESS.**
-
-**S1 — Node project ↔ Runit provenance (częściowe):** lista Runit przypina właściciela projektu dopiero, gdy `NodeProjectHost.list` i `NodeRunitHost.status` zweryfikują jego prywatny marker, skrypt i wspólny registry digest. Nazwa jednostki nie stanowi dowodu. `Open owning project` otwiera dokładny projekt w `Projects` i odświeża runtime/release bez automatycznego zatwierdzenia zmian. Nie udostępnia komend runit z ogólnego UI. Brak oznaczenia właściciela przy niedostępnej funkcji Node, drift albo cudzej usłudze. Python nadal wymaga osobnej ścieżki własnego kodu; nie dodajemy niebezpiecznego wykonania dowolnego skryptu przez LAN bez logowania. Scenariusze do S5: zweryfikowany projekt, kolizja nazwy, drift markera, dostępność funkcji i zmiana projektu z deeplinkiem. **S1/S2 nadal IN_PROGRESS.**
-
-**S1 — dostarczenie powiązania Node na A8, 2026-11-15:** zadanie `pockethost-a8-node-owner-link-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`; live `e96a0b6a6ed5a6715619901eb053b1a6a01e1196`, PID 10144, start ticks 16605014, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Powiązanie projektu i przejście do Projects wdrożone, ale **nieprzetestowane funkcjonalnie** na konkretnym uruchomionym Node project. Nadal brak ogólnej rejestracji własnych aplikacji Python, pełnego testu S5 i odbioru S6. **S1/S2 Services pozostaje IN_PROGRESS.**
-
-**S1 — własny kod Python (częściowe stworzenie usługi, przed S5):** `Runit services → Add Service → My Python code` przyjmuje wyłącznie tekst `worker.py` (maks. 32 KiB) i tworzy pod prywatnym `/var/sv/<name>` zatrzymaną definicję runit z `down`, stałym launcherem Python `-I -u`, SHA-256 źródła i niezmiennym markerem własności. `service-create` waliduje osobno pole `content`; zwykłe szablony odrzucają dowolny kod. Każde późniejsze sterowanie weryfikuje skrypt, źródło, logger i rejestr; archiwizacja/restore/retirement zachowują jego hash. **Start, Restart, Enable autostart i Recovery własnego Python są zablokowane przez API/UI LAN** do osobno zatwierdzonej ścieżki właściciela. To bezpieczne staging + provenance, nie działający jeszcze hosting aplikacji Python ani sandbox kodu. S5: walidacje 32 KiB/NUL, checksum drift, lifecycle denial, archive/restore/retire i brak zmian w chronionych jednostkach. Nie wykonano testów ani nie uruchomiono Python na A8. **S1/S2 IN_PROGRESS.**
-
-**S1 Python source staging — wdrożone na A8, 2026-11-15:** zadanie `pockethost-a8-python-source-staging-20261115-v1` zwróciło terminalne `done` / exit 0, FAST FLOW `PASS`, live `3d9a870d3e01b5ebf21e034389f708d2e34cd85f`, PID 2998, start ticks 16730317, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Nie wykonano ani nie uruchomiono kodu użytkownika. GUI przechowuje źródło `worker.py` i wymusza porównanie digestu, lecz **uruchomienie nie jest udostępnione z LAN**; S1/S2 i etap Services wciąż `IN_PROGRESS`. Następne: owner-authenticated execution z minimalnymi uprawnieniami i celowane S5 po domknięciu pełnego Services.
-
-**S1 — przegląd źródła Python bez wykonania (kod przed odbiorem):**
-`Runit services → Review Python source` udostępnia wyłącznie odczyt
-rozmiaru, SHA-256, stanu runit i autostartu dokładnie zweryfikowanej
-własnej definicji `python-source-v1`. Backend czyta bez podążania za
-symlinkiem, porównuje descriptor/inode/mtime/rozmiar przed/po odczycie,
-marker oraz pełną tożsamość po obserwacji. Nie zwraca zawartości kodu
-ani sekretów. Nie ma tokenu, lokalnego TTY jako substytutu fizycznej
-autoryzacji, ani odblokowania Start z LAN. `ownerApproval=not-configured`.
-W S5 sprawdzić podmianę źródła/markera, fałszywy runit, wyścig podczas
-odczytu, symlink, brak dostępu do obcych usług i UI. **To nie jest
-samodzielny mechanizm uruchamiania Python, S1–S4 nadal IN_PROGRESS.**
-
-**S1 Python source review — wdrożenie A8, 2026-11-15:** `pockethost-a8-python-source-review-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`, live `a58de87f2a0d438057c64bc509770a60840a08b6`, PID 15754, start ticks 16785809, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Kod dostarcza przycisk Review Python source i bezpieczny tylko-odczytowy endpoint. Nie wykonano Python ani testów funkcjonalnych; nowa ścieżka fizycznej autoryzacji jest nadal otwarta. **S1/S2/Services IN_PROGRESS.**
-
-**S1/S2 — modyfikacja własnego źródła Python z kontrolą CAS (kod przed S5):**
-`Review Python source → Replace staged Python source` wymaga potwierdzonego
-`stopped`, `autostart=false`, dokładnego aktualnego SHA-256 oraz jawnego
-potwierdzenia nazwy. Backend przy prywatnej blokadzie lifecycle zapisuje
-poprzedni `worker.py` w ograniczonej do 8 wersji historii (32 KiB każda),
-przygotowuje nowe pliki bez wykonywania i osobno atomowo podmienia
-`worker.py` oraz marker źródła. Przy awarii między podmianami stan staje
-się `changed` i wymaga ręcznego uzgodnienia — brak automatycznego
-ponowienia lub uruchomienia. Wszystkie zmiany wymagają ponownej
-kontroli własności i skrótu. **Nadal brak autoryzacji wykonania Python,
-S1–S4 IN_PROGRESS; S5/testy i odbiór później.**
-
-**S1/S2 — wdrożone CAS źródła Python na A8, 2026-11-15:** owner reload `pockethost-a8-owner-panel-reload-20261115-v1` terminal PASS; następnie `pockethost-a8-python-source-revision-20261115-v1` terminal `done`, exit 0, FAST FLOW PASS, live `bd1ec507262710069b838421b349d8d1eeb0aa45`, PID 32301, start ticks 16859671, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Nowe `Replace staged Python source` zachowuje starszy kod w prywatnej historii, żąda dokładnego SHA i zabrania aktualizacji pracującej usługi; stan częściowy wymaga ręcznego sprawdzenia. Nie wykonano żadnego skryptu Python ani testu S5. **S1/S2/Services IN_PROGRESS**, brak owner-authenticated execution.
-
-**S1/S2 — historia źródła Python (częściowe, testy S5 otwarte):** Po sprawdzeniu
-`Review Python source` przycisk `Read saved revisions` wylicza najwyżej
-8 prywatnych kopii `worker.py` z SHA-256 i rozmiarem, bez ujawniania
-kodu/ścieżek. Każda kopia jest czytana przez deskryptor `O_NOFOLLOW`
-i weryfikowana przed/po odczycie. `Restore this source` żąda jawnego
-potwierdzenia nazwy, oczekiwanego aktualnego SHA i docelowego SHA,
-następnie używa już istniejącego mechanizmu CAS przy `stopped` i
-`autostart=false`, z zachowaniem aktualnego źródła w historii. Przy
-pełnych 8 zapisach przywracanie jest blokowane; nie usuwa niczego w
-tle. **Uruchamianie niemożliwe z LAN.** S1–S4 nadal IN_PROGRESS,
-S5 zawiera testy odmowy drift/niewłaściwej historii/pełnego quota.
-
-**S1/S2 Python history — potwierdzone wdrożenie 2026-11-15:** task `pockethost-a8-python-history-restore-20261115-v1` terminal `done`/exit 0, FAST FLOW PASS, live `a8287588bac3e631e36549fa7000427a6c3142eb`, PID 23909, start ticks 16959765, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Historia max 8 wersji, restore przez CAS ze stanem stopped/autostart disabled, bez wykonania skryptu. Brak weryfikacji UI/funkcji na konkretnym zapisanym workerze i brak IP LAN w receipt. Etap S1/S2/S3/S4 nadal `IN_PROGRESS`. **S5 dopiero po zamknięciu całego Services.**
-
-**Audyt Dashboard na A8 — poprawki przed kolejnym sprintem (2026-11-15):**
-Odczyt A8 (zadanie `pockethost-a8-dashboard-audit-20261115-v1`) potwierdził
-HTTP 200 dla host, history, network, monitoring, internet; bridge HTTP 503.
-Collector miał `state=ok`, 62 punkty ostatniej godziny, ale klient
-używał `z.record(z.enum(...))` w Zod v4 i odrzucał poprawne częściowe
-`serviceStates`. Poprawiono na `z.partialRecord` oraz dodano testy
-pustej i częściowej mapy, bez akceptowania dowolnych nazw.
-Collector baterii korzysta teraz z istniejącego read-only sysfs fallback,
-gdy brak opcjonalnego `termux-battery-status`; bez zgadywania statusu ładowania.
-UI rozróżnia brak API Bridge od rzeczywistej odmowy uprawnień oraz
-traktuje zatrzymane usługi jako stan wymagający sprawdzenia,
-nie automatycznie awarię. Backendowe testy bazowe zwróciły exit=0;
-pełne S5/odbiór i fizyczna kwalifikacja Bridge nadal otwarte.
-
-**Dashboard adaptacyjny Basic/Enhanced (2026-11-15, przed odbiorem):**
-Właściciel potwierdził, że brak Android CPU/TrafficStats bez PocketHost
-Companion i Shizuku jest prawidłowym zachowaniem. Jeden Dashboard
-wykrywa świeży status `connected+authorized` z Companion i dynamicznie
-wyświetla `Basic monitoring · Termux` albo
-`Enhanced monitoring · Companion + Shizuku`.
-Metryki i wykresy Androida pojawiają się tylko przy aktualnym,
-rzeczywistym odczycie danej funkcji; pozostałe widoki Termux
-nie są oznaczane jako awaria. Brak baterii/DNS ukrywa puste kafelki
-zamiast mnożyć `Unavailable`. Użytkownik otrzymuje link do
-`/shizuku`, bez automatycznej instalacji i grantów. Testy UI
-weryfikują oba tryby oraz niedostępność status API. Dokumentuje
-to produktowy design, **nie odbiór** — A8 release i QA nadal HOLD
-do dostarczenia lokalnego toolchain TypeScript (poprzedni gate
-`tsc: not found` w checkoutcie QA), bez omijania bramki.
-
-**A8 QA dependencies / Termux manifest (2026-11-15, wdrożone i QA PASS na A8):**
-`scripts/dev/termux-dependency-manifest.mjs` deklaruje wymagane pakiety
-Termux, dwa kompletne npm lockfile i dokładne lokalne CLI QA; Termux:API,
-PocketHost Companion i Shizuku pozostają opcjonalne. Instaluje się zależności
-projektowe tylko w izolowanym QA przez `npm ci --ignore-scripts`
-zgodnie z lockfile, bez globalnych instalacji. `verify-changed` wywołuje
-znane narzędzia TypeScript/ESLint/Vitest/Prettier bezpośrednio przez
-`process.execPath`, bo shebang `/usr/bin/env node` nie działa w Termux.
-Nieznane komendy lub brak pliku fail-closed; QA nie zmienia live, a
-FAST FLOW wdraża tylko po rzeczywistym PASS. Testy skoncentrowane na
-kontrakcie runnera, bez omijania bramki. Poprzedni gate fail
-`tsc: not found` był efektem shebang, nie braku zainstalowanego tsc.
-
-**Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
-
-## 2. Platform — rzeczywista konfiguracja hosta z panelu
-
-**Status: NOT_STARTED jako pełny etap; część UI/LAN już działa.**
-
-- [ ] **P1 — LAN:** konfiguracja adresu prywatnego Wi-Fi, włączenie/wyłączenie, zapamiętanie polityki startu, status bramy i readback po ponownym starcie; bez WAN i bez publicznych reverse proxy; działające obecnie połączenie MacBooka to częściowy dowód.
-- [ ] **P2 — Termux/runit boot:** konfiguracja i diagnoza w panelu, kontrolowane potwierdzenie po prawdziwym restarcie telefonu **tylko za osobną zgodą**.
-- [ ] **P3 — SSH:** port, klucze, status, jawny bezpieczny start/stop, kontrola własności i ścieżka odzyskiwania dostępu; istniejący system SSH na A8 pozostaje chroniony dopóki osobno nie zaaprobowano przejęcia.
-- [ ] **P4 — Git/GitHub:** repozytoria, dostęp i poświadczenia bez ujawniania sekretów, walidacja dostępu, konfiguracja z UI; bez fałszywych „connected” z demo CMS.
-- [ ] **P5 — Bezpieczeństwo i odbiór:** zakresy uprawnień API z LAN bez hasła, walidacje negatywne, testy zmian i odzyskiwania, raport, aktualny panel do odbioru.
-
-**Definicja DONE:** komplet działa z ustawień UI, a nie z ręcznie nadpisanych zmiennych lub twardych reguł. Testy i odbiór są potwierdzone.
-
-## 3. Hosting — pełne flow od projektu do rollbacku
-
-**Status: NOT_STARTED jako pełny etap; istnieją częściowe API i ekrany.**
-
-- [ ] **H1 — Static i Node niezależnie:** tworzenie projektu/strony, walidowany katalog, repozytorium lub pliki, zależności i build z widocznym stanem.
-- [ ] **H2 — Wdrożenie i uruchomienie:** wydanie → właściwy runit → readiness → link i podgląd → logi; brak ukrytych project-specific adapterów.
-- [ ] **H3 — Aktualizacja i cofnięcie:** nowa wersja → health gate → promocja lub rollback do ostatniej dobrej wersji; dowody procesu, release i portów.
-- [ ] **H4 — Bramy funkcji i bezpieczeństwo:** stopniowe odblokowanie istniejących feature-gated Hosting API dopiero po upewnieniu się co do LAN mutations i ownership, bez obcych usług.
-- [ ] **H5 — Testy end-to-end i odbiór:** niezależne static/Node, negatywne ścieżki, recover/rollback, raport i panel A8 dla użytkownika.
-
-**Definicja DONE:** Create → Git/import → Build → Deploy → Run → Health → Logs → Update → Rollback przetestowane na zasobach należących do PocketHost.
-
-## 4. Stabilizacja MVP — bezpieczeństwo i gotowość do używania
-
-**Status: NOT_STARTED jako pełny etap.**
-
-- [ ] **M1 — Porządek:** usunąć martwe ścieżki i dublowane mechanizmy; zachować świadomie umieszczone na dole przykłady framework/CMS.
-- [ ] **M2 — Backup/restore:** odtwarzalny backup i odtworzenie do izolowanego miejsca, spójne logi i diagnostyka, niezależna kopia poza urządzeniem gdy uzgodniona.
-- [ ] **M3 — Testy przekrojowe:** bezpieczeństwo LAN/host, ServiceRegistry/ProjectRegistry, cold-start (tylko za osobną zgodą), awarie, rollback i regresja UX.
-- [ ] **M4 — Finalny raport + odbiór MVP:** lista dowodów, pokrycie testów, znane ograniczenia, dokładne SHA uruchomione na A8, link LAN, decyzja właściciela.
-
-## FAST FLOW — obowiązuje dla każdego commitu i ukończonego etapu
-
-1. Odczytaj `AGENTS.md`, `docs/START_HERE.md`, **ten plan**, scoped AGENTS, świeży `main` i rzeczywisty live SHA/owner A8. Kontynuuj **najwyższy nieukończony punkt bieżącego etapu**, zamiast rozpoczynać kolejne szkielety; ewentualny blocker udokumentuj.
-2. **Kod na aktualnym `main`**: najmniejsza funkcjonalna pionowa zmiana, istniejące kontrakty, bez powtórnych audytów; jeden spójny commit. Aktualizuj status punktów tylko gdy masz dowód implementacji.
-3. **Jedno zadanie Local Agent Samsung A8**: pinned base/target, cached QA checkout, oficjalny `ops/termux/fast-flow.mjs --apply`; **zawsze bez testów, także przy zamknięciu etapów**. FAST FLOW odrzuca `--tests`. Nigdy Mac/Codex/Work/GitHub Actions/S22.
-4. **Przed i po aktualizacji**: sprawdź owner markers, live SHA, PID/start ticks, chronione usługi, wynik guarded refresh, localhost HTTP i prywatny LAN; nie nadpisuj nieznanego procesu, bez automatycznego retry. FAIL / brak receipt / drift = HOLD.
-5. **Zamknięcie pełnego etapu**: nie uruchamiaj automatycznie żadnych testów. Zapisz `TESTS NOT RUN`, brakujące dowody i poproś o **nową, jednoznaczną zgodę na jeden wskazany test/zakres i SHA**. Dopiero po zgodzie niezależny ręczny `verify-changed --execute --approved-head=<SHA>` na A8, nigdy jako część FAST FLOW. Raportuj PASS/FAIL/SKIP bez zgadywania pokrycia.
-6. **Oddanie etapu**: przeładuj/wdróż **tylko własny panel A8** zatwierdzoną ścieżką, sprawdź dokładny SHA, HTTP 200, LAN i stan usług; podaj działający URL dla MacBooka i poproś użytkownika o odbiór. Odświeżenie karty MacBooka wykonuje użytkownik. `READY_FOR_ACCEPTANCE` przed potwierdzeniem; `ACCEPTED` i `[x]` dopiero po nim.
-7. **Raport i checkpoint**: commit(s), live SHA, urządzenie, zakres, `TESTS NOT RUN` albo wynik osobno zatwierdzonego biegu, deployment receipt, bezpieczne granice, link LAN, status odbioru i następny punkt. Zapisz w trackerze.
-
-**Żadnych osobnych stałych schedulerów, automatycznych nocnych audytów, fikcyjnych ustawień UI i twardych zależności od hostowanych projektów. Dokumentacja-only: commit na main, bez restartu panelu.**
-
-## Rejestr zakończeń
-
-| Data       | Element                                | Status          | Dowód / uwagi                                                                                          |
-| ---------- | -------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
-| 2026-11-14 | Baza A8, menu i otwieranie na MacBooku | ACCEPTED (baza) | Właściciel: „ok działa jest ok”; A8 live `e4838cd`, HTTP 200, LAN `healthy`; bez pełnych testów etapów |
-| —          | Etap 1 Services                        | IN_PROGRESS     | S1–S6 otwarte                                                                                          |
-| —          | Etap 2 Platform                        | NOT_STARTED     | P1–P5 otwarte                                                                                          |
-| —          | Etap 3 Hosting                         | NOT_STARTED     | H1–H5 otwarte                                                                                          |
-| —          | Etap 4 Stabilizacja                    | NOT_STARTED     | M1–M4 otwarte                                                                                          |
-
-**Następny punkt kodowania: S1 — uniwersalny, bezpieczny registry i enrollment usług.**
+# PocketHost — aktywny plan MVP
+
+**Ten dokument zawiera wyłącznie bieżący stan i następny krok.** Historia wykonanych podzadań i ich SHA znajduje się w [wersji archiwalnej z 2026-11-15](https://github.com/MichalMatu/PocketHost/blob/31e54178bc21c4217a33831df809e6e276fd0198/docs/MVP_EXECUTION_PLAN.md), a nie w kontekście każdego kolejnego sprintu. Nie usuwaj historycznych dowodów z Git. Kontynuuj po kolei: **Services → Platform → Hosting → Stabilizacja**.
+
+## Zasady nadrzędne
+
+- **QA / testy / lint / format / typecheck / smoke = OFF we wszystkich trybach, bezterminowo.** Zgoda z 2026-11-14 na testy po etapie została cofnięta 2026-11-15. Każde uruchomienie wymaga **nowej wyraźnej zgody** na jeden konkretny zakres i SHA. Samo zamknięcie etapu, „kontynuuj”, audyt ani deploy nie stanowią zgody.
+- **FAST FLOW to tylko code → deploy → verify.** `ops/termux/fast-flow.mjs` nie obsługuje `--tests`. Planner `changed-checks.mjs` nie obsługuje `--run`. `verify-changed.mjs` wyłącznie planuje, dopóki po nowym potwierdzeniu nie otrzyma osobnego `--execute --approved-head=<SHA>`. Patrz [DEV_ITERATION](DEV_ITERATION.md).
+- Weryfikacja wdrożenia (owner/PID/start ticks, exact SHA, nienaruszenie obcych usług, guarded rollback, bazowe HTTP) **zawsze obowiązuje** i nie jest testem funkcjonalnym. Błąd/niepewny wynik → **HOLD, bez automatycznej próby**.
+- **Szczególna zgoda** nadal wymagana na reboot, SSH, WAN, operacje na obcych procesach, fizyczne testy awarii, zmiany dostępu i dane użytkownika.
+- Etap `IN_PROGRESS` → `READY_FOR_ACCEPTANCE` po ukończeniu funkcjonalności i znanych dowodach → `ACCEPTED` tylko po potwierdzeniu właściciela. Bez osobnej zgody na testy wpisuj `TESTS NOT RUN`; nigdy nie udawaj przeprowadzonego QA.
+
+## Baza działająca — A8
+
+- [x] PocketHost DEV na Samsung Galaxy A8 przez Termux/runit; MacBook otwiera panel po prywatnym LAN; menu Services ma osobne strony.
+- [x] Dynamiczny Host inventory, RAM/dysk/uptime, Dashboard Basic/Enhanced według obecności Companion/Shizuku, monitoring i odczyty usług, czytelne GiB oraz dni/godziny.
+- [x] Zweryfikowany FAST FLOW bez testów. **Live SHA `31e54178bc21c4217a33831df809e6e276fd0198`**, Local Agent task `pockethost-a8-fastflow-tests-off-20261115-v1`: terminal `PASS`, `tests=not-run`, 10.294 s, PID 6057/start ticks 18623453, HTTP 200, chronione usługi bez zmian.
+- [ ] **Niepotwierdzone:** pełny odbiór Services, realny reboot/Termux:Boot, wszystkie interakcje z własnym workerem, wykonywanie własnego Python. HTTP 200 i SHA nie dowodzą ich sprawności.
+
+## 1. Services — IN_PROGRESS (jedyny bieżący priorytet)
+
+- [ ] **S1: Inventory + ownership.** Uniwersalne nazwy i bezpieczny enrollment dowolnie nazwanego **własnego** serwisu, bez przejmowania obcych/chronionych procesów; pełny proof: registry, marker, canonical path, run/source SHA. Istnieje lista i częściowa rejestracja szablonowego workera.
+- [ ] **S2: Lifecycle + logs.** Pełne Create → Start/Stop/Restart → readback → logs → archive/restore/retire. Częściowo zaimplementowane (w tym historia źródła Python z CAS); brak pełnego fizycznego odbioru.
+- [ ] **S3: Autostart.** Zapisana polityka desired state, runit enable/disable, Termux:Boot i wyjaśniony stan po reboot; prawdziwy reboot tylko za osobną zgodą.
+- [ ] **S4: Health/recovery.** Własna konfiguracja readiness/heartbeat, ograniczenia restart-loop, diagnostyka PID/HTTP/UNKNOWN i obsługa drift/rollback. Bez niezatwierdzonego schedulera.
+- [ ] **S5: Ręcznie autoryzowane QA.** **Nie uruchamiać domyślnie**, nawet po S1–S4. Najpierw przedstawić zakres testów pozytywnych/negatywnych/UI/API/host i poprosić o osobną zgodę na jedno uruchomienie.
+- [ ] **S6: Odbiór użytkownika.** Aktualny panel, exact SHA, bezpieczny receipt, lista potwierdzonych/niepotwierdzonych funkcji, link MacBook; `ACCEPTED` dopiero po decyzji właściciela.
+
+**Python:** w panelu można zapisać i przywracać własny `worker.py` (max 32 KiB). Start/Restart/autostart/recovery dowolnego kodu Python przez niezabezpieczony LAN nadal są **zablokowane**. `-I` nie jest sandboxem. Nie uruchamiaj niezweryfikowanego kodu na A8.
+
+## 2. Platform — NOT_STARTED jako całość
+
+- [ ] **P1:** konfiguracja prywatnego LAN z panelu, trwałość reguły i readback po restarcie.
+- [ ] **P2:** Termux/runit/Termux:Boot, reboot tylko po osobnej zgodzie.
+- [ ] **P3:** SSH port/klucze/status/polityka odmowy, bez przejęcia zewnętrznego SSH.
+- [ ] **P4:** Git/GitHub: konfiguracja i weryfikacja poświadczeń bez ujawniania sekretów.
+- [ ] **P5:** bezpieczeństwo LAN bez logowania i odbiór.
+
+## 3. Hosting — NOT_STARTED jako całość
+
+- [ ] **H1:** niezależne Static i Node: Create/import, repo/files, pakiety/build.
+- [ ] **H2:** Deploy → runit → Health/Ready → link → logs.
+- [ ] **H3:** Update → health gate → rollback.
+- [ ] **H4:** bezpieczne odblokowanie feature-gated API Hosting, ścisła własność.
+- [ ] **H5:** jednoznaczny odbiór i testy **tylko po odrębnej zgodzie**.
+
+## 4. Stabilizacja MVP — NOT_STARTED
+
+- [ ] **M1:** usunąć martwe/dublujące się ścieżki.
+- [ ] **M2:** spójny Backup → Restore w izolacji.
+- [ ] **M3:** bezpieczeństwo/awarie/recovery oraz reboot **wyłącznie po osobnej zgodzie**.
+- [ ] **M4:** raport znanych luk, live SHA, decyzja użytkownika o końcowym odbiorze.
+
+## Zasada jednej iteracji
+
+1. Świeży `main`, aktualny live SHA i właściciel procesu A8; czytaj tylko `AGENTS.md`, `docs/START_HERE.md`, **ten plan** i najbliższy scoped `AGENTS.md`.
+2. Jedna rzeczywista funkcja → commit na `main` → **jedno** zadanie A8 Local Agent z `fast-flow.mjs --apply`, **bez testów i dodatkowych buildów**.
+3. Jedyny konieczny dowód: terminal PASS/HOLD, SHA, PID/start ticks, podstawowe HTTP, brak zmian w chronionych usługach. Przy HOLD nie uruchamiaj automatycznych ponowień.
+4. Dokumentuj tylko aktualny status, a szczegółowe logi trzymaj w receipt/Git. Dokumentacja-only: commit bez deploy, testów, restartu i formatowania.
+
+**Następny produktowy krok: S1 — domknięcie enrollmentu własnych usług.** 
