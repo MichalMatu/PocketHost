@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSearchParams } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -181,6 +182,9 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
   return value as Record<string, unknown>
 }
 export default function ProjectsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedProject = searchParams.get("project")
+  const appliedDeepLink = React.useRef<string | null>(null)
   const [projects, setProjects] = React.useState<Project[]>([])
   const [nodeTools, setNodeTools] = React.useState<{
     nodeVersion: string | null
@@ -298,6 +302,27 @@ export default function ProjectsPage() {
     void fn().catch(cause => setError(cause instanceof Error ? cause.message : "Operation rejected"))
       .finally(() => setBusy(false))
   }
+  // Navigation from verified Services inventory selects the exact existing
+  // project and refreshes release/runtime evidence. No action is approved.
+  React.useEffect(() => {
+    if (requestedProject === null) {
+      appliedDeepLink.current = null
+      return
+    }
+    if (catalogState !== "ready" ||
+        !/^node-[a-f0-9]{32}$/.test(requestedProject) ||
+        !projects.some(project => project.id === requestedProject) ||
+        appliedDeepLink.current === requestedProject) return
+    appliedDeepLink.current = requestedProject
+    setSelectedId(requestedProject); setApproved(false)
+    setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+    setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+    setExtraFiles({}); setAssetFiles({}); setBuildCheck(null); setEditorDirty(false)
+    setGithubReview(null); setDependencyReview(null); setGithubRepository("")
+    void Promise.all([loadReleases(requestedProject), loadRuntime(requestedProject)])
+      .catch(() => setError("Owning Node project unavailable. Refresh before any action."))
+  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime])
+
   const runRuntimeAction = async (
     id: string,
     operation: "deploy" | "start" | "stop" | "restart" | "rollback",
@@ -509,6 +534,11 @@ export default function ProjectsPage() {
           <div className="flex flex-wrap gap-2">{projects.map(project =>
             <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
               disabled={busy} onClick={() => action(async () => {
+                setSearchParams(current => {
+                  const next = new URLSearchParams(current)
+                  next.delete("project")
+                  return next
+                }, { replace: true })
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)

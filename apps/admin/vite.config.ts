@@ -27,6 +27,7 @@ import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
 import { NodeProjectHost } from "../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
+import { nodeHostingUnitName } from "../../src/shared/node-hosting-projection.ts"
 import { NodeDependencyPreparer } from "../../src/modules/host/node-dependency-preparer.ts"
 import { NodeBuildPreparer } from "../../src/modules/host/node-build-preparer.ts"
 import os from "node:os"
@@ -1323,6 +1324,8 @@ function termuxAdminApi(): Plugin {
   const files = new WorkspaceFiles()
   const backups = new WorkspaceBackups(files)
   const services = new TermuxServiceAdmin()
+  const nodeProjectsForRunit = new NodeProjectHost()
+  const nodeRuntimeForRunit = new NodeRunitHost()
   const cloudflare = new CloudflareTunnelDiagnosticHost()
   const protectedServices = new ProtectedServiceDiagnosticHost()
   const controlPlane = new ControlPlaneDiagnosticHost()
@@ -1392,7 +1395,42 @@ function termuxAdminApi(): Plugin {
             const mode = url.searchParams.get("mode")
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
-              mode === "services" ? { services: services.list(), archived: services.archivedWorkers() } :
+              mode === "services" ? (() => {
+                const inventory = services.list()
+                const ownedProjects = new Map<string, { id: string; name: string }>()
+                // A matching runit name is not sufficient proof of ownership.
+                // Reattest the trusted Node project, unit marker and run digest
+                // before linking the service to its owning project.
+                if (process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
+                    process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1" &&
+                    inventory.some(unit => unit.control === "delegated")) {
+                  try {
+                    for (const project of nodeProjectsForRunit.list()) {
+                      const unit = nodeHostingUnitName(project.id)
+                      if (!inventory.some(service => service.name === unit &&
+                          service.control === "delegated" && service.registered))
+                        continue
+                      try {
+                        if (nodeRuntimeForRunit.status(project.id).state !== "not-provisioned")
+                          ownedProjects.set(unit, { id: project.id, name: project.name })
+                      } catch {
+                        // A changed project stays unlinked and read-only here.
+                      }
+                    }
+                  } catch {
+                    // Bad source registry cannot confer service provenance.
+                  }
+                }
+                return {
+                  services: inventory.map(service => ({
+                    ...service,
+                    ...(service.control === "delegated" && ownedProjects.has(service.name)
+                      ? { project: ownedProjects.get(service.name) }
+                      : {}),
+                  })),
+                  archived: services.archivedWorkers(),
+                }
+              })() :
               mode === "service-health" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectHealth(url.searchParams.get("name") ?? "") :
               mode === "service-recovery" && url.searchParams.size === 2 &&

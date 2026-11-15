@@ -397,6 +397,22 @@ rename and journal failure ambiguity; UI confirmations; isolation of SSH,
 Local Agent, panel/watch and Node Hosting. No worker retired in this
 implementation iteration. S1/S2 still IN_PROGRESS.
 
+## S1 verified Node project ownership deep link (partial)
+
+Generic Services now labels an exact Node project as the delegated owner only
+after the Node provisioner independently validates its project source,
+private runtime marker, run digest and shared Termux registry. Matching unit
+names alone cannot claim ownership. The link opens the specific project
+(`/projects?project=...`) and refreshes its release/runtime readback without
+granting operation approval. Generic Services commands remain disallowed for
+delegated units; NodeRunitHost retains its own rollout/rollback gates.
+Feature-disabled, changed and unknown services remain unlinked.
+
+This is an integrated path for existing own Node source, not a general-purpose
+arbitrary-code executor or Python importer. S1/S2 are IN_PROGRESS. The
+focused S5 gate must verify legitimate Node provenance, impostor unit names,
+source/marker drift, disabled feature and UI deep-link approval isolation.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive

@@ -282,6 +282,8 @@ pozostawioną i podmienioną blokadę oraz brak zmian w usługach chronionych.
 
 **S2 — A8 wdrożenie kwarantanny definicji, 2026-11-15:** `pockethost-a8-archive-retirement-quarantine-20261115-v1` = terminalne `done`, exit 0, FAST FLOW `PASS`; live `00cb9ad3d3c207a05c60eea0f7b74059e5b59118`, PID 22825, start ticks 16512056, HTTP 200, chronione usługi bez zmian, `tests=not-run`. Funkcja `Retire definition` jest wdrożona, lecz **nie użyta na rzeczywistym workerze** i nie zastępuje testów negatywnych/pozytywnych S5. **S1/S2 nadal IN_PROGRESS.**
 
+**S1 — Node project ↔ Runit provenance (częściowe):** lista Runit przypina właściciela projektu dopiero, gdy `NodeProjectHost.list` i `NodeRunitHost.status` zweryfikują jego prywatny marker, skrypt i wspólny registry digest. Nazwa jednostki nie stanowi dowodu. `Open owning project` otwiera dokładny projekt w `Projects` i odświeża runtime/release bez automatycznego zatwierdzenia zmian. Nie udostępnia komend runit z ogólnego UI. Brak oznaczenia właściciela przy niedostępnej funkcji Node, drift albo cudzej usłudze. Python nadal wymaga osobnej ścieżki własnego kodu; nie dodajemy niebezpiecznego wykonania dowolnego skryptu przez LAN bez logowania. Scenariusze do S5: zweryfikowany projekt, kolizja nazwy, drift markera, dostępność funkcji i zmiana projektu z deeplinkiem. **S1/S2 nadal IN_PROGRESS.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

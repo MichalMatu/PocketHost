@@ -548,6 +548,7 @@ type RunitEntry = {
   control: "standalone" | "delegated" | "read-only"
   state: "running" | "stopped" | "unknown"
   enabled?: boolean | null
+  project?: { id: string; name: string }
 }
 
 // UI guard only: the panel and its watcher must not be stopped from this page.
@@ -579,7 +580,13 @@ export function RunitServiceActions({
           (item.identity === undefined ||
             ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
           (item.template === undefined ||
-            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1")))
+            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1") &&
+          (item.project === undefined ||
+            (item.control === "delegated" && !item.template &&
+              typeof item.project === "object" && item.project !== null &&
+              /^node-[a-f0-9]{32}$/.test(item.project.id) &&
+              typeof item.project.name === "string" &&
+              item.project.name.length > 0 && item.project.name.length <= 60))))
       throw new Error("Invalid runit inventory")
     if (!Array.isArray(data.archived) || data.archived.length > 4 ||
         !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
@@ -763,6 +770,7 @@ export function RunitServiceActions({
             service.identity === "legacy" ? "Legacy record · needs reattestation" :
             service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
           {service.template && <Badge variant="outline">{service.template === "python-heartbeat-v1" ? "Python worker" : "Node.js worker"}</Badge>}
+          {service.project && <Badge variant="outline">Node project: {service.project.name}</Badge>}
         </div>
       </div>
       {service.state === "unknown" && mode === "lifecycle" &&
@@ -773,8 +781,9 @@ export function RunitServiceActions({
         <span className="text-xs text-muted-foreground">
           Managed by its creator. Generic runit actions are blocked to protect release identity.
         </span>
-        <Link to="/projects" className="text-xs underline underline-offset-4">
-          Review Projects
+        <Link to={service.project ? "/projects?project=" + encodeURIComponent(service.project.id) : "/projects"}
+          className="text-xs underline underline-offset-4">
+          {service.project ? "Open owning project" : "Review Projects"}
         </Link>
       </div>}
       {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
