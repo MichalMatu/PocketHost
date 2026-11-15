@@ -50,6 +50,8 @@ const bridgeFixture = () => ({
   version: 1, source: "android-companion", connected: true, authorized: true,
   mode: "adb", observedAt: new Date().toISOString(), uid: 2000,
   cpuPercent: 22.5, visibleProcesses: 550, capabilities: [],
+  network: { source: "android-trafficstats", scope: "all-interfaces-since-boot",
+    observedAt: new Date().toISOString(), rxBytes: 50000, txBytes: 18000 },
 })
 
 const internetFixture = () => ({
@@ -122,6 +124,7 @@ describe("PocketHost real-data dashboard", () => {
     expect(screen.getByText("Android network · RX / TX")).toBeTruthy()
     expect(screen.getByTestId("traffic-chart-slot").className).toContain("h-[190px]")
     expect(screen.getByText("Connected · authorized")).toBeTruthy()
+    expect(screen.getByText("Enhanced monitoring · Companion + Shizuku")).toBeTruthy()
     expect(screen.queryByText("Node runtime")).toBeNull()
     expect(screen.queryByText("v26.13.0")).toBeNull()
     expect(screen.queryByText("File Manager")).toBeNull()
@@ -149,11 +152,15 @@ describe("PocketHost real-data dashboard", () => {
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
     await within(metrics).findByText("6 / 6")
-    expect(within(metrics).getByText("Unavailable")).toBeTruthy()
-    expect(screen.getByText("Android Bridge: disconnected or unauthorized")).toBeTruthy()
-    expect(screen.getByText("Disconnected · last status received")).toBeTruthy()
+    expect(within(metrics).queryByText("Unavailable")).toBeNull()
+    expect(screen.getByText("Basic monitoring · Termux")).toBeTruthy()
+    expect(screen.getByText(/PocketHost Companion disconnected/)).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Android & Shizuku settings" }).getAttribute("href")).toBe("/shizuku")
+    expect(screen.queryByText("Android Bridge connectivity")).toBeNull()
     expect(screen.queryByText("0.0%")).toBeNull()
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
+    expect(screen.queryByTestId("chart-area-cpu")).toBeNull()
+    expect(screen.queryByTestId("traffic-chart-slot")).toBeNull()
     for (const axis of screen.getAllByTestId("history-time-axis")) {
       expect(axis.getAttribute("data-key")).toBe("timestamp")
       expect(axis.getAttribute("data-type")).toBe("number")
@@ -166,13 +173,13 @@ describe("PocketHost real-data dashboard", () => {
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
     await within(metrics).findAllByText("Unavailable")
-    expect(within(metrics).getAllByText("Unavailable")).toHaveLength(4)
+    expect(within(metrics).getAllByText("Unavailable")).toHaveLength(3)
     expect(screen.getByText("No successful Internet TCP connection measured yet.")).toBeTruthy()
     expect(screen.getByText(/1 unavailable/)).toBeTruthy()
     expect(screen.getByText(/0 failures/)).toBeTruthy()
-    expect(screen.getByText("No successful Bridge status API request yet.")).toBeTruthy()
+    expect(screen.getByText(/Companion status API unavailable/)).toBeTruthy()
     await screen.findByText(/Saved history unavailable/)
-    expect(screen.getAllByTestId("live-chart")).toHaveLength(5)
+    expect(screen.getAllByTestId("live-chart")).toHaveLength(3)
     for (const axis of screen.getAllByTestId("history-time-axis")) {
       expect(axis.getAttribute("data-key")).toBe("timestamp")
       expect(axis.getAttribute("data-type")).toBe("number")
@@ -180,7 +187,7 @@ describe("PocketHost real-data dashboard", () => {
     }
     expect(screen.getByTestId("resources-chart-slot").className).toContain("h-[260px]")
     expect(screen.getByTestId("internet-chart-slot").className).toContain("h-[190px]")
-    expect(screen.getByTestId("bridge-chart-slot").className).toContain("h-[190px]")
+    expect(screen.queryByTestId("bridge-chart-slot")).toBeNull()
     expect(screen.getByTestId("power-chart-slot").className).toContain("h-[190px]")
   })
 })

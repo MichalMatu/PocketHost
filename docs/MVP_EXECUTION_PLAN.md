@@ -346,6 +346,22 @@ traktuje zatrzymane usługi jako stan wymagający sprawdzenia,
 nie automatycznie awarię. Backendowe testy bazowe zwróciły exit=0;
 pełne S5/odbiór i fizyczna kwalifikacja Bridge nadal otwarte.
 
+**Dashboard adaptacyjny Basic/Enhanced (2026-11-15, przed odbiorem):**
+Właściciel potwierdził, że brak Android CPU/TrafficStats bez PocketHost
+Companion i Shizuku jest prawidłowym zachowaniem. Jeden Dashboard
+wykrywa świeży status `connected+authorized` z Companion i dynamicznie
+wyświetla `Basic monitoring · Termux` albo
+`Enhanced monitoring · Companion + Shizuku`.
+Metryki i wykresy Androida pojawiają się tylko przy aktualnym,
+rzeczywistym odczycie danej funkcji; pozostałe widoki Termux
+nie są oznaczane jako awaria. Brak baterii/DNS ukrywa puste kafelki
+zamiast mnożyć `Unavailable`. Użytkownik otrzymuje link do
+`/shizuku`, bez automatycznej instalacji i grantów. Testy UI
+weryfikują oba tryby oraz niedostępność status API. Dokumentuje
+to produktowy design, **nie odbiór** — A8 release i QA nadal HOLD
+do dostarczenia lokalnego toolchain TypeScript (poprzedni gate
+`tsc: not found` w checkoutcie QA), bez omijania bramki.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu

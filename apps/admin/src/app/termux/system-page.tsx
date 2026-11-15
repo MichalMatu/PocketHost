@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Activity, Battery, Clock3, Cpu, HardDrive, RefreshCw, ServerCog, Wifi } from "lucide-react"
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts"
+import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -317,7 +318,21 @@ export default function SystemPage() {
   const rxMbps = trafficFresh ? lastTraffic?.networkRxMbps ?? null : null
   const txMbps = trafficFresh ? lastTraffic?.networkTxMbps ?? null : null
 
-  const cpu = freshCpu(bridge, referenceTimeMs)
+  // A reachable, fresh and authorized Android source enables enhanced mode;
+  // an HTTP 503 or disconnected Companion is not a failure of Termux itself.
+  const companionAge = referenceTimeMs === null || !bridge
+    ? null : referenceTimeMs - Date.parse(bridge.observedAt)
+  const companionReady = !!bridge && bridge.connected && bridge.authorized &&
+    companionAge !== null && companionAge >= 0 && companionAge <= 45_000
+  const cpu = companionReady ? freshCpu(bridge, referenceTimeMs) : null
+  const trafficSource = bridge?.network
+  const trafficAge = referenceTimeMs === null || !trafficSource
+    ? null : referenceTimeMs - Date.parse(trafficSource.observedAt)
+  const androidTrafficReady = companionReady && trafficSource?.rxBytes != null &&
+    trafficSource?.txBytes != null && trafficAge !== null &&
+    trafficAge >= 0 && trafficAge <= 120_000
+  const batteryReady = batteryPercent !== null
+  const dnsReady = dnsMs !== null || dnsFailed === true
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
   const serviceUnknown = host?.services.some(service => service.state === "unknown") ?? false
   const active = !sampledAt && loading
@@ -343,9 +358,28 @@ export default function SystemPage() {
           </Button>
         </div>
 
+        <div className="space-y-1 text-xs text-muted-foreground" role="status"
+          aria-label="Monitoring source availability">
+          <p className="font-medium text-foreground">
+            {companionReady ? "Enhanced monitoring · Companion + Shizuku" : "Basic monitoring · Termux"}
+          </p>
+          {!companionReady && <p>
+            {bridge === null ? "Companion status API unavailable." :
+              !bridge.connected ? "PocketHost Companion disconnected." :
+              !bridge.authorized ? "Shizuku authorization required." :
+              "Authorized Companion reading not fresh."}
+            {" "}Android-only readings are hidden, not treated as host failures.
+            {" "}<Link to="/shizuku" className="underline underline-offset-2">Android &amp; Shizuku settings</Link>
+          </p>}
+          {companionReady && (cpu === null || !androidTrafficReady) &&
+            <p>Some Android readings are unavailable; their charts are hidden.</p>}
+          {!batteryReady &&
+            <p>Battery percentage requires permitted Termux:API or sysfs access.</p>}
+        </div>
         <div data-testid="system-metrics" aria-busy={active} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <SummaryCard title="Android CPU" value={cpu === null ? null : cpu.toFixed(1) + "%"}
-            icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />
+          {(!sampledAt || cpu !== null) && <SummaryCard title="Android CPU"
+            value={cpu === null ? null : cpu.toFixed(1) + "%"}
+            icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />}
           <SummaryCard title="Available RAM" value={host ? formatMemory(host.runtime.freeMemoryMiB) : null}
             icon={Activity} loading={active} detail={host ? "of " + formatMemory(host.runtime.totalMemoryMiB) + " · system-wide" : "Termux measurement unavailable"} />
           <SummaryCard title="Termux storage" value={host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null}
@@ -355,16 +389,16 @@ export default function SystemPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
-          <Card className="gap-2 py-3">
+          {batteryReady && <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API / sysfs</CardDescription>
               <CardTitle className="text-lg tabular-nums">{batteryPercent === null ? "Unavailable" : batteryPercent + "%"}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">
               {batteryCharging === true ? "Charging" : batteryCharging === false ? "Not charging" : "Charge state unavailable"}
-              {" · "}{batteryTempC === null ? "Temperature unavailable" : batteryTempC.toFixed(1) + "°C"}
+              {" · "}{batteryTempC === null ? "Temperature not provided" : batteryTempC.toFixed(1) + "°C"}
             </CardContent>
-          </Card>
+          </Card>}
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
@@ -372,15 +406,15 @@ export default function SystemPage() {
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">Since device boot</CardContent>
           </Card>
-          <Card className="gap-2 py-3">
+          {dnsReady && <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Wifi className="size-4" />DNS · Termux</CardDescription>
-              <CardTitle className="text-lg tabular-nums">{dnsMs === null ? "Unavailable" : dnsMs.toFixed(1) + " ms"}</CardTitle>
+              <CardTitle className="text-lg tabular-nums">{dnsMs === null ? "Lookup failed" : dnsMs.toFixed(1) + " ms"}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">
-              {dnsFailed === true ? "Fixed DNS lookup failed" : dnsFailed === false ? "Fixed DNS lookup successful" : "No recent DNS sample"}
+              {dnsFailed === true ? "Fixed DNS lookup failed" : "Fixed DNS lookup successful"}
             </CardContent>
-          </Card>
+          </Card>}
         </div>
 
         <div role="status" aria-label="Active health alerts"
@@ -401,7 +435,7 @@ export default function SystemPage() {
           <Card className="min-w-0 xl:col-span-2">
             <CardHeader>
               <CardTitle>Live system resources</CardTitle>
-              <CardDescription>Android CPU and system RAM · percent used</CardDescription>
+              <CardDescription>{cpu !== null ? "Android CPU and system RAM · percent used" : "Termux system RAM · percent used"}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="relative h-[260px] min-w-0 w-full" data-testid="resources-chart-slot">
@@ -421,9 +455,9 @@ export default function SystemPage() {
                     <XAxis dataKey="timestamp" type="number" scale="time" domain={["dataMin", "dataMax"]} tickLine={false} axisLine={false} minTickGap={36} tickMargin={10} tickFormatter={value => historyTime(Number(value), historyRange)} />
                     <YAxis domain={[0, 100]} tickLine={false} axisLine={false} width={48} tickMargin={8} tickFormatter={value => value + "%"} />
                     <ChartTooltip cursor={false} content={<DashboardTooltip range={historyRange} fields={tooltipFields.resources} />} />
-                    <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
+                    {cpu !== null && <Area dataKey="cpu" type="monotone" connectNulls={false} stroke="var(--color-cpu)"
                       strokeOpacity={0.55} fill="url(#pockethost-cpu-fill)" strokeWidth={1.5}
-                      dot={false} activeDot={false} isAnimationActive={false} />
+                      dot={false} activeDot={false} isAnimationActive={false} />}
                     <Area dataKey="ram" type="monotone" connectNulls={false} stroke="var(--color-ram)"
                       strokeOpacity={0.95} fill="url(#pockethost-ram-fill)" strokeWidth={1.5}
                       dot={false} activeDot={false} isAnimationActive={false} />
@@ -432,7 +466,7 @@ export default function SystemPage() {
                 {!samples.some(sample => sample.cpu !== null || sample.ram !== null) && <p className="text-muted-foreground pointer-events-none absolute inset-x-12 top-1/2 -translate-y-1/2 text-center text-sm">Waiting for permitted Android / Termux resource readings.</p>}
               </div>
               <div className="text-muted-foreground flex flex-wrap gap-x-4 gap-y-1 pt-2 text-xs">
-                <span>CPU · Android</span>
+                {cpu !== null && <span>CPU · Android</span>}
                 <span>RAM used · system-wide</span>
                 {historyState !== "ok" && <span>{historyState === "unavailable" ? "Saved history unavailable" : "Loading saved history…"}</span>}
               </div>
@@ -475,7 +509,7 @@ export default function SystemPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {androidTrafficReady && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android network · RX / TX</CardTitle>
               <CardDescription>Android TrafficStats · sampled RX/TX, all interfaces</CardDescription>
@@ -508,12 +542,12 @@ export default function SystemPage() {
               <p className="text-muted-foreground pt-2 text-xs tabular-nums" aria-label="Android transfer rates">
                 RX: {formatTrafficMbps(rxMbps)} · TX: {formatTrafficMbps(txMbps)}
                 {" · "}{trafficFresh && lastTraffic?.networkObservedAt
-                  ? "Measured " + clock(lastTraffic.networkObservedAt) : "Native source unavailable or stale"}
+                  ? "Measured " + clock(lastTraffic.networkObservedAt) : "Waiting for two supported counter readings"}
               </p>
             </CardContent>
-          </Card>
+          </Card>}
 
-          <Card>
+          {companionReady && <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Wifi className="size-4" />Android Bridge connectivity</CardTitle>
               <CardDescription>Bridge status API response time</CardDescription>
@@ -543,7 +577,7 @@ export default function SystemPage() {
                 <span>{bridgeHealth}</span><span>·</span><span>{samples.filter(sample => sample.bridgeOnline === false).length} disconnected samples</span>
               </p>
             </CardContent>
-          </Card>
+          </Card>}
                   <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2"><Battery className="size-4" />Power & storage</CardTitle>
