@@ -326,11 +326,11 @@ export default function SystemPage() {
     companionAge !== null && companionAge >= 0 && companionAge <= 45_000
   const cpu = companionReady ? freshCpu(bridge, referenceTimeMs) : null
   const trafficSource = bridge?.network
-  const trafficAge = referenceTimeMs === null || !trafficSource
+  const trafficSourceAge = referenceTimeMs === null || !trafficSource
     ? null : referenceTimeMs - Date.parse(trafficSource.observedAt)
   const androidTrafficReady = companionReady && trafficSource?.rxBytes != null &&
-    trafficSource?.txBytes != null && trafficAge !== null &&
-    trafficAge >= 0 && trafficAge <= 120_000
+    trafficSource?.txBytes != null && trafficSourceAge !== null &&
+    trafficSourceAge >= 0 && trafficSourceAge <= 120_000
   const batteryReady = batteryPercent !== null
   const dnsReady = dnsMs !== null || dnsFailed === true
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
