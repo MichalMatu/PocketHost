@@ -48,8 +48,15 @@ const MAX_TEMPLATE_WORKERS = 4;
 const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 const RECOVERY_MAX_ATTEMPTS = 2;
-export type WorkerTemplate = 'heartbeat-worker-v1' | 'python-heartbeat-v1' | 'python-source-v1';
-type FixedWorkerTemplate = Exclude<WorkerTemplate, 'python-source-v1'>;
+export type WorkerTemplate =
+  | 'heartbeat-worker-v1'
+  | 'python-heartbeat-v1'
+  | 'python-source-v1'
+  | 'node-source-v1';
+type StagedWorkerTemplate = 'python-source-v1' | 'node-source-v1';
+type FixedWorkerTemplate = Exclude<WorkerTemplate, StagedWorkerTemplate>;
+const isStagedWorker = (template: WorkerTemplate): template is StagedWorkerTemplate =>
+  template === 'python-source-v1' || template === 'node-source-v1';
 
 interface Registration {
   name: string;
@@ -136,14 +143,15 @@ export interface TermuxService {
  * label; recovery re-computes the same SHA-256 before re-enrollment.
  */
 function builtinWorkerRunScript(template: WorkerTemplate, target: string): string {
-  if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(template))
+  if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
     throw new RangeError('Invalid builtin worker');
   if (target !== path.join(PREFIX, 'var', 'sv', path.basename(target)))
     throw new Error('Unexpected builtin target path');
   const sh = path.join(PREFIX, 'bin', 'sh');
   const env = path.join(PREFIX, 'bin', 'env');
-  const runtime = path.join(PREFIX, 'bin', template !== 'heartbeat-worker-v1' ? 'python' : 'node');
-  if (template === 'python-source-v1')
+  const runtime = path.join(PREFIX, 'bin',
+    template === 'python-heartbeat-v1' || template === 'python-source-v1' ? 'python' : 'node');
+  if (isStagedWorker(template))
     return (
       '#!' +
       sh +
@@ -157,8 +165,8 @@ function builtinWorkerRunScript(template: WorkerTemplate, target: string): strin
       path.join(PREFIX, 'tmp') +
       ' ' +
       runtime +
-      ' -I -u ' +
-      path.join(target, 'worker.py') +
+      (template === 'python-source-v1' ? ' -I -u ' : ' ') +
+      path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs') +
       '\n'
     );
   const code =
@@ -202,25 +210,37 @@ function valid(name: string): void {
     throw new RangeError('Invalid runit service name');
 }
 
-/** SHA-256 for an exact owner-private script; never evaluates Python source. */
-function pythonWorkerSourceHash(target: string): string | null {
+/** SHA-256 of private staged source, via inode-pinned NOFOLLOW read. */
+function stagedWorkerSourceHash(target: string, template: StagedWorkerTemplate): string | null {
+  const file = path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs');
+  let fd: number | undefined;
   try {
-    const file = path.join(target, 'worker.py');
-    const stat = lstatSync(file);
-    if (
-      !stat.isFile() ||
-      stat.isSymbolicLink() ||
-      stat.nlink !== 1 ||
-      stat.uid !== process.getuid?.() ||
-      (stat.mode & 0o077) !== 0 ||
-      stat.size === 0 ||
-      stat.size > 32 * 1024
-    )
-      return null;
-    return createHash('sha256').update(readFileSync(file)).digest('hex');
-  } catch {
-    return null;
-  }
+    const initial = lstatSync(file);
+    if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
+        initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
+        initial.size === 0 || initial.size > 32 * 1024) return null;
+    fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
+    const before = fstatSync(fd);
+    if (!before.isFile() || before.nlink !== 1 || before.dev !== initial.dev ||
+        before.ino !== initial.ino || before.uid !== initial.uid ||
+        before.mode !== initial.mode || before.size !== initial.size ||
+        before.mtimeMs !== initial.mtimeMs) return null;
+    const bytes = readFileSync(fd);
+    const after = fstatSync(fd);
+    const current = lstatSync(file);
+    if (bytes.length !== before.size || after.dev !== before.dev ||
+        after.ino !== before.ino || after.size !== before.size ||
+        after.mtimeMs !== before.mtimeMs || after.mode !== before.mode ||
+        after.nlink !== 1 || current.dev !== before.dev ||
+        current.ino !== before.ino || current.size !== before.size ||
+        current.mtimeMs !== before.mtimeMs || current.mode !== before.mode ||
+        current.nlink !== 1 || current.uid !== before.uid) return null;
+    return createHash('sha256').update(bytes).digest('hex');
+  } catch { return null; }
+  finally { if (fd !== undefined) closeSync(fd); }
+}
+function pythonWorkerSourceHash(target: string): string | null {
+  return stagedWorkerSourceHash(target, 'python-source-v1');
 }
 function isReserved(name: string, resolved?: string): boolean {
   return (
@@ -383,10 +403,10 @@ export class TermuxServiceAdmin {
         typeof v.instanceId !== 'string' ||
         typeof v.runSha256 !== 'string' ||
         typeof v.archivedAt !== 'string' ||
-        !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
+        !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
           v.template as string,
         ) ||
-        (v.template === 'python-source-v1'
+        (isStagedWorker(v.template as WorkerTemplate)
           ? typeof v.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.sourceSha256)
           : v.sourceSha256 !== undefined) ||
         !/^[0-9a-f-]{36}$/.test(v.instanceId) ||
@@ -487,8 +507,9 @@ export class TermuxServiceAdmin {
           .update(builtinWorkerRunScript(record.template, target))
           .digest('hex') !== record.runSha256 ||
         !this.fixedWorkerLogIdentity(name, target) ||
-        (record.template === 'python-source-v1' &&
-          (!record.sourceSha256 || pythonWorkerSourceHash(target) !== record.sourceSha256))
+        (isStagedWorker(record.template) &&
+          (!record.sourceSha256 ||
+            stagedWorkerSourceHash(target, record.template) !== record.sourceSha256))
       )
         return false;
       const down = lstatSync(path.join(target, 'down'));
@@ -519,7 +540,7 @@ export class TermuxServiceAdmin {
           'instanceId,name,owner,runSha256,schema,template',
           'instanceId,name,owner,runSha256,schema,sourceSha256,template',
         ].includes(Object.keys(m).sort().join(',')) &&
-        (record.template === 'python-source-v1'
+        (isStagedWorker(record.template)
           ? m.sourceSha256 === record.sourceSha256
           : m.sourceSha256 === undefined) &&
         m.schema === 1 &&
@@ -571,7 +592,7 @@ export class TermuxServiceAdmin {
   ): { changed: true; retired: true; restorable: false; filesRetained: true } {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(template))
+    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
       throw new RangeError('Invalid archived worker template');
     const release = this.acquireStandaloneLifecycleLock();
     try {
@@ -682,7 +703,7 @@ export class TermuxServiceAdmin {
   ): { changed: boolean; restored: boolean; started: false } {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(template))
+    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
       throw new RangeError('Invalid archived worker template');
     const release = this.acquireStandaloneLifecycleLock();
     try {
@@ -719,7 +740,7 @@ export class TermuxServiceAdmin {
     const registrations = this.registry();
     const target = this.target(name);
     const template = this.managedWorkerTemplate(name, target, registrations);
-    if (!template || template === 'python-source-v1')
+    if (!template || isStagedWorker(template))
       throw new Error('Recovery only available for fixed builtin heartbeat worker');
     const raw = safeFile(path.join(target, '.pockethost-service.json'));
     if (!raw) throw new Error('Worker identity marker missing');
@@ -1028,9 +1049,9 @@ export class TermuxServiceAdmin {
     source?: string,
   ): { changed: boolean; name: string; template: WorkerTemplate } {
     valid(name);
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(template))
+    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
       throw new RangeError('Unsupported owned service template');
-    if (template === 'python-source-v1') {
+    if (isStagedWorker(template)) {
       // Source is staged, not executed. Browser Start/Restart/Enable are denied.
       if (
         typeof source !== 'string' ||
@@ -1038,7 +1059,7 @@ export class TermuxServiceAdmin {
         source.includes(String.fromCharCode(0)) ||
         Buffer.byteLength(source) > 32 * 1024
       )
-        throw new RangeError('Invalid Python source or 32 KB limit exceeded');
+        throw new RangeError('Invalid staged source or 32 KB limit exceeded');
     } else if (source !== undefined) {
       throw new RangeError('Custom source refused by fixed templates');
     }
@@ -1074,7 +1095,7 @@ export class TermuxServiceAdmin {
             !!data &&
             typeof data === 'object' &&
             (data as { template?: string }).template !== undefined &&
-            ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
+            ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
               (data as { template: string }).template,
             )
           );
@@ -1101,7 +1122,7 @@ export class TermuxServiceAdmin {
       const node = path.join(PREFIX, 'bin', 'node');
       const python = path.join(PREFIX, 'bin', 'python');
       const svlogd = path.join(PREFIX, 'bin', 'svlogd');
-      const runtime = template !== 'heartbeat-worker-v1' ? python : node;
+      const runtime = template === 'python-heartbeat-v1' || template === 'python-source-v1' ? python : node;
       for (const binary of [sh, env, runtime, svlogd]) {
         const st = statSync(binary);
         if (!st.isFile() || (st.mode & 0o111) === 0) throw new Error('Termux runtime unavailable');
@@ -1118,13 +1139,15 @@ export class TermuxServiceAdmin {
       writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
       writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
       const sourceSha256 =
-        template === 'python-source-v1' && source !== undefined
+        isStagedWorker(template) && source !== undefined
           ? createHash('sha256').update(source).digest('hex')
           : null;
       if (sourceSha256) {
-        writeFileSync(path.join(target, 'worker.py'), source!, { flag: 'wx', mode: 0o600 });
-        if (pythonWorkerSourceHash(target) !== sourceSha256)
-          throw new Error('Python source readback does not match staged bytes');
+        writeFileSync(path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs'),
+          source!, { flag: 'wx', mode: 0o600 });
+        if (!isStagedWorker(template) ||
+            stagedWorkerSourceHash(target, template) !== sourceSha256)
+          throw new Error('Staged source readback does not match written bytes');
       }
       writeFileSync(
         path.join(target, '.pockethost-service.json'),
@@ -1197,13 +1220,13 @@ export class TermuxServiceAdmin {
         proof.schema === 1 &&
         proof.owner === 'pockethost' &&
         proof.name === name &&
-        ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1'].includes(
+        ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
           proof.template as string,
         ) &&
-        (proof.template === 'python-source-v1'
+        (isStagedWorker(proof.template as WorkerTemplate)
           ? typeof proof.sourceSha256 === 'string' &&
             /^[a-f0-9]{64}$/.test(proof.sourceSha256) &&
-            pythonWorkerSourceHash(target) === proof.sourceSha256
+            stagedWorkerSourceHash(target, proof.template as StagedWorkerTemplate) === proof.sourceSha256
           : proof.sourceSha256 === undefined) &&
         typeof proof.instanceId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
@@ -1212,7 +1235,7 @@ export class TermuxServiceAdmin {
       const expectedDigest =
         proof.template === 'heartbeat-worker-v1' ||
         proof.template === 'python-heartbeat-v1' ||
-        proof.template === 'python-source-v1'
+        (proof.template === 'python-source-v1' || proof.template === 'node-source-v1')
           ? createHash('sha256')
               .update(builtinWorkerRunScript(proof.template, target))
               .digest('hex')
@@ -1282,7 +1305,8 @@ export class TermuxServiceAdmin {
         typeof proof.runSha256 !== 'string' ||
         (archiveTemplate !== 'heartbeat-worker-v1' &&
           archiveTemplate !== 'python-heartbeat-v1' &&
-          archiveTemplate !== 'python-source-v1')
+          archiveTemplate !== 'python-source-v1' &&
+          archiveTemplate !== 'node-source-v1')
       ) {
         throw new Error('Worker archiving identity or quota changed');
       }
@@ -1295,7 +1319,7 @@ export class TermuxServiceAdmin {
           template: archiveTemplate,
           instanceId: proof.instanceId,
           runSha256: proof.runSha256,
-          ...(archiveTemplate === 'python-source-v1' && typeof proof.sourceSha256 === 'string'
+          ...(isStagedWorker(archiveTemplate) && typeof proof.sourceSha256 === 'string'
             ? { sourceSha256: proof.sourceSha256 }
             : {}),
           archivedAt: new Date().toISOString(),
@@ -1594,7 +1618,7 @@ export class TermuxServiceAdmin {
     if (isReserved(name)) throw new Error('Protected service');
     const target = this.target(name);
     const template = this.managedWorkerTemplate(name, target, this.registry());
-    if (!template || template === 'python-source-v1' || !this.fixedWorkerLogIdentity(name, target))
+    if (!template || isStagedWorker(template) || !this.fixedWorkerLogIdentity(name, target))
       throw new Error('Only fixed builtin heartbeat workers can configure heartbeat');
     const markerRaw = safeFile(path.join(target, '.pockethost-service.json'));
     if (!markerRaw) throw new Error('Worker instance marker unavailable');
@@ -2099,6 +2123,39 @@ export class TermuxServiceAdmin {
     };
   }
 
+  /** Read-only SHA and state for a staged Node app; source never leaves the host. */
+  inspectNodeSource(name: string): {
+    name: string;
+    template: 'node-source-v1';
+    sourceSha256: string;
+    sourceBytes: number;
+    observed: 'running' | 'stopped' | 'unknown';
+    autostart: boolean | null;
+    canStartFromLan: false;
+    ownerApproval: 'not-configured';
+    checkedAt: string;
+  } {
+    valid(name);
+    if (isReserved(name)) throw new Error('Protected service');
+    const target = this.target(name);
+    if (this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1')
+      throw new Error('Only attested owner-staged Node source can be reviewed');
+    const sourceSha256 = stagedWorkerSourceHash(target, 'node-source-v1');
+    const file = lstatSync(path.join(target, 'worker.mjs'));
+    if (!sourceSha256 || !file.isFile() || file.size === 0 || file.size > 32 * 1024)
+      throw new Error('Node source identity changed');
+    const observed = this.probe(name);
+    const autostart = this.enabled(name, true);
+    if (this.target(name) !== target ||
+        stagedWorkerSourceHash(target, 'node-source-v1') !== sourceSha256 ||
+        this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1')
+      throw new Error('Node source identity changed during review');
+    return { name, template: 'node-source-v1', sourceSha256,
+      sourceBytes: file.size, observed, autostart,
+      canStartFromLan: false, ownerApproval: 'not-configured',
+      checkedAt: new Date().toISOString() };
+  }
+
   /**
    * Manual, read-only runit health observation for attested services.
    * Unlike Node hosting readiness, this does not claim application health
@@ -2116,7 +2173,7 @@ export class TermuxServiceAdmin {
     const autostart = this.enabled(name, true);
     const template = this.managedWorkerTemplate(name, current, registrations);
     const heartbeat: HeartbeatReadback =
-      template && template !== 'python-source-v1'
+      template && !isStagedWorker(template)
         ? (() => {
             const worker = this.builtinHeartbeatIdentity(name);
             return this.heartbeatPolicy.observe(
@@ -2331,8 +2388,8 @@ export class TermuxServiceAdmin {
       const target = this.target(name);
       const template = this.managedWorkerTemplate(name, target, this.registry());
       if (!template) throw new Error('Use the owning project provisioner for this service');
-      if (template === 'python-source-v1' && ['start', 'restart', 'enable'].includes(operation))
-        throw new Error('Python source execution not authorized by unauthenticated LAN Services');
+      if (isStagedWorker(template) && ['start', 'restart', 'enable'].includes(operation))
+        throw new Error('Custom source execution not authorized by unauthenticated LAN Services');
       const result = await this.apply(operation, name, run);
       // Enrollment alone does not confer standalone authority. A concurrent
       // archive, source change or marker replacement revokes the capability
