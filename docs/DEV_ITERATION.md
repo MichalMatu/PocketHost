@@ -1,52 +1,37 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-14
-purpose: Single-pass DEV update with owner-controlled testing
+last_reviewed: 2026-11-15
+purpose: Permanent no-automatic-tests FAST FLOW policy
 ---
 
 # FAST FLOW: code → deploy → verify
 
-**A8 cold-bootstrap gate: PASS on 14 November 2026.** Initial live SHA `1234603ed7c356cb6c05f57aacfcf260e79e4f5b`, runit panel/watch and loopback HTTP 200 were independently read back from the A8 Agent. Future changes must use a separate clean A8 QA checkout and a verified A8 live owner. The retired S22 QA path and marker must never be used. No default tests during interim code work; owner authorization now covers focused testing at complete-stage closure under MVP plan.
+**Every mode is NO-TESTS by default, indefinitely.** The prior broad authorization for tests on completed stages is revoked as of 2026-11-15. Completion of a stage, request to continue, audit, fix, release or deploy **does not authorize testing**. Ask for a new, explicit, scope-specific approval **before each manual test execution**. No independent recurring tests, periodic checks, CI, schedulers or GitHub Actions. Keep existing test code for later opt-in use; do not delete coverage to gain speed.
 
-1. Commit one coherent change on fresh `main`; read the actual live PocketHost panel SHA and verify its ownership. Do not infer it from Git history.
-2. In **one** verified Samsung Termux Local Agent task, reuse the existing clean QA checkout, fetch/pin the exact target and use cached dependencies.
-3. Run `node ops/termux/fast-flow.mjs --base=<live-sha> --target=<target-sha> --apply`. Default: **no QA suites, format/lint/typecheck or route smoke**. It performs strict source/owner checks, read-only preflight, guarded PocketHost-only refresh with rollback, then read-only live revision/health verification.
-4. Read **one terminal JSON receipt**. Deployment PASS requires exact live target SHA, health, unchanged protected services and successful guarded refresh. Missing receipt or failed safety gate = HOLD, **no automatic retry**.
+## Default deployment — no QA
 
-**Tests at completed-stage closure (authorized 2026-11-14):** add `--tests` on the pinned guarded A8 FAST FLOW task **only when a whole MVP stage is functionally ready for acceptance**. Focus on positive/negative UI/API/host and scoped regression before guarded deployment. Do not run tests on interim partial slices or start any recurring job. Real reboot, SSH/external service changes and other disruptive tests still need separate approval. See [MVP acceptance plan](MVP_EXECUTION_PLAN.md).
+1. Commit one coherent code change to fresh GitHub `main`, then read actual A8 DEV live SHA and verified owner identity. Reuse the existing clean isolated A8 QA checkout and cached dependencies; never reinstall packages on each iteration.
+2. Publish **one** bounded A8 Local Agent task with exact base and target. Execute `node ops/termux/fast-flow.mjs --base=<live-sha> --target=<target-sha> --apply`. **There is no `--tests` option.**
+3. The deployment script checks only Git SHA ancestry, clean checkout, panel ownership, protected-service isolation and rollback eligibility. It performs the guarded PocketHost DEV-only refresh and reads back live SHA/owner/basic HTTP. These are **safety and release verification, not functional tests**.
+4. Report exactly one terminal receipt (PASS/HOLD, target SHA, owner/health, protected services, `tests=not-run`). If the agent is unavailable, state is uncertain or a gate fails, **HOLD and no automatic retries**. No extra build, smoke route checks, lint, formatting, typecheck or UI/API regression.
 
-**Docs-only:** commit to Git; no automatic Markdown check, build, restart or deployment. Privileged/unknown ownership remains HOLD rather than a bypass. No service installs, WAN exposure or unrelated process changes. Samsung only, never CI/Mac/sandbox.
+**Docs-only commit:** GitHub update only; no agent job, format/Markdown checks, build, restart or panel update.
 
-## Owner-authorized end-to-end flow qualification
+## Explicitly authorized, separate manual QA
 
-At the end of each fully implemented stage, per the owner's explicit consent, include `--tests` on
-that **single** pinned Samsung deployment task. The changed-source gate
-runs focused structure, syntax, typecheck, relevant Node/UI interaction tests,
-format/lint and changed documentation checks **before** any live update.
-For real device acceptance, inspect the installed source and protected
-service state, and request read-only local/LAN route checks only under the
-same explicit test authorization. Do not run a full unrelated audit.
+The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` are **read-only planners** unless the latter receives a double opt-in. If the owner explicitly requests a *specific* QA run for a *specific* target SHA, run on verified A8 only:
 
-The one JSON receipt identifies `failedStage`, bounded failure reason,
-`timingsMs.prerequisites`, `timingsMs.preflight`,
-`timingsMs.tests`, `timingsMs.deployment` and
-`timingsMs.readback` where reached. On FAIL/HOLD preserve exact source,
-existing checkout, prior receipts and rollback; do not silently retry an
-uncertain deployment. A Git task `done` must include command exit 0 and
-an inner `PocketHostFastFlow` PASS to count as a deployed PASS.
+```sh
+node scripts/dev/verify-changed.mjs --base=<verified-live-sha> --execute --approved-head=<exact-40-hex-target-sha>
+```
 
-The Git task queue is the remote execution transport, not the panel's
-runtime. Measure queue/publish delay separately from on-device test and
-release times using request/result commit timestamps. The selected
-Samsung agent release is an independent product; updating that service
-must be handled by an independent operator, never this flow.
+The agent must have fresh human approval **before constructing this command**; flags are not proof of permission. An approval applies to **one run only** and is not inherited by a different SHA or a subsequent attempt. `changed-checks.mjs --run` and `fast-flow.mjs --tests` are rejected. A manual QA failure generates a bounded receipt, does not deploy anything and never retries automatically.
 
-On a failed QA stage, inspect the existing private
-`.tmp/verify-changed-last.json` receipt in the pinned Samsung QA checkout.
-It includes the exact failed check and bounded error. Do not repeat an
-entire test pass just to retrieve diagnostics.
+The manual planner orders cheap formatting, documentation, structure and lint checks before TypeScript and costly Node/UI tests; it collects inexpensive failures and skips expensive suites after a cheap failure. Reuse existing QA files and receipts; do not repeat entire passes merely to extract diagnostics.
 
-## Stage closure and user handoff
+## Stage acceptance
 
-A deployment PASS is **not** a complete MVP stage. When the current stage is functionally complete: run the focused A8 `--tests` gate (and any safe, explicitly approved additional test scenarios), collect exact test names/counts PASS/FAIL/SKIP plus coverage gaps, verify the owned live revision and protected-service isolation, refresh only the PocketHost-owned A8 panel, check loopback HTTP and private LAN availability, and present a concise report with commit, live SHA, verified owner/PID, test results, caveats and a MacBook URL. The user refreshes their own browser tab. Mark the tracker stage `READY_FOR_ACCEPTANCE`; `ACCEPTED` only upon explicit owner approval. If a required test is blocked, say HOLD, not DONE. Docs-only commits never trigger deploy/restart.
+Code completion and release readiness are separate from test approval. If a stage needs physical functionality or regression evidence, report the exact missing evidence and ask the owner whether to run a named manual check. Never mark it ACCEPTED without confirmation. Physical reboot, SSH, WAN, external services, sensitive data and other disruptive operations each require additional specific consent.
+
+**Operational invariant:** keep protected-service gates, owner marker/PID/start ticks, rollback, exact-SHA source verification and basic loopback HTTP even with tests disabled. Never remove these safety controls to shorten the flow.

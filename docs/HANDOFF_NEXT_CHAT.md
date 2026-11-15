@@ -10,7 +10,7 @@ purpose: A8 development handoff with exact live SHA and QA release gate
 ## Current verified state
 
 - **Device:** paired Samsung Galaxy A8, official Termux, PocketHost-owned DEV only. Never use Mac, S22, Codex, Work, GitHub Actions or schedulers for this flow.
-- **Last verified live source:** `4716e7f21fde1bea019bc87e52015030415ba181` (2026-11-15), PID **29198**, start ticks **18333015**, HTTP **200**, 15.78 GiB free. Termux owner/readback and protected-service isolation verified; independent processes remain untouched. Termux:Boot has not been reboot-tested.
+- **Last verified live source:** `43f8a7854339ec7dabb3fb563f07e924f4901466` (2026-11-15), FAST FLOW without tests, HTTP **200**, protected services unchanged. Do not infer a newer live SHA from Git. Termux:Boot has not been reboot-tested.
 - **A8 release PASS:** single guarded task `pockethost-a8-dashboard-manifest-release-4716-20261115-v1` returned terminal `done`, exit 0, inner `PocketHostFastFlow PASS`, `deployment=applied`, `tests=PASS`, and **20 scoped QA checks** (source syntax, TypeScript, structure/boundaries, Node, UI, docs, lint, Markdown and format). Exact running SHA confirmed.
 - **Delivered:** adaptive Basic/Enhanced dashboard; sparse telemetry history acceptance; optional battery/sysfs fallback; dependency manifest, pinned npm QA packages and Termux-safe direct-Node tools; safe runit worker and UI regression fixes. **Not yet accepted:** whole Services S1–S4, Python execution gate, true device reboot/autostart, production readiness or optional Companion/Shizuku installation. Current GitHub `main` may move forward via docs-only commits, which do not restart DEV.
 - The previous, detailed 2026-11-14/15 A8 implementation receipts and design decisions are preserved in Git at `c09b4dc:docs/HANDOFF_NEXT_CHAT.md`. Older evidence remains in [checkpoint archive](checkpoints/README.md). Do not preload archival documents into every task.
@@ -26,8 +26,8 @@ purpose: A8 development handoff with exact live SHA and QA release gate
 
 ## Next action
 
-1. Use fresh `main` and compare against verified live SHA. Run **one** guarded Samsung A8 Local Agent FAST FLOW task with the already owner-authorized scoped `--tests` gate.
-2. If tests fail, read the exact JSON QA receipt and fix the real contract. Never bypass unknown/high-risk checks or run duplicate jobs.
-3. Only on PASS: guarded DEV-only panel switch, read exact live SHA/PID/start ticks, HTTP health, private-LAN access and protected-service isolation; share [MVP plan](MVP_EXECUTION_PLAN.md) stage status for user acceptance.
+1. **Global tests OFF — prior stage QA consent revoked.** On next code iteration, use fresh `main` and exact live SHA, then publish one guarded A8 FAST FLOW task **without** any test flag. Never run tests, lint, formatting, typecheck or smoke on your own.
+2. If owner wants tests, ask for a fresh, explicit one-run scope and exact SHA. Only then use the independent `verify-changed.mjs --execute --approved-head=<SHA>` on A8. Never bundle testing with deployment.
+3. On guarded deployment PASS, read exact SHA/PID/start ticks, basic HTTP and protected services; share [MVP plan](MVP_EXECUTION_PLAN.md) stage status. Failed ownership or unknown receipt means HOLD, not retry.
 
 **Stages S1–S4 remain IN_PROGRESS; full S5 acceptance is not complete.** A successful build or HTTP 200 alone is not product acceptance.
