@@ -1441,6 +1441,8 @@ function termuxAdminApi(): Plugin {
                 url.searchParams.has("name") ? services.inspectNodeSource(url.searchParams.get("name") ?? "") :
               mode === "python-source-history" && url.searchParams.size === 2 &&
                 url.searchParams.has("name") ? services.inspectPythonSourceHistory(url.searchParams.get("name") ?? "") :
+              mode === "node-source-history" && url.searchParams.size === 2 &&
+                url.searchParams.has("name") ? services.inspectNodeSourceHistory(url.searchParams.get("name") ?? "") :
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
@@ -1576,6 +1578,26 @@ function termuxAdminApi(): Plugin {
                 throw new RangeError("Invalid Python revision request");
               }
               return services.updatePythonSource(
+                input.path ?? "", input.destination, input.content)
+            }
+            if (input.action === "service-node-restore") {
+              if (Object.keys(input).some(key =>
+                    !["action", "name", "path", "root", "destination"].includes(key)) ||
+                  typeof input.name !== "string" ||
+                  typeof input.root !== "string" ||
+                  typeof input.destination !== "string")
+                throw new RangeError("Invalid Node.js restore request");
+              return services.restoreNodeSourceRevision(
+                input.path ?? "", input.name, input.root, input.destination)
+            }
+            if (input.action === "service-node-update") {
+              // Stopped, source-attested compare-and-swap; never authorizes execution.
+              if (typeof input.content !== "string" ||
+                  typeof input.destination !== "string" ||
+                  Object.keys(input).some(key => !["action", "path", "destination", "content"].includes(key))) {
+                throw new RangeError("Invalid Node.js revision request");
+              }
+              return services.updateNodeSource(
                 input.path ?? "", input.destination, input.content)
             }
             if (input.action === "service-create") {
