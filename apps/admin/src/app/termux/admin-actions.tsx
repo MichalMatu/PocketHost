@@ -535,7 +535,7 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
   </div>
 }
 
-type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1"
+type WorkerTemplate = "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1"
 type PythonSourceReview = {
   name: string
   template: "python-source-v1"
@@ -560,6 +560,7 @@ type ArchivedEntry = {
   template: WorkerTemplate
   identity: "restorable" | "changed" | "conflict"
 }
+type NodeSourceReview = Omit<PythonSourceReview, "template"> & { template: "node-source-v1" }
 type RunitEntry = {
   name: string
   registered: boolean
@@ -598,6 +599,7 @@ export function RunitServiceActions({
   const [serviceLogs, setServiceLogs] = React.useState<{ name: string; lines: string[] } | null>(null)
   const [sourceReview, setSourceReview] = React.useState<PythonSourceReview | null>(null)
   const [sourceHistory, setSourceHistory] = React.useState<PythonSourceHistory | null>(null)
+  const [nodeSourceReview, setNodeSourceReview] = React.useState<NodeSourceReview | null>(null)
   const [creatorOpen, setCreatorOpen] = React.useState(false)
   const [workerName, setWorkerName] = React.useState("")
   const [workerTemplate, setWorkerTemplate] = React.useState<WorkerTemplate>("heartbeat-worker-v1")
@@ -621,7 +623,7 @@ export function RunitServiceActions({
              "reserved-system-service"].includes(item.identityReason)) &&
           (item.template === undefined ||
             item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1" ||
-            item.template === "python-source-v1") &&
+            item.template === "python-source-v1" || item.template === "node-source-v1") &&
           (item.project === undefined ||
             (item.control === "delegated" && !item.template &&
               typeof item.project === "object" && item.project !== null &&
@@ -631,13 +633,14 @@ export function RunitServiceActions({
       throw new Error("Invalid runit inventory")
     if (!Array.isArray(data.archived) || data.archived.length > 4 ||
         !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
-          ["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1"].includes(item.template) &&
+          ["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1", "node-source-v1"].includes(item.template) &&
           ["restorable", "changed", "conflict"].includes(item.identity)))
       throw new Error("Invalid archived worker inventory")
     setArchived(data.archived)
     setServices(data.services)
     setSourceReview(null)
     setSourceHistory(null)
+    setNodeSourceReview(null)
     setPythonReplacement("")
     setError(null)
     return { services: data.services, archived: data.archived }
@@ -664,6 +667,25 @@ export function RunitServiceActions({
       setSourceReview(result)
     } catch {
       setError("Python source identity review refused or unavailable. Recheck ownership.")
+    } finally { setBusy(false) }
+  }
+  const reviewNodeSource = async (name: string) => {
+    if (busy) return
+    setBusy(true); setError(null); setNodeSourceReview(null)
+    try {
+      const result = await inspect<NodeSourceReview>("node-source-review", name)
+      if (result.name !== name || result.template !== "node-source-v1" ||
+          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
+          !Number.isSafeInteger(result.sourceBytes) || result.sourceBytes < 1 ||
+          result.sourceBytes > 32 * 1024 ||
+          !["running", "stopped", "unknown"].includes(result.observed) ||
+          ![true, false, null].includes(result.autostart) ||
+          result.canStartFromLan !== false || result.ownerApproval !== "not-configured" ||
+          !Number.isFinite(Date.parse(result.checkedAt)))
+        throw new Error("Invalid Node.js source review")
+      setNodeSourceReview(result)
+    } catch {
+      setError("Node.js source identity review refused or unavailable. Recheck ownership.")
     } finally { setBusy(false) }
   }
   const loadPythonSourceHistory = async (name: string) => {
@@ -832,6 +854,7 @@ export function RunitServiceActions({
     if (busy || entry.identity !== "restorable" ||
         !window.confirm("Restore archived " +
           (entry.template === "python-source-v1" ? "Python source" :
+            entry.template === "node-source-v1" ? "Node.js source" :
             entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
           " service " + entry.name +
           "? The application worker stays stopped with autostart disabled. " +
@@ -894,13 +917,13 @@ export function RunitServiceActions({
   }
   const createWorker = async () => {
     const name = workerName.trim()
-    const custom = workerTemplate === "python-source-v1"
+    const custom = workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1"
     if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
         (custom && (!pythonSource.trim() ||
           new Blob([pythonSource]).size > 32 * 1024)) ||
       !window.confirm(custom
-        ? "Stage exact Python source for " + name +
-          "? Code will NOT execute from this LAN panel. The immutable file is saved" +
+        ? "Stage exact " + (workerTemplate === "node-source-v1" ? "Node.js" : "Python") +
+          " source for " + name + "? Code will NOT execute from this LAN panel. The file is saved" +
           " with SHA-256 and requires a separately authorized owner executor."
         : "Create a new stopped PocketHost-owned " +
           (workerTemplate === "python-heartbeat-v1" ? "Python" : "Node.js") +
@@ -921,7 +944,7 @@ export function RunitServiceActions({
           return
         }
         setDone(name + (custom
-          ? ": Python source staged, verified and stopped · execution blocked in LAN Services"
+          ? ": source staged, verified and stopped · execution blocked in LAN Services"
           : ": verified stopped worker · autostart disabled"))
         setCreatorOpen(false); setWorkerName(""); setPythonSource("")
       } catch {
@@ -955,7 +978,8 @@ export function RunitServiceActions({
             service.identity === "changed" ? "Identity changed · blocked" :
             service.identity === "legacy" ? "Legacy record · needs reattestation" :
             service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
-          {service.template && <Badge variant="outline">{service.template === "python-source-v1" ? "Python source · execution blocked" :
+          {service.template && <Badge variant="outline">{service.template === "node-source-v1" ? "Node.js source · execution blocked" :
+            service.template === "python-source-v1" ? "Python source · execution blocked" :
             service.template === "python-heartbeat-v1" ? "Python heartbeat" : "Node.js heartbeat"}</Badge>}
           {service.project && <Badge variant="outline">Node project: {service.project.name}</Badge>}
         </div>
@@ -985,18 +1009,21 @@ export function RunitServiceActions({
       {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {mode === "lifecycle" ? (service.registered ? <>
           <Button size="sm" disabled={busy || service.state !== "stopped" ||
-              service.template === "python-source-v1"}
+              (service.template === "python-source-v1" || service.template === "node-source-v1")}
             onClick={() => void perform("start", service)}>Start</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
             onClick={() => void perform("stop", service)}>Stop</Button>
           <Button size="sm" variant="outline" disabled={busy || service.state !== "running" ||
-              service.template === "python-source-v1"}
+              (service.template === "python-source-v1" || service.template === "node-source-v1")}
             onClick={() => void perform("restart", service)}>Restart</Button>
           <Button size="sm" variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service.name)}>Logs</Button>
           {service.template === "python-source-v1" &&
             <Button size="sm" variant="outline" disabled={busy}
               onClick={() => void reviewPythonSource(service.name)}>Review Python source</Button>}
+          {service.template === "node-source-v1" &&
+            <Button size="sm" variant="outline" disabled={busy}
+              onClick={() => void reviewNodeSource(service.name)}>Review Node.js source</Button>}
           {service.template &&
             <Button size="sm" variant="outline"
               disabled={busy || service.state !== "stopped" || service.enabled !== false}
@@ -1006,7 +1033,7 @@ export function RunitServiceActions({
           (service.registered ? <>
             <Button size="sm" variant="outline"
               disabled={busy || service.enabled !== false ||
-                service.template === "python-source-v1"}
+                (service.template === "python-source-v1" || service.template === "node-source-v1")}
               onClick={() => void perform("enable", service)}>Enable autostart</Button>
             <Button size="sm" variant="outline"
               disabled={busy || service.enabled !== true}
@@ -1040,7 +1067,7 @@ export function RunitServiceActions({
         <p className="text-sm font-medium">Create standalone service</p>
         <p className="text-muted-foreground text-xs">
           Create a fixed Node.js/Python heartbeat worker, or stage your own
-          immutable Python source. Source is never executed or enabled by
+          immutable Python/Node.js source. Source is never executed or enabled by
           this LAN page; only a separately authorized local owner workflow
           can review activation. Maximum four definitions and 32 KB per source.
           No process adoption or arbitrary service path is allowed.
@@ -1058,13 +1085,19 @@ export function RunitServiceActions({
             variant={workerTemplate === "python-source-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "python-source-v1"}
             onClick={() => setWorkerTemplate("python-source-v1")}>My Python code</Button>
+          <Button size="sm" disabled={busy}
+            variant={workerTemplate === "node-source-v1" ? "secondary" : "outline"}
+            aria-pressed={workerTemplate === "node-source-v1"}
+            onClick={() => setWorkerTemplate("node-source-v1")}>My Node.js code</Button>
         </div>
-        {workerTemplate === "python-source-v1" && <div className="space-y-2">
-          <label htmlFor="python-worker-source" className="text-sm font-medium">worker.py source</label>
+        {(workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1") && <div className="space-y-2">
+          <label htmlFor="python-worker-source" className="text-sm font-medium">
+            {workerTemplate === "node-source-v1" ? "worker.mjs source" : "worker.py source"}
+          </label>
           <Textarea id="python-worker-source" value={pythonSource}
             onChange={event => setPythonSource(event.target.value)}
             maxLength={32 * 1024} rows={7} disabled={busy}
-            placeholder={'print("Hello from Python")'} />
+            placeholder={workerTemplate === "node-source-v1" ? 'console.log("Hello from Node.js")' : 'print("Hello from Python")'} />
           <p className="text-xs text-muted-foreground">
             Stored privately without executing, dependencies or network listener.
             Start, Restart, Autostart and recovery are disabled from this page.
@@ -1075,15 +1108,16 @@ export function RunitServiceActions({
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}
             value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
           <Button size="sm" disabled={busy || !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
-              (workerTemplate === "python-source-v1" &&
+              ((workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1") &&
                 (!pythonSource.trim() || new Blob([pythonSource]).size > 32 * 1024))}
             onClick={() => void createWorker()}>
-            {workerTemplate === "python-source-v1" ? "Stage Python source" : "Create stopped service"}
+            {workerTemplate === "node-source-v1" ? "Stage Node.js source" :
+              workerTemplate === "python-source-v1" ? "Stage Python source" : "Create stopped service"}
           </Button>
         </div>
         <p className="text-muted-foreground text-xs">
           Names must be unique and 2–64 characters: lowercase letters, digits and hyphens.
-          Creating a service never executes its Python source or enables autostart.
+          Creating a service never executes staged source or enables autostart.
         </p>
       </div>}
     </>}
@@ -1147,6 +1181,7 @@ export function RunitServiceActions({
           <p className="text-sm font-medium">{entry.name}</p>
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline">{entry.template === "python-source-v1" ? "Python source" :
+              entry.template === "node-source-v1" ? "Node.js source" :
               entry.template === "python-heartbeat-v1" ? "Python heartbeat" : "Node.js"}</Badge>
             <Badge variant="outline">{entry.identity === "restorable" ? "Archived · verified" :
               entry.identity === "conflict" ? "Archive/live conflict · blocked" : "Identity changed · blocked"}</Badge>
@@ -1162,6 +1197,23 @@ export function RunitServiceActions({
         </div>
       </div>)}
     </section>}
+    {mode === "lifecycle" && nodeSourceReview &&
+      services?.some(service => service.name === nodeSourceReview.name &&
+        service.registered && service.control === "standalone" &&
+        service.template === "node-source-v1") &&
+      <section className="space-y-1 rounded-md border p-3" aria-label="Node.js source identity review">
+        <p className="text-sm font-medium">Node.js source review: {nodeSourceReview.name}</p>
+        <p className="break-all font-mono text-xs">SHA-256: {nodeSourceReview.sourceSha256}</p>
+        <p className="text-xs">Size: {nodeSourceReview.sourceBytes} bytes · runit: {nodeSourceReview.observed} · autostart: {
+          nodeSourceReview.autostart === null ? "unknown" :
+            nodeSourceReview.autostart ? "enabled" : "disabled"
+        }</p>
+        <p className="text-xs text-muted-foreground">
+          Inspected: {nodeSourceReview.checkedAt}. The source stays private on the device.
+          This verifies file identity, not application safety or readiness.
+          Node.js execution and autostart are blocked from LAN; owner activation is not configured.
+        </p>
+      </section>}
     {mode === "lifecycle" && sourceReview &&
       services?.some(service => service.name === sourceReview.name &&
         service.registered && service.control === "standalone" &&
