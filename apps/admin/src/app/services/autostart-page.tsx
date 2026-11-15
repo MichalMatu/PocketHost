@@ -11,7 +11,7 @@ type BootObservation = {
   checkedAt: string
 }
 
-function TermuxBootObservation() {
+function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
   const [boot, setBoot] = React.useState<BootObservation | null>(null)
   const [error, setError] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
@@ -41,7 +41,7 @@ function TermuxBootObservation() {
       setLoading(false)
     }
   }, [])
-  React.useEffect(() => { void refresh() }, [refresh])
+  React.useEffect(() => { void refresh() }, [refresh, refreshToken])
   return <section className="space-y-2 rounded-md border p-3" aria-label="Termux Boot observation">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Termux:Boot · startup chain</h3>
@@ -66,10 +66,16 @@ function TermuxBootObservation() {
 }
 
 export default function ServiceAutostartPage() {
+  const [refreshToken, setRefreshToken] = React.useState(0)
   return <BaseLayout title="Service autostart" description="Runit policy and Android boot visibility">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
-      <TermuxBootObservation />
-      <RunitServiceActions mode="autostart" />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-muted-foreground">Manual observation · no startup scheduler</p>
+        <Button size="sm" variant="outline"
+          onClick={() => setRefreshToken(value => value + 1)}>Refresh boot and runit</Button>
+      </div>
+      <TermuxBootObservation refreshToken={refreshToken} />
+      <RunitServiceActions mode="autostart" refreshToken={refreshToken} />
       <p className="text-xs text-muted-foreground">
         Runit enable/disable is limited to attested PocketHost-owned standalone services.
         Termux:Boot permissions and actual reboot behavior cannot be confirmed from this page.
