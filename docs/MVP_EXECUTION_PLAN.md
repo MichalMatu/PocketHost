@@ -151,6 +151,16 @@ projektów lub dowolnych procesów. **To limit próśb PocketHost, nie
 mechanizmu restartów samego runit.** HTTP readiness/rollback
 dla ogólnych usług oraz pełne testy etapu pozostają otwarte.
 
+**Wdrożenie ręcznego recovery na A8 — 2026-11-15:** commit `0047af4a455c799086cc5f708b6add8d60462e56`,
+zadanie `pockethost-a8-runit-manual-recovery-20261115-v1`, terminalny
+`PASS`, live `0047af4a455c799086cc5f708b6add8d60462e56`, PID 28494, HTTP 200,
+chronione usługi bez zmian, `tests=not-run`.
+Przywracanie gotowości aplikacji nie jest potwierdzone przez samo
+`sv up`; limit dotyczy wyłącznie ręcznych prób PocketHost,
+nie mechanizmu restartów runit. **Status S1–S4 nadal IN_PROGRESS.**
+Następne: konfiguracja readiness, polityka rollback i testy
+całego etapu przed odbiorem.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
