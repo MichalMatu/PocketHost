@@ -64,11 +64,11 @@ export function resolveTermuxCheckCommand(check, checkoutRoot, nodePath, platfor
       directArgs = args.slice(4);
       break;
     case 'ui tests':
-      if (check.cwd !== 'apps/admin' || args.slice(0, 4).join(' ') !== 'run test:ui --' ||
-          args.length < 5 || args.slice(4).some((x) => !validRelative(x)))
+      if (check.cwd !== 'apps/admin' || args.slice(0, 3).join(' ') !== 'run test:ui --' ||
+          args.length < 4 || args.slice(3).some((x) => !validRelative(x)))
         throw new Error('Unexpected UI test arguments');
       entry = tools.adminUI;
-      directArgs = ['run', '--config', 'vitest.config.ts', ...args.slice(4)];
+      directArgs = ['run', '--config', 'vitest.config.ts', ...args.slice(3)];
       break;
     default:
       throw new Error('Unsupported npm QA command: ' + String(check.label));
