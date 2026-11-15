@@ -196,6 +196,15 @@ schedulera, sond cyklicznych ani restartów. **S4 nadal `[ ]`**:
 pozostają testy całego przepływu i decyzja o polityce readiness
 dla innych rodzajów usług.
 
+**S4 HTTP readiness/rollback UI — A8 2026-11-15:** kod `65696ec2de1df8723adb29081d2af9b976377679`;
+`pockethost-a8-node-health-rollback-snapshot-20261115-v1` zakończył
+`PASS`: live SHA `65696ec2de1df8723adb29081d2af9b976377679`, PID 21351, HTTP 200, usługi
+chronione nietknięte, `tests=not-run`. Wynik gotowości to próbka
+konkretnego wydania z czasem obserwacji; historyczne `ready` nie
+przechodzi na inne wydanie. Kandydat rollbacku jest informacją,
+nie autoryzacją — preflight i zapis lokalnie, istniejąca blokada
+mutacji przez LAN bez zmian. **S4 i testy S5 nadal otwarte.**
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
