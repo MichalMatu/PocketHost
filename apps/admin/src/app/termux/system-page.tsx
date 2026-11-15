@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ChartContainer, ChartTooltip, type ChartConfig } from "@/components/ui/chart"
 import { DashboardTooltip, historyTime, type TooltipFields } from "./dashboard-tooltip"
 import { formatMemory } from "@/lib/format-memory"
+import { formatUptime } from "@/lib/format-uptime"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { parseShizukuStatus, type ShizukuStatus } from "@/lib/shizuku-schema"
 import { parseInternetConnectivity, type InternetConnectivity } from "@/lib/internet-connectivity-schema"
@@ -82,12 +83,6 @@ const tooltipFields = {
 
 function clock(value: string | number) {
   return new Date(value).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" })
-}
-
-function uptime(seconds: number | null) {
-  if (seconds === null || !Number.isFinite(seconds)) return "Unavailable"
-  const hours = Math.floor(seconds / 3600)
-  return Math.floor(hours / 24) + "d " + (hours % 24) + "h"
 }
 
 function latencySummary(values: (number | null)[]) {
@@ -402,7 +397,7 @@ export default function SystemPage() {
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
-              <CardTitle className="text-lg tabular-nums">{uptime(host?.runtime.systemUptimeSeconds ?? null)}</CardTitle>
+              <CardTitle className="text-lg tabular-nums">{formatUptime(host?.runtime.systemUptimeSeconds ?? null)}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">Since device boot</CardContent>
           </Card>

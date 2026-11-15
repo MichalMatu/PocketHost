@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
+import { formatMemory } from "@/lib/format-memory"
 
 const endpoint = "/api/v1/observability?scope=monitoring"
 const unavailable = "Termux diagnostic snapshot unavailable. Existing services have not been changed."
@@ -215,7 +216,7 @@ export default function ObservabilityPage() {
                             <tr className="border-b border-border/50">
                               <td className="p-3 font-medium">{process.name ?? "Unknown"}</td>
                               <td className="p-3 tabular-nums">{process.pid}</td>
-                              <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : process.rssMiB + " MiB"}</td>
+                              <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : formatMemory(process.rssMiB)}</td>
                               <td className="p-3">{ownershipLabel(process.ownership)}</td>
                               <td className="p-3 text-right">
                                 <Button size="sm" variant="ghost" aria-label={`Process details for PID ${process.pid}`}

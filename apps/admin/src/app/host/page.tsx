@@ -2,6 +2,8 @@ import * as React from "react"
 import { RefreshCw, Server, ShieldCheck } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { formatMemory } from "@/lib/format-memory"
+import { formatUptime } from "@/lib/format-uptime"
 import { parseHostSnapshot, type HostSnapshot } from "@/lib/host-snapshot-schema"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -89,22 +91,22 @@ export default function HostOverview() {
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription>Device uptime</CardDescription>
-              <CardTitle><Value pending={pending}>{runtime ? Math.floor(runtime.systemUptimeSeconds / 3600) + " h" : "Unavailable"}</Value></CardTitle>
+              <CardTitle><Value pending={pending}>{runtime ? formatUptime(runtime.systemUptimeSeconds) : "Unavailable"}</Value></CardTitle>
             </CardHeader>
           </Card>
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription>Available memory</CardDescription>
-              <CardTitle><Value pending={pending}>{runtime ? runtime.freeMemoryMiB.toLocaleString() + " MiB" : "Unavailable"}</Value></CardTitle>
+              <CardTitle><Value pending={pending}>{runtime ? formatMemory(runtime.freeMemoryMiB) : "Unavailable"}</Value></CardTitle>
             </CardHeader>
-            <CardContent className="px-4 text-xs text-muted-foreground">{runtime ? "of " + runtime.totalMemoryMiB.toLocaleString() + " MiB" : " "}</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">{runtime ? "of " + formatMemory(runtime.totalMemoryMiB) : " "}</CardContent>
           </Card>
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription>Termux storage free</CardDescription>
-              <CardTitle><Value pending={pending}>{runtime?.storage ? runtime.storage.availableMiB.toLocaleString() + " MiB" : "Unavailable"}</Value></CardTitle>
+              <CardTitle><Value pending={pending}>{runtime?.storage ? formatMemory(runtime.storage.availableMiB) : "Unavailable"}</Value></CardTitle>
             </CardHeader>
-            <CardContent className="px-4 text-xs text-muted-foreground">{runtime?.storage ? "of " + runtime.storage.totalMiB.toLocaleString() + " MiB" : " "}</CardContent>
+            <CardContent className="px-4 text-xs text-muted-foreground">{runtime?.storage ? "of " + formatMemory(runtime.storage.totalMiB) : " "}</CardContent>
           </Card>
         </div>
         <Card>
