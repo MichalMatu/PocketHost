@@ -316,6 +316,8 @@ ponowienia lub uruchomienia. Wszystkie zmiany wymagają ponownej
 kontroli własności i skrótu. **Nadal brak autoryzacji wykonania Python,
 S1–S4 IN_PROGRESS; S5/testy i odbiór później.**
 
+**S1/S2 — wdrożone CAS źródła Python na A8, 2026-11-15:** owner reload `pockethost-a8-owner-panel-reload-20261115-v1` terminal PASS; następnie `pockethost-a8-python-source-revision-20261115-v1` terminal `done`, exit 0, FAST FLOW PASS, live `bd1ec507262710069b838421b349d8d1eeb0aa45`, PID 32301, start ticks 16859671, HTTP 200, usługi chronione bez zmian, `tests=not-run`. Nowe `Replace staged Python source` zachowuje starszy kod w prywatnej historii, żąda dokładnego SHA i zabrania aktualizacji pracującej usługi; stan częściowy wymaga ręcznego sprawdzenia. Nie wykonano żadnego skryptu Python ani testu S5. **S1/S2/Services IN_PROGRESS**, brak owner-authenticated execution.
+
 **Definicja DONE:** użytkownik potrafi w panelu zarejestrować własną usługę, uruchomić ją, włączyć autostart, sprawdzić health/logi, bezpiecznie odzyskać po awarii i wyrejestrować; testy i dowody bezpieczeństwa PASS; odbiór zaakceptowany.
 
 ## 2. Platform — rzeczywista konfiguracja hosta z panelu
