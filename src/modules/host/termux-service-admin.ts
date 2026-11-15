@@ -424,22 +424,28 @@ export class TermuxServiceAdmin {
     if (isReserved(name)) throw new Error('Protected service');
     if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
       throw new RangeError('Invalid archived worker template');
-    const archived = this.archivedRegistry();
-    const record = archived.find((item) => item.name === name);
-    if (!record || record.template !== template || !this.offlineWorkerIdentity(record))
-      throw new Error('Archived worker identity could not be attested');
-    if (this.registry().length >= MAX_MANAGED)
-      throw new RangeError('Managed service quota reached');
-    // Validate all state before publication. Never adopt an existing entry.
-    const published = path.join(this.serviceRoot, name);
-    symlinkSync(record.target, published);
-    // If registration unexpectedly fails, leave an inert down-marked unit
-    // for explicit investigation; no implicit retry or unsafe foreign unlink.
-    this.registerProvisioned(name, {
-      target: record.target, runSha256: record.runSha256,
-    });
-    this.saveArchived(archived.filter((item) => item.name !== name));
-    return { changed: true, restored: true, started: false };
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const archived = this.archivedRegistry();
+      const record = archived.find((item) => item.name === name);
+      if (!record || record.template !== template || !this.offlineWorkerIdentity(record))
+        throw new Error('Archived worker identity could not be attested');
+      if (this.registry().length >= MAX_MANAGED)
+        throw new RangeError('Managed service quota reached');
+      // Validate all state before publication. Never adopt an existing entry.
+      const published = path.join(this.serviceRoot, name);
+      symlinkSync(record.target, published);
+      // If registration unexpectedly fails, leave an inert down-marked unit
+      // for explicit investigation; no implicit retry or unsafe foreign unlink.
+      this.registerProvisioned(name, {
+        target: record.target, runSha256: record.runSha256,
+      });
+      this.saveArchived(archived.filter((item) => item.name !== name));
+      return { changed: true, restored: true, started: false };
+    } finally {
+      release();
+    }
+
   }
 
 
@@ -663,6 +669,45 @@ export class TermuxServiceAdmin {
   }
 
   /**
+   * Cross-process lease for creation, archiving, restoring and LAN lifecycle
+   * of owned standalone workers. Hold it across the complete filesystem and
+   * runit transaction: a per-process UI queue cannot protect two adapters.
+   * An abandoned lock stays in place for independent manual reconciliation.
+   */
+  private acquireStandaloneLifecycleLock(): () => void {
+    const folder = path.dirname(this.registerFile);
+    mkdirSync(folder, { recursive: true, mode: 0o700 });
+    const parent = lstatSync(folder);
+    if (!parent.isDirectory() || parent.isSymbolicLink() ||
+        parent.uid !== process.getuid?.() || (parent.mode & 0o077) !== 0 ||
+        realpathSync(folder) !== folder)
+      throw new Error('Unsafe standalone worker lock directory');
+    const lockPath = path.join(folder, '.h3-standalone-lifecycle.lock');
+    let fd: number;
+    try {
+      fd = openSync(lockPath, 'wx', 0o600);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+        throw new Error('Another standalone worker operation is in progress or needs reconciliation');
+      throw error;
+    }
+    return () => {
+      try {
+        const held = fstatSync(fd);
+        const current = lstatSync(lockPath);
+        if (!current.isFile() || current.isSymbolicLink() ||
+            current.dev !== held.dev || current.ino !== held.ino ||
+            current.nlink !== 1 || current.uid !== process.getuid?.() ||
+            (current.mode & 0o077) !== 0)
+          throw new Error('Standalone worker lock changed; refusing cleanup');
+        unlinkSync(lockPath);
+      } finally {
+        closeSync(fd);
+      }
+    };
+  }
+
+  /**
    * First standalone service template: an owned, stopped heartbeat worker.
    * This does NOT accept user code, shell, source path, PID, service target,
    * existing service adoption, or a network port. A name is only a label.
@@ -679,77 +724,83 @@ export class TermuxServiceAdmin {
     if (template !== 'heartbeat-worker-v1' && template !== 'python-heartbeat-v1')
       throw new RangeError('Unsupported owned service template');
     if (isReserved(name)) throw new Error('Protected service');
-    if (this.registry().length >= MAX_MANAGED) throw new RangeError('Managed service quota reached');
-    const sourceRoot = path.join(PREFIX, 'var', 'sv');
-    const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
-    for (const folder of [this.serviceRoot, sourceRoot, logRoot]) {
-      const st = lstatSync(folder);
-      if (!st.isDirectory() || st.isSymbolicLink() ||
-          st.uid !== process.getuid?.() || (st.mode & 0o022) !== 0 ||
-          realpathSync(folder) !== folder) {
-        throw new Error('Untrusted Termux service directory');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      if (this.registry().length >= MAX_MANAGED) throw new RangeError('Managed service quota reached');
+      const sourceRoot = path.join(PREFIX, 'var', 'sv');
+      const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
+      for (const folder of [this.serviceRoot, sourceRoot, logRoot]) {
+        const st = lstatSync(folder);
+        if (!st.isDirectory() || st.isSymbolicLink() ||
+            st.uid !== process.getuid?.() || (st.mode & 0o022) !== 0 ||
+            realpathSync(folder) !== folder) {
+          throw new Error('Untrusted Termux service directory');
+        }
       }
-    }
-    // Both templates share a quota, including already archived definitions,
-    // so LAN clients cannot repeatedly archive and allocate more services.
-    const templateCount = readdirSync(sourceRoot).filter((unit) => {
-      if (!SERVICE_NAME.test(unit)) return false;
-      const marker = path.join(sourceRoot, unit, '.pockethost-service.json');
-      try {
-        const raw = safeFile(marker);
-        if (!raw) return false;
-        const data: unknown = JSON.parse(raw);
-        return !!data && typeof data === 'object' &&
-          (data as { template?: string }).template !== undefined &&
-          ['heartbeat-worker-v1', 'python-heartbeat-v1'].includes(
-            (data as { template: string }).template,
-          );
-      } catch {
-        throw new Error('Managed worker inventory unverified');
+      // Both templates share a quota, including already archived definitions,
+      // so LAN clients cannot repeatedly archive and allocate more services.
+      const templateCount = readdirSync(sourceRoot).filter((unit) => {
+        if (!SERVICE_NAME.test(unit)) return false;
+        const marker = path.join(sourceRoot, unit, '.pockethost-service.json');
+        try {
+          const raw = safeFile(marker);
+          if (!raw) return false;
+          const data: unknown = JSON.parse(raw);
+          return !!data && typeof data === 'object' &&
+            (data as { template?: string }).template !== undefined &&
+            ['heartbeat-worker-v1', 'python-heartbeat-v1'].includes(
+              (data as { template: string }).template,
+            );
+        } catch {
+          throw new Error('Managed worker inventory unverified');
+        }
+      }).length;
+      if (templateCount >= MAX_TEMPLATE_WORKERS) throw new RangeError('Managed worker quota reached');
+      const published = path.join(this.serviceRoot, name);
+      const target = path.join(sourceRoot, name);
+      const logTarget = path.join(logRoot, name);
+      // No adoption, overwrite, repair, remote repo or caller-supplied code.
+      for (const location of [published, target, logTarget]) {
+        try {
+          lstatSync(location);
+          throw new Error('Service name or log directory already exists');
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+        }
       }
-    }).length;
-    if (templateCount >= MAX_TEMPLATE_WORKERS) throw new RangeError('Managed worker quota reached');
-    const published = path.join(this.serviceRoot, name);
-    const target = path.join(sourceRoot, name);
-    const logTarget = path.join(logRoot, name);
-    // No adoption, overwrite, repair, remote repo or caller-supplied code.
-    for (const location of [published, target, logTarget]) {
-      try {
-        lstatSync(location);
-        throw new Error('Service name or log directory already exists');
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+      const sh = path.join(PREFIX, 'bin', 'sh');
+      const env = path.join(PREFIX, 'bin', 'env');
+      const node = path.join(PREFIX, 'bin', 'node');
+      const python = path.join(PREFIX, 'bin', 'python');
+      const svlogd = path.join(PREFIX, 'bin', 'svlogd');
+      const runtime = template === 'python-heartbeat-v1' ? python : node;
+      for (const binary of [sh, env, runtime, svlogd]) {
+        const st = statSync(binary);
+        if (!st.isFile() || (st.mode & 0o111) === 0)
+          throw new Error('Termux runtime unavailable');
       }
+      const runScript = builtinWorkerRunScript(template, target);
+      const logScript = builtinWorkerLogScript(name);
+      const digest = createHash('sha256').update(runScript).digest('hex');
+      mkdirSync(target, { mode: 0o700 });
+      // Runit sees a stopped service immediately, never an incomplete
+      // executable definition or implicitly enabled autostart policy.
+      writeFileSync(path.join(target, 'down'), '', { flag: 'wx', mode: 0o600 });
+      mkdirSync(path.join(target, 'log'), { mode: 0o700 });
+      mkdirSync(logTarget, { mode: 0o700 });
+      writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
+      writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
+      writeFileSync(path.join(target, '.pockethost-service.json'), JSON.stringify({
+        schema: 1, owner: 'pockethost', name, template,
+        runSha256: digest, instanceId: randomUUID(),
+      }) + '\n', { flag: 'wx', mode: 0o600 });
+      symlinkSync(target, published);
+      this.registerProvisioned(name, { target, runSha256: digest });
+      return { changed: true, name, template };
+    } finally {
+      release();
     }
-    const sh = path.join(PREFIX, 'bin', 'sh');
-    const env = path.join(PREFIX, 'bin', 'env');
-    const node = path.join(PREFIX, 'bin', 'node');
-    const python = path.join(PREFIX, 'bin', 'python');
-    const svlogd = path.join(PREFIX, 'bin', 'svlogd');
-    const runtime = template === 'python-heartbeat-v1' ? python : node;
-    for (const binary of [sh, env, runtime, svlogd]) {
-      const st = statSync(binary);
-      if (!st.isFile() || (st.mode & 0o111) === 0)
-        throw new Error('Termux runtime unavailable');
-    }
-    const runScript = builtinWorkerRunScript(template, target);
-    const logScript = builtinWorkerLogScript(name);
-    const digest = createHash('sha256').update(runScript).digest('hex');
-    mkdirSync(target, { mode: 0o700 });
-    // Runit sees a stopped service immediately, never an incomplete
-    // executable definition or implicitly enabled autostart policy.
-    writeFileSync(path.join(target, 'down'), '', { flag: 'wx', mode: 0o600 });
-    mkdirSync(path.join(target, 'log'), { mode: 0o700 });
-    mkdirSync(logTarget, { mode: 0o700 });
-    writeFileSync(path.join(target, 'log', 'run'), logScript, { flag: 'wx', mode: 0o700 });
-    writeFileSync(path.join(target, 'run'), runScript, { flag: 'wx', mode: 0o700 });
-    writeFileSync(path.join(target, '.pockethost-service.json'), JSON.stringify({
-      schema: 1, owner: 'pockethost', name, template,
-      runSha256: digest, instanceId: randomUUID(),
-    }) + '\n', { flag: 'wx', mode: 0o600 });
-    symlinkSync(target, published);
-    this.registerProvisioned(name, { target, runSha256: digest });
-    return { changed: true, name, template };
+
   }
 
   /**
@@ -820,53 +871,59 @@ export class TermuxServiceAdmin {
   ): Promise<{ changed: boolean; archived: boolean; retainedFiles: boolean }> {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    const registrations = this.registry();
-    const target = this.target(name);
-    if (!this.managedWorkerTemplate(name, target, registrations)) {
-      throw new Error('Only an attested PocketHost template worker can be archived');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const registrations = this.registry();
+      const target = this.target(name);
+      if (!this.managedWorkerTemplate(name, target, registrations)) {
+        throw new Error('Only an attested PocketHost template worker can be archived');
+      }
+      if (this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
+        throw new Error('Archive requires a stopped worker with autostart disabled');
+      }
+      const published = path.join(this.serviceRoot, name);
+      const result = await run(path.join(PREFIX, 'bin', 'sv'), ['exit', published], {
+        timeout: 20000, maxBuffer: 12000,
+      });
+      if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
+      if (this.probe(name) === 'running' ||
+          this.enabled(name, true) !== false ||
+          !this.managedWorkerTemplate(name, target, this.registry())) {
+        throw new Error('Worker identity or stopped state changed during retirement');
+      }
+      // Remove only the exact symlink, never the directory it points to.
+      if (!lstatSync(published).isSymbolicLink() || readlinkSync(published) !== target) {
+        throw new Error('Published worker symlink identity changed');
+      }
+      const rawMarker = safeFile(path.join(target, '.pockethost-service.json'));
+      if (!rawMarker) throw new Error('Worker archive marker missing');
+      const marker: unknown = JSON.parse(rawMarker);
+      if (!marker || typeof marker !== 'object' || Array.isArray(marker))
+        throw new Error('Invalid worker archive marker');
+      const proof = marker as Record<string, unknown>;
+      const archived = this.archivedRegistry();
+      if (archived.some((item) => item.name === name) ||
+          archived.length >= MAX_TEMPLATE_WORKERS ||
+          !this.managedWorkerTemplate(name, target, this.registry()) ||
+          typeof proof.instanceId !== 'string' ||
+          typeof proof.runSha256 !== 'string' ||
+          (proof.template !== 'heartbeat-worker-v1' &&
+            proof.template !== 'python-heartbeat-v1')) {
+        throw new Error('Worker archiving identity or quota changed');
+      }
+      // Stage the immutable recovery record before unlinking the unit.
+      this.saveArchived([...archived, {
+        name, target, template: proof.template,
+        instanceId: proof.instanceId, runSha256: proof.runSha256,
+        archivedAt: new Date().toISOString(),
+      }]);
+      unlinkSync(published);
+      this.save(registrations.filter((entry) => entry.name !== name));
+      return { changed: true, archived: true, retainedFiles: true };
+    } finally {
+      release();
     }
-    if (this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
-      throw new Error('Archive requires a stopped worker with autostart disabled');
-    }
-    const published = path.join(this.serviceRoot, name);
-    const result = await run(path.join(PREFIX, 'bin', 'sv'), ['exit', published], {
-      timeout: 20000, maxBuffer: 12000,
-    });
-    if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
-    if (this.probe(name) === 'running' ||
-        this.enabled(name, true) !== false ||
-        !this.managedWorkerTemplate(name, target, this.registry())) {
-      throw new Error('Worker identity or stopped state changed during retirement');
-    }
-    // Remove only the exact symlink, never the directory it points to.
-    if (!lstatSync(published).isSymbolicLink() || readlinkSync(published) !== target) {
-      throw new Error('Published worker symlink identity changed');
-    }
-    const rawMarker = safeFile(path.join(target, '.pockethost-service.json'));
-    if (!rawMarker) throw new Error('Worker archive marker missing');
-    const marker: unknown = JSON.parse(rawMarker);
-    if (!marker || typeof marker !== 'object' || Array.isArray(marker))
-      throw new Error('Invalid worker archive marker');
-    const proof = marker as Record<string, unknown>;
-    const archived = this.archivedRegistry();
-    if (archived.some((item) => item.name === name) ||
-        archived.length >= MAX_TEMPLATE_WORKERS ||
-        !this.managedWorkerTemplate(name, target, this.registry()) ||
-        typeof proof.instanceId !== 'string' ||
-        typeof proof.runSha256 !== 'string' ||
-        (proof.template !== 'heartbeat-worker-v1' &&
-          proof.template !== 'python-heartbeat-v1')) {
-      throw new Error('Worker archiving identity or quota changed');
-    }
-    // Stage the immutable recovery record before unlinking the unit.
-    this.saveArchived([...archived, {
-      name, target, template: proof.template,
-      instanceId: proof.instanceId, runSha256: proof.runSha256,
-      archivedAt: new Date().toISOString(),
-    }]);
-    unlinkSync(published);
-    this.save(registrations.filter((entry) => entry.name !== name));
-    return { changed: true, archived: true, retainedFiles: true };
+
   }
 
   /** No digest or script validation means no lifecycle authority. */
@@ -1233,18 +1290,24 @@ export class TermuxServiceAdmin {
     if (!['start', 'stop', 'restart', 'enable', 'disable'].includes(operation))
       throw new RangeError('Unsupported standalone runit operation');
     if (isReserved(name)) throw new Error('Protected service');
-    const target = this.target(name);
-    if (!this.managedWorkerTemplate(name, target, this.registry()))
-      throw new Error('Use the owning project provisioner for this service');
-    const result = await this.apply(operation, name, run);
-    // Enrollment alone does not confer standalone authority. A concurrent
-    // archive, source change or marker replacement revokes the capability
-    // even if runit already acknowledged the command.
-    if (this.target(name) !== target ||
-        !this.managedWorkerTemplate(name, target, this.registry())) {
-      throw new Error('Standalone worker identity changed during lifecycle action');
+    const release = this.acquireStandaloneLifecycleLock();
+    try {
+      const target = this.target(name);
+      if (!this.managedWorkerTemplate(name, target, this.registry()))
+        throw new Error('Use the owning project provisioner for this service');
+      const result = await this.apply(operation, name, run);
+      // Enrollment alone does not confer standalone authority. A concurrent
+      // archive, source change or marker replacement revokes the capability
+      // even if runit already acknowledged the command.
+      if (this.target(name) !== target ||
+          !this.managedWorkerTemplate(name, target, this.registry())) {
+        throw new Error('Standalone worker identity changed during lifecycle action');
+      }
+      return result;
+    } finally {
+      release();
     }
-    return result;
+
   }
 
   async apply(

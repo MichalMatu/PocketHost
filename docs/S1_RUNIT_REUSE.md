@@ -340,6 +340,24 @@ At S5 stage closure test nonzero `sv` results, a changed run script during
 a held command, marker/log replacement, archive conflicts and unchanged
 protected-service state. This slice is not yet tested or accepted on A8.
 
+## S1/S2 cross-process standalone lifecycle exclusion (partial)
+
+Create, Restore, Archive and standalone Start/Stop/Restart/Autostart now share
+an owner-private, exclusive `O_EXCL` lock in the PocketHost registry directory.
+The lease covers the entire admission, filesystem/registry change and
+fixed-argument `sv` command, preventing concurrent panel processes from
+allocating against stale standalone quotas or interleaving destructive
+archive/restore operations with lifecycle controls. Conflicts are refused,
+not queued or automatically retried. A crash-left or tampered lock requires
+independent manual inspection. The lock is never an authorization to adopt
+foreign, protected or delegated Node-project services.
+
+The S5 stage gate must include two independent adapters creating distinct
+workers at the quota boundary, duplicate names, Archive versus Restore or
+Start, contention while a command is held, replaced and crash-left locks,
+and protected service isolation. No interim suite or physical acceptance is
+claimed. S1/S2 stay IN_PROGRESS.
+
 ## Current incomplete acceptance points
 
 The standalone lifecycle has a bounded create path and reversible archive
