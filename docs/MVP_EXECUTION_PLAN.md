@@ -21,7 +21,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 - [x] PocketHost DEV na Samsung Galaxy A8 przez Termux/runit; MacBook otwiera panel po prywatnym LAN; menu Services ma osobne strony.
 - [x] Dynamiczny Host inventory, RAM/dysk/uptime, Dashboard Basic/Enhanced według obecności Companion/Shizuku, monitoring i odczyty usług, czytelne GiB oraz dni/godziny.
-- [x] Zweryfikowany FAST FLOW bez testów. **Live SHA `e6ce9a5211759f677e3ea89468227cd47de1afd4`**, Local Agent task `pockethost-a8-service-readback-release-20261115-v1`: terminal `PASS`, `tests=not-run`, FAST FLOW 10.237 s, całość zadania 14.174 s, PID 27023/start ticks 18956867, HTTP 200, chronione usługi bez zmian.
+- [x] Zweryfikowany FAST FLOW bez testów. **Live SHA `ed1d0d76bfc2c2c7a6a2cc68b7f018a9282a7171`**, Local Agent task `pockethost-a8-node-source-history-release-20261115-v1`: terminal `PASS`, `tests=not-run`, FAST FLOW 10.313 s, całość 13.638 s, PID 29604/start ticks 19090493, HTTP 200, chronione usługi bez zmian.
 - [ ] **Niepotwierdzone:** pełny odbiór Services, realny reboot/Termux:Boot, wszystkie interakcje z własnym workerem, wykonywanie własnego Python. HTTP 200 i SHA nie dowodzą ich sprawności.
 
 ## 1. Services — IN_PROGRESS (jedyny bieżący priorytet)
@@ -33,7 +33,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 - [ ] **S5: Ręcznie autoryzowane QA.** **Nie uruchamiać domyślnie**, nawet po S1–S4. Najpierw przedstawić zakres testów pozytywnych/negatywnych/UI/API/host i poprosić o osobną zgodę na jedno uruchomienie.
 - [ ] **S6: Odbiór użytkownika.** Aktualny panel, exact SHA, bezpieczny receipt, lista potwierdzonych/niepotwierdzonych funkcji, link MacBook; `ACCEPTED` dopiero po decyzji właściciela.
 
-**Własne aplikacje:** A8 ma już potwierdzone wdrożenie tworzenia prywatnego `worker.py` i `worker.mjs` (max 32 KiB), SHA-256 i read-only review. **Najnowsze źródło, jeszcze bez potwierdzenia A8:** edycja Node.js poprzez dokładny SHA (CAS), do 8 prywatnych wersji i restore bez wykonania kodu; zachowuje lock i wymóg stopped/autostart-disabled. Rejestr własności, metadane workera i archiwum czytane przez deskryptor `O_NOFOLLOW`, ze sprawdzeniem niezmienionej tożsamości pliku; przy rozbieżności odmawia operacji. Dla obu runtime Start/Restart/autostart/recovery przez LAN nadal są **zablokowane**. Node.js i `python -I` nie są sandboxami. Uruchamianie własnego kodu wymaga osobnej, uwierzytelnionej autoryzacji właściciela; QA na samym końcu.
+**Własne aplikacje:** A8 ma już potwierdzone wdrożenie tworzenia prywatnego `worker.py` i `worker.mjs` (max 32 KiB), SHA-256 i read-only review. **Wdrożone, bez testów funkcjonalnych:** edycja Node.js poprzez dokładny SHA (CAS), do 8 prywatnych wersji i restore bez wykonania kodu; zachowuje lock i wymóg stopped/autostart-disabled. **Najnowsza poprawka kodu, jeszcze NIEWDROŻONA:** rejestr własności, metadane workera i archiwum odczytywane przez `O_NOFOLLOW` z kontrolą deskryptora/inode. Zadanie `pockethost-a8-node-provenance-readback-20261115-v1` zatrzymane `HOLD` (`base-sha-drift`) przed modyfikacją panelu; brak automatycznego ponowienia. Dla obu runtime Start/Restart/autostart/recovery przez LAN nadal są **zablokowane**. Node.js i `python -I` nie są sandboxami. Uruchamianie własnego kodu wymaga osobnej, uwierzytelnionej autoryzacji właściciela; QA na samym końcu.
 
 ## 2. Platform — NOT_STARTED jako całość
 
