@@ -47,7 +47,7 @@ describe('S4 heartbeat policy receipt', () => {
     await user.click(await screen.findByRole('button', { name: 'Inspect health' }));
     await screen.findByRole('button', { name: '5 min' });
     await user.click(screen.getByRole('button', { name: '5 min' }));
-    expect(await screen.findByRole('alert')).toHaveTextContent(
+    expect((await screen.findByRole('alert')).textContent).toContain(
       'Heartbeat policy refused or readback unconfirmed',
     );
     expect(screen.queryByText(/worker heartbeat policy saved and verified/)).toBeNull();
