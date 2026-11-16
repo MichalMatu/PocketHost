@@ -68,10 +68,12 @@ function ownedLoopbackListener(pid: number, port: number): boolean {
         Number(fields[7]) !== process.getuid?.()
       )
         continue;
-      if (/^[0-9]{1,20}$/.test(fields[9]) && fields[9] !== '0') sockets.add(fields[9]);
+      const inode = fields[9];
+      if (inode && /^[0-9]{1,20}$/.test(inode) && inode !== '0') sockets.add(inode);
     }
     if (sockets.size !== 1) return false;
     const [socket] = [...sockets];
+    if (!socket) return false;
     const fdRoot = path.join(proc, 'fd');
     const fds = readdirSync(fdRoot);
     if (fds.length > 256) return false;
