@@ -33,7 +33,21 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 
 ## Current Samsung target (A8 installed)
 
-The owner retired PocketHost on S22. **Only use the already-paired Galaxy A8 Local Agent for PocketHost execution.** A8 guarded FAST FLOW latest verified live SHA is `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6` (2026-11-16, HTTP 200, PID 2106/start ticks 23573375, protected services unchanged; deployment PASS with tests not run). GitHub `main` may be newer than live after docs-only commits. Get exact installation identity and latest live SHA from the private A8 task/result, never infer from S22 or Git history. The owned panel/watch and global Termux runit are installed; boot autostart is configured but not reboot-verified. **PocketHost is the intended host-wide service coordinator** with verified enrollment, ownership, lifecycle, readiness, autostart, logs and recovery; do not silently adopt existing SSH/Local Agent or foreign services. No standing background scheduler, default tests during implementation, or S22 changes. **QA note:** an authorized one-shot run at `9bf224dc1b47fe9cd94be733690bb4bc137a9227` found a syntax error and format failure; structure and boundaries PASS, types/Node/UI SKIPPED. The syntax defect was corrected in `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6`, but a newly owner-approved one-shot QA on that SHA failed changed-file format in `termux-service-admin.ts` and `worker-loopback-readiness.ts`; structure/boundaries PASS, root/admin types and Node/UI SKIPPED. That one-use consent is consumed; further formatting or QA needs fresh explicit permission. See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
+**Samsung Galaxy A8 only** for PocketHost execution. The latest verified live
+DEV SHA is `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`, PID 30493/start ticks 24510709,
+HTTP 200, owned panel/watch and independent Local Agent running; SSH and
+ssh-agent remain down. Private task
+`pockethost-a8-s4-final-readback-20261116-v1` confirms exact SHA, markers,
+same-UID process and protected-service isolation.
+
+**Final S4 scoped QA PASS (7/7)** on source `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`:
+format, structure, boundaries, root/admin types, Node and UI.
+The QA-only source differs from live by the updated UI test fixture.
+QA task: `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`.
+GitHub `main` can advance with docs-only commits without redeploying A8.
+Boot autostart and full S1–S4 physical acceptance remain unverified.
+No standing scheduler, automatic tests, reboot or S22 changes.
+See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
 
 ## MVP stage acceptance
 

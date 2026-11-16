@@ -11,7 +11,15 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 
 **Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
-**A8 is installed and running.** Guarded FAST FLOW returned PASS for live panel SHA **`bfd16d6362b879a41120389fe2d2e81a1a6cd8e6`**, QA on this SHA has FAIL (format only; structure/boundaries PASS; types/Node/UI SKIPPED), PID 2106/start ticks 23573375, HTTP 200; official Termux runit supervises panel/watch. Boot autostart was configured, **not reboot-tested**. The earlier `9bf224dc1b47fe9cd94be733690bb4bc137a9227` deploy HOLD rolled back safely; a subsequent owner-approved QA run at that SHA found a syntax defect. Code was fixed and released as `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6`. The one-shot QA on the fixed SHA is completed and failed changed-file format; a further formatting tool run needs fresh approval. GitHub `main` may be ahead after docs-only commits.
+**A8 is installed and running.** Latest guarded live PocketHost DEV source
+`47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`: deployment PASS, final readonly A8
+readback PASS, HTTP 200, PID 30493/start ticks 24510709, panel/watch/Local
+Agent running, protected services unchanged. **S4 scoped QA 7/7 PASS** on
+`c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`, which differs from live only by a UI test fixture.
+Original HTTP readiness HOLD and syntax/format/typecheck defects are resolved
+in the final tested source. Boot autostart is configured but **not reboot-tested**.
+Services S1–S4 are still IN_PROGRESS, not accepted. Main may be ahead by docs
+without requiring deployment. No automatic tests or schedulers.
 
 **Product:** dynamic runit discovery, generic Node/static workloads; Hosting APIs remain feature-gated. Trusted LAN without login is the owner's requirement; WAN exposure remains forbidden, and LAN mutation safety must be preserved. Network Access has private-interface enable/disable, while boot behaviour acceptance and configurable SSH/GitHub/health/autostart policy remain to build.
 

@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-15
+last_reviewed: 2026-11-16
 purpose: A8 development handoff with exact live SHA and QA release gate
 ---
 
@@ -39,10 +39,18 @@ purpose: A8 development handoff with exact live SHA and QA release gate
 - **Avoid an empty post-deploy QA range:** for the S4 HTTP readiness change, the comparison ancestor is `ceb7f07b96b15f41fd42f91b80a0e9a7364b573e` and the exact target is `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6`. An A8 QA checkout pinned cleanly at the exact target must use `--base=ceb7f07b96b15f41fd42f91b80a0e9a7364b573e`; using current live SHA as both base and target yields `NO_CHANGES` and is **not** QA evidence. GitHub `main` has subsequently moved through documentation-only commits; do not silently test that HEAD instead.
 - **Consent used:** QA of `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6` was authorized and executed once, resulting in `QA_FAIL` (format). No further test or format execution is covered by that authorization.
 
+## 2026-11-16 final QA and A8 handoff receipt
+
+- **Live A8 source:** `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`; guarded release `pockethost-a8-readiness-inode-guard-fast-flow-20261116-v1` PASS. Final readback `pockethost-a8-s4-final-readback-20261116-v1` returned done/exit 0/READBACK: PID 30493, start ticks 24510709, source/owner/gateway markers agree, /proc start attested, HTTP 200, panel/watch/Local Agent running, SSH/ssh-agent down, no service mutations.
+- **Final scoped QA:** `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1` on source `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` returned outer done/exit 0, inner QA_PASS. All seven approved checks passed: changed-file format, structure, boundaries, root incremental typecheck, admin incremental typecheck, Node tests and UI tests. Compare ancestor `ceb7f07b96b15f41fd42f91b80a0e9a7364b573e`.
+- **Why two SHAs:** after deploying code `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`, the UI enrollment test fixture was updated to match the strict creation receipt, attested registry `identityReason` and verified runit state message. It changes tests only; runtime stays `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`. QA target `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` is not claimed to be deployed.
+- **Resolved during this continuation:** source Prettier warnings; Markdown handoff formatting; TS narrowing for /proc socket inode `fields[9]`; stale UI fixture. Earlier FAIL/HOLD receipts below are history. No reboot, WAN, SSH, foreign service mutation, production activation or scheduler.
+- **Not accepted:** full Services S1–S4 lifecycle/worker physical flows; Termux:Boot after real reboot; custom code activation, broad application-level HTTP readiness; Platform, Hosting, stabilization and product acceptance. Current position is safe handoff after a scoped S4 QA gate, **not** overall MVP acceptance.
+
 ## Next action
 
-1. **Global tests OFF — prior stage QA consent revoked.** On next code iteration, use fresh `main` and exact live SHA, then publish one guarded A8 FAST FLOW task **without** any test flag. Never run tests, lint, formatting, typecheck or smoke on your own.
-2. If owner wants tests, ask for a fresh, explicit one-run scope and exact SHA. Only then use the independent `verify-changed.mjs --execute --approved-head=<SHA> --approved-checks=<explicit-categories>` on A8 (only categories agreed for that exact revision). Never bundle testing with deployment.
-3. On guarded deployment PASS, read exact SHA/PID/start ticks, basic HTTP and protected services; share [MVP plan](MVP_EXECUTION_PLAN.md) stage status. Failed ownership or unknown receipt means HOLD, not retry.
+1. Resume canonical **S1 generic verified service enrollment**, then S2 lifecycle/logs, S3 autostart and S4 health per [MVP plan](MVP_EXECUTION_PLAN.md); do not mistake the scoped S4 QA PASS for complete Services acceptance.
+2. Fresh main and private A8 live-SHA/owner readback before the next one-pass code → deploy → verify. Default tests OFF; each new exact-SHA QA scope needs separate owner confirmation. No automatic retries or duplicate agent tasks.
+3. Maintain strict process/provenance gates; no S22, SSH, WAN, reboot, arbitrary user-code start, foreign services or schedulers without separate permission.
 
-**Stages S1–S4 remain IN_PROGRESS; full S5 acceptance is not complete.** A successful build or HTTP 200 alone is not product acceptance.
+**Stages S1–S4 remain IN_PROGRESS; S5 scoped QA PASS is not full Services or MVP acceptance.**

@@ -50,7 +50,18 @@ uninstalled, separately qualified capability.
 
 ## Current installation selection: Galaxy A8
 
-The owner selected the **already-paired Galaxy A8 only** for PocketHost execution. Get exact private host and installation IDs from an authenticated A8 task/result, never use S22 identities. A8 Node/npm, isolated PocketHost checkout, owned runit panel and watch were installed with terminal PASS on 14 November 2026; guarded FAST FLOW updates passed. Latest confirmed live panel SHA: `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6` (2026-11-16, HTTP 200, PID 2106, protected unchanged, `tests=not-run`; private task `pockethost-a8-http-readiness-syntax-fixed-20261116-v1`). One authorized QA at old `9bf224dc1b47fe9cd94be733690bb4bc137a9227` FAILed on TypeScript syntax/format; its corrected replacement `bfd16d6362b879a41120389fe2d2e81a1a6cd8e6` received one separately authorized QA: format FAIL on two source files, structure and boundaries PASS, types/Node/UI SKIPPED. The one-use consent is consumed. GitHub `main` may advance for docs-only changes without deployment. [Active handoff](HANDOFF_NEXT_CHAT.md).
+The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
+Get exact private host/installation IDs from verified private task/results, never
+from S22. Final guarded A8 DEV live source: `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`
+(PID 30493/start ticks 24510709, HTTP 200, protected services unchanged).
+Final A8 readback: `pockethost-a8-s4-final-readback-20261116-v1` PASS.
+The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
+returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
+root/admin types, Node, UI. This QA head differs from live only by the fixed
+test fixture; no test-only panel restart was performed. Earlier S4 HOLD and
+QA failures remain historical evidence, not the current result. Further QA
+requires fresh, exact-SHA scoped authorization. No scheduler added.
+[Active handoff](HANDOFF_NEXT_CHAT.md).
 
 The installed A8 **Local Agent** bundle, confirmed independently by private task `pockethost-a8-agent-bundle-identity-20261114-v1`, is **`c39cd958c76cca0aaf2d30a654bdc4305c0a3228`**; runit was running. The newer Termux Git-poll historical-result lookup optimization at source `4d58ae544a1d7d73a6235e6b067152a605bb9635` is **not present in this installed release**. Do not mistake source availability or successful Git intake for a deployed Agent upgrade. An Agent update must use a separately approved, external operator with rollback and exact source acceptance; never self-update/restart it using its own immutable task.
 
