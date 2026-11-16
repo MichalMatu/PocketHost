@@ -340,7 +340,7 @@ describe('H3 runit service enrollment UI', () => {
     );
     await screen.findByText('wreckscanner');
     expect(screen.queryByRole('button', { name: 'Register' })).toBeNull();
-    expect(screen.getByText(/No attested managed services yet/)).toBeTruthy();
+    expect(screen.getByText(/No standalone workers yet/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Add Service' }));
     await user.type(screen.getByRole('textbox', { name: 'New service name' }), 'site-worker');
     await user.click(screen.getByRole('button', { name: 'Create stopped service' }));
