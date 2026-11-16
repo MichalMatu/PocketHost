@@ -12,12 +12,12 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 **Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
 **A8 is installed and running.** Latest guarded live PocketHost DEV source
-`eff74e52b0c73b0a43c3c1fd96244f8fbe3d2819`: FAST FLOW **PASS**, HTTP 200, PID **27589**,
+`e80190677a63269cf9846650b4a84c9f7edb91a7`: FAST FLOW **PASS**, HTTP 200, PID **12730**,
 protected services unchanged; immutable receipt
-`pockethost-a8-hosting-release-content-gate-fast-flow-20261116-v1`.
+`pockethost-a8-hosting-release-identity-fast-flow-20261116-v1`.
 One fixed-template worker completed the physical S1–S4 lifecycle PASS,
 but custom code, reboot/Termux:Boot and generic HTTP readiness remain
-unaccepted. Platform status, static Hosting creation readback, active-release HTTP
+unaccepted. Platform status, static Hosting creation readback, exact-release HTTP
 content gates and Restic receipt guards are deployed, **not fully functionally accepted**. The older
 S4 scoped **7/7 QA PASS** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`
 does **not** validate this newer live SHA. Tests remain OFF without fresh
