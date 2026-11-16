@@ -108,22 +108,51 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       () => mutate(endpoint + "/" + site.id + "/releases/" + release.id + "/" + action,
         action === "restore" ? "POST" : "DELETE"),
       action === "restore" ? "Selected release restored. You can still use one-step Rollback." : "Archived release permanently removed.", true,
+      observed => action === "restore"
+        ? observed.activeRelease === release.id
+        : observed.releases === site.releases - 1 && observed.activeRelease === site.activeRelease,
     )
   }
-  const execute = async (job: () => Promise<unknown>, success: string, mutation = false) => {
+  const execute = async (
+    job: () => Promise<unknown>, success: string, mutation = false,
+    expected?: (observed: FleetSite) => boolean,
+  ) => {
     if (busy) return
     setBusy(true)
     setError(null)
     setMessage(null)
     setHealth(null)
     try {
+      let receipt: unknown
       try {
-        await job()
+        receipt = await job()
       } catch (cause) {
         setError(mutation
           ? "Result unconfirmed. Refresh the site state before retrying; no automatic retry."
           : cause instanceof Error ? cause.message : "Read failed.")
         return
+      }
+      if (mutation) {
+        try {
+          // The POST/PUT acknowledgement is not enough. Read back the exact
+          // owned site independently, without reissuing the mutation.
+          const response = await fetch(endpoint + "/" + site.id, {
+            credentials: "same-origin", cache: "no-store",
+          })
+          if (!response.ok) throw new Error("site-readback-unavailable")
+          const observed = parseFleetSite(await response.json())
+          const ack = receipt as FleetSite | null
+          if (!ack || ack.id !== site.id || observed.id !== site.id ||
+              ack.state !== observed.state || ack.activeRelease !== observed.activeRelease ||
+              ack.previousRelease !== observed.previousRelease ||
+              ack.releases !== observed.releases || ack.canRollback !== observed.canRollback ||
+              ack.history.length !== observed.history.length ||
+              (expected && !expected(observed)))
+            throw new Error("site-state-drift")
+        } catch {
+          setError("Site action result unconfirmed. Refresh the exact site state before retrying.")
+          return
+        }
       }
       try {
         await onChange()
@@ -131,7 +160,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         if (versions !== null) await readVersions()
         setMessage(success)
       } catch {
-        setMessage("Operation acknowledged, but inventory refresh failed. Verify the site state.")
+        setError("Site state was confirmed, but list refresh failed. Refresh to inspect the latest state.")
       }
     } finally {
       setBusy(false)
@@ -142,7 +171,10 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     if ((name === "stop" || name === "restart" || name === "rollback") &&
         !window.confirm("Apply " + name + " only to " + site.name + "?")) return
     void execute(() => mutate(endpoint + "/" + site.id + "/" + name, "POST"),
-      name[0].toUpperCase() + name.slice(1) + " completed.", true)
+      name[0].toUpperCase() + name.slice(1) + " completed.", true,
+      observed => name === "stop" ? observed.state === "stopped" :
+        name === "rollback" ? observed.activeRelease === site.previousRelease :
+        observed.state === "running")
   }
   const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
@@ -151,8 +183,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(async () => {
       if (file.size > maxZip) throw new RangeError("ZIP is larger than 6 MiB.")
-      await mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip")
-    }, "ZIP was published as a new immutable release.", true)
+      return await mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip")
+    }, "ZIP was published as a new immutable release.", true,
+    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
   const folder = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -167,9 +200,10 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         name: file.webkitRelativePath || file.name,
         base64: encodeBase64(new Uint8Array(await file.arrayBuffer())),
       })))
-      await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
+      return await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
         JSON.stringify({ files: entries }), "application/json")
-    }, "Folder was published as a new immutable release.", true)
+    }, "Folder was published as a new immutable release.", true,
+    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
   const verify = () => {
     void execute(async () => {
