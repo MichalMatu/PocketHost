@@ -1200,7 +1200,8 @@ export class TermuxServiceAdmin {
         throw new RangeError('Managed service quota reached');
       const sourceRoot = path.join(PREFIX, 'var', 'sv');
       const logRoot = path.join(PREFIX, 'var', 'log', 'sv');
-      for (const folder of [this.serviceRoot, sourceRoot, logRoot]) {
+      const varRoot = path.join(PREFIX, 'var');
+      const trustedDirectory = (folder: string): void => {
         const st = lstatSync(folder);
         if (
           !st.isDirectory() ||
@@ -1211,7 +1212,17 @@ export class TermuxServiceAdmin {
         ) {
           throw new Error('Untrusted Termux service directory');
         }
+      };
+      // Termux/runit does not create var/sv until a service provisioner
+      // needs it. Create only PocketHost's own definition root, never a
+      // missing runit supervisor or logger root.
+      for (const folder of [varRoot, this.serviceRoot, logRoot]) trustedDirectory(folder);
+      try {
+        mkdirSync(sourceRoot, { mode: 0o700 });
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
       }
+      trustedDirectory(sourceRoot);
       // Both templates share a quota, including already archived definitions,
       // so LAN clients cannot repeatedly archive and allocate more services.
       const templateCount = readdirSync(sourceRoot).filter((unit) => {
