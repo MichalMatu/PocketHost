@@ -898,7 +898,11 @@ export function RunitServiceActions({
     )) return
     setBusy(true); setError(null); setDone(null)
     try {
-      await action({ action: "service", name, path: service.name })
+      const receipt = await action<{ changed: boolean; result?: { exit: number; output: string } }>(
+        { action: "service", name, path: service.name })
+      if (receipt?.changed !== true || !receipt.result || receipt.result.exit !== 0 ||
+          typeof receipt.result.output !== "string" || receipt.result.output.length > 12000)
+        throw new Error("Unverified runit command receipt")
       try {
         const live = await refresh()
         const observed = live.services.find(item => item.name === service.name)

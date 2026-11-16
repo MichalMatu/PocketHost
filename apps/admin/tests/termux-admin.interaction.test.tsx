@@ -290,7 +290,10 @@ describe('H3 runit service enrollment UI', () => {
           });
           running = true;
         }
-        return { ok: true, json: async () => ({ changed: true }) };
+        return { ok: true, json: async () => ({
+          changed: true,
+          result: { exit: 0, output: '' },
+        }) };
       }
       return {
         ok: true,
