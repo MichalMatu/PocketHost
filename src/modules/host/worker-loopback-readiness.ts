@@ -27,10 +27,7 @@ export const validHttpPath = (value: string): boolean =>
   !value.includes('/../') &&
   !value.endsWith('/..');
 
-const unreadable = (
-  name: string,
-  reason: WorkerHttpReadiness['reason'],
-): WorkerHttpReadiness => ({
+const unreadable = (name: string, reason: WorkerHttpReadiness['reason']): WorkerHttpReadiness => ({
   name,
   status: 'unverified',
   httpStatus: null,
@@ -55,11 +52,7 @@ function ownedLoopbackListener(pid: number, port: number): boolean {
   try {
     const proc = path.join('/proc', String(pid));
     const stat = lstatSync(proc);
-    if (
-      !stat.isDirectory() ||
-      stat.isSymbolicLink() ||
-      stat.uid !== process.getuid?.()
-    )
+    if (!stat.isDirectory() || stat.isSymbolicLink() || stat.uid !== process.getuid?.())
       return false;
     const portHex = port.toString(16).toUpperCase().padStart(4, '0');
     const raw = readFileSync('/proc/net/tcp', 'utf8');
@@ -75,8 +68,7 @@ function ownedLoopbackListener(pid: number, port: number): boolean {
         Number(fields[7]) !== process.getuid?.()
       )
         continue;
-      if (/^[0-9]{1,20}$/.test(fields[9]) && fields[9] !== '0')
-        sockets.add(fields[9]);
+      if (/^[0-9]{1,20}$/.test(fields[9]) && fields[9] !== '0') sockets.add(fields[9]);
     }
     if (sockets.size !== 1) return false;
     const [socket] = [...sockets];
@@ -137,19 +129,12 @@ export async function probeOwnedWorkerHttp(
   port: number,
   urlPath: string,
 ): Promise<WorkerHttpReadiness> {
-  if (
-    !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
-    !validHttpPort(port) ||
-    !validHttpPath(urlPath)
-  )
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(name) || !validHttpPort(port) || !validHttpPath(urlPath))
     throw new RangeError('Invalid owned worker HTTP readiness request');
-  if (!ownedLoopbackListener(pid, port))
-    return unreadable(name, 'socket-owner-unverified');
+  if (!ownedLoopbackListener(pid, port)) return unreadable(name, 'socket-owner-unverified');
   const responseStatus = await oneHttpGet(port, urlPath);
-  if (!ownedLoopbackListener(pid, port))
-    return unreadable(name, 'socket-owner-unverified');
-  if (responseStatus === null)
-    return unreadable(name, 'transport-unverified');
+  if (!ownedLoopbackListener(pid, port)) return unreadable(name, 'socket-owner-unverified');
+  if (responseStatus === null) return unreadable(name, 'transport-unverified');
   return {
     name,
     status: responseStatus >= 200 && responseStatus <= 299 ? 'ready' : 'not-ready',

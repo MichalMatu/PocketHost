@@ -55,10 +55,7 @@ const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 const RECOVERY_MAX_ATTEMPTS = 2;
 export type WorkerTemplate =
-  | 'heartbeat-worker-v1'
-  | 'python-heartbeat-v1'
-  | 'python-source-v1'
-  | 'node-source-v1';
+  'heartbeat-worker-v1' | 'python-heartbeat-v1' | 'python-source-v1' | 'node-source-v1';
 type StagedWorkerTemplate = 'python-source-v1' | 'node-source-v1';
 type FixedWorkerTemplate = Exclude<WorkerTemplate, StagedWorkerTemplate>;
 const isStagedWorker = (template: WorkerTemplate): template is StagedWorkerTemplate =>
@@ -168,14 +165,21 @@ export interface TermuxService {
  * label; recovery re-computes the same SHA-256 before re-enrollment.
  */
 function builtinWorkerRunScript(template: WorkerTemplate, target: string): string {
-  if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
+  if (
+    !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
+      template,
+    )
+  )
     throw new RangeError('Invalid builtin worker');
   if (target !== path.join(PREFIX, 'var', 'sv', path.basename(target)))
     throw new Error('Unexpected builtin target path');
   const sh = path.join(PREFIX, 'bin', 'sh');
   const env = path.join(PREFIX, 'bin', 'env');
-  const runtime = path.join(PREFIX, 'bin',
-    template === 'python-heartbeat-v1' || template === 'python-source-v1' ? 'python' : 'node');
+  const runtime = path.join(
+    PREFIX,
+    'bin',
+    template === 'python-heartbeat-v1' || template === 'python-source-v1' ? 'python' : 'node',
+  );
   if (isStagedWorker(template))
     return (
       '#!' +
@@ -241,28 +245,55 @@ function stagedWorkerSourceHash(target: string, template: StagedWorkerTemplate):
   let fd: number | undefined;
   try {
     const initial = lstatSync(file);
-    if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1 ||
-        initial.uid !== process.getuid?.() || (initial.mode & 0o077) !== 0 ||
-        initial.size === 0 || initial.size > 32 * 1024) return null;
+    if (
+      !initial.isFile() ||
+      initial.isSymbolicLink() ||
+      initial.nlink !== 1 ||
+      initial.uid !== process.getuid?.() ||
+      (initial.mode & 0o077) !== 0 ||
+      initial.size === 0 ||
+      initial.size > 32 * 1024
+    )
+      return null;
     fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
     const before = fstatSync(fd);
-    if (!before.isFile() || before.nlink !== 1 || before.dev !== initial.dev ||
-        before.ino !== initial.ino || before.uid !== initial.uid ||
-        before.mode !== initial.mode || before.size !== initial.size ||
-        before.mtimeMs !== initial.mtimeMs) return null;
+    if (
+      !before.isFile() ||
+      before.nlink !== 1 ||
+      before.dev !== initial.dev ||
+      before.ino !== initial.ino ||
+      before.uid !== initial.uid ||
+      before.mode !== initial.mode ||
+      before.size !== initial.size ||
+      before.mtimeMs !== initial.mtimeMs
+    )
+      return null;
     const bytes = readFileSync(fd);
     const after = fstatSync(fd);
     const current = lstatSync(file);
-    if (bytes.length !== before.size || after.dev !== before.dev ||
-        after.ino !== before.ino || after.size !== before.size ||
-        after.mtimeMs !== before.mtimeMs || after.mode !== before.mode ||
-        after.nlink !== 1 || current.dev !== before.dev ||
-        current.ino !== before.ino || current.size !== before.size ||
-        current.mtimeMs !== before.mtimeMs || current.mode !== before.mode ||
-        current.nlink !== 1 || current.uid !== before.uid) return null;
+    if (
+      bytes.length !== before.size ||
+      after.dev !== before.dev ||
+      after.ino !== before.ino ||
+      after.size !== before.size ||
+      after.mtimeMs !== before.mtimeMs ||
+      after.mode !== before.mode ||
+      after.nlink !== 1 ||
+      current.dev !== before.dev ||
+      current.ino !== before.ino ||
+      current.size !== before.size ||
+      current.mtimeMs !== before.mtimeMs ||
+      current.mode !== before.mode ||
+      current.nlink !== 1 ||
+      current.uid !== before.uid
+    )
+      return null;
     return createHash('sha256').update(bytes).digest('hex');
-  } catch { return null; }
-  finally { if (fd !== undefined) closeSync(fd); }
+  } catch {
+    return null;
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
 }
 function pythonWorkerSourceHash(target: string): string | null {
   return stagedWorkerSourceHash(target, 'python-source-v1');
@@ -282,29 +313,49 @@ function safeFile(file: string): string | null {
   let fd: number | undefined;
   try {
     const initial = lstatSync(file);
-    if (!initial.isFile() || initial.isSymbolicLink() ||
-        initial.nlink !== 1 || initial.size > 20000 ||
-        initial.uid !== process.getuid?.() || (initial.mode & 0o022) !== 0)
+    if (
+      !initial.isFile() ||
+      initial.isSymbolicLink() ||
+      initial.nlink !== 1 ||
+      initial.size > 20000 ||
+      initial.uid !== process.getuid?.() ||
+      (initial.mode & 0o022) !== 0
+    )
       throw new Error('Unsafe runit registry');
     // NONBLOCK also prevents a swapped-in FIFO from blocking this host process.
     fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK);
     const opened = fstatSync(fd);
-    if (!opened.isFile() || opened.dev !== initial.dev ||
-        opened.ino !== initial.ino || opened.size !== initial.size ||
-        opened.mtimeMs !== initial.mtimeMs || opened.mode !== initial.mode ||
-        opened.nlink !== 1 || opened.uid !== initial.uid)
+    if (
+      !opened.isFile() ||
+      opened.dev !== initial.dev ||
+      opened.ino !== initial.ino ||
+      opened.size !== initial.size ||
+      opened.mtimeMs !== initial.mtimeMs ||
+      opened.mode !== initial.mode ||
+      opened.nlink !== 1 ||
+      opened.uid !== initial.uid
+    )
       throw new Error('Runit record changed while opening');
     const bytes = readFileSync(fd);
     const after = fstatSync(fd);
     const current = lstatSync(file);
-    if (bytes.length !== initial.size || bytes.length > 20000 ||
-        after.dev !== initial.dev || after.ino !== initial.ino ||
-        after.size !== initial.size || after.mtimeMs !== initial.mtimeMs ||
-        after.mode !== initial.mode || after.nlink !== 1 ||
-        current.dev !== initial.dev || current.ino !== initial.ino ||
-        current.size !== initial.size || current.mtimeMs !== initial.mtimeMs ||
-        current.mode !== initial.mode || current.nlink !== 1 ||
-        current.uid !== initial.uid)
+    if (
+      bytes.length !== initial.size ||
+      bytes.length > 20000 ||
+      after.dev !== initial.dev ||
+      after.ino !== initial.ino ||
+      after.size !== initial.size ||
+      after.mtimeMs !== initial.mtimeMs ||
+      after.mode !== initial.mode ||
+      after.nlink !== 1 ||
+      current.dev !== initial.dev ||
+      current.ino !== initial.ino ||
+      current.size !== initial.size ||
+      current.mtimeMs !== initial.mtimeMs ||
+      current.mode !== initial.mode ||
+      current.nlink !== 1 ||
+      current.uid !== initial.uid
+    )
       throw new Error('Runit record changed during read');
     return bytes.toString('utf8');
   } catch (error) {
@@ -458,9 +509,12 @@ export class TermuxServiceAdmin {
         typeof v.instanceId !== 'string' ||
         typeof v.runSha256 !== 'string' ||
         typeof v.archivedAt !== 'string' ||
-        !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
-          v.template as string,
-        ) ||
+        ![
+          'heartbeat-worker-v1',
+          'python-heartbeat-v1',
+          'python-source-v1',
+          'node-source-v1',
+        ].includes(v.template as string) ||
         (isStagedWorker(v.template as WorkerTemplate)
           ? typeof v.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.sourceSha256)
           : v.sourceSha256 !== undefined) ||
@@ -647,7 +701,14 @@ export class TermuxServiceAdmin {
   ): { changed: true; retired: true; restorable: false; filesRetained: true } {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
+    if (
+      ![
+        'heartbeat-worker-v1',
+        'python-heartbeat-v1',
+        'python-source-v1',
+        'node-source-v1',
+      ].includes(template)
+    )
       throw new RangeError('Invalid archived worker template');
     const release = this.acquireStandaloneLifecycleLock();
     try {
@@ -758,7 +819,14 @@ export class TermuxServiceAdmin {
   ): { changed: boolean; restored: boolean; started: false } {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
+    if (
+      ![
+        'heartbeat-worker-v1',
+        'python-heartbeat-v1',
+        'python-source-v1',
+        'node-source-v1',
+      ].includes(template)
+    )
       throw new RangeError('Invalid archived worker template');
     const release = this.acquireStandaloneLifecycleLock();
     try {
@@ -1104,7 +1172,14 @@ export class TermuxServiceAdmin {
     source?: string,
   ): { changed: boolean; name: string; template: WorkerTemplate } {
     valid(name);
-    if (!['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(template))
+    if (
+      ![
+        'heartbeat-worker-v1',
+        'python-heartbeat-v1',
+        'python-source-v1',
+        'node-source-v1',
+      ].includes(template)
+    )
       throw new RangeError('Unsupported owned service template');
     if (isStagedWorker(template)) {
       // Source is staged, not executed. Browser Start/Restart/Enable are denied.
@@ -1150,9 +1225,12 @@ export class TermuxServiceAdmin {
             !!data &&
             typeof data === 'object' &&
             (data as { template?: string }).template !== undefined &&
-            ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
-              (data as { template: string }).template,
-            )
+            [
+              'heartbeat-worker-v1',
+              'python-heartbeat-v1',
+              'python-source-v1',
+              'node-source-v1',
+            ].includes((data as { template: string }).template)
           );
         } catch {
           throw new Error('Managed worker inventory unverified');
@@ -1177,7 +1255,8 @@ export class TermuxServiceAdmin {
       const node = path.join(PREFIX, 'bin', 'node');
       const python = path.join(PREFIX, 'bin', 'python');
       const svlogd = path.join(PREFIX, 'bin', 'svlogd');
-      const runtime = template === 'python-heartbeat-v1' || template === 'python-source-v1' ? python : node;
+      const runtime =
+        template === 'python-heartbeat-v1' || template === 'python-source-v1' ? python : node;
       for (const binary of [sh, env, runtime, svlogd]) {
         const st = statSync(binary);
         if (!st.isFile() || (st.mode & 0o111) === 0) throw new Error('Termux runtime unavailable');
@@ -1198,10 +1277,12 @@ export class TermuxServiceAdmin {
           ? createHash('sha256').update(source).digest('hex')
           : null;
       if (sourceSha256) {
-        writeFileSync(path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs'),
-          source!, { flag: 'wx', mode: 0o600 });
-        if (!isStagedWorker(template) ||
-            stagedWorkerSourceHash(target, template) !== sourceSha256)
+        writeFileSync(
+          path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs'),
+          source!,
+          { flag: 'wx', mode: 0o600 },
+        );
+        if (!isStagedWorker(template) || stagedWorkerSourceHash(target, template) !== sourceSha256)
           throw new Error('Staged source readback does not match written bytes');
       }
       writeFileSync(
@@ -1275,13 +1356,17 @@ export class TermuxServiceAdmin {
         proof.schema === 1 &&
         proof.owner === 'pockethost' &&
         proof.name === name &&
-        ['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
-          proof.template as string,
-        ) &&
+        [
+          'heartbeat-worker-v1',
+          'python-heartbeat-v1',
+          'python-source-v1',
+          'node-source-v1',
+        ].includes(proof.template as string) &&
         (isStagedWorker(proof.template as WorkerTemplate)
           ? typeof proof.sourceSha256 === 'string' &&
             /^[a-f0-9]{64}$/.test(proof.sourceSha256) &&
-            stagedWorkerSourceHash(target, proof.template as StagedWorkerTemplate) === proof.sourceSha256
+            stagedWorkerSourceHash(target, proof.template as StagedWorkerTemplate) ===
+              proof.sourceSha256
           : proof.sourceSha256 === undefined) &&
         typeof proof.instanceId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
@@ -1290,7 +1375,8 @@ export class TermuxServiceAdmin {
       const expectedDigest =
         proof.template === 'heartbeat-worker-v1' ||
         proof.template === 'python-heartbeat-v1' ||
-        (proof.template === 'python-source-v1' || proof.template === 'node-source-v1')
+        proof.template === 'python-source-v1' ||
+        proof.template === 'node-source-v1'
           ? createHash('sha256')
               .update(builtinWorkerRunScript(proof.template, target))
               .digest('hex')
@@ -1602,10 +1688,9 @@ export class TermuxServiceAdmin {
     // Prefer at most 32 registry entries over unregistered discovery when the
     // inventory reaches its 100-entry UI/API cap.
     const enrolled = registrations.map((item) => item.name).sort();
-    const names = [
-      ...enrolled,
-      ...published.filter((name) => !enrolled.includes(name)),
-    ].slice(0, MAX_ENTRIES).sort();
+    const names = [...enrolled, ...published.filter((name) => !enrolled.includes(name))]
+      .slice(0, MAX_ENTRIES)
+      .sort();
     return names.map((name) => {
       let resolved: string | undefined;
       if (visible.has(name)) {
@@ -2585,14 +2670,23 @@ export class TermuxServiceAdmin {
       throw new Error('Node source identity changed');
     const observed = this.probe(name);
     const autostart = this.enabled(name, true);
-    if (this.target(name) !== target ||
-        stagedWorkerSourceHash(target, 'node-source-v1') !== sourceSha256 ||
-        this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1')
+    if (
+      this.target(name) !== target ||
+      stagedWorkerSourceHash(target, 'node-source-v1') !== sourceSha256 ||
+      this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1'
+    )
       throw new Error('Node source identity changed during review');
-    return { name, template: 'node-source-v1', sourceSha256,
-      sourceBytes: file.size, observed, autostart,
-      canStartFromLan: false, ownerApproval: 'not-configured',
-      checkedAt: new Date().toISOString() };
+    return {
+      name,
+      template: 'node-source-v1',
+      sourceSha256,
+      sourceBytes: file.size,
+      observed,
+      autostart,
+      canStartFromLan: false,
+      ownerApproval: 'not-configured',
+      checkedAt: new Date().toISOString(),
+    };
   }
 
   /**
@@ -2617,10 +2711,17 @@ export class TermuxServiceAdmin {
     const prefix = 'run: ' + unit + ': (pid ';
     const readSupervisor = (): { pid: number; uptimeSeconds: number } | null => {
       const result = spawnSync(command, ['status', unit], {
-        encoding: 'utf8', shell: false, timeout: 1500, maxBuffer: 2048,
+        encoding: 'utf8',
+        shell: false,
+        timeout: 1500,
+        maxBuffer: 2048,
       });
-      if (result.error || result.status !== 0 ||
-          typeof result.stdout !== 'string' || !result.stdout.startsWith(prefix))
+      if (
+        result.error ||
+        result.status !== 0 ||
+        typeof result.stdout !== 'string' ||
+        !result.stdout.startsWith(prefix)
+      )
         return null;
       const match = /^([1-9][0-9]{0,8})\) ([0-9]{1,10})s(?:;|$)/.exec(
         result.stdout.slice(prefix.length),
@@ -2628,8 +2729,8 @@ export class TermuxServiceAdmin {
       if (!match) return null;
       const pid = Number(match[1]);
       const uptimeSeconds = Number(match[2]);
-      if (!Number.isSafeInteger(pid) || pid <= 1 ||
-          !Number.isSafeInteger(uptimeSeconds)) return null;
+      if (!Number.isSafeInteger(pid) || pid <= 1 || !Number.isSafeInteger(uptimeSeconds))
+        return null;
       return { pid, uptimeSeconds };
     };
     try {
@@ -2637,8 +2738,12 @@ export class TermuxServiceAdmin {
       if (!first || typeof process.getuid?.() !== 'number') return unavailable;
       const procDir = path.join('/proc', String(first.pid));
       const directory = lstatSync(procDir);
-      if (!directory.isDirectory() || directory.isSymbolicLink() ||
-          directory.uid !== process.getuid?.()) return unavailable;
+      if (
+        !directory.isDirectory() ||
+        directory.isSymbolicLink() ||
+        directory.uid !== process.getuid?.()
+      )
+        return unavailable;
       const stat = readFileSync(path.join(procDir, 'stat'), 'utf8');
       if (stat.length > 4096) return unavailable;
       const open = stat.indexOf(' (');
@@ -2646,20 +2751,33 @@ export class TermuxServiceAdmin {
       if (open < 1 || close <= open || Number(stat.slice(0, open)) !== first.pid)
         return unavailable;
       // After "(comm)", index 0 is proc stat field 3; index 19 is starttime (22).
-      const fields = stat.slice(close + 2).trim().split(/\s+/);
+      const fields = stat
+        .slice(close + 2)
+        .trim()
+        .split(/\s+/);
       const startTicks = fields[19];
-      if (!startTicks || !/^[0-9]{1,24}$/.test(startTicks) ||
-          /^0+$/.test(startTicks)) return unavailable;
+      if (!startTicks || !/^[0-9]{1,24}$/.test(startTicks) || /^0+$/.test(startTicks))
+        return unavailable;
       const second = readSupervisor();
-      if (!second || second.pid !== first.pid ||
-          second.uptimeSeconds < first.uptimeSeconds) return unavailable;
+      if (!second || second.pid !== first.pid || second.uptimeSeconds < first.uptimeSeconds)
+        return unavailable;
       const confirm = readFileSync(path.join(procDir, 'stat'), 'utf8');
       const confirmClose = confirm.lastIndexOf(') ');
-      if (confirm.length > 4096 || confirmClose < 0 ||
-          confirm.slice(confirmClose + 2).trim().split(/\s+/)[19] !== startTicks)
+      if (
+        confirm.length > 4096 ||
+        confirmClose < 0 ||
+        confirm
+          .slice(confirmClose + 2)
+          .trim()
+          .split(/\s+/)[19] !== startTicks
+      )
         return unavailable;
-      return { status: 'observed', pid: first.pid,
-        uptimeSeconds: second.uptimeSeconds, startTicks };
+      return {
+        status: 'observed',
+        pid: first.pid,
+        uptimeSeconds: second.uptimeSeconds,
+        startTicks,
+      };
     } catch {
       return unavailable;
     }
@@ -2674,20 +2792,22 @@ export class TermuxServiceAdmin {
   inspectHealthOverview(): WorkerHealthOverview {
     const inventory = this.list();
     const registeredNames = new Set(this.registry().map((item) => item.name));
-    const blockedRegistrations = inventory.filter((item) =>
-      registeredNames.has(item.name) && !item.registered).length;
-    const workers = inventory.filter((item) =>
-      item.control === 'standalone' &&
-      item.registered && !item.protected && !!item.template);
-    const rows: WorkerHealthOverview['rows'] = workers.slice(0, MAX_TEMPLATE_WORKERS)
+    const blockedRegistrations = inventory.filter(
+      (item) => registeredNames.has(item.name) && !item.registered,
+    ).length;
+    const workers = inventory.filter(
+      (item) =>
+        item.control === 'standalone' && item.registered && !item.protected && !!item.template,
+    );
+    const rows: WorkerHealthOverview['rows'] = workers
+      .slice(0, MAX_TEMPLATE_WORKERS)
       .map((item) => {
         const name = item.name;
         const template = item.template!;
         try {
           const health = this.inspectHealth(name);
-          if (
-            this.managedWorkerTemplate(name, this.target(name), this.registry()) !== template
-          ) throw new Error('Worker changed during batch readback');
+          if (this.managedWorkerTemplate(name, this.target(name), this.registry()) !== template)
+            throw new Error('Worker changed during batch readback');
           return { name, template, status: 'observed' as const, health };
         } catch {
           return { name, template, status: 'unavailable' as const };
