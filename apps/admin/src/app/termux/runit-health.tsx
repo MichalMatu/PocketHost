@@ -287,18 +287,34 @@ export function RunitHealthPanel() {
       const result = await postJson<{ changed: boolean; heartbeat: HeartbeatPolicy }>({
         action: "service-heartbeat", name: choice, path: name,
       })
-      if (!result || !result.heartbeat ||
-          !["disabled", "log-heartbeat"].includes(result.heartbeat.mode))
-        throw new Error("Heartbeat policy confirmation missing")
+      // Compare the receipt to the user's requested policy, not merely to
+      // another potentially matching (but wrong) server observation.
+      const expectedSeconds = choice === "disabled" ? null : Number(choice)
+      const expectedMode = choice === "disabled" ? "disabled" : "log-heartbeat"
+      if (!result || typeof result.changed !== "boolean" || !result.heartbeat ||
+          result.heartbeat.mode !== expectedMode ||
+          result.heartbeat.staleAfterSeconds !== expectedSeconds ||
+          !["disabled", "fresh", "stale", "missing", "unknown"].includes(
+            result.heartbeat.status) ||
+          (expectedMode === "disabled" && result.heartbeat.status !== "disabled"))
+        throw new Error("Heartbeat policy command receipt differs from requested choice")
       const current = await getJson<RunitHealth>(
         "?mode=service-health&name=" + encodeURIComponent(name))
-      if (current.name !== name || current.identity !== "verified" ||
+      if (!current || current.name !== name || current.identity !== "verified" ||
           current.readiness !== "not-verified" ||
-          current.heartbeat?.mode !== result.heartbeat.mode ||
-          current.heartbeat.staleAfterSeconds !== result.heartbeat.staleAfterSeconds)
-        throw new Error("Heartbeat policy readback mismatch")
+          !["running", "stopped", "unknown"].includes(current.observed) ||
+          !validProcess(current.process, current.observed) ||
+          current.heartbeat?.mode !== expectedMode ||
+          current.heartbeat.staleAfterSeconds !== expectedSeconds ||
+          !["disabled", "fresh", "stale", "missing", "unknown"].includes(
+            current.heartbeat.status) ||
+          (expectedMode === "disabled" && current.heartbeat.status !== "disabled") ||
+          !Number.isFinite(Date.parse(current.checkedAt)))
+        throw new Error("Heartbeat policy readback differs from requested choice")
       setReadback(current)
-      setNotice(name + ": worker heartbeat policy saved and confirmed.")
+      setNotice(name + (result.changed
+        ? ": worker heartbeat policy saved and verified."
+        : ": worker heartbeat policy already set and verified."))
     } catch {
       setError("Heartbeat policy refused or readback unconfirmed. Refresh before another change.")
       setReadback(null)
