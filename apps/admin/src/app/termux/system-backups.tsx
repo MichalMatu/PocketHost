@@ -37,28 +37,62 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
   }
   const run = async (name: "backup" | "check" | "restore" | "forget", id?: string) => {
     if (busy || !detected) return
-    const action = name === "backup" ? "Create a local encrypted Restic backup of Termux " + scope + "?" :
+    const prompt = name === "backup" ? "Create a local encrypted Restic backup of Termux " + scope + "?" :
       name === "restore" ? "Restore the selected snapshot into an isolated directory, without replacing running files?" :
       name === "forget" ? "Permanently forget and prune this selected backup?" :
       "Run the full Restic integrity check?"
-    if (!window.confirm(action)) return
+    if (!window.confirm(prompt)) return
     setBusy(true); setMessage(""); setError("")
     try {
-      const result = await post<{ result?: { restoredTo?: string } }>({
+      const listing = async () => {
+        const response = await get<{ snapshots: Snapshot[] }>("?mode=system-snapshots&scope=" + scope)
+        if (!Array.isArray(response.snapshots) || response.snapshots.length > 40 ||
+            !response.snapshots.every(item =>
+              /^[a-f0-9]{64}$/.test(item.id) &&
+              typeof item.time === "string" && item.time.length <= 60))
+          throw new Error("Untrusted Restic snapshot inventory")
+        return response.snapshots
+      }
+      // Check the selected scope directly rather than trusting potentially
+      // stale React state. A newly initialized repository starts empty.
+      const before = name === "backup" || name === "forget"
+        ? status?.initialized ? await listing() : []
+        : null
+      if (name === "forget" && (!id || !before?.some(item => item.id === id)))
+        throw new Error("Selected backup no longer exists")
+      const receipt = await post<{ result?: { exit?: number; restoredTo?: string } }>({
         action: "restic-system", name, root: scope, path: id,
       })
-      const acknowledged = name === "restore" && result.result?.restoredTo
-        ? "Restored into: " + result.result.restoredTo
-        : "Restic " + name + " acknowledged"
-      try {
-        await refresh(scope)
-        setMessage(acknowledged + " · inventory refreshed")
-      } catch {
-        setMessage(acknowledged + " · inventory not refreshed")
-        setError("Snapshot inventory unavailable. Verify state before retrying.")
+      if (name === "restore") {
+        const destination = receipt.result?.restoredTo
+        if (typeof destination !== "string" ||
+            !/\/h3-restic\/restores\/system-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(destination))
+          throw new Error("Restic staging receipt unverified")
+      } else if (receipt.result?.exit !== 0) {
+        throw new Error("Restic completion receipt unverified")
       }
-    } catch { setError("Backup result unconfirmed. Verify snapshots before retrying.") }
-    finally { setBusy(false) }
+      const restic = await get<{ restic: ResticState }>("?mode=restic-status")
+      if (!restic.restic?.initialized || !restic.restic.repositoryPresent ||
+          !restic.restic.keyPresent)
+        throw new Error("Restic repository status unverified")
+      const after = await listing()
+      if (name === "backup" &&
+          !after.some(item => !before?.some(previous => previous.id === item.id)))
+        throw new Error("New snapshot was not observed")
+      if (name === "forget" && (!id || after.some(item => item.id === id)))
+        throw new Error("Forgotten snapshot still present")
+      if (name === "restore" && (!id || !after.some(item => item.id === id)))
+        throw new Error("Restored snapshot is no longer in selected scope")
+      setStatus(restic.restic)
+      setRecords(after)
+      setMessage(name === "restore"
+        ? "Restic restored to isolated staging (host verified). Running files were not replaced."
+        : name === "backup" ? "New encrypted backup confirmed in snapshot inventory."
+        : name === "forget" ? "Snapshot removal confirmed in inventory."
+        : "Restic repository integrity check completed successfully.")
+    } catch {
+      setError("Backup operation result unconfirmed. Refresh and inspect snapshots before retrying; no automatic retry.")
+    } finally { setBusy(false) }
   }
   React.useEffect(() => {
     if (!detected) return
