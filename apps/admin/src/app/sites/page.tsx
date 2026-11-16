@@ -13,6 +13,23 @@ const endpoint = "/api/v1/sites"
 const intent = "owned-sites"
 const maxZip = 6 * 1024 * 1024
 const maxFolder = 8 * 1024 * 1024
+const maxStarterHtml = 32 * 1024
+const starterHtml = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My PocketHost site</title>
+  <style>
+    body { font: 18px system-ui, sans-serif; max-width: 720px; margin: 15vh auto; padding: 1rem; }
+    h1 { color: #156f60; }
+  </style>
+</head>
+<body>
+  <h1>My first PocketHost site</h1>
+  <p>This page is hosted on my own device.</p>
+</body>
+</html>`
 
 async function readSites(signal?: AbortSignal): Promise<FleetSite[]> {
   const response = await fetch(endpoint, { credentials: "same-origin", cache: "no-store", signal })
@@ -63,6 +80,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [versionsLoading, setVersionsLoading] = React.useState(false)
   const [assets, setAssets] = React.useState<H3Files | null>(null)
   const [assetsLoading, setAssetsLoading] = React.useState(false)
+  const [html, setHtml] = React.useState(starterHtml)
+  const [showHtmlEditor, setShowHtmlEditor] = React.useState(false)
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
@@ -205,6 +224,25 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     }, "Folder was published as a new immutable release.", true,
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
+  const publishHtml = () => {
+    if (busy || site.state === "unknown" || !html.trim()) return
+    const bytes = new TextEncoder().encode(html)
+    if (bytes.length > maxStarterHtml) {
+      setError("HTML is larger than 32 KiB. Use Upload folder or ZIP instead.")
+      return
+    }
+    if (site.activeRelease && !window.confirm(
+      "Publish new index.html release of " + site.name + "?")) return
+    void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
+      JSON.stringify({
+        files: [{ name: "index.html", base64: encodeBase64(bytes) }],
+      }), "application/json"),
+    "HTML was published as a new immutable release. Press Start if the site is stopped.",
+    true, observed =>
+      observed.activeRelease !== null &&
+      observed.activeRelease !== site.activeRelease &&
+      observed.fileCount === 1)
+  }
   const verify = () => {
     void execute(async () => {
       const response = await fetch(endpoint + "/" + site.id + "/health", {
@@ -259,6 +297,40 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           <a className="inline-flex py-1 text-sm underline underline-offset-4"
             target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>
         </div>}
+        <section className="space-y-3 rounded-md border p-3" aria-label={"Quick HTML starter for " + site.name}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium">Quick HTML website</p>
+              <p className="text-xs text-muted-foreground">
+                Edit index.html → Publish HTML → Start → Open hosted site.
+                No ZIP or build needed.
+              </p>
+            </div>
+            <Button size="sm" variant="outline" disabled={busy}
+              onClick={() => setShowHtmlEditor(value => !value)}>
+              {showHtmlEditor ? "Hide HTML editor" : "Edit starter HTML"}
+            </Button>
+          </div>
+          {showHtmlEditor && <div className="space-y-2">
+            <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
+              index.html source
+            </label>
+            <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
+              value={html} onChange={event => setHtml(event.target.value)}
+              disabled={busy || site.state === "unknown"}
+              className="w-full rounded-md border bg-background p-3 font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
+              Each save becomes a new version you can roll back.
+            </p>
+            <Button size="sm" disabled={busy || site.state === "unknown" || !html.trim() ||
+              new TextEncoder().encode(html).length > maxStarterHtml}
+              onClick={publishHtml}>
+              Publish HTML
+            </Button>
+          </div>}
+        </section>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-zip"}>
