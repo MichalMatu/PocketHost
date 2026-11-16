@@ -125,6 +125,7 @@ export const routes: RouteObject[] = [
   },
   // Settings Routes
   { path: "/settings/network", lazy: page(() => import("@/app/settings/network/page")) },
+  { path: "/settings/platform", lazy: page(() => import("@/app/settings/platform/page")) },
   {
     path: "/settings/user",
     lazy: page(() => import("@/app/settings/user/page")),

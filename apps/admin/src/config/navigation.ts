@@ -1,5 +1,5 @@
 import {
-  Activity, Archive, Bot, Boxes, FolderOpen, Globe2, HeartPulse,
+  Activity, Archive, Bot, Boxes, FolderOpen, Globe2, HeartPulse, GitBranch,
   History, LayoutDashboard, ListTree, Network, Package, Power,
   ScrollText, ServerCog, Settings, Smartphone, Terminal,
 } from "lucide-react"
@@ -60,6 +60,7 @@ export const navGroups = [
   {
     label: "Settings",
     items: [
+      { title: "Platform", url: "/settings/platform", icon: GitBranch },
       { title: "Network access", url: "/settings/network", icon: Network },
       { title: "Appearance", url: "/settings/appearance", icon: Settings },
     ],

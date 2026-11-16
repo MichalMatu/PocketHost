@@ -2,6 +2,7 @@ import { readHostMetrics, readProcessInventory, readPackageInventory } from "../
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
+import { inspectLocalGitWorkspace } from "../../src/modules/host/git-workspace-inspection.ts"
 import { inspectTermuxBoot } from "../../src/modules/host/termux-boot-inspection.ts"
 import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflare-tunnel-diagnostics.ts"
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
@@ -1432,6 +1433,7 @@ function termuxAdminApi(): Plugin {
                   archived: services.archivedWorkers(),
                 }
               })() :
+              mode === "git-workspace" && url.searchParams.size === 1 ? inspectLocalGitWorkspace() :
               mode === "service-boot" && url.searchParams.size === 1 ? inspectTermuxBoot() :
               mode === "service-http-readiness" && url.searchParams.size === 4 &&
                 url.searchParams.has("name") && url.searchParams.has("port") &&
