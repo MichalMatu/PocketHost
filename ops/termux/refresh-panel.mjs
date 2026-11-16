@@ -6,12 +6,13 @@
  * Optional QA suites are separately owner-authorized, not a release prerequisite.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, lstatSync, realpathSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, readlinkSync, lstatSync, realpathSync, statSync } from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { classifyUiChanges } from '../../scripts/dev/ui-sync-policy.mjs';
+import { TermuxServiceAdmin } from '../../src/modules/host/termux-service-admin.ts';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 const home = os.homedir();
@@ -222,13 +223,43 @@ function inspect(root, expectedHead) {
 function externalStates() {
   const entries = readdirSync(globalServiceRoot).sort();
   const states = {};
+  let ownedWorkers;
   for (const name of entries) {
     if (name === 'pockethost-panel' || name === 'pockethost-panel-watch') continue;
     requireCondition(/^[a-z][a-z0-9-]{1,63}$/.test(name), 'Unexpected runit service name');
     const target = path.join(globalServiceRoot, name);
     const meta = lstatSync(target);
-    requireCondition(meta.isDirectory() && !meta.isSymbolicLink(), 'Unverified external runit entry');
+    if (meta.isSymbolicLink()) {
+      // The built-in provisioner publishes verified standalone workers as
+      // absolute symlinks. Trust its exact registry, SHA and marker checks;
+      // never bless a foreign or merely discovered link.
+      if (!ownedWorkers) {
+        ownedWorkers = new Set(
+          new TermuxServiceAdmin().list()
+            .filter((item) => item.registered && !item.protected &&
+              item.identity === 'verified' && item.control === 'standalone')
+            .map((item) => item.name),
+        );
+      }
+      requireCondition(
+        ownedWorkers.has(name) &&
+          readlinkSync(target) === path.join(prefix, 'var', 'sv', name),
+        'Unverified external runit entry',
+      );
+    } else {
+      requireCondition(meta.isDirectory(), 'Unverified external runit entry');
+    }
+    const previousLink = meta.isSymbolicLink() ? readlinkSync(target) : null;
     const state = status(target);
+    if (previousLink !== null) {
+      requireCondition(
+        readlinkSync(target) === previousLink &&
+          new TermuxServiceAdmin().list().some((item) =>
+            item.name === name && item.registered && !item.protected &&
+            item.identity === 'verified' && item.control === 'standalone'),
+        'External runit ownership changed during observation',
+      );
+    }
     states[name] = state.running ? 'run' : 'down';
   }
   const localAgent = status(agentService);
