@@ -430,14 +430,16 @@ export class SiteFleetHost {
    * or modifying another project's directory. Old active is one-use undo.
    */
   async restoreRelease(id: string, release: string): Promise<FleetProject> {
-    return this.lock(() => {
+    return this.lock(async () => {
       const item = this.record(id);
-      if (state(item, this.site(id)) === 'unknown')
+      const currentState = state(item, this.site(id));
+      if (currentState === 'unknown')
         throw new Error('Process identity uncertain; restore denied');
       if (!RELEASE.test(release)) throw new RangeError('Invalid release identifier');
       if (release === item.activeRelease) throw new RangeError('Release is already active');
       requireRelease(this.site(id), release);
       this.counts(id, release);
+      const previous = this.releaseState(item);
       const old = item.activeRelease;
       item.activeRelease = release;
       item.previousRelease = old;
@@ -451,6 +453,7 @@ export class SiteFleetHost {
         },
       ];
       this.save(id, item);
+      if (currentState === 'running') await this.attestReleaseOrRevert(id, item, previous);
       return this.inspect(id);
     });
   }
@@ -534,9 +537,10 @@ export class SiteFleetHost {
     });
   }
   async deploy(id: string, incoming: ReadonlyArray<FleetFile>): Promise<FleetProject> {
-    return this.lock(() => {
+    return this.lock(async () => {
       const item = this.record(id);
-      if (state(item, this.site(id)) === 'unknown')
+      const currentState = state(item, this.site(id));
+      if (currentState === 'unknown')
         throw new Error('Process identity uncertain; deployment denied');
       if (!incoming.length || incoming.length > 100)
         throw new RangeError('Invalid site file count');
@@ -570,6 +574,7 @@ export class SiteFleetHost {
       }
       const revision = 'r-' + randomUUID().replaceAll('-', '');
       renameSync(stage, path.join(releases, revision));
+      const previous = this.releaseState(item);
       const prior = item.activeRelease;
       item.activeRelease = revision;
       item.previousRelease = prior;
@@ -585,15 +590,18 @@ export class SiteFleetHost {
       // The static server reads the marker for each request. If this fails,
       // the previous active release is still served; an orphan release is inert.
       this.save(id, item);
+      if (currentState === 'running') await this.attestReleaseOrRevert(id, item, previous);
       return this.inspect(id);
     });
   }
   async rollback(id: string): Promise<FleetProject> {
-    return this.lock(() => {
+    return this.lock(async () => {
       const item = this.record(id);
-      if (state(item, this.site(id)) === 'unknown' || !item.previousRelease)
+      const currentState = state(item, this.site(id));
+      if (currentState === 'unknown' || !item.previousRelease)
         throw new RangeError('No safe previous owned release');
       requireRelease(this.site(id), item.previousRelease);
+      const previous = this.releaseState(item);
       const next = item.previousRelease;
       const old = item.activeRelease;
       item.activeRelease = next;
@@ -608,17 +616,53 @@ export class SiteFleetHost {
         },
       ];
       this.save(id, item);
+      if (currentState === 'running') await this.attestReleaseOrRevert(id, item, previous);
       return this.inspect(id);
     });
   }
+  private releaseState(item: RecordOnDisk): Pick<RecordOnDisk, 'activeRelease' | 'previousRelease' | 'history'> {
+    return {
+      activeRelease: item.activeRelease,
+      previousRelease: item.previousRelease,
+      history: item.history,
+    };
+  }
+  /**
+   * For running sites, a marker change is not considered successful until
+   * loopback HTTP serves the exact active homepage from the verified child.
+   * On failure restore the previous marker; never signal a foreign process.
+   */
+  private async attestReleaseOrRevert(
+    id: string,
+    item: RecordOnDisk,
+    previous: Pick<RecordOnDisk, 'activeRelease' | 'previousRelease' | 'history'>,
+  ): Promise<void> {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (await this.health(id)) return;
+      if (attempt < 2) await wait(150);
+    }
+    item.activeRelease = previous.activeRelease;
+    item.previousRelease = previous.previousRelease;
+    item.history = previous.history;
+    this.save(id, item);
+    throw new Error('Owned site release readiness unconfirmed; previous release marker restored');
+  }
   async health(id: string): Promise<boolean> {
     const item = this.record(id);
-    if (state(item, this.site(id)) !== 'running') return false;
+    if (state(item, this.site(id)) !== 'running' || !item.activeRelease) return false;
     try {
+      const expected = fileAt(requireRelease(this.site(id), item.activeRelease), 'index.html');
       const result = await fetch('http://127.0.0.1:' + item.port + '/', {
-        signal: AbortSignal.timeout(1500),
+        signal: AbortSignal.timeout(2500),
+        redirect: 'error',
       });
-      return result.status === 200 && result.headers.get('x-pockethost-instance') === item.instance;
+      if (
+        result.status !== 200 ||
+        result.headers.get('x-pockethost-instance') !== item.instance ||
+        result.headers.get('content-length') !== String(expected.length)
+      ) return false;
+      const received = Buffer.from(await result.arrayBuffer());
+      return received.equals(expected);
     } catch {
       return false;
     }
