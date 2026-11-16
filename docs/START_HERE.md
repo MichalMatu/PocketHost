@@ -12,9 +12,9 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 **Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
 **A8 is installed and running.** Latest guarded live PocketHost DEV source
-`f8e34fcf57a62647ec8e51814c4865b47329baa1`: FAST FLOW **PASS**, HTTP 200, PID **30544**,
+`d0e7120c4ffea3bdaaecc43c9da4b993dc1bd31f`: FAST FLOW **PASS**, HTTP 200, PID **22047**,
 protected services unchanged; immutable receipt
-`pockethost-a8-services-health-attestation-fast-flow-20261116-v1`.
+`pockethost-a8-services-health-overview-attested-fast-flow-20261116-v1`.
 One fixed-template worker completed the physical S1–S4 lifecycle PASS,
 but custom code, reboot/Termux:Boot and generic HTTP readiness remain
 unaccepted. Platform status, static Hosting creation readback, exact-release HTTP
