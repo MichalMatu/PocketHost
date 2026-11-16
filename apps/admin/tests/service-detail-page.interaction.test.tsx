@@ -12,8 +12,6 @@ import ServiceDetailPage from "@/app/services/service-detail-page"
 afterEach(() => vi.unstubAllGlobals())
 
 const services = [
-  ["ilestoi", "ilestoi-diagnostics"],
-  ["healthwatch", "healthwatch-diagnostics"],
   ["cloudflare", "cloudflare-diagnostics"],
   ["ssh", "ssh-diagnostics"],
   ["mqtt", "mqtt-diagnostics"],
@@ -34,10 +32,10 @@ it.each(services)("only requests the %s service diagnostics", async (service, mo
   expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
 })
 
-it("unknown service slugs never trigger a host request", () => {
+it.each(["ilestoi", "healthwatch", "not-owned"])("retired or unknown service %s never triggers a host request", service => {
   const fetchMock = vi.fn()
   vi.stubGlobal("fetch", fetchMock)
-  render(<MemoryRouter initialEntries={["/services/not-owned"]}>
+  render(<MemoryRouter initialEntries={["/services/" + service]}>
     <Routes><Route path="/services/:serviceId" element={<ServiceDetailPage />} /></Routes>
   </MemoryRouter>)
   expect(screen.getByText(/Unknown service. No diagnostics were requested/)).toBeTruthy()

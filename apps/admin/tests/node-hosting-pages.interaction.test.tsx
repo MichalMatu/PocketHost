@@ -66,7 +66,9 @@ function setup(enabled: boolean) {
         : { ok: false, status: 404 }
     if (url === "/api/v1/node-projects/" + id + "/runtime")
       return { ok: true, status: 200, json: async () => ({ runtime: {
-        state: "running", activeRelease: release, lastGoodRelease: release,
+        state: "running", desired: "running", port: 19090,
+        healthDecision: { action: "none", reason: "ready", nextEligibleAtMs: null },
+        activeRelease: release, lastGoodRelease: release,
         previousGoodRelease: null,
         history: [{ at: "2026-11-10T01:00:00Z", action: "start", release }],
       } }) }

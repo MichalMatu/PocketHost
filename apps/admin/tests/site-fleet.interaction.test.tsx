@@ -113,6 +113,8 @@ describe("H2 browser site-manager lifecycle", () => {
       const url = String(input)
       if (url === "/api/v1/sites" && !options?.method)
         return { ok: true, json: async () => ({ sites: [current] }) }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: current }) }
       if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST") {
         expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
         current = project("running", true)
@@ -138,6 +140,8 @@ describe("H2 browser site-manager lifecycle", () => {
         if (reloaded) return { ok: false, status: 503 }
         return { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
       }
+      if (url === "/api/v1/sites/" + ID && !init?.method)
+        return { ok: true, json: async () => ({ site: project("running", true) }) }
       if (url === "/api/v1/sites/" + ID + "/start" && init?.method === "POST") {
         reloaded = true
         return { ok: true, json: async () => ({ site: project("running", true) }) }
@@ -148,7 +152,7 @@ describe("H2 browser site-manager lifecycle", () => {
     render(<SitesPage />)
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
-    await screen.findByText(/Operation acknowledged, but inventory refresh failed/)
+    await screen.findByText(/Site state was confirmed, but list refresh failed/)
     expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
   })
 
@@ -211,6 +215,8 @@ describe("H2.1 version-management UI", () => {
       const url = String(input)
       if (url === "/api/v1/sites" && !options?.method)
         return { ok: true, json: async () => ({ sites: [site] }) }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site }) }
       if (url === "/api/v1/sites/" + ID + "/releases" && !options?.method)
         return { ok: true, json: async () => ({ releases: versions }) }
       const match = new RegExp("^/api/v1/sites/" + ID + "/releases/(r-[a-f0-9]{32})/(restore|prune)$").exec(url)

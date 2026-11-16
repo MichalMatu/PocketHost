@@ -368,12 +368,13 @@ describe("Termux filesystem and administration", () => {
   it("runs selected full-home encrypted backup through fixed Restic API", async () => {
     const user = userEvent.setup()
     let initialized = false
+    const snapshot = { id: "a".repeat(64), time: "2026-11-16T10:00:00.000Z", paths: ["home"] }
     const calls = vi.fn(async (url: string, options?: RequestInit) => {
       if (options?.method === "POST") {
         initialized = true
         return { ok: true, json: async () => ({ result: { exit: 0, output: "fixture" } }) }
       }
-      if (url.includes("system-snapshots")) return { ok: true, json: async () => ({ snapshots: [] }) }
+      if (url.includes("system-snapshots")) return { ok: true, json: async () => ({ snapshots: initialized ? [snapshot] : [] }) }
       return { ok: true, json: async () => ({
         restic: { initialized, repositoryPresent: initialized, keyPresent: initialized },
       }) }
@@ -383,7 +384,7 @@ describe("Termux filesystem and administration", () => {
     render(<FullTermuxBackups detected />)
     await screen.findByText("Not initialized")
     await user.click(screen.getByRole("button", { name: "Create full backup" }))
-    await screen.findByText("Restic backup completed")
+    await screen.findByText("New encrypted backup confirmed in snapshot inventory.")
     const post = calls.mock.calls.find(call => call[1]?.method === "POST")!
     expect(JSON.parse(String(post[1]?.body))).toEqual({
       action: "restic-system", name: "backup", root: "home",
