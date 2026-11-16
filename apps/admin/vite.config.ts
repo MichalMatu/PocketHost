@@ -1494,8 +1494,10 @@ function termuxAdminApi(): Plugin {
           response.end('{"error":"intent-required"}')
           return
         }
+        let requestedAction: string | undefined
         try {
           const input = await parseBody(request)
+          requestedAction = input.action
           const result = await serialize(async () => {
             if (input.action === "package-preview") {
               if (!input.name || !["install","remove","upgrade","upgrade-all"].includes(input.name))
@@ -1697,9 +1699,22 @@ function termuxAdminApi(): Plugin {
               reportDashboardOwnedEvent("owned-backup-restored")
           }
           response.end(JSON.stringify(result))
-        } catch {
+        } catch (error) {
           response.statusCode = 409
-          response.end('{"error":"operation-failed-or-refused"}')
+          if (requestedAction === "service-create") {
+            // A fixed diagnostic only. Never expose host paths, source,
+            // stack traces, process details or arbitrary error messages.
+            const message = error instanceof Error ? error.message : ""
+            const reason = message.includes("quota reached") ? "capacity" :
+              message === "Service name or log directory already exists" ? "name-in-use" :
+              message === "Termux runtime unavailable" ? "runtime-unavailable" :
+              message === "Managed worker inventory unverified" ||
+              message === "Untrusted Termux service directory" ? "storage-unverified" :
+              "unconfirmed"
+            response.end(JSON.stringify({ error: "operation-failed-or-refused", reason }))
+          } else {
+            response.end('{"error":"operation-failed-or-refused"}')
+          }
         }
       })
     },

@@ -17,7 +17,20 @@ async function action<T>(payload: { action: string; name?: string; root?: string
     credentials: "same-origin",
     body: JSON.stringify(payload),
   })
-  if (!response.ok) throw new Error("Operation failed or was refused. No success was assumed.")
+  if (!response.ok) {
+    if (payload.action === "service-create" && response.status === 409) {
+      const result = await response.json().catch(() => null) as { reason?: string } | null
+      const hints: Record<string, string> = {
+        capacity: "Creation blocked: PocketHost worker capacity is full.",
+        "name-in-use": "Creation blocked: service name is already in use.",
+        "runtime-unavailable": "Creation blocked: required Termux runtime is unavailable.",
+        "storage-unverified": "Creation blocked: worker storage identity is unverified.",
+      }
+      const hint = result?.reason ? hints[result.reason] : undefined
+      if (hint) throw new Error(hint)
+    }
+    throw new Error("Operation failed or was refused. No success was assumed.")
+  }
   return await response.json() as T
 }
 async function inspect<T>(mode: string, location = ""): Promise<T> {
@@ -1051,8 +1064,10 @@ export function RunitServiceActions({
       } catch {
         setError("Creation acknowledged but inventory refresh failed. Verify identity before retrying.")
       }
-    } catch {
-      setError("Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
+    } catch (error) {
+      setError(error instanceof Error && error.message.startsWith("Creation blocked:")
+        ? error.message
+        : "Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
     } finally { setBusy(false) }
   }
   const autostartWorkers = services?.filter(item =>
