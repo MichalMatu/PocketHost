@@ -23,32 +23,23 @@ export default function NetworkAccessPage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const refresh = React.useCallback(async (signal?: AbortSignal) => {
+    // Never leave stale gateway controls enabled after a failed refresh.
+    setStatus(null)
+    setError(null)
     const next = await getStatus(signal)
     if (signal?.aborted) return
     setStatus(next)
     setBind((previous) => next.interfaces.some((item) => item.address === previous)
       ? previous : (next.bind ?? next.interfaces[0]?.address ?? ""))
-    setError(null)
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void getStatus(controller.signal)
-      .then((next) => {
-        if (controller.signal.aborted) return
-        setStatus(next)
-        setBind((previous) =>
-          next.interfaces.some((item) => item.address === previous)
-            ? previous
-            : (next.bind ?? next.interfaces[0]?.address ?? ""),
-        )
-        setError(null)
-      })
-      .catch(() => {
-        if (!controller.signal.aborted)
-          setError("Cannot read LAN settings from this PocketHost session.")
-      })
+    void refresh(controller.signal).catch(() => {
+      if (!controller.signal.aborted)
+        setError("Cannot read LAN settings from this PocketHost session.")
+    })
     return () => controller.abort()
-  }, [])
+  }, [refresh])
   const change = async (enabled: boolean) => {
     if (busy) return
     setBusy(true)
@@ -75,7 +66,7 @@ export default function NetworkAccessPage() {
       setStatus(observed)
     } catch {
       setError("Gateway change result unconfirmed. Inspect the current LAN state before retrying.")
-      try { setStatus(await getStatus()) } catch { /* Keep last verified state. */ }
+      try { setStatus(await getStatus()) } catch { setStatus(null) }
     } finally {
       setBusy(false)
     }
@@ -92,8 +83,11 @@ export default function NetworkAccessPage() {
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex flex-wrap items-center gap-3">
-              <Badge variant="outline"><ShieldCheck className="size-3" /> {status?.mode === "auto" ? "Private LAN auto-starts with PocketHost" : "Manual LAN startup"}</Badge>
-              <Badge variant="secondary">{status?.enabled ? "Home LAN enabled" : "Managed gateway off"}</Badge>
+              <Badge variant="outline"><ShieldCheck className="size-3" /> {!status
+                ? "LAN mode unverified"
+                : status.mode === "auto" ? "Private LAN auto-starts with PocketHost" : "Manual LAN startup"}</Badge>
+              <Badge variant="secondary">{!status
+                ? "Gateway state unverified" : status.enabled ? "Home LAN enabled" : "Managed gateway off"}</Badge>
               <Button variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Could not refresh gateway state."))}>
                 <RefreshCw className="size-4" /> Refresh
               </Button>
@@ -102,6 +96,15 @@ export default function NetworkAccessPage() {
             {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
             {status && (
               <>
+                {status.health && (
+                  <p className="text-muted-foreground text-xs" aria-label="Owned gateway observation">
+                    Owned gateway: {status.health.state}
+                    {" · Recovery count: "}{status.health.recoveryCount}
+                    {" · Startup failures: "}{status.health.startupFailures}.
+                    {status.health.lastError && <> Last issue: {status.health.lastError}.</>}
+                    {" This is a session observation, not Android boot verification."}
+                  </p>
+                )}
                 <div className="flex flex-col gap-2">
                   <label htmlFor="network-bind" className="text-sm font-medium">Phone Wi-Fi address</label>
                   <select id="network-bind" className="border-input bg-background h-10 max-w-sm rounded-md border px-3 text-sm"
