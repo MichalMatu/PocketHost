@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-14
+last_reviewed: 2026-11-17
 purpose: Exclusive Samsung host executor and private Git task/result runbook
 ---
 
@@ -52,9 +52,10 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Final guarded A8 DEV live source: `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`
-(PID 30493/start ticks 24510709, HTTP 200, protected services unchanged).
-Final A8 readback: `pockethost-a8-s4-final-readback-20261116-v1` PASS.
+from S22. Last verified A8 DEV live source: `79be0852cb204b535bfc0ce8a42a78aaf92330ea`
+(panel PID 22154/start ticks 28334582, HTTP 200, protected services unchanged).
+Latest terminal receipt: `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1` PASS, tests not run.
+[Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
 The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
 returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
 root/admin types, Node, UI. This QA head differs from live only by the fixed

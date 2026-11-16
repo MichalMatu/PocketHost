@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-16
+last_reviewed: 2026-11-17
 purpose: Short authoritative MVP stage tracker; no automatic test permission
 ---
 
@@ -70,7 +70,7 @@ Zakres fixed-template S1–S4 zaimplementowano i przeprowadzono wcześniej jeden
 - [x] **Hosting entry:** osobna strona `/hosting` z wyborem statycznej strony i aplikacji Node.js, weryfikacją niezależnych inwentarzy oraz linkami do wydania, deployów i logów.
 - [x] **Static feature gate:** wyłącznie w istniejącym PocketHost-owned DEV runit, `POCKETHOST_ENABLE_OWNED_SITE_DEV=1` i `POCKETHOST_ENABLE_USER_SITES_DEV=1`. Daje dostęp do istniejącego `/api/v1/sites`; samo włączenie nie tworzy ani nie uruchamia witryny. A8 `pockethost-a8-hosting-static-entry-fast-flow-20261116-v1`: terminal done/exit 0, guarded PASS, live `476aea22b56bc5c65d298dfc1ce1743f1977c623`, PID 21058, ticks 28227167, HTTP 200; usługi chronione bez zmian; **testy nieuruchomione**.
 - [x] **Quick HTML starter:** w `/sites` przy każdej własnej stronie działa bezpieczny edytor jednego `index.html` (32 KiB), bez ZIP, publikacja jako niezmienne wydanie przez istniejące API folder, obowiązkowy niezależny readback i wyraźna instrukcja `Edit → Publish → Start → Open`. `pockethost-a8-hosting-html-starter-fast-flow-20261116-v1`: terminal PASS, live `57a718a0fc53a1dd9cf481036275e6b7627047fc`, PID 31533, ticks 28261039, HTTP 200, protected unchanged; test UI zapisany, **NOT RUN**. Nie utworzono jeszcze żadnej witryny na A8 podczas tej operacji.
-- [x] **Statyczny przepływ podstawowy:** właściciel pokazał w przeglądarce Create → Publish HTML → Start, działający adres LAN `:18879/h2/site-...` oraz `HTTP: healthy`, PID 6619. Nie jest to QA na obecnym SHA; test aktualizacji, rollback, ZIP/folder i awarii pozostaje otwarty.
+- [x] **Static Hosting basic MVP — OWNER CONFIRMED PASS (2026-11-17):** Create → Publish HTML → Start → render strony na `:18879/h2/site-...` → ręczny `HTTP: healthy`. Site PID 6619; format metryk 56.4 MiB i 14m 9s potwierdzony na zrzucie. [Pełny checkpoint/handoff A8 Local Agent](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Aktualizacja do drugiego wydania, rollback, ZIP/folder i awarie pozostają **otwarte**.
 - [x] **Czytelne metryki witryn (2026-11-17):** wspólny format bajtów B/KiB/MiB/GiB/TiB bez zbędnych `.0`, `Uptime` przez wspólne `formatUptime` (np. 248 s → 4m 8s), lepsza hierarchia danych, skrócony release z pełnym identyfikatorem w podpowiedzi. A8 `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`: PASS, live `79be0852cb204b535bfc0ce8a42a78aaf92330ea`, PID 22154, start ticks 28334582, HTTP 200, protected unchanged, **testy nieuruchomione**.
 - [ ] **Backend Node.js:** `/projects` ma kandydatów kodu, wydania i prywatny runtime; nie jest jeszcze udostępniony do mutacji kodu przez bezhasłowy LAN. Zaprojektować kontrolę autoryzacji wdrożenia i bezpieczną publikację backendu dla przeglądarki MacBook, dopiero potem udostępnić wykonanie własnego kodu.
 - [ ] **Odbiór Hosting:** testy wyłącznie przy świeżej zgodzie na dokładny SHA i konkretny zakres; nie twierdzić, że HTTP panelu oznacza działającą stronę.
@@ -97,4 +97,4 @@ Zakres fixed-template S1–S4 zaimplementowano i przeprowadzono wcześniej jeden
 3. Jedyny konieczny dowód: terminal PASS/HOLD, SHA, PID/start ticks, podstawowe HTTP, brak zmian w chronionych usługach. Przy HOLD nie uruchamiaj automatycznych ponowień.
 4. Dokumentuj tylko aktualny status, a szczegółowe logi trzymaj w receipt/Git. Dokumentacja-only: commit bez deploy, testów, restartu i formatowania.
 
-**Następny produktowy krok:** hosting Node.js z backendem: bezpieczne autoryzowanie zmian przez LAN, wdrożenie własnego projektu, HTTP readiness, logi i rollback. Nie obchodź blokady mutacji kodu Node.js przez bezhasłowy LAN. Services i Platform pozostają jako osobne otwarte bramki odbioru; bez schedulera.
+**Następny produktowy krok:** [checkpoint A8 Local Agent](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md) → Node.js Hosting z backendem: bezpieczna autoryzacja mutacji z MacBooka, własne wydania, HTTP readiness, logi i rollback. Nie obchodź blokady bezhasłowego LAN. Services zamrożony, Platform w backlogu, **scheduler wyłączony**.

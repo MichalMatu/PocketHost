@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-15
+last_reviewed: 2026-11-17
 purpose: Smallest safe entrypoint
 ---
 
@@ -29,8 +29,8 @@ explicit consent. No automatic scheduler, SSH/WAN change or reboot.
 
 **Services IA:** Each service has a separate menu destination; the Overview only navigates. Main menu: Overview → Hosting → Services → System & Tools → Automation → Settings; Framework/CMS examples kept at the very bottom. MacBook LAN menu baseline accepted, not full-stage acceptance.
 
-**Canonical active task:** [MVP execution tracker](MVP_EXECUTION_PLAN.md): **Hosting**. Services fixed-template implementation has been frozen at READY_FOR_ACCEPTANCE, with full user/physical acceptance deferred. Platform and Boot gaps remain tracked but do not block the owner's requested Hosting sprint. First finish a real static-site publish/readback/rollback flow, then Node.js backend source/release/runtime and secure LAN publication. Do not return to speculative Services micro-hardening, rebuild unrelated infrastructure or enable a scheduler.
+**Canonical active task:** [MVP execution tracker](MVP_EXECUTION_PLAN.md): **Hosting**. Services fixed-template implementation has been frozen at READY_FOR_ACCEPTANCE, with full user/physical acceptance deferred. Platform and Boot gaps remain tracked but do not block the owner's requested Hosting sprint. Owner screenshots confirm static basic Create → Publish → Start → LAN render → HTTP healthy. Next implement Node.js backend source/release/runtime and secure MacBook LAN mutation approval; static update/rollback remains open. Resume from [2026-11-17 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not return to speculative Services micro-hardening, rebuild unrelated infrastructure or enable a scheduler.
 
 **Default workflow:** [single-pass code → deploy → verify](DEV_ITERATION.md) on the paired A8, exact-SHA/owner/health readback. **Tests are OFF in every mode by default, including stage closure.** The previous general consent to stage tests is withdrawn. Run any suite, lint, typecheck, formatter, smoke or QA **only after fresh explicit confirmation** of exact scope. The FAST FLOW deployment CLI has no test flag. Independent A8 QA is a separate manual action with exact-SHA approval; never conflate deployment health with tests. Physical reboot or protected-service changes still require separate consent. Documentation-only commits do not restart or deploy. No scheduler, Mac, Codex, Work, Actions, S22 or automatic retries.
 
-[MVP plan](MVP_EXECUTION_PLAN.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Historical A8/S22 checkpoint](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md).
+[Current A8 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md) · [MVP plan](MVP_EXECUTION_PLAN.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Historical A8/S22 checkpoint](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md).

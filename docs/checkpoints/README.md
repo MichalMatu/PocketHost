@@ -7,6 +7,8 @@ purpose: Git-backed historical evidence locations
 
 # Historical checkpoint index
 
+**Latest resume point:** [2026-11-17 static Hosting MVP + Samsung A8 Local Agent handoff](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the entire historical archive.
+
 Original contents are in commit `d801da7`; do not preload all checkpoint files.
 
 - [2026-11-05-admin-shell-termux-checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)

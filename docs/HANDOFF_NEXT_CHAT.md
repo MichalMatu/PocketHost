@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-16
+last_reviewed: 2026-11-17
 purpose: A8 development handoff with exact live SHA and QA release gate
 ---
 
@@ -14,6 +14,14 @@ purpose: A8 development handoff with exact live SHA and QA release gate
 - **Earlier A8 QA receipt (historical, not current-SHA QA):** single guarded task `pockethost-a8-dashboard-manifest-release-4716-20261115-v1` returned terminal `done`, exit 0, inner `PocketHostFastFlow PASS`, `deployment=applied`, `tests=PASS`, and **20 scoped QA checks** (source syntax, TypeScript, structure/boundaries, Node, UI, docs, lint, Markdown and format). Exact running SHA confirmed.
 - **Delivered:** adaptive Basic/Enhanced dashboard; sparse telemetry history acceptance; optional battery/sysfs fallback; dependency manifest, pinned npm QA packages and Termux-safe direct-Node tools; safe runit worker and UI regression fixes. **Not yet accepted:** whole Services S1–S4, Python execution gate, true device reboot/autostart, production readiness or optional Companion/Shizuku installation. Current GitHub `main` may move forward via docs-only commits, which do not restart DEV.
 - The previous, detailed 2026-11-14/15 A8 implementation receipts and design decisions are preserved in Git at `c09b4dc:docs/HANDOFF_NEXT_CHAT.md`. Older evidence remains in [checkpoint archive](checkpoints/README.md). Do not preload archival documents into every task.
+
+## Next-chat resume — 2026-11-17 / Samsung A8 Local Agent
+
+**Start from [complete checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md).** Owner has confirmed one static site rendered in the MacBook browser and manual `HTTP: healthy`: basic Static Hosting MVP PASS. The latest screenshot shows `56.4 MiB` memory and `14m 9s` uptime, with running site PID 6619; do not confuse this site PID with panel PID 22154. Remaining static work: update, rollback, ZIP/folder and failure behavior. Preserve that website and its data.
+
+**Execution:** GitHub Connector + existing Galaxy A8 Termux Local Agent; private `MichalMatu/local-agent:agent-control` task/result workflow, main-only source, one guarded code→deploy→verify per feature. Live panel SHA `79be0852cb204b535bfc0ce8a42a78aaf92330ea`; after this docs-only checkpoint main is ahead and **no deployment is needed**. No scheduler, Mac/S22, Work/Codex/Actions, unapproved QA, SSH/WAN or automatic retries.
+
+**Next product sprint:** Node.js Hosting; authenticated/approved LAN mutations before owned Node project import → deploy → run → HTTP readiness/logs → update/rollback. Keep the existing unauthenticated-LAN backend write denial. Services fixed-worker implementation is frozen, not fully accepted. Full detail and exact task receipt live in the checkpoint.
 
 ## Current autonomous sprint — 2026-11-16
 
