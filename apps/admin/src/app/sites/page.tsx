@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { formatBytes } from "@/lib/format-memory"
+import { formatUptime } from "@/lib/format-uptime"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, parseFleetSites, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 
@@ -65,9 +67,6 @@ function encodeBase64(bytes: Uint8Array): string {
     text += String.fromCharCode(...bytes.subarray(offset, offset + 32768))
   }
   return btoa(text)
-}
-function formatSize(bytes: number | null): string {
-  return bytes === null ? "unavailable" : (bytes / 1024).toFixed(1) + " KiB"
 }
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
@@ -276,19 +275,41 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         <div className="flex flex-wrap gap-2">
           <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
           <Badge variant="outline">127.0.0.1:{site.port}</Badge>
-          <Badge variant="outline">{site.fileCount} files · {formatSize(site.bytes)}</Badge>
+          <Badge variant="outline">{site.fileCount} files · {formatBytes(site.bytes)}</Badge>
           <Badge variant="outline">{site.releases} releases</Badge>
           {health !== null && <Badge variant="outline">HTTP: {health ? "healthy" : "unavailable"}</Badge>}
         </div>
-        <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <div><dt className="text-muted-foreground">Active release</dt>
-            <dd className="break-all font-mono text-xs">{site.activeRelease ?? "not published"}</dd></div>
-          <div><dt className="text-muted-foreground">Verified PID / ticks</dt>
-            <dd className="font-mono text-xs">{site.pid === null ? "none" : site.pid + " / " + site.startTicks}</dd></div>
-          <div><dt className="text-muted-foreground">Memory (verified child)</dt>
-            <dd>{formatSize(site.memoryBytes)}</dd></div>
-          <div><dt className="text-muted-foreground">Uptime</dt>
-            <dd>{site.uptimeSeconds === null ? "not running" : site.uptimeSeconds + " seconds"}</dd></div>
+        <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+          <div className="min-w-0 space-y-1">
+            <dt className="text-xs text-muted-foreground">Active release</dt>
+            <dd className="truncate font-mono text-sm font-medium"
+              title={site.activeRelease ?? "No release published"}>
+              {site.activeRelease ? site.activeRelease.slice(0, 12) + "…" : "Not published"}
+            </dd>
+          </div>
+          <div className="min-w-0 space-y-1">
+            <dt className="text-xs text-muted-foreground">Verified process</dt>
+            <dd className="font-mono text-sm font-medium tabular-nums">
+              {site.pid === null ? "Not running" : "PID " + site.pid}
+            </dd>
+            {site.startTicks !== null && <dd className="text-xs text-muted-foreground tabular-nums">
+              Start ticks: {site.startTicks}
+            </dd>}
+          </div>
+          <div className="min-w-0 space-y-1">
+            <dt className="text-xs text-muted-foreground">Process memory</dt>
+            <dd className="text-lg font-semibold tabular-nums">
+              {site.memoryBytes === null ? "Not measured" : formatBytes(site.memoryBytes)}
+            </dd>
+            <dd className="text-xs text-muted-foreground">Verified child process</dd>
+          </div>
+          <div className="min-w-0 space-y-1">
+            <dt className="text-xs text-muted-foreground">Uptime</dt>
+            <dd className="text-lg font-semibold tabular-nums">
+              {site.uptimeSeconds === null ? "Not running" : formatUptime(site.uptimeSeconds)}
+            </dd>
+            <dd className="text-xs text-muted-foreground">Since process start</dd>
+          </div>
         </dl>
         {site.state === "unknown" && <p role="alert" className="text-destructive text-sm">
           Process identity is uncertain. All mutations are blocked; no unverified process is signalled.
