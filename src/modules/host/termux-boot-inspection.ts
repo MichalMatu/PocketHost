@@ -5,6 +5,8 @@ import path from 'node:path';
 export type TermuxBootObservation = {
   state: 'scripts-present' | 'no-scripts' | 'unverified';
   scriptCount: number | null;
+  /** Count of trusted scripts with the owner's execute bit set, not boot proof. */
+  ownerExecutableCount: number | null;
   androidPermission: 'not-verified';
   rebootReadback: 'not-verified';
   checkedAt: string;
@@ -20,8 +22,9 @@ export function inspectTermuxBoot(): TermuxBootObservation {
   const observed = (
     state: TermuxBootObservation['state'],
     scriptCount: number | null,
+    ownerExecutableCount: number | null,
   ): TermuxBootObservation => ({
-    state, scriptCount, androidPermission: 'not-verified',
+    state, scriptCount, ownerExecutableCount, androidPermission: 'not-verified',
     rebootReadback: 'not-verified', checkedAt,
   });
   const home = os.homedir();
@@ -38,33 +41,37 @@ export function inspectTermuxBoot(): TermuxBootObservation {
     );
   };
   try {
-    if (!trusted(home)) return observed('unverified', null);
+    if (!trusted(home)) return observed('unverified', null, null);
     const config = path.join(home, '.termux');
     const boot = path.join(config, 'boot');
     try {
-      if (!trusted(config)) return observed('unverified', null);
+      if (!trusted(config)) return observed('unverified', null, null);
     } catch (error) {
       return (error as NodeJS.ErrnoException).code === 'ENOENT'
-        ? observed('no-scripts', 0) : observed('unverified', null);
+        ? observed('no-scripts', 0, 0) : observed('unverified', null, null);
     }
     try {
-      if (!trusted(boot)) return observed('unverified', null);
+      if (!trusted(boot)) return observed('unverified', null, null);
     } catch (error) {
       return (error as NodeJS.ErrnoException).code === 'ENOENT'
-        ? observed('no-scripts', 0) : observed('unverified', null);
+        ? observed('no-scripts', 0, 0) : observed('unverified', null, null);
     }
     const entries = readdirSync(boot);
-    if (entries.length > 32) return observed('unverified', null);
+    if (entries.length > 32) return observed('unverified', null, null);
+    let ownerExecutableCount = 0;
     for (const name of entries) {
       const file = lstatSync(path.join(boot, name));
       if (
         !file.isFile() || file.isSymbolicLink() ||
         file.nlink !== 1 || file.uid !== owner ||
         (file.mode & 0o022) !== 0
-      ) return observed('unverified', null);
+      ) return observed('unverified', null, null);
+      // Mode bits only: never inspect script content, disclose names, or run it.
+      if ((file.mode & 0o100) !== 0) ownerExecutableCount += 1;
     }
-    return observed(entries.length ? 'scripts-present' : 'no-scripts', entries.length);
+    return observed(entries.length ? 'scripts-present' : 'no-scripts',
+      entries.length, ownerExecutableCount);
   } catch {
-    return observed('unverified', null);
+    return observed('unverified', null, null);
   }
 }

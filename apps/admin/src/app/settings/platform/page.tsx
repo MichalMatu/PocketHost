@@ -21,6 +21,7 @@ type GitStatus = {
 type BootStatus = {
   state: "scripts-present" | "no-scripts" | "unverified"
   scriptCount: number | null
+  ownerExecutableCount: number | null
   androidPermission: "not-verified"
   rebootReadback: "not-verified"
 }
@@ -67,7 +68,18 @@ export default function PlatformPage() {
           git.scope === "running-panel-checkout" && git.credentials === "not-checked" &&
           git.remoteConnectivity === "not-checked" && git.operations === "none" ? git : null,
         boot: boot && boot.androidPermission === "not-verified" &&
-          boot.rebootReadback === "not-verified" ? boot : null,
+          boot.rebootReadback === "not-verified" &&
+          ["scripts-present", "no-scripts", "unverified"].includes(boot.state) &&
+          (boot.state === "unverified"
+            ? boot.scriptCount === null && boot.ownerExecutableCount === null
+            : Number.isSafeInteger(boot.scriptCount) &&
+              boot.scriptCount! >= 0 && boot.scriptCount! <= 32 &&
+              Number.isSafeInteger(boot.ownerExecutableCount) &&
+              boot.ownerExecutableCount! >= 0 &&
+              boot.ownerExecutableCount! <= boot.scriptCount! &&
+              (boot.state === "no-scripts"
+                ? boot.scriptCount === 0 && boot.ownerExecutableCount === 0
+                : boot.scriptCount! > 0)) ? boot : null,
         ssh: ssh && ssh.mode === "read-only" &&
           ssh.notice === "external-protected-no-lifecycle-control" ? ssh : null,
         lan: lan && typeof lan.enabled === "boolean" &&
@@ -92,7 +104,8 @@ export default function PlatformPage() {
     {
       title: "Termux:Boot",
       detail: status?.boot ? (status.boot.state === "scripts-present"
-        ? status.boot.scriptCount + " script(s) detected · reboot unverified"
+        ? status.boot.scriptCount + " script(s) · " + status.boot.ownerExecutableCount +
+          " owner-executable · reboot unverified"
         : status.boot.state === "no-scripts" ? "No scripts detected · reboot unverified"
         : "Boot configuration unverified") : "Unverified",
       url: "/services/autostart", link: "Inspect autostart",

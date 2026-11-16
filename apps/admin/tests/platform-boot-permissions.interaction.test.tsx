@@ -1,0 +1,39 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { MemoryRouter } from 'react-router-dom'
+import PlatformPage from '@/app/settings/platform/page'
+
+afterEach(() => vi.unstubAllGlobals())
+
+const boot = {
+  state: 'scripts-present',
+  scriptCount: 3,
+  ownerExecutableCount: 2,
+  androidPermission: 'not-verified',
+  rebootReadback: 'not-verified',
+  checkedAt: '2026-11-16T21:00:00.000Z',
+}
+
+describe('Platform read-only Termux:Boot mode diagnostics', () => {
+  it('shows owner-executable count without claiming Android startup', async () => {
+    const fetcher = vi.fn(async (route: string) => ({
+      ok: route.includes('mode=service-boot'),
+      json: async () => boot,
+    }))
+    vi.stubGlobal('fetch', fetcher)
+    render(<MemoryRouter><PlatformPage /></MemoryRouter>)
+    expect(await screen.findByText('3 script(s) · 2 owner-executable · reboot unverified'))
+      .toBeTruthy()
+    expect(fetcher.mock.calls.every(call => call[1]?.method !== 'POST')).toBe(true)
+  })
+
+  it('refuses impossible executable counts in an untrusted response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (route: string) => ({
+      ok: route.includes('mode=service-boot'),
+      json: async () => ({ ...boot, ownerExecutableCount: 4 }),
+    })))
+    render(<MemoryRouter><PlatformPage /></MemoryRouter>)
+    await screen.findByText('Termux:Boot')
+    expect(screen.queryByText(/3 script\(s\) · 4 owner-executable/)).toBeNull()
+  })
+})

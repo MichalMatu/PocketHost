@@ -6,6 +6,7 @@ import { RunitServiceActions } from "@/app/termux/admin-actions"
 type BootObservation = {
   state: "scripts-present" | "no-scripts" | "unverified"
   scriptCount: number | null
+  ownerExecutableCount: number | null
   androidPermission: "not-verified"
   rebootReadback: "not-verified"
   checkedAt: string
@@ -26,10 +27,16 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
       if (!response.ok) throw new Error("Boot diagnostics unavailable")
       const value = await response.json() as BootObservation
       if (!value || !["scripts-present", "no-scripts", "unverified"].includes(value.state) ||
-          (value.state === "unverified" ? value.scriptCount !== null :
-            !Number.isSafeInteger(value.scriptCount) || value.scriptCount! < 0 ||
-            value.scriptCount! > 32 ||
-            (value.state === "no-scripts" ? value.scriptCount !== 0 : value.scriptCount === 0)) ||
+          (value.state === "unverified"
+            ? value.scriptCount !== null || value.ownerExecutableCount !== null
+            : !Number.isSafeInteger(value.scriptCount) || value.scriptCount! < 0 ||
+              value.scriptCount! > 32 ||
+              !Number.isSafeInteger(value.ownerExecutableCount) ||
+              value.ownerExecutableCount! < 0 ||
+              value.ownerExecutableCount! > value.scriptCount! ||
+              (value.state === "no-scripts"
+                ? value.scriptCount !== 0 || value.ownerExecutableCount !== 0
+                : value.scriptCount === 0)) ||
           value.androidPermission !== "not-verified" ||
           value.rebootReadback !== "not-verified" ||
           !Number.isFinite(Date.parse(value.checkedAt)))
@@ -58,6 +65,12 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
         : boot.state === "no-scripts"
           ? "No local Termux:Boot scripts detected."
           : "Boot configuration cannot be safely inspected."}</p>
+      {boot.state !== "unverified" && <p>
+        Owner-executable bit set: {boot.ownerExecutableCount}/{boot.scriptCount} local script(s).
+        {boot.scriptCount! > boot.ownerExecutableCount! &&
+          " Some scripts lack the owner's execute permission."}
+        {" Mode bits do not prove that Android will execute these scripts on boot."}
+      </p>}
       <p>Android Termux:Boot installation/permission: unverified. Startup after a phone reboot: unverified.</p>
       <p>Runit autostart below records each enrolled service's desired state; it does not establish Android startup.</p>
       <p>Last observed: {new Date(boot.checkedAt).toLocaleString()} · read-only</p>
