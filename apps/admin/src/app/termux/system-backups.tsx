@@ -24,17 +24,6 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
   const [busy, setBusy] = React.useState(false)
   const [message, setMessage] = React.useState("")
   const [error, setError] = React.useState("")
-  const refresh = async (targetScope: Scope) => {
-    const result = await get<{ restic: ResticState }>("?mode=restic-status")
-    setStatus(result.restic)
-    if (result.restic.initialized) {
-      const listing = await get<{ snapshots: Snapshot[] }>("?mode=system-snapshots&scope=" + targetScope)
-      if (!Array.isArray(listing.snapshots) || listing.snapshots.length > 40 ||
-          !listing.snapshots.every(item => /^[a-f0-9]{64}$/.test(item.id)))
-        throw new Error("Invalid system backup records")
-      setRecords(listing.snapshots)
-    } else setRecords([])
-  }
   const run = async (name: "backup" | "check" | "restore" | "forget", id?: string) => {
     if (busy || !detected) return
     const prompt = name === "backup" ? "Create a local encrypted Restic backup of Termux " + scope + "?" :
