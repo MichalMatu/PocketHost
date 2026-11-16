@@ -1807,7 +1807,7 @@ export class TermuxServiceAdmin {
     const instanceId = (marker as Record<string, unknown>).instanceId;
     if (
       typeof instanceId !== 'string' ||
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId)
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(instanceId)
     )
       throw new Error('Untrusted worker instance');
     return { template, instanceId, target };
