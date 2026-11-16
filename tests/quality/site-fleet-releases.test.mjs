@@ -202,3 +202,50 @@ test('H2.1: explicitly pruning only obsolete versions frees a bounded archive sl
     await cleanup(fleet, root);
   }
 });
+
+test('H2.1: identical content has distinct served release identity after publish and rollback', async () => {
+  const { root, fleet } = await createFleet();
+  try {
+    const item = await fleet.create('Identical releases');
+    const first = await fleet.deploy(item.id, file('Unchanged homepage'));
+    assert.ok(first.activeRelease);
+    await fleet.start(item.id);
+    const read = async (url = '/') => {
+      const response = await fetch('http://127.0.0.1:' + item.port + url);
+      return {
+        code: response.status,
+        release: response.headers.get('x-pockethost-release'),
+        instance: response.headers.get('x-pockethost-instance'),
+        text: await response.text(),
+      };
+    };
+    const initial = await read();
+    assert.equal(initial.code, 200);
+    assert.equal(initial.release, first.activeRelease);
+    assert.match(initial.instance, /^[0-9a-f-]{36}$/);
+    assert.equal(await fleet.health(item.id), true);
+
+    // The HTML bytes are identical. Content-only readiness would not prove
+    // which immutable release the owned server is actually serving.
+    const second = await fleet.deploy(item.id, file('Unchanged homepage'));
+    assert.notEqual(second.activeRelease, first.activeRelease);
+    const updated = await read();
+    assert.equal(updated.code, 200);
+    assert.equal(updated.text, initial.text);
+    assert.equal(updated.release, second.activeRelease);
+    assert.equal(await fleet.health(item.id), true);
+
+    const archive = await read('/__versions/' + first.activeRelease + '/');
+    assert.equal(archive.code, 200);
+    assert.equal(archive.release, first.activeRelease);
+    assert.equal(archive.text, initial.text);
+    assert.equal((await read()).release, second.activeRelease);
+
+    const rolledBack = await fleet.rollback(item.id);
+    assert.equal(rolledBack.activeRelease, first.activeRelease);
+    assert.equal((await read()).release, first.activeRelease);
+    assert.equal(await fleet.health(item.id), true);
+  } finally {
+    await cleanup(fleet, root);
+  }
+});
