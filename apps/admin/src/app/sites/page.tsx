@@ -396,15 +396,34 @@ export default function SitesPage() {
     setCreating(true)
     setError(null)
     try {
+      let created: FleetSite
       try {
-        await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
+        created = await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
       } catch {
         setError("Create result unconfirmed. Refresh the site list before retrying.")
         return
       }
-      setName("")
-      try { await reload() } catch {
-        setError("Creation acknowledged; site list refresh failed. Refresh before retrying.")
+      try {
+        // A successful POST cannot establish creation. Independently read
+        // the complete owned inventory and attest the exact new site.
+        const observed = await readSites()
+        const matching = observed.filter(site => site.id === created.id)
+        if (matching.length !== 1 || matching[0]?.name !== name.trim() ||
+            matching[0].kind !== "static-site" ||
+            matching[0].state !== "stopped" ||
+            matching[0].activeRelease !== null ||
+            matching[0].previousRelease !== null ||
+            matching[0].pid !== null ||
+            matching[0].canRollback ||
+            created.id !== matching[0].id ||
+            created.name !== matching[0].name ||
+            created.port !== matching[0].port ||
+            created.state !== matching[0].state)
+          throw new Error("create-readback-mismatch")
+        setSites(observed)
+        setName("")
+      } catch {
+        setError("Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
   }
