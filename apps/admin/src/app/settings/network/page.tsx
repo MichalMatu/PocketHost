@@ -64,7 +64,15 @@ export default function NetworkAccessPage() {
       })
       if (!response.ok) throw new Error("Gateway could not be changed. An older PocketHost gateway may already own these ports.")
       const value: unknown = await response.json()
-      setStatus(parseNetworkAccessStatus(value))
+      const acknowledged = parseNetworkAccessStatus(value)
+      const observed = await getStatus()
+      // A successful POST is not proof that the owned gateway retained its
+      // requested bind. Read back the independent current session state.
+      const matches = (state: NetworkAccessStatus) =>
+        state.enabled === enabled && (enabled ? state.bind === bind : state.bind === null)
+      if (!matches(acknowledged) || !matches(observed))
+        throw new Error("LAN gateway state did not match its requested policy")
+      setStatus(observed)
     } catch {
       setError("Gateway change result unconfirmed. Inspect the current LAN state before retrying.")
       try { setStatus(await getStatus()) } catch { /* Keep last verified state. */ }
