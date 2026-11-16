@@ -376,29 +376,57 @@ export function RunitHealthPanel() {
       // The server independently re-attests ownership and the retry budget.
       const before = await getJson<RecoveryReview>(
         "?mode=service-recovery&name=" + encodeURIComponent(serviceName))
-      if (before.name !== serviceName || before.template !== recovery.template ||
+      if (!before || before.name !== serviceName ||
+          before.template !== recovery.template ||
           before.action !== "start" || before.observed !== "stopped" ||
-          before.attempts !== recovery.attempts || before.maxAttempts !== recovery.maxAttempts)
+          !Number.isSafeInteger(before.attempts) ||
+          before.attempts !== recovery.attempts ||
+          before.maxAttempts !== 2 || before.attempts >= before.maxAttempts ||
+          !Number.isFinite(Date.parse(before.checkedAt)))
         throw new Error("Recovery review changed")
       const outcome = await postJson<{
         requested: true
+        result: { exit: number; output: string }
         review: RecoveryReview
       }>({ action: "service-recover", name: "once", path: serviceName })
-      if (outcome.requested !== true || outcome.review?.name !== serviceName ||
-          outcome.review.template !== recovery.template ||
-          outcome.review.attempts <= before.attempts)
-        throw new Error("Unconfirmed recovery receipt")
-      setRecovery(outcome.review)
+      // The budget is consumed before sv up. Both its exact increment and
+      // the successful command receipt must be proven; neither alone suffices.
+      if (!outcome || outcome.requested !== true ||
+          outcome.result?.exit !== 0 ||
+          typeof outcome.result.output !== "string" ||
+          outcome.result.output.length > 12000 ||
+          outcome.review?.name !== serviceName ||
+          outcome.review.template !== before.template ||
+          outcome.review.attempts !== before.attempts + 1 ||
+          outcome.review.maxAttempts !== before.maxAttempts ||
+          !Number.isFinite(Date.parse(outcome.review.checkedAt)))
+        throw new Error("Unconfirmed recovery command receipt")
+      const after = await getJson<RecoveryReview>(
+        "?mode=service-recovery&name=" + encodeURIComponent(serviceName))
+      if (!after || after.name !== serviceName ||
+          after.template !== before.template ||
+          after.readiness !== "not-verified" ||
+          !["running", "stopped", "unknown"].includes(after.observed) ||
+          !["start", "none", "blocked"].includes(after.action) ||
+          !Number.isSafeInteger(after.attempts) ||
+          after.attempts !== before.attempts + 1 ||
+          after.maxAttempts !== before.maxAttempts ||
+          !Number.isFinite(Date.parse(after.checkedAt)))
+        throw new Error("Recovery budget readback unconfirmed")
       // One on-demand observation after the command. Never poll or infer
       // application readiness from a runit process.
       const observed = await getJson<RunitHealth>(
         "?mode=service-health&name=" + encodeURIComponent(serviceName))
-      if (observed.name !== serviceName || observed.identity !== "verified" ||
+      if (!observed || observed.name !== serviceName ||
+          observed.identity !== "verified" ||
           observed.readiness !== "not-verified" ||
-          !["running", "stopped", "unknown"].includes(observed.observed))
+          !["running", "stopped", "unknown"].includes(observed.observed) ||
+          !validProcess(observed.process, observed.observed) ||
+          !Number.isFinite(Date.parse(observed.checkedAt)))
         throw new Error("Recovery state readback untrusted")
+      setRecovery(after)
       setReadback(observed)
-      setNotice(serviceName + ": one recovery attempt recorded; runit " +
+      setNotice(serviceName + ": one recovery attempt recorded and independently verified; runit " +
         observed.observed + ". Application readiness unverified.")
     } catch {
       setRecovery(null)
