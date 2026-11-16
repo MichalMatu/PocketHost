@@ -34,10 +34,10 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 ## Current Samsung target (A8 installed)
 
 **Samsung Galaxy A8 only** for PocketHost execution. Latest verified live
-DEV SHA: `b7721b2c71bf34128dc607e2df40c6cebc73444f`, PID **9258**, HTTP **200**, owned panel/watch and
+DEV SHA: `476aea22b56bc5c65d298dfc1ce1743f1977c623`, PID **21058**, HTTP **200**, owned panel/watch and
 independent Local Agent running; protected services unchanged.
 Terminal FAST FLOW receipt:
-`pockethost-a8-platform-boot-executable-diagnostics-fast-flow-20261116-v1`
+`pockethost-a8-hosting-static-entry-fast-flow-20261116-v1`
 (done, exit 0, PASS). Exact current source differs from the last manually
 approved **7/7 QA** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`.
 **No QA, lint, typecheck, formatting or smoke suite was run on the newer SHA.**
@@ -56,4 +56,4 @@ See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
 
 ## MVP stage acceptance
 
-Follow [the canonical plan and tracker](docs/MVP_EXECUTION_PLAN.md) in order: Services → Platform → Hosting → stabilization. Each stage needs exact-SHA terminal deployment receipt, read-only owner/HTTP/LAN evidence, concise report and explicit owner acceptance. **Tests are not automatically triggered at stage completion**; report TESTS NOT RUN and ask the owner for a separately scoped test authorization if test evidence is required for acceptance. READY_FOR_ACCEPTANCE is not ACCEPTED. Check off only proven work. Docs-only changes never restart the panel.
+Follow [the canonical plan and tracker](docs/MVP_EXECUTION_PLAN.md). Owner prioritization as of 2026-11-16: Services fixed-worker implementation is frozen at READY_FOR_ACCEPTANCE (remaining physical acceptance evidence recorded), Platform gaps are deferred, **Hosting static and Node is the active feature sprint**, followed by stabilization. Each stage needs exact-SHA terminal deployment receipt, read-only owner/HTTP/LAN evidence, concise report and explicit owner acceptance. **Tests are not automatically triggered at stage completion**; report TESTS NOT RUN and ask the owner for a separately scoped test authorization if test evidence is required for acceptance. READY_FOR_ACCEPTANCE is not ACCEPTED. Check off only proven work. Docs-only changes never restart the panel.

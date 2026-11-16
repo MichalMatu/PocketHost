@@ -12,9 +12,9 @@ Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
 **Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
 
 **A8 is installed and running.** Latest guarded live PocketHost DEV source
-`b7721b2c71bf34128dc607e2df40c6cebc73444f`: FAST FLOW **PASS**, HTTP 200, PID **9258**,
+`476aea22b56bc5c65d298dfc1ce1743f1977c623`: FAST FLOW **PASS**, HTTP 200, PID **21058**,
 protected services unchanged; immutable receipt
-`pockethost-a8-platform-boot-executable-diagnostics-fast-flow-20261116-v1`.
+`pockethost-a8-hosting-static-entry-fast-flow-20261116-v1`.
 One fixed-template worker completed the physical S1–S4 lifecycle PASS,
 but custom code, reboot/Termux:Boot and generic HTTP readiness remain
 unaccepted. Platform status, static Hosting creation readback, exact-release HTTP
@@ -29,7 +29,7 @@ explicit consent. No automatic scheduler, SSH/WAN change or reboot.
 
 **Services IA:** Each service has a separate menu destination; the Overview only navigates. Main menu: Overview → Hosting → Services → System & Tools → Automation → Settings; Framework/CMS examples kept at the very bottom. MacBook LAN menu baseline accepted, not full-stage acceptance.
 
-**Canonical next task:** [MVP execution tracker](MVP_EXECUTION_PLAN.md) determines task order and completion checkboxes. Finish **1. Services → 2. Platform → 3. Hosting → 4. MVP stabilization**, starting with **S1** (generic verified service enrollment). Do not build more half-finished skeletons.
+**Canonical active task:** [MVP execution tracker](MVP_EXECUTION_PLAN.md): **Hosting**. Services fixed-template implementation has been frozen at READY_FOR_ACCEPTANCE, with full user/physical acceptance deferred. Platform and Boot gaps remain tracked but do not block the owner's requested Hosting sprint. First finish a real static-site publish/readback/rollback flow, then Node.js backend source/release/runtime and secure LAN publication. Do not return to speculative Services micro-hardening, rebuild unrelated infrastructure or enable a scheduler.
 
 **Default workflow:** [single-pass code → deploy → verify](DEV_ITERATION.md) on the paired A8, exact-SHA/owner/health readback. **Tests are OFF in every mode by default, including stage closure.** The previous general consent to stage tests is withdrawn. Run any suite, lint, typecheck, formatter, smoke or QA **only after fresh explicit confirmation** of exact scope. The FAST FLOW deployment CLI has no test flag. Independent A8 QA is a separate manual action with exact-SHA approval; never conflate deployment health with tests. Physical reboot or protected-service changes still require separate consent. Documentation-only commits do not restart or deploy. No scheduler, Mac, Codex, Work, Actions, S22 or automatic retries.
 
