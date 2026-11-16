@@ -34,10 +34,10 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 ## Current Samsung target (A8 installed)
 
 **Samsung Galaxy A8 only** for PocketHost execution. Latest verified live
-DEV SHA: `3dbba591149dd7250cd5c956f3998170120eb57b`, PID **27923**, HTTP **200**, owned panel/watch and
+DEV SHA: `70e3d9523d0d0efdd0d50887043478caa8494983`, PID **16799**, HTTP **200**, owned panel/watch and
 independent Local Agent running; protected services unchanged.
 Terminal FAST FLOW receipt:
-`pockethost-a8-runit-command-receipt-fast-flow-20261116-v1`
+`pockethost-a8-inventory-failclosed-fast-flow-20261116-v1`
 (done, exit 0, PASS). Exact current source differs from the last manually
 approved **7/7 QA** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`.
 **No QA, lint, typecheck, formatting or smoke suite was run on the newer SHA.**
