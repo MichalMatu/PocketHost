@@ -433,8 +433,7 @@ export class SiteFleetHost {
     return this.lock(async () => {
       const item = this.record(id);
       const currentState = state(item, this.site(id));
-      if (currentState === 'unknown')
-        throw new Error('Process identity uncertain; restore denied');
+      if (currentState === 'unknown') throw new Error('Process identity uncertain; restore denied');
       if (!RELEASE.test(release)) throw new RangeError('Invalid release identifier');
       if (release === item.activeRelease) throw new RangeError('Release is already active');
       requireRelease(this.site(id), release);
@@ -620,7 +619,9 @@ export class SiteFleetHost {
       return this.inspect(id);
     });
   }
-  private releaseState(item: RecordOnDisk): Pick<RecordOnDisk, 'activeRelease' | 'previousRelease' | 'history'> {
+  private releaseState(
+    item: RecordOnDisk,
+  ): Pick<RecordOnDisk, 'activeRelease' | 'previousRelease' | 'history'> {
     return {
       activeRelease: item.activeRelease,
       previousRelease: item.previousRelease,
@@ -661,7 +662,8 @@ export class SiteFleetHost {
         result.headers.get('x-pockethost-instance') !== item.instance ||
         result.headers.get('x-pockethost-release') !== item.activeRelease ||
         result.headers.get('content-length') !== String(expected.length)
-      ) return false;
+      )
+        return false;
       const received = Buffer.from(await result.arrayBuffer());
       return received.equals(expected);
     } catch {
