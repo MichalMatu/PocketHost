@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -6,6 +7,9 @@ type VerifiedService = {
   name: string
   registered: boolean
   protected: boolean
+  control: "standalone" | "delegated" | "read-only"
+  identity: "verified" | "unregistered" | "legacy" | "changed" | "archive-conflict" | "reserved"
+  identityReason: string
   template?: "heartbeat-worker-v1" | "python-heartbeat-v1" | "python-source-v1" | "node-source-v1"
 }
 type RecoveryReview = {
@@ -135,6 +139,11 @@ export function RunitHealthPanel() {
           serviceName.test(service.name) &&
           typeof service.registered === "boolean" &&
           typeof service.protected === "boolean" &&
+          ["standalone", "delegated", "read-only"].includes(service.control) &&
+          ["verified", "unregistered", "legacy", "changed", "archive-conflict",
+           "reserved"].includes(service.identity) &&
+          typeof service.identityReason === "string" &&
+          service.identityReason.length < 96 &&
           (service.template === undefined ||
             service.template === "heartbeat-worker-v1" ||
             service.template === "python-heartbeat-v1" ||
@@ -142,8 +151,14 @@ export function RunitHealthPanel() {
             service.template === "node-source-v1"))) {
       throw new Error("Invalid service inventory")
     }
+    // Delegated/project-owned and unverified units never inherit S4 worker
+    // controls from a merely registered or process-running service.
     setServices(result.services.filter(service =>
-      service.registered && !service.protected))
+      service.registered && !service.protected &&
+      service.control === "standalone" &&
+      service.identity === "verified" &&
+      service.identityReason === "run-sha-attested" &&
+      service.template !== undefined))
   }, [])
 
   React.useEffect(() => {
@@ -198,6 +213,9 @@ export function RunitHealthPanel() {
 
   const inspect = async (service: VerifiedService) => {
     if (busy || !service.registered || service.protected ||
+        service.control !== "standalone" ||
+        service.identity !== "verified" ||
+        service.identityReason !== "run-sha-attested" ||
         !serviceName.test(service.name)) return
     setBusy(service.name)
     setError(null)
@@ -506,9 +524,15 @@ export function RunitHealthPanel() {
     {error && <p role="alert" className="text-xs">{error}</p>}
     {notice && <p role="status" className="text-xs">{notice}</p>}
     {services === null && !error && <p className="text-xs text-muted-foreground">Loading verified services…</p>}
-    {services?.length === 0 && <p className="text-xs text-muted-foreground">
-      No verified runit services to inspect. Add a PocketHost-owned service under Runit services.
-    </p>}
+    {services?.length === 0 && <div className="flex flex-wrap items-center gap-3 rounded-md border p-3">
+      <p className="text-xs text-muted-foreground">
+        No verified standalone workers. Create a stopped PocketHost-owned worker
+        in Runit services, then return here for manual Health and Recovery.
+      </p>
+      <Button size="sm" variant="outline" render={<Link to="/services/runit" />}>
+        Create standalone worker
+      </Button>
+    </div>}
     {services?.map(service => <div key={service.name}
       className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
       <span className="text-sm">{service.name}</span>

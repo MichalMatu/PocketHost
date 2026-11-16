@@ -43,7 +43,8 @@ describe('S4 one-shot recovery command receipt', () => {
             ? health
             : { services: [{
                 name: 'fixed-worker', registered: true, protected: false,
-                template: 'heartbeat-worker-v1',
+                control: 'standalone', identity: 'verified',
+                identityReason: 'run-sha-attested', template: 'heartbeat-worker-v1',
               }] },
     }));
     vi.stubGlobal('fetch', requests);

@@ -38,7 +38,8 @@ describe('S4 heartbeat policy receipt', () => {
           : {
               services: [{
                 name: 'sample-worker', registered: true, protected: false,
-                template: 'heartbeat-worker-v1',
+                control: 'standalone', identity: 'verified',
+                identityReason: 'run-sha-attested', template: 'heartbeat-worker-v1',
               }],
             },
     }));
