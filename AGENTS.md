@@ -34,10 +34,10 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 ## Current Samsung target (A8 installed)
 
 **Samsung Galaxy A8 only** for PocketHost execution. Latest verified live
-DEV SHA: `64c92f3b825df015095bea041fbb529ed1e7d7fb`, PID **25555**, HTTP **200**, owned panel/watch and
+DEV SHA: `eff74e52b0c73b0a43c3c1fd96244f8fbe3d2819`, PID **27589**, HTTP **200**, owned panel/watch and
 independent Local Agent running; protected services unchanged.
 Terminal FAST FLOW receipt:
-`pockethost-a8-stabilization-restic-readback-fast-flow-20261116-v1`
+`pockethost-a8-hosting-release-content-gate-fast-flow-20261116-v1`
 (done, exit 0, PASS). Exact current source differs from the last manually
 approved **7/7 QA** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`.
 **No QA, lint, typecheck, formatting or smoke suite was run on the newer SHA.**
@@ -47,8 +47,10 @@ Health / Logs / Recovery review → Stop → Archive → Restore → Retire on A
 (receipt `pockethost-a8-s1-s4-complete-owned-flow-396058d2-20261116-v1`).
 S3 Android startup after reboot, arbitrary source execution, generic
 hosting release/rollback and full Backup → Restore are not physically accepted.
-Platform settings readback, Hosting static release readback, and Restic
-UI receipt validation are deployed but not independently QA-tested.
+Platform settings readback, Hosting static exact-create readback, live release content
+readiness/revert gates, and Restic UI receipt validation are deployed but not
+independently QA-tested. End-to-end Hosting create/deploy/update/rollback still
+awaits explicit owner-authorized physical acceptance.
 No standing scheduler, reboot, protected SSH, WAN or S22 changes.
 See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
 

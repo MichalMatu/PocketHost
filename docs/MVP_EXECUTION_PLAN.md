@@ -21,7 +21,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 - [x] PocketHost DEV na Samsung Galaxy A8 przez Termux/runit; MacBook otwiera panel po prywatnym LAN; menu Services ma osobne strony.
 - [x] Dynamiczny Host inventory, RAM/dysk/uptime, Dashboard Basic/Enhanced według obecności Companion/Shizuku, monitoring i odczyty usług, czytelne GiB oraz dni/godziny.
-- [x] Zweryfikowany FAST FLOW bez testów. **Live A8 `64c92f3b825df015095bea041fbb529ed1e7d7fb`** (PASS, PID 25555, HTTP 200, usługi chronione bez zmian), receipt `pockethost-a8-stabilization-restic-readback-fast-flow-20261116-v1`. Ostatnie QA 7/7 dotyczy starszego źródła `c0bf0218`; **aktualnej wersji nie testowano**.
+- [x] Zweryfikowany FAST FLOW bez testów. **Live A8 `eff74e52b0c73b0a43c3c1fd96244f8fbe3d2819`** (PASS, PID 27589, HTTP 200, usługi chronione bez zmian), receipt `pockethost-a8-hosting-release-content-gate-fast-flow-20261116-v1`. Ostatnie QA 7/7 dotyczy starszego źródła `c0bf0218`; **aktualnej wersji nie testowano**.
 - [ ] **Niepotwierdzone:** pełny odbiór Services, realny reboot/Termux:Boot, wszystkie interakcje z własnym workerem, wykonywanie własnego Python. HTTP 200 i SHA nie dowodzą ich sprawności.
 
 ## Sprint 2026-11-16 — potwierdzone wyniki i granice
@@ -29,8 +29,9 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 - **Services S1–S4, własny fixed worker:** `pockethost-a8-s1-s4-complete-owned-flow-396058d2-20261116-v1` — terminal PASS dla utworzenia, rejestracji, startu, Health, logów, review recovery, stop, archiwum, restore i retire. Własna jednostka wycofana; obce usługi bez zmian. **Nie** dowodzi autostartu po reboot ani bezpiecznego uruchamiania kodu użytkownika.
 - **Platform:** poprawiona niezależna weryfikacja LAN po zmianie, widok **Settings → Platform** oraz bezpieczny read-only status Git (bez haseł, tokenów i sieciowego fetch). `pockethost-a8-platform-git-overview-fast-flow-20261116-v1` PASS. Konfiguracja SSH i fizyczny reboot nadal nieodebrane.
 - **Hosting:** statyczne deploy/start/stop/rollback/restore/prune wymagają odczytu dokładnej strony po akcji i zgodności release/state przed komunikatem sukcesu. `pockethost-a8-hosting-static-exact-readback-fast-flow-20261116-v1` PASS; brak fizycznego odbioru całego procesu H1–H4.
+- **Hosting — kolejny zakres:** Create potwierdza nową stronę w niezależnym inwentarzu; działające deploy, restore i rollback potwierdzają HTTP 200, właściciela oraz identyczną zawartość aktywnego `index.html`. Nieudana weryfikacja przywraca poprzedni znacznik wydania. `pockethost-a8-hosting-create-exact-readback-fast-flow-20261116-v1` i `pockethost-a8-hosting-release-content-gate-fast-flow-20261116-v1` — FAST FLOW PASS, **TESTS NOT RUN**, bez fizycznej publikacji strony.
 - **Stabilizacja:** Restic UI weryfikuje kody wyniku, listę snapshotów i izolowane staging po Restore. `pockethost-a8-stabilization-restic-readback-fast-flow-20261116-v1` PASS. Realne operacje Backup/Restore **nie były uruchamiane**.
-- Wszystkie wdrożenia: kod → wdrożenie → operational readback, exact SHA / PID / HTTP, usługi chronione bez zmian; **TESTS NOT RUN** na `64c92f3b825df015095bea041fbb529ed1e7d7fb`. Brak schedulera, SSH, WAN i restartu urządzenia. Etapy pozostają **IN_PROGRESS**, żaden nie jest **ACCEPTED**.
+- Wszystkie wdrożenia: kod → wdrożenie → operational readback, exact SHA / PID / HTTP, usługi chronione bez zmian; **TESTS NOT RUN** na `eff74e52b0c73b0a43c3c1fd96244f8fbe3d2819`. Brak schedulera, SSH, WAN i restartu urządzenia. Etapy pozostają **IN_PROGRESS**, żaden nie jest **ACCEPTED**.
 
 ## 1. Services — IN_PROGRESS (częściowo odebrany fizycznie)
 
