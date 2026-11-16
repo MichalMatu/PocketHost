@@ -48,7 +48,6 @@ Agent history is on another machine and **not** claimed by this panel.
 Independent dead-process detection and off-page notification remain an
 uninstalled, separately qualified capability.
 
-
 ## Current installation selection: Galaxy A8
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution. Get exact private host and installation IDs from an authenticated A8 task/result, never use S22 identities. A8 Node/npm, isolated PocketHost checkout, owned runit panel and watch were installed with terminal PASS on 14 November 2026; guarded FAST FLOW updates passed. Latest confirmed live panel SHA: `ceb7f07b96b15f41fd42f91b80a0e9a7364b573e` (confirmed after rollback 2026-11-16, HTTP 200, PID 19023, tests not run; private task `pockethost-a8-rollback-readback-20261116-v2`); HTTP readiness source `9bf224dc1b47fe9cd94be733690bb4bc137a9227` did **not** deploy and is on HOLD. GitHub `main` may advance for docs-only changes without deployment. [Active handoff](HANDOFF_NEXT_CHAT.md).
