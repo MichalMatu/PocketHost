@@ -357,6 +357,42 @@ describe('H3 runit service enrollment UI', () => {
     ]);
     expect(actions.every((action: { path: string }) => action.path === 'site-worker')).toBe(true);
   });
+
+  it('refuses lifecycle success without a confirmed runit command receipt', async () => {
+    const user = userEvent.setup();
+    const requests = vi.fn(async (_url: string, options?: RequestInit) => {
+      if (options?.method === 'POST') {
+        return {
+          ok: true,
+          json: async () => ({ changed: false, result: { exit: 0, output: '' } }),
+        };
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          archived: [],
+          services: [{
+            name: 'receipt-worker',
+            registered: true,
+            protected: false,
+            control: 'standalone',
+            identity: 'verified',
+            identityReason: 'run-sha-attested',
+            template: 'heartbeat-worker-v1',
+            state: 'stopped',
+            enabled: false,
+          }],
+        }),
+      };
+    });
+    vi.stubGlobal('fetch', requests);
+    vi.stubGlobal('confirm', vi.fn(() => true));
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>);
+    await screen.findByText('receipt-worker');
+    await user.click(screen.getByRole('button', { name: 'Start' }));
+    expect((await screen.findByRole('alert')).textContent).toContain('Service result unconfirmed');
+    expect(screen.queryByText(/runit start confirmed/)).toBeNull();
+  });
 });
 
 describe('H3 unified package inventory', () => {
