@@ -189,6 +189,7 @@ describe("H3 runit service enrollment UI", () => {
             action: "service-create", name: "heartbeat-worker-v1", path: "site-worker",
           })
           created = true
+          return { ok: true, json: async () => ({ changed: true, name: "site-worker", template: "heartbeat-worker-v1" }) }
         } else {
           expect(body).toEqual({
             action: "service", name: "start", path: "site-worker",
@@ -208,6 +209,7 @@ describe("H3 runit service enrollment UI", () => {
           ...(created ? [{
             name: "site-worker", registered: true, protected: false,
             control: "standalone", identity: "verified",
+            identityReason: "run-sha-attested",
             template: "heartbeat-worker-v1",
             state: running ? "running" : "stopped", enabled: false,
           }] : []),
@@ -226,7 +228,7 @@ describe("H3 runit service enrollment UI", () => {
     await screen.findByText("site-worker")
     expect(screen.getByText("Standalone · attested")).toBeTruthy()
     await user.click(screen.getByRole("button", { name: "Start" }))
-    await screen.findByText(/site-worker: start acknowledged/)
+    await screen.findByText(/site-worker: runit start confirmed running/)
     const actions = requests.mock.calls.filter((call: [string, RequestInit?]) => call[1]?.method === "POST")
       .map((call: [string, RequestInit?]) => JSON.parse(String(call[1]?.body)))
     expect(actions.map((action: { action: string }) => action.action))
