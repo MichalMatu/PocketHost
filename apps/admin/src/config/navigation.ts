@@ -23,8 +23,9 @@ export const navGroups = [
   {
     label: "Hosting",
     items: [
-      { title: "Websites", url: "/sites", icon: Globe2 },
-      { title: "Projects", url: "/projects", icon: FolderOpen },
+      { title: "Hosting overview", url: "/hosting", icon: ServerCog },
+      { title: "Static websites", url: "/sites", icon: Globe2 },
+      { title: "Node.js applications", url: "/projects", icon: FolderOpen },
       { title: "Deployments", url: "/deployments", icon: History },
       { title: "Project logs", url: "/runtime-logs", icon: ScrollText },
     ],

@@ -48,6 +48,7 @@ export const routes: RouteObject[] = [
   { path: "/agents", lazy: page(() => import("@/app/termux/agents-page")) },
   // PocketHost-owned test site; opt-in DEV-only actions (no external service controls)
   { path: "/owned-site", lazy: page(() => import("@/app/owned-site/page")) },
+  { path: "/hosting", lazy: page(() => import("@/app/hosting/page")) },
   { path: "/sites", lazy: page(() => import("@/app/sites/page")) },
   { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
   { path: "/projects", lazy: page(() => import("@/app/projects/page")) },

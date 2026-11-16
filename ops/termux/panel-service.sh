@@ -26,6 +26,13 @@ case "${1:-}" in
     # This process owns only PocketHost's loopback Vite server. The existing
     # Vite integration restores its Wi-Fi LAN gateway when the network returns.
     export POCKETHOST_LAN_AUTOSTART=1
+    # Owner-requested H2 static Hosting on the existing trusted LAN DEV panel.
+    # This only activates PocketHost-owned bounded site APIs. No site is
+    # created, published, or started by enabling the feature.
+    export POCKETHOST_ENABLE_OWNED_SITE_DEV=1
+    export POCKETHOST_ENABLE_USER_SITES_DEV=1
+    # Node source/runtime execution remains separately gated. The LAN gateway
+    # cannot authorize custom Node source mutations without authentication.
     # Runit directly execs Vite; update only the verified prior PocketHost
     # owner markers to this same PID/start tick, never adopt a live outsider.
     "$PREFIX/bin/node" "$root/ops/termux/panel-owner.mjs" "$root" "$$" || exit 111
