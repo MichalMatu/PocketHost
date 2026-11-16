@@ -358,6 +358,70 @@ describe('H3 runit service enrollment UI', () => {
     expect(actions.every((action: { path: string }) => action.path === 'site-worker')).toBe(true);
   });
 
+  it('guides empty Services into the stopped-worker creator without sending a command', async () => {
+    const user = userEvent.setup();
+    const requests = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        archived: [],
+        services: [
+          { name: 'pockethost-panel', registered: false, protected: true,
+            control: 'read-only', identity: 'reserved', state: 'running', enabled: true },
+        ],
+      }),
+    }));
+    vi.stubGlobal('fetch', requests);
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>);
+    await screen.findByText('No standalone workers yet');
+    await user.click(screen.getByRole('button', { name: 'Create standalone worker' }));
+    expect(screen.getByLabelText('Add standalone service')).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Create stopped service' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(requests.mock.calls.every(call => call[1]?.method !== 'POST')).toBe(true);
+  });
+
+  it('blocks the worker creator when a previously verified inventory becomes unavailable', async () => {
+    const user = userEvent.setup();
+    let fail = false;
+    const requests = vi.fn(async () => {
+      if (fail) throw new Error('Inventory unavailable');
+      return { ok: true, json: async () => ({ archived: [], services: [] }) };
+    });
+    vi.stubGlobal('fetch', requests);
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>);
+    await screen.findByText('No standalone workers yet');
+    await user.click(screen.getByRole('button', { name: 'Create standalone worker' }));
+    await user.type(screen.getByRole('textbox', { name: 'New service name' }), 'safe-worker');
+    expect((screen.getByRole('button', { name: 'Create stopped service' }) as HTMLButtonElement).disabled).toBe(false);
+    fail = true;
+    await user.click(screen.getByRole('button', { name: 'Refresh services' }));
+    await screen.findByText('Runit services unavailable');
+    expect((screen.getByRole('button', { name: 'Create stopped service' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/Service inventory unavailable/)).toBeTruthy();
+    expect(requests.mock.calls.every(call => call[1]?.method !== 'POST')).toBe(true);
+  });
+
+  it('blocks duplicate or archived worker names before a create request', async () => {
+    const user = userEvent.setup();
+    const requests = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        archived: [{ name: 'old-worker', template: 'heartbeat-worker-v1', identity: 'restorable' }],
+        services: [{ name: 'live-worker', registered: true, protected: false,
+          control: 'standalone', identity: 'verified', state: 'stopped',
+          identityReason: 'run-sha-attested', enabled: false, template: 'heartbeat-worker-v1' }],
+      }),
+    }));
+    vi.stubGlobal('fetch', requests);
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>);
+    await screen.findByText('live-worker');
+    await user.click(screen.getByRole('button', { name: 'Add Service' }));
+    const input = screen.getByRole('textbox', { name: 'New service name' });
+    await user.type(input, 'old-worker');
+    expect(screen.getByText(/already exists or is archived/)).toBeTruthy();
+    expect((screen.getByRole('button', { name: 'Create stopped service' }) as HTMLButtonElement).disabled).toBe(true);
+    expect(requests.mock.calls.every(call => call[1]?.method !== 'POST')).toBe(true);
+  });
+
   it('revokes stale lifecycle controls when the service inventory refresh fails', async () => {
     const user = userEvent.setup();
     let unavailable = false;

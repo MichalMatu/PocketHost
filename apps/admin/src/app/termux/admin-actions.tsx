@@ -1046,7 +1046,12 @@ export function RunitServiceActions({
   const createWorker = async () => {
     const name = workerName.trim()
     const custom = workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1"
-    if (busy || !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
+    // A verified inventory is required even to create a new worker. A failed
+    // refresh must never leave an old creator form authorized to submit.
+    if (busy || !services ||
+        services.some(item => item.name === name) ||
+        archived.some(item => item.name === name) ||
+        !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
         (custom && (!pythonSource.trim() ||
           new Blob([pythonSource]).size > 32 * 1024)) ||
       !window.confirm(custom
@@ -1244,7 +1249,8 @@ export function RunitServiceActions({
         <p className="text-muted-foreground text-xs">
           Standalone workers need no Project. Only PocketHost-created, attested services can be managed.
         </p>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button size="sm" variant="outline"
+          disabled={busy || (!creatorOpen && !services)}
           onClick={() => setCreatorOpen(open => !open)}>
           {creatorOpen ? "Close creator" : "Add Service"}
         </Button>
@@ -1293,7 +1299,10 @@ export function RunitServiceActions({
           <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}
             value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
-          <Button size="sm" disabled={busy || !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
+          <Button size="sm" disabled={busy || !services ||
+              services.some(item => item.name === workerName) ||
+              archived.some(item => item.name === workerName) ||
+              !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
               ((workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1") &&
                 (!pythonSource.trim() || new Blob([pythonSource]).size > 32 * 1024))}
             onClick={() => void createWorker()}>
@@ -1305,6 +1314,15 @@ export function RunitServiceActions({
           Names must be unique and 2–64 characters: lowercase letters, digits and hyphens.
           Creating a service never executes staged source or enables autostart.
         </p>
+        {services && workerName &&
+          (services.some(item => item.name === workerName) ||
+            archived.some(item => item.name === workerName)) &&
+          <p role="alert" className="text-destructive text-xs">
+            Service name already exists or is archived. Choose a different name.
+          </p>}
+        {!services && <p role="status" className="text-muted-foreground text-xs">
+          Service inventory unavailable. Refresh services before creating a worker.
+        </p>}
       </div>}
     </>}
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
@@ -1320,15 +1338,25 @@ export function RunitServiceActions({
     </div>}
     {mode === "lifecycle" && services && counts?.managed === 0 && (
       <div className="space-y-2 rounded-md border p-3">
-        <p className="text-sm font-medium">No attested managed services yet</p>
+        <p className="text-sm font-medium">No standalone workers yet</p>
         <p className="text-muted-foreground text-xs">
-          Run a PocketHost-provisioned Node project to create an owned runit unit.
-          An arbitrary discovered service cannot be adopted by renaming it or clicking Register.
-          Use Add Service to create a bounded Node.js or Python service.
-          Owned Node projects register their runtimes separately; user code
-          and external adoption require source/ownership qualification.
+          Create a stopped, PocketHost-owned Node.js or Python heartbeat worker
+          to manage its lifecycle and inspect Health checks. No project or
+          external service adoption is required; creating never starts a process
+          or enables autostart.
         </p>
-        <Button size="sm" variant="outline" render={<Link to="/projects" />}>Open Projects</Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" disabled={busy} onClick={() => {
+            setWorkerTemplate("heartbeat-worker-v1")
+            setCreatorOpen(true)
+          }}>Create standalone worker</Button>
+          <Button size="sm" variant="outline" render={<Link to="/projects" />}>
+            Node project hosting
+          </Button>
+        </div>
+        {creatorOpen && <p className="text-muted-foreground text-xs">
+          The creator is open above. Select a name and confirm to create a stopped worker.
+        </p>}
       </div>
     )}
     {services?.filter(service => service.registered && !service.protected && !isPanelService(service)).map(serviceRow)}
