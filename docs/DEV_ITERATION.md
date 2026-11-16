@@ -23,8 +23,10 @@ purpose: Permanent no-automatic-tests FAST FLOW policy
 The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` are **read-only planners** unless the latter receives a double opt-in. If the owner explicitly requests a _specific_ QA run for a _specific_ target SHA, run on verified A8 only:
 
 ```sh
-node scripts/dev/verify-changed.mjs --base=<verified-live-sha> --execute --approved-head=<exact-40-hex-target-sha> --approved-checks=docs,node
+node scripts/dev/verify-changed.mjs --base=<verified-prechange-sha> --execute --approved-head=<exact-40-hex-target-sha> --approved-checks=docs,node
 ```
+
+For **post-deployment QA** where the target SHA is already live, `--base` must be a verified pre-change ancestor of that target, **not** the current live SHA itself. Otherwise the planner reports `NO_CHANGES` and that result is not functional QA. Always pin the clean A8 QA checkout at the separately approved target SHA; `main` may contain later documentation-only commits.
 
 Replace `docs,node` with exactly the approved check categories: `format,structure,boundaries,docs,markdown,root-lint,admin-lint,root-types,admin-types,node,ui,syntax`. Unrequested categories are not run; missing or duplicate selected categories are refused. A category such as `node` still contains the explicitly planned dependent test files, so inspect the plan and agree on its file list before approval. The agent must have fresh human approval **before constructing this command**; flags are not proof of permission. An approval applies to **one run only** and is not inherited by a different SHA or a subsequent attempt. `changed-checks.mjs --run` and `fast-flow.mjs --tests` are rejected. A manual QA failure generates a bounded receipt, does not deploy anything and never retries automatically.
 
