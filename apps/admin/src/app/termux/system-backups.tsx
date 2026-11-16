@@ -55,8 +55,11 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
       }
       // Check the selected scope directly rather than trusting potentially
       // stale React state. A newly initialized repository starts empty.
+      const currentStatus = name === "backup" || name === "forget"
+        ? await get<{ restic: ResticState }>("?mode=restic-status")
+        : null
       const before = name === "backup" || name === "forget"
-        ? status?.initialized ? await listing() : []
+        ? currentStatus?.restic.initialized ? await listing() : []
         : null
       if (name === "forget" && (!id || !before?.some(item => item.id === id)))
         throw new Error("Selected backup no longer exists")
