@@ -55,9 +55,13 @@ export default function PlatformPage() {
       inspect<BootStatus>("/api/v1/termux-admin?mode=service-boot", controller.signal),
       inspect<SshStatus>("/api/v1/termux-admin?mode=ssh-diagnostics", controller.signal),
       inspect<LanStatus>("/api/v1/network-access", controller.signal),
-    ]).then(results => {
+    ] as const).then(results => {
       if (controller.signal.aborted) return
-      const [git, boot, ssh, lan] = results.map(result => result.status === "fulfilled" ? result.value : null)
+      const [gitResult, bootResult, sshResult, lanResult] = results
+      const git = gitResult.status === "fulfilled" ? gitResult.value : null
+      const boot = bootResult.status === "fulfilled" ? bootResult.value : null
+      const ssh = sshResult.status === "fulfilled" ? sshResult.value : null
+      const lan = lanResult.status === "fulfilled" ? lanResult.value : null
       setStatus({
         git: git && git.version === 1 && git.mode === "read-only" &&
           git.scope === "running-panel-checkout" && git.credentials === "not-checked" &&
