@@ -33,20 +33,23 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 
 ## Current Samsung target (A8 installed)
 
-**Samsung Galaxy A8 only** for PocketHost execution. The latest verified live
-DEV SHA is `47fdfd428ccf7911a7f9a71f7c63c76edfdee5b3`, PID 30493/start ticks 24510709,
-HTTP 200, owned panel/watch and independent Local Agent running; SSH and
-ssh-agent remain down. Private task
-`pockethost-a8-s4-final-readback-20261116-v1` confirms exact SHA, markers,
-same-UID process and protected-service isolation.
+**Samsung Galaxy A8 only** for PocketHost execution. Latest verified live
+DEV SHA: `64c92f3b825df015095bea041fbb529ed1e7d7fb`, PID **25555**, HTTP **200**, owned panel/watch and
+independent Local Agent running; protected services unchanged.
+Terminal FAST FLOW receipt:
+`pockethost-a8-stabilization-restic-readback-fast-flow-20261116-v1`
+(done, exit 0, PASS). Exact current source differs from the last manually
+approved **7/7 QA** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`.
+**No QA, lint, typecheck, formatting or smoke suite was run on the newer SHA.**
 
-**Final S4 scoped QA PASS (7/7)** on source `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`:
-format, structure, boundaries, root/admin types, Node and UI.
-The QA-only source differs from live by the updated UI test fixture.
-QA task: `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`.
-GitHub `main` can advance with docs-only commits without redeploying A8.
-Boot autostart and full S1–S4 physical acceptance remain unverified.
-No standing scheduler, automatic tests, reboot or S22 changes.
+One bounded owned fixed-template worker passed physical Create → Start →
+Health / Logs / Recovery review → Stop → Archive → Restore → Retire on A8
+(receipt `pockethost-a8-s1-s4-complete-owned-flow-396058d2-20261116-v1`).
+S3 Android startup after reboot, arbitrary source execution, generic
+hosting release/rollback and full Backup → Restore are not physically accepted.
+Platform settings readback, Hosting static release readback, and Restic
+UI receipt validation are deployed but not independently QA-tested.
+No standing scheduler, reboot, protected SSH, WAN or S22 changes.
 See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
 
 ## MVP stage acceptance
