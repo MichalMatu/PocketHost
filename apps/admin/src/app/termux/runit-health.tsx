@@ -238,7 +238,8 @@ export function RunitHealthPanel() {
 
   const inspectHttp = async () => {
     if (!readback || busy !== null || !services?.some(service =>
-      service.name === readback.name && service.registered && !service.protected) ||
+      service.name === readback.name && service.registered && !service.protected &&
+      service.template !== undefined) ||
       !/^[0-9]{4,5}$/.test(httpPort) || Number(httpPort) < 1024 ||
       Number(httpPort) > 65535 ||
       !/^\/(?:[a-zA-Z0-9._~-]|\/){0,96}$/.test(httpPath) ||
@@ -528,7 +529,9 @@ export function RunitHealthPanel() {
             Last matching heartbeat output: {new Date(readback.heartbeat.lastOutputAt).toLocaleString()}
           </p>}
         </div>}
-      <div className="space-y-2 rounded-md border p-3" aria-label="Manual HTTP readiness">
+      {services?.some(service => service.name === readback.name &&
+          service.registered && !service.protected && service.template !== undefined) ?
+        <div className="space-y-2 rounded-md border p-3" aria-label="Manual HTTP readiness">
         <p className="text-sm font-medium">Manual HTTP readiness · owned worker only</p>
         <p className="text-xs text-muted-foreground">
           The probe sends one GET to 127.0.0.1 only if the listener can be proven
@@ -565,7 +568,11 @@ export function RunitHealthPanel() {
           <p>Observed: {new Date(httpResult.checkedAt).toLocaleString()}.
             Readiness is a point-in-time result only.</p>
         </div>}
-      </div>
+        </div> :
+        <p className="text-xs text-muted-foreground">
+          HTTP readiness for delegated services is managed under Hosting.
+          This manual probe is limited to attested standalone workers.
+        </p>}
       {readback.process.status === "observed" &&
         <p className="text-xs text-muted-foreground">
           Proc start ticks: {readback.process.startTicks} · same-UID process,
