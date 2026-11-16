@@ -166,14 +166,24 @@ export function RunitHealthPanel() {
   }, [refresh])
 
   const refreshOverview = async () => {
-    if (busy !== null) return
+    if (busy !== null || services === null) return
     setBusy("__overview__")
     setError(null)
     setNotice(null)
     setOverview(null)
     try {
       const result = await getJson<HealthOverview>("?mode=service-health-overview")
+      // A snapshot cannot confer Health ownership by itself. Match every
+      // observed worker to the separately attested current inventory.
+      const seen = new Set<string>()
       if (!result || !Array.isArray(result.rows) || result.rows.length > 4 ||
+          !result.rows.every(row => {
+            const registered = services.find(item => item.name === row.name)
+            if (!registered || registered.template !== row.template ||
+                seen.has(row.name)) return false
+            seen.add(row.name)
+            return true
+          }) ||
           !Number.isSafeInteger(result.blockedRegistrations) ||
           result.blockedRegistrations < 0 || result.blockedRegistrations > 32 ||
           typeof result.truncated !== "boolean" ||
@@ -472,7 +482,7 @@ export function RunitHealthPanel() {
     <section className="space-y-2 rounded-md border p-3" aria-label="Standalone worker health overview">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-sm font-medium">Standalone workers · health snapshot</h4>
-        <Button size="sm" variant="outline" disabled={busy !== null}
+        <Button size="sm" variant="outline" disabled={busy !== null || services === null}
           onClick={() => void refreshOverview()}>
           {busy === "__overview__" ? "Reading…" : "Inspect all workers"}
         </Button>
