@@ -624,6 +624,16 @@ export function RunitServiceActions({
   const [pythonSource, setPythonSource] = React.useState("")
   const [pythonReplacement, setPythonReplacement] = React.useState("")
   const refresh = React.useCallback(async () => {
+    // A failed/invalid read must revoke stale browser controls immediately.
+    setServices(null)
+    setArchived([])
+    setServiceLogs(null)
+    setSourceReview(null)
+    setSourceHistory(null)
+    setNodeSourceReview(null)
+    setNodeSourceHistory(null)
+    setDone(null)
+    setError(null)
     const data = await inspect<{ services: RunitEntry[]; archived?: ArchivedEntry[] }>("services")
     if (!Array.isArray(data.services) || data.services.length > 100 ||
         !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&

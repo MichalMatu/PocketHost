@@ -121,6 +121,14 @@ export function RunitHealthPanel() {
   const [httpResult, setHttpResult] = React.useState<HttpReadinessResult | null>(null)
 
   const refresh = React.useCallback(async () => {
+    // On unavailable or untrusted inventory, no old health/recovery controls survive.
+    setServices(null)
+    setOverview(null)
+    setHttpResult(null)
+    setReadback(null)
+    setRecovery(null)
+    setNotice(null)
+    setError(null)
     const result = await getJson<{ services: VerifiedService[] }>("?mode=services")
     if (!Array.isArray(result.services) || result.services.length > 100 ||
         !result.services.every(service =>
@@ -136,12 +144,6 @@ export function RunitHealthPanel() {
     }
     setServices(result.services.filter(service =>
       service.registered && !service.protected))
-    setOverview(null)
-    setHttpResult(null)
-    setReadback(null)
-    setRecovery(null)
-    setNotice(null)
-    setError(null)
   }, [])
 
   React.useEffect(() => {

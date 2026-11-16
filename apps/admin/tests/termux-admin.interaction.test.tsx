@@ -358,6 +358,40 @@ describe('H3 runit service enrollment UI', () => {
     expect(actions.every((action: { path: string }) => action.path === 'site-worker')).toBe(true);
   });
 
+  it('revokes stale lifecycle controls when the service inventory refresh fails', async () => {
+    const user = userEvent.setup();
+    let unavailable = false;
+    const requests = vi.fn(async () => {
+      if (unavailable) throw new Error('Inventory transport unavailable');
+      return {
+        ok: true,
+        json: async () => ({
+          archived: [],
+          services: [{
+            name: 'stale-worker',
+            registered: true,
+            protected: false,
+            control: 'standalone',
+            identity: 'verified',
+            identityReason: 'run-sha-attested',
+            template: 'heartbeat-worker-v1',
+            state: 'stopped',
+            enabled: false,
+          }],
+        }),
+      };
+    });
+    vi.stubGlobal('fetch', requests);
+    render(<MemoryRouter><RunitServiceActions /></MemoryRouter>);
+    await screen.findByText('stale-worker');
+    expect(screen.getByRole('button', { name: 'Start' })).toBeTruthy();
+    unavailable = true;
+    await user.click(screen.getByRole('button', { name: 'Refresh services' }));
+    await screen.findByText('Runit services unavailable');
+    expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
+    expect(screen.queryByText('stale-worker')).toBeNull();
+  });
+
   it('refuses lifecycle success without a confirmed runit command receipt', async () => {
     const user = userEvent.setup();
     const requests = vi.fn(async (_url: string, options?: RequestInit) => {
