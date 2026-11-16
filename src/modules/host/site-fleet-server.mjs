@@ -88,9 +88,10 @@ function getRelease(site, id, port, instance, selectedRelease = null) {
   checkDirectory(releases);
   if (selectedRelease !== null && !RELEASE.test(selectedRelease))
     throw new Error('Invalid archived release selection');
-  const root = path.join(releases, selectedRelease ?? marker.activeRelease);
+  const release = selectedRelease ?? marker.activeRelease;
+  const root = path.join(releases, release);
   checkDirectory(root);
-  return root;
+  return { root, release };
 }
 
 /** Inert when imported; an explicitly owned child process starts the server. */
@@ -132,10 +133,11 @@ export function startSiteServer({ port, id, instance, site = process.cwd() }) {
         selectedRelease = match[1];
         assetPath = match[2] || '/';
       }
-      const { bytes, type } = getFile(
-        getRelease(site, id, port, instance, selectedRelease),
-        assetPath,
-      );
+      const served = getRelease(site, id, port, instance, selectedRelease);
+      const { bytes, type } = getFile(served.root, assetPath);
+      // Release identity comes from the same verified marker used to read
+      // the asset, not from a second, potentially different disk read.
+      response.setHeader('X-PocketHost-Release', served.release);
       response.writeHead(200, { 'Content-Type': type, 'Content-Length': bytes.length });
       response.end(request.method === 'HEAD' ? undefined : bytes);
     } catch {

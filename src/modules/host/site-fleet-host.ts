@@ -659,6 +659,7 @@ export class SiteFleetHost {
       if (
         result.status !== 200 ||
         result.headers.get('x-pockethost-instance') !== item.instance ||
+        result.headers.get('x-pockethost-release') !== item.activeRelease ||
         result.headers.get('content-length') !== String(expected.length)
       ) return false;
       const received = Buffer.from(await result.arrayBuffer());
