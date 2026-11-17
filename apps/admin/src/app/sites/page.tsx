@@ -1,4 +1,5 @@
 import * as React from "react"
+import { useSearchParams } from "react-router-dom"
 import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Upload, FileArchive } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -512,6 +513,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
 }
 
 export default function SitesPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const selectedSiteId = searchParams.get("site")
   const [sites, setSites] = React.useState<FleetSite[]>([])
   const [name, setName] = React.useState("")
   const [loading, setLoading] = React.useState(true)
@@ -601,14 +604,23 @@ export default function SitesPage() {
             </form>
           </CardContent>
         </Card>
+        {selectedSiteId && <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span>{sites.some(site => site.id === selectedSiteId)
+            ? "Selected static site: " + sites.find(site => site.id === selectedSiteId)?.name
+            : "Selected static site: " + selectedSiteId}</span>
+          <Button variant="outline" size="sm" onClick={() => setSearchParams({})}>Show all sites</Button>
+        </div>}
         {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {notice && <p role="status" className="text-sm">{notice}</p>}
         {!loading && sites.length === 0 && !error && <p className="text-muted-foreground text-sm">
           No static sites yet. Create your first site above.
         </p>}
+        {!loading && selectedSiteId && !sites.some(site => site.id === selectedSiteId) && !error &&
+          <p role="alert" className="text-sm">This static site was not found in the owned inventory.</p>}
         <div className="grid gap-5">
-          {sites.map(site => <SiteCard key={site.id} site={site} onChange={reload} />)}
+          {sites.filter(site => !selectedSiteId || site.id === selectedSiteId)
+            .map(site => <SiteCard key={site.id} site={site} onChange={reload} />)}
         </div>
         <p className="text-muted-foreground text-xs">
           Each site is bound to its own local-only port; the manually enabled trusted-LAN gateway
