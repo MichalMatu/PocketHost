@@ -49,9 +49,12 @@ export default function HostingPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    // A new request never leaves a previously observed state looking current.
-    setStaticInventory(loadingSites)
-    setNodeInventory(loadingNodes)
+    // Invalidate prior inventory when Refresh starts, without an effect-time sync setState.
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted) return
+      setStaticInventory(loadingSites)
+      setNodeInventory(loadingNodes)
+    })
     void readStaticHosting(controller.signal)
       .then(value => { if (!controller.signal.aborted) setStaticInventory(value) })
       .catch(() => {
