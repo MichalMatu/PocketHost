@@ -104,9 +104,9 @@ describe("H2 browser site-manager lifecycle", () => {
       { ...project("stopped", true), id: "site-" + "c".repeat(32), name: "Other owned site" },
     ], "/sites?site=" + ID)
     await screen.findByText("Selected static site: My own site")
-    expect(screen.queryByRole("heading", { name: "Other owned site" })).toBeNull()
+    expect(screen.queryByText("Other owned site")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Show all sites" }))
-    expect(await screen.findByRole("heading", { name: "Other owned site" })).toBeTruthy()
+    expect(await screen.findByText("Other owned site")).toBeTruthy()
   })
 
   it("creates one explicitly owned site with deliberate intent but cannot start before publishing", async () => {
