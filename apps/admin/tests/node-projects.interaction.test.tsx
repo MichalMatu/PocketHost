@@ -89,6 +89,27 @@ it("keeps Node project creation locked when the owner token is rejected", async 
   expect(fetchMock.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(0)
 })
 
+it("locking owner access drops authenticated management privileges without resetting the catalog", async () => {
+  const requests = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url) === "/api/v1/node-projects")
+      return { ok: true, status: 200, json: async () => ({ projects: [] }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await screen.findByText("No Node projects yet.")
+  await unlockNodeOwner()
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Project name"), "Test project")
+  const create = screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement
+  expect(create.disabled).toBe(false)
+  await user.click(screen.getByRole("button", { name: "Lock" }))
+  expect((screen.getByLabelText("Node owner token") as HTMLInputElement).value).toBe("")
+  expect(create.disabled).toBe(true)
+  expect(screen.getByText("Owner access locked.")).toBeTruthy()
+  expect(screen.getByText("No Node projects yet.")).toBeTruthy()
+})
+
 it("M3 browser creates and stages a real API-backed Node source candidate without running it", async () => {
   const user = userEvent.setup()
   let projects: unknown[] = []

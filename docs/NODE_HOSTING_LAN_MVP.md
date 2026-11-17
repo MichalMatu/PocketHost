@@ -32,7 +32,7 @@ repository and logs. If unset or malformed, **all Node mutations are denied**;
 read-only inventory remains available. To confirm configuration without
 revealing the token, use `GET /api/v1/node-projects/owner-session`:
 `{ "configured": true|false, "authorized": true|false }`. The browser stores
-the token only in the current tab's React state and clears it on Lock/unmount.
+the token only in the current tab's React state and clears it on Lock/unmount. Lock or token edits also discard all previously checked one-shot approvals and review state; asynchronous verification for a superseded token cannot unlock the tab. Lock does not revoke the host-configured token globally—rotate that token in the private panel environment to revoke access across tabs.
 
 The LAN gateway retains its exact private interface and origin policy;
 there is no WAN port or public Node ingress. A credential transmitted over

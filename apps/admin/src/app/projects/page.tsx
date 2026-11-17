@@ -247,6 +247,22 @@ export default function ProjectsPage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
+  // Discard one-shot approvals whenever the owner identity changes or locks.
+  // A subsequent unlock must review the current release and plan again.
+  const revokeOwnerAccess = () => {
+    setOwnerAuthorized(false)
+    setApproved(false)
+    setDependencyApproved(false)
+    setDependencyReview(null)
+    setDependencyInstallEnabled(false)
+    setBuildApproved(false)
+    setBuildReview(null)
+    setBuildEnabled(false)
+    setBackupApproved(false)
+    setRollbackPreflight(null)
+    setPlan(null)
+    setExecutionEnabled(false)
+  }
   const selected = projects.find((project) => project.id === selectedId)
   const refresh = React.useCallback(async () => {
     try {
@@ -402,12 +418,15 @@ export default function ProjectsPage() {
                 onChange={event => {
                   tokenRef.current = event.target.value
                   setToken(event.target.value)
-                  setOwnerAuthorized(false)
-                  setApproved(false)
+                  revokeOwnerAccess()
                 }} />
             </label>
             <Button disabled={busy || token.length < 32} onClick={() => action(async () => {
-              const response = await requestJson(api + "/owner-session", undefined, undefined, tokenRef.current)
+              const attemptedToken = tokenRef.current
+              const response = await requestJson(api + "/owner-session", undefined, undefined, attemptedToken)
+              // Lock or token edits can happen while a network reply is pending.
+              if (tokenRef.current !== attemptedToken)
+                throw new Error("Owner token changed while verifying. Unlock again.")
               if (typeof response.configured !== "boolean" || typeof response.authorized !== "boolean")
                 throw new Error("Invalid owner session response")
               setOwnerConfigured(response.configured)
@@ -419,8 +438,7 @@ export default function ProjectsPage() {
             <Button variant="outline" disabled={!token} onClick={() => {
               tokenRef.current = ""
               setToken("")
-              setOwnerAuthorized(false)
-              setApproved(false)
+              revokeOwnerAccess()
               setMessage("Owner access locked.")
             }}>Lock</Button>
           </div>
