@@ -1,5 +1,4 @@
 import * as React from "react"
-import { NodeLanReadOnly } from "./node-lan-readonly"
 import { useSearchParams } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
@@ -165,15 +164,18 @@ function validProject(value: unknown): value is Project {
     (item.candidateRelease === null || (typeof item.candidateRelease === "string" && /^r-[a-f0-9]{32}$/.test(item.candidateRelease))) &&
     (item.previousCandidate === null || (typeof item.previousCandidate === "string" && /^r-[a-f0-9]{32}$/.test(item.previousCandidate)))
 }
-async function getJson(url: string, method?: "POST", body?: unknown): Promise<Record<string, unknown>> {
+async function requestJson(url: string, method?: "POST", body?: unknown, ownerToken = ""): Promise<Record<string, unknown>> {
+  const ownerHeader: Record<string, string> = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store",
+    headers: ownerHeader,
     ...(method ? {
-      method, headers: { "X-PocketHost-Intent": intent, ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
+      method, headers: { ...ownerHeader, "X-PocketHost-Intent": intent,
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     } : {}) })
   if (!response.ok) throw new Error(response.status === 404 && url === api ? disabledMessage :
     response.status === 404 ? "Node project resource not found." :
-    response.status === 403 ? "Node Hosting access denied." :
+    response.status === 403 ? "Owner authentication required or Node access denied." :
     response.status === 400 ? "Invalid project input, manifest, lockfile or source." :
     response.status === 409 && (url.endsWith("/stage") || url.endsWith("/restore-candidate"))
       ? "Node source save refused. Refresh project and review the current candidate."
@@ -185,6 +187,12 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
 export default function ProjectsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const lanView = typeof window !== "undefined" && !["localhost", "127.0.0.1"].includes(window.location.hostname)
+  const tokenRef = React.useRef("")
+  const [token, setToken] = React.useState("")
+  const [ownerAuthorized, setOwnerAuthorized] = React.useState(false)
+  const [ownerConfigured, setOwnerConfigured] = React.useState<boolean | null>(null)
+  const getJson = React.useCallback((url: string, method?: "POST", body?: unknown) =>
+    requestJson(url, method, body, tokenRef.current), [])
   const requestedProject = searchParams.get("project")
   const appliedDeepLink = React.useRef<string | null>(null)
   const [projects, setProjects] = React.useState<Project[]>([])
@@ -259,12 +267,12 @@ export default function ProjectsPage() {
       setCatalogState("error")
       throw cause
     }
-  }, [])
+  }, [getJson])
   const loadReleases = React.useCallback(async (id: string) => {
     const data = await getJson(api + "/" + id + "/releases")
     if (!Array.isArray(data.releases)) throw new Error("Invalid release inventory")
     setReleases(data.releases as Candidate[])
-  }, [])
+  }, [getJson])
   const loadRuntime = React.useCallback(async (id: string): Promise<RuntimeState> => {
     const [status, preview] = await Promise.all([
       getJson(api + "/" + id + "/runtime"), getJson(api + "/" + id + "/plan"),
@@ -291,7 +299,7 @@ export default function ProjectsPage() {
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
-  }, [])
+  }, [getJson])
   React.useEffect(() => {
     let live = true
     void Promise.resolve().then(refresh).catch(cause => {
@@ -381,9 +389,51 @@ export default function ProjectsPage() {
       setError("Node action acknowledged, but runtime refresh failed. Review plan before retrying.")
     }
   }
-  if (lanView) return <NodeLanReadOnly projects={projects} status={catalogState} onRefresh={() => action(refresh)} />
   return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
+      <Card>
+        <CardHeader><CardTitle>Node.js owner access</CardTitle>
+          <CardDescription>Authenticate before editing or starting trusted Node applications. Token is held in this tab's memory, not saved.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex flex-wrap items-end gap-3">
+            <label className="grid min-w-52 flex-1 gap-1 text-sm">Owner token
+              <Input aria-label="Node owner token" type="password" autoComplete="off" value={token}
+                onChange={event => {
+                  tokenRef.current = event.target.value
+                  setToken(event.target.value)
+                  setOwnerAuthorized(false)
+                  setApproved(false)
+                }} />
+            </label>
+            <Button disabled={busy || token.length < 32} onClick={() => action(async () => {
+              const response = await requestJson(api + "/owner-session", undefined, undefined, tokenRef.current)
+              if (typeof response.configured !== "boolean" || typeof response.authorized !== "boolean")
+                throw new Error("Invalid owner session response")
+              setOwnerConfigured(response.configured)
+              setOwnerAuthorized(response.authorized)
+              if (!response.authorized)
+                throw new Error(response.configured ? "Invalid Node owner token." : "Node owner token is not configured on the host.")
+              setMessage("Owner authenticated for Node management.")
+            })}>Unlock management</Button>
+            <Button variant="outline" disabled={!token} onClick={() => {
+              tokenRef.current = ""
+              setToken("")
+              setOwnerAuthorized(false)
+              setApproved(false)
+              setMessage("Owner access locked.")
+            }}>Lock</Button>
+          </div>
+          <p role="status" className="text-sm">
+            Owner: {ownerAuthorized ? "authenticated" : ownerConfigured === false ? "host token not configured" : "locked"}.
+            {lanView ? " Private LAN HTTP does not encrypt this token. Use a trusted network only." : ""}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Node apps, npm installs and builds run as the Termux user; this is not a sandbox.
+            Only run reviewed, trusted source.
+          </p>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader><CardTitle>Create Node.js project</CardTitle>
           <CardDescription>Manage projects created in PocketHost.</CardDescription></CardHeader>
@@ -391,7 +441,7 @@ export default function ProjectsPage() {
           <label className="grid min-w-52 gap-1 text-sm">Project name
             <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
           </label>
-          <Button disabled={busy || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
+          <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
             setSelectedId(data.project.id); setName(""); setApproved(false)
@@ -479,7 +529,7 @@ export default function ProjectsPage() {
                 setSelectedSnapshot("")
                 setMessage("Owned Node backup snapshots refreshed.")
               })}>List Node snapshots</Button>
-            <Button disabled={busy || !backupApproved || !backupsEnabled}
+            <Button disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled}
               onClick={() => action(async () => {
                 await getJson(api + "/backup/create", "POST", { approved: true })
                 const report = await getJson(api + "/backup")
@@ -502,7 +552,7 @@ export default function ProjectsPage() {
               </option>)}
             </select>
           </label>
-          <Button variant="outline" disabled={busy || !backupApproved || !backupsEnabled ||
+          <Button variant="outline" disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled ||
               !selectedSnapshot}
             onClick={() => action(async () => {
               const response = await getJson(api + "/backup/restore", "POST", {
@@ -563,7 +613,7 @@ export default function ProjectsPage() {
                   setGithubReview(null)
                 }} />
             </label>
-            <Button variant="outline" disabled={busy || !githubRepository.trim()}
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !githubRepository.trim()}
               onClick={() => action(async () => {
                 const result = await getJson(api + "/github/preview", "POST",
                   { repository: githubRepository.trim() })
@@ -732,7 +782,7 @@ export default function ProjectsPage() {
               setPlan(null)
             }}>Clear imported frontend files</Button>}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy || !selected.candidateRelease}
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.candidateRelease}
               onClick={() => action(async () => {
                 const response = await getJson(api + "/" + selected.id + "/source")
                 const value = response.source as Record<string, unknown> | undefined
@@ -750,7 +800,7 @@ export default function ProjectsPage() {
                 setDependencyReview(null)
                 setMessage("Verified staged source loaded into editor; no process changed.")
               })}>Load staged source</Button>
-            <Button disabled={busy || (!!selected.candidateRelease && !editorDirty)}
+            <Button disabled={busy || !ownerAuthorized || (!!selected.candidateRelease && !editorDirty)}
               onClick={() => action(async () => {
               const data = await getJson(api + "/" + selected.id + "/stage", "POST", {
                 packageJson: JSON.parse(manifest) as unknown,
@@ -769,7 +819,7 @@ export default function ProjectsPage() {
                 ? "Source matches the current verified candidate. No new release created."
                 : "Source candidate staged. Review the execution plan before deploying.")
             })}>Validate and stage source</Button>
-            <Button variant="outline" disabled={busy || !selected.previousCandidate}
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.previousCandidate}
               onClick={() => action(async () => {
                 const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST", {
                   expectedCandidate: selected.candidateRelease,
@@ -786,6 +836,14 @@ export default function ProjectsPage() {
             <CardHeader><CardTitle>Node deployment</CardTitle>
               <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
+              <p aria-label="Node runtime summary" className="text-sm">
+                State: {runtime?.state ?? "not loaded"} · Active release: {runtime?.activeRelease ?? "none"} ·
+                HTTP readiness: {health?.ready === null || !health ? "not checked" : health.ready ? "ready" : "not ready"}.
+              </p>
+              <p aria-label="Node local address" className="text-sm">
+                Device loopback: {runtime?.port ? `http://127.0.0.1:${runtime.port}/` : "not assigned"}.
+                Not a public or directly reachable LAN URL.
+              </p>
               <p className="text-sm">Plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
               {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
                   (plan.dependencyIssues?.length ?? 0) > 0) &&
@@ -823,7 +881,7 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
-                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setDependencyReview(null)
                     setDependencyApproved(false)
@@ -864,7 +922,7 @@ export default function ProjectsPage() {
                     disabled={busy || !dependencyInstallEnabled || dependencyReview?.status !== "review-required"} />
                   I authorize one isolated npm ci for this PocketHost release (network downloads permitted).
                 </label>
-                <Button variant="outline" disabled={busy || editorDirty || !dependencyApproved ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !dependencyApproved ||
                   !dependencyInstallEnabled || !selected.candidateRelease ||
                   dependencyReview?.release !== selected.candidateRelease ||
                   dependencyReview.status !== "review-required" || !dependencyReview.installRequired ||
@@ -897,7 +955,7 @@ export default function ProjectsPage() {
                       ? "Node build dependencies verified. Build execution is still disabled."
                       : "Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
                   })}>Install approved dependencies</Button>
-                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setBuildReview(null)
                     setBuildApproved(false)
@@ -946,7 +1004,7 @@ export default function ProjectsPage() {
                   I explicitly approve running the displayed build script from this trusted project.
                   It runs as the Termux user; the private folder is not an OS sandbox.
                 </label>
-                <Button variant="outline" disabled={busy || editorDirty || !buildApproved ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !buildApproved ||
                   !buildEnabled || !selected.candidateRelease ||
                   buildReview?.release !== selected.candidateRelease ||
                   buildReview.status !== "ready-to-build" ||
@@ -984,7 +1042,7 @@ export default function ProjectsPage() {
                     setBuildEnabled(checked.buildEnabled === true)
                     setMessage("Node build published privately and artifact integrity verified. Review deploy plan.")
                   })}>Execute approved Node build</Button>
-                <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
+                <Button disabled={busy || !ownerAuthorized || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",
                       "POST", { release: selected.candidateRelease })
@@ -997,7 +1055,7 @@ export default function ProjectsPage() {
                     })
                     setMessage("Node syntax check completed without executing project source.")
                   })}>Check Node build syntax</Button>
-                <Button disabled={busy || editorDirty || !approved || !executionEnabled ||
+                <Button disabled={busy || !ownerAuthorized || editorDirty || !approved || !executionEnabled ||
                   !plan?.allowed || !selected.candidateRelease ||
                   plan.release !== selected.candidateRelease ||
                   runtime?.activeRelease === selected.candidateRelease}
@@ -1006,14 +1064,14 @@ export default function ProjectsPage() {
                       { approved: true, release: selected.candidateRelease },
                       "Owned Node release started and readiness verified by host.")
                   })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
-                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
                   runtime?.state !== "stopped" || !runtime.activeRelease ||
                   runtime.activeRelease !== runtime.lastGoodRelease}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "start", { approved: true },
                       "Previously verified Node release started and readiness confirmed.")
                   })}>Start stopped service</Button>
-                <Button variant="outline" disabled={busy || !runtime?.previousGoodRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
                     const target = runtime?.previousGoodRelease
@@ -1037,7 +1095,7 @@ export default function ProjectsPage() {
                       ? "Previous Node release verified for explicit rollback."
                       : "Rollback target is not safely recoverable.")
                   })}>Review rollback target</Button>
-                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
                   !runtime?.previousGoodRelease || runtime.state === "unknown" ||
                   (rollbackPreflight !== null &&
                     (!rollbackPreflight.allowed ||
@@ -1046,12 +1104,12 @@ export default function ProjectsPage() {
                     await runRuntimeAction(selected.id, "rollback", { approved: true },
                       "Previous verified Node release restored by host.")
                   })}>Rollback active release</Button>
-                <Button variant="outline" disabled={busy || !approved || !executionEnabled || runtime?.state !== "running"}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled || runtime?.state !== "running"}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "stop", { approved: true },
                       "Owned Node service stopped.")
                   })}>Stop owned service</Button>
-                <Button variant="outline" disabled={busy || !approved || !executionEnabled ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
                   runtime?.state !== "running" || !runtime.activeRelease ||
                   runtime.activeRelease !== runtime.lastGoodRelease}
                   onClick={() => action(async () => {
@@ -1069,7 +1127,7 @@ export default function ProjectsPage() {
                   setHealth(value as NodeHealth)
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
-                <Button variant="outline" disabled={busy || runtime?.state !== "running"}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
                   onClick={() => action(async () => {
                     const response = await getJson(api + "/" + selected.id + "/preview")
                     const value = response.preview as Record<string, unknown> | undefined

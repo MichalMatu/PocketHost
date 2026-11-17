@@ -14,12 +14,14 @@ describe("Hosting selection", () => {
     }))
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
-    expect(await screen.findByText("Static hosting: Enabled · 0 hosted")).toBeTruthy()
+    expect(await screen.findByText("Static hosting: 0 running · 0 total")).toBeTruthy()
     expect(await screen.findByText("Node hosting: Not enabled on this panel")).toBeTruthy()
     expect(screen.getByRole("link", { name: "Manage static websites" }).getAttribute("href"))
       .toBe("/sites")
-    expect(screen.getByRole("link", { name: "Inspect Node.js projects" }).getAttribute("href"))
+    expect(screen.getByRole("link", { name: "Manage Node.js projects" }).getAttribute("href"))
       .toBe("/projects")
+    expect(screen.getByRole("link", { name: "Deployment history" }).getAttribute("href")).toBe("/deployments")
+    expect(screen.getByRole("link", { name: "Project logs" }).getAttribute("href")).toBe("/runtime-logs")
     expect(requests.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
   })
 
@@ -29,6 +31,55 @@ describe("Hosting selection", () => {
       json: async () => ({ sites: [{ id: "foreign", kind: "static-site" }] }),
     })))
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
-    expect(await screen.findByText("Static hosting: Status unavailable")).toBeTruthy()
+    expect(await screen.findByText("Static hosting: Status unavailable — retry Refresh")).toBeTruthy()
   })
+  it("shows actual running and stopped static sites and verified Node runtime", async () => {
+    const release = "r-" + "b".repeat(32)
+    const nodeId = "node-" + "a".repeat(32)
+    const site = {
+      id: "site-" + "c".repeat(32), name: "My site", kind: "static-site",
+      state: "running", port: 19080, activeRelease: release,
+      previousRelease: null, canRollback: false,
+      pid: 1234, startTicks: "5678", fileCount: 1, bytes: 320, releases: 1,
+      memoryBytes: null, uptimeSeconds: null, healthy: true, history: [],
+    }
+    const requests = vi.fn(async (url: string) => {
+      if (url === "/api/v1/sites") return { ok: true, status: 200,
+        json: async () => ({ sites: [site, {
+          ...site, id: "site-" + "d".repeat(32), name: "Draft",
+          state: "stopped", pid: null, startTicks: null, activeRelease: null, healthy: null,
+        }] }) }
+      if (url === "/api/v1/node-projects") return { ok: true, status: 200,
+        json: async () => ({ projects: [{ id: nodeId, name: "My Node", kind: "node" }] }) }
+      if (url === "/api/v1/node-projects/" + nodeId + "/runtime") return {
+        ok: true, status: 200, json: async () => ({ runtime: {
+          state: "running", desired: "running", port: 19090,
+          healthDecision: { action: "none", reason: "ready", nextEligibleAtMs: null },
+          activeRelease: release, lastGoodRelease: release, previousGoodRelease: null, history: [],
+        } }),
+      }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    render(<MemoryRouter><HostingPage /></MemoryRouter>)
+    expect(await screen.findByText("Static hosting: 1 running · 2 total")).toBeTruthy()
+    expect(await screen.findByText("Node hosting: 1 running · 1 total")).toBeTruthy()
+    expect(screen.getByText("My site")).toBeTruthy()
+    expect(screen.getByText("Draft")).toBeTruthy()
+    expect(screen.getByText("My Node")).toBeTruthy()
+    expect(screen.getByText("HTTP: healthy")).toBeTruthy()
+    expect(screen.getByText("Port: 19090")).toBeTruthy()
+    expect(screen.getByRole("link", { name: "My site" }).getAttribute("href"))
+      .toBe("/sites?site=" + encodeURIComponent(site.id))
+    expect(screen.getByRole("link", { name: "My Node" }).getAttribute("href"))
+      .toBe("/projects?project=" + encodeURIComponent(nodeId))
+    expect(screen.getAllByRole("link", { name: "Logs" }).map(link => link.getAttribute("href")))
+      .toEqual([
+        "/runtime-logs?project=" + encodeURIComponent("static:" + site.id),
+        "/runtime-logs?project=" + encodeURIComponent("static:site-" + "d".repeat(32)),
+        "/runtime-logs?project=" + encodeURIComponent("node:" + nodeId),
+      ])
+    expect(requests.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
+  })
+
 })

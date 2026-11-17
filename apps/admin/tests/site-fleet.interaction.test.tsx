@@ -2,6 +2,7 @@ import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -11,6 +12,10 @@ import SitesPage from "@/app/sites/page"
 
 const ID = "site-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
+
+function renderSites(route = "/sites") {
+  return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
+}
 
 function project(state: "stopped" | "running" | "unknown" = "stopped", active = false) {
   return {
@@ -34,7 +39,7 @@ function project(state: "stopped" | "running" | "unknown" = "stopped", active = 
   }
 }
 
-function withSites(initial: ReturnType<typeof project>[] = []) {
+function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites") {
   let sites = [...initial]
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -58,7 +63,7 @@ function withSites(initial: ReturnType<typeof project>[] = []) {
     return { ok: false, status: 404, json: async () => ({ error: "not-found" }) }
   })
   vi.stubGlobal("fetch", fetchMock)
-  render(<SitesPage />)
+  renderSites(route)
   return fetchMock
 }
 
@@ -72,7 +77,7 @@ describe("Static Hosting catalog states", () => {
   ])("keeps API failure %i distinct from no sites", async (status, message) => {
     const calls = vi.fn(async () => ({ ok: false, status }))
     vi.stubGlobal("fetch", calls)
-    render(<SitesPage />)
+    renderSites()
     expect((await screen.findByRole("alert")).textContent).toBe(message)
     expect(screen.queryByText(/No static sites yet/)).toBeNull()
     expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
@@ -84,7 +89,7 @@ describe("Static Hosting catalog states", () => {
       ok: true, status: 200, json: async () => ({ sites: [{ id: "not-owned" }] }),
     }))
     vi.stubGlobal("fetch", calls)
-    render(<SitesPage />)
+    renderSites()
     await screen.findByText("Invalid static site inventory. No changes were made.")
     expect(screen.queryByText(/No static sites yet/)).toBeNull()
     expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
@@ -92,6 +97,18 @@ describe("Static Hosting catalog states", () => {
 })
 
 describe("H2 browser site-manager lifecycle", () => {
+  it("selects an owned site from a direct link and returns to the full inventory", async () => {
+    const user = userEvent.setup()
+    withSites([
+      project("stopped", true),
+      { ...project("stopped", true), id: "site-" + "c".repeat(32), name: "Other owned site" },
+    ], "/sites?site=" + ID)
+    await screen.findByText("Selected static site: My own site")
+    expect(screen.queryByRole("heading", { name: "Other owned site" })).toBeNull()
+    await user.click(screen.getByRole("button", { name: "Show all sites" }))
+    expect(await screen.findByRole("heading", { name: "Other owned site" })).toBeTruthy()
+  })
+
   it("creates one explicitly owned site with deliberate intent but cannot start before publishing", async () => {
     const user = userEvent.setup()
     const fetchMock = withSites()
@@ -123,7 +140,7 @@ describe("H2 browser site-manager lifecycle", () => {
       return { ok: false, status: 404, json: async () => ({ error: "not-found" }) }
     })
     vi.stubGlobal("fetch", calls)
-    render(<SitesPage />)
+    renderSites()
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
     await screen.findByText("Start completed.")
@@ -149,7 +166,7 @@ describe("H2 browser site-manager lifecycle", () => {
       return { ok: false, status: 404 }
     })
     vi.stubGlobal("fetch", calls)
-    render(<SitesPage />)
+    renderSites()
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
     await screen.findByText(/Site state was confirmed, but list refresh failed/)
@@ -245,7 +262,7 @@ describe("H2.1 version-management UI", () => {
     })
     vi.stubGlobal("fetch", calls)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    render(<SitesPage />)
+    renderSites()
     return calls
   }
 

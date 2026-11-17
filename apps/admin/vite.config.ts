@@ -289,7 +289,7 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
@@ -300,6 +300,7 @@ function ownedSiteFleetApi(): Plugin {
               id && action === "health" ? { healthy: await fleet.health(id) } :
               id && action === "logs" ? { logs: fleet.logs(id) } :
               id && action === "files" ? { files: fleet.listActiveFiles(id) } :
+              id && action === "html" ? fleet.readActiveHtml(id) :
               id && action === "releases" ? { releases: fleet.listReleases(id) } : null
             if (!result) {
               response.statusCode = 404
