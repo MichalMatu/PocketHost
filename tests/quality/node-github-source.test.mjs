@@ -33,7 +33,7 @@ function fixture(overrides = {}) {
       : name ? {
           type: 'file', name, path: name, encoding: 'base64',
           content: Buffer.from(
-            typeof entries[name] === 'string' ? entries[name] : JSON.stringify(entries[name]),
+            typeof entries[name] === 'string' ? entries[name] : JSON.stringify(entries[name] ?? ''),
           ).toString('base64'),
         } : {};
     if (typeof overrides.change === 'function')
@@ -127,7 +127,7 @@ test('GitHub build preview imports bounded frontend text files at one pinned SHA
     'src/style.css': 'body { color: red }',
     'vite.config.ts': 'export default {}',
   };
-  const get = async (url, init) => {
+  const get = async (url) => {
     requests.push(url);
     const part = url.split('/contents/')[1]?.split('?')[0];
     const obj = url.endsWith('/safe-node') ?

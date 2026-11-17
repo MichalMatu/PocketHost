@@ -17,12 +17,12 @@ test('read-only preflight reports verified HMR-only SHA drift without deployment
   }), saved);
   assert.deepEqual(summarizePreflight({
     markerSha: saved, checkoutSha: checkedOut,
-    panelHttpOk: true, protectedRunning: true,
+    panelHttpOk: true, protectedBaselineAttested: true,
   }), {
     status: 'READ_ONLY_READY', mode: 'read-only', ownedPanel: 'verified',
     markerSha: saved, checkoutSha: checkedOut,
     sourceDrift: 'verified-ui-hmr-only', panelHttp: 'reachable',
-    protectedServices: 'running', deployment: 'not-performed',
+    protectedServices: 'baseline-attested', deployment: 'not-performed',
     restart: 'not-performed', nextStep: 'operator-review-required',
   });
 });
@@ -30,14 +30,14 @@ test('read-only preflight reports verified HMR-only SHA drift without deployment
 test('read-only preflight does not imply approval to deploy on missing HTTP or foreign services', () => {
   const summary = summarizePreflight({
     markerSha: saved, checkoutSha: saved,
-    panelHttpOk: false, protectedRunning: true,
+    panelHttpOk: false, protectedBaselineAttested: true,
   });
   assert.equal(summary.status, 'HOLD');
   assert.equal(summary.sourceDrift, 'same');
   assert.equal(summary.restart, 'not-performed');
   assert.equal(summarizePreflight({
     markerSha: saved, checkoutSha: checkedOut,
-    panelHttpOk: true, protectedRunning: false,
+    panelHttpOk: true, protectedBaselineAttested: false,
   }).status, 'HOLD');
 });
 
@@ -54,11 +54,11 @@ test('invalid marker or non-UI drift cannot establish a valid preflight', () => 
   }
   assert.throws(() => summarizePreflight({
     markerSha: 'not a hash', checkoutSha: checkedOut,
-    panelHttpOk: true, protectedRunning: true,
+    panelHttpOk: true, protectedBaselineAttested: true,
   }));
   assert.throws(() => summarizePreflight({
     markerSha: saved, checkoutSha: checkedOut,
-    panelHttpOk: 'yes', protectedRunning: true,
+    panelHttpOk: 'yes', protectedBaselineAttested: true,
   }));
 });
 

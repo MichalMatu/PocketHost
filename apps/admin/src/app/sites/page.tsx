@@ -399,7 +399,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         {versions !== null && <section className="space-y-3 rounded-lg border p-4" aria-label={"Saved versions of " + site.name}>
           <div>
             <h3 className="text-sm font-semibold">Saved releases</h3>
-            <p className="text-muted-foreground text-xs">Preview older snapshots, restore any saved release or remove unused archives. Active and quick-rollback versions are protected.</p>
+            <p className="text-muted-foreground text-xs">Preview, restore or remove saved releases. Active and rollback versions are protected.</p>
           </div>
           {versions.length === 0 && <p className="text-muted-foreground text-xs">No versions published yet.</p>}
           <ol className="space-y-2">
@@ -413,7 +413,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
                 </div>
                 <p className="text-muted-foreground">
                   <time dateTime={release.createdAt}>{new Date(release.createdAt).toLocaleString()}</time>
-                  {" · "}{release.fileCount} files{" · "}{formatSize(release.bytes)}
+                  {" · "}{release.fileCount} files{" · "}{formatBytes(release.bytes)}
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-2">

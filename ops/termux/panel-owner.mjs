@@ -114,8 +114,10 @@ function main() {
     oldOwnerIsGone(marker.pid);
   requireCondition(cold || restart, 'previous owner live, unverified or not cold-staged');
   const ticks = statTicks(pid);
-  const { bootstrap: ignoredMarker, ...nextMarker } = marker;
-  const { bootstrap: ignoredGateway, ...nextGateway } = gateway;
+  const nextMarker = { ...marker };
+  const nextGateway = { ...gateway };
+  delete nextMarker.bootstrap;
+  delete nextGateway.bootstrap;
   writeOwner(ownerFile, {
     ...nextMarker,
     pid,
