@@ -11,7 +11,7 @@ export interface ManagedRuntimeRegistration {
 }
 
 /**
- * No PhotoMap constants, process discovery, or shell. Only explicitly registered
+ * No process discovery or shell. Only explicitly registered
  * PocketHost-owned adapters are available; ports and IDs must be unique.
  */
 export function createManagedRuntimeRegistry(

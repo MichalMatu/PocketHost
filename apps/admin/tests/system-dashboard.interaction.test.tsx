@@ -67,8 +67,8 @@ const historyFixture = () => ({
     {
       observedAt: new Date(Date.now() - 180000).toISOString(),
       cpu: 19, ram: 66, internetMs: 28, internetFailed: false,
-      bridgeMs: 12, bridgeOnline: true, servicesRunning: 6,
-      servicesTotal: 6, storageAvailableMiB: 12000, systemUptimeSeconds: 200,
+      bridgeMs: 12, bridgeOnline: true, servicesRunning: 4,
+      servicesTotal: 4, storageAvailableMiB: 12000, systemUptimeSeconds: 200,
     },
   ],
 })
@@ -92,7 +92,7 @@ describe("PocketHost real-data dashboard", () => {
     await within(metrics).findByText("22.5%")
     expect(within(metrics).getByText("2.0 GiB")).toBeTruthy()
     expect(within(metrics).getByText("117.3 GiB")).toBeTruthy()
-    expect(within(metrics).getByText("6 / 6")).toBeTruthy()
+    expect(within(metrics).getByText("4 / 4")).toBeTruthy()
     expect(screen.getByText("Live system resources")).toBeTruthy()
     expect(screen.getByText("Recent system events")).toBeTruthy()
     expect(screen.getByText("Power & storage")).toBeTruthy()
@@ -151,7 +151,7 @@ describe("PocketHost real-data dashboard", () => {
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
     const metrics = screen.getByTestId("system-metrics")
-    await within(metrics).findByText("6 / 6")
+    await within(metrics).findByText("4 / 4")
     expect(within(metrics).queryByText("Unavailable")).toBeNull()
     expect(screen.getByText("Basic monitoring · Termux")).toBeTruthy()
     expect(screen.getByText(/PocketHost Companion disconnected/)).toBeTruthy()
