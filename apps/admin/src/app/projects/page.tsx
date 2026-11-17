@@ -529,7 +529,7 @@ export default function ProjectsPage() {
                 setSelectedSnapshot("")
                 setMessage("Owned Node backup snapshots refreshed.")
               })}>List Node snapshots</Button>
-            <Button disabled={busy || !backupApproved || !backupsEnabled}
+            <Button disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled}
               onClick={() => action(async () => {
                 await getJson(api + "/backup/create", "POST", { approved: true })
                 const report = await getJson(api + "/backup")
@@ -552,7 +552,7 @@ export default function ProjectsPage() {
               </option>)}
             </select>
           </label>
-          <Button variant="outline" disabled={busy || !backupApproved || !backupsEnabled ||
+          <Button variant="outline" disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled ||
               !selectedSnapshot}
             onClick={() => action(async () => {
               const response = await getJson(api + "/backup/restore", "POST", {
@@ -613,7 +613,7 @@ export default function ProjectsPage() {
                   setGithubReview(null)
                 }} />
             </label>
-            <Button variant="outline" disabled={busy || !githubRepository.trim()}
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !githubRepository.trim()}
               onClick={() => action(async () => {
                 const result = await getJson(api + "/github/preview", "POST",
                   { repository: githubRepository.trim() })
@@ -782,7 +782,7 @@ export default function ProjectsPage() {
               setPlan(null)
             }}>Clear imported frontend files</Button>}
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy || !selected.candidateRelease}
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.candidateRelease}
               onClick={() => action(async () => {
                 const response = await getJson(api + "/" + selected.id + "/source")
                 const value = response.source as Record<string, unknown> | undefined
@@ -881,7 +881,7 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
-                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setDependencyReview(null)
                     setDependencyApproved(false)
@@ -922,7 +922,7 @@ export default function ProjectsPage() {
                     disabled={busy || !dependencyInstallEnabled || dependencyReview?.status !== "review-required"} />
                   I authorize one isolated npm ci for this PocketHost release (network downloads permitted).
                 </label>
-                <Button variant="outline" disabled={busy || editorDirty || !dependencyApproved ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !dependencyApproved ||
                   !dependencyInstallEnabled || !selected.candidateRelease ||
                   dependencyReview?.release !== selected.candidateRelease ||
                   dependencyReview.status !== "review-required" || !dependencyReview.installRequired ||
@@ -955,7 +955,7 @@ export default function ProjectsPage() {
                       ? "Node build dependencies verified. Build execution is still disabled."
                       : "Owned Node packages installed and SHA-256 integrity verified. Review deploy plan.")
                   })}>Install approved dependencies</Button>
-                <Button variant="outline" disabled={busy || editorDirty || !selected.candidateRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setBuildReview(null)
                     setBuildApproved(false)
@@ -1004,7 +1004,7 @@ export default function ProjectsPage() {
                   I explicitly approve running the displayed build script from this trusted project.
                   It runs as the Termux user; the private folder is not an OS sandbox.
                 </label>
-                <Button variant="outline" disabled={busy || editorDirty || !buildApproved ||
+                <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !buildApproved ||
                   !buildEnabled || !selected.candidateRelease ||
                   buildReview?.release !== selected.candidateRelease ||
                   buildReview.status !== "ready-to-build" ||
@@ -1042,7 +1042,7 @@ export default function ProjectsPage() {
                     setBuildEnabled(checked.buildEnabled === true)
                     setMessage("Node build published privately and artifact integrity verified. Review deploy plan.")
                   })}>Execute approved Node build</Button>
-                <Button disabled={busy || editorDirty || !plan?.allowed || !selected.candidateRelease}
+                <Button disabled={busy || !ownerAuthorized || editorDirty || !plan?.allowed || !selected.candidateRelease}
                   variant="outline" onClick={() => action(async () => {
                     const result = await getJson(api + "/" + selected.id + "/check-build",
                       "POST", { release: selected.candidateRelease })
@@ -1071,7 +1071,7 @@ export default function ProjectsPage() {
                     await runRuntimeAction(selected.id, "start", { approved: true },
                       "Previously verified Node release started and readiness confirmed.")
                   })}>Start stopped service</Button>
-                <Button variant="outline" disabled={busy || !runtime?.previousGoodRelease}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
                     const target = runtime?.previousGoodRelease
@@ -1127,7 +1127,7 @@ export default function ProjectsPage() {
                   setHealth(value as NodeHealth)
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
-                <Button variant="outline" disabled={busy || runtime?.state !== "running"}
+                <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
                   onClick={() => action(async () => {
                     const response = await getJson(api + "/" + selected.id + "/preview")
                     const value = response.preview as Record<string, unknown> | undefined
