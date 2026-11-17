@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,6 +13,9 @@ type LogState = "idle" | "loading" | "ready" | "error"
 const errorPattern = /\b(error|failed|fatal|exception|denied|refused)\b/i
 
 export default function RuntimeLogsPage() {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const requestedRef = React.useRef<string | null>(null)
+  requestedRef.current = searchParams.get("project")
   const [targets, setTargets] = React.useState<ProjectLogTarget[]>([])
   const [selectedKey, setSelectedKey] = React.useState("")
   const [staticStatus, setStaticStatus] = React.useState<LogSourceStatus | "loading">("loading")
@@ -34,8 +37,11 @@ export default function RuntimeLogsPage() {
     setStaticStatus(result.staticStatus)
     setNodeStatus(result.nodeStatus)
     setTargets(result.targets)
-    setSelectedKey(current => result.targets.some(target => target.key === current)
-      ? current : (result.targets[0]?.key ?? ""))
+    setSelectedKey(current => {
+      const requested = requestedRef.current
+      return result.targets.some(target => target.key === requested) ? requested! :
+        result.targets.some(target => target.key === current) ? current : (result.targets[0]?.key ?? "")
+    })
     setCatalogLoading(false)
   }, [])
 
@@ -123,6 +129,7 @@ export default function RuntimeLogsPage() {
                 disabled={catalogLoading}
                 onClick={() => {
                   setSelectedKey(target.key)
+                  setSearchParams({ project: target.key }, { replace: true })
                   setSearch("")
                   setErrorsOnly(false)
                 }}>
