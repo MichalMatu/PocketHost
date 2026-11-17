@@ -151,8 +151,6 @@ export function RunitHealthPanel() {
             service.template === "node-source-v1"))) {
       throw new Error("Invalid service inventory")
     }
-    // Delegated/project-owned and unverified units never inherit S4 worker
-    // controls from a merely registered or process-running service.
     setServices(result.services.filter(service =>
       service.registered && !service.protected &&
       service.control === "standalone" &&
@@ -162,7 +160,7 @@ export function RunitHealthPanel() {
   }, [])
 
   React.useEffect(() => {
-    void refresh().catch(() => setError("Service inventory unavailable"))
+    void Promise.resolve().then(refresh).catch(() => setError("Service inventory unavailable"))
   }, [refresh])
 
   const refreshOverview = async () => {

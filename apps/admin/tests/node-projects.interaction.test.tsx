@@ -749,7 +749,7 @@ it("rejects malformed GitHub preview without changing the Node source editor", a
     runtime: "not-provisioned", activeRelease: null, candidateRelease: null,
     previousCandidate: null, deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
   }
-  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+  const calls = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
     if (url === "/api/v1/node-projects")
       return { ok: true, json: async () => ({ projects: [project] }) }

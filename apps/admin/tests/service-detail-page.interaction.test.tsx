@@ -18,9 +18,11 @@ const services = [
 ] as const
 
 it.each(services)("only requests the %s service diagnostics", async (service, mode) => {
-  const fetchMock = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => ({
-    ok: false, status: 503,
-  }))
+  const fetchMock = vi.fn(async (_input: RequestInfo | URL, _options?: RequestInit) => {
+    void _input
+    void _options
+    return { ok: false, status: 503 }
+  })
   vi.stubGlobal("fetch", fetchMock)
   render(<MemoryRouter initialEntries={["/services/" + service]}>
     <Routes><Route path="/services/:serviceId" element={<ServiceDetailPage />} /></Routes>

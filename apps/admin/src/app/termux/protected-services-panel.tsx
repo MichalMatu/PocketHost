@@ -18,8 +18,11 @@ function ServiceCard({ service, title, mode, refreshToken }: {
   const [error, setError] = React.useState(false)
   React.useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
-    setData(null)
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted) return
+      setLoading(true)
+      setData(null)
+    })
     void fetch("/api/v1/termux-admin?mode=" + mode, {
       method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
     }).then(async response => {

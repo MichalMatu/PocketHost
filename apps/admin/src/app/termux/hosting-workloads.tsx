@@ -46,9 +46,12 @@ export function HostingWorkloads({
   React.useEffect(() => {
     const controller = new AbortController()
     current.current = controller
-    setStaticSites({ state: "loading", items: [] })
-    setNodeProjects({ state: "loading", items: [] })
-    setProbes({})
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted) return
+      setStaticSites({ state: "loading", items: [] })
+      setNodeProjects({ state: "loading", items: [] })
+      setProbes({})
+    })
     void readStatic(controller.signal).then(value => {
       if (!controller.signal.aborted) setStaticSites(value)
     }).catch(() => {

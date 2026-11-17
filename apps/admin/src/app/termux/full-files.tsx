@@ -105,7 +105,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
   // Only expose shortcuts that exist and can actually be browsed. Never create directories here.
   React.useEffect(() => {
     let active = true
-    setQuickLocations([])
+    void Promise.resolve().then(() => { if (active) setQuickLocations([]) })
     void Promise.allSettled([browse("home", ""), browse("shared", "")]).then(async results => {
       const candidates = quickLocationCandidates.filter(candidate => {
         const result = results[candidate.root === "home" ? 0 : 1]

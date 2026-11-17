@@ -29,7 +29,7 @@ async function action<T>(payload: { action: string; name?: string; root?: string
       const hint = result?.reason ? hints[result.reason] : undefined
       if (hint) throw new Error(hint)
     }
-    throw new Error("Operation failed or was refused. No success was assumed.")
+    throw new Error("Operation refused; no success assumed.")
   }
   return await response.json() as T
 }
@@ -40,7 +40,7 @@ async function inspect<T>(mode: string, location = ""): Promise<T> {
       ? endpoint + "?mode=" + mode + "&name=" + encodeURIComponent(location) :
     endpoint + "?mode=" + mode
   const response = await fetch(request, { method: "GET", credentials: "same-origin", cache: "no-store" })
-  if (!response.ok) throw new Error("Inventory cannot be inspected.")
+  if (!response.ok) throw new Error("Inventory unavailable.")
   return await response.json() as T
 }
 function Feedback({ error, done }: { error: string | null; done: string | null }) {
@@ -676,9 +676,9 @@ export function RunitServiceActions({
   }, [])
   React.useEffect(() => {
     let active = true
-    void refresh().catch(() => { if (active) setError("Runit services unavailable") })
+    void Promise.resolve().then(refresh).catch(() => { if (active) setError("Runit unavailable") })
     return () => { active = false }
-  }, [refreshToken])
+  }, [refresh, refreshToken])
   const reviewPythonSource = async (name: string) => {
     if (busy) return
     setBusy(true); setError(null); setSourceReview(null); setSourceHistory(null)
