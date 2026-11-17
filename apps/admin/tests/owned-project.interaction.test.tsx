@@ -32,7 +32,7 @@ describe("H1 owned project validation", () => {
 
   it("rejects process ownership inferred from an external project", () => {
     const forged = fixture()
-    forged.project.id = "photomap-test"
+    forged.project.id = "foreign-project"
     expect(() => parseOwnedProject(forged)).toThrow()
     const port = fixture()
     port.project.url = "http://127.0.0.1:8010/"

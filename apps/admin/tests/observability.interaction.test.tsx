@@ -9,7 +9,7 @@ const fixture = () => ({
     version: 1, mode: "read-only", platform: "termux", observedAt: time,
     runtime: { nodeVersion: "v26.4.0", architecture: "arm64", systemUptimeSeconds: 1,
       totalMemoryMiB: 4096, freeMemoryMiB: 1024, storage: null },
-    services: ["ilestoi","tunnel","ssh","mqtt","healthwatch","local-agent"].map((id) =>
+    services: ["tunnel","ssh","mqtt","local-agent"].map((id) =>
       ({ id, label: id, ownership: "external", state: "unknown" })),
   },
   metrics: { cpuPercent: missing, batteryPercent: missing, network: missing },

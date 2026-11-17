@@ -15,33 +15,28 @@ const make = (service: string) => ({
     settings: service === "sshd" ? [{ name: "port", value: "8022" }] : [],
     truncated: false, error: null },
   logs: { state: "ok", events: [{ kind: "connection", timestamp: null }], error: null },
-  lastCheck: service === "ilestoi-healthwatch"
-    ? { state: "unverified", reason: "no-independent-check-source" } : null,
   notice: "external-protected-no-lifecycle-control",
 })
 afterEach(() => vi.unstubAllGlobals())
-describe("SSH, Mosquitto and healthwatch diagnostic cards", () => {
+describe("SSH and Mosquitto diagnostic cards", () => {
   it("shows independent read-only results with no lifecycle controls", async () => {
     const fetcher = vi.fn(async (url: string) => ({
       ok: true,
       json: async () => make(
-        url.includes("ssh-diagnostics") ? "sshd" :
-        url.includes("mqtt-diagnostics") ? "mosquitto" : "ilestoi-healthwatch"),
+        url.includes("ssh-diagnostics") ? "sshd" : "mosquitto"),
     }))
     vi.stubGlobal("fetch", fetcher)
     render(<ProtectedServicePanels />)
     await screen.findByText("port: 8022")
-    expect(screen.getAllByText(/PID 98/)).toHaveLength(3)
-    expect(screen.getByText(/Healthwatch last completed check: unverified/)).toBeTruthy()
+    expect(screen.getAllByText(/PID 98/)).toHaveLength(2)
     expect(screen.queryByRole("button", { name: /restart|stop|start/i })).toBeNull()
-    expect(fetcher.mock.calls).toHaveLength(3)
+    expect(fetcher.mock.calls).toHaveLength(2)
     expect(fetcher.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
   })
   it("isolates a missing service and rejects mismatched service payload", async () => {
     vi.stubGlobal("fetch", vi.fn(async (url: string) => ({
       ok: true,
-      json: async () => make(url.includes("mqtt-") ? "sshd" :
-        url.includes("ssh-") ? "sshd" : "ilestoi-healthwatch"),
+      json: async () => make(url.includes("mqtt-") ? "sshd" : "sshd"),
     })))
     render(<ProtectedServicePanels />)
     await screen.findByText(/Mosquitto \/ MQTT diagnostics unavailable/)

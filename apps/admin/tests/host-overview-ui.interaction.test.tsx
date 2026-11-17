@@ -14,7 +14,7 @@ const snapshot = {
   runtime: { nodeVersion: "v26.4.0", architecture: "arm64",
     systemUptimeSeconds: 8000, freeMemoryMiB: 2000,
     totalMemoryMiB: 6000, storage: { totalMiB: 7000, availableMiB: 4000 } },
-  services: ["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"].map(
+  services: ["tunnel", "ssh", "mqtt", "local-agent"].map(
     id => ({ id, label: id, ownership: "external", state: "running" }),
   ),
 }
@@ -50,7 +50,7 @@ describe("Host Overview stable and minimal UI", () => {
     expect(await screen.findByText("v26.4.0")).toBeTruthy()
     expect(screen.getByTestId("host-summary")).toBe(summaries)
     expect(screen.getByTestId("host-services")).toBe(services)
-    expect(screen.getByText("6 observed services")).toBeTruthy()
+    expect(screen.getByText("4 observed services")).toBeTruthy()
     expect(screen.queryByText(/External services are never controlled/)).toBeNull()
     expect(calls).toHaveBeenCalledTimes(1)
   })
@@ -66,11 +66,11 @@ describe("Host Overview stable and minimal UI", () => {
     vi.stubGlobal("fetch", calls)
     render(<HostOverview />)
     const oldValue = await screen.findByText("v26.4.0")
-    const oldService = screen.getByText("ilestoi")
+    const oldService = screen.getByText("tunnel")
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
     await waitFor(() => expect(round).toBe(2))
     expect(screen.getByText("v26.4.0")).toBe(oldValue)
-    expect(screen.getByText("ilestoi")).toBe(oldService)
+    expect(screen.getByText("tunnel")).toBe(oldService)
     expect(screen.getByTestId("host-summary").getAttribute("aria-busy")).toBe("false")
     finish?.({ ...snapshot, runtime: { ...snapshot.runtime, nodeVersion: "v26.5.0" } })
     expect(await screen.findByText("v26.5.0")).toBeTruthy()

@@ -22,7 +22,7 @@ const observation = {
     version: 1, mode: "read-only", platform: "termux", observedAt: time,
     runtime: { nodeVersion: "v26.0.0", architecture: "arm64", systemUptimeSeconds: 1,
       totalMemoryMiB: 4000, freeMemoryMiB: 1200, storage: null },
-    services: ["ilestoi","tunnel","ssh","mqtt","healthwatch","local-agent"].map(id => ({
+    services: ["tunnel","ssh","mqtt","local-agent"].map(id => ({
       id, label: id, ownership: "external", state: "running",
     })),
   },
@@ -185,7 +185,6 @@ describe("H3 strict read-only contracts", () => {
     ]) {
       expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(url)
     }
-    expect(screen.queryByText(/PhotoMap|IleStoi|wreckscanner/)).toBeNull()
     expect(calls).not.toHaveBeenCalled()
   })
 })

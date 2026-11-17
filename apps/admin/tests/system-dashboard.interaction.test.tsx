@@ -41,7 +41,7 @@ const hostFixture = {
     totalMemoryMiB: 4096, freeMemoryMiB: 2048,
     storage: { totalMiB: 150000, availableMiB: 120093 },
   },
-  services: ["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"].map(id => ({
+  services: ["tunnel", "ssh", "mqtt", "local-agent"].map(id => ({
     id, label: id, ownership: "external", state: "running",
   })),
 }

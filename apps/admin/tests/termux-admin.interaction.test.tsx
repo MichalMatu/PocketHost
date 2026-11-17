@@ -301,7 +301,7 @@ describe('H3 runit service enrollment UI', () => {
           archived: [],
           services: [
             {
-              name: 'wreckscanner',
+              name: 'foreign-daemon',
               registered: false,
               protected: true,
               control: 'read-only',
@@ -338,7 +338,7 @@ describe('H3 runit service enrollment UI', () => {
         <RunitServiceActions />
       </MemoryRouter>,
     );
-    await screen.findByText('wreckscanner');
+    await screen.findByText('foreign-daemon');
     expect(screen.queryByRole('button', { name: 'Register' })).toBeNull();
     expect(screen.getByText(/No standalone workers yet/)).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Add Service' }));

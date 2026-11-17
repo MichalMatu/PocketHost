@@ -27,7 +27,7 @@ const sample = () => ({
     runtime: { nodeVersion: "v26.1.0", architecture: "arm64", systemUptimeSeconds: 4000,
       totalMemoryMiB: 8000, freeMemoryMiB: 3000,
       storage: { totalMiB: 1000, availableMiB: 500 } },
-    services: ["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"].map(id =>
+    services: ["tunnel", "ssh", "mqtt", "local-agent"].map(id =>
       ({ id, label: id, ownership: "external", state: "running" })),
   },
   metrics: {

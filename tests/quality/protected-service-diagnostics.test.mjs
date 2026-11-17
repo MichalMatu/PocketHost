@@ -24,7 +24,7 @@ function host(f, command = (_binary, args) => ({
 }), readProc = file => file.endsWith('/stat') ? proc(98) : 'Name:\tnode\nVmRSS:\t4096 kB\n') {
   return new ProtectedServiceDiagnosticHost(f.services, f.sv, f.logs, f.etc, command, readProc, () => now);
 }
-for (const name of ['sshd', 'mosquitto', 'ilestoi-healthwatch']) {
+for (const name of ['sshd', 'mosquitto']) {
   test(name + ': verified fixed service, stable PID, read-only unknown health', () => {
     const f = fixture(name); const calls = [];
     try {
@@ -105,22 +105,21 @@ test('bounded event categories, without raw SSH/MQTT credentials, hosts or log t
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });
 test('changing PID/start ticks, denied proc and timeouts never claim a verified process', () => {
-  const f = fixture('ilestoi-healthwatch');
+  const f = fixture('mosquitto');
   try {
     let reads = 0;
     const moving = host(f, undefined, file => file.endsWith('/stat')
-      ? proc(98).replace('555', String(++reads)) : 'VmRSS:\t2048 kB\n').inspect('ilestoi-healthwatch');
+      ? proc(98).replace('555', String(++reads)) : 'VmRSS:\t2048 kB\n').inspect('mosquitto');
     assert.equal(moving.process, null);
     assert.equal(moving.runit.error, 'process-identity-changed');
     const denied = host(f, undefined, () => {
       throw Object.assign(Error('no access'), { code: 'EACCES' });
-    }).inspect('ilestoi-healthwatch');
+    }).inspect('mosquitto');
     assert.equal(denied.runit.error, 'process-permission-denied');
     const timeout = host(f, () => ({
       error: Object.assign(Error('timeout'), { code: 'ETIMEDOUT' }),
-    })).inspect('ilestoi-healthwatch');
+    })).inspect('mosquitto');
     assert.equal(timeout.runit.error, 'runit-timeout');
-    assert.equal(timeout.lastCheck.state, 'unverified');
     assert.throws(() => host(f).inspect('../sshd'), /unsupported-service/);
   } finally { rmSync(f.root, { recursive: true, force: true }); }
 });

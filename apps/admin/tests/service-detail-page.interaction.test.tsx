@@ -34,7 +34,7 @@ it.each(services)("only requests the %s service diagnostics", async (service, mo
   expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
 })
 
-it.each(["ilestoi", "healthwatch", "not-owned"])("retired or unknown service %s never triggers a host request", service => {
+it.each(["external-service", "unknown-service", "not-owned"])("retired or unknown service %s never triggers a host request", service => {
   const fetchMock = vi.fn()
   vi.stubGlobal("fetch", fetchMock)
   render(<MemoryRouter initialEntries={["/services/" + service]}>
