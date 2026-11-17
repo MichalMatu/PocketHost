@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
+import { NodeBackupPanel } from "./node-backup-panel"
 
 function validatedExtras(input: unknown): Record<string, string> {
   if (input === undefined) return {}
@@ -232,15 +233,6 @@ export default function ProjectsPage() {
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
-  const [backupApproved, setBackupApproved] = React.useState(false)
-  const [backupsEnabled, setBackupsEnabled] = React.useState(false)
-  const [backupSnapshots, setBackupSnapshots] = React.useState<{
-    id: string; time: string
-  }[]>([])
-  const [selectedSnapshot, setSelectedSnapshot] = React.useState("")
-  const [backupStatus, setBackupStatus] = React.useState<{
-    initialized: boolean; repositoryPresent: boolean; keyPresent: boolean
-  } | null>(null)
   const [registries, setRegistries] = React.useState<{
     modules: number; services: number; projects: number
   } | null>(null)
@@ -258,7 +250,6 @@ export default function ProjectsPage() {
     setBuildApproved(false)
     setBuildReview(null)
     setBuildEnabled(false)
-    setBackupApproved(false)
     setRollbackPreflight(null)
     setPlan(null)
     setExecutionEnabled(false)
@@ -493,22 +484,7 @@ export default function ProjectsPage() {
             })
             setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
-          <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
-            const response = await getJson(api + "/backup")
-            const value = response.backup as Record<string, unknown> | undefined
-            if (!value || typeof value.initialized !== "boolean" ||
-              typeof value.repositoryPresent !== "boolean" ||
-              typeof value.keyPresent !== "boolean") {
-              throw new Error("Invalid Node Restic state")
-            }
-            setBackupsEnabled(response.backupsEnabled === true)
-            setBackupStatus({
-              initialized: value.initialized,
-              repositoryPresent: value.repositoryPresent,
-              keyPresent: value.keyPresent,
-            })
-            setMessage("Owned Node Restic repository inspected without running backup.")
-          })}>Inspect Node backups</Button>
+
         </CardContent>
       </Card>
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
@@ -517,79 +493,8 @@ export default function ProjectsPage() {
       </p>}
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
-      {backupStatus && <Card>
-        <CardHeader>
-          <CardTitle>Scoped Node project backups</CardTitle>
-          <CardDescription>Restic stores only PocketHost-created Node projects in a separate private repository. Restore never replaces live services.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-sm" aria-label="Node backup state">
-            Scoped Node Restic: {backupStatus.initialized ? "initialized" : "not initialized"}.
-            Mutations: {backupsEnabled ? "enabled for explicit approval" : "disabled"}.
-          </p>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" aria-label="Approve Node Restic operation"
-              checked={backupApproved} onChange={event => setBackupApproved(event.target.checked)} />
-            I authorize a backup or staging-only restore of PocketHost-owned Node project data.
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy || !backupStatus.initialized}
-              onClick={() => action(async () => {
-                const result = await getJson(api + "/backup/snapshots")
-                if (!Array.isArray(result.snapshots) || result.snapshots.length > 40 ||
-                  !result.snapshots.every((snapshot) => {
-                    if (!snapshot || typeof snapshot !== "object") return false
-                    const row = snapshot as Record<string, unknown>
-                    return typeof row.id === "string" && /^[a-f0-9]{64}$/.test(row.id) &&
-                      typeof row.time === "string" && row.time.length <= 60
-                  })) throw new Error("Invalid Node Restic snapshot inventory")
-                setBackupSnapshots(result.snapshots as { id: string; time: string }[])
-                setSelectedSnapshot("")
-                setMessage("Owned Node backup snapshots refreshed.")
-              })}>List Node snapshots</Button>
-            <Button disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled}
-              onClick={() => action(async () => {
-                await getJson(api + "/backup/create", "POST", { approved: true })
-                const report = await getJson(api + "/backup")
-                const backup = report.backup as { initialized?: unknown } | undefined
-                if (!backup || backup.initialized !== true)
-                  throw new Error("Backup completion not verified")
-                setBackupStatus(backup as {
-                  initialized: boolean; repositoryPresent: boolean; keyPresent: boolean
-                })
-                setBackupApproved(false)
-                setMessage("Scoped encrypted Node backup completed; verify snapshots before restore.")
-              })}>Create Node backup</Button>
-          </div>
-          <label className="grid gap-1 text-sm">Staging restore snapshot
-            <select aria-label="Staging restore snapshot" className="w-full rounded-md border bg-background p-2"
-              value={selectedSnapshot} onChange={event => setSelectedSnapshot(event.target.value)}>
-              <option value="">Select a verified snapshot</option>
-              {backupSnapshots.map(snapshot => <option key={snapshot.id} value={snapshot.id}>
-                {snapshot.time} · {snapshot.id.slice(0, 12)}
-              </option>)}
-            </select>
-          </label>
-          <Button variant="outline" disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled ||
-              !selectedSnapshot}
-            onClick={() => action(async () => {
-              const response = await getJson(api + "/backup/restore", "POST", {
-                approved: true, snapshot: selectedSnapshot,
-              })
-              if (response.restoredToStaging !== true ||
-                  typeof response.verifiedProjects !== "number" ||
-                  !Number.isSafeInteger(response.verifiedProjects) ||
-                  response.verifiedProjects < 1 || response.verifiedProjects > 8)
-                throw new Error("Unverified staging-only restore")
-              setBackupApproved(false)
-              setMessage("Verified " + response.verifiedProjects +
-                " Node projects in private restore staging; no live source was replaced.")
-            })}>Restore Node snapshot to staging</Button>
-          {!backupsEnabled && <p className="text-xs text-muted-foreground">
-            Backup mutations require an independent Node backup DEV feature flag.
-          </p>}
-        </CardContent>
-      </Card>}
+      <NodeBackupPanel catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
+        busy={busy} action={action} getJson={getJson} onMessage={setMessage} />
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.

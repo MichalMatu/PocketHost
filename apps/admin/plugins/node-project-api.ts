@@ -143,7 +143,8 @@ export function nodeProjectApi(): Plugin {
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" &&
-            (op === "preview" || op === "source" || op === "dependency-review" ||
+            (route === "/backup/snapshots" || op === "preview" || op === "source" ||
+              op === "dependency-review" ||
              op === "build-review" || op === "rollback-preview") &&
             !ownerAuthorized(request)) {
           response.statusCode = 403
@@ -239,8 +240,17 @@ export function nodeProjectApi(): Plugin {
               if (createBackup) {
                 if (Object.keys(input).join(",") !== "approved" || input.approved !== true)
                   throw new RangeError("Explicit scoped backup authorization required")
+                const previous = nodeBackup!.status().initialized
+                  ? await nodeBackup!.snapshots() : []
                 await nodeBackup!.backup(true)
-                return { backupCreated: true, backup: nodeBackup!.status() }
+                // Verify one new owned snapshot; repository initialization is not
+                // evidence that this specific backup completed.
+                const observed = await nodeBackup!.snapshots()
+                const added = observed.filter((item) =>
+                  !previous.some((old) => old.id === item.id))
+                if (added.length !== 1) throw new Error("New Node snapshot not confirmed")
+                return { backupCreated: true, snapshot: added[0].id,
+                  backup: nodeBackup!.status() }
               }
               if (Object.keys(input).sort().join(",") !== "approved,snapshot" ||
                   input.approved !== true || typeof input.snapshot !== "string" ||
