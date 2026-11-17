@@ -98,12 +98,13 @@ export default function HostingPage() {
                   {staticInventory.items.map(site => (
                     <div key={site.id} className="space-y-1 rounded-md border p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="min-w-0 break-words font-medium">{site.name}</span>
+                        <Link to={"/sites?site=" + encodeURIComponent(site.id)} className="min-w-0 break-words font-medium underline underline-offset-4">{site.name}</Link>
                         <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span title={site.activeRelease ?? undefined}>Release: {releaseLabel(site.activeRelease)}</span>
                         <span>{site.releases} releases</span>
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className="underline underline-offset-4">Logs</Link>
                         {site.state === "running" && (
                           <span>HTTP: {site.healthy === true ? "healthy" : site.healthy === false ? "unavailable" : "not checked"}</span>
                         )}
@@ -132,13 +133,14 @@ export default function HostingPage() {
                   {nodeInventory.items.map(project => (
                     <div key={project.id} className="space-y-1 rounded-md border p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="min-w-0 break-words font-medium">{project.name}</span>
+                        <Link to={"/projects?project=" + encodeURIComponent(project.id)} className="min-w-0 break-words font-medium underline underline-offset-4">{project.name}</Link>
                         <Badge variant={project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span title={project.activeRelease ?? undefined}>Release: {releaseLabel(project.activeRelease)}</span>
                         {project.port !== null && <span>Port: {project.port}</span>}
                         <span>Desired: {project.desired}</span>
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("node:" + project.id)} className="underline underline-offset-4">Logs</Link>
                       </div>
                     </div>
                   ))}
