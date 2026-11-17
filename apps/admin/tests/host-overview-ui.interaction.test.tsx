@@ -21,11 +21,12 @@ const snapshot = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("Host Overview stable and minimal UI", () => {
-  it("places Host Inventory in Hosting, before Websites and exactly once", () => {
+  it("keeps Host Inventory once in Overview and Static websites in Hosting", () => {
     const overview = navGroups.find(group => group.label === "Overview")
     const hosting = navGroups.find(group => group.label === "Hosting")
     expect(overview?.items.some(item => item.url === "/host")).toBe(true)
-    expect(hosting?.items[0].url).toBe("/sites")
+    expect(hosting?.items[0].url).toBe("/hosting")
+    expect(hosting?.items[1].url).toBe("/sites")
     expect(hosting?.items.some(item => item.url === "/host")).toBe(false)
     expect(navGroups.flatMap(group => group.items).filter(item => item.url === "/host")).toHaveLength(1)
   })
