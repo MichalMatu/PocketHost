@@ -108,7 +108,7 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
   if (requestPath?.startsWith('/api/v1/sites')) return 30000;
   // Owner-approved Node installs, builds and runit lifecycle are longer than
   // the generic LAN 5s budget. No other API inherits these deadlines.
-  if (route?.startsWith('/api/v1/node-projects')) {
+  if (route === '/api/v1/node-projects' || route?.startsWith('/api/v1/node-projects/')) {
     if (method === 'POST' && /\/(?:install-dependencies|build)$/.test(route)) return 300000;
     if (method === 'POST' && /\/(?:deploy|rollback|start|stop|restart)$/.test(route)) return 60000;
     if (method === 'POST' && route === '/api/v1/node-projects/github/preview') return 90000;
