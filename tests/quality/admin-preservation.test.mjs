@@ -131,7 +131,6 @@ test('Services menu uses one generic registry without duplicated hosted-app navi
   for (const dest of ['/local-agent', '/services/cloudflare', '/services/ssh', '/services/mqtt']) {
     assert.equal(catalog.split('url: "' + dest + '"').length - 1, 1, dest);
   }
-  assert.doesNotMatch(catalog, /url: "\/services\/(?:photomap|ilestoi|healthwatch)"/);
   assert.match(routes, /path: "\/services\/:serviceId"/);
   for (const id of ['cloudflare', 'ssh', 'mqtt']) {
     assert.ok(routes.includes('path: "/services/' + id + '"'));

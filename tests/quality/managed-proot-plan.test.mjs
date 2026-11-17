@@ -12,7 +12,7 @@ const plan = () => ({
   command: ['/opt/app/python', '-m', 'uvicorn', 'server:app'],
 });
 
-test('generic PRoot launch plan supports a second app without PhotoMap values', () => {
+test('generic PRoot launch plan supports a second app without project-specific constants', () => {
   assert.deepEqual(buildManagedProotArgs(plan()), [
     '-R',
     '/managed/rootfs',

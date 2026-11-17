@@ -121,9 +121,9 @@ test('H2: invalid name, unknown ID and unowned directory fail closed', async () 
   const { tmp, root } = fixture();
   try {
     const fleet = new SiteFleetHost(root, await freePort());
-    await assert.rejects(fleet.create('../IleStoi'), /name/);
+    await assert.rejects(fleet.create('../outside'), /name/);
     await assert.rejects(fleet.create('A'), /name/);
-    assert.throws(() => fleet.inspect('photomap-test'), /Unknown site/);
+    assert.throws(() => fleet.inspect('foreign-project'), /Unknown site/);
     mkdirSync(root);
     mkdirSync(path.join(root, 'site-' + 'a'.repeat(32)));
     assert.throws(() => fleet.list(), /ENOENT|marker|directory/i);

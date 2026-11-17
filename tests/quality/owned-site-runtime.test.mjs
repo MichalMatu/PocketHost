@@ -96,7 +96,7 @@ test('single explicit site can be created, started, published, rolled back and s
 
 test('fixed ID rejects discovered services; only built-in static documents are published', () => {
   assert.equal(assertOwnedDemoId(OWNED_DEMO_ID), OWNED_DEMO_ID);
-  assert.throws(() => assertOwnedDemoId('ilestoi'), RangeError);
+  assert.throws(() => assertOwnedDemoId('foreign-owned'), RangeError);
   assert.throws(() => assertOwnedDemoId('../../outside'), RangeError);
   assert.match(demoDocument(1), /First local site/);
   assert.match(demoDocument(2), /Updated local site/);

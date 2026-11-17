@@ -26,7 +26,7 @@ test('M2 Node project, service and module declarations have exact reusable IDs',
 });
 
 test('M2 projection refuses foreign identity, duplicate project, and reserved port collision', () => {
-  assert.throws(() => nodeHostingUnitName('photomap-test'), /identity/);
+  assert.throws(() => nodeHostingUnitName('foreign-project'), /identity/);
   assert.throws(
     () => projectNodeHostingDeclarations([{ id: a, kind: 'node', port: null, registered: true }]),
     /Invalid/,

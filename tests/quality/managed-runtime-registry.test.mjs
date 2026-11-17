@@ -50,5 +50,5 @@ test('duplicate IDs, ports, invalid names, and unsafe ports are rejected', () =>
 test('registration is not automatic discovery or filesystem adoption', () => {
   const registry = createManagedRuntimeRegistry([]);
   assert.deepEqual(registry.list(), []);
-  assert.throws(() => registry.resolve('photomap-test'), /Unregistered/);
+  assert.throws(() => registry.resolve('foreign-project'), /Unregistered/);
 });

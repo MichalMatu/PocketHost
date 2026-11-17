@@ -124,7 +124,7 @@ test('native failures remain null; no autonomous privilege or foreign-service ac
       systemUptimeSeconds: 80,
     },
     services: [
-      { id: 'ilestoi', ownership: 'external', state: 'running' },
+      { id: 'tunnel', ownership: 'external', state: 'running' },
       { id: 'ssh', ownership: 'external', state: 'unknown' },
     ],
   });

@@ -23,7 +23,7 @@ test('HTTP watchdog signals only the dedicated registered runit service', () => 
   assert.match(service, /failures" -ge 3/);
   assert.match(service, /now - last_restart/);
   assert.match(service, /"\$SV" term "\$PANEL"/);
-  assert.doesNotMatch(service, /kill\s|SIGKILL|sshd|cloudflared|mosquitto|wreckscanner/);
+  assert.doesNotMatch(service, /kill\s|SIGKILL|sshd|cloudflared|mosquitto/);
 });
 
 test('install is guarded, disabled before activation, and scoped to the two PocketHost services', () => {

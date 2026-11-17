@@ -10,8 +10,8 @@ function fixture() {
   const services = path.join(tmp, 'services');
   mkdirSync(services);
   mkdirSync(path.join(services, 'site-worker'));
-  mkdirSync(path.join(services, 'wreckscanner'));
-  mkdirSync(path.join(services, 'wreckscanner-backup'));
+  mkdirSync(path.join(services, 'external-worker'));
+  mkdirSync(path.join(services, 'external-worker-backup'));
   mkdirSync(path.join(services, 'pockethost-panel'));
   mkdirSync(path.join(services, 'pockethost-panel-watch'));
   return { tmp, services, registry: path.join(tmp, 'state', 'registry.json') };
@@ -32,10 +32,10 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
       observed.find((item) => item.name === 'site-worker')?.identityReason,
       'no-enrollment',
     );
-    assert.equal(observed.find((item) => item.name === 'wreckscanner')?.registered, false);
-    assert.equal(observed.find((item) => item.name === 'wreckscanner')?.protected, true);
+    assert.equal(observed.find((item) => item.name === 'external-worker')?.registered, false);
+    assert.equal(observed.find((item) => item.name === 'external-worker')?.protected, true);
     assert.equal(
-      observed.find((item) => item.name === 'wreckscanner')?.identityReason,
+      observed.find((item) => item.name === 'external-worker')?.identityReason,
       'no-enrollment',
     );
     await assert.rejects(admin.apply('start', 'site-worker', fakeRun), /not explicitly registered/);
@@ -44,7 +44,7 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
       admin.apply('restart', 'site-worker', fakeRun),
       /not explicitly registered/,
     );
-    await assert.rejects(admin.apply('once', 'wreckscanner', fakeRun), /not explicitly registered/);
+    await assert.rejects(admin.apply('once', 'external-worker', fakeRun), /not explicitly registered/);
     await assert.rejects(
       admin.apply('register', 'site-worker', fakeRun),
       /attested PocketHost provisioner/,
@@ -67,7 +67,7 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
     return { exit: 0, output: '' };
   };
   try {
-    for (const name of ['wreckscanner', 'wreckscanner-backup']) {
+    for (const name of ['external-worker', 'external-worker-backup']) {
       assert.equal(admin.list(() => 'running').find((item) => item.name === name)?.protected, true);
       assert.equal(admin.isRegistered(name), false);
       await assert.rejects(
@@ -93,8 +93,8 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
       assert.throws(() => admin.isRegistered(name), /Protected service/);
     }
     await assert.rejects(admin.apply('register', '../service', fakeRun), /Invalid/);
-    await assert.rejects(admin.apply('start', 'site-worker/../wreckscanner', fakeRun), /Invalid/);
-    symlinkSync(path.join(services, 'wreckscanner'), path.join(services, 'alias'));
+    await assert.rejects(admin.apply('start', 'site-worker/../external-worker', fakeRun), /Invalid/);
+    symlinkSync(path.join(services, 'external-worker'), path.join(services, 'alias'));
     assert.equal(admin.isRegistered('alias'), false);
     await assert.rejects(admin.apply('stop', 'alias', fakeRun), /not explicitly registered/);
     symlinkSync(path.join(services, 'pockethost-panel'), path.join(services, 'protected-alias'));
@@ -125,7 +125,7 @@ test('H3.4 runit enable/disable requires separately attested worker enrollment',
       /not explicitly registered/,
     );
     await assert.rejects(
-      admin.apply('disable', 'wreckscanner', fakeRun),
+      admin.apply('disable', 'external-worker', fakeRun),
       /not explicitly registered/,
     );
     await assert.rejects(admin.apply('disable', 'pockethost-panel', fakeRun), /Protected service/);
@@ -145,7 +145,7 @@ test('H3 exact runit inspection separates foreign services from protected Pocket
   const admin = new TermuxServiceAdmin(services, registry);
   try {
     assert.equal(admin.isRegistered('site-worker'), false);
-    assert.equal(admin.isRegistered('wreckscanner'), false);
+    assert.equal(admin.isRegistered('external-worker'), false);
     assert.throws(() => admin.isRegistered('pockethost-panel'), /Protected/);
     assert.throws(() => admin.isRegistered('not-registered'), /unavailable/);
     assert.equal(existsSync(registry), false);

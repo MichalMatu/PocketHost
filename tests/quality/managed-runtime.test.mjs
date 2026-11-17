@@ -46,7 +46,7 @@ function fixture() {
   };
 }
 
-test('generic runtime manages an unrelated owned project without PhotoMap constants', async () => {
+test('generic runtime manages an unrelated owned project without project-specific constants', async () => {
   const f = fixture();
   assert.equal((await f.runtime.start()).state, 'running');
   assert.equal((await f.runtime.start()).state, 'running');
@@ -59,7 +59,7 @@ test('generic runtime manages an unrelated owned project without PhotoMap consta
 test('foreign owner, id, port, release and autostart fail closed before side effects', async () => {
   for (const changed of [
     { ownership: 'none' },
-    { id: 'photomap-test' },
+    { id: 'foreign-project' },
     { port: 8010 },
     { sourceRelease: 'foreign-release' },
     { autostart: true },
