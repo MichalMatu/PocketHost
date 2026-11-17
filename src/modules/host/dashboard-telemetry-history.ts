@@ -9,6 +9,7 @@ import { readHostSnapshot } from './host-snapshot.ts';
 import { readBatteryPercent } from './observability-probes.ts';
 import { readCompanionStatus } from './shizuku-companion.mjs';
 import { probeInternetConnectivity } from './internet-connectivity.ts';
+import { filterUnknownServices } from './dashboard-history-migration.ts';
 
 export const DASHBOARD_INTERVAL_MS = 60_000;
 export const DASHBOARD_MAX_POINTS = 1440;
@@ -371,7 +372,7 @@ export class DashboardHistoryStore {
     try {
       privateParent(file);
       if (privateFile(file)) {
-        const value: unknown = JSON.parse(readFileSync(file, 'utf8'));
+        const value: unknown = filterUnknownServices(JSON.parse(readFileSync(file, 'utf8')), SERVICE_IDS);
         if (
           !value ||
           typeof value !== 'object' ||
@@ -399,9 +400,7 @@ export class DashboardHistoryStore {
         ) {
           throw new Error('Invalid hourly history');
         }
-        // A long phone sleep or stopped panel can leave full-resolution points
-        // older than 24 h in the last saved file. Downsample those genuine
-        // points on reload rather than silently discarding the 7-day history.
+        // Retain genuine older samples as hourly checkpoints.
         const older = [
           ...(archive as DashboardTelemetryPoint[]),
           ...(loaded as DashboardTelemetryPoint[]),

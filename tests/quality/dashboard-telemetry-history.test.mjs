@@ -464,3 +464,28 @@ test('long suspend across 24h rollover preserves actual old samples in 7d hourly
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('retired external service IDs are not required to restore persisted telemetry', () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-history-'));
+  try {
+    const file = path.join(dir, 'history.json');
+    const earlier = initial - 60000;
+    writeFileSync(file, JSON.stringify({
+      version: 1,
+      points: [point(earlier, {
+        serviceStates: { ssh: 'running', 'retired-external': 'stopped' },
+      })],
+      events: [
+        { observedAt: new Date(earlier).toISOString(),
+          code: 'service-unavailable', service: 'retired-external' },
+      ],
+    }));
+    const store = new DashboardHistoryStore(file, () => initial);
+    const history = store.history('24h');
+    assert.equal(history.state, 'ok');
+    assert.deepEqual(history.samples[0]?.serviceStates, { ssh: 'running' });
+    assert.deepEqual(history.events, []);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
