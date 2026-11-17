@@ -47,14 +47,17 @@ export async function readProjectLogCatalog(signal?: AbortSignal): Promise<Proje
   return { targets: [...staticTargets, ...nodeTargets], staticStatus, nodeStatus }
 }
 
-/* Defense-in-depth for displayed output; host-side ownership and redaction remain mandatory. */
+/* Defense in depth: hide entire sensitive lines, including JSON and header formats
+ * whose values are not covered by the older host-side key=value sanitizer.
+ * Unknown secrets cannot be identified reliably: avoid logging secrets at source. */
 export function redactProjectLog(line: string): string {
-  return line
-    .replace(/\b(authorization)\s*[:=]\s*(?:bearer\s+)?\S+/gi, "$1=[redacted]")
-    .replace(/\b(password|secret|token|api[_-]?key|access[_-]?key)\s*[:=]\s*(?:"[^"]*"|'[^']*'|\S+)/gi, "$1=[redacted]")
-    .replace(/\b(bearer)\s+[a-z0-9._~+/-]+/gi, "$1 [redacted]")
-    .replace(/[\x00-\x1f\x7f]/g, "")
-    .slice(0, 240)
+  const clean = line.replace(/[\x00-\x1f\x7f]/g, "")
+  if (/\b(password|passwd|secret|token|authorization|api[_-]?key|access[_-]?key|cookie|set-cookie|private[_ -]?key|bearer)\b/i.test(clean) ||
+      /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(clean) ||
+      /\beyJ[A-Za-z0-9_-]{12,}\.eyJ[A-Za-z0-9_-]{12,}\./.test(clean)) {
+    return "[sensitive log line hidden]"
+  }
+  return clean.slice(0, 240)
 }
 
 export async function readProjectLogLines(target: ProjectLogTarget, signal?: AbortSignal): Promise<string[]> {
