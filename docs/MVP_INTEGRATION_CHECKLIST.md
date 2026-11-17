@@ -27,6 +27,8 @@ Status: **HOSTING P0 DEVICE FLOWS PASS (NODE + STATIC); API/ROUTES PASS; BROWSER
 
 ## Remaining owner acceptance and P1
 
+**P1 read-only A8 preflight:** receipt `pockethost-a8-mvp-stabilization-readiness-0db03272-20261117-v1` PASS. Node Restic backup API 200 but `backupsEnabled=false`, `initialized=false`, `repositoryPresent=false`, `keyPresent=false` — **do not attempt real backup/restore until scoped initialization and approval**. Termux:Boot directory exists with 3 executable regular scripts; no evidence they actually start after Android reboot. No backup, restore, reboot, scheduler or boot mutation performed.
+
 - [ ] **Browser UI:** on trusted LAN, visually check `/hosting`, `/sites?site=<id>`, `/projects?project=<id>`, `/deployments`, `/runtime-logs?project=static:<id>` and `node:<id>`; click links, refresh and verify both owners' entries. An HTML 200 alone does not prove React-rendered UI.
 - [x] **A8 Local Agent P0:** real Node Create → Stage → Deploy → HTTP/Health/Logs → Update → Stop/Start → Rollback; real Static Update → served HTML → Rollback. Both PASS at exact live SHA above.
 - [ ] **P1 scoped backup/restore:** perform an authorized real backup, restore into isolated staging and verify restoration without overwriting live user data; capture evidence before marking accepted.
