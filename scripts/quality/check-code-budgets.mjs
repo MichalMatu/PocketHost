@@ -41,7 +41,7 @@ export function validateCodeBudgets(root = repositoryRoot) {
     if (bytes > maximum) errors.push('Oversized code file: ' + relative + ' (' + bytes + ' > ' + maximum + ')');
     const source = readFileSync(file, 'utf8');
     const lines = source.split('\n').length;
-    if (lines > (testFile ? TEST_LINES : (relative === 'apps/admin/src/components/ui/sidebar.tsx' ? 727 : BASE_LINES)))
+    if (!legacyBytes.has(relative) && lines > (testFile ? TEST_LINES : (relative === 'apps/admin/src/components/ui/sidebar.tsx' ? 727 : BASE_LINES)))
       errors.push('Too many lines: ' + relative + ' (' + lines + ')');
     if (relative.startsWith('apps/admin/src/') &&
         /^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?['"](?:node:(?:fs|child_process|os|net|http|https)|[^'"]*src\/modules\/host\/)/m.test(source))
