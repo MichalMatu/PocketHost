@@ -67,6 +67,28 @@ it("rejects invalid Node project inventory without hiding an error as an empty c
   expect(screen.queryByText("No Node projects yet.")).toBeNull()
   expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
 })
+it("keeps Node project creation locked when the owner token is rejected", async () => {
+  const fetchMock = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url) === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [] }) }
+    if (String(url) === "/api/v1/node-projects/owner-session")
+      return { ok: true, json: async () => ({ configured: true, authorized: false }) }
+    throw new Error("Unexpected owner operation")
+  })
+  vi.stubGlobal("fetch", fetchMock)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await screen.findByText("No Node projects yet.")
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Project name"), "Trusted project")
+  const create = screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement
+  expect(create.disabled).toBe(true)
+  await user.type(screen.getByLabelText("Node owner token"), "B".repeat(40))
+  await user.click(screen.getByRole("button", { name: "Unlock management" }))
+  await screen.findByText("Invalid Node owner token.")
+  expect(create.disabled).toBe(true)
+  expect(fetchMock.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(0)
+})
+
 it("M3 browser creates and stages a real API-backed Node source candidate without running it", async () => {
   const user = userEvent.setup()
   let projects: unknown[] = []
