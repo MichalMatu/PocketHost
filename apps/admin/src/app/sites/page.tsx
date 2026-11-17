@@ -81,11 +81,22 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [assetsLoading, setAssetsLoading] = React.useState(false)
   const [html, setHtml] = React.useState(starterHtml)
   const [showHtmlEditor, setShowHtmlEditor] = React.useState(false)
+  const [htmlLoading, setHtmlLoading] = React.useState(false)
+  const [editorRelease, setEditorRelease] = React.useState<string | null | undefined>(undefined)
+  const editorReady = editorRelease !== undefined && editorRelease === site.activeRelease
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
+  React.useEffect(() => {
+    // A publish/restore/rollback changes the immutable source. Never leave
+    // an editor bound to the previous release and accidentally overwrite it.
+    if (showHtmlEditor && editorRelease !== undefined && editorRelease !== site.activeRelease) {
+      setShowHtmlEditor(false)
+      setEditorRelease(undefined)
+    }
+  }, [showHtmlEditor, editorRelease, site.activeRelease])
 
   const readVersions = async () => {
     const response = await fetch(endpoint + "/" + site.id + "/releases", {
@@ -118,6 +129,41 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
     }).finally(() => setAssetsLoading(false))
   }
+  const toggleHtmlEditor = () => {
+    if (showHtmlEditor) {
+      setShowHtmlEditor(false)
+      setEditorRelease(undefined)
+      return
+    }
+    if (busy || htmlLoading || site.state === "unknown" || site.fileCount > 1) return
+    setShowHtmlEditor(true)
+    setEditorRelease(undefined)
+    setError(null)
+    if (!site.activeRelease) {
+      setHtml(starterHtml)
+      setEditorRelease(null)
+      return
+    }
+    setHtmlLoading(true)
+    void fetch(endpoint + "/" + site.id + "/html", {
+      credentials: "same-origin", cache: "no-store",
+    }).then(async response => {
+      if (!response.ok) throw new Error("Could not load the published HTML for editing.")
+      const result: unknown = await response.json()
+      if (!result || typeof result !== "object" || Array.isArray(result))
+        throw new Error("Invalid HTML source response.")
+      const source = result as { release?: unknown; html?: unknown }
+      if (source.release !== site.activeRelease || typeof source.html !== "string")
+        throw new Error("Active release changed. Refresh before editing.")
+      if (new TextEncoder().encode(source.html).length > maxStarterHtml)
+        throw new Error("Current HTML is larger than the 32 KiB editor limit.")
+      setHtml(source.html)
+      setEditorRelease(site.activeRelease)
+    }).catch(cause => {
+      setError(cause instanceof Error ? cause.message : "Could not load the published HTML.")
+    }).finally(() => setHtmlLoading(false))
+  }
+
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
     if (site.state === "unknown" || busy) return
     const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
@@ -224,7 +270,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
   const publishHtml = () => {
-    if (busy || site.state === "unknown" || !html.trim()) return
+    if (busy || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
     const bytes = new TextEncoder().encode(html)
     if (bytes.length > maxStarterHtml) {
       setError("HTML is larger than 32 KiB. Use Upload folder or ZIP instead.")
@@ -324,18 +370,27 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               <p className="text-sm font-medium">Quick HTML website</p>
               <p className="text-xs text-muted-foreground">
                 Edit index.html → Publish HTML → Start → Open hosted site.
-                No ZIP or build needed.
+                Open the editor again to update; each publish creates a rollback version.
               </p>
             </div>
-            <Button size="sm" variant="outline" disabled={busy}
-              onClick={() => setShowHtmlEditor(value => !value)}>
-              {showHtmlEditor ? "Hide HTML editor" : "Edit starter HTML"}
+            <Button size="sm" variant="outline"
+              disabled={busy || htmlLoading || site.state === "unknown" || site.fileCount > 1}
+              onClick={toggleHtmlEditor}>
+              {showHtmlEditor ? "Hide HTML editor" :
+                site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
             </Button>
           </div>
-          {showHtmlEditor && <div className="space-y-2">
+          {site.fileCount > 1 && <p className="text-xs text-muted-foreground">
+            The quick editor is for single-file HTML sites. Existing multi-file releases are left unchanged.
+          </p>}
+          {showHtmlEditor && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
+          {showHtmlEditor && editorReady && <div className="space-y-2">
             <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
               index.html source
             </label>
+            <p className="text-xs text-muted-foreground">
+              {editorRelease ? "Editing active release " + editorRelease.slice(0, 12) + "…" : "Editing new starter page"}
+            </p>
             <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
               value={html} onChange={event => setHtml(event.target.value)}
               disabled={busy || site.state === "unknown"}
@@ -343,9 +398,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             />
             <p className="text-xs text-muted-foreground">
               One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
-              Each save becomes a new version you can roll back.
+              Each publish creates a new version you can roll back.
             </p>
-            <Button size="sm" disabled={busy || site.state === "unknown" || !html.trim() ||
+            <Button size="sm" disabled={busy || !editorReady || site.state === "unknown" || !html.trim() ||
               new TextEncoder().encode(html).length > maxStarterHtml}
               onClick={publishHtml}>
               Publish HTML
@@ -462,6 +517,7 @@ export default function SitesPage() {
   const [loading, setLoading] = React.useState(true)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [notice, setNotice] = React.useState<string | null>(null)
 
   const reload = React.useCallback(async (signal?: AbortSignal) => {
     const entries = await readSites(signal)
@@ -488,6 +544,7 @@ export default function SitesPage() {
     if (creating || sites.length >= 8) return
     setCreating(true)
     setError(null)
+    setNotice(null)
     try {
       let created: FleetSite
       try {
@@ -515,6 +572,7 @@ export default function SitesPage() {
           throw new Error("create-readback-mismatch")
         setSites(observed)
         setName("")
+        setNotice('Site "' + created.name + '" created. Edit HTML to publish the first release.')
       } catch {
         setError("Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
@@ -545,6 +603,7 @@ export default function SitesPage() {
         </Card>
         {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+        {notice && <p role="status" className="text-sm">{notice}</p>}
         {!loading && sites.length === 0 && !error && <p className="text-muted-foreground text-sm">
           No static sites yet. Create your first site above.
         </p>}

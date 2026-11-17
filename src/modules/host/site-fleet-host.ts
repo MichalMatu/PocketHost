@@ -400,6 +400,20 @@ export class SiteFleetHost {
     return result.sort((a, b) => a.name.localeCompare(b.name));
   }
 
+  /** Read only the exact active homepage, never a caller-supplied file path. */
+  readActiveHtml(id: string): { release: string | null; html: string | null } {
+    const item = this.record(id);
+    if (!item.activeRelease) return { release: null, html: null };
+    const root = requireRelease(this.site(id), item.activeRelease);
+    const bytes = fileAt(root, 'index.html');
+    if (bytes.length > 32 * 1024)
+      throw new RangeError('Homepage exceeds the quick HTML editor limit');
+    return {
+      release: item.activeRelease,
+      html: new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+    };
+  }
+
   /** Only physically present, verified owned releases are actionable. */
   listReleases(id: string): FleetRelease[] {
     const item = this.record(id);
