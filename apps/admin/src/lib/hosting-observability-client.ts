@@ -36,12 +36,12 @@ export async function readProjectLogCatalog(signal?: AbortSignal): Promise<Proje
   const staticTargets: ProjectLogTarget[] = staticResult.status === "fulfilled" &&
     staticResult.value !== null
     ? staticResult.value.map(site => ({
-        key: "static:" + site.id, id: site.id, name: site.name, kind: "static",
+        key: "static:" + site.id, id: site.id, name: site.name, kind: "static" as const,
       }))
     : []
   const nodeTargets: ProjectLogTarget[] = nodeResult.status === "fulfilled"
     ? nodeResult.value.projects.map(project => ({
-        key: "node:" + project.id, id: project.id, name: project.name, kind: "node",
+        key: "node:" + project.id, id: project.id, name: project.name, kind: "node" as const,
       }))
     : []
   return { targets: [...staticTargets, ...nodeTargets], staticStatus, nodeStatus }
