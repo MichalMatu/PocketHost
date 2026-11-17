@@ -48,7 +48,7 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
       setLoading(false)
     }
   }, [])
-  React.useEffect(() => { void refresh() }, [refresh, refreshToken])
+  React.useEffect(() => { void Promise.resolve().then(refresh) }, [refresh, refreshToken])
   return <section className="space-y-2 rounded-md border p-3" aria-label="Termux Boot observation">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Termux:Boot · startup chain</h3>

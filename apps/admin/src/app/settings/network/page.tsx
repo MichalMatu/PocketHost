@@ -34,7 +34,9 @@ export default function NetworkAccessPage() {
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
-    void refresh(controller.signal).catch(() => {
+    void Promise.resolve().then(() => {
+      if (!controller.signal.aborted) return refresh(controller.signal)
+    }).catch(() => {
       if (!controller.signal.aborted)
         setError("Cannot read LAN settings from this PocketHost session.")
     })

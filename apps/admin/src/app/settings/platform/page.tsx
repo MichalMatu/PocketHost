@@ -50,7 +50,9 @@ export default function PlatformPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    setLoading(true)
+    void Promise.resolve().then(() => {
+      if (!controller.signal.aborted) setLoading(true)
+    })
     void Promise.allSettled([
       inspect<GitStatus>("/api/v1/termux-admin?mode=git-workspace", controller.signal),
       inspect<BootStatus>("/api/v1/termux-admin?mode=service-boot", controller.signal),

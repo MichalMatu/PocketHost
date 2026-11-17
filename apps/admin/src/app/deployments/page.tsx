@@ -70,8 +70,11 @@ export default function DeploymentsPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    void loadSites(controller.signal)
-    void loadNodes(controller.signal)
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted) return
+      void loadSites(controller.signal)
+      void loadNodes(controller.signal)
+    })
     return () => controller.abort()
   }, [loadSites, loadNodes])
 

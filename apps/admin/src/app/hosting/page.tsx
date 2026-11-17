@@ -31,8 +31,12 @@ export default function HostingPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    setStaticState(loading)
-    setNodeState(loading)
+    void Promise.resolve().then(() => {
+      if (!controller.signal.aborted) {
+        setStaticState(loading)
+        setNodeState(loading)
+      }
+    })
     void staticHosting(controller.signal)
       .then(value => { if (!controller.signal.aborted) setStaticState(value) })
       .catch(() => { if (!controller.signal.aborted) setStaticState({ status: "unavailable", count: 0 }) })

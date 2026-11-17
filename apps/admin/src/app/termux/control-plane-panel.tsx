@@ -14,9 +14,12 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
   const [error, setError] = React.useState(false)
   React.useEffect(() => {
     const controller = new AbortController()
-    setData(null)
-    setError(false)
-    setLoading(true)
+    void Promise.resolve().then(() => {
+      if (controller.signal.aborted) return
+      setData(null)
+      setError(false)
+      setLoading(true)
+    })
     void fetch("/api/v1/termux-admin?mode=control-plane-diagnostics", {
       method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
     }).then(async response => {
