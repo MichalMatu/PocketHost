@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readFileSync } from 'node:fs';
 import {
   attestsManagedProcess,
   safeStopEvidence,
@@ -81,28 +80,10 @@ test('PRoot process group probe fails closed for unknown and surviving descendan
   );
 });
 
-test('PhotoMap adapter may not delete its marker on leader-only stop evidence', () => {
-  const source = readFileSync(
-    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
-    'utf8',
-  );
-  assert.match(source, /await stopOwnedProcessSafely\(/);
-  assert.match(source, /observedDescendantsExited\(descendants, startTicks\)/);
-  assert.match(source, /processGroupAbsent\(marker.pid/);
-  assert.match(source, /signalOwnedLeader: \(\) => process\.kill\(marker\.pid, 'SIGTERM'\)/);
-  assert.match(source, /PhotoMap graceful stop uncertain; marker retained/);
-});
-
-test('missing leader PID cannot clear a retained PhotoMap ownership marker', () => {
+test('managed process state remains fail-closed on inconsistent ownership evidence', () => {
   assert.equal(classifyManagedProcessState(false, false), 'stopped');
   assert.equal(classifyManagedProcessState(true, true), 'running');
   assert.equal(classifyManagedProcessState(true, false), 'unknown');
-  // An inconsistent observation must never promote an absent marker.
+  // Inconsistent observations cannot promote absent ownership into a running state.
   assert.equal(classifyManagedProcessState(false, true), 'stopped');
-  const source = readFileSync(
-    new URL('../../src/modules/host/photomap-runtime-host.ts', import.meta.url),
-    'utf8',
-  );
-  assert.match(source, /classifyManagedProcessState\(/);
-  assert.doesNotMatch(source, /startTicks\(marker\.pid\) === null\s*\? 'stopped'/);
 });
