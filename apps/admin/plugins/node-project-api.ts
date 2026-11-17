@@ -160,7 +160,7 @@ export function nodeProjectApi(): Plugin {
               route === "/registry" ? { registries: runtime!.registryProjection() } :
               route === "/backup" ? { backup: nodeBackup!.status(), backupsEnabled: backupEnabled } :
               route === "/backup/snapshots" ? {
-                snapshots: await nodeBackup!.snapshots(),
+                snapshots: (await nodeBackup!.snapshots()).map(({ id, time }) => ({ id, time })),
               } :
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :

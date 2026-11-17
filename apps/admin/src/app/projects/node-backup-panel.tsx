@@ -35,12 +35,20 @@ export function NodeBackupPanel({
   React.useEffect(() => {
     if (!ownerAuthorized) {
       setBackupApproved(false)
+      setBackupStatus(null)
+      setBackupsEnabled(false)
       setBackupSnapshots([])
       setSelectedSnapshot("")
     }
   }, [ownerAuthorized])
 
   const inspect = async () => {
+    // Failed refresh must never retain a previous "ready" or mutation flag.
+    setBackupStatus(null)
+    setBackupsEnabled(false)
+    setBackupApproved(false)
+    setBackupSnapshots([])
+    setSelectedSnapshot("")
     const report = await getJson(api + "/backup")
     const value = report.backup as Record<string, unknown> | undefined
     if (!value || typeof value.initialized !== "boolean" ||
@@ -81,14 +89,18 @@ export function NodeBackupPanel({
           <Button variant="outline" disabled={busy || !ownerAuthorized ||
               !backupStatus.initialized || !backupStatus.repositoryPresent || !backupStatus.keyPresent}
             onClick={() => action(async () => {
+              setBackupSnapshots([])
+              setSelectedSnapshot("")
+              setBackupApproved(false)
               const response = await getJson(api + "/backup/snapshots")
               setBackupSnapshots(readSnapshots(response.snapshots))
-              setSelectedSnapshot("")
               onMessage("Owned Node snapshots refreshed.")
             })}>List Node snapshots</Button>
           <Button disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled}
             onClick={() => action(async () => {
               setBackupApproved(false)
+              setBackupSnapshots([])
+              setSelectedSnapshot("")
               const result = await getJson(api + "/backup/create", "POST", { approved: true })
               if (result.backupCreated !== true || typeof result.snapshot !== "string" ||
                   !/^[a-f0-9]{64}$/.test(result.snapshot))
@@ -117,6 +129,7 @@ export function NodeBackupPanel({
           onClick={() => action(async () => {
             const snapshot = selectedSnapshot
             setBackupApproved(false)
+            setSelectedSnapshot("")
             const result = await getJson(api + "/backup/restore", "POST", { approved: true, snapshot })
             if (result.restoredToStaging !== true ||
                 typeof result.verifiedProjects !== "number" ||
