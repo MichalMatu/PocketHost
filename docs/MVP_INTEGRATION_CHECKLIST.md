@@ -1,6 +1,13 @@
 # PocketHost Hosting MVP — integration and owner acceptance
 
-Status: **IMPLEMENTED AND DEPLOYED TO VERIFIED A8 DEV — READY FOR OWNER ACCEPTANCE; NOT PHYSICALLY ACCEPTED END-TO-END**.
+Status: **HOSTING P0 DEVICE FLOWS PASS (NODE + STATIC); API/ROUTES PASS; BROWSER OWNER SIGN-OFF AND P1 RECOVERY/REBOOT PENDING**.
+
+## Device-backed Hosting P0 (2026-11-17, later acceptance run)
+
+- **Node.js: PASS** on verified Samsung A8, live panel code `0db0327239194e4a8d9da538308529681ad666fc`. Local Agent receipt `pockethost-a8-mvp-real-owned-node-continue-0db03272-20261117-v3`: existing private, owner-authorized demo project `node-0ccd04db610a46418fc113753019b8fb` staged v1 `r-bc53b74d151a4cd1b9508f56d54bac05`, deployed and verified loopback HTTP 200/readiness/logs at port 19300, updated to v2 `r-4953df3424a342128e341c7c3b4545f8`, stopped, started and rolled back to v1. All stages PASS. The demo remains running on v1. The owner secret was read only on A8 and never logged or copied to GitHub.
+- **Static: PASS** on existing site `site-33cca1ef73fd4bd89b41d979b754ccfe`. Receipt `pockethost-a8-mvp-static-v2-rollback-0db03272-20261117-v1`: initial one-file v1 `r-22ad782ce6ef40489494a293ed87669b`, published v2 `r-db3cf2c7aaa64a4d93b3f5cd826c3303`, verified exact served HTML at HTTP 200, rolled back and reverified original source and served bytes (SHA-256 `92cf4486770d065263c944d49d563145f07e3c725f19d4f97e8c815da8b3f7a6`). Node demo, panel and protected services unaffected.
+- **Hosting APIs/routes: PASS**. Receipt `pockethost-a8-mvp-live-hosting-navigation-0db03272-20261117-v1`: five SPA routes, four direct-link routes, static and Node catalogs, project-scoped log APIs all HTTP 200. Node logs have 5 lines. This verifies HTTP availability and live API state, **not** final browser-rendered interaction or human visual sign-off.
+- These are narrowly scoped owner-requested *physical A8 operations*, not repository-wide automated QA, not separate external device/browser approval and not evidence for backup/restore or reboot/autostart. Existing user data preserved; one new demo Node project was intentionally retained.
 
 ## Delivered 2026-11-17
 
@@ -18,11 +25,12 @@ Status: **IMPLEMENTED AND DEPLOYED TO VERIFIED A8 DEV — READY FOR OWNER ACCEPT
 - Integrated PR #6 at `649dd31a85e44a120eecf8c83207d6b29ec43633`: **3/3 targeted Node backend PASS**, **59/63 UI PASS** with four test harness/assertion failures. Fixed the missing mock for Hosting's layout and whitespace-sensitive deployment history assertion. On the subsequent source SHA `5e3af1ebb5c06cac3f8d35a0a3825a5665f3c2ae`, the **11/11 affected Hosting/Deployments UI assertions PASS**; receipt `pockethost-a8-mvp-pr6-focus-hosting-deployments-5e3af1eb-20261117-valid-v3`.
 - These are **exact-SHA, selective tests only**. No repository-wide test, lint, formatting, or types gate was run; do not misattribute one commit's QA result to later commits.
 
-## Still requiring owner functional sign-off
+## Remaining owner acceptance and P1
 
-- [ ] On a trusted private LAN browser, verify selecting each existing owned Static site and navigating through all five Hosting routes. The existing Static basic create/publish/start was separately accepted earlier; update/rollback isolated test receipts are not full manual browser acceptance.
-- [ ] On the A8 **locally**, read the owner token from `~/.local/state/pockethost/node-owner-token` in trusted Termux and unlock `/projects`. **Never share the token in chat or Git.**
-- [ ] Use one deliberately reviewed, trusted owner Node app for physical **Create → Stage → Prepare → Deploy → HTTP readiness → Logs → Update → Stop/Start → Rollback**, confirming source, release and process identity at each step. Node apps execute as the same Termux user and are **not sandboxed**. Current Node inventory is zero; no disposable Node project was created because the API has no verified retirement path and enforces a bounded project count.
-- [ ] Compare live Static and Node state in `/deployments`, `/runtime-logs`, `/hosting` with the real owned workloads, verify refresh and safe failures, and explicitly mark **ACCEPTED** only after physical owner review.
+- [ ] **Browser UI:** on trusted LAN, visually check `/hosting`, `/sites?site=<id>`, `/projects?project=<id>`, `/deployments`, `/runtime-logs?project=static:<id>` and `node:<id>`; click links, refresh and verify both owners' entries. An HTML 200 alone does not prove React-rendered UI.
+- [x] **A8 Local Agent P0:** real Node Create → Stage → Deploy → HTTP/Health/Logs → Update → Stop/Start → Rollback; real Static Update → served HTML → Rollback. Both PASS at exact live SHA above.
+- [ ] **P1 scoped backup/restore:** perform an authorized real backup, restore into isolated staging and verify restoration without overwriting live user data; capture evidence before marking accepted.
+- [ ] **P1 Termux:Boot/autostart:** separately authorize an actual Android reboot, then read back PocketHost-owned panel/Node and protected services. No reboot, scheduler or Boot mutation was conducted as part of P0.
+- [ ] **Final owner sign-off** once the browser interaction and P1 checks are complete. Do not mark overall Hosting accepted solely from API/HTTP receipts.
 
-**Gate:** Code integration, scoped QA and A8 deployment are complete; **the full Node app lifecycle has not been physically accepted**. Do not claim that HTTP 200, a merged PR, or unit tests alone close owner acceptance.
+**Next:** browser visual acceptance, then separately approved backup/restore and reboot. Cloudflare, domains and Python/PHP are deferred in [TermuxPanel reuse backlog](TERMUXPANEL_REUSE_BACKLOG.md).
