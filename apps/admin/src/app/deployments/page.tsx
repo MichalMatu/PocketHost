@@ -106,7 +106,7 @@ export default function DeploymentsPage() {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Link className="underline" to="/sites">Manage {site.name} in Sites</Link>
-                  <Link className="underline" to="/runtime-logs">Read project logs</Link>
+                  <Link className="underline" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Read project logs</Link>
                   {site.canRollback && site.state !== "unknown"
                     ? <span className="text-muted-foreground text-xs">
                         Rollback target saved — review and execute in Sites
@@ -152,7 +152,7 @@ export default function DeploymentsPage() {
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Link className="underline" to={projectUrl}>Open {node.name}</Link>
-                  <Link className="underline" to="/runtime-logs">Read project logs</Link>
+                  <Link className="underline" to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Read project logs</Link>
                   {node.previousGoodRelease && node.state !== "unknown"
                     ? <Link className="underline" to={projectUrl}>Review rollback in project</Link>
                     : <span className="text-muted-foreground text-xs">
