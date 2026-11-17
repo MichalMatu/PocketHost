@@ -7,10 +7,11 @@ purpose: Git-backed historical evidence locations
 
 # Historical checkpoint index
 
-**Latest resume point:** [2026-11-17 static Hosting MVP + Samsung A8 Local Agent handoff](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the entire historical archive.
+**Latest delivery checkpoint:** [2026-11-17 MVP page-by-page plan](2026-11-17-mvp-page-by-page-checkpoint.md). Earlier device handoff: [static Hosting MVP + A8 Local Agent](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the entire archive.
 
 Original contents are in commit `d801da7`; do not preload all checkpoint files.
 
+- [2026-11-17-mvp-page-by-page-checkpoint](2026-11-17-mvp-page-by-page-checkpoint.md)
 - [2026-11-05-admin-shell-termux-checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
 - [2026-11-05-appearance-header-menu](2026-11-05-appearance-header-menu.md)
 - [2026-11-05-commercial-template-cleanup](2026-11-05-commercial-template-cleanup.md)

@@ -9,6 +9,9 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 **Ten dokument zawiera wyłącznie bieżący stan i następny krok.** Historia wykonanych podzadań i ich SHA znajduje się w [wersji archiwalnej z 2026-11-15](https://github.com/MichalMatu/PocketHost/blob/31e54178bc21c4217a33831df809e6e276fd0198/docs/MVP_EXECUTION_PLAN.md), a nie w kontekście każdego kolejnego sprintu. Nie usuwaj historycznych dowodów z Git. Priorytet właściciela od 2026-11-16: **Hosting statyczny → Hosting Node.js/backend → Stabilizacja**. Services zamrożony jako implementacja MVP gotowa do odbioru (otwarte dowody zapisane poniżej); Platform pozostaje w backlogu.
 
+
+**Aktywny tryb dostarczania od 2026-11-17:** zamykaj strony kolejno `/sites` → `/projects` → `/deployments` → `/runtime-logs` → `/hosting`, bez kolejnych horyzontalnych sprintów Services i bez QA całego repo przy każdej poprawce. Każda strona musi mieć jeden potwierdzony przepływ użytkownika, celowane testy wyłącznie po osobnej zgodzie i dokładną weryfikację wdrożenia. [Ocena stron, MVP cutline i szacunek 26–48 h](checkpoints/2026-11-17-mvp-page-by-page-checkpoint.md). Zapisane poprawki na `main` nie są automatycznie wdrożone na A8.
+
 ## Zasady nadrzędne
 
 - **QA / testy / lint / format / typecheck / smoke = OFF we wszystkich trybach, bezterminowo.** Zgoda z 2026-11-14 na testy po etapie została cofnięta 2026-11-15. Każde uruchomienie wymaga **nowej wyraźnej zgody** na jeden konkretny zakres i SHA. Samo zamknięcie etapu, „kontynuuj”, audyt ani deploy nie stanowią zgody.
