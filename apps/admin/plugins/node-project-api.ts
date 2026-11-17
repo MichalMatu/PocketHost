@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto"
 import { NodeProjectHost } from "../../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../../src/modules/host/node-runit-host.ts"
@@ -10,7 +11,7 @@ import os from "node:os"
 import type { IncomingMessage } from "node:http"
 import type { Plugin } from "vite"
 
-/** Server-only Node hosting; never authorize Node writes through passwordless LAN. */
+/** Server-only Node hosting; LAN mutation requires an owner-held secret. */
 export function nodeProjectApi(): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
@@ -90,6 +91,16 @@ export function nodeProjectApi(): Plugin {
         }
       }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
+      // Explicit owner authentication, independent of the caller's intent header.
+      // Never disclose or log this private host-configured token.
+      const ownerSecret = process.env.POCKETHOST_NODE_OWNER_TOKEN ?? ""
+      const ownerConfigured = /^[A-Za-z0-9_-]{32,128}$/.test(ownerSecret)
+      function ownerAuthorized(request: IncomingMessage): boolean {
+        const submitted = request.headers["x-pockethost-node-owner"]
+        return ownerConfigured && typeof submitted === "string" &&
+          submitted.length === ownerSecret.length &&
+          timingSafeEqual(Buffer.from(submitted), Buffer.from(ownerSecret))
+      }
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
         const action = pending.then(fn, fn)
@@ -116,15 +127,8 @@ export function nodeProjectApi(): Plugin {
           response.end('{"error":"node-projects-disabled"}')
           return
         }
-        // Even with an explicit DEV opt-in, never accept Node source/host
-        // mutations through the existing LAN gateway. Its upstream socket
-        // appears to be loopback, but the true caller is on the LAN.
-        if (request.method !== "GET" &&
-            request.headers["x-pockethost-lan-proxy"] === "1") {
-          response.statusCode = 403
-          response.end('{"error":"local-node-mutations-only"}')
-          return
-        }
+        // The LAN proxy rewrites Host/Origin, but owner authentication remains
+        // mandatory for writes regardless of whether the caller was proxied.
         const route = request.url?.split("?")[0] ?? ""
         const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview))?$/.exec(route)
         const id = match?.[1]
@@ -132,14 +136,16 @@ export function nodeProjectApi(): Plugin {
         if (request.method === "GET" &&
             (op === "preview" || op === "source" || op === "dependency-review" ||
              op === "build-review" || op === "rollback-preview") &&
-            request.headers["x-pockethost-lan-proxy"] === "1") {
+            !ownerAuthorized(request)) {
           response.statusCode = 403
-          response.end('{"error":"local-node-source-and-preview-only"}')
+          response.end('{"error":"node-owner-required"}')
           return
         }
         if (request.method === "GET") {
           try {
-            const data = route === "/" ? { projects: host.list() } :
+            const data = route === "/owner-session" ?
+              { configured: ownerConfigured, authorized: ownerAuthorized(request) } :
+              route === "/" ? { projects: host.list() } :
               route === "/toolchain" ? { toolchain: runtime!.toolVersions() } :
               route === "/registry" ? { registries: runtime!.registryProjection() } :
               route === "/backup" ? { backup: nodeBackup!.status(), backupsEnabled: backupEnabled } :
@@ -194,7 +200,8 @@ export function nodeProjectApi(): Plugin {
           return
         }
         if (!origin || !origins.has(origin) ||
-            request.headers["x-pockethost-intent"] !== "owned-node-project") {
+            request.headers["x-pockethost-intent"] !== "owned-node-project" ||
+            !ownerAuthorized(request)) {
           response.statusCode = 403
           response.end('{"error":"mutation-not-authorized"}')
           return
