@@ -274,9 +274,8 @@ export default function ProjectsPage() {
     setReleases(data.releases as Candidate[])
   }, [getJson])
   const loadRuntime = React.useCallback(async (id: string): Promise<RuntimeState> => {
-    const [status, preview, readiness] = await Promise.all([
+    const [status, preview] = await Promise.all([
       getJson(api + "/" + id + "/runtime"), getJson(api + "/" + id + "/plan"),
-      getJson(api + "/" + id + "/health"),
     ])
     if (!status.runtime || typeof status.runtime !== "object" ||
         Array.isArray(status.runtime) || !preview.plan)
@@ -289,11 +288,7 @@ export default function ProjectsPage() {
           !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
       throw new Error("Invalid Node runtime state")
     setRuntime(observed)
-    const checked = readiness.health as NodeHealth | undefined
-    setHealth(checked && ["not-provisioned", "stopped", "running", "unknown"].includes(checked.state) &&
-      (checked.release === null || (typeof checked.release === "string" &&
-        /^r-[a-f0-9]{32}$/.test(checked.release))) &&
-      (checked.ready === null || typeof checked.ready === "boolean") ? checked : null)
+    setHealth(null)
     setDependencyReview(null)
     setDependencyApproved(false)
     setDependencyInstallEnabled(false)
