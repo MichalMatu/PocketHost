@@ -1,22 +1,19 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-14
-purpose: Milestones ordered by canonical MVP acceptance tracker
+last_reviewed: 2026-11-17
+purpose: Development direction, not a duplicate stage tracker
 ---
 
 # PocketHost roadmap
 
-**Jedyny bieżący plan z checklistami, dowodami i statusem odbioru: [MVP execution plan](MVP_EXECUTION_PLAN.md).** Ten roadmap nie jest drugą listą zadań.
+**Canonical status:** [MVP execution tracker](MVP_EXECUTION_PLAN.md).
 
-0. **Zaakceptowana baza — 2026-11-14:** PocketHost działa na A8 (runit/watch), na MacBooku po prywatnym LAN; menu jest uporządkowane, przykłady framework/CMS pozostają na dole. Ostatni potwierdzony SHA `e4838cd472a0db57bf0760ae2a384a97035fdc94`. Nie oznacza to ukończenia funkcji Hosting/Services/Platform ani ich testów.
-1. **Services — IN_PROGRESS:** uniwersalny rejestr i bezpieczna własność, lifecycle/logi, autostart, readiness, ograniczony recovery; po domknięciu wszystkie testy zakresu, raport i odbiór.
-2. **Platform — NOT_STARTED jako kompletny etap:** konfiguracja LAN i boot, SSH i Git/GitHub, zabezpieczenia, testy i odbiór. Reboot tylko na osobną zgodę.
-3. **Hosting — NOT_STARTED jako kompletny etap:** niezależne Node i static, Create → import Git/files → Build → Deploy → Run → Health → Logs → Update → Rollback; testy i odbiór.
-4. **Stabilizacja MVP — NOT_STARTED:** porządki, bezpieczeństwo, backup/restore, regresja, raport i odbiór końcowy; zachowaj demonstracyjne strony frameworka.
+1. **A8 baseline — implemented, partially qualified:** private LAN Termux/runit panel; independently protected Local Agent, observability and process ownership. No public-production claim.
+2. **Services — READY_FOR_ACCEPTANCE:** S1–S4 fixed-template worker lifecycle physically exercised once; custom scripts, reboot/Boot and general health acceptance open. Implementation frozen.
+3. **Hosting — ACTIVE:** Static Create → Publish → Start → LAN render/HTTP check accepted by owner. Next static update/rollback and trusted Node source → build → deploy → readiness/logs → rollback.
+4. **Platform — DEFERRED:** LAN/Boot policy, SSH/GitHub authentication and physical reboot only with separate consent.
+5. **Quality/stabilization — ACTIVE:** exact-SHA QA, bounded files/modules, stale fixtures, UI consistency, isolation warning and backup/restore qualification.
+6. **Post-MVP:** proper process isolation before untrusted hosting, domains/HTTPS, reliable installer, optional Android Companion/Shizuku.
 
-**Szybkie flow:** bieżący main → spójny commit → jedno strzeżone zadanie A8 Local Agent FAST FLOW → exact-SHA/owner/HTTP/LAN readback. Testy skupione na **ukończeniu pełnego etapu**, zgodnie z wyraźną zgodą właściciela; nie podczas zwykłej implementacji. Dokumentacja-only nie uruchamia panelu. Bez dodatkowego schedulera, Mac/Codex/Work/GitHub Actions, S22 lub automatycznych ponowień.
-
-**Po zaakceptowanym MVP:** wielokomponentowe projekty, poświadczenia i magazyny, domeny/HTTPS, powtarzalny instalator Termux, opcjonalne rozszerzenia Android; migracja niezależnego Local Agent tylko z oddzielnym operatorem i zgodą.
-
-PocketHost jest uniwersalnym koordynatorem jawnie zarejestrowanych usług; runit jest procesowym supervisorem, obce usługi pozostają chronione do potwierdzonego przejęcia.
+Only verified A8 Local Agent performs code → guarded DEV deploy → readback, with independently approved QA. Never add a scheduler, Actions, Mac/S22 execution or automatic retry.

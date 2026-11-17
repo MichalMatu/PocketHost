@@ -2,35 +2,27 @@
 status: active
 owner: core
 last_reviewed: 2026-11-17
-purpose: Smallest safe entrypoint
+purpose: Minimal safe A8 handoff
 ---
 
-# PocketHost — minimal context
+# PocketHost — start here
 
-Read [AGENTS](../AGENTS.md), fresh `main` SHA and nearest scoped AGENTS.md.
+Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main` SHA and nearest scoped `AGENTS.md`.
 
-**Target:** already-paired Galaxy A8 Termux only. PocketHost on S22 is retired; independent S22 production IleStoi services remain untouched.
+## Device and execution
 
-**A8 is installed and running.** Latest guarded live PocketHost DEV source
-`79be0852cb204b535bfc0ce8a42a78aaf92330ea`: FAST FLOW **PASS**, HTTP 200, PID **22154**,
-protected services unchanged; immutable receipt
-`pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`.
-One fixed-template worker completed the physical S1–S4 lifecycle PASS,
-but custom code, reboot/Termux:Boot and generic HTTP readiness remain
-unaccepted. Platform status, static Hosting creation readback, exact-release HTTP
-content gates and Restic receipt guards are deployed, **not fully functionally accepted**. The older
-S4 scoped **7/7 QA PASS** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`
-does **not** validate this newer live SHA. Tests remain OFF without fresh
-explicit consent. No automatic scheduler, SSH/WAN change or reboot.
+Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-**Product:** dynamic runit discovery, generic Node/static workloads; Hosting APIs remain feature-gated. Trusted LAN without login is the owner's requirement; WAN exposure remains forbidden, and LAN mutation safety must be preserved. Network Access has private-interface enable/disable, while boot behaviour acceptance and configurable SSH/GitHub/health/autostart policy remain to build.
+Last verified live A8 panel: `79be0852cb204b535bfc0ce8a42a78aaf92330ea`, PID 22154, HTTP 200, protected services unchanged; receipt `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`. Later docs-only commits are not deployed. Recheck live SHA and ownership before action.
 
-**Hard product rule:** no concrete hosted project, domain, process or special health endpoint belongs in PocketHost runtime code, UI or default configuration. All host service, LAN, autostart, health, SSH and Git/GitHub settings belong in the panel and verified service registry.
+## Product and scope
 
-**Services IA:** Each service has a separate menu destination; the Overview only navigates. Main menu: Overview → Hosting → Services → System & Tools → Automation → Settings; Framework/CMS examples kept at the very bottom. MacBook LAN menu baseline accepted, not full-stage acceptance.
+PocketHost offers general-purpose static and Node.js Hosting and Termux services, without hardcoded customer applications. Static Create → Publish → Start → private LAN render → manual HTTP check was owner-accepted 2026-11-17. Static update/rollback and generic Node execution remain unaccepted. Services S1–S4 fixed-worker implementation is frozen pending acceptance; reboot/Termux:Boot and backups unqualified.
 
-**Canonical active task:** [MVP execution tracker](MVP_EXECUTION_PLAN.md): **Hosting**. Services fixed-template implementation has been frozen at READY_FOR_ACCEPTANCE, with full user/physical acceptance deferred. Platform and Boot gaps remain tracked but do not block the owner's requested Hosting sprint. Owner screenshots confirm static basic Create → Publish → Start → LAN render → HTTP healthy. Next implement Node.js backend source/release/runtime and secure MacBook LAN mutation approval; static update/rollback remains open. Resume from [2026-11-17 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not return to speculative Services micro-hardening, rebuild unrelated infrastructure or enable a scheduler.
+Current focus: Node.js Hosting on A8 with authenticated owner authorization; **never bypass passwordless LAN Node write denials**. User Node code has the Termux UID and is not sandboxed; run only owner-reviewed trusted source. Stronger isolation is still open.
 
-**Default workflow:** [single-pass code → deploy → verify](DEV_ITERATION.md) on the paired A8, exact-SHA/owner/health readback. **Tests are OFF in every mode by default, including stage closure.** The previous general consent to stage tests is withdrawn. Run any suite, lint, typecheck, formatter, smoke or QA **only after fresh explicit confirmation** of exact scope. The FAST FLOW deployment CLI has no test flag. Independent A8 QA is a separate manual action with exact-SHA approval; never conflate deployment health with tests. Physical reboot or protected-service changes still require separate consent. Documentation-only commits do not restart or deploy. No scheduler, Mac, Codex, Work, Actions, S22 or automatic retries.
+## Quality and deployment
 
-[Current A8 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md) · [MVP plan](MVP_EXECUTION_PLAN.md) · [Local Agent transport](LOCAL_AGENT_TERMUX.md) · [Architecture](ARCHITECTURE.md) · [Roadmap](ROADMAP.md) · [Historical A8/S22 checkpoint](checkpoints/2026-11-14-final-s22-reaudit-a8-local-agent-handoff.md).
+One task per release: code → guarded FAST FLOW → exact-SHA, PID/start ticks, protected-service and HTTP readback. Code-only commit is not deployment. Unknown result means HOLD; no retries. Docs-only updates never restart panel.
+
+Tests, lint, format, types, smoke and quality checks need fresh explicit approval per scope and revision, separately from deployment. Reboot, WAN, SSH and foreign services need separate permission. See [handoff](HANDOFF_NEXT_CHAT.md), [quality gates](QUALITY_GATES.md), [Local Agent](LOCAL_AGENT_TERMUX.md), [architecture](ARCHITECTURE.md), [roadmap](ROADMAP.md) and [A8 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md).

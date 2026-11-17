@@ -1,4 +1,5 @@
 import * as React from "react"
+import { NodeLanReadOnly } from "./node-lan-readonly"
 import { useSearchParams } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
@@ -183,6 +184,7 @@ async function getJson(url: string, method?: "POST", body?: unknown): Promise<Re
 }
 export default function ProjectsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const lanView = typeof window !== "undefined" && !["localhost", "127.0.0.1"].includes(window.location.hostname)
   const requestedProject = searchParams.get("project")
   const appliedDeepLink = React.useRef<string | null>(null)
   const [projects, setProjects] = React.useState<Project[]>([])
@@ -302,8 +304,6 @@ export default function ProjectsPage() {
     void fn().catch(cause => setError(cause instanceof Error ? cause.message : "Operation rejected"))
       .finally(() => setBusy(false))
   }
-  // Navigation from verified Services inventory selects the exact existing
-  // project and refreshes release/runtime evidence. No action is approved.
   React.useEffect(() => {
     if (requestedProject === null) {
       appliedDeepLink.current = null
@@ -329,8 +329,6 @@ export default function ProjectsPage() {
     body: unknown,
     successMessage: string,
   ) => {
-    // Once submitted, a lost response must never leave stale controls enabled
-    // or imply it is safe to retry a potentially completed host operation.
     const expectedState = operation === "stop" ? "stopped" : "running"
     const expectedRelease = operation === "deploy"
       ? (body as { release: string }).release
@@ -383,6 +381,7 @@ export default function ProjectsPage() {
       setError("Node action acknowledged, but runtime refresh failed. Review plan before retrying.")
     }
   }
+  if (lanView) return <NodeLanReadOnly projects={projects} status={catalogState} onRefresh={() => action(refresh)} />
   return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       <Card>
@@ -785,7 +784,7 @@ export default function ProjectsPage() {
           </div>
           <Card>
             <CardHeader><CardTitle>Node deployment</CardTitle>
-              <CardDescription>Review the execution plan and authorize a one-shot local runit operation.</CardDescription></CardHeader>
+              <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-sm">Plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
               {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||

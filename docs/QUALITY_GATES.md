@@ -1,20 +1,23 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-14
-purpose: Distinguish safe deployment receipts from explicitly authorized test gates
+last_reviewed: 2026-11-17
+purpose: Separate guarded deployment from independently approved QA
 ---
 
 # Quality and deployment evidence
 
-A **deployment PASS** requires one real Samsung Local Agent terminal receipt with exact live source SHA, verified PocketHost ownership/readiness and unchanged protected services. A Git commit, queued task, earlier receipt or report without live evidence is **not deployed PASS**. Default FAST FLOW runs no tests.
+A **deployment PASS** requires terminal A8 Local Agent receipt at exact SHA, verified owned panel, PID/start ticks, HTTP and unchanged protected services. A code commit or queued task is not a deploy.
 
-A **test PASS** requires separately authorized, actually executed checks tied to the exact source SHA. Do not treat a deployment receipt as test evidence.
+A **QA PASS** requires independently approved, actually run checks at that exact SHA. FAST FLOW never automatically runs test suites.
 
-- DEV deploy — preflight, owned guarded refresh/rollback and read-only live revision/health verification; no automatic tests.
-- G0 — structure/docs/boundaries/Node foundation, only on explicit test request.
-- G1 — source, lint, format and TypeScript, only on explicit test request.
-- G2 — Node/admin/build suite, only on explicit test request.
-- G3 — physical Samsung browser/process, recovery/isolation and real-world routes, only on explicit test request.
+- G0 — structure, docs, boundaries, code-budget gate, Node foundation.
+- G1 — format, Markdown, lint and TypeScript.
+- G2 — full Node/UI regression, coverage and admin build.
+- G3 — separate real-device functionality, isolation, reboot and restore with explicit consent.
 
-Full current-SHA G2/G3 remain OPEN without separate receipts. No service control or public exposure follows from a DEV deployment or test.
+## Size and modularity budget
+
+`npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
+
+Full current-source G2/G3 remain OPEN until verified receipts; no unauthenticated Node mutation or public release is authorized.
