@@ -20,6 +20,16 @@ All four PRs now exist: [Sites #4](https://github.com/MichalMatu/PocketHost/pull
 - The Node PR enforces a separate `X-PocketHost-Node-Owner` authorization for mutating operations; the Hosting overview intentionally makes only read-only inventory requests and must not expose mutation shortcuts.
 - **No confirmed integration mismatch requiring source changes so far.** Confirm in the combined merged build, rather than marking integration PASS from individual PR review.
 
+## Exact-SHA targeted QA receipt (2026-11-17)
+
+Owner authorized only narrow, changed-code QA. A8 Local Agent immutable task `pockethost-a8-mvp-pr6-targeted-node-ui-39194aed-20261117-v1` completed (exit 1, PARTIAL) on integrated source `39194aed29576759f218a292373a0b40b0984a74`:
+
+- **PASS:** exactly 2 focused Node tests: static HTML edit/update/rollback and Node owner LAN timeouts.
+- **FAIL:** Vitest invocation limited to five changed page test files (`hosting-selection`, `node-hosting-pages`, `node-projects`, `site-fleet`, `sites-html-editor`). Two confirmed stale test expectations were a combined PID/start ticks label and a URL assumed to contain a site ID rather than its loopback port. The bounded receipt does not retain every failing assertion; do not claim other failures are repaired.
+- **No all-suite QA, lint, typecheck, format, production deployment, or external-service mutations.** Live panel remained `79be0852cb204b535bfc0ce8a42a78aaf92330ea` before/after.
+- The integrated candidate was then advanced to include newer #4/#5 source revisions, and the two known test assertions were corrected. **These later source commits have not been retested.** PR5 separately reported 37/37 UI tests PASS at `ff801977f64117f0bf83c3b665b531e996c82567`, not at the combined SHA.
+- Next gate: fresh, exact-SHA scoped owner permission for any further targeted run. Do not describe this candidate as QA PASS or deployed.
+
 ## Owner acceptance on the combined A8 build
 
 - [ ] **Static:** Create → Publish → Update → Rollback; confirm served content and active release after each stage.
