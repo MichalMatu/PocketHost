@@ -33,6 +33,33 @@ case "${1:-}" in
     export POCKETHOST_ENABLE_USER_SITES_DEV=1
     # Node source/runtime execution remains separately gated. The LAN gateway
     # cannot authorize custom Node source mutations without authentication.
+    # Enable private Node Hosting only when the A8 owner already provisioned
+    # a local, owner-only token. Never store the token in Git or shell argv.
+    # Invalid/missing token fails closed for Node, without disabling Static.
+    export POCKETHOST_ENABLE_NODE_HOSTING_DEV=0
+    export POCKETHOST_ENABLE_NODE_RUNTIME_DEV=0
+    export POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV=0
+    export POCKETHOST_ENABLE_NODE_BUILD_DEV=0
+    unset POCKETHOST_NODE_OWNER_TOKEN
+    node_token_file="$STATE/node-owner-token"
+    if [ -f "$node_token_file" ] && [ ! -L "$node_token_file" ] && \
+      [ "$("$PREFIX/bin/stat" -c '%a' "$node_token_file" 2>/dev/null || :)" = 600 ] && \
+      [ "$("$PREFIX/bin/stat" -c '%u' "$node_token_file" 2>/dev/null || :)" = "$("$PREFIX/bin/id" -u)" ]; then
+      node_token=$("$PREFIX/bin/cat" "$node_token_file" 2>/dev/null || :)
+      case "$node_token" in
+        "" | *[!A-Za-z0-9_-]*) ;;
+        *)
+          if [ "${#node_token}" -ge 32 ] && [ "${#node_token}" -le 128 ]; then
+            export POCKETHOST_NODE_OWNER_TOKEN="$node_token"
+            export POCKETHOST_ENABLE_NODE_HOSTING_DEV=1
+            export POCKETHOST_ENABLE_NODE_RUNTIME_DEV=1
+            export POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV=1
+            export POCKETHOST_ENABLE_NODE_BUILD_DEV=1
+          fi
+          ;;
+      esac
+      unset node_token
+    fi
     # Runit directly execs Vite; update only the verified prior PocketHost
     # owner markers to this same PID/start tick, never adopt a live outsider.
     "$PREFIX/bin/node" "$root/ops/termux/panel-owner.mjs" "$root" "$$" || exit 111

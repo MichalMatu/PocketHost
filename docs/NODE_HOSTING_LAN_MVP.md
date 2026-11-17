@@ -16,9 +16,17 @@ in constant time with `POCKETHOST_NODE_OWNER_TOKEN`. The header
 additional request checks, **not** authentication. No token is returned by the
 API, persisted by the editor, or committed to Git.
 
-Configure the following server-side variables in the private, existing
-PocketHost DEV panel environment on A8 (never use `VITE_*` variables for
-secrets):
+On the verified A8 DEV runit panel, the launcher activates Node Hosting
+only if `~/.local/state/pockethost/node-owner-token` is a regular, owner-owned
+file with mode `0600` holding exactly one 32–128-character URL-safe token.
+It disables Node when the token is missing or invalid without affecting
+Static Hosting. This private token must be generated on A8, read **locally**
+in Termux to unlock the browser, and never sent through Git, logs, the
+dashboard, or this chat. It is not a sandbox boundary: trusted user Node
+code runs with the same Termux UID and could read its owner's files.
+
+The launcher enables the following server-side variables only after that
+file is verified (never use `VITE_*` variables for secrets):
 
 - `POCKETHOST_ENABLE_OWNED_SITE_DEV=1`
 - `POCKETHOST_ENABLE_NODE_HOSTING_DEV=1`
@@ -27,8 +35,13 @@ secrets):
 - `POCKETHOST_ENABLE_NODE_BUILD_DEV=1` if the trusted app needs a build
 - `POCKETHOST_NODE_OWNER_TOKEN=<random 32–128 URL-safe characters>`
 
-Generate the token on the owner's **trusted device**, and keep it outside the
-repository and logs. If unset or malformed, **all Node mutations are denied**;
+Generate the token on the owner's **trusted A8 device** and keep it outside
+the repository and logs. A verified local provisioning operation may create
+it atomically with owner-only permissions; read it directly in Termux, for
+example `cat ~/.local/state/pockethost/node-owner-token`, only on a trusted
+screen. Any activation occurs on the next separately guarded DEV panel
+restart and never enables WAN, SSH, external service control, or arbitrary
+project execution without an authenticated and reviewed owner action. If unset or malformed, **all Node mutations are denied**;
 read-only inventory remains available. To confirm configuration without
 revealing the token, use `GET /api/v1/node-projects/owner-session`:
 `{ "configured": true|false, "authorized": true|false }`. The browser stores
