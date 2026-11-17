@@ -108,7 +108,8 @@ describe("one-file static site MVP", () => {
     await screen.findByText(/HTML was published/)
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
     await screen.findByText("Start completed.")
-    expect(screen.getByRole("link", { name: "Open hosted site" }).getAttribute("href")).toContain(ID)
+    expect(screen.getByRole("link", { name: "Open hosted site" }).getAttribute("href"))
+      .toBe("http://127.0.0.1:19080/")
 
     await user.click(await screen.findByRole("button", { name: "Edit current HTML" }))
     expect((await screen.findByLabelText("index.html source") as HTMLTextAreaElement).value).toBe("<h1>v1</h1>")
