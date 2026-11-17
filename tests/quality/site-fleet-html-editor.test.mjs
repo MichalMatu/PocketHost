@@ -53,3 +53,53 @@ test('static HTML editor reads exactly the published index, update and rollback'
     rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+test('owned test site serves v1, v2 and rollback over loopback HTTP', async () => {
+  const tmp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-html-loopback-'));
+  const fleet = new SiteFleetHost(path.join(tmp, 'sites'), await freePort());
+  let siteId = null;
+  try {
+    const site = await fleet.create('Isolated HTML verification site');
+    siteId = site.id;
+    const firstHtml = '<!doctype html><title>Version one</title><p>v1</p>';
+    const first = await fleet.deploy(siteId, [
+      { name: 'index.html', bytes: Buffer.from(firstHtml, 'utf8') },
+    ]);
+    const started = await fleet.start(siteId);
+    assert.equal(started.state, 'running');
+    assert.equal(started.activeRelease, first.activeRelease);
+
+    async function served(expectedRelease, expectedHtml) {
+      assert.equal(await fleet.health(siteId), true);
+      const response = await fetch('http://127.0.0.1:' + started.port + '/', {
+        cache: 'no-store',
+        redirect: 'error',
+        signal: AbortSignal.timeout(5000),
+      });
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('x-pockethost-release'), expectedRelease);
+      assert.equal(await response.text(), expectedHtml);
+    }
+    await served(first.activeRelease, firstHtml);
+
+    const secondHtml = '<!doctype html><title>Version two</title><p>v2</p>';
+    const second = await fleet.deploy(siteId, [
+      { name: 'index.html', bytes: Buffer.from(secondHtml, 'utf8') },
+    ]);
+    assert.notEqual(second.activeRelease, first.activeRelease);
+    await served(second.activeRelease, secondHtml);
+
+    const restored = await fleet.rollback(siteId);
+    assert.equal(restored.activeRelease, first.activeRelease);
+    await served(first.activeRelease, firstHtml);
+  } finally {
+    // Only the temporary owned child may be stopped. Never signal an
+    // unverified/foreign process, and retain its marker for inspection if unsafe.
+    if (siteId) {
+      const current = fleet.inspect(siteId);
+      if (current.state === 'running') await fleet.stop(siteId);
+      assert.equal(fleet.inspect(siteId).state, 'stopped');
+    }
+    rmSync(tmp, { recursive: true, force: true });
+  }
+});
