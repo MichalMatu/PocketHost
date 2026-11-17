@@ -69,6 +69,16 @@ describe("Hosting selection", () => {
     expect(screen.getByText("My Node")).toBeTruthy()
     expect(screen.getByText("HTTP: healthy")).toBeTruthy()
     expect(screen.getByText("Port: 19090")).toBeTruthy()
+    expect(screen.getByRole("link", { name: "My site" }).getAttribute("href"))
+      .toBe("/sites?site=" + encodeURIComponent(site.id))
+    expect(screen.getByRole("link", { name: "My Node" }).getAttribute("href"))
+      .toBe("/projects?project=" + encodeURIComponent(nodeId))
+    expect(screen.getAllByRole("link", { name: "Logs" }).map(link => link.getAttribute("href")))
+      .toEqual([
+        "/runtime-logs?project=" + encodeURIComponent("static:" + site.id),
+        "/runtime-logs?project=" + encodeURIComponent("static:site-" + "d".repeat(32)),
+        "/runtime-logs?project=" + encodeURIComponent("node:" + nodeId),
+      ])
     expect(requests.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
   })
 
