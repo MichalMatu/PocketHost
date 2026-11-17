@@ -4,7 +4,7 @@ import path from 'node:path';
 import { parseProcessRss, parseProcessStat } from './observability-probes.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
-export const PROTECTED_DIAGNOSTIC_SERVICES = ['sshd', 'mosquitto', 'ilestoi-healthwatch'] as const;
+export const PROTECTED_DIAGNOSTIC_SERVICES = ['sshd', 'mosquitto'] as const;
 export type ProtectedDiagnosticService = typeof PROTECTED_DIAGNOSTIC_SERVICES[number];
 type Availability = 'ok' | 'unavailable' | 'permission-denied';
 type RunitState = 'running' | 'stopped' | 'unknown';
@@ -25,10 +25,9 @@ export interface ProtectedServiceDiagnostics {
   health: { state: 'unverified'; reason: 'runit-is-not-application-health-proof' };
   config: { state: Availability; scope: 'direct-file-not-effective-runtime' | 'not-observed';
     settings: { name: SettingName; value: string }[];
-    truncated: boolean; error: 'not-found' | 'not-applicable' | 'unsafe-config' | 'read-unavailable' | null };
+    truncated: boolean; error: 'not-found' | 'unsafe-config' | 'read-unavailable' | null };
   logs: { state: Availability; events: { kind: EventKind; timestamp: string | null }[];
     error: 'not-found' | 'unsafe-log' | 'read-unavailable' | null };
-  lastCheck: { state: 'unverified'; reason: 'no-independent-check-source' } | null;
   notice: 'external-protected-no-lifecycle-control';
 }
 
@@ -153,7 +152,6 @@ export class ProtectedServiceDiagnosticHost {
   private config(name: ProtectedDiagnosticService): ProtectedServiceDiagnostics['config'] {
     const empty: ProtectedServiceDiagnostics['config'] = { state: 'unavailable',
       scope: 'not-observed', settings: [], truncated: false, error: 'not-found' };
-    if (name === 'ilestoi-healthwatch') return { ...empty, error: 'not-applicable' };
     const directory = path.join(this.configRoot, name === 'sshd' ? 'ssh' : 'mosquitto');
     const file = path.join(directory, name === 'sshd' ? 'sshd_config' : 'mosquitto.conf');
     let fd: number | null = null;
@@ -222,8 +220,6 @@ export class ProtectedServiceDiagnosticHost {
       health: { state: 'unverified', reason: 'runit-is-not-application-health-proof' },
       config: this.config(name),
       logs: { state: 'unavailable', events: [], error: 'not-found' },
-      lastCheck: name === 'ilestoi-healthwatch'
-        ? { state: 'unverified', reason: 'no-independent-check-source' } : null,
       notice: 'external-protected-no-lifecycle-control',
     };
     let target: { argument: string; resolved: string };

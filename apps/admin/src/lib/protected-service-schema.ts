@@ -4,7 +4,7 @@ const availability = z.enum(["ok", "unavailable", "permission-denied"])
 export const protectedServiceSchema = z.object({
   version: z.literal(1),
   mode: z.literal("read-only"),
-  service: z.enum(["sshd", "mosquitto", "ilestoi-healthwatch"]),
+  service: z.enum(["sshd", "mosquitto"]),
   observedAt: z.string().datetime({ offset: true }),
   runit: z.object({
     state: z.enum(["running", "stopped", "unknown"]),
@@ -29,7 +29,7 @@ export const protectedServiceSchema = z.object({
       value: z.string().regex(/^(?:\d{1,5}|yes|no|true|false)$/),
     }).strict()).max(8),
     truncated: z.boolean(),
-    error: z.enum(["not-found", "not-applicable", "unsafe-config", "read-unavailable"]).nullable(),
+    error: z.enum(["not-found", "unsafe-config", "read-unavailable"]).nullable(),
   }).strict(),
   logs: z.object({
     state: availability,
@@ -39,10 +39,6 @@ export const protectedServiceSchema = z.object({
     }).strict()).max(16),
     error: z.enum(["not-found", "unsafe-log", "read-unavailable"]).nullable(),
   }).strict(),
-  lastCheck: z.object({
-    state: z.literal("unverified"),
-    reason: z.literal("no-independent-check-source"),
-  }).strict().nullable(),
   notice: z.literal("external-protected-no-lifecycle-control"),
 }).strict()
 export type ProtectedServiceDiagnostic = z.infer<typeof protectedServiceSchema>

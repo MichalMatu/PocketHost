@@ -7,7 +7,6 @@ type Service = ProtectedServiceDiagnostic["service"]
 const PANELS = [
   { service: "sshd", title: "SSH / sshd", mode: "ssh-diagnostics" },
   { service: "mosquitto", title: "Mosquitto / MQTT", mode: "mqtt-diagnostics" },
-  { service: "ilestoi-healthwatch", title: "IleStoi / healthwatch", mode: "healthwatch-diagnostics" },
 ] as const
 
 function ServiceCard({ service, title, mode, refreshToken }: {
@@ -71,7 +70,6 @@ function ServiceCard({ service, title, mode, refreshToken }: {
           {data.logs.events.length === 0 && <p className="text-xs text-muted-foreground">No readable recognized log events.</p>}
           {data.logs.events.map((event, index) => <p key={index}>{event.kind} · {event.timestamp ? new Date(event.timestamp).toLocaleString() : "time unavailable"}</p>)}
         </div>
-        {data.lastCheck && <p className="text-xs text-muted-foreground">Healthwatch last completed check: unverified; no independent check source available.</p>}
         <p className="text-xs text-muted-foreground">Observed {new Date(data.observedAt).toLocaleString()}. Protected external service; start, stop, restart and configuration changes are not authorized.</p>
       </>}
     </CardContent>

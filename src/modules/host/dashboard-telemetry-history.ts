@@ -43,7 +43,7 @@ const EXTRA_FIELDS = [
   'networkTxBytes',
   'networkObservedAt',
 ] as const;
-const SERVICE_IDS = ['ilestoi', 'tunnel', 'ssh', 'mqtt', 'healthwatch', 'local-agent'] as const;
+const SERVICE_IDS = ['tunnel', 'ssh', 'mqtt', 'local-agent'] as const;
 type ServiceId = (typeof SERVICE_IDS)[number];
 type ServiceState = 'running' | 'stopped' | 'unknown';
 type ServiceStates = Partial<Record<ServiceId, ServiceState>>;

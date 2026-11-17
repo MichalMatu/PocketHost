@@ -440,7 +440,7 @@ function observabilityApi(): Plugin {
               updates: { state: "unknown" as const, candidates: [] } }
             : readPackageInventory()
           // M0: global O1 is product-neutral; P4 events remain accessible
-          // only through the explicit GET-only legacy PhotoMap endpoint.
+          // only through an explicit, scoped GET-only endpoint.
           const diagnostics = { state: "unavailable" as const, events: [] }
           const payload = history.append({
             version: 1,

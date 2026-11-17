@@ -11,12 +11,12 @@ const event = z.object({
     "collector-started", "owned-release-published", "owned-release-rolled-back",
     "owned-backup-created", "owned-backup-restored", "owned-service-restarted",
   ]),
-  service: z.enum(["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"]).nullable(),
+  service: z.enum(["tunnel", "ssh", "mqtt", "local-agent"]).nullable(),
 }).strict()
 // Collector includes only service IDs actually observed on this host.
 // Zod 4 z.record(enum, value) requires ALL enum keys; use a sparse record.
 const serviceStates = z.partialRecord(
-  z.enum(["ilestoi", "tunnel", "ssh", "mqtt", "healthwatch", "local-agent"]),
+  z.enum(["tunnel", "ssh", "mqtt", "local-agent"]),
   z.enum(["running", "stopped", "unknown"]),
 )
 const point = z.object({
