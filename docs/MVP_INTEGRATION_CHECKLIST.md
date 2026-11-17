@@ -1,6 +1,6 @@
 # PocketHost Hosting MVP — integration and owner acceptance
 
-Status: **HOSTING P0 DEVICE FLOWS PASS (NODE + STATIC); API/ROUTES PASS; BROWSER OWNER SIGN-OFF AND P1 RECOVERY/REBOOT PENDING**.
+Status: **HOSTING P0 NODE/STATIC PASS; NODE RESTIC BACKUP→ISOLATED RESTORE PASS; BROWSER OWNER SIGN-OFF AND REBOOT/AUTOSTART PENDING**.
 
 ## Device-backed Hosting P0 (2026-11-17, later acceptance run)
 
@@ -25,14 +25,21 @@ Status: **HOSTING P0 DEVICE FLOWS PASS (NODE + STATIC); API/ROUTES PASS; BROWSER
 - Integrated PR #6 at `649dd31a85e44a120eecf8c83207d6b29ec43633`: **3/3 targeted Node backend PASS**, **59/63 UI PASS** with four test harness/assertion failures. Fixed the missing mock for Hosting's layout and whitespace-sensitive deployment history assertion. On the subsequent source SHA `5e3af1ebb5c06cac3f8d35a0a3825a5665f3c2ae`, the **11/11 affected Hosting/Deployments UI assertions PASS**; receipt `pockethost-a8-mvp-pr6-focus-hosting-deployments-5e3af1eb-20261117-valid-v3`.
 - These are **exact-SHA, selective tests only**. No repository-wide test, lint, formatting, or types gate was run; do not misattribute one commit's QA result to later commits.
 
+## P1 encrypted Node backup → isolated recovery (2026-11-17)
+
+- Owner approved this exact scope. On verified Samsung A8, Local Agent installed **only** the missing Termux `restic 0.19.1` package (apt dry-run showed one install, no removals or upgrades). Existing PocketHost `NodeProjectBackupHost` initialized an encrypted local repository at `~/.local/state/pockethost/node-restic/repo`, with a private local password file (`0600`). Never publish the key or source files.
+- **Real backup/restore PASS** within the approved Node-owned root only: snapshot `74dbd57d306ee478e9b4f0c17311af3575a80a1c462e7ee0e25c95db8f623b1b`, 1 project, 10 source/runtime files, 3790 bytes; Restic repository check passed. Restore produced a separate `node-restic/restores/restore-…/PocketHost-NodeProjects` tree; the existing adapter verified restored project source digests and file-by-file SHA-256 equality. Live Node source was not overwritten. Receipt `pockethost-a8-restic-node-backup-isolated-restore-20261117-v1` contained a completed embedded `backup.status=PASS`, but its outer task held at a too-strict comparison of dynamic Static inventory fields.
+- **Separate postflight PASS:** receipt `pockethost-a8-restic-postflight-owned-inventory-20261117-v1` verified all 10 restored files match, repository initialized, password `0600`, Node demo running on original v1 / port 19300 with readiness, Static v1 content exact SHA-256 and HTTP 200, PocketHost panel still on `0db0327239194e4a8d9da538308529681ad666fc`, protected services unchanged. No second backup, further restore, reboot, scheduler or panel restart occurred.
+- **Limits:** the encrypted repository and its key are on the same A8, **not off-device disaster recovery**; Static data, all of HOME/PREFIX and other services were not backed up. Browser-side Node backup mutations remain disabled (`backupsEnabled=false`) pending separate activation; the explicitly authorized local backup/restore has been verified. This does not verify Android reboot/autostart or browser UI.
+
 ## Remaining owner acceptance and P1
 
 **P1 read-only A8 preflight:** receipt `pockethost-a8-mvp-stabilization-readiness-0db03272-20261117-v1` PASS. Node Restic backup API 200 but `backupsEnabled=false`, `initialized=false`, `repositoryPresent=false`, `keyPresent=false` — **do not attempt real backup/restore until scoped initialization and approval**. Termux:Boot directory exists with 3 executable regular scripts; no evidence they actually start after Android reboot. No backup, restore, reboot, scheduler or boot mutation performed.
 
 - [ ] **Browser UI:** on trusted LAN, visually check `/hosting`, `/sites?site=<id>`, `/projects?project=<id>`, `/deployments`, `/runtime-logs?project=static:<id>` and `node:<id>`; click links, refresh and verify both owners' entries. An HTML 200 alone does not prove React-rendered UI.
 - [x] **A8 Local Agent P0:** real Node Create → Stage → Deploy → HTTP/Health/Logs → Update → Stop/Start → Rollback; real Static Update → served HTML → Rollback. Both PASS at exact live SHA above.
-- [ ] **P1 scoped backup/restore:** perform an authorized real backup, restore into isolated staging and verify restoration without overwriting live user data; capture evidence before marking accepted.
+- [x] **P1 scoped Node backup/restore:** verified one real encrypted Restic backup and isolated staging restore on A8, exact source hashes and postflight ownership PASS. UI enablement/off-device protection are separate follow-ups.
 - [ ] **P1 Termux:Boot/autostart:** separately authorize an actual Android reboot, then read back PocketHost-owned panel/Node and protected services. No reboot, scheduler or Boot mutation was conducted as part of P0.
 - [ ] **Final owner sign-off** once the browser interaction and P1 checks are complete. Do not mark overall Hosting accepted solely from API/HTTP receipts.
 
-**Next:** browser visual acceptance, then separately approved backup/restore and reboot. Cloudflare, domains and Python/PHP are deferred in [TermuxPanel reuse backlog](TERMUXPANEL_REUSE_BACKLOG.md).
+**Next:** browser visual acceptance; optional Node backup UI activation and off-device copy design; separately approved Android reboot/autostart test. Cloudflare, domains and Python/PHP are deferred in [TermuxPanel reuse backlog](TERMUXPANEL_REUSE_BACKLOG.md).
