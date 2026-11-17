@@ -22,13 +22,19 @@ export function nodeProjectApi(): Plugin {
     request.setTimeout(20000, () => request.destroy())
     const chunks: Buffer[] = []
     let total = 0
-    for await (const chunk of request) {
-      const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-      total += bytes.length
-      if (total > limit) throw new RangeError("Payload too large")
-      chunks.push(bytes)
+    try {
+      for await (const chunk of request) {
+        const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        total += bytes.length
+        if (total > limit) throw new RangeError("Payload too large")
+        chunks.push(bytes)
+      }
+      return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown
+    } finally {
+      // Request-body inactivity is limited to 20s, but the same TCP socket
+      // must survive a separately approved, bounded npm/build operation.
+      request.setTimeout(0)
     }
-    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown
   }
   return {
     name: "pockethost-owned-node-projects-dev",
@@ -97,9 +103,12 @@ export function nodeProjectApi(): Plugin {
       const ownerConfigured = /^[A-Za-z0-9_-]{32,128}$/.test(ownerSecret)
       function ownerAuthorized(request: IncomingMessage): boolean {
         const submitted = request.headers["x-pockethost-node-owner"]
+        // Validate ASCII before comparing: equal UTF-16 string lengths do
+        // not guarantee equal Buffer lengths for timingSafeEqual.
         return ownerConfigured && typeof submitted === "string" &&
+          /^[A-Za-z0-9_-]{32,128}$/.test(submitted) &&
           submitted.length === ownerSecret.length &&
-          timingSafeEqual(Buffer.from(submitted), Buffer.from(ownerSecret))
+          timingSafeEqual(Buffer.from(submitted, "ascii"), Buffer.from(ownerSecret, "ascii"))
       }
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
