@@ -165,7 +165,7 @@ function validProject(value: unknown): value is Project {
     (item.previousCandidate === null || (typeof item.previousCandidate === "string" && /^r-[a-f0-9]{32}$/.test(item.previousCandidate)))
 }
 async function requestJson(url: string, method?: "POST", body?: unknown, ownerToken = ""): Promise<Record<string, unknown>> {
-  const ownerHeader = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
+  const ownerHeader: Record<string, string> = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store",
     headers: ownerHeader,
     ...(method ? {
