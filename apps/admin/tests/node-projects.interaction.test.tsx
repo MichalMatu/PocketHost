@@ -9,7 +9,28 @@ vi.mock("@/components/layouts/base-layout", () => ({
 import ProjectsPage from "@/app/projects/page"
 const ID = "node-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
+const OWNER_TOKEN = "A".repeat(40)
 afterEach(() => vi.unstubAllGlobals())
+
+// The owner session is a separate, private contract from each tested endpoint.
+// Do not weaken production authorization just to satisfy old source-flow mocks.
+async function unlockNodeOwner() {
+  const fetchOriginal = globalThis.fetch
+  vi.stubGlobal("fetch", (url: RequestInfo | URL, options?: RequestInit) => {
+    if (String(url) === "/api/v1/node-projects/owner-session") {
+      expect((options?.headers as Record<string, string>)["X-PocketHost-Node-Owner"])
+        .toBe(OWNER_TOKEN)
+      return Promise.resolve({ ok: true, json: async () => ({
+        configured: true, authorized: true,
+      }) })
+    }
+    return fetchOriginal(url, options)
+  })
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Node owner token"), OWNER_TOKEN)
+  await user.click(screen.getByRole("button", { name: "Unlock management" }))
+  await screen.findByText("Owner authenticated for Node management.")
+}
 
 it("keeps a disabled Node API distinct from an empty project list", async () => {
   const requests = vi.fn(async () => ({ ok: false, status: 404 }))
@@ -25,7 +46,7 @@ it("keeps a disabled Node API distinct from an empty project list", async () => 
 })
 
 it.each([
-  [403, "Node Hosting access denied."],
+  [403, "Owner authentication required or Node access denied."],
   [503, "Could not load Node projects. Try Refresh."],
 ])("displays API error %i without claiming that Node projects are empty", async (status, message) => {
   const requests = vi.fn(async () => ({ ok: false, status }))
@@ -46,6 +67,49 @@ it("rejects invalid Node project inventory without hiding an error as an empty c
   expect(screen.queryByText("No Node projects yet.")).toBeNull()
   expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
 })
+it("keeps Node project creation locked when the owner token is rejected", async () => {
+  const fetchMock = vi.fn(async (url: RequestInfo | URL, _options?: RequestInit) => {
+    if (String(url) === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [] }) }
+    if (String(url) === "/api/v1/node-projects/owner-session")
+      return { ok: true, json: async () => ({ configured: true, authorized: false }) }
+    throw new Error("Unexpected owner operation")
+  })
+  vi.stubGlobal("fetch", fetchMock)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await screen.findByText("No Node projects yet.")
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Project name"), "Trusted project")
+  const create = screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement
+  expect(create.disabled).toBe(true)
+  await user.type(screen.getByLabelText("Node owner token"), "B".repeat(40))
+  await user.click(screen.getByRole("button", { name: "Unlock management" }))
+  await screen.findByText("Invalid Node owner token.")
+  expect(create.disabled).toBe(true)
+  expect(fetchMock.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(0)
+})
+
+it("locking owner access drops authenticated management privileges without resetting the catalog", async () => {
+  const requests = vi.fn(async (url: RequestInfo | URL) => {
+    if (String(url) === "/api/v1/node-projects")
+      return { ok: true, status: 200, json: async () => ({ projects: [] }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await screen.findByText("No Node projects yet.")
+  await unlockNodeOwner()
+  const user = userEvent.setup()
+  await user.type(screen.getByLabelText("Project name"), "Test project")
+  const create = screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement
+  expect(create.disabled).toBe(false)
+  await user.click(screen.getByRole("button", { name: "Lock" }))
+  expect((screen.getByLabelText("Node owner token") as HTMLInputElement).value).toBe("")
+  expect(create.disabled).toBe(true)
+  expect(screen.getByText("Owner access locked.")).toBeTruthy()
+  expect(screen.getByText("No Node projects yet.")).toBeTruthy()
+})
+
 it("M3 browser creates and stages a real API-backed Node source candidate without running it", async () => {
   const user = userEvent.setup()
   let projects: unknown[] = []
@@ -122,6 +186,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByText("No Node projects yet.")
   await user.click(screen.getByRole("button", { name: "Check Node tools" }))
   await screen.findByText("Installed tools: Node v26.13.0 · npm 11.6.2")
@@ -188,6 +253,7 @@ it("treats a malformed installed-tool report as an error without claiming versio
   })
   vi.stubGlobal("fetch", requests)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByText("No Node projects yet.")
   const user = userEvent.setup()
   await user.click(screen.getByRole("button", { name: "Check Node tools" }))
@@ -243,6 +309,7 @@ it("starts and restarts only an explicitly approved, verified Node release", asy
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByRole("button", { name: "Resume Node" })
   await user.click(screen.getByRole("button", { name: "Resume Node" }))
   await screen.findByText(/Runtime: stopped/)
@@ -307,6 +374,7 @@ it.each(["refresh-failed", "mutation-unconfirmed"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "Safe Node" })
     await user.click(screen.getByRole("button", { name: "Safe Node" }))
     await screen.findByText(/Runtime: running/)
@@ -361,6 +429,7 @@ it.each(["response-mismatch", "refresh-mismatch"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "Verified Node" })
     await user.click(screen.getByRole("button", { name: "Verified Node" }))
     await screen.findByText(/Runtime: running/)
@@ -411,6 +480,7 @@ it("blocks follow-up Node execution if the owned HTTP readiness proof fails", as
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByRole("button", { name: "Unready Node" })
   await user.click(screen.getByRole("button", { name: "Unready Node" }))
   await screen.findByText(/Runtime: running/)
@@ -515,6 +585,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "GitHub Node" })
     await user.click(screen.getByRole("button", { name: "GitHub Node" }))
     await screen.findByText(/Runtime: running/)
@@ -617,6 +688,7 @@ it("previews GitHub dependencies and required build without installing or stagin
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByRole("button", { name: "Dependency preview" })
   await user.click(screen.getByRole("button", { name: "Dependency preview" }))
   await screen.findByText(/Runtime: not-provisioned/)
@@ -672,6 +744,7 @@ it.each(["review-required", "blocked", "malformed"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "Dependency plan Node" })
     await user.click(screen.getByRole("button", { name: "Dependency plan Node" }))
     await screen.findByText(/Runtime: not-provisioned/)
@@ -729,6 +802,7 @@ it("accepts bounded build dependency approval without authorizing deploy or buil
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await user.click(await screen.findByRole("button", { name: "Build packages" }))
   await user.click(screen.getByRole("button", { name: "Review dependency setup" }))
   await screen.findByText("Dependency setup reviewed without running npm or build.")
@@ -775,6 +849,7 @@ it("rejects malformed GitHub preview without changing the Node source editor", a
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByRole("button", { name: "Rejected GitHub" })
   await user.click(screen.getByRole("button", { name: "Rejected GitHub" }))
   await screen.findByText(/Runtime: not-provisioned/)
@@ -819,6 +894,7 @@ it("rejects a stale Node editor save and never retries the conflicting stage req
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await screen.findByRole("button", { name: "Concurrent Node" })
   await user.click(screen.getByRole("button", { name: "Concurrent Node" }))
   await screen.findByText(/Runtime: not-provisioned/)
@@ -873,6 +949,7 @@ it.each(["restored", "conflict"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "Versioned Node" })
     await user.click(screen.getByRole("button", { name: "Versioned Node" }))
     await screen.findByText(/Runtime: not-provisioned/)
@@ -951,6 +1028,7 @@ it.each(["disabled", "approved", "blocked"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await screen.findByRole("button", { name: "Prepared Node" })
     await user.click(screen.getByRole("button", { name: "Prepared Node" }))
     await screen.findByText(/Runtime: not-provisioned/)
@@ -1035,6 +1113,7 @@ it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await user.click(await screen.findByRole("button", { name: "Build project" }))
     await screen.findByText(/Runtime: not-provisioned/)
     const approve = screen.getByLabelText("Approve Node build execution") as HTMLInputElement
@@ -1105,6 +1184,7 @@ it.each([true, false])(
     })
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
     await user.click(await screen.findByRole("button", { name: "Rollback review" }))
     await screen.findByText(/Runtime: running/)
     await user.click(screen.getByRole("button", { name: "Review rollback target" }))
@@ -1189,6 +1269,7 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
   })
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await user.click(await screen.findByRole("button", { name: "Frontend import" }))
   await screen.findByText(/Runtime: not-provisioned/)
   await user.type(screen.getByLabelText("Public GitHub repository"), "example/frontend-node")
@@ -1263,6 +1344,7 @@ it("loads one local project folder including frontend assets and stages only aft
   const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII="
   vi.stubGlobal("fetch", calls)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
   await user.click(await screen.findByRole("button", { name: "Local folder" }))
   await screen.findByText(/Runtime: not-provisioned/)
   await user.upload(screen.getByLabelText("Load Node project folder"), [

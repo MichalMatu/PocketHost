@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -54,10 +54,10 @@ function setup(enabled: boolean) {
     expect(options?.method).toBeUndefined()
     if (url === "/api/v1/sites")
       return { ok: true, status: 200, json: async () => ({ sites: [staticSite] }) }
-    if (url === "/api/v1/owned-site/project")
-      return { ok: true, status: 200, json: async () => ({ project: demo }) }
-    if (url === "/api/v1/owned-site/logs")
-      return { ok: true, status: 200, json: async () => ({ logs: ["demo log"] }) }
+    if (url === "/api/v1/sites/" + staticSite.id + "/logs")
+      return { ok: true, status: 200, json: async () => ({
+        logs: ["static published", "Authorization: Bearer sensitive"],
+      }) }
     if (url === "/api/v1/node-projects")
       return enabled
         ? { ok: true, status: 200, json: async () => ({
@@ -87,20 +87,29 @@ it("Deployments shows only owned static and Node project histories", async () =>
   render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
   await screen.findByText("Example static")
   await screen.findByText("Example Node")
-  expect(screen.getByText(/publish · r-/)).toBeTruthy()
-  expect(screen.getByText(/start · r-/)).toBeTruthy()
+  expect(screen.getByRole("list", { name: "Deployment history for Example static" }).textContent)
+    .toMatch(/publish\s*·\s*new\s*→\s*r-/)
+  expect(screen.getByRole("list", { name: "Deployment history for Example Node" }).textContent)
+    .toMatch(/start\s*·\s*r-/)
   expect(screen.queryByText("PocketHost Demo")).toBeNull()
   expect(requests.mock.calls.some(([input]) => String(input) === "/api/v1/owned-site/project")).toBe(false)
   expect(requests.mock.calls.every((call) => call[1]?.method === undefined)).toBe(true)
 })
 
-it("Runtime logs reads only selected owned Node service and preserves H1 demo", async () => {
+it("Runtime logs reads only selected owned project, redacts secrets, and can switch to Node", async () => {
   const requests = setup(true)
   render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)
+  await screen.findByText(/static published/)
+  expect(screen.getByText(/\[sensitive log line hidden\]/)).toBeTruthy()
+  expect(screen.queryByText(/Bearer sensitive/)).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Example Node (Node.js)" }))
   await screen.findByText("node started")
-  expect(screen.getByText("demo log")).toBeTruthy()
-  expect(screen.getByRole("button", { name: "Example Node" })).toBeTruthy()
-  expect(requests.mock.calls.some((call) => String(call[0]).endsWith("/logs"))).toBe(true)
+  expect(requests.mock.calls.some(([input]) =>
+    String(input) === "/api/v1/sites/" + staticSite.id + "/logs")).toBe(true)
+  expect(requests.mock.calls.some(([input]) =>
+    String(input) === "/api/v1/node-projects/" + id + "/logs")).toBe(true)
+  expect(requests.mock.calls.some(([input]) =>
+    String(input).startsWith("/api/v1/owned-site"))).toBe(false)
 })
 
 it("Node feature disabled never requests foreign service runtime or logs", async () => {
@@ -112,18 +121,19 @@ it("Node feature disabled never requests foreign service runtime or logs", async
 })
 
 
-it("missing optional demo logs is a neutral empty state with a monitoring link", async () => {
+it("disabled log sources show an honest empty state without demo placeholders", async () => {
   const requests = vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input)
-    if (url === "/api/v1/node-projects" || url === "/api/v1/owned-site/logs")
+    if (url === "/api/v1/node-projects" || url === "/api/v1/sites")
       return { ok: false, status: 404 }
     throw new Error("Unexpected endpoint " + url)
   })
   vi.stubGlobal("fetch", requests)
   render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)
-  await screen.findByText("Optional demo logs are not enabled on this panel.")
+  await screen.findByText("No owned projects have been created.")
+  expect(screen.getByText("Static hosting is disabled.")).toBeTruthy()
+  expect(screen.getByText("Node Hosting is disabled.")).toBeTruthy()
   expect(screen.getByRole("link", { name: "Monitoring" }).getAttribute("href")).toBe("/observability")
-  expect(screen.getByRole("link", { name: "Services" }).getAttribute("href")).toBe("/services")
   expect(screen.queryByText("PocketHost Demo")).toBeNull()
   expect(screen.queryByRole("alert")).toBeNull()
 })
