@@ -31,8 +31,11 @@ export function NodeBackupPanel({
   const [backupApproved, setBackupApproved] = React.useState(false)
   const [backupSnapshots, setBackupSnapshots] = React.useState<Snapshot[]>([])
   const [selectedSnapshot, setSelectedSnapshot] = React.useState("")
+  const ownerSessionVersion = React.useRef(0)
 
   React.useEffect(() => {
+    // Invalidate responses started before owner access changed.
+    ownerSessionVersion.current += 1
     if (!ownerAuthorized) {
       setBackupApproved(false)
       setBackupStatus(null)
@@ -42,6 +45,15 @@ export function NodeBackupPanel({
     }
   }, [ownerAuthorized])
 
+  const guardedGetJson: Props["getJson"] = async (url, method, body) => {
+    const version = ownerSessionVersion.current
+    const result = await getJson(url, method, body)
+    if (version !== ownerSessionVersion.current) {
+      throw new Error("Owner session changed. Inspect backups again.")
+    }
+    return result
+  }
+
   const inspect = async () => {
     // Failed refresh must never retain a previous "ready" or mutation flag.
     setBackupStatus(null)
@@ -49,7 +61,7 @@ export function NodeBackupPanel({
     setBackupApproved(false)
     setBackupSnapshots([])
     setSelectedSnapshot("")
-    const report = await getJson(api + "/backup")
+    const report = await guardedGetJson(api + "/backup")
     const value = report.backup as Record<string, unknown> | undefined
     if (!value || typeof value.initialized !== "boolean" ||
         typeof value.repositoryPresent !== "boolean" ||
@@ -92,7 +104,7 @@ export function NodeBackupPanel({
               setBackupSnapshots([])
               setSelectedSnapshot("")
               setBackupApproved(false)
-              const response = await getJson(api + "/backup/snapshots")
+              const response = await guardedGetJson(api + "/backup/snapshots")
               setBackupSnapshots(readSnapshots(response.snapshots))
               onMessage("Owned Node snapshots refreshed.")
             })}>List Node snapshots</Button>
@@ -101,11 +113,11 @@ export function NodeBackupPanel({
               setBackupApproved(false)
               setBackupSnapshots([])
               setSelectedSnapshot("")
-              const result = await getJson(api + "/backup/create", "POST", { approved: true })
+              const result = await guardedGetJson(api + "/backup/create", "POST", { approved: true })
               if (result.backupCreated !== true || typeof result.snapshot !== "string" ||
                   !/^[a-f0-9]{64}$/.test(result.snapshot))
                 throw new Error("Backup result unconfirmed. Inspect snapshots before retrying.")
-              const inventory = await getJson(api + "/backup/snapshots")
+              const inventory = await guardedGetJson(api + "/backup/snapshots")
               const snapshots = readSnapshots(inventory.snapshots)
               if (!snapshots.some(item => item.id === result.snapshot))
                 throw new Error("Snapshot not found. Inspect before retrying.")
@@ -130,7 +142,7 @@ export function NodeBackupPanel({
             const snapshot = selectedSnapshot
             setBackupApproved(false)
             setSelectedSnapshot("")
-            const result = await getJson(api + "/backup/restore", "POST", { approved: true, snapshot })
+            const result = await guardedGetJson(api + "/backup/restore", "POST", { approved: true, snapshot })
             if (result.restoredToStaging !== true ||
                 typeof result.verifiedProjects !== "number" ||
                 !Number.isSafeInteger(result.verifiedProjects) ||
