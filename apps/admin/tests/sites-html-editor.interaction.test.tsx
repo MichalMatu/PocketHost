@@ -2,6 +2,7 @@ import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
+import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -94,7 +95,7 @@ describe("one-file static site MVP", () => {
     })
     vi.stubGlobal("fetch", mock)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    render(<SitesPage />)
+    render(<MemoryRouter initialEntries={["/sites"]}><SitesPage /></MemoryRouter>)
 
     await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "One HTML page")
