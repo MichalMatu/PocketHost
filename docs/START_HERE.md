@@ -13,13 +13,13 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified live A8 panel: `79be0852cb204b535bfc0ce8a42a78aaf92330ea`, PID 22154, HTTP 200, protected services unchanged; receipt `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`. Later docs-only commits are not deployed. Recheck live SHA and ownership before action.
+Last verified live A8 panel source: `0db0327239194e4a8d9da538308529681ad666fc` (2026-11-17, Node Restic postflight PASS); protected services unchanged. Previous `79be085...` receipt is historical. Later docs-only commits were not deployed; recheck live SHA and ownership before any action.
 
 ## Product and scope
 
-PocketHost offers general-purpose static and Node.js Hosting and Termux services, without hardcoded customer applications. Static Create → Publish → Start → private LAN render → manual HTTP check was owner-accepted 2026-11-17. Static update/rollback and generic Node execution remain unaccepted. Services S1–S4 fixed-worker implementation is frozen pending acceptance; reboot/Termux:Boot and backups unqualified.
+PocketHost offers general-purpose static and Node.js Hosting and Termux services, without hardcoded customer applications. Static Create → Publish → Start → LAN render and Static v2 → HTTP → rollback passed. Authenticated, trusted owned Node Create → Stage → Deploy → readiness/logs → Update → Stop/Start → rollback passed at the pinned A8 source. Scoped encrypted Node Restic backup → isolated staging restore passed (10 matching files). Browser sign-off, off-device backups, untrusted-source isolation and reboot/Termux:Boot remain unaccepted; Services S1–S4 fixed-worker implementation remains frozen pending acceptance.
 
-Current focus: Node.js Hosting on A8 with authenticated owner authorization; **never bypass passwordless LAN Node write denials**. User Node code has the Termux UID and is not sandboxed; run only owner-reviewed trusted source. Stronger isolation is still open.
+Current focus: finish safe, explicitly gated Node backup UI and visual Hosting acceptance, then plan off-device protection. **Never bypass Node owner-token checks or the disabled backup-mutation DEV flag.** Node code runs with the Termux UID; only owner-reviewed trusted source is permitted until genuine process isolation exists.
 
 ## Quality and deployment
 

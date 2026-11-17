@@ -33,24 +33,15 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 
 ## Current Samsung target (A8 installed)
 
-**Samsung Galaxy A8 only** for PocketHost execution. Latest verified live
-DEV SHA: `79be0852cb204b535bfc0ce8a42a78aaf92330ea`, PID **22154**, HTTP **200**, owned panel/watch and
-independent Local Agent running; protected services unchanged.
-Terminal FAST FLOW receipt:
-`pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`
-(done, exit 0, PASS). Exact current source differs from the last manually
-approved **7/7 QA** at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`.
-**No QA, lint, typecheck, formatting or smoke suite was run on the newer SHA.**
+**Samsung Galaxy A8 only** for PocketHost execution. Last confirmed live DEV source:
+`0db0327239194e4a8d9da538308529681ad666fc` (2026-11-17), independently checked after the Node backup/restore; the owner-panel and protected services stayed intact. Its authenticated Node demo remains on the original release at port 19300 and the Static site on v1. Physical Node Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start → Rollback and Static v2 → HTTP → Rollback both passed. Exact receipts: `docs/MVP_INTEGRATION_CHECKLIST.md`. Later source-only changes are **not** confirmed deployed. Previous live SHA `79be085...` is historical.
+Repository-wide QA, lint, types, formatting and UI regression are **not** proven for current `main`; prior selective results are bound to their exact SHAs.
 
 One bounded owned fixed-template worker passed physical Create → Start →
 Health / Logs / Recovery review → Stop → Archive → Restore → Retire on A8
 (receipt `pockethost-a8-s1-s4-complete-owned-flow-396058d2-20261116-v1`).
-S3 Android startup after reboot, arbitrary source execution, generic
-hosting release/rollback and full Backup → Restore are not physically accepted.
-Platform settings readback, Hosting static exact-create readback, live release content
-readiness/revert gates, exact HTTP release identity, and Restic UI receipt validation are deployed but not
-independently QA-tested. End-to-end Hosting create/deploy/update/rollback still
-awaits explicit owner-authorized physical acceptance.
+S3 Android startup after reboot, untrusted/arbitrary source isolation and final browser visual acceptance are still open. Trusted owned Node and Static update/rollback passed. Scoped Node Restic backup and isolated staging restore passed on A8 (10 matching files, snapshot `74dbd57d...`), but only on-device; browser backup mutations remain disabled by the dedicated DEV flag. This is not full-device/off-device disaster recovery.
+Previous platform/readback changes were deployed but do not constitute current-source repository-wide QA. Hosting Node/Static physical basic flows are accepted only within the exact scope above; browser UI sign-off, off-device backup, and reboot still require separate acceptance.
 No standing scheduler, reboot, protected SSH, WAN or S22 changes.
 See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
 

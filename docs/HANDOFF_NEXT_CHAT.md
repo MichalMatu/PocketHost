@@ -10,10 +10,10 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Verified state
 
 - Repo `MichalMatu/PocketHost`, source `main`: always read fresh HEAD.
-- Last verified live DEV: `79be0852cb204b535bfc0ce8a42a78aaf92330ea`; PID 22154; HTTP 200; protected services unchanged; receipt `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`. Later docs commits were not deployed.
+- Last verified live DEV source: `0db0327239194e4a8d9da538308529681ad666fc`; A8 Node Restic postflight confirmed the panel, demo Node project on v1/port 19300, Static v1 HTTP/content and unchanged protected services. Earlier `79be085...` receipt is historical. Later docs commits were not deployed. Recheck running PID, start ticks and live SHA before any change.
 - Only paired Galaxy A8 official Termux Local Agent, private `MichalMatu/local-agent` branch `agent-control`, immutable task/result path. No Mac, S22, Actions, Work, Codex, scheduler or automatic retries.
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
-- Owner-accepted static basic flow: site `first website`, HTML release `r-22ad782ce6ef40489494a293ed87669b`, rendered over LAN and HTTP healthy. Preserve existing site/data. ZIP/folder, update, rollback, reboot and public access remain unaccepted.
+- Owner-accepted Static Create/Publish/Start and later physical v2 → HTTP → rollback to original v1 PASS. Authenticated trusted Node Create → Stage → Deploy → Health/Logs → Update → Stop/Start → Rollback PASS. Scoped Node Restic backup and staging-only restore PASS: one encrypted local snapshot, 10 verified files and no overwrite of live services. These do not accept ZIP/folder, off-device copy, browser visual UI, untrusted Node execution, reboot or public access. Preserve existing site/data.
 
 ## Owner-requested full QA baseline (2026-11-17)
 
@@ -23,9 +23,9 @@ Pinned source `96bf1a1100ba9d555d5f6bde467353bad2a59990` on Samsung A8. Structur
 
 1. Restore QA prerequisites using only pinned root/admin lockfiles in isolated A8 QA checkout; never global npm installation or production dependency replacement.
 2. Enforce code file-size budgets and browser/server boundaries. Refactor oversized `vite.config.ts` and `termux-service-admin.ts` incrementally; existing oversized files must not grow.
-3. Node.js Hosting source/build/run uses the **same Termux OS user**, without a secure sandbox. Do not enable arbitrary/untrusted execution or permit passwordless LAN writes. Create an authenticated, revocable owner authorization path before enabling any Node mutation over LAN.
+3. Node.js Hosting source/build/run uses the **same Termux OS user**, without a secure sandbox. A local owner-token gate already protects Node mutations and negative unauthenticated POST returned 403; never bypass it or expose the plaintext credential on an untrusted LAN. Arbitrary/untrusted execution remains prohibited; browser backup mutations stay disabled pending separate DEV enablement.
 4. Show `/projects` as read-only over LAN; allow deployment and log inspection without misleading disabled-backend create/deploy buttons.
-5. Sync [ROADMAP](ROADMAP.md) with [MVP tracker](MVP_EXECUTION_PLAN.md). Framework/CMS examples remain separate and do not imply active product features.
+5. Keep [ROADMAP](ROADMAP.md), [MVP tracker](MVP_EXECUTION_PLAN.md) and [integration receipts](MVP_INTEGRATION_CHECKLIST.md) aligned. Framework/CMS examples do not imply active features; the current next steps are backup UI gating, browser visual sign-off and off-device copy design.
 
 ## Operational workflow
 

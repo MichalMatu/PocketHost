@@ -26,7 +26,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 - [x] PocketHost DEV na Samsung Galaxy A8 przez Termux/runit; MacBook otwiera panel po prywatnym LAN; menu Services ma osobne strony.
 - [x] Dynamiczny Host inventory, RAM/dysk/uptime, Dashboard Basic/Enhanced według obecności Companion/Shizuku, monitoring i odczyty usług, czytelne GiB oraz dni/godziny.
-- [x] Zweryfikowany FAST FLOW bez testów. **Live A8 `79be0852cb204b535bfc0ce8a42a78aaf92330ea`** (PASS, PID 22154, HTTP 200, usługi chronione bez zmian), receipt `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`. Historyczne QA 7/7 dotyczy `c0bf0218`; osobny, wąski Vitest UI na `c1c2ef8cb1b1bc4ee3c7128cd554ed7b041ba70e` zwrócił FAIL przez przestarzałą asercję. **Aktualnej wersji nie testowano**.
+- [x] Zweryfikowany FAST FLOW; ostatni fizycznie potwierdzony panel A8 to **`0db0327239194e4a8d9da538308529681ad666fc`**, zgodny z postflight Node Restic 2026-11-17. `79be085...` jest starszym wydaniem. Historyczne QA 7/7 dotyczy `c0bf0218`, inne testy tylko wymienionych SHA. **Pełnego QA obecnego `main` nie wykonano**.
 - [ ] **Niepotwierdzone:** pełny odbiór Services, realny reboot/Termux:Boot, wszystkie interakcje z własnym workerem, wykonywanie własnego Python. HTTP 200 i SHA nie dowodzą ich sprawności.
 
 ## Sprint 2026-11-16 — potwierdzone wyniki i granice
@@ -77,7 +77,7 @@ Zakres fixed-template S1–S4 zaimplementowano i przeprowadzono wcześniej jeden
 - [x] **Quick HTML starter:** w `/sites` przy każdej własnej stronie działa bezpieczny edytor jednego `index.html` (32 KiB), bez ZIP, publikacja jako niezmienne wydanie przez istniejące API folder, obowiązkowy niezależny readback i wyraźna instrukcja `Edit → Publish → Start → Open`. `pockethost-a8-hosting-html-starter-fast-flow-20261116-v1`: terminal PASS, live `57a718a0fc53a1dd9cf481036275e6b7627047fc`, PID 31533, ticks 28261039, HTTP 200, protected unchanged; test UI zapisany, **NOT RUN**. Nie utworzono jeszcze żadnej witryny na A8 podczas tej operacji.
 - [x] **Static Hosting basic MVP — OWNER CONFIRMED PASS (2026-11-17):** Create → Publish HTML → Start → render strony na `:18879/h2/site-...` → ręczny `HTTP: healthy`. Site PID 6619; format metryk 56.4 MiB i 14m 9s potwierdzony na zrzucie. [Pełny checkpoint/handoff A8 Local Agent](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Aktualizacja do drugiego wydania, rollback, ZIP/folder i awarie pozostają **otwarte**.
 - [x] **Czytelne metryki witryn (2026-11-17):** wspólny format bajtów B/KiB/MiB/GiB/TiB bez zbędnych `.0`, `Uptime` przez wspólne `formatUptime` (np. 248 s → 4m 8s), lepsza hierarchia danych, skrócony release z pełnym identyfikatorem w podpowiedzi. A8 `pockethost-a8-hosting-metrics-format-fast-flow-20261117-v1`: PASS, live `79be0852cb204b535bfc0ce8a42a78aaf92330ea`, PID 22154, start ticks 28334582, HTTP 200, protected unchanged, **testy nieuruchomione**.
-- [ ] **Backend Node.js:** `/projects` ma kandydatów kodu, wydania i prywatny runtime; nie jest jeszcze udostępniony do mutacji kodu przez bezhasłowy LAN. Zaprojektować kontrolę autoryzacji wdrożenia i bezpieczną publikację backendu dla przeglądarki MacBook, dopiero potem udostępnić wykonanie własnego kodu.
+- [x] **Backend Node.js P0 (zaufany, własny kod):** na A8 osobny token właściciela chroni mutacje; nieautoryzowany POST zwrócił 403. Fizyczny przepływ Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start → Rollback PASS na `0db03272`. **Otwarte:** końcowy odbiór przeglądarkowy, izolacja nieufnego kodu i publikacja poza prywatnym LAN. Token po HTTP LAN nie daje szyfrowania transportu.
 - [ ] **Odbiór Hosting:** testy wyłącznie przy świeżej zgodzie na dokładny SHA i konkretny zakres; nie twierdzić, że HTTP panelu oznacza działającą stronę.
 
 
@@ -91,7 +91,7 @@ Zakres fixed-template S1–S4 zaimplementowano i przeprowadzono wcześniej jeden
 ## 4. Stabilizacja MVP — IN_PROGRESS (bez odbioru całego etapu)
 
 - [ ] **M1:** usunąć martwe/dublujące się ścieżki.
-- [ ] **M2:** spójny Backup → Restore w izolacji.
+- [x] **M2 (wąski zakres Node):** Restic 0.19.1, zaszyfrowany backup własnych projektów Node i odtworzenie do izolowanego staging, 10/10 plików SHA-256 PASS na A8. Pełne HOME/PREFIX, Static i off-device recovery pozostają poza zakresem.
 - [ ] **M3:** bezpieczeństwo/awarie/recovery oraz reboot **wyłącznie po osobnej zgodzie**.
 - [ ] **M4:** raport znanych luk, live SHA, decyzja użytkownika o końcowym odbiorze.
 
@@ -102,4 +102,4 @@ Zakres fixed-template S1–S4 zaimplementowano i przeprowadzono wcześniej jeden
 3. Jedyny konieczny dowód: terminal PASS/HOLD, SHA, PID/start ticks, podstawowe HTTP, brak zmian w chronionych usługach. Przy HOLD nie uruchamiaj automatycznych ponowień.
 4. Dokumentuj tylko aktualny status, a szczegółowe logi trzymaj w receipt/Git. Dokumentacja-only: commit bez deploy, testów, restartu i formatowania.
 
-**Następny produktowy krok:** [checkpoint A8 Local Agent](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md) → Node.js Hosting z backendem: bezpieczna autoryzacja mutacji z MacBooka, własne wydania, HTTP readiness, logi i rollback. Nie obchodź blokady bezhasłowego LAN. Services zamrożony, Platform w backlogu, **scheduler wyłączony**.
+**Następny produktowy krok:** domknąć osobno autoryzowane włączenie backupu Node w UI (obecny serwerowy flag `POCKETHOST_ENABLE_NODE_BACKUPS_DEV` pozostaje wyłączony), wykonać ręczny odbiór przeglądarkowy Hostingu, następnie przygotować bezpieczną kopię poza A8. Realny backup Node/restore w staging jest już sprawdzony; nie uruchamiaj go ponownie bez odrębnego zakresu. Nie obchodź autoryzacji Node ani ograniczeń LAN. Services zamrożony, Platform w backlogu, **scheduler wyłączony**.
