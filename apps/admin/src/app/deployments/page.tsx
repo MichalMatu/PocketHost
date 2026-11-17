@@ -105,7 +105,7 @@ export default function DeploymentsPage() {
                   Last operation: {latest ? latest.action + " · " + latest.at : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline" to="/sites">Manage {site.name} in Sites</Link>
+                  <Link className="underline" to={"/sites?site=" + encodeURIComponent(site.id)}>Manage {site.name} in Sites</Link>
                   <Link className="underline" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Read project logs</Link>
                   {site.canRollback && site.state !== "unknown"
                     ? <span className="text-muted-foreground text-xs">
