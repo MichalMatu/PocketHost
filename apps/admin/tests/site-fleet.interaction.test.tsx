@@ -200,7 +200,8 @@ describe("H2 browser site-manager lifecycle", () => {
   it("renders real owned PID and asynchronous HTTP verification result", async () => {
     const user = userEvent.setup()
     withSites([project("running", true)])
-    await screen.findByText(/1234 \/ 55555/)
+    await screen.findByText("PID 1234")
+    expect(screen.getByText("Start ticks: 55555")).toBeTruthy()
     expect(screen.getByRole("button", { name: /Restart/ })).toBeTruthy()
     expect(screen.getByRole("button", { name: /Stop/ })).toBeTruthy()
     await user.click(screen.getByRole("button", { name: /Verify HTTP/ }))
