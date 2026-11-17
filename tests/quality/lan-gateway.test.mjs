@@ -54,6 +54,19 @@ test('only the fixed read-only O1 snapshot gets a bounded extended LAN upstream 
   }
 });
 
+test('Node owner LAN API has scoped deadlines without opening unrelated routes', () => {
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects', 'GET'), 30000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/owner-session', 'GET'), 30000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/health', 'GET'), 30000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/install-dependencies', 'POST'), 300000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/build', 'POST'), 300000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/deploy', 'POST'), 60000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/rollback', 'POST'), 60000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/github/preview', 'POST'), 90000);
+  assert.equal(upstreamTimeoutMs('/api/v1/node-projects-other', 'POST'), 5000);
+  assert.equal(upstreamTimeoutMs('/api/v1/sites', 'GET'), 30000);
+});
+
 test('H3 admin LAN timeout is long only for its exact typed endpoint', () => {
   assert.equal(upstreamTimeoutMs('/api/v1/termux-admin?mode=packages', 'GET'), 30000);
   assert.equal(upstreamTimeoutMs('/api/v1/termux-admin', 'POST'), 610000);
