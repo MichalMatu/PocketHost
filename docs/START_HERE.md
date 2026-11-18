@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-17
+last_reviewed: 2026-11-18
 purpose: Minimal safe A8 handoff
 ---
 
@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified live A8 panel source: `7246a05c5739f843f6f81344c6ec2a2931d82aac` (2026-11-18 guarded FAST FLOW PASS; PID 17085, HTTP 200, protected services unchanged). The 2026-11-17 real Node/Static/Restic receipts at `0db03272...` remain historical. A scoped QA run on `1cfe385f...` exposed a stale UI test and three oversized code files; both issues were addressed in `7246a05...` but QA for that SHA has not been rerun. Recheck live SHA and ownership before action.
+Last verified live A8 DEV source: `48a9c9015dcd025896f9bcf92c1a9acc92a814de` (guarded FAST FLOW PASS, PID 9858, HTTP 200, protected services unchanged; receipt `pockethost-a8-projects-client-validation-48a9c901-20261118-v1`). Scoped QA on `7246a05c5739f843f6f81344c6ec2a2931d82aac` passed budgets, boundaries, Node backup host and admin TypeScript; UI 61/62 PASS with one missing layout-provider test mock. Source `48a9c90...` fixes the mock and modularizes/validates Node projects, but QA of this SHA has not run. Earlier physical Node/Static/Restic acceptance remains historical.
 
 ## Product and scope
 

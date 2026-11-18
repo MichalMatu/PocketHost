@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-17
+last_reviewed: 2026-11-18
 purpose: Exclusive Samsung host executor and private Git task/result runbook
 ---
 
@@ -52,7 +52,7 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Last verified A8 DEV live source: `7246a05c5739f843f6f81344c6ec2a2931d82aac` (2026-11-18 guarded FAST FLOW PASS, panel PID 17085/start ticks 37170263, HTTP 200, protected services unchanged). Receipt `pockethost-a8-quality-debt-modularize-7246a05c-20261118-v1`. Physical Node/Static/Restic P0/P1 checks at `0db03272...` remain earlier acceptance only; no new hosted-service lifecycle tests occurred. A single scoped QA at `1cfe385f...` found UI fixture and code-budget failures, fixed in later source `7246a05...` but **not retested**. Full current-source QA is not certified.
+from S22. Last verified A8 DEV live source: `48a9c9015dcd025896f9bcf92c1a9acc92a814de` (2026-11-18 guarded FAST FLOW PASS, PID 9858/start ticks 37356176, HTTP 200, protected services unchanged), receipt `pockethost-a8-projects-client-validation-48a9c901-20261118-v1`. `pockethost-a8-approved-node-backup-qa-7246a05c-20261118-v1` passed budgets/boundaries/Node backup host/admin types; UI 61/62 PASS with one missing layout mock, corrected in deployed code but not retested. No current-source QA/visual sign-off exists. Physical Node/Static/Restic P0/P1 receipts on `0db03272...` are historical scope-only evidence.
 [Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
 The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
 returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
