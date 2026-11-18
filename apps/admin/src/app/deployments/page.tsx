@@ -8,6 +8,15 @@ import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hostin
 
 type CatalogState = "loading" | "ready" | "disabled" | "error"
 
+function shortRelease(id: string | null): string {
+  return id ? id.slice(0, 12) + "…" : "none"
+}
+
+function localTime(value: string): string {
+  const parsed = Date.parse(value)
+  return Number.isFinite(parsed) ? new Date(parsed).toLocaleString() : value
+}
+
 export default function DeploymentsPage() {
   const [sites, setSites] = React.useState<FleetSite[]>([])
   const [staticState, setStaticState] = React.useState<CatalogState>("loading")
@@ -84,7 +93,8 @@ export default function DeploymentsPage() {
         <Card>
           <CardHeader><CardTitle>Static sites</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Link to="/sites" className="text-sm underline">Manage static sites</Link>
+            {(staticState !== "ready" || sites.length === 0) &&
+              <Link to="/sites" className="text-sm underline underline-offset-4">Manage static sites</Link>}
             {staticState === "loading" && <p role="status">Loading static deployments…</p>}
             {staticState === "disabled" && <p role="status" className="text-muted-foreground text-sm">
               Static hosting is not enabled on this panel.
@@ -96,17 +106,21 @@ export default function DeploymentsPage() {
               // SiteFleetHost.inspect returns history newest first.
               const latest = site.history[0]
               return <section className="rounded-md border p-3 space-y-2" key={site.id}>
-                <p className="text-sm font-semibold">{site.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  Static HTML · State: {site.state} · Active: {site.activeRelease ?? "none"} ·
-                  Previous: {site.previousRelease ?? "none"} · Saved releases: {site.releases}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{site.name}</p>
+                  <span className="rounded-full border px-2 py-0.5 text-xs">{site.state}</span>
+                </div>
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span title={site.activeRelease ?? undefined}>Active: {shortRelease(site.activeRelease)}</span>
+                  <span title={site.previousRelease ?? undefined}>Previous: {shortRelease(site.previousRelease)}</span>
+                  <span>Saved releases: {site.releases}</span>
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Last operation: {latest ? latest.action + " · " + latest.at : "No deployment recorded"}
+                  Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline" to={"/sites?site=" + encodeURIComponent(site.id)}>Manage {site.name} in Sites</Link>
-                  <Link className="underline" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Read project logs</Link>
+                  <Link className="underline underline-offset-4" to={"/sites?site=" + encodeURIComponent(site.id)}>Open site settings</Link>
+                  <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
                   {site.canRollback && site.state !== "unknown"
                     ? <span className="text-muted-foreground text-xs">
                         Rollback target saved — review and execute in Sites
@@ -116,12 +130,18 @@ export default function DeploymentsPage() {
                       </span>}
                 </div>
                 {site.history.length > 0
-                  ? <ol className="max-h-44 overflow-auto space-y-1 text-xs" aria-label={"Deployment history for " + site.name}>
-                      {site.history.slice(0, 8).map((entry, i) => (
-                        <li key={entry.at + i}>{entry.at} · {entry.action} ·
-                          {entry.from ?? "new"} → {entry.to}</li>
-                      ))}
-                    </ol>
+                  ? <details open={site.history.length <= 2} className="rounded-md bg-muted/30 p-2 text-xs">
+                      <summary className="cursor-pointer font-medium">Deployment history ({site.history.length})</summary>
+                      <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + site.name}>
+                        {site.history.slice(0, 8).map((entry, i) => (
+                          <li key={entry.at + i}>
+                            <span className="text-muted-foreground">{localTime(entry.at)}</span> · {entry.action} ·
+                            <span title={entry.from ?? undefined}> {entry.from ? shortRelease(entry.from) : "new"}</span>
+                            {" → "}<span title={entry.to}>{shortRelease(entry.to)}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
                   : <p className="text-muted-foreground text-xs">No deployment history.</p>}
               </section>
             })}
@@ -130,7 +150,8 @@ export default function DeploymentsPage() {
         <Card>
           <CardHeader><CardTitle>Node.js applications</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Link to="/projects" className="text-sm underline">Manage Node projects</Link>
+            {(nodeState !== "ready" || nodeProjects.length === 0) &&
+              <Link to="/projects" className="text-sm underline underline-offset-4">Manage Node projects</Link>}
             {nodeState === "loading" && <p role="status">Loading Node deployments…</p>}
             {nodeState === "disabled" && <p role="status" className="text-muted-foreground text-sm">
               Node Hosting is not enabled on this panel.
@@ -142,17 +163,21 @@ export default function DeploymentsPage() {
               const latest = node.history[node.history.length - 1]
               const projectUrl = "/projects?project=" + encodeURIComponent(node.id)
               return <section className="rounded-md border p-3 space-y-2" key={node.id}>
-                <p className="text-sm font-semibold">{node.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  Node.js · State: {node.state} · Desired: {node.desired} ·
-                  Active: {node.activeRelease ?? "none"} · Previous good: {node.previousGoodRelease ?? "none"}
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm font-semibold">{node.name}</p>
+                  <span className="rounded-full border px-2 py-0.5 text-xs">{node.state}</span>
+                </div>
+                <p className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span>Desired: {node.desired}</span>
+                  <span title={node.activeRelease ?? undefined}>Active: {shortRelease(node.activeRelease)}</span>
+                  <span title={node.previousGoodRelease ?? undefined}>Previous good: {shortRelease(node.previousGoodRelease)}</span>
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Last operation: {latest ? latest.action + " · " + latest.at : "No deployment recorded"}
+                  Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline" to={projectUrl}>Open {node.name}</Link>
-                  <Link className="underline" to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Read project logs</Link>
+                  <Link className="underline underline-offset-4" to={projectUrl}>Open project</Link>
+                  <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
                   {node.previousGoodRelease && node.state !== "unknown"
                     ? <Link className="underline" to={projectUrl}>Review rollback in project</Link>
                     : <span className="text-muted-foreground text-xs">
@@ -160,11 +185,17 @@ export default function DeploymentsPage() {
                       </span>}
                 </div>
                 {node.history.length > 0
-                  ? <ol className="max-h-44 overflow-auto space-y-1 text-xs" aria-label={"Deployment history for " + node.name}>
-                      {node.history.slice(-8).reverse().map((entry, i) => (
-                        <li key={entry.at + i}>{entry.at} · {entry.action} · {entry.release}</li>
-                      ))}
-                    </ol>
+                  ? <details open={node.history.length <= 2} className="rounded-md bg-muted/30 p-2 text-xs">
+                      <summary className="cursor-pointer font-medium">Deployment history ({node.history.length})</summary>
+                      <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + node.name}>
+                        {node.history.slice(-8).reverse().map((entry, i) => (
+                          <li key={entry.at + i}>
+                            <span className="text-muted-foreground">{localTime(entry.at)}</span> · {entry.action} ·
+                            <span title={entry.release}> {shortRelease(entry.release)}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </details>
                   : <p className="text-muted-foreground text-xs">No deployment history.</p>}
               </section>
             })}

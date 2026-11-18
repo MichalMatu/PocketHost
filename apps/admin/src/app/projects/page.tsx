@@ -354,236 +354,12 @@ export default function ProjectsPage() {
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
-          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. Termux runit starts the verified server.mjs on loopback only after explicit approval. Build candidates require separate install/build review and SHA-256 verification; generated dist files are not served automatically—server.mjs must serve them. /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
-          <div className="flex flex-wrap items-end gap-2">
-            <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
-              <Input aria-label="Public GitHub repository" placeholder="owner/repository"
-                value={githubRepository} maxLength={150}
-                onChange={event => {
-                  setGithubRepository(event.target.value)
-                  setGithubReview(null)
-                }} />
-            </label>
-            <Button variant="outline" disabled={busy || !ownerAuthorized || !githubRepository.trim()}
-              onClick={() => action(async () => {
-                const result = await getJson(api + "/github/preview", "POST",
-                  { repository: githubRepository.trim() })
-                const data = result.preview as Record<string, unknown> | undefined
-                const contents = data?.source as Record<string, unknown> | undefined
-                const sourcePlan = data?.plan as Record<string, unknown> | undefined
-                const commands = sourcePlan?.commands as Record<string, unknown> | undefined
-                if (!data || !sourcePlan || !commands ||
-                    typeof sourcePlan.dependencyCount !== "number" ||
-                    !Number.isSafeInteger(sourcePlan.dependencyCount) ||
-                    (sourcePlan.dependencyCount as number) < 0 ||
-                    (sourcePlan.dependencyCount as number) > 500 ||
-                    (commands.build !== null &&
-                     (!Array.isArray(commands.build) ||
-                      commands.build.length !== 3 ||
-                      commands.build.join(" ") !== "npm run build")) ||
-                    data.repository !== githubRepository.trim() ||
-                    typeof data.commit !== "string" || !/^[a-f0-9]{40}$/.test(data.commit) ||
-                    !contents || typeof contents.packageJson !== "object" ||
-                    !contents.packageJson || Array.isArray(contents.packageJson) ||
-                    typeof contents.packageLock !== "object" ||
-                    !contents.packageLock || Array.isArray(contents.packageLock) ||
-                    typeof contents.serverSource !== "string" ||
-                    !contents.serverSource.trim() || contents.serverSource.length > 65536)
-                  throw new Error("Invalid GitHub Node source preview")
-                const fetchedExtras = validatedExtras(contents.extraFiles)
-                const fetchedAssets = validatedAssets(contents.assetFiles)
-                const changed = ["package.json", "package-lock.json", "server.mjs"]
-                if (selected.candidateRelease) {
-                  // Compare only with attested on-host source, never the editor buffer.
-                  const current = await getJson(api + "/" + selected.id + "/source")
-                  const staged = current.source as Record<string, unknown> | undefined
-                  if (!staged || staged.release !== selected.candidateRelease ||
-                      typeof staged.manifest !== "string" ||
-                      typeof staged.lockfile !== "string" ||
-                      typeof staged.serverSource !== "string" ||
-                      staged.manifest.length > 140000 || staged.lockfile.length > 140000 ||
-                      staged.serverSource.length > 65536)
-                    throw new Error("Could not verify current staged Node source")
-                  try {
-                    if (JSON.stringify(JSON.parse(staged.manifest)) ===
-                        JSON.stringify(contents.packageJson)) changed.splice(changed.indexOf("package.json"), 1)
-                    if (JSON.stringify(JSON.parse(staged.lockfile)) ===
-                        JSON.stringify(contents.packageLock)) changed.splice(changed.indexOf("package-lock.json"), 1)
-                    if (staged.serverSource === contents.serverSource)
-                      changed.splice(changed.indexOf("server.mjs"), 1)
-                  } catch {
-                    throw new Error("Could not verify current staged Node source")
-                  }
-                  const oldExtras = validatedExtras(staged.extraFiles)
-                  if (JSON.stringify(oldExtras) !== JSON.stringify(fetchedExtras))
-                    changed.push("frontend files")
-                  const oldAssets = validatedAssets(staged.assetFiles)
-                  if (JSON.stringify(oldAssets) !== JSON.stringify(fetchedAssets))
-                    changed.push("binary assets")
-                  if (!changed.length) {
-                    setGithubReview(null)
-                    setMessage("GitHub commit " + data.commit.slice(0, 12) +
-                      " matches the current staged source. No update needed.")
-                    return
-                  }
-                }
-                setGithubReview({
-                  repository: data.repository as string,
-                  commit: data.commit,
-                  changed,
-                  dependencies: sourcePlan.dependencyCount as number,
-                  buildRequired: commands.build !== null,
-                  extraCount: Object.keys(fetchedExtras).length,
-                  assetCount: Object.keys(fetchedAssets).length,
-                })
-                setExtraFiles(fetchedExtras)
-                setAssetFiles(fetchedAssets)
-                setManifest(JSON.stringify(contents.packageJson, null, 2))
-                setLockfile(JSON.stringify(contents.packageLock, null, 2))
-                setSource(contents.serverSource)
-                setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
-                setDependencyReview(null)
-                setExecutionEnabled(false); setEditorDirty(true)
-                setMessage("GitHub commit " + data.commit.slice(0, 12) +
-                  " contains changes. Review and stage to preserve the previous release.")
-              })}>{selected.candidateRelease ? "Check GitHub updates" : "Load GitHub source"}</Button>
-          </div>
-          {githubReview && <p className="text-muted-foreground text-xs"
-            aria-label="GitHub source changes">
-            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"} · Frontend files: {githubReview.extraCount} · Binary assets: {githubReview.assetCount}
-            {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
-              " · Staging only; package installation/build requires separate approval."}
-          </p>}
-          <label className="grid gap-1 text-sm">Load local Node files
-            <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
-              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
-              onChange={event => {
-                const picked = Array.from(event.currentTarget.files ?? [])
-                event.currentTarget.value = ""
-                if (!picked.length) return
-                action(async () => {
-                  const files = await readLocalNodeFiles(picked)
-                  setManifest(files.manifest)
-                  setLockfile(files.lockfile)
-                  setSource(files.source)
-                  setExtraFiles({})
-                  setAssetFiles({})
-                  setApproved(false)
-                  setBuildCheck(null)
-                  setPlan(null)
-                  setPreview(null)
-                  setExecutionEnabled(false)
-                  setEditorDirty(true)
-                  setGithubReview(null)
-                  setDependencyReview(null)
-                  setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
-                })
-              }} />
-          </label>
-          <label className="grid gap-1 text-sm">Load Node project folder
-            <input type="file" aria-label="Load Node project folder" multiple
-              ref={element => { if (element) element.setAttribute("webkitdirectory", "") }}
-              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
-              onChange={event => {
-                const chosen = Array.from(event.currentTarget.files ?? [])
-                event.currentTarget.value = ""
-                if (!chosen.length) return
-                action(async () => {
-                  const local = await readLocalNodeFolder(chosen)
-                  setManifest(local.manifest)
-                  setLockfile(local.lockfile)
-                  setSource(local.source)
-                  setExtraFiles(local.extraFiles)
-                  setAssetFiles(local.assetFiles)
-                  setApproved(false); setBuildApproved(false); setBuildCheck(null)
-                  setPlan(null); setPreview(null); setBuildReview(null)
-                  setExecutionEnabled(false); setEditorDirty(true)
-                  setGithubReview(null); setDependencyReview(null)
-                  setMessage("Local project folder reviewed. Validate and stage to save its files; no code executed.")
-                })
-              }} />
-          </label>
-          <label className="grid gap-1 text-sm">package.json
-            <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
-          <label className="grid gap-1 text-sm">package-lock.json
-            <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
-          <label className="grid gap-1 text-sm">server.mjs
-            <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
-          <p className="text-muted-foreground text-xs" aria-label="Imported frontend files">
-            Extra source files: {Object.keys(extraFiles).length ?
-              Object.keys(extraFiles).sort().join(", ") : "none"}
-          </p>
-          <p className="text-muted-foreground text-xs" aria-label="Imported binary assets">
-            Binary assets: {Object.keys(assetFiles).length ?
-              Object.keys(assetFiles).sort().join(", ") : "none"}
-          </p>
-          {(Object.keys(extraFiles).length > 0 || Object.keys(assetFiles).length > 0) &&
-            <Button variant="outline"
-            disabled={busy} onClick={() => {
-              setExtraFiles({})
-              setAssetFiles({})
-              setEditorDirty(true)
-              setApproved(false)
-              setGithubReview(null)
-              setDependencyReview(null)
-              setBuildReview(null)
-              setPlan(null)
-            }}>Clear imported frontend files</Button>}
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.candidateRelease}
-              onClick={() => action(async () => {
-                const response = await getJson(api + "/" + selected.id + "/source")
-                const value = response.source as Record<string, unknown> | undefined
-                if (!value || value.release !== selected.candidateRelease ||
-                  typeof value.manifest !== "string" || value.manifest.length > 140000 ||
-                  typeof value.lockfile !== "string" || value.lockfile.length > 140000 ||
-                  typeof value.serverSource !== "string" || value.serverSource.length > 65536)
-                  throw new Error("Invalid verified candidate source")
-                const verifiedExtras = validatedExtras(value.extraFiles)
-                const verifiedAssets = validatedAssets(value.assetFiles)
-                setManifest(value.manifest); setLockfile(value.lockfile)
-                setSource(value.serverSource); setExtraFiles(verifiedExtras)
-                setAssetFiles(verifiedAssets); setApproved(false)
-                setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
-                setDependencyReview(null)
-                setMessage("Verified staged source loaded into editor; no process changed.")
-              })}>Load staged source</Button>
-            <Button disabled={busy || !ownerAuthorized || (!!selected.candidateRelease && !editorDirty)}
-              onClick={() => action(async () => {
-              const data = await getJson(api + "/" + selected.id + "/stage", "POST", {
-                packageJson: JSON.parse(manifest) as unknown,
-                packageLock: JSON.parse(lockfile) as unknown,
-                serverSource: source,
-                ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
-                ...(Object.keys(assetFiles).length ? { assetFiles } : {}),
-                expectedCandidate: selected.candidateRelease,
-                expectedRevision: selected.deploymentCount,
-              })
-              if (!validProject(data.project)) throw new Error("Invalid stage response")
-              await refresh()
-              await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-              setApproved(false); setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
-              setMessage(data.unchanged === true
-                ? "Source matches the current verified candidate. No new release created."
-                : "Source candidate staged. Review the execution plan before deploying.")
-            })}>Validate and stage source</Button>
-            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.previousCandidate}
-              onClick={() => action(async () => {
-                const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST", {
-                  expectedCandidate: selected.candidateRelease,
-                  expectedRevision: selected.deploymentCount,
-                })
-                if (!validProject(data.project)) throw new Error("Invalid restore response")
-                await refresh()
-                await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
-                setApproved(false); setGithubReview(null)
-                setMessage("Previous source candidate restored. No live process was changed.")
-              })}>Restore previous candidate</Button>
-          </div>
-          <Card>
+          <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
+            <a className="underline underline-offset-4" href="#node-runtime">Runtime and actions</a>
+            <a className="underline underline-offset-4" href="#node-source">Source and imports</a>
+            <a className="underline underline-offset-4" href="#node-candidates">Candidates</a>
+          </nav>
+          <Card id="node-runtime">
             <CardHeader><CardTitle>Node deployment</CardTitle>
               <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
@@ -927,7 +703,242 @@ export default function ProjectsPage() {
               </pre>}
             </CardContent>
           </Card>
-          <p className="text-sm">Current candidate: {selected.candidateRelease ?? "none"} · Previous: {selected.previousCandidate ?? "none"}</p>
+          <section id="node-source" aria-label="Node source editor" className="space-y-3 rounded-lg border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-semibold">Source files and updates</h3>
+              <span className="text-xs text-muted-foreground">Load → Review → Stage</span>
+            </div>
+          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. Termux runit starts the verified server.mjs on loopback only after explicit approval. Build candidates require separate install/build review and SHA-256 verification; generated dist files are not served automatically—server.mjs must serve them. /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
+              <Input aria-label="Public GitHub repository" placeholder="owner/repository"
+                value={githubRepository} maxLength={150}
+                onChange={event => {
+                  setGithubRepository(event.target.value)
+                  setGithubReview(null)
+                }} />
+            </label>
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !githubRepository.trim()}
+              onClick={() => action(async () => {
+                const result = await getJson(api + "/github/preview", "POST",
+                  { repository: githubRepository.trim() })
+                const data = result.preview as Record<string, unknown> | undefined
+                const contents = data?.source as Record<string, unknown> | undefined
+                const sourcePlan = data?.plan as Record<string, unknown> | undefined
+                const commands = sourcePlan?.commands as Record<string, unknown> | undefined
+                if (!data || !sourcePlan || !commands ||
+                    typeof sourcePlan.dependencyCount !== "number" ||
+                    !Number.isSafeInteger(sourcePlan.dependencyCount) ||
+                    (sourcePlan.dependencyCount as number) < 0 ||
+                    (sourcePlan.dependencyCount as number) > 500 ||
+                    (commands.build !== null &&
+                     (!Array.isArray(commands.build) ||
+                      commands.build.length !== 3 ||
+                      commands.build.join(" ") !== "npm run build")) ||
+                    data.repository !== githubRepository.trim() ||
+                    typeof data.commit !== "string" || !/^[a-f0-9]{40}$/.test(data.commit) ||
+                    !contents || typeof contents.packageJson !== "object" ||
+                    !contents.packageJson || Array.isArray(contents.packageJson) ||
+                    typeof contents.packageLock !== "object" ||
+                    !contents.packageLock || Array.isArray(contents.packageLock) ||
+                    typeof contents.serverSource !== "string" ||
+                    !contents.serverSource.trim() || contents.serverSource.length > 65536)
+                  throw new Error("Invalid GitHub Node source preview")
+                const fetchedExtras = validatedExtras(contents.extraFiles)
+                const fetchedAssets = validatedAssets(contents.assetFiles)
+                const changed = ["package.json", "package-lock.json", "server.mjs"]
+                if (selected.candidateRelease) {
+                  // Compare only with attested on-host source, never the editor buffer.
+                  const current = await getJson(api + "/" + selected.id + "/source")
+                  const staged = current.source as Record<string, unknown> | undefined
+                  if (!staged || staged.release !== selected.candidateRelease ||
+                      typeof staged.manifest !== "string" ||
+                      typeof staged.lockfile !== "string" ||
+                      typeof staged.serverSource !== "string" ||
+                      staged.manifest.length > 140000 || staged.lockfile.length > 140000 ||
+                      staged.serverSource.length > 65536)
+                    throw new Error("Could not verify current staged Node source")
+                  try {
+                    if (JSON.stringify(JSON.parse(staged.manifest)) ===
+                        JSON.stringify(contents.packageJson)) changed.splice(changed.indexOf("package.json"), 1)
+                    if (JSON.stringify(JSON.parse(staged.lockfile)) ===
+                        JSON.stringify(contents.packageLock)) changed.splice(changed.indexOf("package-lock.json"), 1)
+                    if (staged.serverSource === contents.serverSource)
+                      changed.splice(changed.indexOf("server.mjs"), 1)
+                  } catch {
+                    throw new Error("Could not verify current staged Node source")
+                  }
+                  const oldExtras = validatedExtras(staged.extraFiles)
+                  if (JSON.stringify(oldExtras) !== JSON.stringify(fetchedExtras))
+                    changed.push("frontend files")
+                  const oldAssets = validatedAssets(staged.assetFiles)
+                  if (JSON.stringify(oldAssets) !== JSON.stringify(fetchedAssets))
+                    changed.push("binary assets")
+                  if (!changed.length) {
+                    setGithubReview(null)
+                    setMessage("GitHub commit " + data.commit.slice(0, 12) +
+                      " matches the current staged source. No update needed.")
+                    return
+                  }
+                }
+                setGithubReview({
+                  repository: data.repository as string,
+                  commit: data.commit,
+                  changed,
+                  dependencies: sourcePlan.dependencyCount as number,
+                  buildRequired: commands.build !== null,
+                  extraCount: Object.keys(fetchedExtras).length,
+                  assetCount: Object.keys(fetchedAssets).length,
+                })
+                setExtraFiles(fetchedExtras)
+                setAssetFiles(fetchedAssets)
+                setManifest(JSON.stringify(contents.packageJson, null, 2))
+                setLockfile(JSON.stringify(contents.packageLock, null, 2))
+                setSource(contents.serverSource)
+                setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
+                setDependencyReview(null)
+                setExecutionEnabled(false); setEditorDirty(true)
+                setMessage("GitHub commit " + data.commit.slice(0, 12) +
+                  " contains changes. Review and stage to preserve the previous release.")
+              })}>{selected.candidateRelease ? "Check GitHub updates" : "Load GitHub source"}</Button>
+          </div>
+          {githubReview && <p className="text-muted-foreground text-xs"
+            aria-label="GitHub source changes">
+            {githubReview.repository} @ {githubReview.commit.slice(0, 12)} · Changed: {githubReview.changed.join(", ")} · Dependencies: {githubReview.dependencies} · Build: {githubReview.buildRequired ? "required" : "none"} · Frontend files: {githubReview.extraCount} · Binary assets: {githubReview.assetCount}
+            {(githubReview.dependencies > 0 || githubReview.buildRequired) &&
+              " · Staging only; package installation/build requires separate approval."}
+          </p>}
+          <label className="grid gap-1 text-sm">Load local Node files
+            <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              onChange={event => {
+                const picked = Array.from(event.currentTarget.files ?? [])
+                event.currentTarget.value = ""
+                if (!picked.length) return
+                action(async () => {
+                  const files = await readLocalNodeFiles(picked)
+                  setManifest(files.manifest)
+                  setLockfile(files.lockfile)
+                  setSource(files.source)
+                  setExtraFiles({})
+                  setAssetFiles({})
+                  setApproved(false)
+                  setBuildCheck(null)
+                  setPlan(null)
+                  setPreview(null)
+                  setExecutionEnabled(false)
+                  setEditorDirty(true)
+                  setGithubReview(null)
+                  setDependencyReview(null)
+                  setMessage("Three Node files loaded into the editor. Validate and stage to save a candidate.")
+                })
+              }} />
+          </label>
+          <label className="grid gap-1 text-sm">Load Node project folder
+            <input type="file" aria-label="Load Node project folder" multiple
+              ref={element => { if (element) element.setAttribute("webkitdirectory", "") }}
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              onChange={event => {
+                const chosen = Array.from(event.currentTarget.files ?? [])
+                event.currentTarget.value = ""
+                if (!chosen.length) return
+                action(async () => {
+                  const local = await readLocalNodeFolder(chosen)
+                  setManifest(local.manifest)
+                  setLockfile(local.lockfile)
+                  setSource(local.source)
+                  setExtraFiles(local.extraFiles)
+                  setAssetFiles(local.assetFiles)
+                  setApproved(false); setBuildApproved(false); setBuildCheck(null)
+                  setPlan(null); setPreview(null); setBuildReview(null)
+                  setExecutionEnabled(false); setEditorDirty(true)
+                  setGithubReview(null); setDependencyReview(null)
+                  setMessage("Local project folder reviewed. Validate and stage to save its files; no code executed.")
+                })
+              }} />
+          </label>
+          <label className="grid gap-1 text-sm">package.json
+            <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
+              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+          <label className="grid gap-1 text-sm">package-lock.json
+            <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
+              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+          <label className="grid gap-1 text-sm">server.mjs
+            <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
+              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+          <p className="text-muted-foreground text-xs" aria-label="Imported frontend files">
+            Extra source files: {Object.keys(extraFiles).length ?
+              Object.keys(extraFiles).sort().join(", ") : "none"}
+          </p>
+          <p className="text-muted-foreground text-xs" aria-label="Imported binary assets">
+            Binary assets: {Object.keys(assetFiles).length ?
+              Object.keys(assetFiles).sort().join(", ") : "none"}
+          </p>
+          {(Object.keys(extraFiles).length > 0 || Object.keys(assetFiles).length > 0) &&
+            <Button variant="outline"
+            disabled={busy} onClick={() => {
+              setExtraFiles({})
+              setAssetFiles({})
+              setEditorDirty(true)
+              setApproved(false)
+              setGithubReview(null)
+              setDependencyReview(null)
+              setBuildReview(null)
+              setPlan(null)
+            }}>Clear imported frontend files</Button>}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.candidateRelease}
+              onClick={() => action(async () => {
+                const response = await getJson(api + "/" + selected.id + "/source")
+                const value = response.source as Record<string, unknown> | undefined
+                if (!value || value.release !== selected.candidateRelease ||
+                  typeof value.manifest !== "string" || value.manifest.length > 140000 ||
+                  typeof value.lockfile !== "string" || value.lockfile.length > 140000 ||
+                  typeof value.serverSource !== "string" || value.serverSource.length > 65536)
+                  throw new Error("Invalid verified candidate source")
+                const verifiedExtras = validatedExtras(value.extraFiles)
+                const verifiedAssets = validatedAssets(value.assetFiles)
+                setManifest(value.manifest); setLockfile(value.lockfile)
+                setSource(value.serverSource); setExtraFiles(verifiedExtras)
+                setAssetFiles(verifiedAssets); setApproved(false)
+                setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
+                setDependencyReview(null)
+                setMessage("Verified staged source loaded into editor; no process changed.")
+              })}>Load staged source</Button>
+            <Button disabled={busy || !ownerAuthorized || (!!selected.candidateRelease && !editorDirty)}
+              onClick={() => action(async () => {
+              const data = await getJson(api + "/" + selected.id + "/stage", "POST", {
+                packageJson: JSON.parse(manifest) as unknown,
+                packageLock: JSON.parse(lockfile) as unknown,
+                serverSource: source,
+                ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
+                ...(Object.keys(assetFiles).length ? { assetFiles } : {}),
+                expectedCandidate: selected.candidateRelease,
+                expectedRevision: selected.deploymentCount,
+              })
+              if (!validProject(data.project)) throw new Error("Invalid stage response")
+              await refresh()
+              await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
+              setApproved(false); setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+              setMessage(data.unchanged === true
+                ? "Source matches the current verified candidate. No new release created."
+                : "Source candidate staged. Review the execution plan before deploying.")
+            })}>Validate and stage source</Button>
+            <Button variant="outline" disabled={busy || !ownerAuthorized || !selected.previousCandidate}
+              onClick={() => action(async () => {
+                const data = await getJson(api + "/" + selected.id + "/restore-candidate", "POST", {
+                  expectedCandidate: selected.candidateRelease,
+                  expectedRevision: selected.deploymentCount,
+                })
+                if (!validProject(data.project)) throw new Error("Invalid restore response")
+                await refresh()
+                await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
+                setApproved(false); setGithubReview(null)
+                setMessage("Previous source candidate restored. No live process was changed.")
+              })}>Restore previous candidate</Button>
+          </div>
+          </section>
+          <p id="node-candidates" className="text-sm">Current candidate: {selected.candidateRelease ?? "none"} · Previous: {selected.previousCandidate ?? "none"}</p>
           <div aria-label="Source candidates" className="space-y-2 text-sm">
             {releases.map(release => <div key={release.id} className="rounded-md border p-3">
               {release.id} {release.candidate ? "(selected candidate)" : release.previousCandidate ? "(rollback source)" : "(archived)"}
