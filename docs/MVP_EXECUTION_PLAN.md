@@ -7,7 +7,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 # PocketHost — aktywny plan MVP
 
-> **Najnowszy A8 DEV (2026-11-18):** `7ac250807d9dc301b4c306e879de2744be250a31` — guarded FAST FLOW PASS, PID 7834/start ticks 44244411, HTTP 200, usługi chronione bez zmian (`pockethost-a8-deployments-compact-7ac2508-20261118-v1`). `/deployments`: historia Static/Node zwinięta, uproszczone komunikaty rollbacku, niezmienione API i zabezpieczenia. **QA NOT RUN**; odbiór przeglądarkowy otwarty. Wcześniejszy `/projects` wizualnie przyjęty jako MVP; jego UI QA FAIL na starych asercjach, poprawionych tylko w kodzie testów (`a8d825aa`, bez ponownego uruchomienia). Następny punkt: `/runtime-logs`.
+> **Najnowszy A8 DEV (2026-11-18):** `c9eebe1eda9468cad12cc67e85b6dedea2c60e43` — guarded FAST FLOW PASS, PID 21641/start ticks 44284924, HTTP 200, usługi chronione bez zmian (`pockethost-a8-runtime-logs-mvp-c9eebe1-20261118-v1`). `/runtime-logs`: link Static prowadzi do wybranej strony; ograniczono opisy, nie zmieniano API, filtrowania ani redakcji danych. **QA NOT RUN**, odbiór przeglądarkowy logów otwarty. `/deployments` zaakceptowane wizualnie jako MVP na dostarczonym zrzucie, bez osobnego QA. Kolejna strona: `/hosting`.
 
 > **Poprzedni A8 DEV (2026-11-18):** `805f32a49308d7084be472f6371cc7a59d056234` — guarded FAST FLOW PASS, PID 30552/start ticks 43825005, HTTP 200, usługi chronione bez zmian. Uporządkowano `/projects`, lecz wersja zawierała błąd JSX zauważony na późniejszym screenie; zastąpiona poprawką powyżej.
 
