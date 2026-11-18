@@ -16,13 +16,18 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
   const [boot, setBoot] = React.useState<BootObservation | null>(null)
   const [error, setError] = React.useState(false)
   const [loading, setLoading] = React.useState(false)
+  const activeRequest = React.useRef<AbortController | null>(null)
   const refresh = React.useCallback(async () => {
+    // A slower previous read must never overwrite a newer boot observation.
+    activeRequest.current?.abort()
+    const controller = new AbortController()
+    activeRequest.current = controller
     setLoading(true)
     setError(false)
     setBoot(null)
     try {
       const response = await fetch("/api/v1/termux-admin?mode=service-boot", {
-        credentials: "same-origin", cache: "no-store",
+        credentials: "same-origin", cache: "no-store", signal: controller.signal,
       })
       if (!response.ok) throw new Error("Boot diagnostics unavailable")
       const value = await response.json() as BootObservation
@@ -41,14 +46,25 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
           value.rebootReadback !== "not-verified" ||
           !Number.isFinite(Date.parse(value.checkedAt)))
         throw new Error("Invalid boot diagnostics")
-      setBoot(value)
+      if (!controller.signal.aborted) setBoot(value)
     } catch {
-      setError(true)
+      if (!controller.signal.aborted) setError(true)
     } finally {
-      setLoading(false)
+      if (activeRequest.current === controller) {
+        activeRequest.current = null
+        setLoading(false)
+      }
     }
   }, [])
-  React.useEffect(() => { void Promise.resolve().then(refresh) }, [refresh, refreshToken])
+  React.useEffect(() => {
+    let cancelled = false
+    void Promise.resolve().then(() => { if (!cancelled) void refresh() })
+    return () => {
+      cancelled = true
+      activeRequest.current?.abort()
+      activeRequest.current = null
+    }
+  }, [refresh, refreshToken])
   return <section className="space-y-2 rounded-md border p-3" aria-label="Termux Boot observation">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Termux:Boot · startup chain</h3>
