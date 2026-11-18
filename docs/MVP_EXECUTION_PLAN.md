@@ -7,7 +7,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 # PocketHost — aktywny plan MVP
 
-> **Najnowszy A8 DEV (2026-11-18):** `f2290b1ad7eebd91661f416f6189104c90df6504` — guarded FAST FLOW PASS, PID 335/start ticks 44118576, HTTP 200, usługi chronione bez zmian (`pockethost-a8-projects-final-compact-f2290b1-20261118-v1`). Uproszczono Runtime, zwinięto całą sekcję importu/edytora, skrócono karty wydań i panel autoryzacji; blokady i API bez zmian. **Odbiór wizualny MVP zaakceptowany przez właściciela (2026-11-18).** Jednorazowe QA na tym SHA: budżety, granice modułów, TypeScript PASS; UI FAIL (stare asercje `Runtime: ...`). Testy poprawione w `a8d825aa...`, **QA NIE PONAWIANO**; następna strona: `/deployments`. Bez operacji Node, backup/restore, rebootu czy schedulera.
+> **Najnowszy A8 DEV (2026-11-18):** `7ac250807d9dc301b4c306e879de2744be250a31` — guarded FAST FLOW PASS, PID 7834/start ticks 44244411, HTTP 200, usługi chronione bez zmian (`pockethost-a8-deployments-compact-7ac2508-20261118-v1`). `/deployments`: historia Static/Node zwinięta, uproszczone komunikaty rollbacku, niezmienione API i zabezpieczenia. **QA NOT RUN**; odbiór przeglądarkowy otwarty. Wcześniejszy `/projects` wizualnie przyjęty jako MVP; jego UI QA FAIL na starych asercjach, poprawionych tylko w kodzie testów (`a8d825aa`, bez ponownego uruchomienia). Następny punkt: `/runtime-logs`.
 
 > **Poprzedni A8 DEV (2026-11-18):** `805f32a49308d7084be472f6371cc7a59d056234` — guarded FAST FLOW PASS, PID 30552/start ticks 43825005, HTTP 200, usługi chronione bez zmian. Uporządkowano `/projects`, lecz wersja zawierała błąd JSX zauważony na późniejszym screenie; zastąpiona poprawką powyżej.
 
