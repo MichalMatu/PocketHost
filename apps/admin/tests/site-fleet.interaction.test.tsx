@@ -84,6 +84,28 @@ describe("Static Hosting catalog states", () => {
     expect(calls.mock.calls).toHaveLength(1)
   })
 
+  it("drops stale site cards and action controls when the owned catalog fails", async () => {
+    const user = userEvent.setup()
+    let failed = false
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      if (String(input) === "/api/v1/sites" && !options?.method)
+        return failed
+          ? { ok: false, status: 503 }
+          : { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+      throw new Error("Unexpected endpoint " + String(input))
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText("My own site")
+    failed = true
+    await user.click(screen.getByRole("button", { name: "Refresh" }))
+    await screen.findByText("Could not load static sites. Try Refresh.")
+    expect(screen.queryByText("My own site")).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
+    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("refuses an invalid inventory instead of claiming it is empty", async () => {
     const calls = vi.fn(async () => ({
       ok: true, status: 200, json: async () => ({ sites: [{ id: "not-owned" }] }),
@@ -169,7 +191,8 @@ describe("H2 browser site-manager lifecycle", () => {
     renderSites()
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
-    await screen.findByText(/Site state was confirmed, but list refresh failed/)
+    await screen.findByText("Could not load static sites. Try Refresh.")
+    expect(screen.queryByText("My own site")).toBeNull()
     expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
   })
 
