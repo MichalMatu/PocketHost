@@ -112,7 +112,7 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
   await unlockNodeOwner()
   await user.click(await screen.findByRole("button", { name: "Frontend import" }))
-  await screen.findByText(/Runtime: not-provisioned/)
+  await screen.findByText(/not-provisioned · Live:/)
   await user.type(screen.getByLabelText("Public GitHub repository"), "example/frontend-node")
   await user.click(screen.getByRole("button", { name: "Load GitHub source" }))
   await screen.findByText(/contains changes. Review and stage/)

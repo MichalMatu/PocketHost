@@ -237,7 +237,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
   await screen.findByText("Verified staged source loaded into editor; no process changed.")
   expect((screen.getByLabelText("package.json") as HTMLTextAreaElement).value).toContain('restored-node')
   expect((screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value).toContain('verified release')
-  expect(screen.getByText(/Runtime: not-provisioned/)).toBeTruthy()
+  expect(screen.getByText(/not-provisioned · Live:/)).toBeTruthy()
   await user.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
   await screen.findByText(/Modules: 1 · Services: 0 · Projects: 1/)
   await user.click(screen.getByRole("button", { name: "Inspect Node backups" }))
@@ -326,7 +326,7 @@ it("starts and restarts only an explicitly approved, verified Node release", asy
   await unlockNodeOwner()
   await screen.findByRole("button", { name: "Resume Node" })
   await user.click(screen.getByRole("button", { name: "Resume Node" }))
-  await screen.findByText(/Runtime: stopped/)
+  await screen.findByText(/stopped · Live:/)
   const start = screen.getByRole("button", { name: "Start stopped service" }) as HTMLButtonElement
   expect(start.disabled).toBe(true)
   await user.click(screen.getByLabelText("Approve local Node execution"))
@@ -391,7 +391,7 @@ it.each(["refresh-failed", "mutation-unconfirmed"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "Safe Node" })
     await user.click(screen.getByRole("button", { name: "Safe Node" }))
-    await screen.findByText(/Runtime: running/)
+    await screen.findByText(/running · Live:/)
     await user.click(screen.getByLabelText("Approve local Node execution"))
     await user.click(screen.getByRole("button", { name: "Restart service" }))
     await screen.findByText(scenario === "refresh-failed"
@@ -446,7 +446,7 @@ it.each(["response-mismatch", "refresh-mismatch"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "Verified Node" })
     await user.click(screen.getByRole("button", { name: "Verified Node" }))
-    await screen.findByText(/Runtime: running/)
+    await screen.findByText(/running · Live:/)
     await user.click(screen.getByLabelText("Approve local Node execution"))
     await user.click(screen.getByRole("button", { name: "Restart service" }))
     await screen.findByText(scenario === "response-mismatch"
@@ -497,7 +497,7 @@ it("blocks follow-up Node execution if the owned HTTP readiness proof fails", as
   await unlockNodeOwner()
   await screen.findByRole("button", { name: "Unready Node" })
   await user.click(screen.getByRole("button", { name: "Unready Node" }))
-  await screen.findByText(/Runtime: running/)
+  await screen.findByText(/running · Live:/)
   await user.click(screen.getByLabelText("Approve local Node execution"))
   await user.click(screen.getByRole("button", { name: "Restart service" }))
   await screen.findByText(
@@ -602,7 +602,7 @@ it.each(["unchanged", "updated", "candidate-unavailable"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "GitHub Node" })
     await user.click(screen.getByRole("button", { name: "GitHub Node" }))
-    await screen.findByText(/Runtime: running/)
+    await screen.findByText(/running · Live:/)
     const editor = screen.getByLabelText("server.mjs") as HTMLTextAreaElement
     const priorEditor = editor.value
     const stage = screen.getByRole("button", { name: "Validate and stage source" }) as HTMLButtonElement
@@ -705,7 +705,7 @@ it("previews GitHub dependencies and required build without installing or stagin
   await unlockNodeOwner()
   await screen.findByRole("button", { name: "Dependency preview" })
   await user.click(screen.getByRole("button", { name: "Dependency preview" }))
-  await screen.findByText(/Runtime: not-provisioned/)
+  await screen.findByText(/not-provisioned · Live:/)
   await user.type(screen.getByLabelText("Public GitHub repository"), "example/with-packages")
   await user.click(screen.getByRole("button", { name: "Load GitHub source" }))
   await screen.findByText(/GitHub commit a{12} contains changes/)
@@ -761,7 +761,7 @@ it.each(["review-required", "blocked", "malformed"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "Dependency plan Node" })
     await user.click(screen.getByRole("button", { name: "Dependency plan Node" }))
-    await screen.findByText(/Runtime: not-provisioned/)
+    await screen.findByText(/not-provisioned · Live:/)
     await user.click(screen.getByRole("button", { name: "Review dependency setup" }))
     if (scenario === "malformed") {
       await screen.findByText("Invalid Node dependency review")
@@ -866,7 +866,7 @@ it("rejects malformed GitHub preview without changing the Node source editor", a
   await unlockNodeOwner()
   await screen.findByRole("button", { name: "Rejected GitHub" })
   await user.click(screen.getByRole("button", { name: "Rejected GitHub" }))
-  await screen.findByText(/Runtime: not-provisioned/)
+  await screen.findByText(/not-provisioned · Live:/)
   const originalSource = (screen.getByLabelText("server.mjs") as HTMLTextAreaElement).value
   await user.type(screen.getByLabelText("Public GitHub repository"), "example/safe-node")
   await user.click(screen.getByRole("button", { name: "Load GitHub source" }))
@@ -911,7 +911,7 @@ it("rejects a stale Node editor save and never retries the conflicting stage req
   await unlockNodeOwner()
   await screen.findByRole("button", { name: "Concurrent Node" })
   await user.click(screen.getByRole("button", { name: "Concurrent Node" }))
-  await screen.findByText(/Runtime: not-provisioned/)
+  await screen.findByText(/not-provisioned · Live:/)
   await user.type(screen.getByLabelText("server.mjs"), "x")
   await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
   await screen.findByText("Node source save refused. Refresh project and review the current candidate.")
@@ -966,7 +966,7 @@ it.each(["restored", "conflict"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "Versioned Node" })
     await user.click(screen.getByRole("button", { name: "Versioned Node" }))
-    await screen.findByText(/Runtime: not-provisioned/)
+    await screen.findByText(/not-provisioned · Live:/)
     await user.click(screen.getByRole("button", { name: "Restore previous candidate" }))
     if (scenario === "restored") {
       await screen.findByText("Previous source candidate restored. No live process was changed.")
@@ -1045,7 +1045,7 @@ it.each(["disabled", "approved", "blocked"] as const)(
   await unlockNodeOwner()
     await screen.findByRole("button", { name: "Prepared Node" })
     await user.click(screen.getByRole("button", { name: "Prepared Node" }))
-    await screen.findByText(/Runtime: not-provisioned/)
+    await screen.findByText(/not-provisioned · Live:/)
     const approve = screen.getByLabelText("Approve Node dependency install") as HTMLInputElement
     const install = screen.getByRole("button", { name: "Install approved dependencies" }) as HTMLButtonElement
     expect(approve.disabled).toBe(true)
@@ -1129,7 +1129,7 @@ it.each(["disabled", "blocked", "approved", "unconfirmed"] as const)(
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
   await unlockNodeOwner()
     await user.click(await screen.findByRole("button", { name: "Build project" }))
-    await screen.findByText(/Runtime: not-provisioned/)
+    await screen.findByText(/not-provisioned · Live:/)
     const approve = screen.getByLabelText("Approve Node build execution") as HTMLInputElement
     const build = screen.getByRole("button", { name: "Execute approved Node build" }) as HTMLButtonElement
     expect(build.disabled).toBe(true)
@@ -1200,7 +1200,7 @@ it.each([true, false])(
     render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
   await unlockNodeOwner()
     await user.click(await screen.findByRole("button", { name: "Rollback review" }))
-    await screen.findByText(/Runtime: running/)
+    await screen.findByText(/running · Live:/)
     await user.click(screen.getByRole("button", { name: "Review rollback target" }))
     await screen.findByText(verified ?
       "Previous Node release verified for explicit rollback." :
@@ -1269,7 +1269,7 @@ it("loads one local project folder including frontend assets and stages only aft
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
   await unlockNodeOwner()
   await user.click(await screen.findByRole("button", { name: "Local folder" }))
-  await screen.findByText(/Runtime: not-provisioned/)
+  await screen.findByText(/not-provisioned · Live:/)
   await user.upload(screen.getByLabelText("Load Node project folder"), [
     make("package.json", JSON.stringify(pkg)),
     make("package-lock.json", JSON.stringify(lock)),
