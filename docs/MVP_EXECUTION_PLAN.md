@@ -17,6 +17,8 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 **Decyzja właściciela (2026-11-18):** widok `/hosting` i wcześniejsze `/projects` oraz `/deployments` przyjęte wizualnie jako MVP. **Odbiór funkcjonalny oraz QA Hosting P0 odłożone na później (OPEN, nie ACCEPTED).** Do powrotu: Node `Check readiness` z `HTTP: ready`, sprawdzenie HTTP statycznej `first website`, odbiór `/runtime-logs` i ewentualny zatwierdzony ponowny test UI po poprawce 16 starych asercji (`a8d825aa`, dotychczas bez rerun). Nie uruchamiać testów ani schedulera automatycznie; wymagane nowe zatwierdzenie konkretnego zakresu i SHA.
 
+**P1 stabilizacja (2026-11-18):** poprawiono nawigację Back/Forward po katalogu logów i walidację klucza Node przed odczytem; A8 guarded deploy `ab5e925...` PASS, HTTP 200, usługi chronione bez zmian, **QA NOT RUN**. [Plan kopii Restic poza A8](P1_OFF_DEVICE_RESTIC_PLAN.md) opisany; **tylko design**, kopiowanie i niezależny restore pozostają HOLD do wyboru celu i osobnej zgody. Nie wznawiać odłożonego QA Hosting P0 ani schedulera automatycznie.
+
 **Ten dokument zawiera wyłącznie bieżący stan i następny krok.** Historia wykonanych podzadań i ich SHA znajduje się w [wersji archiwalnej z 2026-11-15](https://github.com/MichalMatu/PocketHost/blob/31e54178bc21c4217a33831df809e6e276fd0198/docs/MVP_EXECUTION_PLAN.md), a nie w kontekście każdego kolejnego sprintu. Nie usuwaj historycznych dowodów z Git. Priorytet właściciela od 2026-11-16: **Hosting statyczny → Hosting Node.js/backend → Stabilizacja**. Services zamrożony jako implementacja MVP gotowa do odbioru (otwarte dowody zapisane poniżej); Platform pozostaje w backlogu.
 
 
