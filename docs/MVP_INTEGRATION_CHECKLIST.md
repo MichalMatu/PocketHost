@@ -57,6 +57,12 @@ Owner screenshots at LAN panel port 18878 confirm that all five Hosting pages re
 - Initial QA at `eb0464c...` returned scope HOLD due to an unmapped test helper; fixed in `09e4a09...` without weakening the QA planner. Exact-source `pockethost-a8-nodeux-qa-09e4a096-20261118-v1`: **PASS** — budgets, boundaries, fake Restic host, admin TypeScript and targeted UI.
 - Guarded A8 DEV release `pockethost-a8-nodeux-runtime-source-09e4a096-20261118-v1` **PASS**, PID 20265/start ticks 41786882, HTTP 200, protected services unchanged. No real backup/restore or node lifecycle operation. Final owner screenshot review of this layout remains OPEN.
 
+## Final Projects UX and Hosting overview readiness (2026-11-18)
+
+- `f12351c...`: shorter Projects safeguards and clearer disabled publishing. `f1a870e...`: explicit user-triggered, GET-only Node readiness probe in Hosting overview; validates the owned identity and active release, aborts stale checks on Refresh, never polls or restarts automatically.
+- Prior QA failures at `f1a870e...` and `36f7e68...` were due to incomplete legacy test fixtures and link accessibility. Both corrected by `36f7e68...` and `1d5f706...`. Exact source `1d5f706314640438457d4acbc70dd5abed4ede01`: `pockethost-a8-hosting-readiness-qa-1d5f7063-20261118-v1` **PASS** (code budgets, module boundaries, fake-Restic host, admin TypeScript, UI tests).
+- Guarded A8 DEV release `pockethost-a8-hosting-readiness-1d5f7063-20261118-v1` **PASS**, PID 31205/start ticks 42056168, HTTP 200, protected services unchanged. No physical backup/restore, reboot, scheduler or unrelated service changes. Browser visual acceptance of updated Hosting overview remains open.
+
 ## Remaining owner acceptance and P1
 
 **Historical P1 read-only A8 preflight, before the approved Restic initialization:** receipt `pockethost-a8-mvp-stabilization-readiness-0db03272-20261117-v1` PASS. Node Restic backup API 200 but `backupsEnabled=false`, `initialized=false`, `repositoryPresent=false`, `keyPresent=false` — **do not attempt real backup/restore until scoped initialization and approval**. Termux:Boot directory exists with 3 executable regular scripts; no evidence they actually start after Android reboot. No backup, restore, reboot, scheduler or boot mutation performed.

@@ -52,7 +52,7 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Last verified A8 DEV live source: `09e4a096727df9fb013a2063b8382f1e87f16056` (2026-11-18 guarded FAST FLOW PASS, PID 20265/start ticks 41786882, HTTP 200, protected services unchanged; receipt `pockethost-a8-nodeux-runtime-source-09e4a096-20261118-v1`). Approved exact-source QA `pockethost-a8-nodeux-qa-09e4a096-20261118-v1` PASS for UI, admin types, budgets, boundaries and fake Restic host. Node Projects now separates advanced runtime actions, folds source editors, marks provenance and clarifies release roles. This release did not create/restore backups or change other processes. Visual sign-off still open.
+from S22. Last verified A8 DEV source: `1d5f706314640438457d4acbc70dd5abed4ede01` (2026-11-18 guarded FAST FLOW PASS, PID 31205/start ticks 42056168, HTTP 200, protected services unchanged; `pockethost-a8-hosting-readiness-1d5f7063-20261118-v1`). Exact-source QA `pockethost-a8-hosting-readiness-qa-1d5f7063-20261118-v1` PASS (UI, TS, budgets, boundaries, fake Restic). Hosting overview Node readiness is manual and read-only. No automatic restart/backup. Visual sign-off still open.
 [Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
 The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
 returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
