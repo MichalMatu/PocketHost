@@ -137,6 +137,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
         candidateRelease: RELEASE, deploymentCount: 1 }
       projects = [project]
       releases = [{ id: RELEASE, active: false, candidate: true, previousCandidate: false,
+        sourceIntegrity: "verified",
         dependencyPlan: { packageName: "my-node-site", packageVersion: "1.0.0", dependencyCount: 0, status: "review-required" } }]
       return { ok: true, json: async () => ({ project }) }
     }

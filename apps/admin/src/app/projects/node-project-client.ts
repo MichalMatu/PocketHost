@@ -119,7 +119,45 @@ export type Candidate = {
   active: false
   candidate: boolean
   previousCandidate: boolean
+  sourceIntegrity: "verified" | "legacy-needs-restaging"
   dependencyPlan: { packageName: string; packageVersion: string; dependencyCount: number; status: "review-required" }
+}
+
+/** Fail closed on malformed, duplicated or contradictory host release inventories. */
+export function parseCandidates(value: unknown): Candidate[] {
+  if (!Array.isArray(value) || value.length > 12)
+    throw new Error("Invalid Node release inventory")
+  const ids = new Set<string>()
+  let current = 0
+  let previous = 0
+  for (const entry of value) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry))
+      throw new Error("Invalid Node release inventory")
+    const release = entry as Record<string, unknown>
+    const detail = release.dependencyPlan
+    if (!detail || typeof detail !== "object" || Array.isArray(detail))
+      throw new Error("Invalid Node dependency plan")
+    const plan = detail as Record<string, unknown>
+    if (typeof release.id !== "string" || !/^r-[a-f0-9]{32}$/.test(release.id) ||
+        ids.has(release.id) || release.active !== false ||
+        typeof release.candidate !== "boolean" ||
+        typeof release.previousCandidate !== "boolean" ||
+        !["verified", "legacy-needs-restaging"].includes(String(release.sourceIntegrity)) ||
+        plan.status !== "review-required" ||
+        typeof plan.packageName !== "string" || !plan.packageName ||
+        plan.packageName.length > 256 ||
+        typeof plan.packageVersion !== "string" || !plan.packageVersion ||
+        plan.packageVersion.length > 256 ||
+        !Number.isSafeInteger(plan.dependencyCount) ||
+        (plan.dependencyCount as number) < 0 || (plan.dependencyCount as number) > 500)
+      throw new Error("Invalid Node release inventory")
+    ids.add(release.id)
+    if (release.candidate) current++
+    if (release.previousCandidate) previous++
+    if (current > 1 || previous > 1)
+      throw new Error("Conflicting Node release inventory")
+  }
+  return value as Candidate[]
 }
 export const api = "/api/v1/node-projects"
 export const disabledMessage = "Node Hosting is not enabled on this panel."

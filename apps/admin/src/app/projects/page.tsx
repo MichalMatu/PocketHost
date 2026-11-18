@@ -8,7 +8,7 @@ import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-impor
 import { NodeBackupPanel } from "./node-backup-panel"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, validProject, requestJson,
+  validatedExtras, validatedAssets, validProject, parseCandidates, requestJson,
   type Project, type RuntimeState, type RuntimePlan, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight, type Candidate,
 } from "./node-project-client"
@@ -104,9 +104,9 @@ export default function ProjectsPage() {
     }
   }, [getJson])
   const loadReleases = React.useCallback(async (id: string) => {
+    setReleases([])
     const data = await getJson(api + "/" + id + "/releases")
-    if (!Array.isArray(data.releases)) throw new Error("Invalid release inventory")
-    setReleases(data.releases as Candidate[])
+    setReleases(parseCandidates(data.releases))
   }, [getJson])
   const loadRuntime = React.useCallback(async (id: string): Promise<RuntimeState> => {
     const [status, preview] = await Promise.all([
@@ -932,6 +932,8 @@ export default function ProjectsPage() {
             {releases.map(release => <div key={release.id} className="rounded-md border p-3">
               {release.id} {release.candidate ? "(selected candidate)" : release.previousCandidate ? "(rollback source)" : "(archived)"}
               <p className="text-muted-foreground">Manifest {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies · review required</p>
+              {release.sourceIntegrity === "legacy-needs-restaging" &&
+                <p className="text-destructive">Legacy source needs restaging before use.</p>}
             </div>)}
           </div>
         </CardContent>
