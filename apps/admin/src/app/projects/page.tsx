@@ -258,7 +258,7 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>}
       <Card id="node-owner-access">
-        <CardContent className="space-y-2 py-4">
+        <CardContent className="space-y-2 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Node.js owner access</h2>
             <p role="status" className="text-xs text-muted-foreground">
@@ -297,7 +297,7 @@ export default function ProjectsPage() {
             }}>Lock</Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Token stays in this tab. {lanView ? "LAN HTTP is unencrypted — use a trusted network. " : ""}Only run trusted Node code.
+            Token stays in this tab. {lanView ? "LAN HTTP is unencrypted — trusted network only." : "Only use trusted Node code."}
           </p>
         </CardContent>
       </Card>
@@ -317,9 +317,10 @@ export default function ProjectsPage() {
         </p>}
       {selected && catalogState === "ready" && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
-          <CardDescription>
+          <CardDescription aria-label="Node runtime summary">
             {runtime?.state ?? "unverified"} · Live: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
-            Prepared: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span>
+            Prepared: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span> ·
+            HTTP readiness: {!health ? "not checked" : health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}
           </CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
@@ -328,15 +329,10 @@ export default function ProjectsPage() {
             <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-candidates">Releases</a>
           </nav>
           <Card id="node-runtime">
-            <CardHeader><CardTitle>Runtime</CardTitle>
-              <CardDescription>Trusted code only; Node shares the Termux user.</CardDescription></CardHeader>
-            <CardContent className="space-y-3">
-              {!ownerAuthorized && <p role="status" className="text-sm text-muted-foreground">
-                Read-only. <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a> to manage.
+            <CardContent className="space-y-3 pt-4">
+              {!ownerAuthorized && <p role="status" className="text-xs text-muted-foreground">
+                Read-only · <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a>
               </p>}
-              <p aria-label="Node runtime summary" className="text-sm">
-                HTTP readiness: {!health ? "not checked" : health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}.
-              </p>
               <details data-testid="node-runtime-details" className="rounded-lg border px-3 py-2 text-xs">
                 <summary className="cursor-pointer font-medium">Technical details</summary>
                 <div className="mt-2 space-y-2 text-muted-foreground">
@@ -696,14 +692,17 @@ export default function ProjectsPage() {
               </pre>}
             </CardContent>
           </Card>
-          <section id="node-source" aria-label="Node source editor" className="space-y-3 rounded-lg border p-4">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">Source files</h3>
-              <span className="text-xs text-muted-foreground">Import → Review → Stage</span>
-            </div>
-          <p className="text-sm text-muted-foreground">
-            Import and stage files for review. The running service is not changed.
-          </p>
+          <details id="node-source" data-testid="node-source-panel" aria-label="Node source editor"
+            className="rounded-lg border">
+            <summary className="cursor-pointer px-4 py-3 font-semibold">
+              Source files <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {sourceOrigin === "example" ? "Example — not deployed" :
+                  sourceOrigin === "staged" ? "Staged candidate — not necessarily live" :
+                  sourceOrigin === "github" ? "GitHub preview — not staged" :
+                  sourceOrigin === "local" ? "Local import — not staged" : "Edited draft — not staged"}
+              </span>
+            </summary>
+            <div className="space-y-3 border-t p-4">
           <details data-testid="node-source-safety" className="rounded-md border px-3 py-2 text-xs">
             <summary className="cursor-pointer font-medium">Technical deployment requirements</summary>
             <p className="mt-2 text-muted-foreground">
@@ -959,17 +958,23 @@ export default function ProjectsPage() {
                 setMessage("Previous source candidate restored. No live process was changed.")
               })}>Restore previous candidate</Button>
           </div>
-          </section>
+            </div>
+          </details>
           <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
             <h3 className="text-sm font-semibold">Releases</h3>
-            <p className="text-xs text-muted-foreground">Publishing and rollback require separate approval.</p>
             <div className="space-y-2 text-sm">
-              {releases.map(release => <div key={release.id} className="rounded-md border p-3">
-                <p className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</p>
-                <p className="text-xs text-muted-foreground" title={release.id}>Release: {shortRelease(release.id)}</p>
-                <p className="text-muted-foreground">{release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies</p>
+              {releases.map(release => <div key={release.id} className="rounded-md border px-3 py-2">
+                <details>
+                  <summary className="cursor-pointer">
+                    <span className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</span>
+                    <span className="ml-2 text-xs text-muted-foreground" title={release.id}>{shortRelease(release.id)}</span>
+                  </summary>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies
+                  </p>
+                </details>
                 {release.sourceIntegrity === "legacy-needs-restaging" &&
-                  <p className="text-destructive">Legacy source needs restaging before use.</p>}
+                  <p className="mt-1 text-xs text-destructive">Restaging required before use.</p>}
               </div>)}
             </div>
           </section>
