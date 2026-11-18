@@ -1,11 +1,12 @@
 import * as React from "react"
 import { expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { fireEvent, render, screen } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
 import ProjectsPage from "@/app/projects/page"
+import { NodeBackupPanel } from "@/app/projects/node-backup-panel"
 
 it("keeps advanced Node actions and all source editors closed by default", async () => {
   const id = "node-" + "a".repeat(32)
@@ -33,4 +34,24 @@ it("keeps advanced Node actions and all source editors closed by default", async
     expect(section?.open).toBe(false)
   }
   expect(screen.getByText(/Example template — not deployed/)).toBeTruthy()
+})
+
+it("invalidates inspected Node backup permissions when the catalog becomes unavailable", async () => {
+  const getJson = vi.fn(async () => ({
+    backup: { initialized: true, repositoryPresent: true, keyPresent: true },
+    backupsEnabled: true,
+  }))
+  const action = (fn: () => Promise<void>) => { void fn() }
+  const props = { ownerAuthorized: true, busy: false, getJson, action, onMessage: vi.fn() }
+  const view = render(<NodeBackupPanel {...props} catalogReady />)
+  fireEvent.click(screen.getByText("Scoped Node project backups"))
+  fireEvent.click(screen.getByRole("button", { name: "Inspect Node backups" }))
+  await screen.findByText(/Restic: ready\. Mutations: owner-gated\./)
+  fireEvent.click(screen.getByLabelText("Approve Node Restic operation"))
+  expect((screen.getByRole("button", { name: "Create Node backup" }) as HTMLButtonElement).disabled).toBe(false)
+  view.rerender(<NodeBackupPanel {...props} catalogReady={false} />)
+  expect((screen.getByRole("button", { name: "Inspect Node backups" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.queryByLabelText("Node backup state")).toBeNull()
+  expect(screen.queryByRole("button", { name: "Create Node backup" })).toBeNull()
+  expect(getJson).toHaveBeenCalledTimes(1)
 })

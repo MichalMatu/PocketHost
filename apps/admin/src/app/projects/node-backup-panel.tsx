@@ -35,14 +35,18 @@ export function NodeBackupPanel({
   React.useEffect(() => {
     // Invalidate responses started before owner access changed.
     ownerSessionVersion.current += 1
-    if (!ownerAuthorized) {
+    if (!ownerAuthorized || !catalogReady) {
       setBackupApproved(false)
       setBackupStatus(null)
       setBackupsEnabled(false)
       setBackupSnapshots([])
       setSelectedSnapshot("")
     }
-  }, [ownerAuthorized])
+  }, [ownerAuthorized, catalogReady])
+
+  const repositoryReady = backupStatus?.initialized === true &&
+    backupStatus.repositoryPresent && backupStatus.keyPresent
+  const canMutate = catalogReady && ownerAuthorized && repositoryReady && backupsEnabled
 
   const guardedGetJson: Props["getJson"] = async (url, method, body) => {
     const version = ownerSessionVersion.current
@@ -96,13 +100,12 @@ export function NodeBackupPanel({
       {backupStatus && <>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" aria-label="Approve Node Restic operation"
-            disabled={busy || !ownerAuthorized || !backupsEnabled}
+            disabled={busy || !canMutate}
             checked={backupApproved} onChange={event => setBackupApproved(event.target.checked)} />
           I authorize one backup or staging-only restore of my PocketHost Node project data.
         </label>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" disabled={busy || !ownerAuthorized ||
-              !backupStatus.initialized || !backupStatus.repositoryPresent || !backupStatus.keyPresent}
+          <Button variant="outline" disabled={busy || !catalogReady || !ownerAuthorized || !repositoryReady}
             onClick={() => action(async () => {
               setBackupSnapshots([])
               setSelectedSnapshot("")
@@ -111,7 +114,7 @@ export function NodeBackupPanel({
               setBackupSnapshots(readSnapshots(response.snapshots))
               onMessage("Owned Node snapshots refreshed.")
             })}>List Node snapshots</Button>
-          <Button disabled={busy || !ownerAuthorized || !backupApproved || !backupsEnabled}
+          <Button disabled={busy || !canMutate || !backupApproved}
             onClick={() => action(async () => {
               setBackupApproved(false)
               setBackupSnapshots([])
@@ -131,7 +134,7 @@ export function NodeBackupPanel({
         </div>
         <label className="grid gap-1 text-sm">Staging restore snapshot
           <select aria-label="Staging restore snapshot" className="w-full rounded-md border bg-background p-2"
-            disabled={busy || !ownerAuthorized} value={selectedSnapshot}
+            disabled={busy || !catalogReady || !ownerAuthorized || !repositoryReady} value={selectedSnapshot}
             onChange={event => setSelectedSnapshot(event.target.value)}>
             <option value="">Select a verified snapshot</option>
             {backupSnapshots.map(item => <option key={item.id} value={item.id}>
@@ -139,8 +142,8 @@ export function NodeBackupPanel({
             </option>)}
           </select>
         </label>
-        <Button variant="outline" disabled={busy || !ownerAuthorized || !backupApproved ||
-            !backupsEnabled || !backupSnapshots.some(item => item.id === selectedSnapshot)}
+        <Button variant="outline" disabled={busy || !canMutate || !backupApproved ||
+            !backupSnapshots.some(item => item.id === selectedSnapshot)}
           onClick={() => action(async () => {
             const snapshot = selectedSnapshot
             setBackupApproved(false)
