@@ -426,7 +426,6 @@ export default function ProjectsPage() {
                 <summary className="cursor-pointer text-sm font-medium">Dependencies & build
                   <span className="ml-2 text-xs font-normal text-muted-foreground">Advanced · separate approval</span>
                 </summary>
-                <p className="my-2 text-xs text-muted-foreground">Review npm dependencies and build scripts before granting one-shot authorization.</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
@@ -606,7 +605,6 @@ export default function ProjectsPage() {
               </details>
               <details data-testid="node-recovery" className="rounded-lg border p-3">
                 <summary className="cursor-pointer text-sm font-medium">Maintenance & rollback
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">Start · stop · restart · rollback</span>
                 </summary>
                 <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
@@ -867,12 +865,6 @@ export default function ProjectsPage() {
           <details data-testid="node-source-editors" className="rounded-lg border p-3">
             <summary className="cursor-pointer text-sm font-medium">
               Edit package.json, package-lock.json & server.mjs
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {sourceOrigin === "example" ? "Example template — not deployed" :
-                  sourceOrigin === "staged" ? "Loaded staged candidate — not necessarily running" :
-                  sourceOrigin === "github" ? "GitHub preview — not staged" :
-                  sourceOrigin === "local" ? "Local import — not staged" : "Edited draft — not staged"}
-              </span>
             </summary>
             <div className="mt-3 space-y-3">
           <label className="grid gap-1 text-sm">package.json
@@ -986,7 +978,6 @@ export default function ProjectsPage() {
           Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
         </summary>
         <div className="space-y-3 border-t px-4 py-4">
-          <p className="text-xs text-muted-foreground">Create a project only after authenticating as its owner.</p>
           <div className="flex flex-wrap items-end gap-3">
           <label className="grid min-w-52 gap-1 text-sm">Project name
             <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />

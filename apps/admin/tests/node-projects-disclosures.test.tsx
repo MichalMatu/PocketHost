@@ -42,11 +42,15 @@ it("keeps advanced Node actions and all source editors closed by default", async
   expect(Boolean(runtimeSection!.compareDocumentPosition(createPanel!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
   expect(Boolean(runtimeSection!.compareDocumentPosition(backupPanel!) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(true)
   expect(screen.queryByText(/Select a project above to inspect its runtime/)).toBeNull()
+  const source = document.querySelector<HTMLDetailsElement>('details[data-testid="node-source-panel"]')
+  expect(source?.open).toBe(false)
+  expect(screen.getByText(/Example — not deployed/)).toBeTruthy()
   for (const id of ["node-advanced-setup", "node-recovery", "node-source-editors"]) {
     const section = document.querySelector<HTMLDetailsElement>(`details[data-testid="${id}"]`)
     expect(section?.open).toBe(false)
   }
-  expect(screen.getByText(/Example template — not deployed/)).toBeTruthy()
+  fireEvent.click(source!.querySelector("summary")!)
+  expect(source?.open).toBe(true)
 })
 
 it("invalidates inspected Node backup permissions when the catalog becomes unavailable", async () => {
