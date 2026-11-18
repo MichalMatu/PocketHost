@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `3383c6e6d5790eec3ea09facac37a094c11f98aa` (2026-11-18 guarded FAST FLOW PASS, PID 20773/start ticks 43988465, HTTP 200, protected services unchanged; `pockethost-a8-projects-jsx-parsefix-3383c6e-20261118-v1`). The Vite JSX parse error at `/projects` line 681 was corrected by removing a stray brace. Previous UX changes from `805f32a49308d7084be472f6371cc7a59d056234` are preserved. **QA NOT RUN**; browser `/projects` sign-off is still required. No Node lifecycle mutation, backup/restore, reboot or scheduler.
+Last verified A8 DEV source: `f2290b1ad7eebd91661f416f6189104c90df6504` (2026-11-18 guarded FAST FLOW PASS, PID 335/start ticks 44118576, HTTP 200, protected services unchanged; `pockethost-a8-projects-final-compact-f2290b1-20261118-v1`). Projects runtime, full source import/editor, release details and owner access were compacted. No authorization or backend changes. **QA NOT RUN**; final browser `/projects` sign-off still open. No Node lifecycle mutation, backup/restore, reboot or scheduler.
 
 ## Product and scope
 
