@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from "vitest"
 import {
-  readNodeCatalog, readNodeRuntimeCatalog, readNodeLogs,
+  readNodeCatalog, readNodeRuntimeCatalog, readNodeLogs, readNodeHealth,
 } from "@/lib/node-hosting-client"
 
 const id = "node-" + "a".repeat(32)
@@ -53,4 +53,27 @@ it("malformed identities, deployment records and logs are rejected", async () =>
   await expect(readNodeLogs(id)).rejects.toThrow(/logs/)
   await expect(import("@/lib/node-hosting-client").then(({ readNodeRuntime }) =>
     readNodeRuntime(id))).rejects.toThrow(/runtime/)
+})
+
+it("readiness is fetched only on explicit request and validates owned release identity", async () => {
+  const calls = vi.fn(async (url: string) => ({
+    ok: true, status: 200, json: async () => ({ health: {
+      state: "running", ready: true, release,
+    } }),
+  }))
+  vi.stubGlobal("fetch", calls)
+  expect(await readNodeHealth(id)).toEqual({ state: "running", ready: true, release })
+  expect(calls).toHaveBeenCalledTimes(1)
+  expect(String(calls.mock.calls[0]?.[0])).toBe("/api/v1/node-projects/" + id + "/health")
+  await expect(readNodeHealth("foreign")).rejects.toThrow(/ID/)
+  expect(calls).toHaveBeenCalledTimes(1)
+})
+
+it("rejects inconsistent readiness rather than treating malformed health as ready", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({
+    ok: true, status: 200, json: async () => ({ health: {
+      state: "stopped", ready: true, release,
+    } }),
+  })))
+  await expect(readNodeHealth(id)).rejects.toThrow(/health/)
 })

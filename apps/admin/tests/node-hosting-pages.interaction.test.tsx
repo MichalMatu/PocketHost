@@ -8,6 +8,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
 }))
 
 import DeploymentsPage from "@/app/deployments/page"
+import HostingPage from "@/app/hosting/page"
 import RuntimeLogsPage from "@/app/runtime-logs/page"
 
 const id = "node-" + "a".repeat(32)
@@ -75,6 +76,10 @@ function setup(enabled: boolean) {
     if (url === "/api/v1/node-projects/" + id + "/logs")
       return { ok: true, status: 200, json: async () => ({
         logs: { lines: ["node started"] },
+      }) }
+    if (url === "/api/v1/node-projects/" + id + "/health")
+      return { ok: true, status: 200, json: async () => ({
+        health: { state: "running", ready: true, release },
       }) }
     return { ok: false, status: 404 }
   })
@@ -197,4 +202,15 @@ it("rejects malformed static inventory instead of treating it as empty", async (
   await screen.findByText("Invalid static site inventory.")
   expect(screen.queryByText("No static sites yet.")).toBeNull()
   expect(screen.queryByText("PocketHost Demo")).toBeNull()
+})
+
+it("Hosting overview checks HTTP readiness only after an explicit click", async () => {
+  const calls = setup(true)
+  render(<MemoryRouter><HostingPage /></MemoryRouter>)
+  const button = await screen.findByRole("button", { name: "Check readiness for Example Node" })
+  expect(calls.mock.calls.some(([url]) => String(url).endsWith("/health"))).toBe(false)
+  expect(screen.getByText("HTTP: not checked")).toBeTruthy()
+  fireEvent.click(button)
+  await screen.findByText("HTTP: ready")
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/health"))).toHaveLength(1)
 })

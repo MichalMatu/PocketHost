@@ -30,6 +30,11 @@ export interface NodeCatalog {
   enabled: boolean
   projects: NodeProjectEntry[]
 }
+export interface NodeHealthEntry {
+  state: NodeRuntimeEntry["state"]
+  release: string | null
+  ready: boolean | null
+}
 function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid Node Hosting response")
@@ -135,4 +140,21 @@ export async function readNodeLogs(id: string, signal?: AbortSignal): Promise<st
     !lines.every((line) => typeof line === "string" && line.length <= 240))
     throw new Error("Invalid owned Node runtime logs")
   return lines as string[]
+}
+
+/** Only explicit user interaction probes readiness; this never starts a service. */
+export async function readNodeHealth(id: string, signal?: AbortSignal): Promise<NodeHealthEntry> {
+  if (!ID.test(id)) throw new Error("Invalid Node project ID")
+  const raw = object(await get("/" + id + "/health", signal))
+  const data = object(raw.health)
+  if (!["not-provisioned", "stopped", "running", "unknown"].includes(String(data.state)) ||
+      !release(data.release) ||
+      !(data.ready === null || typeof data.ready === "boolean") ||
+      (data.ready === true && (data.state !== "running" || data.release === null)))
+    throw new Error("Invalid owned Node health response")
+  return {
+    state: data.state as NodeHealthEntry["state"],
+    release: data.release as string | null,
+    ready: data.ready as boolean | null,
+  }
 }
