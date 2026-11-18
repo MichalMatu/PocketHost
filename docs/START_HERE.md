@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified live A8 panel source: `0db0327239194e4a8d9da538308529681ad666fc` (2026-11-17, Node Restic postflight PASS); protected services unchanged. Previous `79be085...` receipt is historical. Later docs-only commits were not deployed; recheck live SHA and ownership before any action.
+Last verified live A8 panel source: `7246a05c5739f843f6f81344c6ec2a2931d82aac` (2026-11-18 guarded FAST FLOW PASS; PID 17085, HTTP 200, protected services unchanged). The 2026-11-17 real Node/Static/Restic receipts at `0db03272...` remain historical. A scoped QA run on `1cfe385f...` exposed a stale UI test and three oversized code files; both issues were addressed in `7246a05...` but QA for that SHA has not been rerun. Recheck live SHA and ownership before action.
 
 ## Product and scope
 

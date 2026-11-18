@@ -34,8 +34,8 @@ The same backend owner and fail-closed safety gates apply in every subpage.
 ## Current Samsung target (A8 installed)
 
 **Samsung Galaxy A8 only** for PocketHost execution. Last confirmed live DEV source:
-`0db0327239194e4a8d9da538308529681ad666fc` (2026-11-17), independently checked after the Node backup/restore; the owner-panel and protected services stayed intact. Its authenticated Node demo remains on the original release at port 19300 and the Static site on v1. Physical Node Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start → Rollback and Static v2 → HTTP → Rollback both passed. Exact receipts: `docs/MVP_INTEGRATION_CHECKLIST.md`. Later source-only changes are **not** confirmed deployed. Previous live SHA `79be085...` is historical.
-Repository-wide QA, lint, types, formatting and UI regression are **not** proven for current `main`; prior selective results are bound to their exact SHAs.
+`7246a05c5739f843f6f81344c6ec2a2931d82aac` (2026-11-18), guarded FAST FLOW PASS, owner panel PID 17085/start ticks 37170263, HTTP 200, protected services unchanged. Receipt: `pockethost-a8-quality-debt-modularize-7246a05c-20261118-v1`; a second concurrent attempt correctly refused with `base-sha-drift`, without another deployment. Earlier real Node/Static P0 and Restic P1 receipts at `0db03272...` are historical scope-specific acceptance, not fresh browser checks.
+One authorized QA run on `1cfe385f8345ada857b72d739f34904f4112a71e` passed Node backup host tests, module boundaries and admin TypeScript, but failed a stale UI assertion and three pinned code-size budgets (receipt `pockethost-a8-scoped-node-backup-qa-1cfe385f-20261118-v1`). Source `7246a05...` repairs those defects; **its QA has NOT been rerun**. No repository-wide current-source QA acceptance.
 
 One bounded owned fixed-template worker passed physical Create → Start →
 Health / Logs / Recovery review → Stop → Archive → Restore → Retire on A8

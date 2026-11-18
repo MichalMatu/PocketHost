@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-17
+last_reviewed: 2026-11-18
 purpose: Current Samsung A8 execution handoff, receipts and acceptance boundaries
 ---
 
@@ -10,7 +10,7 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Verified state
 
 - Repo `MichalMatu/PocketHost`, source `main`: always read fresh HEAD.
-- Last verified live DEV source: `0db0327239194e4a8d9da538308529681ad666fc`; A8 Node Restic postflight confirmed the panel, demo Node project on v1/port 19300, Static v1 HTTP/content and unchanged protected services. Earlier `79be085...` receipt is historical. Later docs commits were not deployed. Recheck running PID, start ticks and live SHA before any change.
+- Last verified live DEV source: `7246a05c5739f843f6f81344c6ec2a2931d82aac`, guarded FAST FLOW PASS, owner PID 17085/start ticks 37170263, HTTP 200 and protected services unchanged; receipt `pockethost-a8-quality-debt-modularize-7246a05c-20261118-v1`. A second concurrent deploy attempt returned HOLD `base-sha-drift` (expected, no repeat). Earlier real Node/Static/Restic P0/P1 receipts on `0db03272...` are historical scope-specific acceptance, not fresh hosted-service readbacks. Recheck running ownership before another action.
 - Only paired Galaxy A8 official Termux Local Agent, private `MichalMatu/local-agent` branch `agent-control`, immutable task/result path. No Mac, S22, Actions, Work, Codex, scheduler or automatic retries.
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
 - Owner-accepted Static Create/Publish/Start and later physical v2 → HTTP → rollback to original v1 PASS. Authenticated trusted Node Create → Stage → Deploy → Health/Logs → Update → Stop/Start → Rollback PASS. Scoped Node Restic backup and staging-only restore PASS: one encrypted local snapshot, 10 verified files and no overwrite of live services. These do not accept ZIP/folder, off-device copy, browser visual UI, untrusted Node execution, reboot or public access. Preserve existing site/data.
@@ -18,6 +18,10 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Owner-requested full QA baseline (2026-11-17)
 
 Pinned source `96bf1a1100ba9d555d5f6bde467353bad2a59990` on Samsung A8. Structure PASS, module boundaries PASS. Documentation gate FAIL from old oversized `HANDOFF_NEXT_CHAT.md` / `START_HERE.md`. Node tests/coverage FAIL from stale `photomap-runtime-host.ts` fixture. Format, lint, types, build and UI checks could not start because pinned QA packages are missing from the isolated checkout; these are unavailable checks, not proved code defects. No production operation. Preserve exact receipt `pockethost-a8-full-qa-baseline-96bf1a1-20261117-v2`.
+
+## Scoped A8 QA and source remediation (2026-11-18)
+
+One explicitly approved run at `1cfe385f8345ada857b72d739f34904f4112a71e`: Node backup host tests PASS (fake Restic; **not** a second physical backup), module boundaries PASS, admin TypeScript PASS; UI FAIL on a stale Restic-status assertion and code budgets FAIL for three previously oversized legacy files. Receipt: `pockethost-a8-scoped-node-backup-qa-1cfe385f-20261118-v1`. On `main` commit `7246a05c...` the assertion and source modularity were corrected and the DEV panel deployed without running QA. These source fixes do **not** turn old failures into new test PASS. Fresh, exact-SHA owner consent is needed for another test run; browser visual acceptance is still open.
 
 ## Direction and safety
 

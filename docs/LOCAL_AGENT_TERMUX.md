@@ -52,7 +52,7 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Last verified A8 DEV live source: `0db0327239194e4a8d9da538308529681ad666fc` (2026-11-17 Node Restic postflight; protected services unchanged). Node demo on v1/port 19300 and Static site on v1 remained healthy; full receipt IDs are in `docs/MVP_INTEGRATION_CHECKLIST.md`. Historical `79be085...` panel PID/start-ticks refer only to its earlier release. Newer documentation commits were not deployed. No current-source full QA receipt exists.
+from S22. Last verified A8 DEV live source: `7246a05c5739f843f6f81344c6ec2a2931d82aac` (2026-11-18 guarded FAST FLOW PASS, panel PID 17085/start ticks 37170263, HTTP 200, protected services unchanged). Receipt `pockethost-a8-quality-debt-modularize-7246a05c-20261118-v1`. Physical Node/Static/Restic P0/P1 checks at `0db03272...` remain earlier acceptance only; no new hosted-service lifecycle tests occurred. A single scoped QA at `1cfe385f...` found UI fixture and code-budget failures, fixed in later source `7246a05...` but **not retested**. Full current-source QA is not certified.
 [Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
 The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
 returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,

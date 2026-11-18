@@ -1,13 +1,13 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-17
+last_reviewed: 2026-11-18
 purpose: Short authoritative MVP stage tracker; no automatic test permission
 ---
 
 # PocketHost — aktywny plan MVP
 
-> **Aktualizacja P0 po wdrożeniu 2026-11-17:** na Samsung A8 fizyczny przepływ Node.js (Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start → Rollback) **PASS**; istniejąca strona Static (v2 → HTTP → Rollback do v1) **PASS**; API, inwentarze i trasy pięciu ekranów Hosting **PASS**. Szczegóły i ID receiptów: [MVP_INTEGRATION_CHECKLIST](MVP_INTEGRATION_CHECKLIST.md). Na A8 działa DEV kod `0db0327239194e4a8d9da538308529681ad666fc`; późniejsze commity dokumentacyjne nie wymagają deploya. **P1 Node Backup→Restore: PASS 2026-11-17** — Restic 0.19.1, szyfrowany snapshot, odtworzenie 10 plików do izolowanego katalogu i kontrola SHA-256; bez naruszenia działającego Node/Static. **Nadal otwarte:** ręczny odbiór wizualny ekranów, włączenie backupu w UI (opcjonalne), kopia poza A8 i restart Androida/Termux:Boot wyłącznie za osobną zgodą. TermuxPanel jest odłożony w [backlogu](TERMUXPANEL_REUSE_BACKLOG.md), bez instalacji. Ta aktualizacja ma pierwszeństwo nad starszymi fragmentami sekcji Hosting poniżej.
+> **Aktualizacja P0 po wdrożeniu 2026-11-17:** na Samsung A8 fizyczny przepływ Node.js (Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start → Rollback) **PASS**; istniejąca strona Static (v2 → HTTP → Rollback do v1) **PASS**; API, inwentarze i trasy pięciu ekranów Hosting **PASS**. Szczegóły i ID receiptów: [MVP_INTEGRATION_CHECKLIST](MVP_INTEGRATION_CHECKLIST.md). Na A8 działa zweryfikowany DEV kod `7246a05c5739f843f6f81344c6ec2a2931d82aac` (guarded FAST FLOW PASS, HTTP 200, usługi chronione bez zmian); szczegółowe fizyczne P0/P1 receipty dotyczą wcześniejszego `0db03272...`. **P1 Node Backup→Restore: PASS 2026-11-17** — Restic 0.19.1, szyfrowany snapshot, odtworzenie 10 plików do izolowanego katalogu i kontrola SHA-256; bez naruszenia działającego Node/Static. **Nadal otwarte:** ręczny odbiór wizualny ekranów, włączenie backupu w UI (opcjonalne), kopia poza A8 i restart Androida/Termux:Boot wyłącznie za osobną zgodą. TermuxPanel jest odłożony w [backlogu](TERMUXPANEL_REUSE_BACKLOG.md), bez instalacji. Ta aktualizacja ma pierwszeństwo nad starszymi fragmentami sekcji Hosting poniżej.
 
 **Ten dokument zawiera wyłącznie bieżący stan i następny krok.** Historia wykonanych podzadań i ich SHA znajduje się w [wersji archiwalnej z 2026-11-15](https://github.com/MichalMatu/PocketHost/blob/31e54178bc21c4217a33831df809e6e276fd0198/docs/MVP_EXECUTION_PLAN.md), a nie w kontekście każdego kolejnego sprintu. Nie usuwaj historycznych dowodów z Git. Priorytet właściciela od 2026-11-16: **Hosting statyczny → Hosting Node.js/backend → Stabilizacja**. Services zamrożony jako implementacja MVP gotowa do odbioru (otwarte dowody zapisane poniżej); Platform pozostaje w backlogu.
 
@@ -26,7 +26,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 - [x] PocketHost DEV na Samsung Galaxy A8 przez Termux/runit; MacBook otwiera panel po prywatnym LAN; menu Services ma osobne strony.
 - [x] Dynamiczny Host inventory, RAM/dysk/uptime, Dashboard Basic/Enhanced według obecności Companion/Shizuku, monitoring i odczyty usług, czytelne GiB oraz dni/godziny.
-- [x] Zweryfikowany FAST FLOW; ostatni fizycznie potwierdzony panel A8 to **`0db0327239194e4a8d9da538308529681ad666fc`**, zgodny z postflight Node Restic 2026-11-17. `79be085...` jest starszym wydaniem. Historyczne QA 7/7 dotyczy `c0bf0218`, inne testy tylko wymienionych SHA. **Pełnego QA obecnego `main` nie wykonano**.
+- [x] Zweryfikowany FAST FLOW; ostatni potwierdzony DEV panel A8 to **`7246a05c5739f843f6f81344c6ec2a2931d82aac`** (2026-11-18, PASS, PID 17085, HTTP 200). Poprzednie Node/Static/Restic na `0db03272...` są historycznym dowodem swojego zakresu. Jednorazowe QA `1cfe385f...`: Node backup host, boundaries, admin types PASS; UI i trzy legacy code budgets FAIL. Zmiany `7246a05...` adresują te problemy, ale **testów nie ponowiono na nowym SHA**. Pełne QA niepotwierdzone.
 - [ ] **Niepotwierdzone:** pełny odbiór Services, realny reboot/Termux:Boot, wszystkie interakcje z własnym workerem, wykonywanie własnego Python. HTTP 200 i SHA nie dowodzą ich sprawności.
 
 ## Sprint 2026-11-16 — potwierdzone wyniki i granice
