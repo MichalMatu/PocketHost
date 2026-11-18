@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `d8fbfa4a0ced11d8c6b9b38eab94d84c46fe2bbf` (2026-11-18, guarded FAST FLOW PASS, PID 24804/start ticks 43612692, HTTP 200, protected unchanged; `pockethost-a8-projects-ux-release-d8fbfa4a-20261118-v1`). Projects UX distinguishes active release from staged source, shows owner-lock guidance and consistent file pickers. Focused UI regression written, **NOT RUN**; previous `0cc7aba1...` QA PASS for old source only. Screenshots from 18:46 predate this deployment; new browser visual sign-off open. No Node lifecycle changes, backup/restore, reboot or scheduler.
+Last verified A8 DEV source: `805f32a49308d7084be472f6371cc7a59d056234` (2026-11-18 guarded FAST FLOW PASS, PID 30552/start ticks 43825005, HTTP 200, protected services unchanged; `pockethost-a8-projects-clean-ux-805f32a4-20261118-v1`). Selected Node project is now shown before Create and backups, and technical data is collapsed. Current-source UI tests written but NOT RUN; prior scoped QA at `0cc7aba1...` does not cover this release. New browser visual sign-off open. No Node service lifecycle change, backup/restore, reboot or scheduler.
 
 ## Product and scope
 
