@@ -18,13 +18,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 - Owned panel PID **12508**, start ticks **45687615**, HTTP **200**; protected services
   unchanged. This proves release safety, **not** hosted-app HTTP readiness.
 - Private A8 queue at handoff: **322 tasks, 322 terminal results, zero pending**.
-- Most recent one-shot owner-approved QA at `5f1ee2acbef29094c5f518bf28ef332996d1e391`
-  **FAIL**: format check flagged the MVP tracker, A8 checkpoint and new planner test.
+- One-shot QA at `ccb13c71c047a1995d9543c63511f0cb5e432d28` **FAIL** only
+  for the MVP tracker table alignment after a docs-only text change.
   Syntax, structure, docs, root lint and Markdown lint **PASS**; admin types,
-  Node tests and UI tests **SKIPPED**. Prior scoped QA **PASS** is only
-  for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`.
-  The three QA-flagged files were formatted in `44d2c79` and guarded-deployed;
-  the new source has **no executed QA**. No test rerun is authorized by the old consent.
+  Node and UI tests **SKIPPED** by the gate. The earlier `5f1ee2a` QA had
+  three formatting failures corrected at deployed code `44d2c79`.
+- This docs-only correction restores the MVP tracker row verbatim from the
+  previously formatted `44d2c79` source. **No QA has run on this newer SHA.**
+  The last earlier scoped fully PASS QA remains limited to `b1fde537`.
 - This docs-only handoff commit is not running code. Independently recheck
   current `main`, A8 live SHA, owner PID/start ticks and agent queue before new work.
 

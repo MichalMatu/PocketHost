@@ -25,6 +25,8 @@ purpose: Verified A8 DEV state, scoped test evidence, product maturity and unfin
 - A8 read-only preflight `pockethost-a8-quality-live-preflight-20261119-v1` PASS. Agent queue **322 tasks / 322 terminal results, zero pending** at this checkpoint update.
 - No reboot, SSH/WAN/Cloudflare, backup/restore, untrusted Node or unapproved QA. Services S1–S4 remain `READY_FOR_ACCEPTANCE`.
 
+- Second owner-approved one-shot QA at `ccb13c71c047a1995d9543c63511f0cb5e432d28`: syntax, structure, documentation, root ESLint and Markdown lint **PASS**; only the MVP tracker Markdown table alignment caused formatting **FAIL**. Admin TypeScript, Node and UI tests **SKIPPED**. A subsequent docs-only commit restores the previously Prettier-formatted table row; it has not been QA-verified.
+
 ## What is working, and what the evidence proves
 
 | Area                            | Implementation and verified evidence                                                                                                                                                                                                                                       | Acceptance boundary                                                                                                                                                     |
