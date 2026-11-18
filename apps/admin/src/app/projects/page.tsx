@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
+import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
   validatedExtras, validatedAssets, validProject, parseCandidates, requestJson,
@@ -369,7 +370,7 @@ export default function ProjectsPage() {
               <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               <p aria-label="Node runtime summary" className="text-sm">
-                State: {runtime?.state ?? "not loaded"} · Active release: {runtime?.activeRelease ?? "none"} ·
+                State: {runtime?.state ?? "not loaded"} · Active release: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
                 HTTP readiness: {health?.ready === null || !health ? "not checked" : health.ready ? "ready" : "not ready"}.
               </p>
               <p aria-label="Node local address" className="text-sm">
@@ -413,6 +414,59 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
+                <Button disabled={busy || !ownerAuthorized || editorDirty || !approved || !executionEnabled ||
+                  !plan?.allowed || !selected.candidateRelease ||
+                  plan.release !== selected.candidateRelease ||
+                  runtime?.activeRelease === selected.candidateRelease}
+                  onClick={() => action(async () => {
+                    await runRuntimeAction(selected.id, "deploy",
+                      { approved: true, release: selected.candidateRelease },
+                      "Owned Node release started and readiness verified by host.")
+                  })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
+                  runtime?.state !== "stopped" || !runtime.activeRelease ||
+                  runtime.activeRelease !== runtime.lastGoodRelease}
+                  onClick={() => action(async () => {
+                    await runRuntimeAction(selected.id, "start", { approved: true },
+                      "Previously verified Node release started and readiness confirmed.")
+                  })}>Start stopped service</Button>
+                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+                  const response = await getJson(api + "/" + selected.id + "/health")
+                  const value = response.health as Record<string, unknown> | undefined
+                  if (!value || !["not-provisioned", "stopped", "running", "unknown"].includes(String(value.state)) ||
+                    (value.ready !== null && typeof value.ready !== "boolean") ||
+                    (value.release !== null && (typeof value.release !== "string" ||
+                      !/^r-[a-f0-9]{32}$/.test(value.release))))
+                    throw new Error("Invalid owned Node health response")
+                  setHealth(value as NodeHealth)
+                  setMessage("Current Node readiness checked against verified local ownership.")
+                })}>Check live readiness</Button>
+                <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
+                  onClick={() => action(async () => {
+                    const response = await getJson(api + "/" + selected.id + "/preview")
+                    const value = response.preview as Record<string, unknown> | undefined
+                    if (!value || typeof value.release !== "string" ||
+                      !/^r-[a-f0-9]{32}$/.test(value.release) ||
+                      typeof value.body !== "string" || value.body.length > 8192)
+                      throw new Error("Invalid private Node preview response")
+                    setPreview({ release: value.release, body: value.body })
+                    setMessage("Private loopback response inspected as plain text, not published.")
+                  })}>Preview local response</Button>
+                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+                  const response = await getJson(api + "/" + selected.id + "/logs")
+                  const logs = response.logs as { lines?: unknown } | undefined
+                  if (!Array.isArray(logs?.lines) || !logs.lines.every(x => typeof x === "string"))
+                    throw new Error("Invalid bounded service logs")
+                  setLogLines(logs.lines); setMessage("Bounded runit logs loaded.")
+                })}>View logs</Button>
+              </div>
+
+              <details data-testid="node-advanced-setup" className="rounded-lg border p-3">
+                <summary className="cursor-pointer text-sm font-medium">Dependencies & build
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">Advanced · separate approval</span>
+                </summary>
+                <p className="my-2 text-xs text-muted-foreground">Review npm dependencies and build scripts before granting one-shot authorization.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={busy || !ownerAuthorized || editorDirty || !selected.candidateRelease}
                   onClick={() => action(async () => {
                     setDependencyReview(null)
@@ -587,22 +641,13 @@ export default function ProjectsPage() {
                     })
                     setMessage("Node syntax check completed without executing project source.")
                   })}>Check Node build syntax</Button>
-                <Button disabled={busy || !ownerAuthorized || editorDirty || !approved || !executionEnabled ||
-                  !plan?.allowed || !selected.candidateRelease ||
-                  plan.release !== selected.candidateRelease ||
-                  runtime?.activeRelease === selected.candidateRelease}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "deploy",
-                      { approved: true, release: selected.candidateRelease },
-                      "Owned Node release started and readiness verified by host.")
-                  })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
-                  runtime?.state !== "stopped" || !runtime.activeRelease ||
-                  runtime.activeRelease !== runtime.lastGoodRelease}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "start", { approved: true },
-                      "Previously verified Node release started and readiness confirmed.")
-                  })}>Start stopped service</Button>
+                </div>
+              </details>
+              <details data-testid="node-recovery" className="rounded-lg border p-3">
+                <summary className="cursor-pointer text-sm font-medium">Maintenance & rollback
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">Stop · restart · restore</span>
+                </summary>
+                <div className="mt-3 flex flex-wrap gap-2">
                 <Button variant="outline" disabled={busy || !ownerAuthorized || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
@@ -648,37 +693,9 @@ export default function ProjectsPage() {
                     await runRuntimeAction(selected.id, "restart", { approved: true },
                       "Owned Node service restarted and readiness verified.")
                   })}>Restart service</Button>
-                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
-                  const response = await getJson(api + "/" + selected.id + "/health")
-                  const value = response.health as Record<string, unknown> | undefined
-                  if (!value || !["not-provisioned", "stopped", "running", "unknown"].includes(String(value.state)) ||
-                    (value.ready !== null && typeof value.ready !== "boolean") ||
-                    (value.release !== null && (typeof value.release !== "string" ||
-                      !/^r-[a-f0-9]{32}$/.test(value.release))))
-                    throw new Error("Invalid owned Node health response")
-                  setHealth(value as NodeHealth)
-                  setMessage("Current Node readiness checked against verified local ownership.")
-                })}>Check live readiness</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
-                  onClick={() => action(async () => {
-                    const response = await getJson(api + "/" + selected.id + "/preview")
-                    const value = response.preview as Record<string, unknown> | undefined
-                    if (!value || typeof value.release !== "string" ||
-                      !/^r-[a-f0-9]{32}$/.test(value.release) ||
-                      typeof value.body !== "string" || value.body.length > 8192)
-                      throw new Error("Invalid private Node preview response")
-                    setPreview({ release: value.release, body: value.body })
-                    setMessage("Private loopback response inspected as plain text, not published.")
-                  })}>Preview local response</Button>
-                <Button variant="outline" disabled={busy} onClick={() => action(async () => {
-                  const response = await getJson(api + "/" + selected.id + "/logs")
-                  const logs = response.logs as { lines?: unknown } | undefined
-                  if (!Array.isArray(logs?.lines) || !logs.lines.every(x => typeof x === "string"))
-                    throw new Error("Invalid bounded service logs")
-                  setLogLines(logs.lines); setMessage("Bounded runit logs loaded.")
-                })}>View logs</Button>
-              </div>
-              {rollbackPreflight && <p className="text-muted-foreground text-xs"
+                </div>
+              </details>
+{rollbackPreflight && <p className="text-muted-foreground text-xs"
                 aria-label="Node rollback preflight">
                 Rollback to {rollbackPreflight.release ?? "none"}:
                 {rollbackPreflight.allowed ? " verified" : " blocked"} · {rollbackPreflight.reason}.
@@ -692,14 +709,20 @@ export default function ProjectsPage() {
               {health && <p className="text-sm" aria-label="Node live health">
                 Live health: {health.state} · HTTP readiness: {health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}.
               </p>}
-              <p className="text-sm">Last good: {runtime?.lastGoodRelease ?? "none"} · Previous good: {runtime?.previousGoodRelease ?? "none"} · Desired: {runtime?.desired ?? "unknown"}</p>
+              <p className="text-sm">Last good: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous good: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
               <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
                 No automatic restart is authorized.
               </p>
-              {runtime?.history?.length ? <div className="space-y-1 text-xs">
-                {runtime.history.slice(-8).reverse().map((event, i) =>
-                  <p key={event.at + i}>{event.at} · {event.action} · {event.release}</p>)}
-              </div> : null}
+              {runtime?.history?.length ? <details data-testid="node-history" className="rounded-lg border p-3 text-xs">
+                <summary className="cursor-pointer font-medium">Runtime history ({runtime.history.length})</summary>
+                <ol className="mt-2 space-y-1" aria-label="Node runtime history">
+                  {runtime.history.slice(-8).reverse().map((event, i) =>
+                    <li key={event.at + i}>
+                      <span className="text-muted-foreground">{localEventTime(event.at)}</span> · {event.action} ·
+                      <span title={event.release}> {shortRelease(event.release)}</span>
+                    </li>)}
+                </ol>
+              </details> : null}
               {preview && <pre aria-label="Local Node response" className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
                 {preview.body}
               </pre>}
@@ -943,15 +966,23 @@ export default function ProjectsPage() {
               })}>Restore previous candidate</Button>
           </div>
           </section>
-          <p id="node-candidates" className="text-sm">Current candidate: {selected.candidateRelease ?? "none"} · Previous: {selected.previousCandidate ?? "none"}</p>
-          <div aria-label="Source candidates" className="space-y-2 text-sm">
-            {releases.map(release => <div key={release.id} className="rounded-md border p-3">
-              {release.id} {release.candidate ? "(selected candidate)" : release.previousCandidate ? "(rollback source)" : "(archived)"}
-              <p className="text-muted-foreground">Manifest {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies · review required</p>
-              {release.sourceIntegrity === "legacy-needs-restaging" &&
-                <p className="text-destructive">Legacy source needs restaging before use.</p>}
-            </div>)}
-          </div>
+          <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
+            <h3 className="text-sm font-semibold">Source candidates</h3>
+            <p className="text-xs text-muted-foreground">
+              Staged candidate: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span> ·
+              Previous staged source: <span title={selected.previousCandidate ?? undefined}>{shortRelease(selected.previousCandidate)}</span>
+            </p>
+            <p className="text-xs text-muted-foreground">Staged source is not necessarily running. Host rollback requires separate review.</p>
+            <div className="space-y-2 text-sm">
+              {releases.map(release => <div key={release.id} className="rounded-md border p-3">
+                <p className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</p>
+                <p className="text-xs text-muted-foreground" title={release.id}>Release: {shortRelease(release.id)}</p>
+                <p className="text-muted-foreground">Manifest {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies · review required</p>
+                {release.sourceIntegrity === "legacy-needs-restaging" &&
+                  <p className="text-destructive">Legacy source needs restaging before use.</p>}
+              </div>)}
+            </div>
+          </section>
         </CardContent>
       </Card>}
     </div>
