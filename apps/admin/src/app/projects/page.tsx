@@ -100,9 +100,21 @@ export default function ProjectsPage() {
       setCatalogState("ready")
       setError(null)
     } catch (cause) {
+      // A failed ownership inventory invalidates the old selection and any
+      // one-shot execution approvals; no stale project may remain actionable.
+      setProjects([])
+      setSelectedId("")
+      setRuntime(null)
+      setReleases([])
+      setPlan(null)
+      setApproved(false)
+      setExecutionEnabled(false)
+      setDependencyApproved(false)
+      setDependencyReview(null)
+      setBuildApproved(false)
+      setBuildReview(null)
+      setRollbackPreflight(null)
       if (cause instanceof Error && cause.message === disabledMessage) {
-        setProjects([])
-        setSelectedId("")
         setCatalogState("disabled")
         setError(null)
         return
