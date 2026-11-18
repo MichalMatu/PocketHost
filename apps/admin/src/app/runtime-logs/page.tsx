@@ -68,6 +68,8 @@ export default function RuntimeLogsPage() {
         if (!controller.signal.aborted) {
           setStaticStatus("error")
           setNodeStatus("error")
+          setTargets([])
+          setSelectedKey("")
           setCatalogLoading(false)
         }
       })
