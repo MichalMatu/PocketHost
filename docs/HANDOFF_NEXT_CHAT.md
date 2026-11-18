@@ -16,6 +16,17 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
 - Owner-accepted Static Create/Publish/Start and later physical v2 → HTTP → rollback to original v1 PASS. Authenticated trusted Node Create → Stage → Deploy → Health/Logs → Update → Stop/Start → Rollback PASS. Scoped Node Restic backup and staging-only restore PASS: one encrypted local snapshot, 10 verified files and no overwrite of live services. These do not accept ZIP/folder, off-device copy, browser visual UI, untrusted Node execution, reboot or public access. Preserve existing site/data.
 
+
+## Hosting P0 acceptance / QA — deferred by owner (2026-11-18)
+
+Owner accepted the current visual MVP layout of `/projects`, `/deployments` and `/hosting`. **Do not treat this as functional Hosting P0 acceptance or all-tests PASS.** Defer the following until a separate owner request, without a scheduler or automatic agent task:
+
+- On A8 in the browser, explicitly check Node `Check readiness` (expect validated `HTTP: ready`) and HTTP for the owned static site `first website`; confirm `/runtime-logs` displays the selected owned project and can switch between Static and Node without disclosing secrets.
+- Revisit the failed scoped `/projects` UI QA at live code SHA `f2290b1ad7eebd91661f416f6189104c90df6504`. The recorded run passed budgets/boundaries/admin types and failed UI from stale runtime-text expectations. Test-only commit `a8d825aa15ce3eceadffbbe44b2530bf6158a4e5` updated 16 assertions, **not rerun or certified**. Any new test run needs fresh, exact SHA and category-specific owner consent.
+- Scoped testing and browser acceptance for subsequent `/deployments` and `/runtime-logs` are also outstanding. Keep guarded release PASS distinct from test PASS. Finish a concise P0 acceptance report after collecting the missing evidence.
+
+Status: **visual MVP accepted; functional acceptance and QA DEFERRED / OPEN**. Hosting remains private trusted-LAN MVP, not public-ready. Work may proceed to the already planned stabilization items; never silently mark Hosting P0 fully ACCEPTED.
+
 ## Owner-requested full QA baseline (2026-11-17)
 
 Pinned source `96bf1a1100ba9d555d5f6bde467353bad2a59990` on Samsung A8. Structure PASS, module boundaries PASS. Documentation gate FAIL from old oversized `HANDOFF_NEXT_CHAT.md` / `START_HERE.md`. Node tests/coverage FAIL from stale `photomap-runtime-host.ts` fixture. Format, lint, types, build and UI checks could not start because pinned QA packages are missing from the isolated checkout; these are unavailable checks, not proved code defects. No production operation. Preserve exact receipt `pockethost-a8-full-qa-baseline-96bf1a1-20261117-v2`.
