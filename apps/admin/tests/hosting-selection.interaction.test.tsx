@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -12,6 +12,37 @@ import HostingPage from "@/app/hosting/page"
 afterEach(() => vi.unstubAllGlobals())
 
 describe("Hosting selection", () => {
+  it("can retry a stalled Node inventory without accepting the old failure", async () => {
+    let rejectFirst: ((error: Error) => void) | undefined
+    let nodeFetches = 0
+    const requests = vi.fn((url: string) => {
+      if (url === "/api/v1/sites") return Promise.resolve({
+        ok: true, status: 200, json: async () => ({ sites: [] }),
+      })
+      if (url === "/api/v1/node-projects") {
+        nodeFetches++
+        if (nodeFetches === 1) return new Promise((_resolve, reject) => {
+          rejectFirst = reject
+        })
+        return Promise.resolve({ ok: false, status: 404, json: async () => ({}) })
+      }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    render(<MemoryRouter><HostingPage /></MemoryRouter>)
+
+    expect(await screen.findByText("Static hosting: 0 running · 0 total")).toBeTruthy()
+    await waitFor(() => expect(nodeFetches).toBe(1))
+    const refresh = screen.getByRole("button", { name: "Refresh" })
+    expect(refresh.hasAttribute("disabled")).toBe(false)
+    fireEvent.click(refresh)
+
+    expect(await screen.findByText("Node hosting: Not enabled on this panel")).toBeTruthy()
+    await act(async () => { rejectFirst?.(new Error("late network failure")) })
+    expect(screen.getByText("Node hosting: Not enabled on this panel")).toBeTruthy()
+    expect(nodeFetches).toBe(2)
+  })
+
   it("distinguishes enabled static hosting from disabled Node hosting", async () => {
     const requests = vi.fn(async (url: string) => ({
       ok: url === "/api/v1/sites",

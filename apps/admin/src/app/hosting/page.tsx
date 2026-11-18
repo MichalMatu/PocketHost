@@ -115,8 +115,7 @@ export default function HostingPage() {
               checks.current.clear()
               setReadiness({})
               setGeneration(value => value + 1)
-            }}
-            disabled={staticInventory.status === "loading" || nodeInventory.status === "loading"}>
+            }}>
             Refresh
           </Button>
         </div>
