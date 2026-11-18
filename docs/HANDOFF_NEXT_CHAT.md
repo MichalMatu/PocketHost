@@ -18,17 +18,21 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 - Owned panel PID **14715**, start ticks **45606162**, HTTP **200**; protected services
   unchanged. This proves release safety, **not** hosted-app HTTP readiness.
 - Private A8 queue at handoff: **319 tasks, 319 terminal results, zero pending**.
-- Last executed scoped QA **PASS** only for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`
-  (logs, UI, admin types, module boundaries, budgets). Later `81f269ad`,
-  `8d257a03`, `a7f85e33` and `90b42f2` have regression tests written, **not run**.
+- Most recent one-shot owner-approved QA at `5f1ee2acbef29094c5f518bf28ef332996d1e391`
+  **FAIL**: format check flagged the MVP tracker, A8 checkpoint and new planner test.
+  Syntax, structure, docs, root lint and Markdown lint **PASS**; admin types,
+  Node tests and UI tests **SKIPPED**. Prior scoped QA **PASS** is only
+  for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`.
+  Current formatting corrections are not QA-certified.
 - This docs-only handoff commit is not running code. Independently recheck
   current `main`, A8 live SHA, owner PID/start ticks and agent queue before new work.
 
 ## Quality follow-up
 
-- Reconcile the changed-file plan; request one **fresh explicit owner approval**
-  listing final 40-character target SHA and exact check categories before running
-  A8 `verify-changed.mjs --execute`. Deployment consent is not QA consent.
+- Formatting corrections from the first one-shot QA require a **new** owner
+  approval naming the new full SHA and exact categories before any A8
+  `verify-changed.mjs --execute`. Prior consent was single-use and pinned to
+  `5f1ee2acbef29094c5f518bf28ef332996d1e391`.
 - Make changes only for demonstrated defects. Bound browser API responses,
   keep `apps/admin/src` separate from Termux host operations, and preserve
   independent Static and Node ownership/release boundaries.

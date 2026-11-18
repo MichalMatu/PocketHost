@@ -41,11 +41,7 @@ test('documentation-only delta runs no source tests, builds or typechecks', () =
 });
 
 test('scoped source AGENTS Markdown is documentation, not missing test coverage', () => {
-  const changed = [
-    'src/AGENTS.md',
-    'src/modules/host/AGENTS.md',
-    'src/shared/AGENTS.md',
-  ];
+  const changed = ['src/AGENTS.md', 'src/modules/host/AGENTS.md', 'src/shared/AGENTS.md'];
   const plan = planChangedChecks(changed, deps);
   assert.deepEqual(plan.review, []);
   assert.deepEqual(command(plan, 'docs').argv.slice(3), changed);
