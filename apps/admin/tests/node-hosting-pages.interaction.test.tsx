@@ -1,7 +1,8 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
 import { fireEvent, render, screen } from "@testing-library/react"
-import { MemoryRouter } from "react-router-dom"
+import { MemoryRouter, useNavigate } from "react-router-dom"
+import { readProjectLogLines } from "@/lib/hosting-observability-client"
 
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
@@ -125,6 +126,34 @@ it("Runtime logs reads only selected owned project, redacts secrets, and can swi
     String(input) === "/api/v1/node-projects/" + id + "/logs")).toBe(true)
   expect(requests.mock.calls.some(([input]) =>
     String(input).startsWith("/api/v1/owned-site"))).toBe(false)
+})
+
+it("Project logs follows the URL when navigating back between owned targets", async () => {
+  const requests = setup(true)
+  function BackControl() {
+    const navigate = useNavigate()
+    return <button type="button" onClick={() => navigate(-1)}>Browser back</button>
+  }
+  render(<MemoryRouter initialEntries={["/runtime-logs?project=static:" + staticSite.id]}>
+    <BackControl />
+    <RuntimeLogsPage />
+  </MemoryRouter>)
+  await screen.findByText(/static published/)
+  fireEvent.click(screen.getByRole("button", { name: "Example Node (Node.js)" }))
+  await screen.findByText("node started")
+  fireEvent.click(screen.getByRole("button", { name: "Browser back" }))
+  await screen.findByText(/static published/)
+  expect(requests.mock.calls.filter(([url]) => String(url) ===
+    "/api/v1/sites/" + staticSite.id + "/logs")).toHaveLength(2)
+})
+
+it("Project logs rejects a mismatched Node selector before any request", async () => {
+  const requests = vi.fn()
+  vi.stubGlobal("fetch", requests)
+  await expect(readProjectLogLines({
+    key: "static:" + id, id, name: "Mismatched", kind: "node",
+  })).rejects.toThrow("Invalid owned Node project identity")
+  expect(requests).not.toHaveBeenCalled()
 })
 
 it("Node feature disabled never requests foreign service runtime or logs", async () => {
