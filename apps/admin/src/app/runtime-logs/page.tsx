@@ -15,7 +15,8 @@ const errorPattern = /\b(error|failed|fatal|exception|denied|refused)\b/i
 export default function RuntimeLogsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedRef = React.useRef<string | null>(null)
-  requestedRef.current = searchParams.get("project")
+  const requestedProject = searchParams.get("project")
+  requestedRef.current = requestedProject
   const [targets, setTargets] = React.useState<ProjectLogTarget[]>([])
   const [selectedKey, setSelectedKey] = React.useState("")
   const [staticStatus, setStaticStatus] = React.useState<LogSourceStatus | "loading">("loading")
@@ -73,6 +74,14 @@ export default function RuntimeLogsPage() {
     return () => { controller.abort(); version.current += 1 }
   }, [refreshCatalog])
 
+  // Keep an already-loaded catalog in sync with browser Back/Forward and
+  // same-route deep links. Never select a project missing from the owned catalog.
+  React.useEffect(() => {
+    if (catalogLoading || !requestedProject ||
+        !targets.some(target => target.key === requestedProject)) return
+    setSelectedKey(current => current === requestedProject ? current : requestedProject)
+  }, [requestedProject, targets, catalogLoading])
+
   React.useEffect(() => {
     const target = targets.find(entry => entry.key === selectedKey)
     if (target && !catalogLoading) void loadLogs(target)
@@ -128,7 +137,7 @@ export default function RuntimeLogsPage() {
                 disabled={catalogLoading}
                 onClick={() => {
                   setSelectedKey(target.key)
-                  setSearchParams({ project: target.key }, { replace: true })
+                  setSearchParams({ project: target.key })
                   setSearch("")
                   setErrorsOnly(false)
                 }}>
