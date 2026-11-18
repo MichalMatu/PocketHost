@@ -481,12 +481,12 @@ export default function SitesPage() {
       try {
         created = await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
       } catch {
+        setSites([])
         setError("Create result unconfirmed. Refresh the site list before retrying.")
         return
       }
       try {
-        // A successful POST cannot establish creation. Independently read
-        // the complete owned inventory and attest the exact new site.
+        // Attest creation by independent exact-inventory readback.
         const observed = await readSites()
         const matching = observed.filter(site => site.id === created.id)
         if (matching.length !== 1 || matching[0]?.name !== name.trim() ||
@@ -505,6 +505,7 @@ export default function SitesPage() {
         setName("")
         setNotice('Site "' + created.name + '" created. Edit HTML to publish the first release.')
       } catch {
+        setSites([])
         setError("Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
