@@ -26,7 +26,7 @@ purpose: Single concise MVP status, priority and acceptance tracker
 
 1. **Hosting P0 functional sign-off — OWNER DEFERRED:** Node `Check readiness`, Static site HTTP and project-log selection, bounded screenshot/receipt; `running` alone is not readiness. No repeat of approved visual redesign.
 2. **Services S1–S4 final acceptance — OPEN:** verified own worker registration, runit lifecycle, health/recovery, safe negative paths; generic Python/JS execution must remain protected until separately qualified.
-3. **P1 maintainability/security:** address observed reproducible stale-state, authorization, logs or API issues in small coherent changes. The earlier P1 QA targets `263d64b`, `5cd0d80`, `e966f74`, `b1fde53` passed only recorded scopes; latest live code `a7f85e33` needs separately authorized QA.
+3. **P1 maintainability/security:** address observed reproducible stale-state, authorization, logs or API issues in small coherent changes. The earlier P1 QA targets `263d64b`, `5cd0d80`, `e966f74`, `b1fde53` passed only recorded scopes; latest live code `90b42f2` needs separately authorized QA.
 4. **Autostart after Android reboot — NEEDS DISTINCT OWNER AUTHORIZATION:** no physical reboot acceptance; protect Local Agent, panel and hosted apps.
 5. **Platform next:** LAN persistence and readback, verified Git/GitHub and SSH settings/keys, stronger admin network protection. No public exposure before threat model and TLS/auth.
 6. **Later product work:** ZIP/folder and npm/build edge cases, untrusted process isolation, custom domains/Cloudflare, Python/PHP and optional Companion/Shizuku.

@@ -13,14 +13,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 
 ## Verified device state
 
-- Last A8 live code: `a7f85e338de86627f91832d43e4c8f2c9cf3d33d`, guarded task
-  `pockethost-a8-quality-network-readback-a7f85e3-20261119-v1`: **PASS**.
-- Owned panel PID **24258**, start ticks **45545589**, HTTP **200**; protected services
+- Last A8 live code: `90b42f23a211bef180dac1f04667e75710b5b6db`, guarded task
+  `pockethost-a8-quality-doc-planner-90b42f2-20261119-v1`: **PASS**.
+- Owned panel PID **14715**, start ticks **45606162**, HTTP **200**; protected services
   unchanged. This proves release safety, **not** hosted-app HTTP readiness.
-- Private A8 queue at handoff: **317 tasks, 317 terminal results, zero pending**.
+- Private A8 queue at handoff: **319 tasks, 319 terminal results, zero pending**.
 - Last executed scoped QA **PASS** only for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`
   (logs, UI, admin types, module boundaries, budgets). Later `81f269ad`,
-  `8d257a03` and `a7f85e33` have regression tests written, **not run**.
+  `8d257a03`, `a7f85e33` and `90b42f2` have regression tests written, **not run**.
 - This docs-only handoff commit is not running code. Independently recheck
   current `main`, A8 live SHA, owner PID/start ticks and agent queue before new work.
 
