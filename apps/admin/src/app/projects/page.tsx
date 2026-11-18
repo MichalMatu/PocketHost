@@ -36,6 +36,7 @@ export default function ProjectsPage() {
   const [manifest, setManifest] = React.useState(examplePackage)
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
+  const [sourceOrigin, setSourceOrigin] = React.useState<"example" | "github" | "local" | "staged" | "edited">("example")
   const [extraFiles, setExtraFiles] = React.useState<Record<string, string>>({})
   const [assetFiles, setAssetFiles] = React.useState<Record<string, string>>({})
   const [githubRepository, setGithubRepository] = React.useState("")
@@ -160,7 +161,7 @@ export default function ProjectsPage() {
     appliedDeepLink.current = requestedProject
     setSelectedId(requestedProject); setApproved(false)
     setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
-    setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+    setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
     setExtraFiles({}); setAssetFiles({}); setBuildCheck(null); setEditorDirty(false)
     setGithubReview(null); setDependencyReview(null); setGithubRepository("")
     void Promise.all([loadReleases(requestedProject), loadRuntime(requestedProject)])
@@ -241,7 +242,7 @@ export default function ProjectsPage() {
                 }, { replace: true })
                 setSelectedId(project.id); setApproved(false)
                 setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
-                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
                 setExtraFiles({}); setAssetFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
@@ -823,6 +824,7 @@ export default function ProjectsPage() {
                 setManifest(JSON.stringify(contents.packageJson, null, 2))
                 setLockfile(JSON.stringify(contents.packageLock, null, 2))
                 setSource(contents.serverSource)
+                setSourceOrigin("github")
                 setApproved(false); setBuildCheck(null); setPlan(null); setPreview(null)
                 setDependencyReview(null)
                 setExecutionEnabled(false); setEditorDirty(true)
@@ -848,6 +850,7 @@ export default function ProjectsPage() {
                   setManifest(files.manifest)
                   setLockfile(files.lockfile)
                   setSource(files.source)
+                  setSourceOrigin("local")
                   setExtraFiles({})
                   setAssetFiles({})
                   setApproved(false)
@@ -875,6 +878,7 @@ export default function ProjectsPage() {
                   setManifest(local.manifest)
                   setLockfile(local.lockfile)
                   setSource(local.source)
+                  setSourceOrigin("local")
                   setExtraFiles(local.extraFiles)
                   setAssetFiles(local.assetFiles)
                   setApproved(false); setBuildApproved(false); setBuildCheck(null)
@@ -885,15 +889,28 @@ export default function ProjectsPage() {
                 })
               }} />
           </label>
+          <details data-testid="node-source-editors" className="rounded-lg border p-3">
+            <summary className="cursor-pointer text-sm font-medium">
+              Edit package.json, package-lock.json & server.mjs
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {sourceOrigin === "example" ? "Example template — not deployed" :
+                  sourceOrigin === "staged" ? "Loaded staged candidate — not necessarily running" :
+                  sourceOrigin === "github" ? "GitHub preview — not staged" :
+                  sourceOrigin === "local" ? "Local import — not staged" : "Edited draft — not staged"}
+              </span>
+            </summary>
+            <div className="mt-3 space-y-3">
           <label className="grid gap-1 text-sm">package.json
             <textarea aria-label="package.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+              value={manifest} onChange={event => { setManifest(event.target.value); setEditorDirty(true); setSourceOrigin("edited"); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
           <label className="grid gap-1 text-sm">package-lock.json
             <textarea aria-label="package-lock.json" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+              value={lockfile} onChange={event => { setLockfile(event.target.value); setEditorDirty(true); setSourceOrigin("edited"); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
           <label className="grid gap-1 text-sm">server.mjs
             <textarea aria-label="server.mjs" className="w-full rounded-md border bg-background p-3 font-mono text-xs" rows={8}
-              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+              value={source} onChange={event => { setSource(event.target.value); setEditorDirty(true); setSourceOrigin("edited"); setApproved(false); setGithubReview(null); setDependencyReview(null) }} /></label>
+            </div>
+          </details>
           <p className="text-muted-foreground text-xs" aria-label="Imported frontend files">
             Extra source files: {Object.keys(extraFiles).length ?
               Object.keys(extraFiles).sort().join(", ") : "none"}
@@ -927,7 +944,7 @@ export default function ProjectsPage() {
                 const verifiedExtras = validatedExtras(value.extraFiles)
                 const verifiedAssets = validatedAssets(value.assetFiles)
                 setManifest(value.manifest); setLockfile(value.lockfile)
-                setSource(value.serverSource); setExtraFiles(verifiedExtras)
+                setSource(value.serverSource); setSourceOrigin("staged"); setExtraFiles(verifiedExtras)
                 setAssetFiles(verifiedAssets); setApproved(false)
                 setBuildCheck(null); setPreview(null); setEditorDirty(false); setGithubReview(null)
                 setDependencyReview(null)
@@ -948,6 +965,7 @@ export default function ProjectsPage() {
               await refresh()
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
               setApproved(false); setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+              setSourceOrigin("staged")
               setMessage(data.unchanged === true
                 ? "Source matches the current verified candidate. No new release created."
                 : "Source candidate staged. Review the execution plan before deploying.")

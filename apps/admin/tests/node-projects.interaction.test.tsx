@@ -3,6 +3,7 @@ import { afterEach, expect, it, vi } from "vitest"
 import { render as renderBase, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
+import { renderNodeProjects } from "./helpers/render-node-projects"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
@@ -12,15 +13,7 @@ const RELEASE = "r-" + "b".repeat(32)
 const OWNER_TOKEN = "A".repeat(40)
 afterEach(() => vi.unstubAllGlobals())
 
-function render(ui: React.ReactElement) {
-  const view = renderBase(ui)
-  for (const id of ["node-create-panel", "node-backup-panel"]) {
-    const section = view.container.querySelector<HTMLDetailsElement>(`details[data-testid="${id}"]`)
-    if (!section) throw new Error("Missing Node disclosure " + id)
-    section.open = true
-  }
-  return view
-}
+const render = renderNodeProjects
 
 // The owner session is a separate, private contract from each tested endpoint.
 // Do not weaken production authorization just to satisfy old source-flow mocks.

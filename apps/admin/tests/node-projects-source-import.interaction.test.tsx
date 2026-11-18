@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { screen } from "@testing-library/react"
+import { renderNodeProjects as render } from "./helpers/render-node-projects"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
