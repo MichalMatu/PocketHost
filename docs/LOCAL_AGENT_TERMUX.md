@@ -52,15 +52,13 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Last verified A8 DEV source: `d8fbfa4a0ced11d8c6b9b38eab94d84c46fe2bbf` (2026-11-18 guarded FAST FLOW PASS, PID 24804/start ticks 43612692, HTTP 200, protected unchanged; `pockethost-a8-projects-ux-release-d8fbfa4a-20261118-v1`). Projects visual UX cleanly separates active and staged releases and explains owner-gated controls. Focused regression test written, **NOT RUN**; old targeted QA `0cc7aba1...` PASS does not cover this SHA. No Node lifecycle, real backup/restore, reboot or scheduler; updated browser visual acceptance open.
-[Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
-The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
-returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
-root/admin types, Node, UI. This QA head differs from live only by the fixed
-test fixture; no test-only panel restart was performed. Earlier S4 HOLD and
-QA failures remain historical evidence, not the current result. Further QA
-requires fresh, exact-SHA scoped authorization. No scheduler added.
-[Active handoff](HANDOFF_NEXT_CHAT.md).
+from S22. **Do not pin a historic live SHA in this runbook.** The
+[verified current A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
+records the last known live code, PID/ticks and QA; re-read actual
+device/agent receipts before any new task. The [active handoff](HANDOFF_NEXT_CHAT.md)
+contains the next-chat autonomous P1 sprint cutline. Old Services S4 QA
+and earlier DEV versions are historical evidence, not the current state.
+
 
 The installed A8 **Local Agent** bundle, confirmed independently by private task `pockethost-a8-agent-bundle-identity-20261114-v1`, is **`c39cd958c76cca0aaf2d30a654bdc4305c0a3228`**; runit was running. The newer Termux Git-poll historical-result lookup optimization at source `4d58ae544a1d7d73a6235e6b067152a605bb9635` is **not present in this installed release**. Do not mistake source availability or successful Git intake for a deployed Agent upgrade. An Agent update must use a separately approved, external operator with rollback and exact source acceptance; never self-update/restart it using its own immutable task.
 
