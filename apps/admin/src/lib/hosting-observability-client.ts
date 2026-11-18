@@ -63,6 +63,8 @@ export function redactProjectLog(line: string): string {
 export async function readProjectLogLines(target: ProjectLogTarget, signal?: AbortSignal): Promise<string[]> {
   let lines: string[]
   if (target.kind === "node") {
+    if (target.key !== "node:" + target.id)
+      throw new Error("Invalid owned Node project identity")
     lines = await readNodeLogs(target.id, signal)
   } else {
     if (!STATIC_ID.test(target.id) || target.key !== "static:" + target.id)
