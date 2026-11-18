@@ -101,8 +101,9 @@ export function planChangedChecks(paths, dependencies = {}, { includeAdminLint =
       node.add('tests/quality/dev-verify-changed.test.mjs');
 
     if (
-      file.startsWith('src/') ||
-      (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file))
+      !markdown &&
+      (file.startsWith('src/') ||
+        (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file)))
     ) {
       const matching = Object.entries(dependencies).filter(([, targets]) => targets.includes(file));
       for (const [test] of matching) {

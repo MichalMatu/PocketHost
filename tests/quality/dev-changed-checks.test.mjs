@@ -40,6 +40,23 @@ test('documentation-only delta runs no source tests, builds or typechecks', () =
   assert.deepEqual(plan.review, []);
 });
 
+test('scoped source AGENTS Markdown is documentation, not missing test coverage', () => {
+  const changed = [
+    'src/AGENTS.md',
+    'src/modules/host/AGENTS.md',
+    'src/shared/AGENTS.md',
+  ];
+  const plan = planChangedChecks(changed, deps);
+  assert.deepEqual(plan.review, []);
+  assert.deepEqual(command(plan, 'docs').argv.slice(3), changed);
+  assert.ok(command(plan, 'changed markdown lint'));
+  assert.ok(command(plan, 'changed-file format'));
+  assert.equal(command(plan, 'node tests'), undefined);
+  assert.equal(command(plan, 'ui tests'), undefined);
+  assert.equal(command(plan, 'root incremental typecheck'), undefined);
+  assert.equal(command(plan, 'boundaries'), undefined);
+});
+
 test('backend delta selects only dependent Node tests with incremental typecheck', () => {
   const plan = planChangedChecks(['src/shared/hosting-registry.ts'], deps);
   const node = command(plan, 'node tests');
