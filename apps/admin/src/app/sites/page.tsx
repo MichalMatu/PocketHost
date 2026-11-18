@@ -449,23 +449,25 @@ export default function SitesPage() {
   const [notice, setNotice] = React.useState<string | null>(null)
 
   const reload = React.useCallback(async (signal?: AbortSignal) => {
-    const entries = await readSites(signal)
+    const entries = await readSites(signal).catch(cause => {
+      if (!signal?.aborted) {
+        setSites([])
+        setError(cause instanceof Error ? cause.message : "Could not load static sites.")
+      }
+      throw cause
+    })
     if (!signal?.aborted) { setSites(entries); setError(null) }
   }, [])
   React.useEffect(() => {
     const controller = new AbortController()
     void Promise.resolve().then(() => reload(controller.signal))
-      .catch(cause => {
-        if (!controller.signal.aborted) setError(cause instanceof Error ? cause.message : "Could not load static sites.")
-      })
+      .catch(() => {})
       .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [reload])
   const refresh = async () => {
     setLoading(true)
-    try { await reload() } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Could not load static sites.")
-    }
+    try { await reload() } catch {}
     finally { setLoading(false) }
   }
   const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
