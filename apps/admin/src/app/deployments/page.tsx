@@ -121,16 +121,14 @@ export default function DeploymentsPage() {
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Link className="underline underline-offset-4" to={"/sites?site=" + encodeURIComponent(site.id)}>Open site settings</Link>
                   <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
-                  {site.canRollback && site.state !== "unknown"
-                    ? <span className="text-muted-foreground text-xs">
-                        Rollback target saved — review and execute in Sites
-                      </span>
-                    : <span className="text-muted-foreground text-xs">
-                        {site.state === "unknown" ? "Runtime unverified; rollback not offered" : "No rollback target"}
-                      </span>}
+                  {site.state === "unknown"
+                    ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
+                    : site.canRollback
+                      ? <span className="text-muted-foreground text-xs">Rollback available in Sites</span>
+                      : null}
                 </div>
                 {site.history.length > 0
-                  ? <details open={site.history.length <= 2} className="rounded-md bg-muted/30 p-2 text-xs">
+                  ? <details className="rounded-md bg-muted/30 p-2 text-xs">
                       <summary className="cursor-pointer font-medium">Deployment history ({site.history.length})</summary>
                       <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + site.name}>
                         {site.history.slice(0, 8).map((entry, i) => (
@@ -178,14 +176,14 @@ export default function DeploymentsPage() {
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <Link className="underline underline-offset-4" to={projectUrl}>Open project</Link>
                   <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
-                  {node.previousGoodRelease && node.state !== "unknown"
-                    ? <Link className="underline" to={projectUrl}>Review rollback in project</Link>
-                    : <span className="text-muted-foreground text-xs">
-                        {node.state === "unknown" ? "Runtime unverified; rollback not offered" : "No previous good release"}
-                      </span>}
+                  {node.state === "unknown"
+                    ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
+                    : node.previousGoodRelease
+                      ? <Link className="underline" to={projectUrl}>Review rollback in project</Link>
+                      : null}
                 </div>
                 {node.history.length > 0
-                  ? <details open={node.history.length <= 2} className="rounded-md bg-muted/30 p-2 text-xs">
+                  ? <details className="rounded-md bg-muted/30 p-2 text-xs">
                       <summary className="cursor-pointer font-medium">Deployment history ({node.history.length})</summary>
                       <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + node.name}>
                         {node.history.slice(-8).reverse().map((entry, i) => (
