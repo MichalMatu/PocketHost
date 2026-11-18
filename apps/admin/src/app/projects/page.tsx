@@ -85,6 +85,12 @@ export default function ProjectsPage() {
     setExecutionEnabled(false)
   }
   const selected = projects.find((project) => project.id === selectedId)
+  const canPublish = Boolean(
+    selected && !busy && ownerAuthorized && !editorDirty && approved && executionEnabled &&
+    plan?.allowed && selected.candidateRelease &&
+    plan.release === selected.candidateRelease &&
+    runtime?.activeRelease !== selected.candidateRelease
+  )
   const refresh = React.useCallback(async () => {
     try {
       const data = await getJson(api)
@@ -415,10 +421,9 @@ export default function ProjectsPage() {
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
                 })}>Review plan</Button>
-                <Button disabled={busy || !ownerAuthorized || editorDirty || !approved || !executionEnabled ||
-                  !plan?.allowed || !selected.candidateRelease ||
-                  plan.release !== selected.candidateRelease ||
-                  runtime?.activeRelease === selected.candidateRelease}
+                <Button disabled={!canPublish} variant={canPublish ? "default" : "outline"}
+                  className={!canPublish ? "cursor-not-allowed opacity-35" : undefined}
+                  title={!canPublish ? "Unlock owner access, review the plan, approve execution and select an eligible staged release." : "Publish the reviewed release"}
                   onClick={() => action(async () => {
                     await runRuntimeAction(selected.id, "deploy",
                       { approved: true, release: selected.candidateRelease },
@@ -737,7 +742,19 @@ export default function ProjectsPage() {
               <h3 className="font-semibold">Source files and updates</h3>
               <span className="text-xs text-muted-foreground">Load → Review → Stage</span>
             </div>
-          <p className="text-muted-foreground text-sm">Release candidates are private until explicitly deployed. Termux runit starts the verified server.mjs on loopback only after explicit approval. Build candidates require separate install/build review and SHA-256 verification; generated dist files are not served automatically—server.mjs must serve them. /__pockethost/ready must echo the private X-PocketHost-Ready nonce. No public routes or automatic startup.</p>
+          <p className="text-sm text-muted-foreground">
+            Source candidates stay private until reviewed and explicitly published. Imports and builds never start a service automatically.
+          </p>
+          <details data-testid="node-source-safety" className="rounded-md border px-3 py-2 text-xs">
+            <summary className="cursor-pointer font-medium">Technical deployment requirements</summary>
+            <p className="mt-2 text-muted-foreground">
+              The reviewed server.mjs runs as the Termux user on loopback only after explicit approval.
+              Dependency installation and builds require separate review and SHA-256 verification.
+              Generated dist files are not served unless server.mjs serves them.
+              /__pockethost/ready must return the private X-PocketHost-Ready nonce.
+              No public routes or automatic startup.
+            </p>
+          </details>
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
               <Input aria-label="Public GitHub repository" placeholder="owner/repository"
