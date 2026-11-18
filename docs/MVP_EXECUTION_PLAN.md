@@ -7,7 +7,7 @@ purpose: Short authoritative MVP stage tracker; no automatic test permission
 
 # PocketHost — aktywny plan MVP
 
-> **Najnowszy A8 DEV (2026-11-18):** `c9eebe1eda9468cad12cc67e85b6dedea2c60e43` — guarded FAST FLOW PASS, PID 21641/start ticks 44284924, HTTP 200, usługi chronione bez zmian (`pockethost-a8-runtime-logs-mvp-c9eebe1-20261118-v1`). `/runtime-logs`: link Static prowadzi do wybranej strony; ograniczono opisy, nie zmieniano API, filtrowania ani redakcji danych. **QA NOT RUN**, odbiór przeglądarkowy logów otwarty. `/deployments` zaakceptowane wizualnie jako MVP na dostarczonym zrzucie, bez osobnego QA. Kolejna strona: `/hosting`.
+> **Najnowszy A8 DEV — P1 (2026-11-18):** `ab5e9250bf5581210256632147dcd19b0162871d` — guarded FAST FLOW PASS, PID 9750/start ticks 44437746, HTTP 200, usługi chronione bez zmian (`pockethost-a8-p1-logs-navigation-ab5e925-20261118-v1`). Stabilizacja `/runtime-logs`: synchronizacja wyboru projektu z historią adresów, walidacja `node:id` przed pobraniem logów. Testy regresji zapisane, **QA NOT RUN**. Hosting P0: MVP wizualnie zaakceptowane, odbiór funkcjonalny i QA odłożone przez właściciela (OPEN). Kolejny bezpieczny zakres P1: projekt kopii Restic poza A8 i plan odtwarzania, bez operacji sieciowych/backupów bez osobnej zgody.
 
 > **Poprzedni A8 DEV (2026-11-18):** `805f32a49308d7084be472f6371cc7a59d056234` — guarded FAST FLOW PASS, PID 30552/start ticks 43825005, HTTP 200, usługi chronione bez zmian. Uporządkowano `/projects`, lecz wersja zawierała błąd JSX zauważony na późniejszym screenie; zastąpiona poprawką powyżej.
 
