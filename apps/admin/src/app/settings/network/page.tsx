@@ -22,28 +22,42 @@ export default function NetworkAccessPage() {
   const [bind, setBind] = React.useState("")
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const refresh = React.useCallback(async (signal?: AbortSignal) => {
-    // Never leave stale gateway controls enabled after a failed refresh.
+  const activeRead = React.useRef<AbortController | null>(null)
+  const refresh = React.useCallback(async () => {
+    // Invalidate older snapshots; a slow GET cannot restore stale LAN controls.
+    activeRead.current?.abort()
+    const controller = new AbortController()
+    activeRead.current = controller
     setStatus(null)
     setError(null)
-    const next = await getStatus(signal)
-    if (signal?.aborted) return
-    setStatus(next)
-    setBind((previous) => next.interfaces.some((item) => item.address === previous)
-      ? previous : (next.bind ?? next.interfaces[0]?.address ?? ""))
-  }, [])
-  React.useEffect(() => {
-    const controller = new AbortController()
-    void Promise.resolve().then(() => {
-      if (!controller.signal.aborted) return refresh(controller.signal)
-    }).catch(() => {
+    try {
+      const next = await getStatus(controller.signal)
+      if (controller.signal.aborted) return
+      setStatus(next)
+      setBind(previous => next.interfaces.some(item => item.address === previous)
+        ? previous : (next.bind ?? next.interfaces[0]?.address ?? ""))
+    } catch {
       if (!controller.signal.aborted)
         setError("Cannot read LAN settings from this PocketHost session.")
-    })
-    return () => controller.abort()
+    } finally {
+      if (activeRead.current === controller) activeRead.current = null
+    }
+  }, [])
+  React.useEffect(() => {
+    let cancelled = false
+    void Promise.resolve().then(() => { if (!cancelled) void refresh() })
+    return () => {
+      cancelled = true
+      activeRead.current?.abort()
+      activeRead.current = null
+    }
   }, [refresh])
   const change = async (enabled: boolean) => {
     if (busy) return
+    // A pending read is not allowed to overwrite the independent POST readback.
+    activeRead.current?.abort()
+    activeRead.current = null
+    setStatus(null)
     setBusy(true)
     setError(null)
     try {
@@ -90,7 +104,7 @@ export default function NetworkAccessPage() {
                 : status.mode === "auto" ? "Private LAN auto-starts with PocketHost" : "Manual LAN startup"}</Badge>
               <Badge variant="secondary">{!status
                 ? "Gateway state unverified" : status.enabled ? "Home LAN enabled" : "Managed gateway off"}</Badge>
-              <Button variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Could not refresh gateway state."))}>
+              <Button variant="outline" disabled={busy} onClick={() => void refresh()}>
                 <RefreshCw className="size-4" /> Refresh
               </Button>
             </div>
