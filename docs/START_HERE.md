@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `e966f749f346c371f3cee986e8aa4180219759ea` (2026-11-18 guarded FAST FLOW PASS, PID 20622/start ticks 44676738, HTTP 200, protected unchanged; `pockethost-a8-p1-create-uncertain-e966f74-20261118-v1`). Three P1 hardening patches: stale Node selection and execution approval invalidation, Project logs catalog invalidation, Static catalog and unconfirmed creation fail-closed. Independent scoped QA on exact `263d64b`, `5cd0d80`, `e966f74` **PASS** (code budgets, boundaries, admin TypeScript, affected UI). Hosting P0 functional sign-off, whole-repo QA, physical reboot and off-device Restic remain deferred. No additional app/service mutations.
+Last verified A8 DEV source: `fbb7c93c6261e8fec1e119f4f85eb691c7c583ca` (2026-11-18 guarded FAST FLOW PASS, PID 19841/start ticks 45064809, HTTP 200, protected services unchanged; `pockethost-a8-p1-unknown-project-link-fbb7c93-20261118-v1`). Project log deep links now fail closed for unknown targets, without silently showing another project's logs; two regression tests added, **QA NOT RUN** on current SHA. Prior three P1 scoped QA runs at `263d64b`, `5cd0d80`, `e966f74` PASS, not certification of `fbb7c93`. Hosting P0 functional acceptance, reboot and off-device Restic remain deferred. No hosted-service lifecycle changes.
 
 ## Product and scope
 
