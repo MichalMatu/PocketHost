@@ -257,7 +257,7 @@ export default function ProjectsPage() {
               })}>{project.name}</Button>)}</div>}
         </CardContent>
       </Card>}
-      <Card>
+      <Card id="node-owner-access">
         <CardContent className="space-y-2 py-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-sm font-semibold">Node.js owner access</h2>
@@ -363,9 +363,16 @@ export default function ProjectsPage() {
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
       </p>}
+      {!selected && catalogState === "ready" && projects.length > 0 &&
+        <p role="status" className="text-sm text-muted-foreground">
+          Select a project above to inspect its runtime, source files and releases.
+        </p>}
       {selected && catalogState === "ready" && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
-          <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
+          <CardDescription>
+            Runtime: {runtime?.state ?? "unverified"} · Active release: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
+            Staged candidate: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span>
+          </CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
             <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-runtime">Runtime and actions</a>
@@ -376,6 +383,9 @@ export default function ProjectsPage() {
             <CardHeader><CardTitle>Node deployment</CardTitle>
               <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
+              {!ownerAuthorized && <p role="status" className="text-sm text-muted-foreground">
+                Read-only mode. <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a> above to manage this service.
+              </p>}
               <p aria-label="Node runtime summary" className="text-sm">
                 State: {runtime?.state ?? "not loaded"} · Active release: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
                 HTTP readiness: {health?.ready === null || !health ? "not checked" : health.ready ? "ready" : "not ready"}.
@@ -384,7 +394,7 @@ export default function ProjectsPage() {
                 Device loopback: {runtime?.port ? `http://127.0.0.1:${runtime.port}/` : "not assigned"}.
                 Not a public or directly reachable LAN URL.
               </p>
-              <p className="text-sm">Plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
+              <p className="text-sm">Staged candidate plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
               {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
                   (plan.dependencyIssues?.length ?? 0) > 0) &&
                 <p role="alert" className="text-sm text-destructive">{[
@@ -857,7 +867,7 @@ export default function ProjectsPage() {
           </p>}
           <label className="grid gap-1 text-sm">Load local Node files
             <input type="file" aria-label="Load local Node files" multiple accept=".json,.mjs"
-              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium"
               onChange={event => {
                 const picked = Array.from(event.currentTarget.files ?? [])
                 event.currentTarget.value = ""
@@ -885,7 +895,7 @@ export default function ProjectsPage() {
           <label className="grid gap-1 text-sm">Load Node project folder
             <input type="file" aria-label="Load Node project folder" multiple
               ref={element => { if (element) element.setAttribute("webkitdirectory", "") }}
-              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm"
+              disabled={busy} className="w-full rounded-md border bg-background p-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-2 file:text-sm file:font-medium"
               onChange={event => {
                 const chosen = Array.from(event.currentTarget.files ?? [])
                 event.currentTarget.value = ""
@@ -1005,9 +1015,9 @@ export default function ProjectsPage() {
             <h3 className="text-sm font-semibold">Source candidates</h3>
             <p className="text-xs text-muted-foreground">
               Staged candidate: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span> ·
-              Previous staged source: <span title={selected.previousCandidate ?? undefined}>{shortRelease(selected.previousCandidate)}</span>
+              Earlier candidate: <span title={selected.previousCandidate ?? undefined}>{shortRelease(selected.previousCandidate)}</span>
             </p>
-            <p className="text-xs text-muted-foreground">Staged source is not necessarily running. Host rollback requires separate review.</p>
+            <p className="text-xs text-muted-foreground">Staging does not change the running service. Host rollback requires separate review.</p>
             <div className="space-y-2 text-sm">
               {releases.map(release => <div key={release.id} className="rounded-md border p-3">
                 <p className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</p>
