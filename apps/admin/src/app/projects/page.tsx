@@ -678,7 +678,6 @@ export default function ProjectsPage() {
               {!executionEnabled && ownerAuthorized && <p className="text-xs text-muted-foreground">
                 Execution unavailable; review runtime permissions.
               </p>}
-}
               {runtime?.history?.length ? <details data-testid="node-history" className="rounded-lg border p-3 text-xs">
                 <summary className="cursor-pointer font-medium">Runtime history ({runtime.history.length})</summary>
                 <ol className="mt-2 space-y-1" aria-label="Node runtime history">
