@@ -2,50 +2,24 @@
 
 ## Entry
 
-Read this file, docs/START_HERE.md, **docs/MVP_EXECUTION_PLAN.md** and only the nearest scoped AGENTS.md; use fresh main HEAD. The MVP tracker governs task order, status and acceptance; no preload of historical checkpoints.
+Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current evidence lives in the [A8 checkpoint](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md); old checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
 
 ## Execution
 
-- Main only. GitHub Connector is source/task transport; **only verified Samsung Termux Local Agent** runs builds, device actions and any owner-authorized tests. Never Mac, ChatGPT sandbox, Codex, Work or GitHub Actions.
-- Default workflow, in **one agent task**: **code → deploy → verify**. Commit the change, perform the permitted guarded update of the verified PocketHost-owned DEV panel, then read back the running revision, process ownership and basic health. Report one terminal exact-SHA deployment receipt. Do not split these stages into multiple jobs or duplicate an existing job.
-- **GLOBAL TESTS OFF — EVERY MODE, EVERY STAGE, EVERY RELEASE.** Prior owner permission for stage-close tests was withdrawn on 2026-11-15. Do not infer permission from a task, milestone, stage completion, request to continue, deploy, audit, verify, or this document. **Each single test/QA/lint/typecheck/format/smoke run requires fresh, explicit owner confirmation that names its exact scope.** Never invoke `--tests`: FAST FLOW rejects it. A separately approved A8 `verify-changed.mjs --execute --approved-head=<exact target SHA> --approved-checks=<named categories> --base=<live SHA>` is the only orchestration-supported manual quality gate. The CLI flags document intent; they do not prove that the user consented. Ask first. Physical reboot, SSH/external-service mutations and WAN still require additional distinct consent.
-- Deployment safety checks remain mandatory: establish process ownership, live revision, protected-service isolation and rollback eligibility before updating. These operational safeguards are not authorization to run test suites. On unsafe state or unavailable Samsung agent, report HOLD; do not bypass guards or claim deployment.
-- **Verification is not testing:** read back live/installed SHA, owner PID/start ticks, protected-service isolation and baseline HTTP. No functional routes, unit tests, UI tests, lint, formatting, typecheck or QA without a new explicit approval. Build/run required to serve the panel is not a test suite.
-- A commit or queued task is not a deployed PASS. Unknown result means HOLD. No automatic retries.
-- Docs-only changes: commit to Git only; **no automatic documentation checks, build or panel restart**. Preserve dependencies/caches.
+- **Only paired Samsung Galaxy A8 official Termux Local Agent** may run builds, deployments, device operations and owner-approved QA. GitHub Connector is source and immutable task/result transport (`MichalMatu/local-agent:agent-control`). Never Mac, S22, Codex, Work, ChatGPT sandbox, GitHub Actions or schedulers.
+- One coherent code change on `main` → one guarded A8 DEV `code → deploy → verify` task → terminal exact-SHA, owned PID/start ticks, unchanged protected services and basic HTTP readback. Preflight must verify clean checkout, source ownership and rollback eligibility. Unknown result or guard failure = **HOLD**, not a retry.
+- **TESTS OFF BY DEFAULT, ALWAYS.** Each single QA/test/lint/typecheck/format/smoke run requires a **fresh explicit owner approval naming scope and exact target SHA**. `fast-flow.mjs` cannot run `--tests`. Separate A8 `verify-changed.mjs --base=<prechange-SHA> --execute --approved-head=<exact-SHA> --approved-checks=<categories>` is the only supported manual quality gate. No implicit approval from `continue`, stage completion or deploy.
+- Required deployment readback (owner/live SHA/PID/HTTP/protected services) is operational verification, **not functional QA**. A queue commit is not deployment PASS. Docs-only changes: Git commit only, **no build, test, formatting or panel restart**.
 
 ## Safety
 
-- Discovered processes/sites are external until separately verified. Never stop/change/adopt unrelated hosted projects, third-party services, the independent Local Agent, SSH, tunnels, brokers or unrelated data without verified enrollment.
-- Only the verified PocketHost DEV panel has its existing runit restart/rollback exception. Check PID, start ticks, cwd, source and protected services first.
-- No unsolicited shell, global upgrades, WAN exposure or hidden credential logs. Private LAN DEV UI has no auth/TLS; ADB is not root.
+- Discovered processes, services, applications and user files are **external until verified owned**; never stop, adopt, edit or recover protected/foreign services. Local Agent and SSH/tunnels are independent protected surfaces.
+- Hosted Node code shares the Termux UID and is **not sandboxed**; trusted owner-reviewed code only. Node writes require the verified owner token. Unknown/stale catalog, unsafe path/symlink, missing authorization or failed readback must fail closed.
+- DEV panel is unauthenticated HTTP restricted to **trusted private LAN**, never WAN or a public proxy by default. No exposed credentials, unsolicited shell, SSH/WAN changes, package upgrades, reboot, physical destructive tests, backups or off-device transfer without distinct scope-specific approval.
+- Runit is the only process supervisor; do not add a competing watchdog, cron or scheduler. Preserve independent access to Services overview, Runit, Autostart, Hosting, Health, Local Agent, SSH and related subpages.
 
-## Product and gates
+## Product / acceptance
 
-Basic = universal official-Termux Hosting (H2 static separate from Node), without any hardcoded hosted project/domain/service. Panel-owned settings cover trusted LAN without login (never WAN), runit/Termux:Boot autostart, per-service health/recovery and SSH/Git/GitHub configuration; implement them with strict host/ownership gates, not hidden per-project scripts. Pro/Companion/Shizuku expansion and unified APK deferred. Host/process/permission changes must retain fail-closed deployment checks. Positive/negative regression testing at stage close is **pending a separate owner decision each time**, not automatically authorized by reaching a milestone. Source DEV ≠ G2/G3 physical release.
-
-## Services interface rule
-
-Services must remain independently navigable from the sidebar: overview only links
-to dedicated Runit lifecycle, Autostart, Hosting, Health, Local Agent, SSH and other
-service-specific pages. No single page should load or control the entire stack.
-The same backend owner and fail-closed safety gates apply in every subpage.
-
-## Current Samsung target (A8 installed)
-
-**Samsung Galaxy A8 only** for PocketHost execution. Latest verified live DEV source:
- `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` (2026-11-18), guarded FAST FLOW deployment PASS, PID 21255/start ticks 45163402, HTTP 200, protected services unchanged. Owner-approved one-shot **scoped QA PASS** at exact live SHA `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` against base `e966f749f346c371f3cee986e8aa4180219759ea` (`pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1`): code budgets PASS, module boundaries PASS, admin TypeScript PASS, affected UI tests PASS. Verified both P1 changes: unknown /runtime-logs project links fail closed, and snake_case/camelCase credentials are redacted in bounded log output. QA post-readback confirmed the same live SHA and panel owner process; tests did not deploy or restart anything. This is not full-repo QA or Hosting P0 functional acceptance; physical reboot and off-device Restic remain deferred. No hosted-service lifecycle, backup, scheduler or WAN changes.
-
-One owner-approved QA run at `1cfe385f...` passed Node backup host, boundaries, admin types but failed UI and pinned budgets. Follow-up QA at `7246a05c5739f843f6f81344c6ec2a2931d82aac` (`pockethost-a8-approved-node-backup-qa-7246a05c-20261118-v1`) passed code budgets, boundaries, backup host and admin TypeScript; UI 61/62 PASS, one harness failure in `static-html-starter.interaction.test.tsx` (missing SidebarConfigProvider mock). This was fixed in `48a9c90...`, along with projects client extraction and candidate validation, and its **approved scoped QA is PASS** (`pockethost-a8-scoped-projects-html-qa-48a9c901-20261118-v1`): Node backup-host fake-Restic, code budgets, boundaries, admin TypeScript and targeted UI. Full repository QA and browser visual sign-off remain unverified.
-
-One bounded owned fixed-template worker passed physical Create → Start →
-Health / Logs / Recovery review → Stop → Archive → Restore → Retire on A8
-(receipt `pockethost-a8-s1-s4-complete-owned-flow-396058d2-20261116-v1`).
-S3 Android startup after reboot, untrusted/arbitrary source isolation and final browser visual acceptance are still open. Trusted owned Node and Static update/rollback passed. Scoped Node Restic backup and isolated staging restore passed on A8 (10 matching files, snapshot `74dbd57d...`), but only on-device; browser backup mutations remain disabled by the dedicated DEV flag. This is not full-device/off-device disaster recovery.
-Previous platform/readback changes were deployed but do not constitute current-source repository-wide QA. Hosting Node/Static physical basic flows are accepted only within the exact scope above; browser UI sign-off, off-device backup, and reboot still require separate acceptance.
-No standing scheduler, reboot, protected SSH, WAN or S22 changes.
-See [active handoff](docs/HANDOFF_NEXT_CHAT.md).
-
-## MVP stage acceptance
-
-Follow [the canonical plan and tracker](docs/MVP_EXECUTION_PLAN.md). Owner prioritization as of 2026-11-16: Services fixed-worker implementation is frozen at READY_FOR_ACCEPTANCE (remaining physical acceptance evidence recorded), Platform gaps are deferred, **Hosting static and Node is the active feature sprint**, followed by stabilization. Each stage needs exact-SHA terminal deployment receipt, read-only owner/HTTP/LAN evidence, concise report and explicit owner acceptance. **Tests are not automatically triggered at stage completion**; report TESTS NOT RUN and ask the owner for a separately scoped test authorization if test evidence is required for acceptance. READY_FOR_ACCEPTANCE is not ACCEPTED. Check off only proven work. Docs-only changes never restart the panel.
+- Basic: generic Termux host/platform management, independent Static and Node Hosting; no named hosted customer app or hardcoded project.
+- Pro/Companion/Shizuku, public hosting and untrusted-source isolation are deferred. Delivery stage `READY_FOR_ACCEPTANCE` is not `ACCEPTED`.
+- Static + trusted Node device flows and scoped P1 QA are proven **only within recorded scopes**. Hosting P0 functional acceptance, full-repo G2, Android reboot G3, Services S1–S4 owner acceptance and off-device recovery remain unaccepted/deferred as marked in the checkpoint.

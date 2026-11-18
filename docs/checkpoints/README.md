@@ -7,10 +7,11 @@ purpose: Git-backed historical evidence locations
 
 # Historical checkpoint index
 
-**Latest delivery checkpoint:** [2026-11-17 MVP page-by-page plan](2026-11-17-mvp-page-by-page-checkpoint.md). Earlier device handoff: [static Hosting MVP + A8 Local Agent](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the entire archive.
+**Current delivery checkpoint:** [18 Nov 2026 A8 Hosting/P1](2026-11-18-a8-p1-hardening-checkpoint.md). Previous: [17 Nov page-by-page](2026-11-17-mvp-page-by-page-checkpoint.md) and [Static Hosting A8 acceptance](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the archive.
 
-Original contents are in commit `d801da7`; do not preload all checkpoint files.
+Original older contents are in Git at commit `d801da7`; historical stub files are deliberately kept for stable links. Do not preload all checkpoint files.
 
+- [2026-11-18-a8-p1-hardening-checkpoint](2026-11-18-a8-p1-hardening-checkpoint.md)
 - [2026-11-17-mvp-page-by-page-checkpoint](2026-11-17-mvp-page-by-page-checkpoint.md)
 - [2026-11-05-admin-shell-termux-checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
 - [2026-11-05-appearance-header-menu](2026-11-05-appearance-header-menu.md)

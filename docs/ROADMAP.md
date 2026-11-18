@@ -1,19 +1,20 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-17
-purpose: Development direction, not a duplicate stage tracker
+last_reviewed: 2026-11-18
+purpose: High-level delivery sequence, not a duplicate release history
 ---
 
 # PocketHost roadmap
 
-**Canonical status:** [MVP execution tracker](MVP_EXECUTION_PLAN.md).
+For evidence and stage-by-stage status use the [current checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md) and [MVP tracker](MVP_EXECUTION_PLAN.md).
 
-1. **A8 baseline — implemented, partially qualified:** private LAN Termux/runit panel; independently protected Local Agent, observability and process ownership. No public-production claim.
-2. **Services — READY_FOR_ACCEPTANCE:** S1–S4 fixed-template worker lifecycle physically exercised once; custom scripts, reboot/Boot and general health acceptance open. Implementation frozen.
-3. **Hosting — P0 DEVICE FLOW PASS; UI SIGN-OFF OPEN:** Static Create/Publish/Start and v2 HTTP → rollback passed on A8. Authenticated trusted Node Create/Stage/Deploy/HTTP/Logs/Update/Stop/Start/Rollback passed. Browser visual acceptance, generic/untrusted source isolation and public access remain open.
-4. **Platform — DEFERRED:** LAN/Boot policy, SSH/GitHub authentication and physical reboot only with separate consent.
-5. **Quality/stabilization P1 — scoped log safety QA PASS:** deployed live `b1fde53...` on A8. One-shot owner-approved exact-SHA QA `pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1` PASS across admin TypeScript, affected UI (unknown project deep links and credential redaction), module boundaries and code budgets. Previous three exact-SHA UI/API QA runs `263d64b`, `5cd0d80`, `e966f74` PASS. Full repo QA, Hosting P0 functional sign-off and physical reboot remain OPEN. Browser backup mutations disabled. **DEFERRED BACKLOG:** [off-device encrypted Restic copy and independent recovery](P1_OFF_DEVICE_RESTIC_PLAN.md); no transfer or restore without a new owner decision.
-6. **Post-MVP:** proper process isolation before untrusted hosting, domains/HTTPS, reliable installer, optional Android Companion/Shizuku.
+1. **A8 private-LAN Basic DEV:** running, with inventory/monitoring and independently supervised Local Agent.
+2. **Hosting Static + trusted Node:** device-tested core lifecycle and visual MVP accepted; functional current-browser acceptance deferred.
+3. **Services S1–S4:** fixed-template worker implemented and physically exercised; owner acceptance, general-purpose worker qualification and reboot evidence open.
+4. **P1 reliability/security:** targeted fail-closed catalogs, owner-safe routes, log redaction; latest scoped UI/TypeScript/boundaries/budgets QA PASS. Fix reproducible defects, not accepted layouts.
+5. **Platform:** LAN/Boot durability and safe Git/SSH configuration still partial; requires physical owner authorization where appropriate.
+6. **Post-MVP:** genuine untrusted-process isolation, HTTPS/auth/WAN, domain/Cloudflare integration, optional Companion/Shizuku, other runtimes.
+7. **Restic off-device:** indefinitely deferred [design-only backlog](P1_OFF_DEVICE_RESTIC_PLAN.md). No transfer or restore without separate owner approval.
 
-Only verified A8 Local Agent performs code → guarded DEV deploy → readback, with independently approved QA. Never add a scheduler, Actions, Mac/S22 execution or automatic retry.
+Execution: only verified A8 Local Agent; no scheduler, no GitHub Actions/Codex/Work, no default tests, no automatic retries. [Rules](../AGENTS.md).

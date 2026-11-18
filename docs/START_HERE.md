@@ -2,27 +2,15 @@
 status: active
 owner: core
 last_reviewed: 2026-11-18
-purpose: Minimal safe A8 handoff
+purpose: Minimal agent entry and current-state navigation
 ---
 
 # PocketHost — start here
 
-Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main` SHA and nearest scoped `AGENTS.md`.
+1. Read [root agent rules](../AGENTS.md) and the [MVP tracker](MVP_EXECUTION_PLAN.md); use fresh `main` and nearest scoped `AGENTS.md`.
+2. Read the **[current A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)** for last verified live SHA, exact QA receipts, proven capabilities and open acceptance. Never treat docs-only HEAD as deployed.
+3. Use [Local Agent transport](LOCAL_AGENT_TERMUX.md) for A8 operations; [FAST FLOW rules](DEV_ITERATION.md) for deployment versus separately approved QA.
 
-## Device and execution
+**Current state:** private-LAN Static + trusted Node Hosting functional MVP, S1–S4 fixed-worker implementation awaiting owner acceptance; scoped P1 safety QA PASS. No full repository G2/G3 or reboot certification. Restic off-device stays in the indefinite backlog.
 
-Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
-
-Last verified A8 DEV source: `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` (2026-11-18 guarded FAST FLOW PASS, PID 21255/start ticks 45163402, HTTP 200, protected services unchanged). **One-shot A8 scoped QA PASS** for `/runtime-logs` deep links and sensitive-line redaction, admin TypeScript, code budgets and module boundaries, pinned exact SHA `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` versus base `e966f74` (`pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1`). No deployment in QA; current live owner and protected services unchanged. Full-repo QA, Hosting P0 functional acceptance, physical reboot and off-device Restic remain deferred; no backup, hosted app mutation or scheduler.
-
-## Product and scope
-
-PocketHost offers general-purpose static and Node.js Hosting and Termux services, without hardcoded customer applications. Static Create → Publish → Start → LAN render and Static v2 → HTTP → rollback passed. Authenticated, trusted owned Node Create → Stage → Deploy → readiness/logs → Update → Stop/Start → rollback passed at the pinned A8 source. Scoped encrypted Node Restic backup → isolated staging restore passed (10 matching files). Browser sign-off, off-device backups, untrusted-source isolation and reboot/Termux:Boot remain unaccepted; Services S1–S4 fixed-worker implementation remains frozen pending acceptance.
-
-Current focus: finish safe, explicitly gated Node backup UI and visual Hosting acceptance, then plan off-device protection. **Never bypass Node owner-token checks or the disabled backup-mutation DEV flag.** Node code runs with the Termux UID; only owner-reviewed trusted source is permitted until genuine process isolation exists.
-
-## Quality and deployment
-
-One task per release: code → guarded FAST FLOW → exact-SHA, PID/start ticks, protected-service and HTTP readback. Code-only commit is not deployment. Unknown result means HOLD; no retries. Docs-only updates never restart panel.
-
-Tests, lint, format, types, smoke and quality checks need fresh explicit approval per scope and revision, separately from deployment. Reboot, WAN, SSH and foreign services need separate permission. See [handoff](HANDOFF_NEXT_CHAT.md), [quality gates](QUALITY_GATES.md), [Local Agent](LOCAL_AGENT_TERMUX.md), [architecture](ARCHITECTURE.md), [roadmap](ROADMAP.md) and [A8 checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md).
+**Current priority:** targeted reliability fixes only if reproducible; complete deferred Hosting browser and Services acceptance when separately requested. No scheduler, public WAN exposure, untrusted Node execution, unapproved test run, backup or reboot. See [roadmap](ROADMAP.md) and [architecture](ARCHITECTURE.md).

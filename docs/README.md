@@ -1,6 +1,6 @@
 # PocketHost documentation
 
-Read [START_HERE](START_HERE.md), root [AGENTS](../AGENTS.md), then only task-specific files. Full earlier Markdown: `git show d801da7:<path>`.
+**Start:** [current checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md), [MVP tracker](MVP_EXECUTION_PLAN.md), [root AGENTS](../AGENTS.md). Full old active docs are in Git: `git show 3513e452d2d98b3615ec2305247a2eaa5deabf8c:<path>`. Detailed technical and historical files are reference-only, not required context.
 
 - [ADMIN_MVP](ADMIN_MVP.md)
 - [ARCHITECTURE](ARCHITECTURE.md)
@@ -53,3 +53,8 @@ Read [START_HERE](START_HERE.md), root [AGENTS](../AGENTS.md), then only task-sp
 - [modules/sites](modules/sites.md)
 
 - [Historical checkpoint index](checkpoints/README.md)
+
+- [MVP_INTEGRATION_CHECKLIST](MVP_INTEGRATION_CHECKLIST.md)
+- [NODE_HOSTING_LAN_MVP](NODE_HOSTING_LAN_MVP.md)
+- [P1_OFF_DEVICE_RESTIC_PLAN](P1_OFF_DEVICE_RESTIC_PLAN.md)
+- [TERMUXPANEL_REUSE_BACKLOG](TERMUXPANEL_REUSE_BACKLOG.md)
