@@ -10,4 +10,4 @@ No foreign service changes, cross-module host internals or unrequested operation
 
 ## Gate
 
-Follow root **code → deploy → verify** in one agent task. Do not run tests, lint, formatting, typecheck, QA, smoke or documentation checks until the owner explicitly says it is time for tests. Deployment safety gates and read-only live-SHA verification still apply. A source commit alone is not a deployed release.
+Follow the root `AGENTS.md` as the single authority: A8-only guarded deployment, exact live-SHA ownership checks, and **fresh owner approval naming a 40-character SHA and check categories** for every QA, lint, typecheck, format or test execution. A Git commit is not deployment evidence.
