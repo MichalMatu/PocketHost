@@ -9,17 +9,18 @@ purpose: Verified A8 DEV state, scoped test evidence, product maturity and unfin
 
 ## Punkt odniesienia
 
-- Repository: `MichalMatu/PocketHost`, branch `main`. **Actual last verified panel code**: `8d257a0345931e37fa5dd8d2c01383b647491521` (code HEAD before this docs-only handoff). Never infer live SHA from subsequent documentation commits.
+- Repository: `MichalMatu/PocketHost`, branch `main`. **Actual last verified panel code**: `a7f85e338de86627f91832d43e4c8f2c9cf3d33d` (before subsequent docs-only handoff). Never infer live SHA from subsequent documentation commits.
 - Executor: paired Samsung Galaxy A8 Termux Local Agent via the private `MichalMatu/local-agent:agent-control` task/result transport. Panel available only in trusted private LAN (observed `192.168.0.16:18878`); address can change.
-- Last guarded DEV deployment `pockethost-a8-p1-hosting-refresh-8d257a0-20261118-v1`: terminal PASS, live SHA `8d257a0345931e37fa5dd8d2c01383b647491521`, owned panel PID **27009** / start ticks **45462791**, HTTP **200**, protected services unchanged; **tests not run**. Previous `81f269ad` deployment also PASS. This does not attest hosted applications' current HTTP readiness.
-- Last exact-SHA owner-approved QA `pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1`: **PASS only for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`** against base `e966f749f346c371f3cee986e8aa4180219759ea`: UI navigation, redaction, admin TypeScript, module boundaries and code budgets. The newer `81f269a` and `8d257a0` changes have written regressions but **no executed QA**.
+- Last guarded DEV deployment `pockethost-a8-quality-network-readback-a7f85e3-20261119-v1`: terminal PASS, live SHA `a7f85e338de86627f91832d43e4c8f2c9cf3d33d`, owned panel PID **24258** / start ticks **45545589**, HTTP **200**, protected services unchanged; **tests not run**. Previous `81f269ad` and `8d257a03` deployments also PASS. This does not attest hosted applications' current HTTP readiness.
+- Last exact-SHA owner-approved QA `pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1`: **PASS only for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`** against base `e966f749f346c371f3cee986e8aa4180219759ea`: UI navigation, redaction, admin TypeScript, module boundaries and code budgets. The newer `81f269a`, `8d257a0` and `a7f85e3` changes have written regressions but **no executed QA**.
 - Earlier one-shot scoped QA at `263d64b`, `5cd0d80`, `e966f74`: PASS for their respective affected UI, TypeScript, module boundaries and budgets. Historical failures on older SHAs are not current-source failures unless reproduced. **Full latest-SHA repository G2 and physical G3 are NOT certified**.
 
 ## Latest scoped P1 changes (code on A8, 18 November)
 
 - `81f269ad`: corrected superseded Termux:Boot diagnostic responses. One-shot guarded deploy PASS; test committed but not run.
 - `8d257a03`: Hosting inventory Refresh can retry a stalled request; superseded responses remain abort-gated. One-shot guarded deploy PASS; test committed but not run.
-- A8 read-only preflight `pockethost-a8-p1-live-preflight-20261118-v2` PASS; its v1 was rejected by task-schema validation before any command. Agent queue **315 tasks / 315 terminal results, zero pending** at closure.
+- `a7f85e33`: Network Access aborts superseded LAN reads and gates stale API responses. Guarded deploy PASS; regression committed but not run.
+- A8 read-only preflight `pockethost-a8-quality-live-preflight-20261119-v1` PASS. Agent queue **317 tasks / 317 terminal results, zero pending** at this checkpoint update.
 - No reboot, SSH/WAN/Cloudflare, backup/restore, untrusted Node or automated QA. Services S1–S4 remain `READY_FOR_ACCEPTANCE`.
 
 ## What is working, and what the evidence proves

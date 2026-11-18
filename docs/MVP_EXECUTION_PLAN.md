@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-18
+last_reviewed: 2026-11-19
 purpose: Single concise MVP status, priority and acceptance tracker
 ---
 
@@ -18,7 +18,7 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Trusted Node Hosting P0 | **DEVICE FLOW PASS; visual MVP accepted** | Owner-token protection; Create/Stage/Deploy/HTTP/Logs/Update/Stop/Start/Rollback | Final current-browser readiness/logs review, arbitrary source isolation and WAN prohibited |
 | Deployments / Project logs / Hosting overview | **Visual MVP accepted, targeted QA PASS** | Owned Static/Node summaries, history, GET-only readiness, deep-link fail-closed and log secret redaction | Functional current-browser sign-off postponed |
 | Services S1–S4 | **READY_FOR_ACCEPTANCE** | One full owned fixed-template worker lifecycle with Health/logs/archive/restore/retire | Generic user script/Python, more negative paths, reboot/autostart and owner sign-off |
-| P1 UI/API safety | **Scoped PASS** | Stale Node/Static catalog handling, uncertain Static Create, log routing and redaction; exact-SHA UI/TypeScript/boundary/budget QA | Continue only for concrete defects; this is not full G2 |
+| P1 UI/API safety | **Prior scoped PASS; latest QA pending** | Older Node/Static catalogs, uncertain Create and logs passed scoped QA; newer Boot/Hosting/LAN race fixes deployed safely | New regressions/types/boundaries/budgets not run at current source; full G2 still open |
 | Encrypted Node Restic | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files | Full-device or Static backups, off-device disaster recovery and browser mutation activation |
 | Platform advanced / Android integration | **PARTIAL / DEFERRED** | LAN gateway settings/readbacks, limited Git/Boot diagnostics | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
@@ -26,7 +26,7 @@ purpose: Single concise MVP status, priority and acceptance tracker
 
 1. **Hosting P0 functional sign-off — OWNER DEFERRED:** Node `Check readiness`, Static site HTTP and project-log selection, bounded screenshot/receipt; `running` alone is not readiness. No repeat of approved visual redesign.
 2. **Services S1–S4 final acceptance — OPEN:** verified own worker registration, runit lifecycle, health/recovery, safe negative paths; generic Python/JS execution must remain protected until separately qualified.
-3. **P1 maintainability/security:** address observed reproducible stale-state, authorization, logs or API issues in small coherent changes. The four last P1 QA targets `263d64b`, `5cd0d80`, `e966f74`, `b1fde53` passed their exact scopes.
+3. **P1 maintainability/security:** address observed reproducible stale-state, authorization, logs or API issues in small coherent changes. The earlier P1 QA targets `263d64b`, `5cd0d80`, `e966f74`, `b1fde53` passed only recorded scopes; latest live code `a7f85e33` needs separately authorized QA.
 4. **Autostart after Android reboot — NEEDS DISTINCT OWNER AUTHORIZATION:** no physical reboot acceptance; protect Local Agent, panel and hosted apps.
 5. **Platform next:** LAN persistence and readback, verified Git/GitHub and SSH settings/keys, stronger admin network protection. No public exposure before threat model and TLS/auth.
 6. **Later product work:** ZIP/folder and npm/build edge cases, untrusted process isolation, custom domains/Cloudflare, Python/PHP and optional Companion/Shizuku.

@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-17
+last_reviewed: 2026-11-19
 purpose: Separate guarded deployment from independently approved QA
 ---
 
@@ -9,7 +9,7 @@ purpose: Separate guarded deployment from independently approved QA
 
 A **deployment PASS** requires terminal A8 Local Agent receipt at exact SHA, verified owned panel, PID/start ticks, HTTP and unchanged protected services. A code commit or queued task is not a deploy.
 
-A **QA PASS** requires independently approved, actually run checks at that exact SHA. FAST FLOW never automatically runs test suites.
+A **QA PASS** requires fresh owner approval naming the exact 40-character SHA and check categories, plus a terminal A8 result. A test committed to Git, source inspection or deployment safety PASS is **not** QA PASS.
 
 - G0 — structure, docs, boundaries, code-budget gate, Node foundation.
 - G1 — format, Markdown, lint and TypeScript.
@@ -20,4 +20,4 @@ A **QA PASS** requires independently approved, actually run checks at that exact
 
 `npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
 
-Full current-source G2/G3 remain OPEN until verified receipts; no unauthenticated Node mutation or public release is authorized.
+The latest deployed source `a7f85e33` has no executed QA receipt. Full current-source G2/G3 remain OPEN; software checks do not authorize reboot, external-service controls, off-device restore, untrusted Node execution or public release.
