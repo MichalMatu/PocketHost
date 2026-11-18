@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `7ac250807d9dc301b4c306e879de2744be250a31` (2026-11-18 guarded FAST FLOW PASS, PID 7834/start ticks 44244411, HTTP 200, protected services unchanged; `pockethost-a8-deployments-compact-7ac2508-20261118-v1`). `/deployments` histories closed by default, redundant rollback notices removed; no API or permission changes. **QA NOT RUN** on this SHA. `/projects` MVP visual acceptance complete; its old failed UI QA fixtures were corrected in source but not re-tested. Browser sign-off `/deployments` remains open. Next `/runtime-logs`. No Node lifecycle mutation, backup/restore, reboot or scheduler.
+Last verified A8 DEV source: `c9eebe1eda9468cad12cc67e85b6dedea2c60e43` (2026-11-18 guarded FAST FLOW PASS, PID 21641/start ticks 44284924, HTTP 200, protected unchanged; `pockethost-a8-runtime-logs-mvp-c9eebe1-20261118-v1`). Static Project logs now link directly to the selected site; unnecessary descriptions were removed, authorization and log redaction unchanged. `/deployments` visual MVP accepted. **QA NOT RUN**; logs browser review open. Next: `/hosting`. No Node lifecycle mutation, backup/restore, reboot or scheduler.
 
 ## Product and scope
 
