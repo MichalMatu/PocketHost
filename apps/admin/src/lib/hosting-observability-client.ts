@@ -52,7 +52,7 @@ export async function readProjectLogCatalog(signal?: AbortSignal): Promise<Proje
  * Unknown secrets cannot be identified reliably: avoid logging secrets at source. */
 export function redactProjectLog(line: string): string {
   const clean = line.replace(/[\x00-\x1f\x7f]/g, "")
-  if (/\b(password|passwd|secret|token|authorization|api[_-]?key|access[_-]?key|cookie|set-cookie|private[_ -]?key|bearer)\b/i.test(clean) ||
+  if (/(?:^|[^a-z0-9])(?:password|passwd|secret|token|authorization|api[_-]?key|access[_-]?key|cookie|set-cookie|private[_ -]?key|bearer)(?=$|[^a-z0-9])|[a-z](?:Secret|Token|Password|Passwd|ApiKey|AccessKey)(?=$|[^A-Za-z0-9])/i.test(clean) ||
       /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(clean) ||
       /\beyJ[A-Za-z0-9_-]{12,}\.eyJ[A-Za-z0-9_-]{12,}\./.test(clean)) {
     return "[sensitive log line hidden]"
