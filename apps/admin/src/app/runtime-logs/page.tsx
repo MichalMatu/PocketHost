@@ -86,19 +86,18 @@ export default function RuntimeLogsPage() {
     line.toLowerCase().includes(search.trim().toLowerCase()))
   const hasSourceError = staticStatus === "error" || nodeStatus === "error"
   const projectLink = selected?.kind === "node"
-    ? "/projects?project=" + encodeURIComponent(selected.id) : "/sites"
+    ? "/projects?project=" + encodeURIComponent(selected.id)
+    : selected ? "/sites?site=" + encodeURIComponent(selected.id) : "/sites"
 
   return (
     <BaseLayout title="Project logs" description="Bounded logs from PocketHost-owned projects">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
-        <p className="text-sm text-muted-foreground">
-          Select an owned static site or Node.js project. Logs are read on demand, never streamed.
-          For host diagnostics visit <Link className="underline" to="/observability">Monitoring</Link>.
+        <p className="text-xs text-muted-foreground">
+          Read-only, on-demand logs · Host diagnostics: <Link className="underline" to="/observability">Monitoring</Link>
         </p>
         <Card>
           <CardHeader>
             <CardTitle>Project</CardTitle>
-            <CardDescription>Only projects returned by the existing ownership-scoped APIs appear here.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2">
@@ -143,7 +142,7 @@ export default function RuntimeLogsPage() {
             <CardTitle>{selected.name}</CardTitle>
             <CardDescription>
               {selected.kind === "static" ? "Static site activity" : "Node.js runit output"} ·
-              Last 50 lines maximum · <Link className="underline" to={projectLink}>
+              Up to 50 lines · <Link className="underline" to={projectLink}>
                 {selected.kind === "node" ? "Open this project" : "Open Sites manager"}
               </Link>
             </CardDescription>
