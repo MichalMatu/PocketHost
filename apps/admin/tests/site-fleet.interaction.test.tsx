@@ -145,6 +145,39 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(fetchMock.mock.calls.some(call => call[1]?.method === "PUT")).toBe(false)
   })
 
+  it.each(["post-unconfirmed", "readback-unconfirmed"] as const)(
+    "removes stale site actions after %s during creation", async (scenario) => {
+      const user = userEvent.setup()
+      let submitted = false
+      const created = { ...project(), id: "site-" + "d".repeat(32), name: "Another site" }
+      const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+        const url = String(input)
+        if (url === "/api/v1/sites" && !options?.method)
+          return submitted && scenario === "readback-unconfirmed"
+            ? { ok: false, status: 503 }
+            : { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+        if (url === "/api/v1/sites/" && options?.method === "POST") {
+          submitted = true
+          return scenario === "post-unconfirmed"
+            ? { ok: false, status: 503 }
+            : { ok: true, json: async () => ({ site: created }) }
+        }
+        throw new Error("Unexpected site operation " + url)
+      })
+      vi.stubGlobal("fetch", requests)
+      renderSites()
+      await screen.findByText("My own site")
+      await user.type(screen.getByLabelText("Site name"), "Another site")
+      await user.click(screen.getByRole("button", { name: "Create site" }))
+      await screen.findByText(scenario === "post-unconfirmed"
+        ? /Create result unconfirmed/ : /Creation was acknowledged/)
+      expect(screen.queryByText("My own site")).toBeNull()
+      expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
+      expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+      expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+    },
+  )
+
   it("starts only the selected PocketHost-owned site through Hosting with explicit intent", async () => {
     const user = userEvent.setup()
     let current = project("stopped", true)
