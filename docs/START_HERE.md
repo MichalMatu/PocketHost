@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified live A8 DEV code: `bc61493f2cc00c43243234246016c6de1ee5494d` (2026-11-18 FAST FLOW PASS, panel PID 30036, HTTP 200, protected services unchanged, receipt `pockethost-a8-hosting-visual-cleanup-bc61493f-20261118-v1`). Based on user-supplied screenshots of five Hosting pages, `/projects` now prioritizes runtime above lengthy source editors, while `/deployments` uses shorter identifiers and collapsible histories. Screenshots predate this change; **new UI not yet visually accepted**. Scoped QA PASS at `48a9c9015dcd025896f9bcf92c1a9acc92a814de` does not certify `bc61493f2cc00c43243234246016c6de1ee5494d` (tests NOT RUN).
+Last verified A8 DEV panel source: `634de0d36781662e4a59be7cf788df8eccadd2a1` (2026-11-18 guarded FAST FLOW PASS, PID 26503, HTTP 200, protected services unchanged; receipt `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1`). The project list is now first; owner access is compact and project creation/backup are collapsed. `/projects` runtime still precedes source editors; `/deployments` keeps compact histories. Exact-source one-shot QA `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1` PASS (admin TypeScript, UI, boundaries, budgets, fake Restic). New browser UI still needs visual approval.
 
 ## Product and scope
 

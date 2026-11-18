@@ -10,7 +10,7 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Verified state
 
 - Repo `MichalMatu/PocketHost`, source `main`: always read fresh HEAD.
-- Last verified DEV panel A8: `bc61493f2cc00c43243234246016c6de1ee5494d`, guarded FAST FLOW PASS, PID 30036/start ticks 37529180, HTTP 200, protected services unchanged; receipt `pockethost-a8-hosting-visual-cleanup-bc61493f-20261118-v1`. Its changes are presentation-only: Node runtime first in `/projects`, compact release/timestamp and bounded history in `/deployments`. Tests NOT RUN at this SHA. Previously owner-approved targeted QA on `48a9c9015dcd025896f9bcf92c1a9acc92a814de` was PASS for that exact source.
+- Last verified DEV panel A8: `634de0d36781662e4a59be7cf788df8eccadd2a1`, guarded FAST FLOW PASS (PID 26503/start ticks 37726993, HTTP 200, protected services unchanged); receipt `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1`. `/projects`: Owned projects first, compact owner access, collapsed secondary create/backup controls, runtime before editor. One-shot QA `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1` PASS for budgets, boundaries, fake Restic backup host, admin TypeScript and UI tests; no physical backup or restore. Screenshot sign-off still pending for newest layout.
 - Only paired Galaxy A8 official Termux Local Agent, private `MichalMatu/local-agent` branch `agent-control`, immutable task/result path. No Mac, S22, Actions, Work, Codex, scheduler or automatic retries.
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
 - Owner-accepted Static Create/Publish/Start and later physical v2 → HTTP → rollback to original v1 PASS. Authenticated trusted Node Create → Stage → Deploy → Health/Logs → Update → Stop/Start → Rollback PASS. Scoped Node Restic backup and staging-only restore PASS: one encrypted local snapshot, 10 verified files and no overwrite of live services. These do not accept ZIP/folder, off-device copy, browser visual UI, untrusted Node execution, reboot or public access. Preserve existing site/data.
@@ -28,6 +28,10 @@ One new owner-approved QA run at exact `7246a05c5739f843f6f81344c6ec2a2931d82aac
 ## Browser screenshots and UI follow-up (2026-11-18)
 
 Owner supplied screenshots from trusted LAN showing `/sites`, `/projects` (locked owner and selected Node demo), `/deployments`, `/runtime-logs`, and `/hosting`. Both Node and Static appear running, with project histories and the static log page rendering; this is **partial visual evidence only**, not proof of successful clicks, readiness or owner actions. The screenshots predate the layout cleanup deployed at `bc61493f2cc00c43243234246016c6de1ee5494d`. Check the updated `/projects` section order and `/deployments` collapsed history in browser. No ownership token was entered on screenshots; private-LAN HTTP is unencrypted. Any new QA run needs per-SHA explicit approval.
+
+## PocketHost UX sprint (2026-11-18)
+
+User requested every proposed fix after screenshots: prioritize `Owned projects`, collapse creation and Restic backup sections, compact owner token controls. Commit `634de0d36781662e4a59be7cf788df8eccadd2a1` changes presentation and an existing test fixture, not host API or authorization logic; size budgets remain pinned. The A8 QA task `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1` finished PASS (budgets/boundaries/fake Restic/admin TS/UI), separately from the guarded DEV deployment `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1` PASS. No unauthorized Node action, physical backup/restore, reboot or scheduler. New browser layout remains to be inspected by owner.
 
 ## Direction and safety
 

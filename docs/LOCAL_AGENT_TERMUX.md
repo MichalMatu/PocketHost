@@ -52,7 +52,7 @@ uninstalled, separately qualified capability.
 
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
-from S22. Last verified A8 DEV live source: `bc61493f2cc00c43243234246016c6de1ee5494d` (2026-11-18 guarded FAST FLOW PASS, PID 30036/start ticks 37529180, HTTP 200, protected services unchanged), receipt `pockethost-a8-hosting-visual-cleanup-bc61493f-20261118-v1`. This is visual layout cleanup only: no new tests on this SHA. Prior scoped `48a9c9015dcd025896f9bcf92c1a9acc92a814de` QA PASS stays historical. Owner screenshot evidence of Hosting pages predates the new layout; follow-up visual acceptance is open.
+from S22. Last verified A8 DEV live source: `634de0d36781662e4a59be7cf788df8eccadd2a1` (2026-11-18 FAST FLOW PASS, panel PID 26503/start ticks 37726993, HTTP 200, protected services unchanged; receipt `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1`). A separate scoped QA `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1` PASS at exact code SHA for code budgets, module boundaries, fake-Restic host, TypeScript and UI. Create/backup sections now collapsed by default; only presentation changed, not API/security. Visual acceptance remains open.
 [Current static Hosting / Node resumption checkpoint](checkpoints/2026-11-17-a8-static-mvp-local-agent-handoff.md). Older S4 readback is historical and not the latest live state.
 The independent QA task `pockethost-a8-s4-final-qa-c0bf0218-20261116-v1`
 returned **7/7 PASS** on `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8`: format, structure, boundaries,
