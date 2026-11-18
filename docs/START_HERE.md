@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `fbb7c93c6261e8fec1e119f4f85eb691c7c583ca` (2026-11-18 guarded FAST FLOW PASS, PID 19841/start ticks 45064809, HTTP 200, protected services unchanged; `pockethost-a8-p1-unknown-project-link-fbb7c93-20261118-v1`). Project log deep links now fail closed for unknown targets, without silently showing another project's logs; two regression tests added, **QA NOT RUN** on current SHA. Prior three P1 scoped QA runs at `263d64b`, `5cd0d80`, `e966f74` PASS, not certification of `fbb7c93`. Hosting P0 functional acceptance, reboot and off-device Restic remain deferred. No hosted-service lifecycle changes.
+Last verified A8 DEV source: `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` (2026-11-18 guarded FAST FLOW PASS, PID 21255/start ticks 45163402, HTTP 200, protected services unchanged; `pockethost-a8-p1-redact-credentials-b1fde53-20261118-v1`). P1 log privacy: redact complete sensitive lines for snake_case/camelCase credential keys, including `refresh_token` and `clientSecret`; regression cases added but **QA NOT RUN** on current source. Earlier P1 scoped QA PASS on `263d64b`, `5cd0d80`, `e966f74`; log deep-link guard at `fbb7c93` also awaits QA. Hosting P0 functional acceptance, full-repo QA, Android reboot and off-device Restic remain deferred. No Node/Static lifecycle mutations, backup/restore or scheduler.
 
 ## Product and scope
 
