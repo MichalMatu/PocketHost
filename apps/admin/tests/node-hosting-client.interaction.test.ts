@@ -15,8 +15,9 @@ it("read-only Node catalog, runtime journal and logs preserve explicit owned ide
       }) }
     if (url === "/api/v1/node-projects/" + id + "/runtime")
       return { ok: true, status: 200, json: async () => ({
-        runtime: { state: "running", activeRelease: release, lastGoodRelease: release,
-          previousGoodRelease: null,
+        runtime: { state: "running", desired: "running", port: 19090,
+          healthDecision: { action: "none", reason: "ready", nextEligibleAtMs: null },
+          activeRelease: release, lastGoodRelease: release, previousGoodRelease: null,
           history: [{ at: "2026-11-10T01:00:00Z", action: "start", release }] },
       }) }
     if (url === "/api/v1/node-projects/" + id + "/logs")
@@ -42,8 +43,10 @@ it("disabled Node Hosting never tries to inspect external services", async () =>
 it("malformed identities, deployment records and logs are rejected", async () => {
   const fetchMock = vi.fn(async (url: string) => ({
     ok: true, status: 200, json: async () => url.endsWith("/runtime")
-      ? { runtime: { state: "running", activeRelease: "invalid",
-          lastGoodRelease: null, previousGoodRelease: null, history: [] } }
+      ? { runtime: { state: "running", desired: "running", port: 19090,
+          healthDecision: { action: "none", reason: "ready", nextEligibleAtMs: null },
+          activeRelease: "invalid", lastGoodRelease: null, previousGoodRelease: null,
+          history: [] } }
       : url.endsWith("/logs") ? { logs: { lines: ["x".repeat(300)] } }
         : { projects: [{ id: "foreign", kind: "node", name: "Fake" }] },
   }))

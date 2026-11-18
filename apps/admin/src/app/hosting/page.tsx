@@ -151,7 +151,7 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Button render={<Link to="/sites" />}>Manage static websites</Button>
+              <Button nativeButton={false} render={<Link to="/sites" />}>Manage static websites</Button>
             </CardContent>
           </Card>
           <Card>
@@ -201,7 +201,7 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Button variant="outline" render={<Link to="/projects" />}>Manage Node.js projects</Button>
+              <Button variant="outline" nativeButton={false} render={<Link to="/projects" />}>Manage Node.js projects</Button>
             </CardContent>
           </Card>
         </div>
