@@ -247,7 +247,7 @@ it("M3 browser creates and stages a real API-backed Node source candidate withou
 
   expect(screen.getByRole("button", { name: "Deploy selected release" }).hasAttribute("disabled")).toBe(true)
   await user.click(screen.getByRole("button", { name: "Check live readiness" }))
-  await screen.findByText(/Live health: not-provisioned · HTTP readiness: not probed/)
+  await screen.findByText(/HTTP readiness: not probed/)
   await user.click(screen.getByRole("button", { name: "Check Node build syntax" }))
   await screen.findByText(/Candidate syntax: syntax-valid/)
   expect(screen.getByRole("button", { name: "Rollback active release" }).hasAttribute("disabled")).toBe(true)

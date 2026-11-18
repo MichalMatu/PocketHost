@@ -235,7 +235,7 @@ export default function ProjectsPage() {
   return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
-        <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
+        </CardHeader>
         <CardContent>
           {projects.length === 0 ? <p className="text-muted-foreground text-sm">No Node projects yet.</p> :
           <div className="flex flex-wrap gap-2">{projects.map(project =>
@@ -296,69 +296,17 @@ export default function ProjectsPage() {
               setMessage("Owner access locked.")
             }}>Lock</Button>
           </div>
-          {lanView && <p className="text-xs text-muted-foreground">
-            Private LAN HTTP does not encrypt this token. Use a trusted network only.
-          </p>}
           <p className="text-xs text-muted-foreground">
-            Token held only in this tab. Node processes run as the Termux user without OS isolation; use trusted source.
+            Token stays in this tab. {lanView ? "LAN HTTP is unencrypted — use a trusted network. " : ""}Only run trusted Node code.
           </p>
         </CardContent>
       </Card>
-      <details data-testid="node-create-panel" className="rounded-xl border bg-card text-card-foreground">
-        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
-          Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
-        </summary>
-        <div className="space-y-3 border-t px-4 py-4">
-          <p className="text-xs text-muted-foreground">Create a project only after authenticating as its owner.</p>
-          <div className="flex flex-wrap items-end gap-3">
-          <label className="grid min-w-52 gap-1 text-sm">Project name
-            <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
-          </label>
-          <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
-            const data = await getJson(api + "/", "POST", { name: name.trim() })
-            if (!validProject(data.project)) throw new Error("Invalid create response")
-            setSelectedId(data.project.id); setName(""); setApproved(false)
-            setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
-            await refresh(); setReleases([]); await loadRuntime(data.project.id)
-            setMessage("Private Node project created.")
-          })}>Create project</Button>
-          <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
-          <Button variant="outline" disabled={busy || catalogState !== "ready"}
-            onClick={() => action(async () => {
-              const result = await getJson(api + "/toolchain")
-              const tools = result.toolchain as Record<string, unknown> | undefined
-              const version = (value: unknown) => value === null ||
-                (typeof value === "string" && /^v?\d+\.\d+\.\d+$/.test(value))
-              if (!tools || !version(tools.nodeVersion) || !version(tools.npmVersion))
-                throw new Error("Invalid Node toolchain report")
-              setNodeTools(tools as { nodeVersion: string | null; npmVersion: string | null })
-            })}>Check Node tools</Button>
-          <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
-            const response = await getJson(api + "/registry")
-            const value = response.registries as Record<string, unknown> | undefined
-            if (!value || !Array.isArray(value.modules) || value.modules.length > 32 ||
-              !Array.isArray(value.services) || value.services.length > 64 ||
-              !Array.isArray(value.projects) || value.projects.length > 64) {
-              throw new Error("Invalid Hosting registry projection")
-            }
-            setRegistries({
-              modules: value.modules.length,
-              services: value.services.length,
-              projects: value.projects.length,
-            })
-            setMessage("Read-only module, service and project declarations verified.")
-          })}>Inspect hosting registries</Button>
-          </div>
-        </div>
-      </details>
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
       {nodeTools && <p role="status" className="text-muted-foreground text-sm">
         Installed tools: Node {nodeTools.nodeVersion ?? "not detected"} · npm {nodeTools.npmVersion ?? "not detected"}
       </p>}
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
-      <NodeBackupPanel catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
-        busy={busy} action={action} getJson={getJson} onMessage={setMessage} />
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
@@ -370,36 +318,33 @@ export default function ProjectsPage() {
       {selected && catalogState === "ready" && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>
-            Runtime: {runtime?.state ?? "unverified"} · Active release: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
-            Staged candidate: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span>
+            {runtime?.state ?? "unverified"} · Live: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
+            Prepared: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span>
           </CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
-            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-runtime">Runtime and actions</a>
-            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-source">Source and imports</a>
-            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-candidates">Candidates</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-runtime">Runtime</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-source">Source</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-candidates">Releases</a>
           </nav>
           <Card id="node-runtime">
-            <CardHeader><CardTitle>Node deployment</CardTitle>
-              <CardDescription>Trusted source only: Node runs as the Termux user, without OS isolation.</CardDescription></CardHeader>
+            <CardHeader><CardTitle>Runtime</CardTitle>
+              <CardDescription>Trusted code only; Node shares the Termux user.</CardDescription></CardHeader>
             <CardContent className="space-y-3">
               {!ownerAuthorized && <p role="status" className="text-sm text-muted-foreground">
-                Read-only mode. <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a> above to manage this service.
+                Read-only. <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a> to manage.
               </p>}
               <p aria-label="Node runtime summary" className="text-sm">
-                State: {runtime?.state ?? "not loaded"} · Active release: <span title={runtime?.activeRelease ?? undefined}>{shortRelease(runtime?.activeRelease)}</span> ·
-                HTTP readiness: {health?.ready === null || !health ? "not checked" : health.ready ? "ready" : "not ready"}.
+                HTTP readiness: {!health ? "not checked" : health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}.
               </p>
+              <details data-testid="node-runtime-details" className="rounded-lg border px-3 py-2 text-xs">
+                <summary className="cursor-pointer font-medium">Technical details</summary>
+                <div className="mt-2 space-y-2 text-muted-foreground">
               <p aria-label="Node local address" className="text-sm">
                 Device loopback: {runtime?.port ? `http://127.0.0.1:${runtime.port}/` : "not assigned"}.
                 Not a public or directly reachable LAN URL.
               </p>
               <p className="text-sm">Staged candidate plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
-              {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
-                  (plan.dependencyIssues?.length ?? 0) > 0) &&
-                <p role="alert" className="text-sm text-destructive">{[
-                  ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
-                ].join(", ")}</p>}
               {buildReview && <p className="text-muted-foreground text-xs"
                 aria-label="Node build setup">
                 Build: {buildReview.status} · Script: {buildReview.script ?? "not required"} ·
@@ -422,10 +367,21 @@ export default function ProjectsPage() {
                   ? " Installed package bytes verified; no npm command executed during this review."
                   : " Not executed; installation/build requires separate approval."}
               </p>}
+              <p className="text-sm">Last good: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous good: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
+              <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
+                No automatic restart is authorized.
+              </p>
+                </div>
+              </details>
+              {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
+                  (plan.dependencyIssues?.length ?? 0) > 0) &&
+                <p role="alert" className="text-sm text-destructive">{[
+                  ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
+                ].join(", ")}</p>}
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
                   onChange={event => setApproved(event.target.checked)} />
-                I authorize this PocketHost-owned Node service to run on this Termux host.
+                Approve running this trusted Node application.
               </label>
               <div className="flex flex-wrap gap-2">
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
@@ -439,13 +395,6 @@ export default function ProjectsPage() {
                       { approved: true, release: selected.candidateRelease },
                       "Owned Node release started and readiness verified by host.")
                   })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
-                  runtime?.state !== "stopped" || !runtime.activeRelease ||
-                  runtime.activeRelease !== runtime.lastGoodRelease}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "start", { approved: true },
-                      "Previously verified Node release started and readiness confirmed.")
-                  })}>Start stopped service</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
                   const response = await getJson(api + "/" + selected.id + "/health")
                   const value = response.health as Record<string, unknown> | undefined
@@ -661,9 +610,16 @@ export default function ProjectsPage() {
               </details>
               <details data-testid="node-recovery" className="rounded-lg border p-3">
                 <summary className="cursor-pointer text-sm font-medium">Maintenance & rollback
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">Stop · restart · restore</span>
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">Start · stop · restart · rollback</span>
                 </summary>
                 <div className="mt-3 flex flex-wrap gap-2">
+                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
+                  runtime?.state !== "stopped" || !runtime.activeRelease ||
+                  runtime.activeRelease !== runtime.lastGoodRelease}
+                  onClick={() => action(async () => {
+                    await runRuntimeAction(selected.id, "start", { approved: true },
+                      "Previously verified Node release started and readiness confirmed.")
+                  })}>Start stopped service</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
@@ -719,16 +675,10 @@ export default function ProjectsPage() {
               {buildCheck && <p className="text-muted-foreground text-xs" role="status">
                 Candidate syntax: {buildCheck.status} · No project code executed.
               </p>}
-              {!executionEnabled && <p className="text-xs text-muted-foreground">
-                Execution is disabled until the separate Node runtime DEV feature flag is explicitly enabled.
+              {!executionEnabled && ownerAuthorized && <p className="text-xs text-muted-foreground">
+                Execution unavailable; review runtime permissions.
               </p>}
-              {health && <p className="text-sm" aria-label="Node live health">
-                Live health: {health.state} · HTTP readiness: {health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}.
-              </p>}
-              <p className="text-sm">Last good: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous good: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
-              <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
-                No automatic restart is authorized.
-              </p>
+}
               {runtime?.history?.length ? <details data-testid="node-history" className="rounded-lg border p-3 text-xs">
                 <summary className="cursor-pointer font-medium">Runtime history ({runtime.history.length})</summary>
                 <ol className="mt-2 space-y-1" aria-label="Node runtime history">
@@ -749,11 +699,11 @@ export default function ProjectsPage() {
           </Card>
           <section id="node-source" aria-label="Node source editor" className="space-y-3 rounded-lg border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">Source files and updates</h3>
-              <span className="text-xs text-muted-foreground">Load → Review → Stage</span>
+              <h3 className="font-semibold">Source files</h3>
+              <span className="text-xs text-muted-foreground">Import → Review → Stage</span>
             </div>
           <p className="text-sm text-muted-foreground">
-            Source candidates stay private until reviewed and explicitly published. Imports and builds never start a service automatically.
+            Import and stage files for review. The running service is not changed.
           </p>
           <details data-testid="node-source-safety" className="rounded-md border px-3 py-2 text-xs">
             <summary className="cursor-pointer font-medium">Technical deployment requirements</summary>
@@ -1012,17 +962,13 @@ export default function ProjectsPage() {
           </div>
           </section>
           <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
-            <h3 className="text-sm font-semibold">Source candidates</h3>
-            <p className="text-xs text-muted-foreground">
-              Staged candidate: <span title={selected.candidateRelease ?? undefined}>{shortRelease(selected.candidateRelease)}</span> ·
-              Earlier candidate: <span title={selected.previousCandidate ?? undefined}>{shortRelease(selected.previousCandidate)}</span>
-            </p>
-            <p className="text-xs text-muted-foreground">Staging does not change the running service. Host rollback requires separate review.</p>
+            <h3 className="text-sm font-semibold">Releases</h3>
+            <p className="text-xs text-muted-foreground">Publishing and rollback require separate approval.</p>
             <div className="space-y-2 text-sm">
               {releases.map(release => <div key={release.id} className="rounded-md border p-3">
                 <p className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</p>
                 <p className="text-xs text-muted-foreground" title={release.id}>Release: {shortRelease(release.id)}</p>
-                <p className="text-muted-foreground">Manifest {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies · review required</p>
+                <p className="text-muted-foreground">{release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies</p>
                 {release.sourceIntegrity === "legacy-needs-restaging" &&
                   <p className="text-destructive">Legacy source needs restaging before use.</p>}
               </div>)}
@@ -1030,6 +976,57 @@ export default function ProjectsPage() {
           </section>
         </CardContent>
       </Card>}
+      <div className="space-y-3">
+      <details data-testid="node-create-panel" className="rounded-xl border bg-card text-card-foreground">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+          Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
+        </summary>
+        <div className="space-y-3 border-t px-4 py-4">
+          <p className="text-xs text-muted-foreground">Create a project only after authenticating as its owner.</p>
+          <div className="flex flex-wrap items-end gap-3">
+          <label className="grid min-w-52 gap-1 text-sm">Project name
+            <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
+          </label>
+          <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
+            const data = await getJson(api + "/", "POST", { name: name.trim() })
+            if (!validProject(data.project)) throw new Error("Invalid create response")
+            setSelectedId(data.project.id); setName(""); setApproved(false)
+            setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+            await refresh(); setReleases([]); await loadRuntime(data.project.id)
+            setMessage("Private Node project created.")
+          })}>Create project</Button>
+          <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
+          <Button variant="outline" disabled={busy || catalogState !== "ready"}
+            onClick={() => action(async () => {
+              const result = await getJson(api + "/toolchain")
+              const tools = result.toolchain as Record<string, unknown> | undefined
+              const version = (value: unknown) => value === null ||
+                (typeof value === "string" && /^v?\d+\.\d+\.\d+$/.test(value))
+              if (!tools || !version(tools.nodeVersion) || !version(tools.npmVersion))
+                throw new Error("Invalid Node toolchain report")
+              setNodeTools(tools as { nodeVersion: string | null; npmVersion: string | null })
+            })}>Check Node tools</Button>
+          <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
+            const response = await getJson(api + "/registry")
+            const value = response.registries as Record<string, unknown> | undefined
+            if (!value || !Array.isArray(value.modules) || value.modules.length > 32 ||
+              !Array.isArray(value.services) || value.services.length > 64 ||
+              !Array.isArray(value.projects) || value.projects.length > 64) {
+              throw new Error("Invalid Hosting registry projection")
+            }
+            setRegistries({
+              modules: value.modules.length,
+              services: value.services.length,
+              projects: value.projects.length,
+            })
+            setMessage("Read-only module, service and project declarations verified.")
+          })}>Inspect hosting registries</Button>
+          </div>
+        </div>
+      </details>
+      <NodeBackupPanel catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
+        busy={busy} action={action} getJson={getJson} onMessage={setMessage} />
+      </div>
     </div>
   </BaseLayout>
 }

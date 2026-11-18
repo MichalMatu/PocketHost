@@ -11,7 +11,7 @@ export function releaseRole(
   active: string | null | undefined, running: boolean,
 ): string {
   if (release.id === active) return running ? "Running release" : "Last deployed release (stopped)"
-  if (release.candidate) return "Staged candidate — not running"
-  if (release.previousCandidate) return "Previous staged source — not automatic rollback"
+  if (release.candidate) return "Prepared update — not running"
+  if (release.previousCandidate) return "Older prepared source"
   return "Archived source"
 }
