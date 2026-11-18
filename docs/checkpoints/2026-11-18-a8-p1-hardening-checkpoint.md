@@ -9,9 +9,9 @@ purpose: Verified A8 DEV state, scoped test evidence, product maturity and unfin
 
 ## Punkt odniesienia
 
-- Repository: `MichalMatu/PocketHost`, branch `main`. **Actual last verified panel code**: `90b42f23a211bef180dac1f04667e75710b5b6db` (before subsequent docs-only handoff). Never infer live SHA from subsequent documentation commits.
+- Repository: `MichalMatu/PocketHost`, branch `main`. **Actual last verified panel code**: `44d2c79cb119bb287e0742e7c593fa94c00ea063` (before subsequent docs-only handoff). Never infer live SHA from subsequent documentation commits.
 - Executor: paired Samsung Galaxy A8 Termux Local Agent via the private `MichalMatu/local-agent:agent-control` task/result transport. Panel available only in trusted private LAN (observed `192.168.0.16:18878`); address can change.
-- Last guarded DEV deployment `pockethost-a8-quality-doc-planner-90b42f2-20261119-v1`: terminal PASS, live SHA `90b42f23a211bef180dac1f04667e75710b5b6db`, owned panel PID **14715** / start ticks **45606162**, HTTP **200**, protected services unchanged; **tests not run**. Previous `81f269ad`, `8d257a03` and `a7f85e33` deployments also PASS. This does not attest hosted applications' current HTTP readiness.
+- Last guarded DEV deployment `pockethost-a8-quality-format-cleanup-44d2c79-20261119-v1`: terminal PASS, live SHA `44d2c79cb119bb287e0742e7c593fa94c00ea063`, owned panel PID **12508** / start ticks **45687615**, HTTP **200**, protected services unchanged; **tests not run**. Previous `81f269ad`, `8d257a03`, `a7f85e33` and `90b42f2` deployments also PASS. This does not attest hosted applications' current HTTP readiness.
 - Latest owner-approved QA `pockethost-a8-owner-approved-qa-5f1ee2a-20261119-v1`: **FAIL at exact source `5f1ee2acbef29094c5f518bf28ef332996d1e391`** due solely to Prettier formatting of three changed files. Syntax, structure, docs, root ESLint and Markdown lint passed; admin TypeScript, Node and UI tests were **SKIPPED** by the gate. The older `pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1` was PASS **only** at `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` for its recorded scope. Newer Boot/Hosting/LAN/planner regressions have been written but **not yet executed**.
 - Earlier one-shot scoped QA at `263d64b`, `5cd0d80`, `e966f74`: PASS for their respective affected UI, TypeScript, module boundaries and budgets. Historical failures on older SHAs are not current-source failures unless reproduced. **Full latest-SHA repository G2 and physical G3 are NOT certified**.
 
@@ -21,7 +21,8 @@ purpose: Verified A8 DEV state, scoped test evidence, product maturity and unfin
 - `8d257a03`: Hosting inventory Refresh can retry a stalled request; superseded responses remain abort-gated. One-shot guarded deploy PASS; test committed but not run.
 - `a7f85e33`: Network Access aborts superseded LAN reads and gates stale API responses. Guarded deploy PASS; regression committed but not run.
 - `90b42f2`: changed-file QA planner now treats scoped `src/**/AGENTS.md` as documentation, not missing test coverage. Prior plan was `MANUAL_REVIEW`; guarded deployment PASS, targeted planner regression written but not run.
-- A8 read-only preflight `pockethost-a8-quality-live-preflight-20261119-v1` PASS. Agent queue **319 tasks / 319 terminal results, zero pending** at this checkpoint update.
+- `44d2c79`: aligned the two Markdown tables and formatted the planner test after exact-SHA `5f1ee2a` QA reported three Prettier failures. Deployment PASS; the correction has **not** passed a new QA gate.
+- A8 read-only preflight `pockethost-a8-quality-live-preflight-20261119-v1` PASS. Agent queue **322 tasks / 322 terminal results, zero pending** at this checkpoint update.
 - No reboot, SSH/WAN/Cloudflare, backup/restore, untrusted Node or unapproved QA. Services S1–S4 remain `READY_FOR_ACCEPTANCE`.
 
 ## What is working, and what the evidence proves

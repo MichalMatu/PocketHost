@@ -13,17 +13,18 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 
 ## Verified device state
 
-- Last A8 live code: `90b42f23a211bef180dac1f04667e75710b5b6db`, guarded task
-  `pockethost-a8-quality-doc-planner-90b42f2-20261119-v1`: **PASS**.
-- Owned panel PID **14715**, start ticks **45606162**, HTTP **200**; protected services
+- Last A8 live code: `44d2c79cb119bb287e0742e7c593fa94c00ea063`, guarded task
+  `pockethost-a8-quality-format-cleanup-44d2c79-20261119-v1`: **PASS**.
+- Owned panel PID **12508**, start ticks **45687615**, HTTP **200**; protected services
   unchanged. This proves release safety, **not** hosted-app HTTP readiness.
-- Private A8 queue at handoff: **319 tasks, 319 terminal results, zero pending**.
+- Private A8 queue at handoff: **322 tasks, 322 terminal results, zero pending**.
 - Most recent one-shot owner-approved QA at `5f1ee2acbef29094c5f518bf28ef332996d1e391`
   **FAIL**: format check flagged the MVP tracker, A8 checkpoint and new planner test.
   Syntax, structure, docs, root lint and Markdown lint **PASS**; admin types,
   Node tests and UI tests **SKIPPED**. Prior scoped QA **PASS** is only
   for `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6`.
-  Current formatting corrections are not QA-certified.
+  The three QA-flagged files were formatted in `44d2c79` and guarded-deployed;
+  the new source has **no executed QA**. No test rerun is authorized by the old consent.
 - This docs-only handoff commit is not running code. Independently recheck
   current `main`, A8 live SHA, owner PID/start ticks and agent queue before new work.
 

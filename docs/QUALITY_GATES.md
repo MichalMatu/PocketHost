@@ -20,4 +20,4 @@ A **QA PASS** requires fresh owner approval naming the exact 40-character SHA an
 
 `npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
 
-The latest deployed source `90b42f2` has no executed QA receipt. Full current-source G2/G3 remain OPEN; software checks do not authorize reboot, external-service controls, off-device restore, untrusted Node execution or public release.
+The latest deployed source `44d2c79` has no executed QA receipt. QA at docs SHA `5f1ee2a` failed only its format check; later typecheck, Node and UI checks were skipped by design. Full current-source G2/G3 remain OPEN; software checks do not authorize reboot, external-service controls, off-device restore, untrusted Node execution or public release.
