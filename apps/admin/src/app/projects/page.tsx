@@ -100,20 +100,8 @@ export default function ProjectsPage() {
       setCatalogState("ready")
       setError(null)
     } catch (cause) {
-      // A failed ownership inventory invalidates the old selection and any
-      // one-shot execution approvals; no stale project may remain actionable.
-      setProjects([])
-      setSelectedId("")
-      setRuntime(null)
-      setReleases([])
-      setPlan(null)
-      setApproved(false)
-      setExecutionEnabled(false)
-      setDependencyApproved(false)
-      setDependencyReview(null)
-      setBuildApproved(false)
-      setBuildReview(null)
-      setRollbackPreflight(null)
+      setProjects([]); setSelectedId(""); setApproved(false)
+      setPlan(null); setExecutionEnabled(false)
       if (cause instanceof Error && cause.message === disabledMessage) {
         setCatalogState("disabled")
         setError(null)
@@ -244,7 +232,7 @@ export default function ProjectsPage() {
       setError("Node action acknowledged, but runtime refresh failed. Review plan before retrying.")
     }
   }
-  return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
+  return <BaseLayout title="Projects" description="Node.js projects.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         </CardHeader>
@@ -375,7 +363,7 @@ export default function ProjectsPage() {
                   ? " Installed package bytes verified; no npm command executed during this review."
                   : " Not executed; installation/build requires separate approval."}
               </p>}
-              <p className="text-sm">Last good: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous good: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
+              <p className="text-sm">Last: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
               <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
                 No automatic restart is authorized.
               </p>
@@ -708,13 +696,13 @@ export default function ProjectsPage() {
               Source files <span className="ml-2 text-xs font-normal text-muted-foreground">
                 {sourceOrigin === "example" ? "Example — not deployed" :
                   sourceOrigin === "staged" ? "Staged candidate — not necessarily live" :
-                  sourceOrigin === "github" ? "GitHub preview — not staged" :
-                  sourceOrigin === "local" ? "Local import — not staged" : "Edited draft — not staged"}
+                  sourceOrigin === "github" ? "GitHub — not staged" :
+                  sourceOrigin === "local" ? "Local — not staged" : "Draft — not staged"}
               </span>
             </summary>
             <div className="space-y-3 border-t p-4">
           <details data-testid="node-source-safety" className="rounded-md border px-3 py-2 text-xs">
-            <summary className="cursor-pointer font-medium">Technical deployment requirements</summary>
+            <summary className="cursor-pointer font-medium">Deployment requirements</summary>
             <p className="mt-2 text-muted-foreground">
               The reviewed server.mjs runs as the Termux user on loopback only after explicit approval.
               Dependency installation and builds require separate review and SHA-256 verification.
