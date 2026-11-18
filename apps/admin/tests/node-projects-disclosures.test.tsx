@@ -28,10 +28,10 @@ it("keeps advanced Node actions and all source editors closed by default", async
   }))
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
   const user = (await import("@testing-library/user-event")).default.setup()
-  expect(screen.getByText(/Select a project above to inspect its runtime/)).toBeTruthy()
+  expect(await screen.findByText(/Select a project above to inspect its runtime/)).toBeTruthy()
   await user.click(await screen.findByRole("button", { name: "Sample app" }))
   expect(await screen.findByRole("link", { name: "Unlock owner access" })).toBeTruthy()
-  expect(screen.getByText(/Staged candidate plan:/)).toBeTruthy()
+  expect(await screen.findByText(/Staged candidate plan:/)).toBeTruthy()
   expect(screen.queryByText(/Select a project above to inspect its runtime/)).toBeNull()
   for (const id of ["node-advanced-setup", "node-recovery", "node-source-editors"]) {
     const section = document.querySelector<HTMLDetailsElement>(`details[data-testid="${id}"]`)

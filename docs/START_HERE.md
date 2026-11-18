@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `0cc7aba1f84bc1881eb53ac3aa216412c4a723ff` (2026-11-18, guarded FAST FLOW PASS, PID 1109/start ticks 42748698, HTTP 200, protected unchanged; `pockethost-a8-node-backup-catalog-guard-0cc7aba-20261118-v1`). Node backup UI now requires current catalog and verified repository readiness; failed catalog refresh invalidates prior mutation controls. One exact-SHA A8 QA `pockethost-a8-approved-hosting-backup-ui-qa-0cc7aba-20261118-v1` **PASS** for affected UI, admin TypeScript, code budgets and module boundaries. No physical backup, restore, reboot or scheduler. Earlier readiness identity release `27a735d730e216226f249a4c9b90f2a297ef30a8` also FAST FLOW PASS. Browser visual sign-off open; no physical backup/restore, reboot or scheduler.
+Last verified A8 DEV source: `d8fbfa4a0ced11d8c6b9b38eab94d84c46fe2bbf` (2026-11-18, guarded FAST FLOW PASS, PID 24804/start ticks 43612692, HTTP 200, protected unchanged; `pockethost-a8-projects-ux-release-d8fbfa4a-20261118-v1`). Projects UX distinguishes active release from staged source, shows owner-lock guidance and consistent file pickers. Focused UI regression written, **NOT RUN**; previous `0cc7aba1...` QA PASS for old source only. Screenshots from 18:46 predate this deployment; new browser visual sign-off open. No Node lifecycle changes, backup/restore, reboot or scheduler.
 
 ## Product and scope
 
