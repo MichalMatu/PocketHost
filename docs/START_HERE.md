@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV panel source: `634de0d36781662e4a59be7cf788df8eccadd2a1` (2026-11-18 guarded FAST FLOW PASS, PID 26503, HTTP 200, protected services unchanged; receipt `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1`). The project list is now first; owner access is compact and project creation/backup are collapsed. `/projects` runtime still precedes source editors; `/deployments` keeps compact histories. Exact-source one-shot QA `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1` PASS (admin TypeScript, UI, boundaries, budgets, fake Restic). New browser UI still needs visual approval.
+Last verified A8 DEV panel source: `09e4a096727df9fb013a2063b8382f1e87f16056` (2026-11-18 guarded FAST FLOW PASS, PID 20265, HTTP 200, protected services unchanged, receipt `pockethost-a8-nodeux-runtime-source-09e4a096-20261118-v1`). `/projects` now separates primary from advanced Node actions, folds history and source editors, labels example/local/GitHub/staged content correctly and distinguishes running release from candidates. Exact-SHA approved QA `pockethost-a8-nodeux-qa-09e4a096-20261118-v1` PASS (code-size budgets, module boundaries, fake Restic host, admin TS and UI); screenshot acceptance of this revision remains open.
 
 ## Product and scope
 

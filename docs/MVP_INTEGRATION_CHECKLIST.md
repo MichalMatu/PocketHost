@@ -51,6 +51,12 @@ Owner screenshots at LAN panel port 18878 confirm that all five Hosting pages re
 - One-shot owner-approved A8 QA `pockethost-a8-owned-first-disclosures-qa-634de0d3-20261118-v1`: **PASS** for code-size budgets, module boundaries, fake Restic backup host, admin TypeScript and affected UI. No live services mutated by QA.
 - Guarded A8 DEV release `pockethost-a8-owned-first-disclosures-634de0d3-20261118-v1`: **PASS**, PID 26503/start ticks 37726993, HTTP 200, protected services unchanged. **No real backup/restore, reboot, scheduler or extra Node operations.** Screenshot sign-off for new UX remains OPEN.
 
+## Node Projects runtime/source UX closure (2026-11-18)
+
+- `09e4a096727df9fb013a2063b8382f1e87f16056`: runtime controls are split into visible basic actions and separate `Dependencies & build` / `Maintenance & rollback` disclosures. Event history is collapsed and timestamps/IDs compact but complete identities remain in title attributes. Three source editors are collapsed and their summary explicitly distinguishes examples, GitHub previews, local files, staged candidates and edited drafts. Candidate cards distinguish running vs last-deployed vs staged vs previous source; a previous staged source is **not** presented as a ready-to-run rollback.
+- Initial QA at `eb0464c...` returned scope HOLD due to an unmapped test helper; fixed in `09e4a09...` without weakening the QA planner. Exact-source `pockethost-a8-nodeux-qa-09e4a096-20261118-v1`: **PASS** — budgets, boundaries, fake Restic host, admin TypeScript and targeted UI.
+- Guarded A8 DEV release `pockethost-a8-nodeux-runtime-source-09e4a096-20261118-v1` **PASS**, PID 20265/start ticks 41786882, HTTP 200, protected services unchanged. No real backup/restore or node lifecycle operation. Final owner screenshot review of this layout remains OPEN.
+
 ## Remaining owner acceptance and P1
 
 **Historical P1 read-only A8 preflight, before the approved Restic initialization:** receipt `pockethost-a8-mvp-stabilization-readiness-0db03272-20261117-v1` PASS. Node Restic backup API 200 but `backupsEnabled=false`, `initialized=false`, `repositoryPresent=false`, `keyPresent=false` — **do not attempt real backup/restore until scoped initialization and approval**. Termux:Boot directory exists with 3 executable regular scripts; no evidence they actually start after Android reboot. No backup, restore, reboot, scheduler or boot mutation performed.
