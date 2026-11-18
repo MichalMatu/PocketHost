@@ -66,11 +66,13 @@ export default function HostingPage() {
     try {
       const health = await readNodeHealth(project.id, controller.signal)
       if (controller.signal.aborted) return
-      // Never show ready based on a release other than the inventory's active release.
-      const status: Readiness = health.ready === true
-        ? health.release === project.activeRelease && health.state === "running"
-          ? "ready" : "unavailable"
-        : health.ready === false ? "not-ready" : "not-probed"
+      // A health response is only meaningful for the exact inventoried runtime.
+      // A stopped or replaced process must not be reported as the selected release.
+      const matchesInventory = project.activeRelease !== null &&
+        health.release === project.activeRelease && health.state === project.state
+      const status: Readiness = !matchesInventory ? "unavailable" :
+        health.ready === true ? "ready" :
+        health.ready === false ? "not-ready" : "not-probed"
       setReadiness(prev => ({ ...prev, [project.id]: status }))
     } catch {
       if (!controller.signal.aborted)
