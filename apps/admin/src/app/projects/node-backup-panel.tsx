@@ -1,6 +1,5 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 const api = "/api/v1/node-projects"
 type Snapshot = { id: string; time: string }
@@ -77,11 +76,15 @@ export function NodeBackupPanel({
     onMessage("Owned Node Restic repository inspected without running backup.")
   }
 
-  return <Card>
-    <CardHeader><CardTitle>Scoped Node project backups</CardTitle>
-      <CardDescription>Encrypted Restic backup of PocketHost-created Node projects. Restore only creates isolated staging.</CardDescription>
-    </CardHeader>
-    <CardContent className="space-y-3">
+  return <details data-testid="node-backup-panel" className="rounded-xl border bg-card text-card-foreground">
+    <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+      Scoped Node project backups
+      <span className="ml-2 text-xs font-normal text-muted-foreground">Encrypted Restic · advanced</span>
+    </summary>
+    <div className="space-y-3 border-t px-4 py-4">
+      <p className="text-xs text-muted-foreground">
+        Backup of PocketHost-owned Node projects. Restore only creates isolated staging.
+      </p>
       <div className="flex flex-wrap items-center gap-3">
         <Button variant="outline" disabled={busy || !catalogReady}
           onClick={() => action(inspect)}>Inspect Node backups</Button>
@@ -158,6 +161,6 @@ export function NodeBackupPanel({
           Backup remains on this A8, not off-device disaster recovery. Use the owner token only on trusted LAN.
         </p>
       </>}
-    </CardContent>
-  </Card>
+    </div>
+  </details>
 }

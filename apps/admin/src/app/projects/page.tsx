@@ -226,13 +226,40 @@ export default function ProjectsPage() {
   }
   return <BaseLayout title="Projects" description="PocketHost-owned Node.js projects and immutable source candidates.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
+      {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
+        <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
+        <CardContent>
+          {projects.length === 0 ? <p className="text-muted-foreground text-sm">No Node projects yet.</p> :
+          <div className="flex flex-wrap gap-2">{projects.map(project =>
+            <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
+              disabled={busy} onClick={() => action(async () => {
+                setSearchParams(current => {
+                  const next = new URLSearchParams(current)
+                  next.delete("project")
+                  return next
+                }, { replace: true })
+                setSelectedId(project.id); setApproved(false)
+                setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
+                setExtraFiles({}); setAssetFiles({})
+                setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+                setDependencyReview(null)
+                setGithubRepository("")
+                await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
+              })}>{project.name}</Button>)}</div>}
+        </CardContent>
+      </Card>}
       <Card>
-        <CardHeader><CardTitle>Node.js owner access</CardTitle>
-          <CardDescription>Authenticate before editing or starting trusted Node applications. Token is held in this tab's memory, not saved.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex flex-wrap items-end gap-3">
-            <label className="grid min-w-52 flex-1 gap-1 text-sm">Owner token
+        <CardContent className="space-y-2 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">Node.js owner access</h2>
+            <p role="status" className="text-xs text-muted-foreground">
+              Owner: {ownerAuthorized ? "authenticated" : ownerConfigured === false ? "host token not configured" : "locked"}.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex min-w-52 flex-1 items-center gap-2 text-sm">
+              <span className="shrink-0">Owner token</span>
               <Input aria-label="Node owner token" type="password" autoComplete="off" value={token}
                 onChange={event => {
                   tokenRef.current = event.target.value
@@ -261,20 +288,21 @@ export default function ProjectsPage() {
               setMessage("Owner access locked.")
             }}>Lock</Button>
           </div>
-          <p role="status" className="text-sm">
-            Owner: {ownerAuthorized ? "authenticated" : ownerConfigured === false ? "host token not configured" : "locked"}.
-            {lanView ? " Private LAN HTTP does not encrypt this token. Use a trusted network only." : ""}
-          </p>
+          {lanView && <p className="text-xs text-muted-foreground">
+            Private LAN HTTP does not encrypt this token. Use a trusted network only.
+          </p>}
           <p className="text-xs text-muted-foreground">
-            Node apps, npm installs and builds run as the Termux user; this is not a sandbox.
-            Only run reviewed, trusted source.
+            Token held only in this tab. Node processes run as the Termux user without OS isolation; use trusted source.
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardHeader><CardTitle>Create Node.js project</CardTitle>
-          <CardDescription>Manage projects created in PocketHost.</CardDescription></CardHeader>
-        <CardContent className="flex flex-wrap items-end gap-3">
+      <details data-testid="node-create-panel" className="rounded-xl border bg-card text-card-foreground">
+        <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+          Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
+        </summary>
+        <div className="space-y-3 border-t px-4 py-4">
+          <p className="text-xs text-muted-foreground">Create a project only after authenticating as its owner.</p>
+          <div className="flex flex-wrap items-end gap-3">
           <label className="grid min-w-52 gap-1 text-sm">Project name
             <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
           </label>
@@ -312,9 +340,9 @@ export default function ProjectsPage() {
             })
             setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
-
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </details>
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
       {nodeTools && <p role="status" className="text-muted-foreground text-sm">
         Installed tools: Node {nodeTools.nodeVersion ?? "not detected"} · npm {nodeTools.npmVersion ?? "not detected"}
@@ -327,37 +355,14 @@ export default function ProjectsPage() {
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
       </p>}
-      {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
-        <CardDescription>Only user-created PocketHost Node projects appear here.</CardDescription></CardHeader>
-        <CardContent>
-          {projects.length === 0 ? <p className="text-muted-foreground text-sm">No Node projects yet.</p> :
-          <div className="flex flex-wrap gap-2">{projects.map(project =>
-            <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
-              disabled={busy} onClick={() => action(async () => {
-                setSearchParams(current => {
-                  const next = new URLSearchParams(current)
-                  next.delete("project")
-                  return next
-                }, { replace: true })
-                setSelectedId(project.id); setApproved(false)
-                setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
-                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource)
-                setExtraFiles({}); setAssetFiles({})
-                setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
-                setDependencyReview(null)
-                setGithubRepository("")
-                await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
-              })}>{project.name}</Button>)}</div>}
-        </CardContent>
-      </Card>}
       {selected && catalogState === "ready" && <Card>
         <CardHeader><CardTitle>{selected.name}</CardTitle>
           <CardDescription>Source: {selected.state} · Runtime: {runtime?.state ?? "unverified"} · Active release: {runtime?.activeRelease ?? "none"}</CardDescription></CardHeader>
         <CardContent className="space-y-4">
           <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
-            <a className="underline underline-offset-4" href="#node-runtime">Runtime and actions</a>
-            <a className="underline underline-offset-4" href="#node-source">Source and imports</a>
-            <a className="underline underline-offset-4" href="#node-candidates">Candidates</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-runtime">Runtime and actions</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-source">Source and imports</a>
+            <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-candidates">Candidates</a>
           </nav>
           <Card id="node-runtime">
             <CardHeader><CardTitle>Node deployment</CardTitle>

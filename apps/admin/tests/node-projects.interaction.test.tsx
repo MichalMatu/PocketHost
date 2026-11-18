@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render as renderBase, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -11,6 +11,16 @@ const ID = "node-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 const OWNER_TOKEN = "A".repeat(40)
 afterEach(() => vi.unstubAllGlobals())
+
+function render(ui: React.ReactElement) {
+  const view = renderBase(ui)
+  for (const id of ["node-create-panel", "node-backup-panel"]) {
+    const section = view.container.querySelector<HTMLDetailsElement>(`details[data-testid="${id}"]`)
+    if (!section) throw new Error("Missing Node disclosure " + id)
+    section.open = true
+  }
+  return view
+}
 
 // The owner session is a separate, private contract from each tested endpoint.
 // Do not weaken production authorization just to satisfy old source-flow mocks.
@@ -1272,4 +1282,11 @@ it("loads one local project folder including frontend assets and stages only aft
   await screen.findByText("Source candidate staged. Review the execution plan before deploying.")
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})
+
+it("collapses secondary Node controls by default", () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => ({ projects: [] }) })))
+  const { container } = renderBase(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  expect(Array.from(container.querySelectorAll<HTMLDetailsElement>("details"))
+    .every(section => !section.open)).toBe(true)
 })
