@@ -1,7 +1,6 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
-import { screen } from "@testing-library/react"
-import { renderNodeProjects as render } from "./helpers/render-node-projects"
+import { render as renderBase, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -11,7 +10,20 @@ import ProjectsPage from "@/app/projects/page"
 const ID = "node-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 const OWNER_TOKEN = "A".repeat(40)
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => { vi.unstubAllGlobals(); observers.splice(0).forEach(x => x.disconnect()) })
+
+const observers: MutationObserver[] = []
+function render(ui: React.ReactElement) {
+  const view = renderBase(ui)
+  const expand = () => view.container.querySelectorAll<HTMLDetailsElement>(
+    'details[data-testid^="node-"]',
+  ).forEach(section => { section.open = true })
+  const watcher = new MutationObserver(expand)
+  watcher.observe(view.container, { childList: true, subtree: true })
+  observers.push(watcher)
+  expand()
+  return view
+}
 
 async function unlockNodeOwner() {
   const fetchOriginal = globalThis.fetch
