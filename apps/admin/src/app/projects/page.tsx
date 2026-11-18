@@ -86,7 +86,7 @@ export default function ProjectsPage() {
   }
   const selected = projects.find((project) => project.id === selectedId)
   const canPublish = Boolean(
-    selected && !busy && ownerAuthorized && !editorDirty && approved && executionEnabled &&
+    catalogState === "ready" && selected && !busy && ownerAuthorized && !editorDirty && approved && executionEnabled &&
     plan?.allowed && selected.candidateRelease &&
     plan.release === selected.candidateRelease &&
     runtime?.activeRelease !== selected.candidateRelease
