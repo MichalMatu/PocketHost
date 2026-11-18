@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `1d5f706314640438457d4acbc70dd5abed4ede01` (2026-11-18 guarded FAST FLOW PASS, PID 31205, HTTP 200, protected services unchanged; `pockethost-a8-hosting-readiness-1d5f7063-20261118-v1`). Exact-source QA `pockethost-a8-hosting-readiness-qa-1d5f7063-20261118-v1` PASS (UI, TypeScript, budgets, boundaries, fake Restic). UX: shorter Projects safeguards, clearer disabled publish, explicit read-only `Check readiness` in Hosting overview. No automatic probes or service actions. Visual sign-off remains open.
+Last verified A8 DEV source: `27a735d730e216226f249a4c9b90f2a297ef30a8` (2026-11-18, guarded FAST FLOW PASS, PID 21337, start ticks 42712223, HTTP 200, protected services unchanged; `pockethost-a8-hosting-health-identity-27a735d-20261118-v1`). Hosting overview now treats mismatched Node health state/release as unavailable, including negative replies. Three regression cases added, **TESTS NOT RUN** on this SHA. Previous scoped QA on `1d5f706314640438457d4acbc70dd5abed4ede01` PASS; updated browser visual sign-off remains open. No automatic probing or other service actions.
 
 ## Product and scope
 
