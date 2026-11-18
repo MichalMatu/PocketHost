@@ -10,7 +10,7 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Verified state
 
 - Repo `MichalMatu/PocketHost`, source `main`: always read fresh HEAD.
-- Last verified A8 DEV panel: `805f32a49308d7084be472f6371cc7a59d056234`; guarded FAST FLOW PASS, PID 30552/start ticks 43825005, HTTP 200, protected services unchanged (`pockethost-a8-projects-clean-ux-805f32a4-20261118-v1`). Visual cleanup: selected project before Create/Restic, status/live/prepared release/HTTP readiness remain visible, technical metadata is collapsed, Start moved to Maintenance, less redundant text. UI fixtures updated, **QA NOT RUN** on this SHA; browser sign-off open.
+- Last verified A8 DEV panel: `3383c6e6d5790eec3ea09facac37a094c11f98aa`; guarded FAST FLOW PASS, PID 20773/start ticks 43988465, HTTP 200, protected services unchanged (`pockethost-a8-projects-jsx-parsefix-3383c6e-20261118-v1`). Fixed unexpected brace at `apps/admin/src/app/projects/page.tsx:681` that blocked Vite parsing of `/projects`. Earlier selected-project-first UX stays intact. **QA NOT RUN** on this SHA; browser visual sign-off remains open. No Node operation, backup/restore, reboot or scheduler.
 - Previous `d8fbfa4a0ced11d8c6b9b38eab94d84c46fe2bbf` guarded release PASS; older scoped QA at `0cc7aba1f84bc1881eb53ac3aa216412c4a723ff` PASS does not certify the latest source.
 - Only paired Galaxy A8 official Termux Local Agent, private `MichalMatu/local-agent` branch `agent-control`, immutable task/result path. No Mac, S22, Actions, Work, Codex, scheduler or automatic retries.
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
