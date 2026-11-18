@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { readNodeRuntimeCatalog, readNodeHealth, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
 import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
@@ -151,7 +151,7 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Button nativeButton={false} render={<Link to="/sites" />}>Manage static websites</Button>
+              <Link to="/sites" className={buttonVariants({ variant: "default" })}>Manage static websites</Link>
             </CardContent>
           </Card>
           <Card>
@@ -201,7 +201,7 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Button variant="outline" nativeButton={false} render={<Link to="/projects" />}>Manage Node.js projects</Button>
+              <Link to="/projects" className={buttonVariants({ variant: "outline" })}>Manage Node.js projects</Link>
             </CardContent>
           </Card>
         </div>
