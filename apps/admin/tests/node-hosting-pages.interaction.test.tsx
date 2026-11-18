@@ -110,6 +110,39 @@ it("Deployments shows only owned static and Node project histories", async () =>
   expect(requests.mock.calls.every((call) => call[1]?.method === undefined)).toBe(true)
 })
 
+it("unknown project deep links never fall back to another project's logs", async () => {
+  const requests = setup(true)
+  const unknown = "node:node-" + "f".repeat(32)
+  render(<MemoryRouter initialEntries={["/runtime-logs?project=" + unknown]}>
+    <RuntimeLogsPage />
+  </MemoryRouter>)
+  await screen.findByText("Requested project is not in the verified owned inventory.")
+  expect(screen.queryByLabelText("Project log lines")).toBeNull()
+  expect(requests.mock.calls.some(([url]) => String(url).endsWith("/logs"))).toBe(false)
+  expect(screen.getByRole("button", { name: "Example Node (Node.js)" })).toBeTruthy()
+})
+
+it("navigating to an unknown project hides previously visible owned logs", async () => {
+  const requests = setup(true)
+  function UnknownLink() {
+    const navigate = useNavigate()
+    return <button onClick={() => navigate("/runtime-logs?project=static:site-" + "f".repeat(32))}>
+      Unknown project link
+    </button>
+  }
+  render(<MemoryRouter initialEntries={["/runtime-logs?project=static:" + staticSite.id]}>
+    <UnknownLink />
+    <RuntimeLogsPage />
+  </MemoryRouter>)
+  await screen.findByText(/static published/)
+  fireEvent.click(screen.getByRole("button", { name: "Unknown project link" }))
+  await screen.findByText("Requested project is not in the verified owned inventory.")
+  expect(screen.queryByLabelText("Project log lines")).toBeNull()
+  expect(screen.queryByText(/static published/)).toBeNull()
+  expect(requests.mock.calls.some(([url]) => String(url) ===
+    "/api/v1/node-projects/" + id + "/logs")).toBe(false)
+})
+
 it("Runtime logs reads only selected owned project, redacts secrets, and can switch to Node", async () => {
   const requests = setup(true)
   render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)

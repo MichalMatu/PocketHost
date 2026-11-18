@@ -40,8 +40,9 @@ export default function RuntimeLogsPage() {
     setTargets(result.targets)
     setSelectedKey(current => {
       const requested = requestedRef.current
-      return result.targets.some(target => target.key === requested) ? requested! :
-        result.targets.some(target => target.key === current) ? current : (result.targets[0]?.key ?? "")
+      if (requested !== null)
+        return result.targets.some(target => target.key === requested) ? requested : ""
+      return result.targets.some(target => target.key === current) ? current : (result.targets[0]?.key ?? "")
     })
     setCatalogLoading(false)
   }, [])
@@ -79,19 +80,24 @@ export default function RuntimeLogsPage() {
   // Keep an already-loaded catalog in sync with browser Back/Forward and
   // same-route deep links. Never select a project missing from the owned catalog.
   React.useEffect(() => {
-    if (catalogLoading || !requestedProject ||
-        !targets.some(target => target.key === requestedProject)) return
-    setSelectedKey(current => current === requestedProject ? current : requestedProject)
+    if (catalogLoading || requestedProject === null) return
+    const owned = targets.some(target => target.key === requestedProject)
+    const next = owned ? requestedProject : ""
+    setSelectedKey(current => current === next ? current : next)
   }, [requestedProject, targets, catalogLoading])
 
   React.useEffect(() => {
-    const target = targets.find(entry => entry.key === selectedKey)
+    const target = targets.find(entry => entry.key === selectedKey &&
+      (requestedProject === null || entry.key === requestedProject))
     if (target && !catalogLoading) void loadLogs(target)
     else { version.current += 1; setLines([]); setLogState("idle") }
     return () => { version.current += 1 }
-  }, [selectedKey, targets, catalogLoading, loadLogs])
+  }, [selectedKey, targets, catalogLoading, loadLogs, requestedProject])
 
-  const selected = targets.find(entry => entry.key === selectedKey)
+  const selected = targets.find(entry => entry.key === selectedKey &&
+    (requestedProject === null || entry.key === requestedProject))
+  const unknownRequested = !catalogLoading && requestedProject !== null &&
+    !targets.some(entry => entry.key === requestedProject)
   const filtered = lines.filter(line =>
     (!errorsOnly || errorPattern.test(line)) &&
     line.toLowerCase().includes(search.trim().toLowerCase()))
@@ -124,6 +130,9 @@ export default function RuntimeLogsPage() {
             {catalogLoading && <p role="status" className="text-sm">Loading owned projects…</p>}
             {staticStatus === "disabled" && <p className="text-sm text-muted-foreground">Static hosting is disabled.</p>}
             {nodeStatus === "disabled" && <p className="text-sm text-muted-foreground">Node Hosting is disabled.</p>}
+            {unknownRequested && <p role="alert" className="text-sm text-destructive">
+              Requested project is not in the verified owned inventory.
+            </p>}
             {hasSourceError && <p role="alert" className="text-sm text-destructive">
               {staticStatus === "error" && nodeStatus === "error"
                 ? "Static and Node project inventories are unavailable."
