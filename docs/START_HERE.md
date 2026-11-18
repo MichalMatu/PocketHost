@@ -13,7 +13,7 @@ Read [AGENTS](../AGENTS.md), [MVP tracker](MVP_EXECUTION_PLAN.md), current `main
 
 Only verified Galaxy A8 / official Termux Local Agent, private `MichalMatu/local-agent:agent-control`. Do not touch Mac/S22, Work, Codex, Actions, scheduler, SSH/WAN or unowned services. PocketHost DEV and Local Agent have independent runit supervision.
 
-Last verified A8 DEV source: `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` (2026-11-18 guarded FAST FLOW PASS, PID 21255/start ticks 45163402, HTTP 200, protected services unchanged; `pockethost-a8-p1-redact-credentials-b1fde53-20261118-v1`). P1 log privacy: redact complete sensitive lines for snake_case/camelCase credential keys, including `refresh_token` and `clientSecret`; regression cases added but **QA NOT RUN** on current source. Earlier P1 scoped QA PASS on `263d64b`, `5cd0d80`, `e966f74`; log deep-link guard at `fbb7c93` also awaits QA. Hosting P0 functional acceptance, full-repo QA, Android reboot and off-device Restic remain deferred. No Node/Static lifecycle mutations, backup/restore or scheduler.
+Last verified A8 DEV source: `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` (2026-11-18 guarded FAST FLOW PASS, PID 21255/start ticks 45163402, HTTP 200, protected services unchanged). **One-shot A8 scoped QA PASS** for `/runtime-logs` deep links and sensitive-line redaction, admin TypeScript, code budgets and module boundaries, pinned exact SHA `b1fde537dd9dc1b3ef8b40e2e2eb17b7e70328b6` versus base `e966f74` (`pockethost-a8-p1-logs-nav-redaction-qa-b1fde53-20261118-v1`). No deployment in QA; current live owner and protected services unchanged. Full-repo QA, Hosting P0 functional acceptance, physical reboot and off-device Restic remain deferred; no backup, hosted app mutation or scheduler.
 
 ## Product and scope
 
