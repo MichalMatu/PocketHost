@@ -10,8 +10,8 @@ purpose: Current Samsung A8 execution handoff, receipts and acceptance boundarie
 ## Verified state
 
 - Repo `MichalMatu/PocketHost`, source `main`: always read fresh HEAD.
-- Last verified A8 DEV panel: `27a735d730e216226f249a4c9b90f2a297ef30a8`; guarded FAST FLOW PASS, PID 21337/start ticks 42712223, HTTP 200, protected services unchanged (`pockethost-a8-hosting-health-identity-27a735d-20261118-v1`). Hosting overview now verifies Node health response release and runtime state before displaying any readiness result. Tests added but NOT RUN on this source; browser visual sign-off is still open.
-- Previous `1d5f706314640438457d4acbc70dd5abed4ede01` exact-SHA scoped QA PASS (UI, admin TS, code budgets, boundaries, simulated backup), with guarded live receipt archived.
+- Last verified A8 DEV panel: `0cc7aba1f84bc1881eb53ac3aa216412c4a723ff`; guarded FAST FLOW PASS, PID 1109/start ticks 42748698, HTTP 200, protected services unchanged (`pockethost-a8-node-backup-catalog-guard-0cc7aba-20261118-v1`). Node backup UI invalidates stored Restic state and mutation controls when Node catalog becomes unavailable; buttons require verified repository readiness. Tests added but NOT RUN. Browser visual sign-off open.
+- Previous `27a735d730e216226f249a4c9b90f2a297ef30a8` Hosting health identity release FAST FLOW PASS, PID 21337, HTTP 200. Scoped QA on earlier `1d5f706...` PASS; never project that result onto new SHAs.
 - Only paired Galaxy A8 official Termux Local Agent, private `MichalMatu/local-agent` branch `agent-control`, immutable task/result path. No Mac, S22, Actions, Work, Codex, scheduler or automatic retries.
 - Historical 7/7 QA at `c0bf02184c804d93fca7a50cddbdd9b1146ee2c8` does not cover newer SHA.
 - Owner-accepted Static Create/Publish/Start and later physical v2 → HTTP → rollback to original v1 PASS. Authenticated trusted Node Create → Stage → Deploy → Health/Logs → Update → Stop/Start → Rollback PASS. Scoped Node Restic backup and staging-only restore PASS: one encrypted local snapshot, 10 verified files and no overwrite of live services. These do not accept ZIP/folder, off-device copy, browser visual UI, untrusted Node execution, reboot or public access. Preserve existing site/data.
@@ -45,6 +45,10 @@ Commits `f12351c...` and `f1a870e...` completed concise source safety text, disa
 ## Hosting exact-health identity release (2026-11-18)
 
 Source `27a735d730e216226f249a4c9b90f2a297ef30a8` changes `apps/admin/src/app/hosting/page.tsx`: an explicit manual GET health reply must match the selected project's exact active release and state, or the UI reports `unavailable`, never a stale `not ready`. Three regression cases were added to `node-hosting-pages.interaction.test.tsx`, **NOT RUN**. One immutable A8 task `pockethost-a8-hosting-health-identity-27a735d-20261118-v1` returned terminal `done`, command exit 0 and nested FAST FLOW PASS; live SHA `27a735d730e216226f249a4c9b90f2a297ef30a8`, owner PID 21337, ticks 42712223, HTTP 200, protected services unchanged. No backup/restore, reboot, scheduler, or testing. Documentation-only follow-up does not require redeployment. Next: visual browser acceptance and separately authorized scoped QA if requested.
+
+## Node backup catalog fail-closed release (2026-11-18)
+
+Source `0cc7aba1f84bc1881eb53ac3aa216412c4a723ff` changes `apps/admin/src/app/projects/node-backup-panel.tsx`: catalog loss invalidates owner-session-bound backup response state, clears any prior operation approval/snapshot selection and prevents mutation controls from acting on stale Restic readiness. A focused regression case was added to `node-projects-disclosures.test.tsx`; **TESTS NOT RUN**. Immutable A8 task `pockethost-a8-node-backup-catalog-guard-0cc7aba-20261118-v1` returned `done`, command exit 0, nested FAST FLOW PASS, live SHA `0cc7aba1f84bc1881eb53ac3aa216412c4a723ff`, owner PID 1109/ticks 42748698, HTTP 200, protected unchanged. No real backup/restore or scheduler/reboot. Browser acceptance and new exact-SHA QA still open. Documentation-only changes must not redeploy.
 
 ## Direction and safety
 
