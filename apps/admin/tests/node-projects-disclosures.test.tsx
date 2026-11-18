@@ -53,6 +53,43 @@ it("keeps advanced Node actions and all source editors closed by default", async
   expect(source?.open).toBe(true)
 })
 
+it("fails closed on a lost owned registry after selecting a Node project", async () => {
+  const id = "node-" + "a".repeat(32)
+  let catalogUnavailable = false
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects") {
+      if (catalogUnavailable) return { ok: false, status: 503 }
+      return { ok: true, json: async () => ({ projects: [{
+        id, name: "Owned app", kind: "node", state: "created", runtime: "not-provisioned",
+        activeRelease: null, candidateRelease: null, previousCandidate: null,
+        deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+      }] }) }
+    }
+    if (url.endsWith("/releases")) return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime")) return { ok: true, json: async () => ({
+      runtime: { state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [] },
+      executionEnabled: false,
+    }) }
+    if (url.endsWith("/plan")) return { ok: true, json: async () => ({
+      plan: { reason: "not-staged", dependencyCount: 0, missingTools: [], conflicts: [] },
+      executionEnabled: false,
+    }) }
+    throw new Error("Unexpected endpoint " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  const user = (await import("@testing-library/user-event")).default.setup()
+  await user.click(await screen.findByRole("button", { name: "Owned app" }))
+  expect(await screen.findByRole("link", { name: "Unlock owner access" })).toBeTruthy()
+  catalogUnavailable = true
+  await user.click(screen.getByRole("button", { name: "Refresh" }))
+  expect((await screen.findByRole("alert")).textContent).toBe("Could not load Node projects. Try Refresh.")
+  expect(screen.queryByRole("button", { name: "Owned app" })).toBeNull()
+  expect(screen.queryByRole("button", { name: "Publish update" })).toBeNull()
+  expect(requests.mock.calls.every(([, opts]) => opts?.method !== "POST")).toBe(true)
+})
+
 it("invalidates inspected Node backup permissions when the catalog becomes unavailable", async () => {
   const getJson = vi.fn(async () => ({
     backup: { initialized: true, repositoryPresent: true, keyPresent: true },
