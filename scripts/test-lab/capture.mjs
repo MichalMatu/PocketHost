@@ -113,7 +113,11 @@ async function main() {
       const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height },
         deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false })
       await ctx.route("**/*", route => {
-        const address = route.request().url()
+        // Enforce read-only traffic even if application code attempts a mutation on mount.
+        // No POST/PUT/PATCH/DELETE, WebSocket or cross-origin calls from this lab context.
+        const request = route.request()
+        if (!["GET", "HEAD"].includes(request.method())) return route.abort()
+        const address = request.url()
         if (address.startsWith("data:") || address.startsWith("blob:")) return route.continue()
         let u
         try { u = new URL(address) } catch { return route.abort() }
@@ -125,18 +129,37 @@ async function main() {
         page.on("pageerror", () => { jsErrors++ })
         page.on("console", e => { if (e.type() === "error") consoleErrors++ })
         const cap = { route, viewport: vp.name, status: null, geometry: null,
-          jsErrors: 0, consoleErrors: 0, file: null }
+          jsErrors: 0, consoleErrors: 0, file: null, rendered: false, stage: "navigation" }
         try {
+          // The remote Vite module graph can exceed a DOMContentLoaded deadline on Wi-Fi.
+          // Commit captures HTTP without equating it with fully rendered React content.
           const response = await page.goto(config.origin + routes[route],
-            { waitUntil: "domcontentloaded", timeout: 12000 })
-          await page.waitForTimeout(300)
+            { waitUntil: "commit", timeout: 18000 })
           cap.status = response?.status() ?? null
+          cap.stage = "render"
+          try {
+            await page.waitForFunction(() =>
+              (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
+              null, { timeout: 10000 })
+            cap.rendered = true
+          } catch {
+            // Preserve screenshots of unloaded/error states for diagnosis.
+            cap.rendered = false
+          }
+          await page.waitForTimeout(700)
           cap.geometry = await geometry(page)
-          cap.file = route + "-" + vp.name + ".png"
-          const filename = join(folder, cap.file)
-          await page.screenshot({ path: filename, animations: "disabled", timeout: 8000 })
+          cap.stage = "screenshot"
+          const file = route + "-" + vp.name + ".png"
+          const filename = join(folder, file)
+          await page.screenshot({ path: filename, animations: "disabled", timeout: 12000 })
           await chmod(filename, 0o600)
-        } catch { cap.error = "Capture failed" }
+          cap.file = file
+          cap.stage = "complete"
+          if (!cap.rendered) cap.error = "React content not confirmed"
+        } catch {
+          cap.error = cap.stage === "navigation" ? "Navigation unavailable" :
+            cap.stage === "render" ? "Layout inspection unavailable" : "Screenshot unavailable"
+        }
         cap.jsErrors = jsErrors
         cap.consoleErrors = consoleErrors
         captures.push(cap)
@@ -158,6 +181,8 @@ async function main() {
   process.stdout.write(JSON.stringify({ kind: report.kind, status: "OBSERVED",
     sourceSha: config.sha, readOnly: true, screenshots: captures.length,
     failures: captures.filter(c => c.error).length,
+    notRendered: captures.filter(c => !c.rendered).length,
+    overflowing: captures.filter(c => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0).length,
     overflowCases: captures.filter(c => (c.geometry?.horizontalOverflow || 0) > 0).length,
     jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
     api, localFolder: folder }) + "\n")
