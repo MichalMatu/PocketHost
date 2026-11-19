@@ -89,7 +89,10 @@ test('Node owner LAN API has scoped deadlines without opening unrelated routes',
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects', 'GET'), 30000);
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/owner-session', 'GET'), 30000);
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/health', 'GET'), 30000);
-  assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/install-dependencies', 'POST'), 300000);
+  assert.equal(
+    upstreamTimeoutMs('/api/v1/node-projects/node-123/install-dependencies', 'POST'),
+    300000,
+  );
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/build', 'POST'), 300000);
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/deploy', 'POST'), 60000);
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/node-123/rollback', 'POST'), 60000);

@@ -109,7 +109,12 @@ export function validateStructure(root = repositoryRoot) {
         }
         if (rel.startsWith('docs/') && !rel.endsWith('.md'))
           errors.push(`Unexpected documentation artifact: ${rel}`);
-        if (rel.startsWith('scripts/') && !rel.endsWith('.mjs') && rel !== 'scripts/AGENTS.md')
+        if (
+          rel.startsWith('scripts/') &&
+          !rel.endsWith('.mjs') &&
+          rel !== 'scripts/AGENTS.md' &&
+          rel !== 'scripts/test-lab/package.json'
+        )
           errors.push(`Unexpected script artifact: ${rel}`);
         if (rel.startsWith('tests/') && !/\.test\.mjs$/.test(rel) && rel !== 'tests/AGENTS.md')
           errors.push(`Unexpected test artifact: ${rel}`);
