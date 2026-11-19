@@ -11,8 +11,8 @@ const routes = {
   services: "/services", agent: "/local-agent", network: "/settings/network",
 }
 const apis = {
-  host: "/api/v1/host-snapshot", network: "/api/v1/network-access",
-  sites: "/api/v1/owned-sites", projects: "/api/v1/node-projects",
+  host: "/api/v1/host/snapshot", network: "/api/v1/network-access",
+  sites: "/api/v1/sites", projects: "/api/v1/node-projects",
 }
 const screens = [
   { name: "mobile", width: 390, height: 844 },
