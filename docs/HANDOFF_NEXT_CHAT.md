@@ -15,17 +15,19 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
-- Current verified A8 DEV live source: `5351d88caa98814449becee8f27fbe16ecccfc50`.
-  Guarded Local Agent task `pockethost-a8-guarded-touch-targets-5351d88-20261119-v1`:
-  **PASS**, HTTP 200, owned PID **15342**, start ticks **54103228**,
+- Current verified A8 DEV live source: `5352c097246de249ac9d28a017135f4809d7e415`.
+  Guarded Local Agent task `pockethost-a8-vite-assets-guarded-deploy-5352c09-20261119-v1`:
+  **PASS**, HTTP 200, owned PID **7683**, start ticks **54253945**,
   protected services unchanged. This attests panel safety, **not** all hosted-project readiness.
 - Prior A8 live `f8ab416` and guarded deploy PASS introduced responsive
   tablet offcanvas navigation. `5351d88` adds larger mobile header and Hosting
   touch targets while preserving the earlier changes.
 - A8 scoped checks for `32ea32d` and `5351d88`: **PASS** for changed-file
-  formatting and admin TypeScript. The broader UI suite at `f8ab416`
-  hit a 300-second timeout; **do not call full G2 PASS**.
-  The `5351d88` UI interaction test exists in source but was not separately run.
+  formatting and admin TypeScript. At `5352c09`, syntax, formatting,
+  structure, module boundaries, root lint and Node tests all **PASS**.
+  The broader UI suite at `f8ab416` hit a 300-second timeout;
+  **do not call full G2 PASS**. The `5351d88` interaction test exists
+  in source but was not separately run.
 
 ## Private Mac Test Lab
 
@@ -44,6 +46,12 @@ is historical evidence, **not** the latest live SHA.
   universal reliability.
 - First real geometry findings: undersized controls in the menu/search toolbar
   and Hosting links/buttons. These motivated `32ea32d` and `5351d88`.
+- Post-deploy Mac Lab task `pockethost-lab-mac-vite-timeout-postdeploy-5352c09-20261119-v1`:
+  **9/9 rendered views**, zero overflow/tiny targets/JS exceptions/failed
+  same-origin requests, both GET API probes HTTP 200 and shape PASS.
+  One external request was intentionally blocked and seven canceled.
+  The 20-second GET/HEAD-only Vite asset timeout addressed the previously
+  observed module import failure in this bounded run, not a universal guarantee.
 - API mutation from Test Lab is **not implemented**. Scope-specific owner
   permission, allowlisted endpoint, before-state, independent readback and
   rollback are required before any safe mutation adapter.
@@ -53,8 +61,10 @@ is historical evidence, **not** the latest live SHA.
 1. Read latest `main` and independently check live SHA/owner before each A8 action.
    Source commits and QA receipts are **not** deploy receipts. Avoid racing
    parallel chats: if `main` or QA checkout moved, HOLD and reconcile.
-2. Finish one-shot Mac browser geometry after `5351d88`; fix only reproduced
-   UX defects. Do not repeat expensive broad A8 UI QA merely to collect errors.
+2. Responsive Mac Lab observation after `5352c09` is complete: **9/9 PASS**.
+   Next: prioritize authenticated, ownership-scoped, readback-and-rollback
+   planning for isolated DEV settings fixture; **no arbitrary API writes**.
+   Do not repeat broad A8 UI QA merely to collect errors.
 3. Hosting P0 current-browser sign-off, Services S1–S4 owner acceptance,
    Android reboot/autostart G3, WAN/TLS, and off-device recovery remain open
    or deferred. Full G2/G3 has not been certified.
