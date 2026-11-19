@@ -17,8 +17,11 @@ type ProcessOrder = "cpu" | "ram" | "pid"
 type SourceState = "ok" | "stale" | "unavailable" | "permission-denied"
 
 async function loadSnapshot(signal?: AbortSignal): Promise<ObservabilitySnapshot> {
+  const boundedSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+    : AbortSignal.timeout(10_000)
   const response = await fetch(endpoint, {
-    method: "GET", cache: "no-store", credentials: "same-origin", signal,
+    method: "GET", cache: "no-store", credentials: "same-origin", signal: boundedSignal,
   })
   if (!response.ok) throw new Error("Observability endpoint unavailable")
   const payload: unknown = await response.json()
@@ -167,6 +170,7 @@ export default function ObservabilityPage() {
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline"><ShieldCheck className="size-3" />Termux · read-only</Badge>
             {snapshot && <Badge variant="outline">Checked {seenAt(snapshot.observedAt)}</Badge>}
+            {error && snapshot && <Badge variant="outline">Last known snapshot</Badge>}
           </div>
           <Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
