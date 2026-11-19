@@ -348,7 +348,7 @@ export default function SystemPage() {
             <Badge variant="outline">{collectorLabel}</Badge>
             {sampledAt && <Badge variant="outline">Checked {clock(sampledAt)}</Badge>}
           </div>
-          <Button variant="outline" size="sm" onClick={() => setGeneration(value => value + 1)}>
+          <Button variant="outline" size="lg" className="min-h-10" onClick={() => setGeneration(value => value + 1)}>
             <RefreshCw className="size-4" />Refresh
           </Button>
         </div>
@@ -364,7 +364,7 @@ export default function SystemPage() {
               !bridge.authorized ? "Shizuku authorization required." :
               "Authorized Companion reading not fresh."}
             {" "}Android-only readings are hidden, not treated as host failures.
-            {" "}<Link to="/shizuku" className="underline underline-offset-2">Android &amp; Shizuku settings</Link>
+            {" "}<Link to="/shizuku" className="inline-flex min-h-10 items-center underline underline-offset-2">Android &amp; Shizuku settings</Link>
           </p>}
           {companionReady && (cpu === null || !androidTrafficReady) &&
             <p>Some Android readings are unavailable; their charts are hidden.</p>}
@@ -417,12 +417,12 @@ export default function SystemPage() {
           {alerts.length ? alerts.map(item => <span key={item}>{item}</span>) : "No alerts in available readings."}
         </div>
 
-        <div className="flex min-h-8 items-center justify-between gap-3">
+        <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <span className="text-muted-foreground text-xs">History · 24 h detailed, 7 d hourly</span>
           <div className="flex gap-1" role="group" aria-label="History window">
-            <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("1h")}>1 hour</Button>
-            <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("24h")}>24 hours</Button>
-            <Button variant={historyRange === "7d" ? "secondary" : "outline"} size="sm" onClick={() => setHistoryRange("7d")}>7 days</Button>
+            <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("1h")}>1 hour</Button>
+            <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("24h")}>24 hours</Button>
+            <Button variant={historyRange === "7d" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("7d")}>7 days</Button>
           </div>
         </div>
 
