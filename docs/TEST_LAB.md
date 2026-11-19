@@ -41,7 +41,7 @@ The Mac Lab can also produce an **explicitly requested**, JPEG-compressed, bound
 
 Inventory exact existing settings endpoints and ownership semantics before making an API write adapter. Start only with an **isolated owned DEV fixture** and a tiny per-endpoint method/body allowlist. Each mutation requires separate authorization, expected source/initial state, independent readback and documented rollback. Never add arbitrary POST/PUT/DELETE, generic shell, or an action which may interrupt the LAN gateway, agent, SSH, protected services or off-device backups. A test result is not a deployed change.
 
-**Current state:** tooling source only. No new Mac lab execution, browser installation, A8 deploy, QA PASS or API mutation is claimed.
+**Verified 19 November:** Mac Lab one-page SPA capture at tool source `c762ec3` and A8 live `f8ab416` produced **9/9 rendered screenshots**, zero horizontal overflow and zero JS exceptions. API host/network returned HTTP 200 with JSON and response-shape PASS. A later classified capture at `907b4af` also rendered 9/9; some subsequent runs were incomplete during transient LAN/module failures. Geometric inspection revealed small tap targets in the header and Hosting, subsequently addressed by A8 source commits `32ea32d` and `5351d88`. **Mac captures do not establish full interactive acceptance or source-level QA.** Test Lab API writes remain unimplemented.
 
 **SPA navigation:** `navigationMode=spa` with `status=null` is expected because an in-app route change makes no new document HTTP request. Use `rendered`, failed requests and console errors to assess that screen.
 

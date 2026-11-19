@@ -2,53 +2,64 @@
 status: active
 owner: core
 last_reviewed: 2026-11-19
-purpose: One-page A8 resume handoff; checkpoint holds detailed evidence
+purpose: PocketHost latest A8 DEV source, Lab receipts and bounded resume path
 ---
 
-# PocketHost — A8 handoff
+# PocketHost — current handoff
 
-Start with [AGENTS](../AGENTS.md), [START_HERE](START_HERE.md),
-[the current A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
+Read [AGENTS](../AGENTS.md), [START_HERE](START_HERE.md),
+[the MVP tracker](MVP_EXECUTION_PLAN.md), [Test Lab](TEST_LAB.md)
 and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
+The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
+is historical evidence, **not** the latest live SHA.
 
-## Verified device state
+## Verified A8 deployment
 
-- Last A8 live code: `44d2c79cb119bb287e0742e7c593fa94c00ea063`, guarded task
-  `pockethost-a8-quality-format-cleanup-44d2c79-20261119-v1`: **PASS**.
-- Owned panel PID **12508**, start ticks **45687615**, HTTP **200**; protected services
-  unchanged. This proves release safety, **not** hosted-app HTTP readiness.
-- Private A8 queue at handoff: **322 tasks, 322 terminal results, zero pending**.
-- One-shot QA at `ccb13c71c047a1995d9543c63511f0cb5e432d28` **FAIL** only
-  for the MVP tracker table alignment after a docs-only text change.
-  Syntax, structure, docs, root lint and Markdown lint **PASS**; admin types,
-  Node and UI tests **SKIPPED** by the gate. The earlier `5f1ee2a` QA had
-  three formatting failures corrected at deployed code `44d2c79`.
-- This docs-only correction restores the MVP tracker row verbatim from the
-  previously formatted `44d2c79` source. **No QA has run on this newer SHA.**
-  The last earlier scoped fully PASS QA remains limited to `b1fde537`.
-- This docs-only handoff commit is not running code. Independently recheck
-  current `main`, A8 live SHA, owner PID/start ticks and agent queue before new work.
+- Current verified A8 DEV live source: `5351d88caa98814449becee8f27fbe16ecccfc50`.
+  Guarded Local Agent task `pockethost-a8-guarded-touch-targets-5351d88-20261119-v1`:
+  **PASS**, HTTP 200, owned PID **15342**, start ticks **54103228**,
+  protected services unchanged. This attests panel safety, **not** all hosted-project readiness.
+- Prior A8 live `f8ab416` and guarded deploy PASS introduced responsive
+  tablet offcanvas navigation. `5351d88` adds larger mobile header and Hosting
+  touch targets while preserving the earlier changes.
+- A8 scoped checks for `32ea32d` and `5351d88`: **PASS** for changed-file
+  formatting and admin TypeScript. The broader UI suite at `f8ab416`
+  hit a 300-second timeout; **do not call full G2 PASS**.
+  The `5351d88` UI interaction test exists in source but was not separately run.
 
-## Quality follow-up
+## Private Mac Test Lab
 
-- Formatting corrections from the first one-shot QA require a **new** owner
-  approval naming the new full SHA and exact categories before any A8
-  `verify-changed.mjs --execute`. Prior consent was single-use and pinned to
-  `5f1ee2acbef29094c5f518bf28ef332996d1e391`.
-- Make changes only for demonstrated defects. Bound browser API responses,
-  keep `apps/admin/src` separate from Termux host operations, and preserve
-  independent Static and Node ownership/release boundaries.
-- Delete files only after verifying no imports, active routes, scripts,
-  tests or historical references. Framework/CMS examples are still routed,
-  so they are **not** confirmed orphan files.
+- Exception to A8-only execution: the paired MacBook Local Agent may run
+  **owner-requested, read-only** Chrome screenshots, geometry and allowlisted
+  GET probes on the trusted private-LAN panel. Mac never deploys or operates A8,
+  executes source/project QA suites or writes panel settings.
+- Latest source for this standalone development tool is included in current
+  `main`; `scripts/test-lab/capture.mjs` uses one SPA page, isolated Chrome
+  context and three viewports, with local-only screenshots and HTML/JSON reports.
+- Mac Lab task `pockethost-lab-mac-spa-capture-c762ec3-20261119-v1`:
+  **9/9 rendered, zero horizontal overflow and JS exceptions** against A8
+  `f8ab416`; host/network GET responses were JSON and minimal shape PASS.
+  Follow-up classified-network capture also rendered 9/9. Some other captures
+  were incomplete during intermittent LAN/module loading, so no claim of
+  universal reliability.
+- First real geometry findings: undersized controls in the menu/search toolbar
+  and Hosting links/buttons. These motivated `32ea32d` and `5351d88`.
+- API mutation from Test Lab is **not implemented**. Scope-specific owner
+  permission, allowlisted endpoint, before-state, independent readback and
+  rollback are required before any safe mutation adapter.
 
-## Hard boundaries
+## Execution boundaries and next work
 
-Only the paired A8 Termux Local Agent runs builds, guarded deploys or approved
-QA. Never use Mac/S22, Codex, Work, Actions or schedulers. No automatic retry.
-Reboot, SSH/WAN/Cloudflare, foreign services, untrusted Node and off-device
-Restic require separate consent. Services S1–S4 remain `READY_FOR_ACCEPTANCE`.
-Hosting P0 browser sign-off, full G2/G3 and off-device recovery remain open.
+1. Read latest `main` and independently check live SHA/owner before each A8 action.
+   Source commits and QA receipts are **not** deploy receipts. Avoid racing
+   parallel chats: if `main` or QA checkout moved, HOLD and reconcile.
+2. Finish one-shot Mac browser geometry after `5351d88`; fix only reproduced
+   UX defects. Do not repeat expensive broad A8 UI QA merely to collect errors.
+3. Hosting P0 current-browser sign-off, Services S1–S4 owner acceptance,
+   Android reboot/autostart G3, WAN/TLS, and off-device recovery remain open
+   or deferred. Full G2/G3 has not been certified.
 
-See [MVP plan](MVP_EXECUTION_PLAN.md), [quality](QUALITY_GATES.md)
-and [the current checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md).
+Only A8 handles guarded builds/deployment and on-device QA. No scheduler,
+Codex/Work/Actions, unexpected SSH/WAN/Cloudflare changes, foreign-service
+adoption, reboot, untrusted Node source or off-device Restic activity.
+See [DEV iteration rules](DEV_ITERATION.md) and [quality gates](QUALITY_GATES.md).
