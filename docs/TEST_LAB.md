@@ -14,7 +14,7 @@ Private owner-only development tool: **observe → screenshot → diagnose → e
 - **MacBook Local Agent**, verified by existing private Git host+installation task results, may run a *one-shot read-only* capture on explicit owner approval specifying exact 40-hex **verified A8 live** PocketHost source SHA, route names and GET API scope. No Mac source/build/UI test suites or Android device operations. No prior approval carries forward.
 - **Samsung Galaxy A8 Local Agent alone** handles all builds, DEV releases and project tests. No change to the A8 `code → deploy → verify` guard, protected services, existing UX or panel routes.
 - A capture creates screenshots and a local HTML gallery under `.test-lab/` (gitignored). They are not pushed to the public GitHub repository or private Local Agent task results. Agent results should return only compact JSON summary. A screenshot can contain sensitive private-LAN data: select, redact and authorize any later transfer individually.
-- Chrome uses one new temporary browser context per capture run (shared across three viewport sizes, no saved cookies or credentials). The lab refuses WAN/public origins, cross-origin requests, custom routes, arbitrary URL queries and all browser-initiated HTTP writes (non-GET/HEAD requests aborted). GET response bodies and browser console text are never included in task output.
+- Chrome uses one new temporary browser context per capture run (no saved cookies or credentials). It navigates each selected route **once**, then resizes that page for the mobile/tablet/desktop captures, reducing Vite DEV request load on A8. The lab refuses WAN/public origins, cross-origin requests, custom routes, arbitrary URL queries and all browser-initiated HTTP writes (non-GET/HEAD requests aborted). GET response bodies and browser console text are never included in task output.
 - Do not assume a successful screenshot confirms that a button works, or a running process is HTTP-ready.
 
 ## One-shot manual invocation
@@ -31,7 +31,7 @@ node scripts/test-lab/capture.mjs \
 
 Use **only** with a fresh exact-live-SHA scope approval. `--base` is passed at execution time (not hardcoded). Default routes: `dashboard,hosting,projects`. Allowed routes: `dashboard,hosting,sites,projects,deployments,logs,services,agent,network`. Allowed GET API selections: `host,network,sites,projects`; no API requests by default. Fixed viewports: mobile 390×844, tablet 768×1024, desktop 1440×900. Override Chrome binary with `POCKETHOST_LAB_CHROME` only on the selected Mac.
 
-Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation HTTP, React rendered-state, page/console error counts, viewport overflow, and requested GET status/latency; they deliberately omit response bodies, secrets and raw error text.
+Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation HTTP, React rendered-state, page/console/failed-request counts, viewport overflow, and requested GET status/latency; they deliberately omit response bodies, secrets and raw error text.
 
 ## Selected thumbnail review via private Git task result
 

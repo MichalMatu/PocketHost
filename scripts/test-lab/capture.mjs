@@ -109,67 +109,79 @@ async function main() {
   const browser = await chromium.launch({ executablePath: chrome, headless: true })
   const captures = [], api = []
   try {
-    // One isolated context per run: reuse compiled module/cache state across sizes
-    // instead of making the A8 DEV server reload the bundle for every viewport.
+    // Keep one isolated browser context and load each page once. Vite's DEV
+    // module graph is expensive on an A8; repeated reloads can overwhelm it.
     const ctx = await browser.newContext({
       viewport: { width: screens[0].width, height: screens[0].height },
       deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false,
     })
     await ctx.route("**/*", route => {
-        // Enforce read-only traffic even if application code attempts a mutation on mount.
-        // No POST/PUT/PATCH/DELETE, WebSocket or cross-origin calls from this lab context.
-        const request = route.request()
-        if (!["GET", "HEAD"].includes(request.method())) return route.abort()
-        const address = request.url()
-        if (address.startsWith("data:") || address.startsWith("blob:")) return route.continue()
-        let u
-        try { u = new URL(address) } catch { return route.abort() }
-        return u.origin === config.origin ? route.continue() : route.abort()
+      const request = route.request()
+      // Abort all browser-originated mutations, including initialization.
+      if (!["GET", "HEAD"].includes(request.method())) return route.abort()
+      const address = request.url()
+      if (address.startsWith("data:") || address.startsWith("blob:")) return route.continue()
+      let target
+      try { target = new URL(address) } catch { return route.abort() }
+      return target.origin === config.origin ? route.continue() : route.abort()
     })
-    for (const vp of screens) {
-      for (const route of config.pages) {
-        const page = await ctx.newPage()
-        await page.setViewportSize({ width: vp.width, height: vp.height })
-        let jsErrors = 0, consoleErrors = 0
-        page.on("pageerror", () => { jsErrors++ })
-        page.on("console", e => { if (e.type() === "error") consoleErrors++ })
-        const cap = { route, viewport: vp.name, status: null, geometry: null,
-          jsErrors: 0, consoleErrors: 0, file: null, rendered: false, stage: "navigation" }
+    for (const route of config.pages) {
+      const page = await ctx.newPage()
+      let jsErrors = 0, consoleErrors = 0, failedRequests = 0
+      page.on("pageerror", () => { jsErrors++ })
+      page.on("console", e => { if (e.type() === "error") consoleErrors++ })
+      page.on("requestfailed", () => { failedRequests++ })
+      let status = null, navigationError = null
+      try {
+        const response = await page.goto(config.origin + routes[route], {
+          waitUntil: "commit", timeout: 18000,
+        })
+        status = response?.status() ?? null
         try {
-          // The remote Vite module graph can exceed a DOMContentLoaded deadline on Wi-Fi.
-          // Commit captures HTTP without equating it with fully rendered React content.
-          const response = await page.goto(config.origin + routes[route],
-            { waitUntil: "commit", timeout: 18000 })
-          cap.status = response?.status() ?? null
-          cap.stage = "render"
-          try {
-            await page.waitForFunction(() =>
-              (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
-              null, { timeout: 10000 })
-            cap.rendered = true
-          } catch {
-            // Preserve screenshots of unloaded/error states for diagnosis.
-            cap.rendered = false
-          }
-          await page.waitForTimeout(700)
-          cap.geometry = await geometry(page)
-          cap.stage = "screenshot"
-          const file = route + "-" + vp.name + ".png"
-          const filename = join(folder, file)
-          await page.screenshot({ path: filename, animations: "disabled", timeout: 12000 })
-          await chmod(filename, 0o600)
-          cap.file = file
-          cap.stage = "complete"
-          if (!cap.rendered) cap.error = "React content not confirmed"
+          await page.waitForFunction(() => Boolean(
+            document.querySelector('[data-slot="sidebar-wrapper"]') &&
+            (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
+          ), null, { timeout: 12000 })
         } catch {
-          cap.error = cap.stage === "navigation" ? "Navigation unavailable" :
-            cap.stage === "render" ? "Layout inspection unavailable" : "Screenshot unavailable"
+          navigationError = "React management shell not confirmed"
         }
-        cap.jsErrors = jsErrors
-        cap.consoleErrors = consoleErrors
-        captures.push(cap)
-        await page.close()
+      } catch {
+        navigationError = "Navigation unavailable"
       }
+      let previousJs = 0, previousConsole = 0, previousFailed = 0
+      for (const vp of screens) {
+        const cap = { route, viewport: vp.name, status, geometry: null,
+          jsErrors: 0, consoleErrors: 0, failedRequests: 0, file: null,
+          rendered: false, stage: "viewport" }
+        try {
+          await page.setViewportSize({ width: vp.width, height: vp.height })
+          await page.waitForTimeout(450)
+          cap.rendered = await page.evaluate(() => Boolean(
+            document.querySelector('[data-slot="sidebar-wrapper"]') &&
+            (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
+          ))
+          if (cap.rendered) cap.geometry = await geometry(page)
+          cap.stage = "screenshot"
+          const filename = route + "-" + vp.name + ".png"
+          const absolute = join(folder, filename)
+          await page.screenshot({ path: absolute, animations: "disabled", timeout: 12000 })
+          await chmod(absolute, 0o600)
+          cap.file = filename
+          cap.stage = "complete"
+          if (!cap.rendered) cap.error = navigationError ?? "React content not confirmed"
+        } catch {
+          cap.error = cap.stage === "viewport"
+            ? "Viewport or layout inspection unavailable" : "Screenshot unavailable"
+        }
+        cap.jsErrors = jsErrors - previousJs
+        cap.consoleErrors = consoleErrors - previousConsole
+        cap.failedRequests = failedRequests - previousFailed
+        previousJs = jsErrors
+        previousConsole = consoleErrors
+        previousFailed = failedRequests
+        captures.push(cap)
+      }
+      await page.close()
     }
     for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name))
     await ctx.close()
@@ -188,6 +200,7 @@ async function main() {
     overflowing: captures.filter(c => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0).length,
     overflowCases: captures.filter(c => (c.geometry?.horizontalOverflow || 0) > 0).length,
     jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
+    failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
     api, localFolder: folder }) + "\n")
 }
 main().catch(() => {
