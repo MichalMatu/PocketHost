@@ -57,15 +57,30 @@ async function geometry(page) {
   return page.evaluate(() => {
     const w = window.innerWidth
     let outside = 0, smallControls = 0
+    const smallSamples = []
     for (const node of Array.from(document.querySelectorAll("body *")).slice(0, 5000)) {
       const r = node.getBoundingClientRect()
       if (r.height <= 0 || r.width <= 0) continue
       if (r.left < -2 || r.right > w + 2) outside++
       if (node.matches("a,button,input,select,textarea,[role='button']") &&
-          (r.width < 32 || r.height < 32)) smallControls++
+          (r.width < 32 || r.height < 32)) {
+        smallControls++
+        if (smallSamples.length < 24) {
+          // Metadata only: never publish user text, URLs or form values.
+          smallSamples.push({
+            tag: node.tagName.toLowerCase(),
+            slot: node.getAttribute("data-slot")?.slice(0, 40) ?? null,
+            parentSlot: node.parentElement?.getAttribute("data-slot")?.slice(0, 40) ?? null,
+            icon: Boolean(node.querySelector("svg")),
+            textLength: Math.min(node.textContent?.trim().length ?? 0, 100),
+            x: Math.round(r.left), y: Math.round(r.top),
+            width: Math.round(r.width), height: Math.round(r.height),
+          })
+        }
+      }
     }
     return { horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - w),
-      outOfBoundsElements: outside, smallControls }
+      outOfBoundsElements: outside, smallControls, smallSamples }
   })
 }
 
@@ -145,6 +160,7 @@ async function main() {
     })
     const page = await ctx.newPage()
     let jsErrors = 0, consoleErrors = 0, failedRequests = 0, blockedRequests = 0
+    let canceledRequests = 0
     page.on("pageerror", () => { jsErrors++ })
     page.on("console", e => { if (e.type() === "error") consoleErrors++ })
     page.on("requestfailed", request => {
@@ -152,7 +168,9 @@ async function main() {
       let external = true
       try { external = new URL(request.url()).origin !== config.origin } catch { /* unknown URI */ }
       if (external || !["GET", "HEAD"].includes(request.method())) blockedRequests++
-      else failedRequests++
+      else if (/ABORTED|CANCELLED|CANCELED/i.test(String(request.failure()?.errorText ?? ""))) {
+        canceledRequests++
+      } else failedRequests++
     })
     const titles = { dashboard: "Dashboard", hosting: "Hosting", projects: "Projects" }
     const routeReady = expected => Boolean(
@@ -168,6 +186,7 @@ async function main() {
       let navigationMode = first ? "document" : "spa"
       let previousJs = jsErrors, previousConsole = consoleErrors
       let previousFailed = failedRequests, previousBlocked = blockedRequests
+      let previousCanceled = canceledRequests
       try {
         if (first) {
           const response = await page.goto(destination, {
@@ -197,7 +216,8 @@ async function main() {
       }
       for (const vp of screens) {
         const cap = { route, viewport: vp.name, status, navigationMode, geometry: null,
-          jsErrors: 0, consoleErrors: 0, failedRequests: 0, blockedRequests: 0, file: null,
+          jsErrors: 0, consoleErrors: 0, failedRequests: 0,
+          blockedRequests: 0, canceledRequests: 0, file: null,
           rendered: false, stage: "viewport" }
         try {
           await page.setViewportSize({ width: vp.width, height: vp.height })
@@ -220,10 +240,12 @@ async function main() {
         cap.consoleErrors = consoleErrors - previousConsole
         cap.failedRequests = failedRequests - previousFailed
         cap.blockedRequests = blockedRequests - previousBlocked
+        cap.canceledRequests = canceledRequests - previousCanceled
         previousJs = jsErrors
         previousConsole = consoleErrors
         previousFailed = failedRequests
         previousBlocked = blockedRequests
+        previousCanceled = canceledRequests
         captures.push(cap)
       }
       first = false
@@ -248,6 +270,7 @@ async function main() {
     jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
     failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
     blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),
+    canceledRequests: captures.reduce((sum, c) => sum + c.canceledRequests, 0),
     api, localFolder: folder }) + "\n")
 }
 main().catch(() => {

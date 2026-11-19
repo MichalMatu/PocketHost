@@ -31,7 +31,7 @@ node scripts/test-lab/capture.mjs \
 
 Use **only** with a fresh exact-live-SHA scope approval. `--base` is passed at execution time (not hardcoded). Default routes: `dashboard,hosting,projects`. Allowed routes: `dashboard,hosting,sites,projects,deployments,logs,services,agent,network`. Allowed GET API selections: `host,network,sites,projects`; no API requests by default. Fixed viewports: mobile 390×844, tablet 768×1024, desktop 1440×900. Override Chrome binary with `POCKETHOST_LAB_CHROME` only on the selected Mac.
 
-Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation HTTP, React rendered-state, page/console/same-origin-failed-request counts and deliberately blocked request counts, viewport overflow, and requested GET status, latency, MIME, JSON validity and response-shape checks; they deliberately omit response bodies, secrets and raw error text.
+Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation HTTP, React rendered-state, page/console/same-origin-failed, canceled, and deliberately blocked request counts, viewport overflow, and requested GET status, latency, MIME, JSON validity and response-shape checks; they deliberately omit response bodies, secrets and raw error text.
 
 ## Selected thumbnail review via private Git task result
 
@@ -44,3 +44,5 @@ Inventory exact existing settings endpoints and ownership semantics before makin
 **Current state:** tooling source only. No new Mac lab execution, browser installation, A8 deploy, QA PASS or API mutation is claimed.
 
 **SPA navigation:** `navigationMode=spa` with `status=null` is expected because an in-app route change makes no new document HTTP request. Use `rendered`, failed requests and console errors to assess that screen.
+
+Geometry reports include up to 24 text-free tiny-control descriptors (tag/slot/icon, size and location). They exclude raw user text, hrefs and input values. These findings are **diagnostics**, not automatic proof of a WCAG violation.
