@@ -53,7 +53,7 @@ export function SearchTrigger({ onClick }: { onClick: () => void }) {
       variant="outline"
       size="lg"
       onClick={onClick}
-      className="relative w-full justify-start font-normal text-muted-foreground sm:pr-12 md:w-36 lg:w-56"
+      className="relative min-h-10 w-full justify-start font-normal text-muted-foreground sm:pr-12 md:w-36 lg:w-56"
     >
       <Search data-icon="inline-start" />
       Search...

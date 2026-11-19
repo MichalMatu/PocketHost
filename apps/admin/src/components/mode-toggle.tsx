@@ -60,7 +60,7 @@ export function ModeToggle({
           <Button
             variant={variant}
             size="icon"
-            className="cursor-pointer"
+            className="min-h-10 min-w-10 cursor-pointer"
             aria-label="Appearance settings"
             title="Appearance settings"
           />

@@ -59,6 +59,12 @@ describe("Hosting selection", () => {
       .toBe("/projects")
     expect(screen.getByRole("link", { name: "Deployment history" }).getAttribute("href")).toBe("/deployments")
     expect(screen.getByRole("link", { name: "Project logs" }).getAttribute("href")).toBe("/runtime-logs")
+    const refresh = screen.getByRole("button", { name: "Refresh" })
+    expect(refresh.className).toContain("min-h-10")
+    expect(screen.getByRole("link", { name: "Manage static websites" }).className).toContain("min-h-10")
+    expect(screen.getByRole("link", { name: "Manage Node.js projects" }).className).toContain("min-h-10")
+    expect(screen.getByRole("link", { name: "Deployment history" }).className).toContain("min-h-10")
+    expect(screen.getByRole("link", { name: "Project logs" }).className).toContain("min-h-10")
     expect(requests.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
   })
 
