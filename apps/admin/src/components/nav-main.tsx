@@ -17,6 +17,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar"
 
 export function NavMain({
@@ -37,6 +38,8 @@ export function NavMain({
   }[]
 }) {
   const location = useLocation()
+  const { isMobile, setOpenMobile } = useSidebar()
+  const closeMobileMenu = () => { if (isMobile) setOpenMobile(false) }
 
   // Check if any subitem is active to determine if parent should be open
   const shouldBeOpen = (item: (typeof items)[0]) => {
@@ -81,6 +84,8 @@ export function NavMain({
                           render={
                             <Link
                               to={subItem.url}
+                              aria-current={location.pathname === subItem.url ? "page" : undefined}
+                              onClick={closeMobileMenu}
                               target={
                                 item.title === "Auth Pages" ||
                                 item.title === "Errors"
@@ -108,7 +113,7 @@ export function NavMain({
                 tooltip={item.title}
                 className="cursor-pointer"
                 isActive={location.pathname === item.url}
-                render={<Link to={item.url} />}
+                render={<Link to={item.url} aria-current={location.pathname === item.url ? "page" : undefined} onClick={closeMobileMenu} />}
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>

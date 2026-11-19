@@ -5,16 +5,18 @@ import { NavMain } from "@/components/nav-main"
 import { navGroups } from "@/config/navigation"
 import {
   Sidebar, SidebarContent, SidebarHeader, SidebarMenu,
-  SidebarMenuButton, SidebarMenuItem,
+  SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from "@/components/ui/sidebar"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { isMobile, setOpenMobile } = useSidebar()
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" render={<Link to="/system" />}>
+            <SidebarMenuButton size="lg" render={<Link to="/dashboard" aria-label="PocketHost Dashboard" onClick={() => { if (isMobile) setOpenMobile(false) }} />}>
               <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                 <Logo size={24} className="text-current" />
               </div>
