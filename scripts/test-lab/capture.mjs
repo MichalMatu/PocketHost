@@ -144,10 +144,16 @@ async function main() {
       return target.origin === config.origin ? route.continue() : route.abort()
     })
     const page = await ctx.newPage()
-    let jsErrors = 0, consoleErrors = 0, failedRequests = 0
+    let jsErrors = 0, consoleErrors = 0, failedRequests = 0, blockedRequests = 0
     page.on("pageerror", () => { jsErrors++ })
     page.on("console", e => { if (e.type() === "error") consoleErrors++ })
-    page.on("requestfailed", () => { failedRequests++ })
+    page.on("requestfailed", request => {
+      // Cross-origin and mutating traffic is intentionally denied by this Lab.
+      let external = true
+      try { external = new URL(request.url()).origin !== config.origin } catch { /* unknown URI */ }
+      if (external || !["GET", "HEAD"].includes(request.method())) blockedRequests++
+      else failedRequests++
+    })
     const titles = { dashboard: "Dashboard", hosting: "Hosting", projects: "Projects" }
     const routeReady = expected => Boolean(
       document.querySelector('[data-slot="sidebar-wrapper"]') &&
@@ -160,7 +166,8 @@ async function main() {
       await page.setViewportSize({ width: 1440, height: 900 })
       let status = null, navigationError = null
       let navigationMode = first ? "document" : "spa"
-      let previousJs = jsErrors, previousConsole = consoleErrors, previousFailed = failedRequests
+      let previousJs = jsErrors, previousConsole = consoleErrors
+      let previousFailed = failedRequests, previousBlocked = blockedRequests
       try {
         if (first) {
           const response = await page.goto(destination, {
@@ -190,7 +197,7 @@ async function main() {
       }
       for (const vp of screens) {
         const cap = { route, viewport: vp.name, status, navigationMode, geometry: null,
-          jsErrors: 0, consoleErrors: 0, failedRequests: 0, file: null,
+          jsErrors: 0, consoleErrors: 0, failedRequests: 0, blockedRequests: 0, file: null,
           rendered: false, stage: "viewport" }
         try {
           await page.setViewportSize({ width: vp.width, height: vp.height })
@@ -212,9 +219,11 @@ async function main() {
         cap.jsErrors = jsErrors - previousJs
         cap.consoleErrors = consoleErrors - previousConsole
         cap.failedRequests = failedRequests - previousFailed
+        cap.blockedRequests = blockedRequests - previousBlocked
         previousJs = jsErrors
         previousConsole = consoleErrors
         previousFailed = failedRequests
+        previousBlocked = blockedRequests
         captures.push(cap)
       }
       first = false
@@ -238,6 +247,7 @@ async function main() {
     overflowCases: captures.filter(c => (c.geometry?.horizontalOverflow || 0) > 0).length,
     jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
     failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
+    blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),
     api, localFolder: folder }) + "\n")
 }
 main().catch(() => {
