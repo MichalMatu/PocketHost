@@ -99,7 +99,7 @@ async function probe(request, origin, name) {
 function gallery(report) {
   const cards = report.captures.map(c => {
     const label = c.route + " · " + c.viewport
-    const stats = "HTTP " + c.status + ", overflow " +
+    const stats = (c.navigationMode === "spa" ? "SPA route" : "HTTP " + c.status) + ", overflow " +
       (c.geometry?.horizontalOverflow ?? "?") + "px, JS errors " + c.jsErrors
     return "<article><h2>" + escapeHtml(label) + "</h2><p>" + escapeHtml(stats) +
       "</p>" + (c.file ? '<a href="' + escapeHtml(c.file) +
@@ -160,6 +160,7 @@ async function main() {
       await page.setViewportSize({ width: 1440, height: 900 })
       let status = null, navigationError = null
       let navigationMode = first ? "document" : "spa"
+      let previousJs = jsErrors, previousConsole = consoleErrors, previousFailed = failedRequests
       try {
         if (first) {
           const response = await page.goto(destination, {
@@ -180,14 +181,13 @@ async function main() {
         }
         try {
           await page.waitForFunction(routeReady, titles[route] ?? null, { timeout: 15000 })
-          await page.waitForTimeout(700)
+          await page.waitForTimeout(1200)
         } catch {
           navigationError = "React route not confirmed"
         }
       } catch {
         navigationError = "Navigation unavailable"
       }
-      let previousJs = 0, previousConsole = 0, previousFailed = 0
       for (const vp of screens) {
         const cap = { route, viewport: vp.name, status, navigationMode, geometry: null,
           jsErrors: 0, consoleErrors: 0, failedRequests: 0, file: null,
