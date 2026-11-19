@@ -74,7 +74,25 @@ async function probe(request, origin, name) {
   try {
     const response = await request.get(origin + apis[name],
       { timeout: 8000, maxRedirects: 0, headers: { Accept: "application/json" } })
-    return { name, status: response.status(), ms: Date.now() - start }
+    const mime = String(response.headers()["content-type"] ?? "").split(";")[0].slice(0, 60)
+    let jsonValid = false, shapeOK = false
+    try {
+      const bytes = await response.body()
+      if (bytes.length <= 128 * 1024 && mime === "application/json") {
+        const data = JSON.parse(bytes.toString("utf8"))
+        jsonValid = data !== null && typeof data === "object" && !Array.isArray(data)
+        if (jsonValid) {
+          if (name === "host") shapeOK = data.version === 1 &&
+            data.mode === "read-only" && data.platform === "termux" &&
+            !!data.runtime && typeof data.runtime === "object" && Array.isArray(data.services)
+          else if (name === "network") shapeOK = data.version === 1 &&
+            typeof data.enabled === "boolean" && Array.isArray(data.interfaces)
+          else shapeOK = true
+        }
+      }
+    } catch { /* Invalid JSON never leaks body text or raw parse errors. */ }
+    return { name, status: response.status(), ms: Date.now() - start,
+      mime, jsonValid, shapeOK }
   } catch { return { name, status: null, ms: Date.now() - start, error: "GET unavailable" } }
 }
 
@@ -125,41 +143,59 @@ async function main() {
       try { target = new URL(address) } catch { return route.abort() }
       return target.origin === config.origin ? route.continue() : route.abort()
     })
+    const page = await ctx.newPage()
+    let jsErrors = 0, consoleErrors = 0, failedRequests = 0
+    page.on("pageerror", () => { jsErrors++ })
+    page.on("console", e => { if (e.type() === "error") consoleErrors++ })
+    page.on("requestfailed", () => { failedRequests++ })
+    const titles = { dashboard: "Dashboard", hosting: "Hosting", projects: "Projects" }
+    const routeReady = expected => Boolean(
+      document.querySelector('[data-slot="sidebar-wrapper"]') &&
+      (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20 &&
+      (!expected || document.querySelector("h1")?.textContent?.trim() === expected),
+    )
+    let first = true
     for (const route of config.pages) {
-      const page = await ctx.newPage()
-      let jsErrors = 0, consoleErrors = 0, failedRequests = 0
-      page.on("pageerror", () => { jsErrors++ })
-      page.on("console", e => { if (e.type() === "error") consoleErrors++ })
-      page.on("requestfailed", () => { failedRequests++ })
+      const destination = config.origin + routes[route]
+      await page.setViewportSize({ width: 1440, height: 900 })
       let status = null, navigationError = null
+      let navigationMode = first ? "document" : "spa"
       try {
-        const response = await page.goto(config.origin + routes[route], {
-          waitUntil: "commit", timeout: 18000,
-        })
-        status = response?.status() ?? null
+        if (first) {
+          const response = await page.goto(destination, {
+            waitUntil: "commit", timeout: 18000,
+          })
+          status = response?.status() ?? null
+        } else {
+          try {
+            await page.locator('a[href="' + routes[route] + '"]').first().click({ timeout: 5000 })
+            await page.waitForURL(destination, { timeout: 12000 })
+          } catch {
+            navigationMode = "document-fallback"
+            const response = await page.goto(destination, {
+              waitUntil: "commit", timeout: 18000,
+            })
+            status = response?.status() ?? null
+          }
+        }
         try {
-          await page.waitForFunction(() => Boolean(
-            document.querySelector('[data-slot="sidebar-wrapper"]') &&
-            (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
-          ), null, { timeout: 12000 })
+          await page.waitForFunction(routeReady, titles[route] ?? null, { timeout: 15000 })
+          await page.waitForTimeout(700)
         } catch {
-          navigationError = "React management shell not confirmed"
+          navigationError = "React route not confirmed"
         }
       } catch {
         navigationError = "Navigation unavailable"
       }
       let previousJs = 0, previousConsole = 0, previousFailed = 0
       for (const vp of screens) {
-        const cap = { route, viewport: vp.name, status, geometry: null,
+        const cap = { route, viewport: vp.name, status, navigationMode, geometry: null,
           jsErrors: 0, consoleErrors: 0, failedRequests: 0, file: null,
           rendered: false, stage: "viewport" }
         try {
           await page.setViewportSize({ width: vp.width, height: vp.height })
           await page.waitForTimeout(450)
-          cap.rendered = await page.evaluate(() => Boolean(
-            document.querySelector('[data-slot="sidebar-wrapper"]') &&
-            (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20,
-          ))
+          cap.rendered = await page.evaluate(routeReady, titles[route] ?? null)
           if (cap.rendered) cap.geometry = await geometry(page)
           cap.stage = "screenshot"
           const filename = route + "-" + vp.name + ".png"
@@ -181,8 +217,9 @@ async function main() {
         previousFailed = failedRequests
         captures.push(cap)
       }
-      await page.close()
+      first = false
     }
+    await page.close()
     for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name))
     await ctx.close()
   } finally { await browser.close() }
