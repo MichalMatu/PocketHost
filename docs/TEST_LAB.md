@@ -33,6 +33,10 @@ Use **only** with a fresh exact-live-SHA scope approval. `--base` is passed at e
 
 Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation status, page/console error counts, viewport overflow, and requested GET status/latency; they deliberately omit response bodies, secrets and raw error text.
 
+## Selected thumbnail review via private Git task result
+
+The Mac Lab can also produce an **explicitly requested**, JPEG-compressed, bounded preview from one already captured screenshot. Command `node scripts/test-lab/preview.mjs --run=<capture-directory-name> --shot=dashboard-mobile.png`. The reviewed run and screenshot names must be approved separately before publishing image bytes to the **private** Local Agent result (never the public PocketHost repository). The preview is a deliberately downscaled image, not a pixel-level regression baseline; it may still reveal LAN details, so inspect/redact sensitive UI first. The helper refuses symlink escapes, arbitrary filenames and files above its output byte cap. It does not modify the hosted application.
+
 ## Next stage: safe API writes (not yet implemented)
 
 Inventory exact existing settings endpoints and ownership semantics before making an API write adapter. Start only with an **isolated owned DEV fixture** and a tiny per-endpoint method/body allowlist. Each mutation requires separate authorization, expected source/initial state, independent readback and documented rollback. Never add arbitrary POST/PUT/DELETE, generic shell, or an action which may interrupt the LAN gateway, agent, SSH, protected services or off-device backups. A test result is not a deployed change.
