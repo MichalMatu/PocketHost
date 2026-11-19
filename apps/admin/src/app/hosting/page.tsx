@@ -64,7 +64,10 @@ export default function HostingPage() {
     checks.current.set(project.id, controller)
     setReadiness(prev => ({ ...prev, [project.id]: "checking" }))
     try {
-      const health = await readNodeHealth(project.id, controller.signal)
+      const health = await readNodeHealth(
+        project.id,
+        AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
+      )
       if (controller.signal.aborted) return
       // A health response is only meaningful for the exact inventoried runtime.
       // A stopped or replaced process must not be reported as the selected release.
@@ -84,18 +87,19 @@ export default function HostingPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
+    const requestSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)])
     // Invalidate prior inventory when Refresh starts, without an effect-time sync setState.
     void Promise.resolve().then(() => {
       if (controller.signal.aborted) return
       setStaticInventory(loadingSites)
       setNodeInventory(loadingNodes)
     })
-    void readStaticHosting(controller.signal)
+    void readStaticHosting(requestSignal)
       .then(value => { if (!controller.signal.aborted) setStaticInventory(value) })
       .catch(() => {
         if (!controller.signal.aborted) setStaticInventory({ status: "unavailable", items: [] })
       })
-    void readNodeHosting(controller.signal)
+    void readNodeHosting(requestSignal)
       .then(value => { if (!controller.signal.aborted) setNodeInventory(value) })
       .catch(() => {
         if (!controller.signal.aborted) setNodeInventory({ status: "unavailable", items: [] })
