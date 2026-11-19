@@ -132,6 +132,14 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
   ) {
     return 24000;
   }
+  // The A8 Vite DEV server may take more than 5s to transform lazy React
+  // modules. Extend only known development asset GET/HEAD paths; never API
+  // writes or unrelated requests. This changes timeouts, not access policy.
+  if (
+    (method === 'GET' || method === 'HEAD') &&
+    /^(?:\/src\/|\/@vite\/|\/@id\/|\/@fs\/|\/node_modules\/\.vite\/deps\/)/.test(route ?? '')
+  )
+    return 20000;
   return route === '/api/v1/observability' ? 25000 : 5000;
 }
 

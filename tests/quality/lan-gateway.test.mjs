@@ -54,6 +54,37 @@ test('only the fixed read-only O1 snapshot gets a bounded extended LAN upstream 
   }
 });
 
+test('A8 Vite lazy module GET/HEAD receives a bounded DEV asset timeout only', () => {
+  for (const uri of [
+    '/src/app/projects/page.tsx',
+    '/src/app/projects/page.tsx?t=1795129380',
+    '/src/index.css',
+    '/@vite/client',
+    '/@id/__x00__react-router-dom',
+    '/@fs/data/data/com.termux/files/home/Projects/PocketHost-A8-DEV/apps/admin/src/App.tsx',
+    '/node_modules/.vite/deps/react.js?v=123',
+  ]) {
+    assert.equal(upstreamTimeoutMs(uri, 'GET'), 20000, uri);
+    assert.equal(upstreamTimeoutMs(uri, 'HEAD'), 20000, uri);
+    for (const method of ['POST', 'PUT', 'PATCH', 'DELETE']) {
+      assert.equal(upstreamTimeoutMs(uri, method), 5000, method + ' ' + uri);
+    }
+  }
+  for (const uri of [
+    '/src',
+    '/src-other/bad',
+    '/@vite-malicious/',
+    '/node_modules/.vite/raw',
+    '/api/v1/host/snapshot',
+    '/api/v1/network-access',
+    '/dashboard',
+    '/projects',
+    '/random/src/app/projects/page.tsx',
+  ]) {
+    assert.equal(upstreamTimeoutMs(uri, 'GET'), 5000, uri);
+  }
+});
+
 test('Node owner LAN API has scoped deadlines without opening unrelated routes', () => {
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects', 'GET'), 30000);
   assert.equal(upstreamTimeoutMs('/api/v1/node-projects/owner-session', 'GET'), 30000);
