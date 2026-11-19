@@ -109,10 +109,13 @@ async function main() {
   const browser = await chromium.launch({ executablePath: chrome, headless: true })
   const captures = [], api = []
   try {
-    for (const vp of screens) {
-      const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height },
-        deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false })
-      await ctx.route("**/*", route => {
+    // One isolated context per run: reuse compiled module/cache state across sizes
+    // instead of making the A8 DEV server reload the bundle for every viewport.
+    const ctx = await browser.newContext({
+      viewport: { width: screens[0].width, height: screens[0].height },
+      deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false,
+    })
+    await ctx.route("**/*", route => {
         // Enforce read-only traffic even if application code attempts a mutation on mount.
         // No POST/PUT/PATCH/DELETE, WebSocket or cross-origin calls from this lab context.
         const request = route.request()
@@ -122,9 +125,11 @@ async function main() {
         let u
         try { u = new URL(address) } catch { return route.abort() }
         return u.origin === config.origin ? route.continue() : route.abort()
-      })
+    })
+    for (const vp of screens) {
       for (const route of config.pages) {
         const page = await ctx.newPage()
+        await page.setViewportSize({ width: vp.width, height: vp.height })
         let jsErrors = 0, consoleErrors = 0
         page.on("pageerror", () => { jsErrors++ })
         page.on("console", e => { if (e.type() === "error") consoleErrors++ })
@@ -165,11 +170,9 @@ async function main() {
         captures.push(cap)
         await page.close()
       }
-      if (vp.name === "desktop") {
-        for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name))
-      }
-      await ctx.close()
     }
+    for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name))
+    await ctx.close()
   } finally { await browser.close() }
   const report = { kind: "PocketHostTestLab", sourceSha: config.sha,
     origin: config.origin, mode: "read-only", at: new Date().toISOString(), captures, api }
