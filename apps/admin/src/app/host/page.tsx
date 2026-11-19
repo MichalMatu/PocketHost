@@ -112,6 +112,7 @@ export default function HostOverview() {
         <Card>
           <CardHeader className="gap-1 px-4">
             <CardTitle className="flex items-center gap-2"><Server className="size-4" />Observed services</CardTitle>
+            <CardDescription>Read-only runit observations; a listed service is not proof of PocketHost ownership.</CardDescription>
           </CardHeader>
           <CardContent data-testid="host-services" aria-busy={pending}>
             <div className="divide-y">
@@ -126,6 +127,9 @@ export default function HostOverview() {
                   <span className="h-5 w-16 animate-pulse rounded bg-muted" />
                 </div>
               )) : <p className="py-3 text-sm text-muted-foreground">No service inventory available.</p>}
+              {snapshot && snapshot.services.length === 0 && (
+                <p className="py-3 text-sm text-muted-foreground">No services discovered in this sample.</p>
+              )}
             </div>
           </CardContent>
         </Card>
