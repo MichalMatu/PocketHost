@@ -51,7 +51,7 @@ export function SearchTrigger({ onClick }: { onClick: () => void }) {
   return (
     <Button
       variant="outline"
-      size="sm"
+      size="lg"
       onClick={onClick}
       className="relative w-full justify-start font-normal text-muted-foreground sm:pr-12 md:w-36 lg:w-56"
     >

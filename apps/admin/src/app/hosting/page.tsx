@@ -110,7 +110,7 @@ export default function HostingPage() {
           <p className="text-sm text-muted-foreground">
             Current inventory from PocketHost-owned hosting APIs. Refresh after publishing or changing a runtime.
           </p>
-          <Button size="sm" variant="outline" onClick={() => {
+          <Button size="lg" variant="outline" onClick={() => {
               for (const controller of checks.current.values()) controller.abort()
               checks.current.clear()
               setReadiness({})
@@ -137,13 +137,13 @@ export default function HostingPage() {
                   {staticInventory.items.map(site => (
                     <div key={site.id} className="space-y-1 rounded-md border p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Link to={"/sites?site=" + encodeURIComponent(site.id)} className="min-w-0 break-words font-medium underline underline-offset-4">{site.name}</Link>
+                        <Link to={"/sites?site=" + encodeURIComponent(site.id)} className="inline-flex min-h-8 min-w-0 items-center break-words font-medium underline underline-offset-4">{site.name}</Link>
                         <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span title={site.activeRelease ?? undefined}>Release: {releaseLabel(site.activeRelease)}</span>
                         <span>{site.releases} releases</span>
-                        <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className="underline underline-offset-4">Logs</Link>
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className="inline-flex min-h-8 items-center rounded px-1 underline underline-offset-4">Logs</Link>
                         {site.state === "running" && (
                           <span>HTTP: {site.healthy === true ? "healthy" : site.healthy === false ? "unavailable" : "not checked"}</span>
                         )}
@@ -172,14 +172,14 @@ export default function HostingPage() {
                   {nodeInventory.items.map(project => (
                     <div key={project.id} className="space-y-1 rounded-md border p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Link to={"/projects?project=" + encodeURIComponent(project.id)} className="min-w-0 break-words font-medium underline underline-offset-4">{project.name}</Link>
+                        <Link to={"/projects?project=" + encodeURIComponent(project.id)} className="inline-flex min-h-8 min-w-0 items-center break-words font-medium underline underline-offset-4">{project.name}</Link>
                         <Badge variant={project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span title={project.activeRelease ?? undefined}>Release: {releaseLabel(project.activeRelease)}</span>
                         {project.port !== null && <span>Port: {project.port}</span>}
                         <span>Desired: {project.desired}</span>
-                        <Link to={"/runtime-logs?project=" + encodeURIComponent("node:" + project.id)} className="underline underline-offset-4">Logs</Link>
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("node:" + project.id)} className="inline-flex min-h-8 items-center rounded px-1 underline underline-offset-4">Logs</Link>
                       </div>
                       {project.state === "running" && (
                         <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
@@ -190,7 +190,7 @@ export default function HostingPage() {
                               readiness[project.id] === "not-probed" ? "not probed" :
                               readiness[project.id] === "unavailable" ? "unavailable" : "not checked"}
                           </span>
-                          <Button size="xs" variant="outline"
+                          <Button size="lg" variant="outline"
                             aria-label={"Check readiness for " + project.name}
                             disabled={readiness[project.id] === "checking"}
                             onClick={() => { void checkReadiness(project) }}>
@@ -212,8 +212,8 @@ export default function HostingPage() {
             <CardDescription>Inspect published releases and runtime output.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
-            <Link to="/deployments" className="underline underline-offset-4">Deployment history</Link>
-            <Link to="/runtime-logs" className="underline underline-offset-4">Project logs</Link>
+            <Link to="/deployments" className="inline-flex min-h-8 items-center underline underline-offset-4">Deployment history</Link>
+            <Link to="/runtime-logs" className="inline-flex min-h-8 items-center underline underline-offset-4">Project logs</Link>
           </CardContent>
         </Card>
       </div>
