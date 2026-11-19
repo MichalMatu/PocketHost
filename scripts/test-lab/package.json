@@ -1,0 +1,7 @@
+{
+  "name": "pockethost-test-lab",
+  "private": true,
+  "type": "module",
+  "scripts": { "capture": "node capture.mjs" },
+  "dependencies": { "playwright-core": "^1.58.0" }
+}

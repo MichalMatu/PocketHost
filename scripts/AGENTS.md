@@ -6,7 +6,7 @@ Only scripts; typed contracts and root AGENTS.md.
 
 ## Forbidden
 
-No hidden installs, service restarts or non-Samsung execution.
+No hidden installs or service restarts. The only non-Samsung exception is a separately approved read-only `scripts/test-lab` browser/GET capture using the verified Mac Local Agent; never project QA suites, deploy or API writes.
 
 ## Gate
 

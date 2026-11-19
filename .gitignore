@@ -13,3 +13,7 @@ coverage/
 *.db
 *.sqlite*
 .DS_Store
+
+# Locally captured private visual and API diagnostics
+.test-lab/
+scripts/test-lab/node_modules/
