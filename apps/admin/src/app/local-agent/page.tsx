@@ -5,15 +5,17 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
+import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-logs-schema"
 import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
 
-type View = "overview" | "tasks" | "console" | "diagnostics"
+type View = "overview" | "tasks" | "console" | "control" | "diagnostics"
 const views: { value: View; label: string }[] = [
   { value: "overview", label: "Overview" },
   { value: "tasks", label: "Tasks & activity" },
   { value: "console", label: "Live console" },
+  { value: "control", label: "Control & SSH" },
   { value: "diagnostics", label: "Diagnostics" },
 ]
 const warnings: Record<string, string> = {
@@ -328,12 +330,16 @@ export default function LocalAgentPage() {
         </Card>
       </section>}
 
+      {view === "control" && <section role="tabpanel" aria-label="Control & SSH">
+        <LocalAgentOperationsPanel refreshToken={refreshToken} />
+      </section>}
+
       {view === "diagnostics" && <section role="tabpanel" aria-label="Diagnostics" className="space-y-4">
         <Card>
           <CardHeader><CardTitle>Advanced diagnostics & control boundaries</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p>The Local Agent is managed by its own private Termux runit supervisor.
-              This screen does not have permission to start, stop, pause or update that service.</p>
+            <p>Technical evidence lives here. Use Control & SSH to manage the
+              selected Local Agent and dedicated SSH service.</p>
             <p>Local snapshot: {formatAgentTime(plane?.observedAt)}
               {planeError ? " · unable to refresh" : ""}</p>
             <Button variant="outline" size="sm" onClick={() => setAdvanced(open => !open)}>
