@@ -199,6 +199,8 @@ export async function requestJson(url: string, method?: "POST", body?: unknown, 
   const ownerHeader: Record<string, string> = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store",
     headers: ownerHeader,
+    // GETs must settle; never abort a potentially state-changing POST on a UI timer.
+    ...(method ? {} : { signal: AbortSignal.timeout(10_000) }),
     ...(method ? {
       method, headers: { ...ownerHeader, "X-PocketHost-Intent": intent,
         ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
