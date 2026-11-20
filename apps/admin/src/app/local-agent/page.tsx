@@ -9,7 +9,7 @@ import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-logs-schema"
-import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
+import { formatAgentDuration, formatAgentExecutionDuration, formatAgentTime } from "@/lib/local-agent-time"
 
 type View = "overview" | "tasks" | "console" | "control" | "diagnostics"
 const views: { value: View; label: string }[] = [
@@ -249,7 +249,7 @@ export default function LocalAgentPage() {
               <p>Last local task result: <strong>{agent?.lastResult ?? "Not verified"}</strong></p>
               <p>Result recorded: <strong>{formatAgentTime(agent?.lastResultAt)}</strong></p>
               <p>Current task: <span className="text-muted-foreground">Not reported by this API</span></p>
-              {latency?.state === "ok" && <p>Latest execution: <strong>{formatAgentDuration(latency.latestSeconds)}</strong></p>}
+              {latency?.state === "ok" && <p>Latest execution: <strong>{formatAgentExecutionDuration(latency.latestSeconds)}</strong></p>}
               <p className="text-xs text-muted-foreground">
                 Results here come from the phone's local spool, not GitHub acknowledgments.
               </p>
@@ -294,9 +294,9 @@ export default function LocalAgentPage() {
               Timing history is not available from the installed Agent. No performance conclusion is possible.
             </p> : <>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Metric label="Median execution" value={formatAgentDuration(latency.medianSeconds)} />
-                <Metric label="95th percentile" value={formatAgentDuration(latency.p95Seconds)} />
-                <Metric label="Latest execution" value={formatAgentDuration(latency.latestSeconds)} />
+                <Metric label="Median execution" value={formatAgentExecutionDuration(latency.medianSeconds)} />
+                <Metric label="95th percentile" value={formatAgentExecutionDuration(latency.p95Seconds)} />
+                <Metric label="Latest execution" value={formatAgentExecutionDuration(latency.latestSeconds)} />
               </div>
               <p className="text-xs text-muted-foreground">
                 {latency.sampleCount} of 40 possible samples · last recorded {formatAgentTime(latency.observedAt)}
@@ -311,7 +311,7 @@ export default function LocalAgentPage() {
               <ol className="max-h-56 divide-y overflow-auto rounded-md border px-3">
                 {latency.recent.map((item, i) => <li key={i}
                   className="flex flex-wrap justify-between gap-x-3 gap-y-1 py-2">
-                  <span className="font-medium">{item.status} · {formatAgentDuration(item.seconds)}</span>
+                  <span className="font-medium">{item.status} · {formatAgentExecutionDuration(item.seconds)}</span>
                   <span className="text-xs text-muted-foreground">{formatAgentTime(item.at)}</span>
                 </li>)}
               </ol>
