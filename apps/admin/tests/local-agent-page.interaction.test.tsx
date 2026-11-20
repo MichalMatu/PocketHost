@@ -48,11 +48,21 @@ const logs = {
   unclassifiedLines: 79, truncated: true,
   notice: "sanitized-log-tail-no-lifecycle-authority",
 }
+const rawEntry = "2026-11-20_15:00:00.123456 [CMD] TOKEN=exact-secret command=echo raw\\n"
 function mockFetch() {
-  return vi.fn(async (url: string) => ({
-    ok: true,
-    json: async () => url.includes("mode=control-plane-diagnostics") ? controlPlane : logs,
-  }))
+  return vi.fn(async (url: string) => url.includes("mode=local-agent-raw-log")
+    ? {
+      ok: true,
+      headers: new Headers({
+        "X-Agent-Log-Cursor": "12:345:79",
+        "X-Agent-Log-Reset": "0",
+        "X-Agent-Log-More": "0",
+      }),
+      arrayBuffer: async () => new TextEncoder().encode(rawEntry).buffer,
+    } : {
+      ok: true,
+      json: async () => url.includes("mode=control-plane-diagnostics") ? controlPlane : logs,
+    })
 }
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
 
@@ -73,19 +83,18 @@ describe("Local Agent read-only overview", () => {
     expect(fetcher.mock.calls.every(call => !call[0].includes("token"))).toBe(true)
   })
 
-  it("shows a sanitized console with filtering; no raw command or fake terminal", async () => {
-    vi.stubGlobal("fetch", mockFetch())
+  it("shows the unmodified A8 log, without classifier, time conversion or masking", async () => {
+    const fetcher = mockFetch()
+    vi.stubGlobal("fetch", fetcher)
     render(<LocalAgentPage />)
     fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
-    expect(await screen.findByText("Task stopped by execution budget")).toBeTruthy()
-    expect(screen.getByText(/79 entries have private or unsupported details masked/)).toBeTruthy()
-    expect(screen.getByText(/exec finished · exit=0/)).toBeTruthy()
-    expect(screen.getByText(/private or unsupported detail hidden/)).toBeTruthy()
-    expect(screen.getByText(/Task started · ref=012345abcdef/)).toBeTruthy()
-    expect(screen.getByText(/real read-only Agent service log/)).toBeTruthy()
-    fireEvent.change(screen.getByLabelText("Filter Agent log"), { target: { value: "transport" } })
-    expect(screen.getByText("No log entries match this filter.")).toBeTruthy()
-    expect(screen.queryByText("Task stopped by execution budget")).toBeNull()
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toContain("TOKEN=exact-secret"))
+    expect(raw.textContent).toContain("2026-11-20_15:00:00.123456")
+    expect(raw.textContent).toContain("[CMD] TOKEN=exact-secret command=echo raw")
+    expect(raw.textContent).not.toContain("SERVICE")
+    expect(screen.queryByLabelText("Filter Agent log")).toBeNull()
+    expect(fetcher.mock.calls.some(([url]) => url.includes("mode=local-agent-raw-log"))).toBe(true)
   })
 
   it("polls event summaries every five seconds, not service state; pause is browser-only", async () => {
@@ -167,7 +176,7 @@ describe("Local Agent read-only overview", () => {
   })
 })
 
-describe("sanitized data contracts and duration formatting", () => {
+describe("diagnostic data contracts and duration formatting", () => {
   it("formats elapsed seconds without misrepresenting exact calendar months", () => {
     expect(formatAgentDuration(589815)).toBe("6 d 19 h 50 min 15 s")
     expect(formatAgentDuration(420)).toBe("7 min")
