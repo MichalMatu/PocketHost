@@ -13,6 +13,21 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## Latest verified A8 DEV — Local Agent live log (20 November 2026)
+
+- Task `pockethost-a8-agent-live-log-fb3dcc0-20261120-v1`:
+  **DEPLOY PASS** at source `fb3dcc0ed47e006e5ea370ef96854d0b7b6e43c0`,
+  exact owned SHA, PID **7894**, start ticks **59625188**, HTTP **200**,
+  protected services unchanged; **QA NOT RUN**.
+- Local Agent console reads up to 120 recent private svlogd records. Safe Linux
+  Core execution fields are reconstructed in order, including command digest,
+  exit status, elapsed time and output character count. Unknown/private log
+  payloads are masked rather than exposed to unauthenticated LAN clients.
+  Browser event-log tail continues visible-page polling every five seconds.
+- User browser visual/function sign-off remains **OPEN**; guarded HTTP
+  readback does not prove that log entries display correctly in Chrome.
+  No lifecycle controls, raw remote command output or public log endpoint.
+
 ## Latest verified A8 DEV — 20 November 2026
 
 - Local Agent task `pockethost-a8-local-agent-single-snapshot-b8c5f15-20261120-v1`:

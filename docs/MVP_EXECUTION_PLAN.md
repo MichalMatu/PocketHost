@@ -22,7 +22,15 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (20 November 2026):** A8 guarded deployment
+**Latest verified DEV update (20 November 2026):** Local Agent live log
+deployment `fb3dcc0ed47e006e5ea370ef96854d0b7b6e43c0` **PASS**.
+A8 guarded readback: HTTP 200, owned PID/start ticks, protected services
+unchanged, QA not run. Console now presents a bounded chronological private
+svlogd log tail with safe execution progress fields. Arbitrary log content
+and credentials remain masked because the LAN panel has no authentication.
+Browser visual/functional acceptance remains open.
+
+**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
 `b8c5f153db82f1716caa2d62326ffba8fdc79649` **PASS**
 (HTTP 200, owned PID/ticks, protected services unchanged; QA not run).
 The Local Agent read-only dashboard now shares one diagnostic snapshot across
