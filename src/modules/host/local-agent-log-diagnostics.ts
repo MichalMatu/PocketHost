@@ -133,8 +133,11 @@ export function safeAgentLogLine(line: string): AgentLogDisplayLine | null {
   ];
   for (const [rule, makeText] of rules) {
     const parts = rule.exec(content);
-    if (parts) return { kind: event?.kind ?? 'service', text: makeText(parts).slice(0, 180),
-      timestamp };
+    if (parts) {
+      const legacyCommand = /^(?:exec:|exec finished|output summary)/.test(content);
+      return { kind: event?.kind ?? (legacyCommand ? 'task' : 'service'),
+        text: makeText(parts).slice(0, 180), timestamp };
+    }
   }
   // Unknown content is deliberately never copied to an unauthenticated LAN.
   return { kind: event?.kind ?? 'other',

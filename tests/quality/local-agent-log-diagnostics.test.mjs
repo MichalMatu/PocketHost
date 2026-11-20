@@ -132,6 +132,16 @@ test('installed svlogd current log renders a known timestamp without leaking pay
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
 
+test('older Linux Core command records are recognized as task activity', () => {
+  const known = safeAgentLogLine(
+    '2026-11-20_14:00:00.000000 [linux-agent] exec: command sha256=0123456789abcdef');
+  assert.equal(known.kind, 'task');
+  const output = safeAgentLogLine(
+    '2026-11-20_14:00:01.000000 [linux-agent] output summary stage=command-1 exit=0 captured_chars=723');
+  assert.equal(output.kind, 'task');
+  assert.match(output.text, /captured=723 chars/);
+});
+
 test('safe tail reconstructs known command lifecycle but never prints private bytes', () => {
   const messages = [
     '2026-11-20_14:00:00.000000 [linux-agent] exec: command sha256=0123456789abcdef',
