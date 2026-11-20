@@ -8,7 +8,20 @@ import type { DiagnosticServiceId } from "@/config/service-workspaces"
  * root layout shows a progress bar until the next page is ready.
  */
 function page(load: () => Promise<{ default: ComponentType }>) {
-  return async () => ({ Component: (await load()).default })
+  return async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      const loaded = await Promise.race([
+        load(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error("Page module loading timed out")), 20_000)
+        }),
+      ])
+      return { Component: loaded.default }
+    } finally {
+      if (timer !== undefined) clearTimeout(timer)
+    }
+  }
 }
 
 /** Dedicated service URLs share one rendering shell, never duplicated data requests. */
