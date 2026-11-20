@@ -293,12 +293,21 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|export|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
         if (request.method === "GET") {
           try {
+            if (id && action === "export") {
+              const result = fleet.exportActiveZip(id)
+              response.setHeader("Content-Type", "application/zip")
+              response.setHeader("Content-Disposition",
+                'attachment; filename="' + id + "-" + result.release + '.zip"')
+              response.setHeader("Content-Length", result.archive.length)
+              response.end(result.archive)
+              return
+            }
             const result = route === "/" ? { sites: fleet.list() } :
               id && !action ? { site: fleet.inspect(id) } :
               id && action === "health" ? { healthy: await fleet.health(id) } :
