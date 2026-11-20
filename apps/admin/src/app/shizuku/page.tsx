@@ -214,6 +214,18 @@ export default function ShizukuPage() {
   const visiblePermissions = (appDetail?.permissions ?? []).filter(permission =>
     permission.name.toLowerCase().includes(permissionSearch.trim().toLowerCase())
   )
+  function refreshAfterMutation() {
+    // An acknowledged write is not a fresh inventory read. Lock controls
+    // immediately until the bridge status and snapshots have been reverified.
+    setStatus(null)
+    setLoading(true)
+    setAppsLoading(false)
+    setSystemLoading(false)
+    setAppsError(false)
+    setSystemError(false)
+    setRefreshKey(k => k + 1)
+  }
+
   function sortBy(column: typeof sortProcessBy) {
     setDescending(current => column === sortProcessBy ? !current : true)
     setSortProcessBy(column)
@@ -241,6 +253,8 @@ export default function ShizukuPage() {
               setSelectedProcessPid(null)
               setSelectedService(null)
               setStatus(null)
+              setAppsLoading(false)
+              setSystemLoading(false)
               setLoading(true)
               setRefreshKey(k => k + 1)
             }}>
@@ -380,7 +394,7 @@ export default function ShizukuPage() {
                                 <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
                                 {selectedPackage && appsVerified && !detailLoading && <AndroidActionButton
                                   action={permission.granted ? "revoke" : "grant"} target={selectedPackage}
-                                  value={permission.name} onSuccess={() => void selectPackage(selectedPackage)}>
+                                  value={permission.name} onSuccess={() => { void selectPackage(selectedPackage); refreshAfterMutation() }}>
                                   {permission.granted ? "Revoke" : "Grant"}
                                 </AndroidActionButton>}
                               </div>
@@ -406,20 +420,21 @@ export default function ShizukuPage() {
                         <p className="text-xs font-medium text-muted-foreground">Application controls · changes require confirmation</p>
                         <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="launch" target={selectedPackage} onSuccess={() => void selectPackage(selectedPackage)}>Launch</AndroidActionButton>
-                        <AndroidActionButton action="force-stop" target={selectedPackage}>Force stop</AndroidActionButton>
+                        <AndroidActionButton action="force-stop" target={selectedPackage}
+                          onSuccess={refreshAfterMutation}>Force stop</AndroidActionButton>
                         <AndroidActionButton action={appDetail.enabled ? "disable" : "enable"} target={selectedPackage}
-                          onSuccess={() => { void selectPackage(selectedPackage); setRefreshKey(k => k + 1) }}>
+                          onSuccess={() => { void selectPackage(selectedPackage); refreshAfterMutation() }}>
                           {appDetail.enabled ? "Disable" : "Enable"}
                         </AndroidActionButton>
                         <AndroidActionButton action="uninstall" target={selectedPackage}
-                          onSuccess={() => { setSelectedPackage(null); setAppDetail(null); setRefreshKey(k => k + 1) }}>
+                          onSuccess={() => { setSelectedPackage(null); setAppDetail(null); refreshAfterMutation() }}>
                           Uninstall for user 0
                         </AndroidActionButton>
                         </div>
                         <p className="text-xs text-muted-foreground">Force stop, Disable, Enable and Uninstall may interrupt apps. Each operation names its target before execution.</p>
                       </div>
                     )}
-                    <p className="text-muted-foreground text-xs">Direct browser actions run immediately with actual Shizuku permissions. Uninstall targets Android user 0.</p>
+                    <p className="text-muted-foreground text-xs">Android actions use the verified Companion permissions. Risky changes require confirmation; Uninstall targets Android user 0.</p>
                     <p className="text-muted-foreground text-xs">
                       {shownApps.length} matching · {apps.packages.length} reported
                       {apps.truncated ? " · truncated" : ""}
@@ -492,7 +507,7 @@ export default function ShizukuPage() {
                             <p className="text-muted-foreground text-xs">TERM targets PID {selectedProcess.pid}. Android may deny it; do not stop critical system processes.</p>
                             <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
                               disabled={!systemVerified}
-                              onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID {selectedProcess.pid}</AndroidActionButton>
+                              onSuccess={() => { setSelectedProcessPid(null); refreshAfterMutation() }}>Send TERM to PID {selectedProcess.pid}</AndroidActionButton>
                           </>}
                     </div>
                   )}
@@ -549,10 +564,10 @@ export default function ShizukuPage() {
                       <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="service-start" target={selectedService}
                           disabled={!systemVerified}
-                          onSuccess={() => setRefreshKey(k => k + 1)}>Start service</AndroidActionButton>
+                          onSuccess={refreshAfterMutation}>Start service</AndroidActionButton>
                         <AndroidActionButton action="service-stop" target={selectedService}
                           disabled={!systemVerified}
-                          onSuccess={() => setRefreshKey(k => k + 1)}>Stop service</AndroidActionButton>
+                          onSuccess={refreshAfterMutation}>Stop service</AndroidActionButton>
                       </div>
                     </div>
                   )}
