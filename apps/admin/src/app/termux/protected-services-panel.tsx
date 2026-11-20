@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { protectedServiceSchema, type ProtectedServiceDiagnostic } from "@/lib/protected-service-schema"
 
@@ -15,6 +16,8 @@ function ServiceCard({ service, title, mode, refreshToken }: {
   const [data, setData] = React.useState<ProtectedServiceDiagnostic | null>(null)
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState(false)
+  const [mqttProbe, setMqttProbe] = React.useState<"ready" | "not-ready" | "unverified" | null>(null)
+  const [mqttBusy, setMqttBusy] = React.useState(false)
   React.useEffect(() => {
     const controller = new AbortController()
     void Promise.resolve().then(() => {
@@ -38,6 +41,27 @@ function ServiceCard({ service, title, mode, refreshToken }: {
     return () => controller.abort()
   }, [service, mode, refreshToken])
 
+  const checkMqtt = async () => {
+    if (mqttBusy || service !== "mosquitto") return
+    setMqttBusy(true)
+    setMqttProbe(null)
+    try {
+      const response = await fetch("/api/v1/termux-admin?mode=mqtt-loopback-health", {
+        credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(10000),
+      })
+      if (!response.ok) throw Error("unavailable")
+      const value: unknown = await response.json()
+      if (!value || typeof value !== "object" || Array.isArray(value) ||
+        !["ready", "not-ready", "unverified"].includes(String((value as Record<string, unknown>).state)))
+        throw Error("invalid-response")
+      setMqttProbe((value as { state: "ready" | "not-ready" | "unverified" }).state)
+    } catch {
+      setMqttProbe("unverified")
+    } finally {
+      setMqttBusy(false)
+    }
+  }
+
   return <Card>
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -49,6 +73,21 @@ function ServiceCard({ service, title, mode, refreshToken }: {
       {loading && <p role="status">Reading {title} diagnostics…</p>}
       {error && <p role="alert">{title} diagnostics unavailable. No service changes were made.</p>}
       {data && !loading && <>
+        {service === "mosquitto" && <section aria-label="MQTT protocol check"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3">
+          <div className="space-y-1">
+            <p className="text-sm font-medium">Local MQTT protocol · 127.0.0.1:1883</p>
+            <p className="text-xs text-muted-foreground">
+              {mqttProbe === "ready" ? "MQTT CONNACK received; broker ready at last check" :
+                mqttProbe === "not-ready" ? "MQTT broker did not accept the connection" :
+                mqttProbe === "unverified" ? "Protocol check unavailable" :
+                "Not checked · runit alone does not establish MQTT readiness"}
+            </p>
+          </div>
+          <Button variant="outline" size="sm" disabled={mqttBusy} onClick={() => void checkMqtt()}>
+            {mqttBusy ? "Checking…" : "Check MQTT"}
+          </Button>
+        </section>}
         <div className="grid gap-3 sm:grid-cols-3">
           <div><p className="text-xs text-muted-foreground">Runit</p><p>{data.runit.state} · {data.runit.uptimeSeconds === null ? "uptime unavailable" : data.runit.uptimeSeconds + "s"}</p></div>
           <div><p className="text-xs text-muted-foreground">Process</p><p>{data.process ? "PID " + data.process.pid + " · RSS " + (data.process.rssMiB === null ? "unavailable" : data.process.rssMiB + " MiB") : "Unverified"}</p></div>
@@ -58,7 +97,7 @@ function ServiceCard({ service, title, mode, refreshToken }: {
         {data.process && <p className="text-xs text-muted-foreground">PID/start-ticks {data.process.startTicks} checked twice against runit; not ownership evidence.</p>}
         <div className="rounded-md border p-3 space-y-1">
           <h3 className="font-medium">Configuration summary · {data.config.state}</h3>
-          <p className="text-xs text-muted-foreground">Fixed local config file only; settings may be overridden and are not proof of active runtime configuration.</p>
+          <p className="text-xs text-muted-foreground">Fixed package configuration path only; another service-specific configuration may be in use. Missing this file does not mean the broker is stopped.</p>
           {data.config.error && <p className="text-xs text-muted-foreground">Config diagnostic: {data.config.error}</p>}
           {data.config.settings.map((item, index) => <p key={index}>{item.name}: {item.value}</p>)}
           {data.config.truncated && <p className="text-xs text-muted-foreground">Configuration summary truncated.</p>}
@@ -71,7 +110,7 @@ function ServiceCard({ service, title, mode, refreshToken }: {
           {data.logs.events.length === 0 && <p className="text-xs text-muted-foreground">No readable recognized log events.</p>}
           {data.logs.events.map((event, index) => <p key={index}>{event.kind} · {event.timestamp ? new Date(event.timestamp).toLocaleString() : "time unavailable"}</p>)}
         </div>
-        <p className="text-xs text-muted-foreground">Observed {new Date(data.observedAt).toLocaleString()}. Protected external service; start, stop, restart and configuration changes are not authorized.</p>
+        <p className="text-xs text-muted-foreground">Observed {new Date(data.observedAt).toLocaleString()}. Read-only service observation; this page does not grant start, stop, restart or configuration authority.</p>
       </>}
     </CardContent>
   </Card>
