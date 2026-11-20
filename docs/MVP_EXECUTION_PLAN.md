@@ -25,11 +25,11 @@ purpose: Single concise MVP status, priority and acceptance tracker
 **Latest verified A8 Local Agent log change (20 November 2026):**
 `fcbc2734094f41846eea43867d67a922a05a8f8a` **DEPLOY PASS**
 (owned PID/ticks, HTTP 200, protected services unchanged; QA not run).
-Legacy command log entries are classed as tasks. Structured task/stage/Git
-progress support is in the panel, but corresponding Termux Agent source
-`9132b74b1aa73bddbab4f984bfc3584e4b5cdfec` has **not** been
-installed on A8. Independent native operator acceptance required before
-claiming full progress telemetry. User browser acceptance open.
+Legacy command entries are classed as tasks. A8 Termux Agent source
+`228489788d1e5c5045904ade95a2c50d791d20c9` is **native and Git accepted**
+(26 tests PASS, independent SSH switch, host Git canary done/0).
+TASK/STAGE/GIT VERIFIED entries were confirmed in the real service log;
+PocketHost browser visual/functional acceptance remains open.
 
 **Earlier verified DEV update (20 November 2026):** Local Agent live log
 deployment `fb3dcc0ed47e006e5ea370ef96854d0b7b6e43c0` **PASS**.

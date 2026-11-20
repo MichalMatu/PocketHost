@@ -25,10 +25,11 @@ is historical evidence, **not** the latest live SHA.
 - Legacy `exec`, `exec finished`, `output summary` now display under
   **Tasks** rather than generic **Service**. New Termux `TASK`, `STAGE`
   and `GIT VERIFIED` records are parsed as structured activity.
-- **NOT YET INSTALLED ON A8:** Termux Agent source `9132b74b1aa73bddbab4f984bfc3584e4b5cdfec`
-  adds task/stage/Git progress lines. It must be packaged, natively
-  qualified and switched by an **independent operator**, never an Agent Git
-  task that restarts its own service.
+- **A8 Agent installed and Git-accepted:** exact runtime source
+  `228489788d1e5c5045904ade95a2c50d791d20c9`; 26 native tests PASS,
+  independent guarded switch PASS, fresh host Git task/result done/0.
+  Independent SSH verified actual TASK/STAGE/GIT VERIFIED records in svlogd.
+  Browser console acceptance remains OPEN.
 - No public unfiltered stdout, credentials or commands: existing LAN panel
   uses unauthenticated HTTP. Browser visual acceptance and exact-SHA QA
   remain OPEN. No Mac/other-device service changed.
