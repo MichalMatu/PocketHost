@@ -417,9 +417,14 @@ export default function ShizukuPage() {
                     )}
                     {selectedPackage && appDetail && appsVerified && !detailLoading && (
                       <div className="space-y-3 rounded-md border p-3">
-                        <p className="text-xs font-medium text-muted-foreground">Application controls · changes require confirmation</p>
+                        <p className="text-sm font-medium">Application controls</p>
                         <div className="flex flex-wrap gap-2">
-                        <AndroidActionButton action="launch" target={selectedPackage} onSuccess={() => void selectPackage(selectedPackage)}>Launch</AndroidActionButton>
+                          <AndroidActionButton action="launch" target={selectedPackage}
+                            onSuccess={() => void selectPackage(selectedPackage)}>Launch</AndroidActionButton>
+                        </div>
+                        <div className="space-y-2 border-t pt-3">
+                          <p className="text-xs font-semibold text-muted-foreground">Potentially disruptive actions · confirmation required</p>
+                          <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="force-stop" target={selectedPackage}
                           onSuccess={refreshAfterMutation}>Force stop</AndroidActionButton>
                         <AndroidActionButton action={appDetail.enabled ? "disable" : "enable"} target={selectedPackage}
@@ -430,8 +435,9 @@ export default function ShizukuPage() {
                           onSuccess={() => { setSelectedPackage(null); setAppDetail(null); refreshAfterMutation() }}>
                           Uninstall for user 0
                         </AndroidActionButton>
+                          </div>
+                          <p className="text-xs text-muted-foreground">Force stop, Disable, Enable and Uninstall may interrupt apps. Each operation names its target before execution.</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">Force stop, Disable, Enable and Uninstall may interrupt apps. Each operation names its target before execution.</p>
                       </div>
                     )}
                     <p className="text-muted-foreground text-xs">Android actions use the verified Companion permissions. Risky changes require confirmation; Uninstall targets Android user 0.</p>
