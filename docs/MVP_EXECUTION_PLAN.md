@@ -22,16 +22,14 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (20 November 2026):** A8 guarded deployment of
-`ff1559d85abdf45451886263ba003a7125dfa14d` **PASS**
-(HTTP 200, owned PID/start ticks, protected services unchanged).
-Current UI fixes bound diagnostics and prevent ambiguous read results across
-File Manager, Terminal, Backups, Agents, Platform and Network Access; Appearance
-now persists the actual theme choice. **No new QA was run for these changes.**
-Last previously approved scoped source checks at `5352c09` and earlier
-Mac Test Lab screenshots apply only to their recorded SHAs/scopes.
-Interactive Hosting acceptance, current-code functional QA, full UI/G2,
-Services owner sign-off and reboot G3 remain open.
+**Latest verified DEV update (20 November 2026):** A8 guarded panel deploy of
+`9bae95a41ab2ecbecda604cd103020949f22b62a` **PASS**
+(HTTP 200, owned PID/start ticks, unchanged protected services, tests not run).
+New UI/DEV fixes target Dashboard jumps, reload flash, Vite asset revalidation,
+lazy-route failure feedback, File Manager layout and the Terminal ttyd notice.
+**These fixes are not browser-QA or functional acceptance results.** Hosted
+Sites and repeated-reload behavior must still be checked in a real browser.
+Full G2/G3, Hosting P0, Services owner acceptance and off-device recovery remain open.
 
 ## Prioritized remaining work
 

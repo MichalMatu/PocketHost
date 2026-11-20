@@ -15,20 +15,22 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
-- Current verified A8 DEV live source: `ff1559d85abdf45451886263ba003a7125dfa14d`.
-  Guarded Local Agent task `pockethost-a8-appearance-theme-fast-flow-ff1559d-20261120-v1`:
-  **PASS**, HTTP **200**, owned PID **23096**, start ticks **55007488**,
-  protected services verified unchanged, tests **NOT RUN**.
-- Current panel improvements: bounded/fail-closed reads in File Manager,
-  Terminal, Backups & Recovery, Agents & API, Platform and Network Access;
-  Appearance now uses the real browser-persisted theme provider instead of
-  a no-op form. These changes were deployed sequentially with exact-SHA A8
-  guard receipts; this is **deployment verification, not UI or functional QA**.
-- Historical scoped QA at `5352c097246de249ac9d28a017135f4809d7e415`
-  passed only its recorded syntax/format/structure/lint/Node categories.
-  Earlier admin TypeScript checks were similarly SHA-scoped. None qualifies
-  the current `ff1559d` code. Full G2, Hosting P0 browser acceptance,
-  Services S1–S4 owner sign-off and reboot G3 remain open.
+- Current verified A8 DEV live source: `9bae95a41ab2ecbecda604cd103020949f22b62a`.
+  Guarded Local Agent task `pockethost-a8-termux-ui-fast-flow-9bae95a-20261120-v1`:
+  **PASS**, HTTP **200**, owned PID **9472**, start ticks **55238272**,
+  protected services unchanged, tests **NOT RUN**.
+- Consecutive guarded deployments of `ec5839e`, `abb5739`, `b605b9c`,
+  `ad4e1f2`, and `9bae95a` all returned exact-SHA **PASS**.
+  Fixes: paint saved theme before loading; remove remote Google Fonts blocker;
+  bound failed lazy page loads with a recoverable error; reserve Dashboard card
+  slots; permit private revalidation of known Vite GET/HEAD module assets while
+  all APIs/HTML remain no-store; use File Manager space; clarify that Termux
+  terminal requires locally installed ttyd, not Companion.
+- **No scoped QA or browser interaction verification at these SHAs.**
+  Browser-level confirmation of reload flash/latency, Dashboard layout and
+  hosted Sites remains open. The terminal executable was not installed or
+  started by this sprint; package changes require separate authorization.
+  Historical scoped QA at `5352c09` does not attest to the newer code.
 
 ## Private Mac Test Lab
 
