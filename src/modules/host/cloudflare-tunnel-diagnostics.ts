@@ -159,12 +159,12 @@ export class CloudflareTunnelDiagnosticHost {
     const down = 'down: ' + service + ': ';
     const line = result.stdout.trim();
     if (line.startsWith(run)) {
-      const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:;|$)/.exec(line.slice(run.length));
+      const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:[;,]|$)/.exec(line.slice(run.length));
       const pid = Number(match?.[1]), seconds = Number(match?.[2]);
       if (match && Number.isSafeInteger(pid) && Number.isSafeInteger(seconds))
         return { state: 'running', pid, uptimeSeconds: seconds, error: null };
     }
-    if (line.startsWith(down) && /^\d+s(?:;|$)/.test(line.slice(down.length)))
+    if (line.startsWith(down) && /^\d+s(?:[;,]|$)/.test(line.slice(down.length)))
       return { state: 'stopped', pid: null, uptimeSeconds: null, error: null };
     return { ...base, error: 'runit-status-invalid' };
   }
