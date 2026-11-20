@@ -1,5 +1,5 @@
 import * as React from "react"
-import { Activity, GitBranch, RefreshCw, TerminalSquare } from "lucide-react"
+import { GitBranch, RefreshCw, TerminalSquare } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
