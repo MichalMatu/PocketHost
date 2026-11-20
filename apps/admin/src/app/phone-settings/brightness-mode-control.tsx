@@ -92,12 +92,13 @@ export function BrightnessModeControl({ connected, onValuesChanged }: {
     }
   }
 
-  return <div className="space-y-2 rounded-md border p-3">
-    <p className="text-sm font-medium">Brightness control mode</p>
+  return <div className="space-y-2 rounded-md border bg-muted/20 p-3">
+    <p className="text-sm font-medium">Brightness mode</p>
     <p className="min-h-5 text-sm text-muted-foreground" role="status">
-      {mode === "manual" ? "Manual · slider can control the saved brightness" :
+      {!connected ? "Not verified · connect and authorize Shizuku to check" :
+       mode === "manual" ? "Manual · slider controls stored brightness" :
        mode === "automatic" ? "Adaptive · Android may override the slider" :
-       "Mode not checked · use Check mode before changing brightness"}
+       "Not checked · use Check mode"}
     </p>
     <div className="flex flex-wrap gap-2">
       <Button type="button" size="sm" variant="outline" disabled={!connected || busy}
@@ -116,8 +117,8 @@ export function BrightnessModeControl({ connected, onValuesChanged }: {
       {message.value}
     </p>}
     <p className="text-xs text-muted-foreground">
-      Mode changes are explicit Shizuku shell operations. Switching to manual first stores
-      a safe 128 / 255. The browser cannot measure actual screen luminance.
+      Switching to manual first stores 128 / 255 to avoid a black screen.
+      Changing modes requires an authorized Shizuku connection.
     </p>
   </div>
 }
