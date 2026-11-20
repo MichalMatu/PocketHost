@@ -13,6 +13,13 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — owner screenshot SSH listener CLOSED, independently diagnosed
+
+- Owner's post-deploy screenshots confirm migrated SSH panel and Agent-only overview; the dedicated SSH card reports `running PID 6596` but **`Listener: closed`**. "Other SSH service / sshd" is deliberately a separate protected read-only service and is not evidence about the dedicated listener.
+- Read-only A8 Local Agent Git result `pockethost-a8-ssh-listener-readonly-20261120-v1`: **done/0**. Agent PID 6821 and dedicated SSH PID 6596 active under runit; TCP connect to both `192.168.0.16:8022` and `127.0.0.1:8022` returned `ECONNREFUSED (111)`; PocketHost API reports `listen=closed`, HTTP 200. Thus the UI did not invent the warning.
+- Follow-up `pockethost-a8-ssh-runtime-rootcause-readonly-20261120-v1`: **done/0**, verified the real `sshd` PID 6596, config `Port 8022 / AddressFamily inet / ListenAddress 192.168.0.16`; Linux TCP tables contained no port-8022 listener. Root cause of missing bound socket **not yet established**.
+- **Recovery HOLD:** No SSH restart, config change, Agent lifecycle change or functional QA was performed. The dedicated SSH service needs a separately authorized, isolated recovery, preserving Agent intake, Git task transport and other services. Browser functional sign-off for saved profiles/terminal also remains open.
+
 ## 20 November 2026 — A8 SSH page relocation and Local Agent UI refinement DEPLOY PASS
 
 - Owner-requested migration from Local Agent `Control & SSH` into existing `/services/ssh` completed on main `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`.
