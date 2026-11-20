@@ -46,8 +46,9 @@ export function inspectMqttLoopbackHealth(): Promise<MqttLoopbackHealth> {
       }
     });
     socket.on('error', error => {
-      finish(error.code === 'ECONNREFUSED' ? 'not-ready' : 'unverified',
-        error.code === 'ECONNREFUSED' ? 'connect-refused' : 'transport-unavailable');
+      const refused = (error as NodeJS.ErrnoException).code === 'ECONNREFUSED';
+      finish(refused ? 'not-ready' : 'unverified',
+        refused ? 'connect-refused' : 'transport-unavailable');
     });
     socket.setTimeout(2000, () => finish('unverified', 'transport-unavailable'));
     socket.on('close', () => finish('unverified', 'transport-unavailable'));
