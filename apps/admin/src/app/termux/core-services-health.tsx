@@ -38,9 +38,11 @@ export function CoreServicesHealthPanel() {
       }
     }
     try {
+      const agentSample = read("local-agent-operations").then(value =>
+        localAgentOperationsSchema.parse(value))
       const result = await Promise.all([
         observe("Local Agent", async () => {
-          const data = localAgentOperationsSchema.parse(await read("local-agent-operations"))
+          const data = await agentSample
           return {
             state: data.agent.state === "running" && data.intake === "active"
               ? "ready" as const : "attention" as const,
@@ -50,7 +52,7 @@ export function CoreServicesHealthPanel() {
           }
         }),
         observe("Dedicated SSH", async () => {
-          const data = localAgentOperationsSchema.parse(await read("local-agent-operations"))
+          const data = await agentSample
           return {
             state: data.ssh.state === "running" && data.ssh.listen === "open"
               ? "ready" as const : "attention" as const,
