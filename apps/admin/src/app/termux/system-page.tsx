@@ -326,7 +326,6 @@ export default function SystemPage() {
   const androidTrafficReady = companionReady && trafficSource?.rxBytes != null &&
     trafficSource?.txBytes != null && trafficSourceAge !== null &&
     trafficSourceAge >= 0 && trafficSourceAge <= 120_000
-  const batteryReady = batteryPercent !== null
   const dnsReady = dnsMs !== null || dnsFailed === true
   const servicesRunning = host?.services.filter(service => service.state === "running").length ?? null
   const serviceUnknown = host?.services.some(service => service.state === "unknown") ?? false
@@ -368,8 +367,6 @@ export default function SystemPage() {
           </p>}
           {companionReady && (cpu === null || !androidTrafficReady) &&
             <p>Some Android readings are unavailable; their charts are hidden.</p>}
-          {!batteryReady &&
-            <p>Battery percentage requires permitted Termux:API or sysfs access.</p>}
         </div>
         <div data-testid="system-metrics" aria-busy={active} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           <SummaryCard title="Android CPU"
