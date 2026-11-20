@@ -1,5 +1,26 @@
 # PocketHost — mandatory agent rules
 
+## P0 OWNER DIRECTION — TRUSTED PRIVATE LAN; SECURITY LATER (2026-11-20)
+
+The owner treats the existing private LAN and this DEV panel as a trusted
+environment. **Do not initiate security work without an explicit request.**
+Authentication, tokens, protective proxy/tunnel changes, new log filtering
+or redaction, access-control UI and security audits belong to a **separate
+future sprint**. Do not make them a prerequisite for finishing the requested
+Local Agent UI or divert the current functional sprint into security.
+
+**Live Agent Console acceptance:** show the real source log as-is, just like
+`tail -f` on MacBook: full original lines with original timestamps/order,
+without semantic rewrites, SHA-only entries, character-count stand-ins,
+classifier labels or silent omission. Implement the straightforward private-LAN
+view requested by the owner. Acknowledge when the A8 source itself does not
+yet log enough detail; fix the real emitter instead of inventing summaries.
+Do not introduce new auth-token files or security architecture for this task.
+
+Continue respecting the pre-existing restrictions on external/public network
+exposure, unrelated services, recovery, and independent A8 updates; defer
+optional hardening, do not silently enable WAN access.
+
 ## Entry
 
 Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current evidence lives in the [A8 checkpoint](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md); old checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
