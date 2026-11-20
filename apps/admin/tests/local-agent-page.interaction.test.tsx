@@ -9,10 +9,6 @@ import { localAgentLogSchema } from "@/lib/local-agent-logs-schema"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
-vi.mock("@/app/termux/control-plane-panel", () => ({
-  ControlPlanePanel: () => <section>Advanced control plane diagnostics</section>,
-}))
-
 const controlPlane = {
   version: 1, mode: "read-only", observedAt: "2026-11-20T12:00:00.000Z",
   localAgent: {
@@ -110,9 +106,10 @@ describe("Local Agent read-only overview", () => {
     await user.click(screen.getByRole("button", { name: "Refresh" }))
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(4))
     await user.click(screen.getByRole("tab", { name: "Diagnostics" }))
-    expect(screen.queryByText("Advanced control plane diagnostics")).toBeNull()
+    expect(screen.queryByText("Local Agent & PocketHost")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Show technical details" }))
-    expect(screen.getByText("Advanced control plane diagnostics")).toBeTruthy()
+    expect(screen.getByText("Local Agent & PocketHost")).toBeTruthy()
+    expect(fetcher).toHaveBeenCalledTimes(4)
   })
 
   it("does not infer healthy execution from missing timing history", async () => {

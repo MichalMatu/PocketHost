@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
@@ -9,31 +8,13 @@ type Runit = ControlPlaneDiagnostic["localAgent"]["runit"]
 const status = (data: Runit) => data.state + (data.uptimeSeconds === null
   ? " · uptime unavailable" : " · " + formatAgentDuration(data.uptimeSeconds))
 
-export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number }) {
-  const [data, setData] = React.useState<ControlPlaneDiagnostic | null>(null)
-  const [loading, setLoading] = React.useState(true)
-  const [error, setError] = React.useState(false)
-  React.useEffect(() => {
-    const controller = new AbortController()
-    void Promise.resolve().then(() => {
-      if (controller.signal.aborted) return
-      setData(null)
-      setError(false)
-      setLoading(true)
-    })
-    void fetch("/api/v1/termux-admin?mode=control-plane-diagnostics", {
-      method: "GET", credentials: "same-origin", cache: "no-store",
-          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
-    }).then(async response => {
-      if (!response.ok) throw Error("unavailable")
-      return controlPlaneSchema.parse(await response.json() as unknown)
-    }).then(value => {
-      if (!controller.signal.aborted) { setData(value); setLoading(false) }
-    }).catch(() => {
-      if (!controller.signal.aborted) { setError(true); setLoading(false) }
-    })
-    return () => controller.abort()
-  }, [refreshToken])
+export function ControlPlanePanel({
+  data, loading, error,
+}: {
+  data: ControlPlaneDiagnostic | null
+  loading: boolean
+  error: boolean
+}) {
   return <Card>
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -43,8 +24,8 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
     </CardHeader>
     <CardContent className="space-y-3 text-sm">
       {loading && <p role="status">Reading control-plane diagnostics…</p>}
-      {error && <p role="alert">Control-plane diagnostics unavailable. No services were changed.</p>}
-      {data && !loading && <>
+      {error && <p role="alert">Control-plane diagnostics unavailable. {data ? "Last successful snapshot shown; it may be stale." : "No snapshot available."} No services were changed.</p>}
+      {data && <>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border p-3 space-y-1">
             <h3 className="font-medium">Local Agent</h3>

@@ -120,7 +120,7 @@ export default function LocalAgentPage() {
   const intake = agent?.intake === "stop-present" ? "STOP marker present"
     : agent?.intake === "stop-absent" ? "STOP marker absent" : "Unverified"
   const currentClaim = agent?.unspooledClaims
-  const logState = logsError ? "Read failed" : logsLoading ? "Reading" :
+  const logState = logsError ? "Read failed" : !live ? "Event updates paused" : logsLoading ? "Reading" :
     logs?.state === "ok" ? "Reading events" : "Events unavailable"
 
   return <BaseLayout title="Local Agent" description="Samsung A8 · private Termux diagnostics">
@@ -314,7 +314,7 @@ export default function LocalAgentPage() {
             </Button>
           </CardContent>
         </Card>
-        {advanced && <ControlPlanePanel refreshToken={refreshToken} />}
+        {advanced && <ControlPlanePanel data={plane} loading={planeLoading} error={planeError} />}
       </section>}
     </div>
   </BaseLayout>
