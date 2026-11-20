@@ -30,7 +30,7 @@ const headers = { "Content-Type": "application/json", "X-PocketHost-Intent": "te
 
 async function browse(root: Root, folder: string): Promise<Listing> {
   const response = await fetch(api + "?mode=browse-root&root=" + root + "&path=" + encodeURIComponent(folder),
-    { cache: "no-store", credentials: "same-origin" })
+    { cache: "no-store", credentials: "same-origin", signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error("Directory cannot be inspected")
   const data = await response.json() as Listing
   if (!Array.isArray(data.entries) || data.entries.length > 300 ||
@@ -90,7 +90,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
     let active = true
     const location = currentLocation.current
     void Promise.all([
-      fetch(api + "?mode=file-roots", { credentials: "same-origin" }).then(res => {
+      fetch(api + "?mode=file-roots", { credentials: "same-origin", signal: AbortSignal.timeout(10_000) }).then(res => {
         if (!res.ok) throw new Error("Filesystem roots unavailable")
         return res.json() as Promise<{ roots: { id: Root; available: boolean }[] }>
       }),
