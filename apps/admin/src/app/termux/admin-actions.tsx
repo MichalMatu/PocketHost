@@ -39,7 +39,11 @@ async function inspect<T>(mode: string, location = ""): Promise<T> {
     (["python-source-review", "python-source-history", "node-source-review", "node-source-history"].includes(mode))
       ? endpoint + "?mode=" + mode + "&name=" + encodeURIComponent(location) :
     endpoint + "?mode=" + mode
-  const response = await fetch(request, { method: "GET", credentials: "same-origin", cache: "no-store" })
+  const response = await fetch(request, {
+    method: "GET", credentials: "same-origin", cache: "no-store",
+    // Runit inventory is an ownership gate: never leave controls behind a hung read.
+    ...(mode === "services" ? { signal: AbortSignal.timeout(10_000) } : {}),
+  })
   if (!response.ok) throw new Error("Inventory unavailable.")
   return await response.json() as T
 }
