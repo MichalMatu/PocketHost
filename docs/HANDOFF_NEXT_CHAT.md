@@ -13,6 +13,15 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — A8 SSH page relocation and Local Agent UI refinement DEPLOY PASS
+
+- Owner-requested migration from Local Agent `Control & SSH` into existing `/services/ssh` completed on main `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`.
+- Local Agent now shows Agent-only controls and link to Services / SSH. The dedicated SSH listener's Start/Stop/Restart, terminal and saved profiles are rendered together on `/services/ssh`; the separate protected system `sshd` remains read-only lower down, clearly distinguished from the dedicated listener.
+- Other scoped UI changes: task durations retain sub-second precision, the raw log supports copy (including legacy clipboard fallback on LAN HTTP) and jump to latest without filtering source lines, delivery status says not checked by panel, and diagnostics more clearly distinguish missing verification evidence from a service failure. No backend controls, SSH configuration or credentials changed.
+- A8 read-only preflight `pockethost-a8-ssh-ui-preflight-20261120-v1`: **PASS**; live base `cec1a94`, owner/gateway markers match, Agent PID 6821 and dedicated SSH PID 6596 running at observation.
+- Exact-source guarded A8 deployment `pockethost-a8-ssh-ui-relocation-8e200b6-20261120-v1`: **DEPLOY PASS**, live SHA `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`, panel PID **18599** / start ticks **61952882**, loopback `/services/ssh` HTTP **200**, protected services verified unchanged, **tests not run**. No Mac execution, self-update, hardware restart, public exposure or QA.
+- Owner browser functional acceptance remains OPEN for the migrated SSH page, connection profiles and terminal; do not treat HTTP 200 as verified button behavior. Unsolicited QA remains off.
+
 ## 20 November 2026 — A8 Agent 7415454 production cutover ACCEPTED
 
 - Native source QA `sprint-a8-741-native-qa-clean-source-20261120-v1`: **29/29 tests PASS**, exact candidate bundle **26/26 SHA-256 PASS**, no Agent/SSH service changes during QA.
