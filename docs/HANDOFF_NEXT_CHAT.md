@@ -15,6 +15,22 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
+- Latest verified A8 DEV source: `425ea80155dac58d9f2e47f095a11c077c31f7f8`,
+  task `pockethost-a8-shizuku-guarded-actions-425ea80-20261120-v1`:
+  **DEPLOY PASS**, loopback HTTP **200**, owner PID **28660**,
+  start ticks **55740887**, protected services verified unchanged,
+  QA **NOT RUN**, zero Android device commands or package installations.
+  UI safety sprint: confirmation prompts before app disable/uninstall/force-stop,
+  permission grant/revoke, process TERM and Android service start/stop;
+  launch separated from disruptive app controls; stale inventory view-only;
+  mutation results trigger fresh bridge and inventory verification; Android
+  Shell input/execution/history replay disabled without current authorized
+  connection; diagnostics distinguish disconnected, unauthorized and bridge
+  API unavailable. Installation is explicitly **unverifiable** from the browser.
+  Functionality still requires physical Shizuku/Companion testing; user only
+  approved visual UX previously.
+
+
 - Latest verified A8 DEV live source `1bae685ea9ec69d43b7c2d139562601773581599`,
   task `pockethost-a8-shizuku-search-diagnostics-1bae685-20261120-v1`:
   **DEPLOY PASS**, HTTP **200**, owned PID **27171**, start ticks
