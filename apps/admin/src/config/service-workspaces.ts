@@ -22,7 +22,7 @@ export const serviceWorkspaces = [
   {
     id: "ssh", kind: "diagnostic",
     title: "SSH", url: "/services/ssh",
-    description: "Protected SSH service diagnostics",
+    description: "Dedicated A8 SSH controls, terminal, profiles and protected sshd diagnostics",
     icon: Shield,
   },
   {
