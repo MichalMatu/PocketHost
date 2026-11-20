@@ -63,7 +63,12 @@ function portOpen(port: number): Promise<boolean> {
 export class TermuxTerminal {
   private child: ChildProcess | null = null;
   private started: Promise<{ running: boolean; url: string | null }> | null = null;
+  private remoteProfileId: string | null = null;
   private readonly plan = terminalLaunchPlan();
+
+  session(): string | null {
+    return this.status().running ? this.remoteProfileId : null;
+  }
 
   status(): { running: boolean; url: string | null } {
     const running = !!this.child && this.child.exitCode === null && this.child.signalCode === null;
@@ -73,16 +78,33 @@ export class TermuxTerminal {
     if (this.status().running) return this.status();
     if (this.started) return this.started;
     this.started = this.startOnce();
+    this.remoteProfileId = null;
     try {
       return await this.started;
     } finally {
       this.started = null;
     }
   }
-  private async startOnce(): Promise<{ running: boolean; url: string | null }> {
+  async startSSH(profile: { id: string; host: string; username: string; port: number }):
+      Promise<{ running: boolean; url: string | null }> {
+    if (this.status().running || this.started)
+      throw new Error('Terminal is already running; stop it before connecting');
+    const args = [...this.plan.args.slice(0, -2),
+      PREFIX + '/bin/ssh', '-tt', '-p', String(profile.port),
+      profile.username + '@' + profile.host];
+    this.started = this.startOnce(args);
+    try {
+      const result = await this.started;
+      if (result.running) this.remoteProfileId = profile.id;
+      return result;
+    } finally {
+      this.started = null;
+    }
+  }
+  private async startOnce(args: string[] = this.plan.args): Promise<{ running: boolean; url: string | null }> {
     if (await portOpen(this.plan.port))
       throw new Error('Terminal port already in use; refusing to adopt an unknown listener');
-    const child = spawn(this.plan.executable, this.plan.args, {
+    const child = spawn(this.plan.executable, args, {
       cwd: os.homedir(),
       env: this.plan.env,
       detached: false,
@@ -108,6 +130,7 @@ export class TermuxTerminal {
     const child = this.child;
     if (child && child.exitCode === null && child.signalCode === null) child.kill('SIGTERM');
     this.child = null;
+    this.remoteProfileId = null;
     return { running: false, url: null };
   }
 }
