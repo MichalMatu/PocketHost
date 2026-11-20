@@ -67,7 +67,7 @@ async function copyText(text: string) {
   }
 }
 
-export function RemoteShellPanel() {
+export function RemoteShellPanel({ authorized }: { authorized: boolean }) {
   const [command, setCommand] = React.useState("")
   const [busy, setBusy] = React.useState(false)
   const [result, setResult] = React.useState<ShellEntry | null>(null)
@@ -76,7 +76,7 @@ export function RemoteShellPanel() {
   const [history, setHistory] = React.useState<ShellEntry[]>([])
 
   async function run(typed = command) {
-    if (!typed.trim() || typed.length > 240 || busy) return
+    if (!authorized || !typed.trim() || typed.length > 240 || busy) return
     setBusy(true)
     setError("")
     setCopyNotice("")
@@ -123,21 +123,25 @@ export function RemoteShellPanel() {
       </CardDescription>
     </CardHeader>
     <CardContent className="space-y-4">
+      {!authorized && <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
+        Android Shell is unavailable until Shizuku and Companion are connected and authorized.
+        No command can be submitted from this screen.
+      </p>}
       <div className="space-y-1">
         <label className="text-sm font-medium" htmlFor="remote-shell-command">Android shell command</label>
         <textarea id="remote-shell-command" value={command} maxLength={240} rows={3}
-          onChange={event => setCommand(event.target.value)} disabled={busy}
+          onChange={event => setCommand(event.target.value)} disabled={busy || !authorized}
           className="border-input bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2"
           placeholder="id" spellCheck={false} />
         <p className="text-muted-foreground text-xs">{command.length}/240 characters</p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={() => void run()} disabled={busy || !command.trim()}>
+        <Button type="button" onClick={() => void run()} disabled={busy || !authorized || !command.trim()}>
           {busy ? "Running…" : "Run on Samsung"}
         </Button>
         <span role="status" aria-live="polite" className="text-muted-foreground text-sm">
           {busy ? "Executing with Shizuku…" : result ? "Last execution: " + result.mode.toUpperCase() :
-            "Direct shell ready when Shizuku is connected"}
+            authorized ? "Direct shell available" : "Connect and authorize Shizuku to run commands"}
         </span>
       </div>
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
@@ -175,7 +179,7 @@ export function RemoteShellPanel() {
               {item.durationMs != null ? " · " + item.durationMs + " ms" : ""}
             </span>
           </div>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void run(item.command)}>Run again</Button>
+          <Button size="sm" variant="outline" disabled={busy || !authorized} onClick={() => void run(item.command)}>Run again</Button>
         </div>)}
       </div>}
       <p className="text-muted-foreground text-xs">

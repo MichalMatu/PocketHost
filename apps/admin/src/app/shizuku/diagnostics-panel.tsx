@@ -60,8 +60,8 @@ export function ShizukuDiagnosticsPanel() {
     return () => controller.abort()
   }, [refresh])
   const connection = !status
-    ? !loading && probes["Connection & CPU"] ? "Unavailable" : "Not checked"
-    : !status.connected ? "Disconnected"
+    ? !loading && probes["Connection & CPU"] ? "Bridge API unavailable" : "Not checked"
+    : !status.connected ? "Companion disconnected"
     : !status.authorized ? "Authorization required" : "Connected and authorized"
 
   return <Card>
@@ -79,6 +79,10 @@ export function ShizukuDiagnosticsPanel() {
     </CardHeader>
     <CardContent className="space-y-6">
       <section aria-labelledby="shizuku-connection-heading" className="space-y-3">
+        {!status && !loading && <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
+          Shizuku installation status is unknown. A failed bridge API request does not prove an app is missing.
+          Verify Shizuku and Companion directly on the phone.
+        </p>}
         <h3 id="shizuku-connection-heading" className="text-sm font-semibold">Connection status</h3>
         <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[

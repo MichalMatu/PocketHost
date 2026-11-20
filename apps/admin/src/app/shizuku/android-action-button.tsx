@@ -30,17 +30,44 @@ async function runAndroidAction(action: AndroidAction, target: string, value: st
   return result
 }
 
-export function AndroidActionButton({ action, target = "", value = "", children, onSuccess }: {
+const confirmationActions = new Set<AndroidAction>([
+  "force-stop", "enable", "disable", "uninstall", "grant", "revoke",
+  "process-stop", "service-start", "service-stop",
+])
+
+function confirmAction(action: AndroidAction, target: string, value: string) {
+  if (!confirmationActions.has(action)) return true
+  const label: Record<string, string> = {
+    "force-stop": "Force stop application",
+    "enable": "Enable application",
+    "disable": "Disable application",
+    "uninstall": "Uninstall application for Android user 0",
+    "grant": "Grant permission",
+    "revoke": "Revoke permission",
+    "process-stop": "Send TERM to process",
+    "service-start": "Start Android service",
+    "service-stop": "Stop Android service",
+  }
+  const subject = target || "(no target)"
+  const permission = value ? "\nPermission: " + value : ""
+  return window.confirm(
+    label[action] + "?\nTarget: " + subject + permission +
+    "\n\nThis may interrupt apps or system functions. Android may refuse the request. Continue?"
+  )
+}
+
+export function AndroidActionButton({ action, target = "", value = "", children, onSuccess, disabled = false }: {
   action: AndroidAction
   target?: string
   value?: string
   children: React.ReactNode
   onSuccess?: () => void
+  disabled?: boolean
 }) {
   const [busy, setBusy] = React.useState(false)
   const [feedback, setFeedback] = React.useState<{ ok: boolean; text: string } | null>(null)
   async function run() {
-    if (busy) return
+    if (busy || disabled || !confirmAction(action, target, value)) return
     setBusy(true)
     setFeedback(null)
     try {
@@ -58,7 +85,7 @@ export function AndroidActionButton({ action, target = "", value = "", children,
     }
   }
   return <span className="inline-flex min-w-0 flex-wrap items-center gap-2">
-    <Button type="button" size="sm" variant="outline" onClick={() => { void run() }} disabled={busy}>
+    <Button type="button" size="sm" variant="outline" onClick={() => { void run() }} disabled={busy || disabled}>
       {busy ? "Running…" : children}
     </Button>
     {feedback && <span role={feedback.ok ? "status" : "alert"}

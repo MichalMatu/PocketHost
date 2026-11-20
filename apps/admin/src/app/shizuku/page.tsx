@@ -167,6 +167,19 @@ export default function ShizukuPage() {
   }, [refreshKey])
 
   const connected = !loading && status?.connected === true && status.authorized === true
+  // Old inventories remain readable while refreshing but never authorize mutations.
+  const appsVerified = connected && !appsLoading && !appsError && apps !== null
+  const systemVerified = connected && !systemLoading && !systemError && system !== null
+  const bridgeState = loading ? "Checking Shizuku"
+    : !status ? "Bridge status unavailable"
+    : !status.connected ? "Companion disconnected"
+    : !status.authorized ? "Authorization required"
+    : "Shizuku · " + status.mode.toUpperCase() + (status.uid == null ? "" : " · UID " + status.uid)
+  const disconnectedReason = !status
+    ? "The panel cannot read Android bridge status. Installation cannot be determined from this browser."
+    : !status.connected
+      ? "Android bridge disconnected. Start Shizuku and connect PocketHost Companion on the phone."
+      : "Companion is connected but needs Shizuku authorization on the phone."
   const shownApps = (apps?.packages ?? []).filter(item =>
     (packageFilter === "all" || (packageFilter === "system" ? item.system : !item.system)) &&
     (item.packageName.toLowerCase().includes(appSearch.trim().toLowerCase()) ||
@@ -212,7 +225,7 @@ export default function ShizukuPage() {
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge variant="outline"><ShieldCheck className="size-3" /> {loading ? "Checking Shizuku" : connected ? "Shizuku · " + status.mode.toUpperCase() + (status.uid == null ? "" : " · UID " + status.uid) : "Shizuku unavailable"}</Badge>
+            <Badge variant="outline"><ShieldCheck className="size-3" /> {bridgeState}</Badge>
             <LastSample observedAt={status?.observedAt} />
           </div>
           <Button variant="outline" size="sm" disabled={loading}
@@ -220,6 +233,14 @@ export default function ShizukuPage() {
               // Preserve last inventory while refreshing; actions disabled until status verifies.
               setAppsError(false)
               setSystemError(false)
+              // Invalidate selected mutation targets before the next status check.
+              detailRequest.current += 1
+              setSelectedPackage(null)
+              setAppDetail(null)
+              setDetailLoading(false)
+              setSelectedProcessPid(null)
+              setSelectedService(null)
+              setStatus(null)
               setLoading(true)
               setRefreshKey(k => k + 1)
             }}>
@@ -229,12 +250,16 @@ export default function ShizukuPage() {
 
         {!connected && !loading && (
           <Card>
-            <CardHeader><CardTitle>Connect Shizuku</CardTitle></CardHeader><CardContent className="text-sm text-muted-foreground">
-              Start Shizuku, authorize PocketHost Companion on the phone, then refresh this page.
+            <CardHeader><CardTitle>{!status ? "Android bridge unavailable" : !status.connected ? "Connect Shizuku" : "Authorize Companion"}</CardTitle></CardHeader>
+            <CardContent className="space-y-2 text-sm text-muted-foreground">
+              <p>{disconnectedReason}</p>
+              <p>Install or start Shizuku and PocketHost Companion as needed, authorize access, then use Refresh. The browser cannot verify whether either app is installed.</p>
+              <span>
               <a className="ml-2 inline-flex items-center gap-1 underline underline-offset-4"
                 href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
                 Setup guide <ExternalLink className="size-3" />
               </a>
+              </span>
             </CardContent>
           </Card>
         )}
@@ -274,12 +299,16 @@ export default function ShizukuPage() {
                     onClick={() => { setPackageFilter(filter); setAppPage(0) }}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
                 ))}
               </div>
+              {apps && !appsVerified && <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
+                Previous application inventory · read-only until an authorized fresh sample is verified.
+              </p>}
               {!apps ? <p role="status" className="text-muted-foreground text-sm">{appsLoading ? "Loading Android applications…" : appsError ? "Application inventory request failed. Try Refresh." : "Package inventory unavailable or not authorized."}</p> :
                 <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(240px,340px)]">
                   <div className="max-h-[65vh] min-h-48 overflow-y-auto rounded-lg border">
                     {visibleApps.map(item => <button key={item.packageName} type="button"
                       className={"flex w-full items-center justify-between gap-3 border-b p-3 text-left text-sm last:border-b-0 hover:bg-muted/60 " +
                         (selectedPackage === item.packageName ? "bg-muted" : "")}
+                      disabled={!appsVerified}
                       onClick={() => { setAppView("details"); setPermissionSearch(""); void selectPackage(item.packageName) }}>
                       <span className="min-w-0 space-y-1">
                         <span className="block text-sm font-medium break-words">{item.label || item.packageName}</span>
@@ -349,7 +378,7 @@ export default function ShizukuPage() {
                               <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-2 text-sm last:border-b-0">
                                 <span className="min-w-0 flex-1 break-all font-mono text-xs">{permission.name}</span>
                                 <Badge variant="outline">{permission.granted ? "Granted" : "Not granted"}</Badge>
-                                {selectedPackage && connected && <AndroidActionButton
+                                {selectedPackage && appsVerified && !detailLoading && <AndroidActionButton
                                   action={permission.granted ? "revoke" : "grant"} target={selectedPackage}
                                   value={permission.name} onSuccess={() => void selectPackage(selectedPackage)}>
                                   {permission.granted ? "Revoke" : "Grant"}
@@ -372,8 +401,10 @@ export default function ShizukuPage() {
                         <Button size="sm" variant="outline" onClick={() => void selectPackage(selectedPackage)}>Retry app details</Button>
                       </div>
                     )}
-                    {selectedPackage && appDetail && connected && (
-                      <div className="flex flex-wrap gap-2">
+                    {selectedPackage && appDetail && appsVerified && !detailLoading && (
+                      <div className="space-y-3 rounded-md border p-3">
+                        <p className="text-xs font-medium text-muted-foreground">Application controls · changes require confirmation</p>
+                        <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="launch" target={selectedPackage} onSuccess={() => void selectPackage(selectedPackage)}>Launch</AndroidActionButton>
                         <AndroidActionButton action="force-stop" target={selectedPackage}>Force stop</AndroidActionButton>
                         <AndroidActionButton action={appDetail.enabled ? "disable" : "enable"} target={selectedPackage}
@@ -384,6 +415,8 @@ export default function ShizukuPage() {
                           onSuccess={() => { setSelectedPackage(null); setAppDetail(null); setRefreshKey(k => k + 1) }}>
                           Uninstall for user 0
                         </AndroidActionButton>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Force stop, Disable, Enable and Uninstall may interrupt apps. Each operation names its target before execution.</p>
                       </div>
                     )}
                     <p className="text-muted-foreground text-xs">Direct browser actions run immediately with actual Shizuku permissions. Uninstall targets Android user 0.</p>
@@ -401,6 +434,9 @@ export default function ShizukuPage() {
             <CardContent className="space-y-3 pt-4">
               <SearchField label="Search Android processes" placeholder="Search PID, user or process…"
                 value={processSearch} onChange={value => { setProcessSearch(value); setProcessPage(0) }} />
+              {system && !systemVerified && <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
+                Previous Android process sample · view only until a fresh verified read completes.
+              </p>}
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
                   <div className="relative max-h-[65vh] min-h-48 overflow-auto rounded-lg border">
@@ -455,6 +491,7 @@ export default function ShizukuPage() {
                         : <>
                             <p className="text-muted-foreground text-xs">TERM targets PID {selectedProcess.pid}. Android may deny it; do not stop critical system processes.</p>
                             <AndroidActionButton action="process-stop" target={String(selectedProcess.pid)}
+                              disabled={!systemVerified}
                               onSuccess={() => setRefreshKey(k => k + 1)}>Send TERM to PID {selectedProcess.pid}</AndroidActionButton>
                           </>}
                     </div>
@@ -468,6 +505,9 @@ export default function ShizukuPage() {
             <Card><CardContent className="space-y-3 pt-4">
               <SearchField label="Search Android services" placeholder="Search service component…"
                 value={serviceSearch} onChange={value => { setServiceSearch(value); setServicePage(0) }} />
+              {system && !systemVerified && <p role="status" className="rounded-md border p-3 text-sm text-muted-foreground">
+                Previous Android service sample · view only until a fresh verified read completes.
+              </p>}
               {!system || system.services.error ? (
                 <p role="status" className="text-muted-foreground text-sm">
                   {systemLoading ? "Loading Android services…" : systemError ? "Android system request failed. Try Refresh." :
@@ -505,11 +545,13 @@ export default function ShizukuPage() {
                     <div className="space-y-1 rounded-lg border p-3 text-sm">
                       <p className="font-medium">Selected Android component</p>
                       <p className="break-all font-mono text-xs">{selectedService}</p>
-                      <p className="text-muted-foreground text-xs">Runtime state not reported. Start/Stop targets this component; Android may refuse.</p>
+                      <p className="text-muted-foreground text-xs">Current service state is unknown. Start and Stop are requests, not guarantees; Android may reject them. Confirmation is required.</p>
                       <div className="flex flex-wrap gap-2">
                         <AndroidActionButton action="service-start" target={selectedService}
+                          disabled={!systemVerified}
                           onSuccess={() => setRefreshKey(k => k + 1)}>Start service</AndroidActionButton>
                         <AndroidActionButton action="service-stop" target={selectedService}
+                          disabled={!systemVerified}
                           onSuccess={() => setRefreshKey(k => k + 1)}>Stop service</AndroidActionButton>
                       </div>
                     </div>
@@ -519,7 +561,7 @@ export default function ShizukuPage() {
             </CardContent></Card>
           </div>
         )}
-        {section === "shell" && <RemoteShellPanel />}
+        {section === "shell" && <RemoteShellPanel authorized={connected} />}
         {section === "diagnostics" && <ShizukuDiagnosticsPanel />}
 
         </div>
