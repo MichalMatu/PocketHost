@@ -8,6 +8,7 @@ import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflar
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
 import { LocalAgentLogHost } from "../../src/modules/host/local-agent-log-diagnostics.ts"
+import { LocalAgentRawLogHost } from "../../src/modules/host/local-agent-raw-log.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
@@ -972,6 +973,7 @@ function termuxAdminApi(): Plugin {
   const protectedServices = new ProtectedServiceDiagnosticHost()
   const controlPlane = new ControlPlaneDiagnosticHost()
   const agentLogs = new LocalAgentLogHost()
+  const rawAgentLog = new LocalAgentRawLogHost()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
   const terminal = new TermuxTerminal()
@@ -1035,6 +1037,28 @@ function termuxAdminApi(): Plugin {
           try {
             const url = new URL(request.url ?? "/", "http://localhost")
             const mode = url.searchParams.get("mode")
+            // Exact svlogd bytes, streamed incrementally to the trusted LAN UI.
+            // This is not the classified/sanitized diagnostic endpoint.
+            if (mode === "local-agent-raw-log") {
+              const cursor = url.searchParams.get("cursor")
+              if ((url.searchParams.size !== 1 && url.searchParams.size !== 2) ||
+                  Array.from(url.searchParams.keys()).some(key => key !== "mode" && key !== "cursor") ||
+                  (cursor !== null && !/^\\d{1,20}:\\d{1,20}:\\d{1,16}$/.test(cursor))) {
+                response.statusCode = 400
+                response.end('invalid-cursor')
+                return
+              }
+              const chunk = rawAgentLog.read(cursor)
+              response.setHeader("Content-Type", "application/octet-stream")
+              response.setHeader("X-Agent-Log-State", chunk.state)
+              response.setHeader("X-Agent-Log-Reset", chunk.reset ? "1" : "0")
+              response.setHeader("X-Agent-Log-More", chunk.more ? "1" : "0")
+              if (chunk.cursor) response.setHeader("X-Agent-Log-Cursor", chunk.cursor)
+              response.statusCode = chunk.state === "ok" ? 200
+                : chunk.state === "missing" ? 404 : 503
+              response.end(chunk.bytes)
+              return
+            }
             const result = mode === "files" ? { files: files.list(url.searchParams.get("path") ?? "") } :
               mode === "snapshots" ? { snapshots: backups.list() } :
               mode === "services" ? (() => {
