@@ -13,9 +13,24 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## Latest verified A8 DEV — 20 November 2026
+
+- Local Agent task `pockethost-a8-local-agent-single-snapshot-b8c5f15-20261120-v1`:
+  **DEPLOY PASS** at `b8c5f153db82f1716caa2d62326ffba8fdc79649`,
+  guarded readback HTTP **200**, owned PID **27018**, start ticks
+  **59407941**, protected services unchanged, **tests NOT RUN**.
+- The read-only Local Agent screen and advanced details share one bounded
+  control-plane API sample. Opening details no longer issues a duplicate GET.
+  Stale diagnostic snapshots and paused browser event updates are labeled.
+  UI regression assertions were changed in source but not executed. Owner
+  browser acceptance remains open.
+- Previous Local Agent UX deployment at `1399087825eb5c5554427ccce3df8d529f3b5c3a`:
+  **DEPLOY PASS**, HTTP **200**, PID **27966**, start ticks **59321015**,
+  protected services unchanged, tests NOT RUN.
+
 ## Verified A8 deployment
 
-- Latest verified A8 DEV source `83ada7caa6762aec0e0626f6290cfeff583a8fff`,
+- Earlier verified A8 DEV source `83ada7caa6762aec0e0626f6290cfeff583a8fff`,
   task `pockethost-a8-phone-settings-ux-83ada7c-20261120-v1`:
   **DEPLOY PASS**, HTTP **200**, owner PID **24775**, start ticks
   **55819808**, protected services verified unchanged, QA **NOT RUN**.

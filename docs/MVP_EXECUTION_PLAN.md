@@ -23,6 +23,13 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
 **Latest verified DEV update (20 November 2026):** A8 guarded deployment
+`b8c5f153db82f1716caa2d62326ffba8fdc79649` **PASS**
+(HTTP 200, owned PID/ticks, protected services unchanged; QA not run).
+The Local Agent read-only dashboard now shares one diagnostic snapshot across
+overview and advanced details, avoids duplicate API reads, and distinguishes
+paused event updates / stale diagnostic evidence. Owner browser acceptance open.
+
+**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
 `83ada7caa6762aec0e0626f6290cfeff583a8fff` **PASS**
 (HTTP 200, PID/ticks readback, protected services unchanged, no QA).
 Phone Settings layout revised: correct bridge status labels, inline card
