@@ -20,7 +20,7 @@ function parseStatus(value: unknown): Status {
 
 async function read(): Promise<Status> {
   const response = await fetch(api + "?mode=terminal-status", {
-    credentials: "same-origin", cache: "no-store",
+    credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(10_000),
   })
   if (!response.ok) throw new Error("Terminal status unavailable")
   return parseStatus(await response.json() as unknown)
@@ -47,13 +47,13 @@ export function TermuxTerminalPanel({
     void read().then(result => {
       if (mounted) { setStatus(result); setError("") }
     }).catch(() => {
-      if (mounted) setError("Terminal status unavailable. Refresh to check the session.")
+      if (mounted) { setStatus(null); setError("Terminal status unavailable. Refresh to check the session.") }
     })
     return () => { mounted = false }
   }, [refreshToken])
 
   const run = async (name: "start" | "stop") => {
-    if (busy || !status || (name === "start" && (detected !== true || status.running)) ||
+    if (busy || !!error || !status || (name === "start" && (detected !== true || status.running)) ||
       (name === "stop" && !status.running) || !window.confirm(name === "start"
         ? "Open an interactive Termux shell for this trusted LAN session? Commands have your Termux user's permissions."
         : "End this PocketHost-owned ttyd session?")) return
@@ -61,8 +61,8 @@ export function TermuxTerminalPanel({
     try {
       setStatus(await command(name))
     } catch {
+      setStatus(null)
       setError("Terminal result unconfirmed. Refresh to verify the session before retrying.")
-      void read().then(setStatus).catch(() => undefined)
     } finally {
       setBusy(false)
     }
@@ -86,10 +86,10 @@ export function TermuxTerminalPanel({
     </p>}
     <div className="flex flex-wrap gap-2">
       {running
-        ? <Button variant="outline" disabled={busy} onClick={() => void run("stop")}>
+        ? <Button variant="outline" disabled={busy || !!error} onClick={() => void run("stop")}>
           Stop terminal
         </Button>
-        : <Button disabled={busy || !status || detected !== true} onClick={() => void run("start")}>
+        : <Button disabled={busy || !!error || !status || detected !== true} onClick={() => void run("start")}>
           Start terminal
         </Button>}
     </div>
