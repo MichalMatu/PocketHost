@@ -14,7 +14,12 @@ import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, ResticActions } from "@/app/termux/admin-actions"
 
 async function getData<T>(endpoint: string, parse: (value: unknown) => T, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(endpoint, { method: "GET", cache: "no-store", credentials: "same-origin", signal })
+  const requestSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+    : AbortSignal.timeout(10_000)
+  const response = await fetch(endpoint, {
+    method: "GET", cache: "no-store", credentials: "same-origin", signal: requestSignal,
+  })
   if (!response.ok) throw new Error("read-unavailable")
   return parse(await response.json() as unknown)
 }
