@@ -6,6 +6,9 @@ export const cloudflareTunnelSchema = z.object({
   version: z.literal(1),
   mode: z.literal("read-only"),
   service: z.literal("cloudflared"),
+  binary: z.object({
+    state: z.enum(["available", "missing", "unverified"]),
+  }).strict().optional(),
   observedAt: z.string().datetime({ offset: true }),
   runit: z.object({
     state: z.enum(["running", "stopped", "unknown"]),
