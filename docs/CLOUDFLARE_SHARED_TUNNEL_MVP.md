@@ -1,6 +1,6 @@
 ---
 status: design-only
-last_reviewed: 2026-11-20
+last_reviewed: 2026-11-21
 purpose: Prepare the existing Pi Zero Cloudflare connector for future independent A8 applications without a second tunnel
 ---
 
@@ -58,6 +58,8 @@ This is **a template, not valid deployment config**. The final catch-all is inte
 
 `photomap.pl` is **a future first complete independent hosting migration, not a current tunnel or deployment target**. Before changing any `photomap.pl` DNS, verify its real application stack and database/storage needs, deploy an independent copy into PocketHost, confirm uploads, background jobs (if any), persistent storage, backup/restore, logs, health and rollback on a non-production address. Then separately approve domain/TLS migration. Until that point, the live site and its infrastructure remain untouched.
 
-## Next MVP module
+## Current handoff boundary
 
-Proceed with **Services → Autostart**: inventory Termux:Boot scripts, runit desired states, and missing reboot persistence proof. No physical reboot, forced service starts or new scheduler from this design-only change.
+Autostart scripts and current-session service states have since been inspected; **real post-reboot recovery remains open**. This design is still **not applied**. Next Cloudflare change is gated on identifying a dedicated independent A8 application, verifying the Pi tunnel's current public hostname/DNS and planning a safe one-hostname ingress/DNS modification with rollback. No reboot, second connector, public admin exposure or new scheduler.
+
+See [21 November A8 checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and [current handoff](HANDOFF_NEXT_CHAT.md) for current state rather than treating this design document as the project backlog.
