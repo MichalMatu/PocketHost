@@ -3,7 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { formatAgentDuration } from "@/lib/local-agent-time"
 
-const short = (value: string | null) => value ? value.slice(0, 12) : "unverified"
+const short = (value: string | null) => value ? value.slice(0, 12) : "Not available from this diagnostic"
+const ownerReason: Record<string, string> = {
+  unavailable: "Owner evidence could not be read",
+  "invalid-owner": "Owner record could not be validated",
+  "untrusted-checkout": "Checkout validation failed",
+  "invalid-process": "Process identity could not be verified",
+  "invalid-source": "Source revision could not be verified",
+}
 type Runit = ControlPlaneDiagnostic["localAgent"]["runit"]
 const status = (data: Runit) => data.state + (data.uptimeSeconds === null
   ? " · uptime unavailable" : " · " + formatAgentDuration(data.uptimeSeconds))
@@ -54,8 +61,10 @@ export function ControlPlanePanel({
             <h3 className="font-medium">PocketHost</h3>
             <p>Runit: {status(data.pocketHost.runit)}</p>
             <p>Watch: {status(data.pocketHost.watch)}</p>
-            <p>Process ownership: {data.pocketHost.owner.state}</p>
-            <p>{data.pocketHost.owner.pid === null ? "PID unavailable" :
+            <p>Process ownership: {data.pocketHost.owner.state === "verified"
+              ? "Verified by this diagnostic" :
+              ownerReason[data.pocketHost.owner.reason ?? ""] ?? "Not established by this diagnostic"}</p>
+            <p>{data.pocketHost.owner.pid === null ? "PID not reported by this diagnostic" :
               "PID " + data.pocketHost.owner.pid + " · start ticks " + data.pocketHost.owner.startTicks}</p>
           </div>
         </div>
@@ -63,10 +72,13 @@ export function ControlPlanePanel({
           <h3 className="font-medium">Source revision</h3>
           <p>Recorded startup SHA: <code>{short(data.pocketHost.owner.markerSha)}</code></p>
           <p>Gateway marker SHA: <code>{short(data.pocketHost.owner.gatewaySha)}</code></p>
-          <p>Owner record agreement: <strong>{data.pocketHost.owner.markerAgreement}</strong></p>
+          <p>Owner record agreement: <strong>{data.pocketHost.owner.markerAgreement === "unverified"
+            ? "Not established by this diagnostic" : data.pocketHost.owner.markerAgreement}</strong></p>
           <p>Checkout HEAD: <code>{short(data.pocketHost.owner.checkoutSha)}</code></p>
-          <p>Revision comparison: <strong>{data.pocketHost.owner.revision}</strong></p>
-          <p>Git history: {data.pocketHost.owner.revisionEvidence.state}</p>
+          <p>Revision comparison: <strong>{data.pocketHost.owner.revision === "unverified"
+            ? "Not established by this diagnostic" : data.pocketHost.owner.revision}</strong></p>
+          <p>Git history: {data.pocketHost.owner.revisionEvidence.state === "unavailable"
+            ? "Not available from this diagnostic" : data.pocketHost.owner.revisionEvidence.state}</p>
           {data.pocketHost.owner.revisionEvidence.areas && <p>
             Files changed: {data.pocketHost.owner.revisionEvidence.changedFiles}
             {" · Admin UI: "}{data.pocketHost.owner.revisionEvidence.areas.adminUI}
@@ -76,13 +88,15 @@ export function ControlPlanePanel({
             {" · Other: "}{data.pocketHost.owner.revisionEvidence.areas.other}
           </p>}
           <p>Checkout clean: {data.pocketHost.owner.checkoutClean === null
-            ? "unverified" : data.pocketHost.owner.checkoutClean ? "yes" : "no"}</p>
+            ? "Not established by this diagnostic" : data.pocketHost.owner.checkoutClean ? "yes" : "no"}</p>
           {data.pocketHost.owner.reason && <p>Diagnostic: {data.pocketHost.owner.reason}</p>}
           <p className="text-xs text-muted-foreground">
             Historical changes do not prove the JavaScript version loaded in memory.
           </p>
         </div>
-        <p role="status">Update readiness: manual review required · restart blocked.</p>
+        <p role="status">This read-only diagnostic cannot authorize a PocketHost restart.
+          Missing ownership evidence here does not by itself mean that the running service is stopped.
+        </p>
         <p className="text-xs text-muted-foreground">
           No lifecycle controls are granted. Observed {new Date(data.observedAt).toLocaleString()}.
         </p>
