@@ -13,7 +13,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
-## 20 November 2026 — resumed A8 Local Agent + SSH sprint
+## 20 November 2026 — A8 Agent 7415454 production cutover ACCEPTED
+
+- Native source QA `sprint-a8-741-native-qa-clean-source-20261120-v1`: **29/29 tests PASS**, exact candidate bundle **26/26 SHA-256 PASS**, no Agent/SSH service changes during QA.
+- One-shot external controller: first `prepare` failed pre-mutation because `operator.py` shadowed stdlib; corrected isolated Python invocation `python3 -I -B` **PREPARE PASS**. `sprint-a8-741-independent-switch-20261120-v1`: **SWITCH PASS**, Agent PID **4112 → 6821**, SSH PID **6596** preserved, rollback baseline stored.
+- Independent fresh A8 task `sprint-a8-741-new-runtime-git-accept-20261120-v1`: **done/exit 0**, installed release `7415454b1fb2af7d3babe1c283c9e38848291d2b`, live PID/source, 26/26 manifest, STOP absent and SSH unchanged. Do not replay the switch.
+- PocketHost DEV remains at `cec1a94e12a330e89f672f8d4ca1776cc3c7d2e9`, prior deployment HTTP **200**, PID **25941**; this is not browser functional acceptance. **Control & SSH**, Start/Stop, Pause/Resume, saved profiles, terminal and real raw console still need owner browser sign-off. No further tests or panel restarts performed with this docs change.
+
+## Earlier 20 November 2026 — resumed A8 Local Agent + SSH sprint
 
 - **SSH recovered**: native A8 task `sprint-a8-dedicated-ssh-restart-20261120-v1`
   verified port **192.168.0.16:8022 OPEN**, SSH process changed from PID
