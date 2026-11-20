@@ -13,7 +13,8 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
       if (!controller.signal.aborted) setLoading(true)
     })
     void fetch("/api/v1/termux-admin?mode=cloudflare-diagnostics", {
-      method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
+      method: "GET", credentials: "same-origin", cache: "no-store",
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
     }).then(async response => {
       if (!response.ok) throw Error("unavailable")
       return cloudflareTunnelSchema.parse(await response.json() as unknown)
