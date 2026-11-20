@@ -5,11 +5,14 @@ import { cn } from "cn"
 interface LoadingSpinnerProps {
   className?: string
   size?: "sm" | "md" | "lg"
+  /** Inline status indicator; the parent owns the loading area's height. */
+  inline?: boolean
 }
 
 export function LoadingSpinner({
   className,
   size = "md",
+  inline = false,
 }: LoadingSpinnerProps) {
   const sizeClasses = {
     sm: "h-4 w-4",
@@ -18,7 +21,7 @@ export function LoadingSpinner({
   }
 
   return (
-    <div className="flex items-center justify-center min-h-[200px]">
+    <div className={cn("flex items-center justify-center", inline ? "shrink-0" : "min-h-[200px]")}>
       <div
         className={cn(
           "animate-spin rounded-full border-b-2 border-primary",

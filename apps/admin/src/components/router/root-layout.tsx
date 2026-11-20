@@ -41,14 +41,15 @@ export function RootFallback() {
           <div key={index} className={`h-4 rounded bg-sidebar-accent ${width}`} />
         ))}
       </aside>
-      <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background text-foreground md:m-2 md:ml-0 md:rounded-xl">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background text-foreground md:m-2 md:ml-0 md:rounded-xl">
         <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4 lg:px-6">
           <div className="size-8 rounded-md bg-muted" />
           <div className="h-8 w-44 rounded-md bg-muted" />
         </div>
-        <main className="flex min-h-48 flex-1 items-start px-4 py-5 lg:px-6">
-          <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
-            <LoadingSpinner /> Loading page…
+        <main className="grid min-h-48 flex-1 place-items-center px-4 py-5 lg:px-6">
+          <div role="status" className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+            <LoadingSpinner size="sm" inline />
+            <span>Loading page…</span>
           </div>
         </main>
       </div>
