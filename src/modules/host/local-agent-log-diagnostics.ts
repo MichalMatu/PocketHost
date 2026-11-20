@@ -223,8 +223,9 @@ export class LocalAgentLogHost {
       const lines = raw.split(/\r?\n/);
       if (offset > 0) lines.shift(); // skip incomplete first log record
       result.truncated = offset > 0;
-      const last = lines.slice(-120);
-      result.truncated ||= lines.length > 120;
+      const completeLines = lines.filter(line => line.trim());
+      const last = completeLines.slice(-120);
+      result.truncated ||= completeLines.length > 120;
       const events: AgentLogEvent[] = [];
       for (const line of last) {
         if (!line.trim()) continue;
