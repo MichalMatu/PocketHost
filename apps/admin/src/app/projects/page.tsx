@@ -234,6 +234,9 @@ export default function ProjectsPage() {
   }
   return <BaseLayout title="Projects" description="Node.js projects.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
+      <div className="flex min-h-10 items-center justify-end">
+        <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
+      </div>
       {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         </CardHeader>
         <CardContent>
@@ -990,7 +993,6 @@ export default function ProjectsPage() {
             await refresh(); setReleases([]); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
-          <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"}
             onClick={() => action(async () => {
               const result = await getJson(api + "/toolchain")

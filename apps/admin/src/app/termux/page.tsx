@@ -86,20 +86,22 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
   return (
     <BaseLayout title={sectionTitles[section]} >
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" />Termux</Badge>
             <Link to="/settings/network" className="text-muted-foreground text-xs underline-offset-4 hover:underline">
               <Badge variant="outline">LAN only · no login</Badge>
             </Link>
-          </div>
+            </div>
           {overviewTracked && <p role="status" className="text-xs text-muted-foreground">
             {overviewSource}: {reading ? "Loading…" : overviewFailed ? "Unavailable · retry" :
               lastOverviewRead === null ? "Not checked" : "Ready"}
             {lastOverviewRead !== null && !reading &&
               <span> · last successful read {new Date(lastOverviewRead).toLocaleTimeString()}</span>}
           </p>}
-          <Button variant="outline" onClick={() => { setSectionRefreshToken(value => value + 1); void refresh() }} disabled={reading}>
+          </div>
+          <Button variant="outline" className="shrink-0" onClick={() => { setSectionRefreshToken(value => value + 1); void refresh() }} disabled={reading}>
             <RefreshCw className={reading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>
         </div>

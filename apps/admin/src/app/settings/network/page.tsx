@@ -93,6 +93,11 @@ export default function NetworkAccessPage() {
   return (
     <BaseLayout title="Network Access" description="Local administration or trusted home Wi-Fi">
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
+        <div className="flex min-h-10 items-center justify-end">
+          <Button variant="outline" disabled={busy} onClick={() => void refresh()}>
+            <RefreshCw className="size-4" /> Refresh
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Network className="size-5" /> Admin network access</CardTitle>
@@ -107,9 +112,6 @@ export default function NetworkAccessPage() {
                 : status.mode === "auto" ? "Private LAN auto-starts with PocketHost" : "Manual LAN startup"}</Badge>
               <Badge variant="secondary">{!status
                 ? "Gateway state unverified" : status.enabled ? "Home LAN enabled" : "Managed gateway off"}</Badge>
-              <Button variant="outline" disabled={busy} onClick={() => void refresh()}>
-                <RefreshCw className="size-4" /> Refresh
-              </Button>
             </div>
             {!status && !error && <p role="status">Reading network interfaces…</p>}
             {error && <p role="alert" className="text-destructive text-sm">{error}</p>}

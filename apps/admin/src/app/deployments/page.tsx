@@ -93,8 +93,10 @@ export default function DeploymentsPage() {
   return (
     <BaseLayout title="Deployments" description="Current releases and real deployment events for owned projects">
       <div className="space-y-4 px-4 pb-8 lg:px-6">
-        <Button variant="outline" disabled={staticState === "loading" || nodeState === "loading"}
-          onClick={() => { void loadSites(); void loadNodes() }}>Refresh deployments</Button>
+        <div className="flex min-h-10 items-center justify-end">
+          <Button variant="outline" disabled={staticState === "loading" || nodeState === "loading"}
+            onClick={() => { void loadSites(); void loadNodes() }}>Refresh</Button>
+        </div>
         <Card>
           <CardHeader><CardTitle>Static sites</CardTitle></CardHeader>
           <CardContent className="space-y-3">

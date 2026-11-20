@@ -77,25 +77,27 @@ export function TermuxTerminalPanel({
         detected === false && !running ? "ttyd not installed" :
         status ? running ? "Terminal running" : "Stopped" : "Checking status"}</Badge>
     </div>
-    <p className="text-xs text-muted-foreground">
-      Private LAN only. Uses native Termux Bash through ttyd; no Companion or Shizuku is required. Commands have your Termux user's permissions. One client at a time.
-    </p>
+    {!running && detected !== false && <p className="text-xs text-muted-foreground">
+      Private LAN only. Shell commands have your Termux user's permissions. One browser client at a time.
+    </p>}
     {detectionError && <p role="alert" className="text-sm text-destructive">
       Terminal availability could not be checked. Refresh to retry.
     </p>}
-    {detected === false && !detectionError && !running && <p role="status" className="text-sm">
-      Terminal is unavailable because <code>ttyd</code> is not installed in Termux.
-      To enable it: open <Link to="/packages" className="font-medium underline underline-offset-2">Packages & Software</Link>,
-      choose Available, search for <code>ttyd</code>, then Preview install and Confirm.
-      After installation, return here and press Refresh. Companion is not needed.
-    </p>}
+    {detected === false && !detectionError && !running && <div role="status" className="space-y-2 rounded-md border p-4 text-sm">
+      <p><strong>Terminal unavailable:</strong> <code>ttyd</code> is not installed in Termux.</p>
+      <p>
+        Open <Link to="/packages" className="font-medium underline underline-offset-2">Packages & Software</Link>,
+        select Available, search for <code>ttyd</code>, then Preview install and Confirm.
+        Return here and use Refresh. Companion and Shizuku are not required.
+      </p>
+    </div>}
     <div className="flex flex-wrap gap-2">
       {running
         ? <Button variant="outline" disabled={busy || !!error} onClick={() => void run("stop")}>
           Stop terminal
         </Button>
-        : <Button disabled={busy || !!error || !status || detected !== true} onClick={() => void run("start")}>
-          {detected === false ? "Install ttyd first" : "Start terminal"}
+        : detected !== false && <Button disabled={busy || !!error || !status || detected !== true} onClick={() => void run("start")}>
+          Start terminal
         </Button>}
     </div>
     {running ? <div className="space-y-2">
@@ -106,7 +108,7 @@ export function TermuxTerminalPanel({
         className="h-[520px] w-full rounded-md border bg-black"
         referrerPolicy="same-origin"
       />
-    </div> : status && <p className="rounded-md border p-4 text-sm text-muted-foreground">
+    </div> : status && detected !== false && <p className="rounded-md border p-4 text-sm text-muted-foreground">
       Terminal stopped. Start a session to open the shell here.
     </p>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}

@@ -521,6 +521,11 @@ export default function SitesPage() {
   return (
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
+        <div className="flex min-h-10 items-center justify-end">
+          <Button type="button" variant="outline" disabled={loading} onClick={() => void refresh()}>
+            <RefreshCw className="size-4" /> Refresh
+          </Button>
+        </div>
         <Card>
           <CardHeader>
             <CardTitle>New hosted site</CardTitle>
@@ -533,9 +538,6 @@ export default function SitesPage() {
                 placeholder="My first site" minLength={2} maxLength={60} required />
               <Button type="submit" disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
                 <FolderOpen /> Create site
-              </Button>
-              <Button type="button" variant="outline" disabled={loading} onClick={() => void refresh()}>
-                <RefreshCw /> Refresh
               </Button>
             </form>
           </CardContent>
