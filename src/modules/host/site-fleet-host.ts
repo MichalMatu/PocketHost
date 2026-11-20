@@ -20,6 +20,7 @@ import {
 } from 'node:fs';
 import { createServer } from 'node:net';
 import { assetName } from './site-asset-validation.ts';
+import { packStaticZip } from './site-fleet-zip.ts';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -355,6 +356,31 @@ export class SiteFleetHost {
       }
     }
     return result.sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Export the exact active immutable release, not the mutable project root.
+   * Every asset and parent directory is re-attested before being packed.
+   */
+  exportActiveZip(id: string): { release: string; archive: Buffer } {
+    const item = this.record(id);
+    if (!item.activeRelease) throw new RangeError('No active release to export');
+    const assets = this.listActiveFiles(id);
+    if (!assets.length) throw new Error('Active release contains no assets');
+    const current = this.record(id);
+    if (current.activeRelease !== item.activeRelease)
+      throw new Error('Active release changed during inventory');
+    const root = requireRelease(this.site(id), item.activeRelease);
+    const files = assets.map((asset) => {
+      const relative = assetName(asset.name);
+      directory(path.dirname(path.join(root, relative)));
+      const bytes = fileAt(root, relative);
+      if (bytes.length !== asset.bytes) throw new Error('Active asset changed during export');
+      return { name: relative, bytes };
+    });
+    if (this.record(id).activeRelease !== item.activeRelease)
+      throw new Error('Active release changed during export');
+    return { release: item.activeRelease, archive: packStaticZip(files) };
   }
 
   /** Read only the exact active homepage, never a caller-supplied file path. */
