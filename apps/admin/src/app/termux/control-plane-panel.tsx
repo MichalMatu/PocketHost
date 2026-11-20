@@ -2,11 +2,12 @@ import * as React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
+import { formatAgentDuration } from "@/lib/local-agent-time"
 
 const short = (value: string | null) => value ? value.slice(0, 12) : "unverified"
 type Runit = ControlPlaneDiagnostic["localAgent"]["runit"]
 const status = (data: Runit) => data.state + (data.uptimeSeconds === null
-  ? " · uptime unavailable" : " · " + data.uptimeSeconds + "s")
+  ? " · uptime unavailable" : " · " + formatAgentDuration(data.uptimeSeconds))
 
 export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number }) {
   const [data, setData] = React.useState<ControlPlaneDiagnostic | null>(null)
