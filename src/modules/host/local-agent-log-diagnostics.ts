@@ -75,7 +75,8 @@ export function classifyAgentLogLine(line: string): AgentLogEvent | null {
     /\b(git.fetch|git.push|git.transport|remote.ref|git.error)\b/i.test(line) ? 'transport' :
     /\b(started|starting|stopped|serving|polling|service.ready)\b/i.test(line) ? 'service' : null;
   if (!kind) return null;
-  return { kind, message: LABELS[kind], timestamp: agentLogTime(line) };}
+  return { kind, message: LABELS[kind], timestamp: agentLogTime(line) };
+}
 
 /**
  * Display real service-log chronology, but reconstruct only known safe fields
