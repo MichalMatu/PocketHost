@@ -13,6 +13,32 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — resumed A8 Local Agent + SSH sprint
+
+- **SSH recovered**: native A8 task `sprint-a8-dedicated-ssh-restart-20261120-v1`
+  verified port **192.168.0.16:8022 OPEN**, SSH process changed from PID
+  4910 to 6596, Agent PID **4112** unchanged. Mac independent strict-SSH
+  preflight `sprint-a8-mac-strict-ssh-preflight-741-20261120-v1` PASS
+  (private host key pin, exact host identity, old runtime, no STOP, no
+  unresolved local claims, 26-file candidate hashes).
+- **PocketHost DEV deployed**: `cec1a94e12a330e89f672f8d4ca1776cc3c7d2e9` by
+  `sprint-a8-ui-controls-ssh-20261120-v1`, terminal **DEPLOY PASS**
+  (owned PID **25941**, start ticks **61554828**, HTTP **200**,
+  external services unchanged, **PocketHost QA NOT RUN**).
+  `Control & SSH` shows A8 status, local tasks/results, independent
+  Start/Stop and (when supported) Pause/Resume, SSH restart, saved profiles
+  and a browser ttyd terminal. Browser functional sign-off remains OPEN.
+- **Agent release remains at `228489788d1e5c5045904ade95a2c50d791d20c9`**;
+  candidate `7415454b1fb2af7d3babe1c283c9e38848291d2b` is present and
+  hash-verified, with the owner-requested full raw `[CMD]` emitter plus
+  safe intake pause. Independent Mac-native QA task
+  `sprint-a8-741-native-qa-clean-source-20261120-v1` is
+  **QUEUED / no receipt yet**, so no switch or claim of full emitter
+  acceptance. Keep old runtime, STOP absent, rollback intact. Mac status
+  reported stale/unverified host-claim state; do not replay the queued QA.
+- **P0 owner rule remains:** trusted private LAN; no new authentication,
+  token/redaction/security sprint unless explicitly requested.
+
 ## 20 November 2026 — owner-requested raw Local Agent console
 
 - A8 PocketHost DEV **DEPLOY PASS** at `8fa67fcbed7d51194246cf86d19f5635205ef3d0`,

@@ -19,6 +19,16 @@ logging but is **not yet installed on A8**; independent release work queued.
 Browser visual sign-off open. Security hardening deferred by owner to a
 separate sprint.
 
+**A8 SSH + Local Agent sprint (20 November 2026):** SSH 8022 restored
+via dedicated runit restart; agent PID preserved. PocketHost Control & SSH UI
+`cec1a94e12a330e89f672f8d4ca1776cc3c7d2e9` **DEPLOY PASS** (HTTP 200,
+owned PID/ticks, protected services unchanged). Local-Agent runtime
+`2284897` still installed; next candidate `7415454` 26-file bundle hashes
+PASS but exact native QA through Mac is pending. The operator switch and
+fresh Git acceptance must follow that result. No PocketHost functional
+test authorization/receipt or browser sign-off yet; security is a separate
+owner-deferred sprint.
+
 ## Stage status
 
 | Stage                                         | Status                                     | Accepted or verified                                                                                                      | Still open                                                                                            |
