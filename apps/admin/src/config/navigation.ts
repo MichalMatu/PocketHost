@@ -38,8 +38,14 @@ export const navGroups = [
       { title: "Autostart", url: "/services/autostart", icon: Power },
       { title: "Hosting workloads", url: "/services/hosting", icon: Boxes },
       { title: "Health checks", url: "/services/health", icon: HeartPulse },
-      ...serviceWorkspaces.map(({ title, url, icon }) => ({ title, url, icon })),
+      ...serviceWorkspaces.filter(({ kind }) => kind === "diagnostic")
+        .map(({ title, url, icon }) => ({ title, url, icon })),
     ],
+  },
+  {
+    label: "Local Agent",
+    items: serviceWorkspaces.filter(({ kind }) => kind === "independent")
+      .map(({ title, url, icon }) => ({ title, url, icon })),
   },
   {
     label: "System & Tools",
