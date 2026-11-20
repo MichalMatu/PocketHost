@@ -1,16 +1,17 @@
 ---
-status: archived
+status: index
 owner: core
-last_reviewed: 2026-11-14
+last_reviewed: 2026-11-21
 purpose: Git-backed historical evidence locations
 ---
 
 # Historical checkpoint index
 
-**Current delivery checkpoint:** [18 Nov 2026 A8 Hosting/P1](2026-11-18-a8-p1-hardening-checkpoint.md). Previous: [17 Nov page-by-page](2026-11-17-mvp-page-by-page-checkpoint.md) and [Static Hosting A8 acceptance](2026-11-17-a8-static-mvp-local-agent-handoff.md). Do not preload the archive.
+**Current delivery checkpoint:** [21 Nov 2026 A8 broad-MVP / handoff](2026-11-21-pocket-host-mvp-handoff.md). Previous evidence: [18 Nov A8 Hosting/P1](2026-11-18-a8-p1-hardening-checkpoint.md), [17 Nov page-by-page](2026-11-17-mvp-page-by-page-checkpoint.md) and [Static Hosting A8 acceptance](2026-11-17-a8-static-mvp-local-agent-handoff.md). Use [current handoff](../HANDOFF_NEXT_CHAT.md); do not preload the historical archive.
 
 Original older contents are in Git at commit `d801da7`; historical stub files are deliberately kept for stable links. Do not preload all checkpoint files.
 
+- [2026-11-21-pocket-host-mvp-handoff](2026-11-21-pocket-host-mvp-handoff.md)
 - [2026-11-18-a8-p1-hardening-checkpoint](2026-11-18-a8-p1-hardening-checkpoint.md)
 - [2026-11-17-mvp-page-by-page-checkpoint](2026-11-17-mvp-page-by-page-checkpoint.md)
 - [2026-11-05-admin-shell-termux-checkpoint](2026-11-05-admin-shell-termux-checkpoint.md)
