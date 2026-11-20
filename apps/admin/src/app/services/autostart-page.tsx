@@ -2,6 +2,8 @@ import * as React from "react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
 import { RunitServiceActions } from "@/app/termux/admin-actions"
+import { localAgentOperationsSchema } from "@/lib/local-agent-operations-schema"
+import { protectedServiceSchema } from "@/lib/protected-service-schema"
 
 type BootObservation = {
   state: "scripts-present" | "no-scripts" | "unverified"
@@ -10,6 +12,76 @@ type BootObservation = {
   androidPermission: "not-verified"
   rebootReadback: "not-verified"
   checkedAt: string
+}
+
+type RuntimeStatus = "running" | "stopped" | "unverified"
+
+async function readRuntimeMode(mode: string, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch("/api/v1/termux-admin?mode=" + mode, {
+    credentials: "same-origin", cache: "no-store",
+    signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]),
+  })
+  if (!response.ok) throw Error("Runtime state unavailable")
+  return await response.json() as unknown
+}
+
+/** Runtime snapshot only. A running service today does not prove boot restoration. */
+function BootSessionReadback({ refreshToken }: { refreshToken: number }) {
+  const [states, setStates] = React.useState<Record<string, RuntimeStatus> | null>(null)
+  const [observedAt, setObservedAt] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    const controller = new AbortController()
+    void Promise.resolve().then(async () => {
+      if (controller.signal.aborted) return
+      setStates(null)
+      setObservedAt(null)
+      const [agentResult, mqttResult] = await Promise.allSettled([
+        readRuntimeMode("local-agent-operations", controller.signal)
+          .then(value => localAgentOperationsSchema.parse(value)),
+        readRuntimeMode("mqtt-diagnostics", controller.signal)
+          .then(value => protectedServiceSchema.parse(value)),
+      ])
+      if (controller.signal.aborted) return
+      const agent = agentResult.status === "fulfilled" ? agentResult.value : null
+      const mqtt = mqttResult.status === "fulfilled" && mqttResult.value.service === "mosquitto"
+        ? mqttResult.value : null
+      setStates({
+        "PocketHost panel": "running",
+        "Local Agent": agent?.agent.state ?? "unverified",
+        "Dedicated SSH": agent
+          ? agent.ssh.state === "running" && agent.ssh.listen === "open"
+            ? "running" : agent.ssh.state === "stopped" ? "stopped" : "unverified"
+          : "unverified",
+        "Mosquitto broker": mqtt?.runit.state ?? "unverified",
+      })
+      setObservedAt(new Date().toISOString())
+    })
+    return () => controller.abort()
+  }, [refreshToken])
+
+  return <section className="space-y-3 rounded-md border p-3" aria-label="Current A8 startup chain">
+    <h3 className="text-sm font-medium">Current A8 service chain</h3>
+    {!states && <p role="status" className="text-xs text-muted-foreground">
+      Reading current service states…
+    </p>}
+    {states && <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {Object.entries(states).map(([name, state]) =>
+        <div className="space-y-1 rounded-md border p-3" key={name}>
+          <p className="text-sm font-medium">{name}</p>
+          <p role={state === "running" ? "status" : "alert"} className="text-xs">
+            {state === "running" ? "Running now" :
+              state === "stopped" ? "Stopped" : "Unverified"}
+          </p>
+        </div>)}
+    </div>}
+    <p className="text-xs text-muted-foreground">
+      This is a current-session observation, not proof that Termux:Boot restored
+      these services after an Android reboot. Cloudflare's shared connector runs
+      on Pi Zero and is not checked from A8.
+      {observedAt && " Checked " + new Date(observedAt).toLocaleString() + "."}
+    </p>
+  </section>
 }
 
 function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
@@ -105,6 +177,7 @@ export default function ServiceAutostartPage() {
           onClick={() => setRefreshToken(value => value + 1)}>Refresh boot and runit</Button>
       </div>
       <TermuxBootObservation refreshToken={refreshToken} />
+      <BootSessionReadback refreshToken={refreshToken} />
       <RunitServiceActions mode="autostart" refreshToken={refreshToken} />
       <p className="text-xs text-muted-foreground">
         Runit enable/disable is limited to attested PocketHost-owned standalone services.
