@@ -353,7 +353,7 @@ export default function SystemPage() {
           </Button>
         </div>
 
-        <div className="space-y-1 text-xs text-muted-foreground" role="status"
+        <div className="min-h-20 space-y-1 text-xs text-muted-foreground md:min-h-16" role="status"
           aria-label="Monitoring source availability">
           <p className="font-medium text-foreground">
             {companionReady ? "Enhanced monitoring · Companion + Shizuku" : "Basic monitoring · Termux"}
@@ -372,9 +372,9 @@ export default function SystemPage() {
             <p>Battery percentage requires permitted Termux:API or sysfs access.</p>}
         </div>
         <div data-testid="system-metrics" aria-busy={active} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {(!sampledAt || cpu !== null) && <SummaryCard title="Android CPU"
+          <SummaryCard title="Android CPU"
             value={cpu === null ? null : cpu.toFixed(1) + "%"}
-            icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />}
+            icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />
           <SummaryCard title="Available RAM" value={host ? formatMemory(host.runtime.freeMemoryMiB) : null}
             icon={Activity} loading={active} detail={host ? "of " + formatMemory(host.runtime.totalMemoryMiB) + " · system-wide" : "Termux measurement unavailable"} />
           <SummaryCard title="Termux storage" value={host?.runtime.storage ? formatMemory(host.runtime.storage.availableMiB) : null}
@@ -384,7 +384,7 @@ export default function SystemPage() {
         </div>
 
         <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
-          {batteryReady && <Card className="gap-2 py-3">
+          <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API / sysfs</CardDescription>
               <CardTitle className="text-lg tabular-nums">{batteryPercent === null ? "Unavailable" : batteryPercent + "%"}</CardTitle>
@@ -393,7 +393,7 @@ export default function SystemPage() {
               {batteryCharging === true ? "Charging" : batteryCharging === false ? "Not charging" : "Charge state unavailable"}
               {" · "}{batteryTempC === null ? "Temperature not provided" : batteryTempC.toFixed(1) + "°C"}
             </CardContent>
-          </Card>}
+          </Card>
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Clock3 className="size-4" />Device uptime</CardDescription>
@@ -401,15 +401,15 @@ export default function SystemPage() {
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">Since device boot</CardContent>
           </Card>
-          {dnsReady && <Card className="gap-2 py-3">
+          <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Wifi className="size-4" />DNS · Termux</CardDescription>
-              <CardTitle className="text-lg tabular-nums">{dnsMs === null ? "Lookup failed" : dnsMs.toFixed(1) + " ms"}</CardTitle>
+              <CardTitle className="text-lg tabular-nums">{dnsMs === null ? dnsFailed === true ? "Lookup failed" : "Unavailable" : dnsMs.toFixed(1) + " ms"}</CardTitle>
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">
-              {dnsFailed === true ? "Fixed DNS lookup failed" : "Fixed DNS lookup successful"}
+              {dnsFailed === true ? "Fixed DNS lookup failed" : dnsReady ? "Fixed DNS lookup successful" : "Termux DNS reading unavailable"}
             </CardContent>
-          </Card>}
+          </Card>
         </div>
 
         <div role="status" aria-label="Active health alerts"
