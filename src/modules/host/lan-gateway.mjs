@@ -143,6 +143,18 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
   return route === '/api/v1/observability' ? 25000 : 5000;
 }
 
+/**
+ * Keep API, HTML, hosted content and unknown paths uncached. For known Vite
+ * DEV module assets only, allow the browser to store and revalidate ETags.
+ * The LAN is still trusted/private; this does not enable public caching.
+ */
+export function gatewayCacheControl(requestPath, method, admin) {
+  const route = typeof requestPath === 'string' ? requestPath.split('?')[0] : '';
+  const viteAsset = admin && (method === 'GET' || method === 'HEAD') &&
+    /^(?:\/src\/|\/@vite\/|\/@id\/|\/node_modules\/\.vite\/deps\/)/.test(route);
+  return viteAsset ? 'private, no-cache' : 'no-store';
+}
+
 export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
   const upstreamPort = testUpstreamPort ?? INTERNAL_PORTS[admin ? 'admin' : 'site'];
   const server = http.createServer((request, response) => {
@@ -185,7 +197,7 @@ export function createGateway({ bind, mask, admin, port, testUpstreamPort }) {
       (upstreamResponse) => {
         response.writeHead(upstreamResponse.statusCode ?? 502, {
           ...upstreamResponse.headers,
-          'cache-control': 'no-store',
+          'cache-control': gatewayCacheControl(request.url, request.method, admin),
         });
         upstreamResponse.pipe(response);
       },
