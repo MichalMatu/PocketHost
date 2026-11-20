@@ -21,9 +21,15 @@ export const localAgentLogSchema = z.object({
     ]),
     timestamp: z.string().datetime({ offset: true }).nullable(),
   }).strict()).max(30),
-  unclassifiedLines: z.number().int().nonnegative().max(80),
+  lines: z.array(z.object({
+    kind: z.enum(["budget", "failed", "timeout", "interrupted",
+      "published", "claim", "transport", "service", "other"]),
+    text: z.string().min(1).max(180),
+    timestamp: z.string().datetime({ offset: true }).nullable(),
+  }).strict()).max(120),
+  unclassifiedLines: z.number().int().nonnegative().max(120),
   truncated: z.boolean(),
-  notice: z.literal("sanitized-events-only-no-lifecycle-authority"),
+  notice: z.literal("sanitized-log-tail-no-lifecycle-authority"),
   latency: z.object({
     version: z.literal(1),
     source: z.literal("termux-agent-local-task-spool"),

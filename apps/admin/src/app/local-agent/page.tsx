@@ -105,12 +105,12 @@ export default function LocalAgentPage() {
     }
   }, [refreshToken, live])
 
-  const events = logs?.events.filter(event =>
-    filter === "all" || filters[filter].includes(event.kind)) ?? []
+  const displayLines = logs?.lines.filter(line =>
+    filter === "all" || filters[filter].includes(line.kind)) ?? []
   React.useEffect(() => {
-    if (view === "console" && live && events.length > 0)
+    if (view === "console" && live && displayLines.length > 0)
       consoleEnd.current?.scrollIntoView?.({ block: "nearest" })
-  }, [view, live, logs, filter, events.length])
+  }, [view, live, logs, filter, displayLines.length])
 
   const agent = plane?.localAgent
   const latency = logs?.latency
@@ -120,7 +120,7 @@ export default function LocalAgentPage() {
   const intake = agent?.intake === "stop-present" ? "STOP marker present"
     : agent?.intake === "stop-absent" ? "STOP marker absent" : "Unverified"
   const currentClaim = agent?.unspooledClaims
-  const logState = logsError ? "Read failed" : !live ? "Event updates paused" : logsLoading ? "Reading" :
+  const logState = logsError ? "Read failed" : !live ? "Log updates paused" : logsLoading ? "Reading" :
     logs?.state === "ok" ? "Reading events" : "Events unavailable"
 
   return <BaseLayout title="Local Agent" description="Samsung A8 · private Termux diagnostics">
@@ -131,9 +131,9 @@ export default function LocalAgentPage() {
           <Badge variant="outline">{agentStatus}</Badge>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Badge variant="outline">{live ? "Event updates · 5s" : "Event updates paused"}</Badge>
+          <Badge variant="outline">{live ? "Log updates · 5s" : "Log updates paused"}</Badge>
           <Button size="sm" variant="outline" onClick={() => setLive(value => !value)}>
-            {live ? "Pause event updates" : "Resume event updates"}
+            {live ? "Pause log updates" : "Resume log updates"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => setRefreshToken(value => value + 1)}>
             <RefreshCw className="size-4" /> Refresh
@@ -251,18 +251,18 @@ export default function LocalAgentPage() {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2"><TerminalSquare className="size-4" />
-                Sanitized Agent events</CardTitle>
+                Live Agent log</CardTitle>
               <Badge variant="outline">{logState}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
-                Read-only events · sampled {formatAgentTime(logs?.observedAt)}
+                A8 private svlogd · {logs?.lines.length ?? 0} recent lines · sampled {formatAgentTime(logs?.observedAt)}
               </p>
               <label className="flex items-center gap-2 text-xs">
                 Filter
-                <select aria-label="Filter Agent events" className="rounded-md border bg-background px-2 py-1.5"
+                <select aria-label="Filter Agent log" className="rounded-md border bg-background px-2 py-1.5"
                   value={filter} onChange={event => setFilter(event.target.value as Filter)}>
                   <option value="all">All</option>
                   <option value="errors">Errors</option>
@@ -276,26 +276,27 @@ export default function LocalAgentPage() {
             </p>}
             <div aria-label="Agent event console"
               className="max-h-80 min-h-40 overflow-auto rounded-md border bg-neutral-950 p-3 font-mono text-xs leading-relaxed text-neutral-200">
-              {logs?.state === "ok" && events.length ? <ol className="space-y-2">
-                {events.map((event, index) => <li key={index} className="break-words">
-                  <span className="text-neutral-400">[{event.timestamp ? formatAgentTime(event.timestamp) : "no time"}]</span>
-                  {" "}<span className="font-semibold">{event.kind.toUpperCase()}</span>
-                  {" "}{event.message}
+              {logs?.state === "ok" && displayLines.length ? <ol className="space-y-1">
+                {displayLines.map((line, index) => <li key={index} className="break-words">
+                  <span className="text-neutral-400">[{line.timestamp ? formatAgentTime(line.timestamp) : "no time"}]</span>
+                  {" "}<span className="font-semibold">{line.kind.toUpperCase()}</span>
+                  {" "}{line.text}
                 </li>)}
               </ol> : <p role="status" className="text-neutral-400">
-                {!logs ? "No event sample yet." : logs.state !== "ok"
-                  ? "The private event log is unavailable."
-                  : "No classified events match this view."}
+                {!logs ? "No log sample yet." : logs.state !== "ok"
+                  ? "The private Agent log is unavailable."
+                  : "No log entries match this filter."}
               </p>}
               <div ref={consoleEnd} />
             </div>
             {logs?.state === "ok" && <p className="text-xs text-muted-foreground">
-              {logs.unclassifiedLines} unrecognized lines excluded
-              {logs.truncated ? " · source tail truncated" : ""}.
+              {logs.unclassifiedLines} entries have private or unsupported details masked
+              {logs.truncated ? " · showing only the latest log tail" : ""}.
             </p>}
             <p className="text-xs text-muted-foreground">
-              This is not a shell terminal. The API deliberately hides raw log lines, commands, task identifiers
-              and credentials. Events are not proof of GitHub delivery.
+              This is the real read-only Agent service log, refreshed every 5 seconds while visible.
+              Known execution fields are shown; unknown or private payloads, commands and credentials are masked.
+              Log activity is not proof of GitHub delivery.
             </p>
           </CardContent>
         </Card>
