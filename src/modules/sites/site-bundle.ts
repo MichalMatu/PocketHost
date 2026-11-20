@@ -1,7 +1,8 @@
 import { inflateRawSync } from 'node:zlib';
 
 export const MAX_SITE_BYTES = 8 * 1024 * 1024;
-export const MAX_UPLOAD_BYTES = 6 * 1024 * 1024;
+// Bounded ZIP transport overhead above the 8 MiB extracted site limit.
+export const MAX_UPLOAD_BYTES = 9 * 1024 * 1024;
 export const MAX_SITE_FILES = 100;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const allowedExtensions = new Set([
