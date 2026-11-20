@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { GitBranch, RefreshCw, TerminalSquare } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
-import { SSHConnectionsPanel } from "@/app/local-agent/ssh-connections-panel"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-logs-schema"
 import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
@@ -16,7 +16,7 @@ const views: { value: View; label: string }[] = [
   { value: "overview", label: "Overview" },
   { value: "tasks", label: "Tasks & activity" },
   { value: "console", label: "Live console" },
-  { value: "control", label: "Control & SSH" },
+  { value: "control", label: "Control" },
   { value: "diagnostics", label: "Diagnostics" },
 ]
 const warnings: Record<string, string> = {
@@ -47,6 +47,7 @@ export default function LocalAgentPage() {
   const [rawError, setRawError] = React.useState(false)
   const [rawLoading, setRawLoading] = React.useState(true)
   const [followTail, setFollowTail] = React.useState(true)
+  const [copyStatus, setCopyStatus] = React.useState("")
   const rawCursor = React.useRef<string | null>(null)
   const rawDecoder = React.useRef(new TextDecoder())
   const rawViewport = React.useRef<HTMLDivElement>(null)
@@ -160,6 +161,29 @@ export default function LocalAgentPage() {
     }
   }, [rawText, view, followTail])
 
+  const copyRawLog = async () => {
+    if (!rawText) return
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(rawText)
+      } else {
+        // Private LAN HTTP is not a secure context; keep copy usable there.
+        const field = document.createElement("textarea")
+        field.value = rawText
+        field.style.position = "fixed"
+        field.style.opacity = "0"
+        document.body.appendChild(field)
+        field.select()
+        const copied = document.execCommand("copy")
+        field.remove()
+        if (!copied) throw new Error("copy-not-supported")
+      }
+      setCopyStatus("Copied loaded log")
+    } catch {
+      setCopyStatus("Copy unavailable in this browser")
+    }
+  }
+
   const agent = plane?.localAgent
   const latency = logs?.latency
   const agentStatus = !plane ? "Not verified"
@@ -215,8 +239,8 @@ export default function LocalAgentPage() {
             detail="Marker status is not proof that Git intake is healthy" />
           <Metric label="Local results" value={agent?.spooled == null ? "Not verified" : String(agent.spooled)}
             detail={currentClaim == null ? "No claim comparison" : currentClaim + " claims without a local result"} />
-          <Metric label="GitHub delivery" value="Not verified"
-            detail="Local files do not prove remote publication" />
+          <Metric label="GitHub delivery" value="Not checked by panel"
+            detail="Local results do not independently confirm remote GitHub publication" />
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
@@ -313,9 +337,17 @@ export default function LocalAgentPage() {
               <p className="text-xs text-muted-foreground">
                 Termux svlogd/current · original lines · no filtering · updates every 5s
               </p>
-              {!followTail && <Button variant="outline" size="sm"
-                onClick={() => setFollowTail(true)}>Follow tail</Button>}
+              <div className="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" disabled={!rawText}
+                  onClick={() => void copyRawLog()}>Copy loaded log</Button>
+                <Button variant="outline" size="sm"
+                  onClick={() => {
+                    setFollowTail(true)
+                    if (rawViewport.current) rawViewport.current.scrollTop = rawViewport.current.scrollHeight
+                  }}>Jump to latest</Button>
+              </div>
             </div>
+            {copyStatus && <p role="status" className="text-xs text-muted-foreground">{copyStatus}</p>}
             {rawError && <p role="alert" className="text-sm text-muted-foreground">
               Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
             </p>}
@@ -331,17 +363,23 @@ export default function LocalAgentPage() {
         </Card>
       </section>}
 
-      {view === "control" && <section role="tabpanel" aria-label="Control & SSH" className="space-y-4">
-        <LocalAgentOperationsPanel refreshToken={refreshToken} />
-        <SSHConnectionsPanel />
+      {view === "control" && <section role="tabpanel" aria-label="Control" className="space-y-4">
+        <LocalAgentOperationsPanel scope="agent" refreshToken={refreshToken} />
+        <p className="text-sm text-muted-foreground">
+          Dedicated SSH controls, interactive terminal and saved profiles are in{" "}
+          <Link to="/services/ssh" className="underline underline-offset-2">Services / SSH</Link>.
+        </p>
       </section>}
 
       {view === "diagnostics" && <section role="tabpanel" aria-label="Diagnostics" className="space-y-4">
         <Card>
           <CardHeader><CardTitle>Advanced diagnostics & control boundaries</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <p>Technical evidence lives here. Use Control & SSH to manage the
-              selected Local Agent and dedicated SSH service.</p>
+            <p>Technical evidence lives here. Use Control to manage Local Agent intake;
+              dedicated SSH and terminal management are in{" "}
+              <Link to="/services/ssh" className="underline underline-offset-2">Services / SSH</Link>.
+              Ownership and revision evidence below comes from a separate diagnostic endpoint;
+              unavailable evidence is not proof of a stopped service.</p>
             <p>Local snapshot: {formatAgentTime(plane?.observedAt)}
               {planeError ? " · unable to refresh" : ""}</p>
             <Button variant="outline" size="sm" onClick={() => setAdvanced(open => !open)}>
