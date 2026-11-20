@@ -109,7 +109,7 @@ export default function LocalAgentPage() {
     filter === "all" || filters[filter].includes(event.kind)) ?? []
   React.useEffect(() => {
     if (view === "console" && live && events.length > 0)
-      consoleEnd.current?.scrollIntoView({ block: "nearest" })
+      consoleEnd.current?.scrollIntoView?.({ block: "nearest" })
   }, [view, live, logs, filter, events.length])
 
   const agent = plane?.localAgent
