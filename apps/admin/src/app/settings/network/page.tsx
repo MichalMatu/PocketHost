@@ -11,7 +11,10 @@ import {
 const endpoint = "/api/v1/network-access"
 
 async function getStatus(signal?: AbortSignal): Promise<NetworkAccessStatus> {
-  const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", signal })
+  const boundedSignal = signal
+    ? AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+    : AbortSignal.timeout(10_000)
+  const response = await fetch(endpoint, { cache: "no-store", credentials: "same-origin", signal: boundedSignal })
   if (!response.ok) throw new Error("Network settings unavailable on this panel version")
   const value: unknown = await response.json()
   return parseNetworkAccessStatus(value)
