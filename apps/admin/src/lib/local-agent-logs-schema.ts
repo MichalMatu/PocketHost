@@ -8,7 +8,7 @@ export const localAgentLogSchema = z.object({
   state: z.enum(["ok", "missing", "unavailable", "unsafe-log"]),
   events: z.array(z.object({
     kind: z.enum(["budget", "failed", "timeout", "interrupted",
-      "published", "claim", "transport", "service"]),
+      "published", "claim", "transport", "service", "task"]),
     message: z.enum([
       "Task stopped by execution budget",
       "Agent reported an error or failed task",
@@ -18,12 +18,13 @@ export const localAgentLogSchema = z.object({
       "Task claim activity",
       "Git transport activity",
       "Agent service activity",
+      "Agent task activity",
     ]),
     timestamp: z.string().datetime({ offset: true }).nullable(),
   }).strict()).max(30),
   lines: z.array(z.object({
     kind: z.enum(["budget", "failed", "timeout", "interrupted",
-      "published", "claim", "transport", "service", "other"]),
+      "published", "claim", "transport", "service", "task", "other"]),
     text: z.string().min(1).max(180),
     timestamp: z.string().datetime({ offset: true }).nullable(),
   }).strict()).max(120),

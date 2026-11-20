@@ -26,7 +26,7 @@ const warnings: Record<string, string> = {
 const filters: Record<Filter, string[]> = {
   all: [],
   errors: ["failed", "budget", "timeout", "interrupted"],
-  tasks: ["claim", "published", "budget", "failed", "timeout", "interrupted"],
+  tasks: ["task", "claim", "published", "budget", "failed", "timeout", "interrupted"],
   transport: ["transport", "published"],
 }
 
@@ -121,7 +121,7 @@ export default function LocalAgentPage() {
     : agent?.intake === "stop-absent" ? "STOP marker absent" : "Unverified"
   const currentClaim = agent?.unspooledClaims
   const logState = logsError ? "Read failed" : !live ? "Log updates paused" : logsLoading ? "Reading" :
-    logs?.state === "ok" ? "Reading events" : "Events unavailable"
+    logs?.state === "ok" ? "Live log" : "Log unavailable"
 
   return <BaseLayout title="Local Agent" description="Samsung A8 · private Termux diagnostics">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
@@ -272,7 +272,7 @@ export default function LocalAgentPage() {
               </label>
             </div>
             {logsError && <p role="alert" className="text-muted-foreground">
-              Event read failed. {logs ? "Last successful sample remains visible." : "No events available."}
+              Log read failed. {logs ? "Last successful sample remains visible." : "No logs available."}
             </p>}
             <div aria-label="Agent event console"
               className="max-h-80 min-h-40 overflow-auto rounded-md border bg-neutral-950 p-3 font-mono text-xs leading-relaxed text-neutral-200">
@@ -294,9 +294,10 @@ export default function LocalAgentPage() {
               {logs.truncated ? " · showing only the latest log tail" : ""}.
             </p>}
             <p className="text-xs text-muted-foreground">
-              This is the real read-only Agent service log, refreshed every 5 seconds while visible.
-              Known execution fields are shown; unknown or private payloads, commands and credentials are masked.
-              Log activity is not proof of GitHub delivery.
+              Chronological A8 log, refreshed every 5 seconds. The updated Termux Agent will add
+              task and stage transitions after its separate native installation.
+              Command output and private details remain hidden on this unauthenticated LAN panel.
+              Only a verified Git receipt confirms publication.
             </p>
           </CardContent>
         </Card>

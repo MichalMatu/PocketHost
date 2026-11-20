@@ -42,6 +42,8 @@ const logs = {
       timestamp: "2026-11-20T11:59:04.000Z" },
     { kind: "other", text: "Agent log entry (private or unsupported detail hidden)",
       timestamp: null },
+    { kind: "task", text: "Task started · ref=012345abcdef",
+      timestamp: "2026-11-20T12:00:00.000Z" },
   ],
   unclassifiedLines: 79, truncated: true,
   notice: "sanitized-log-tail-no-lifecycle-authority",
@@ -79,6 +81,7 @@ describe("Local Agent read-only overview", () => {
     expect(screen.getByText(/79 entries have private or unsupported details masked/)).toBeTruthy()
     expect(screen.getByText(/exec finished · exit=0/)).toBeTruthy()
     expect(screen.getByText(/private or unsupported detail hidden/)).toBeTruthy()
+    expect(screen.getByText(/Task started · ref=012345abcdef/)).toBeTruthy()
     expect(screen.getByText(/real read-only Agent service log/)).toBeTruthy()
     fireEvent.change(screen.getByLabelText("Filter Agent log"), { target: { value: "transport" } })
     expect(screen.getByText("No log entries match this filter.")).toBeTruthy()

@@ -9,7 +9,7 @@ import { LocalAgentLatencyHost, type LocalAgentLatencyDiagnostics } from './loca
  */
 export type AgentLogKind =
   'budget' | 'failed' | 'timeout' | 'interrupted' | 'published' |
-  'claim' | 'transport' | 'service';
+  'claim' | 'transport' | 'service' | 'task';
 
 export type AgentLogEvent = {
   kind: AgentLogKind;
@@ -46,6 +46,7 @@ const LABELS: Record<AgentLogKind, string> = {
   claim: 'Task claim activity',
   transport: 'Git transport activity',
   service: 'Agent service activity',
+  task: 'Agent task activity',
 };
 
 function agentLogTime(line: string): string | null {
@@ -65,6 +66,8 @@ function agentLogTime(line: string): string | null {
 /** No captured group, original line, paths or user-supplied text crosses the API. */
 export function classifyAgentLogLine(line: string): AgentLogEvent | null {
   const kind: AgentLogKind | null =
+    /\[termux-agent\] GIT VERIFIED ref=[a-f0-9]{12}(?:\s|$)/.test(line) ? 'published' :
+    /\[termux-agent\] (?:TASK|STAGE) (?:START|FINISHED|RESULT|PROGRESS) ref=[a-f0-9]{12}(?:\s|$)/.test(line) ? 'task' :
     /task_budget_exhausted|budget[ _-]+exhausted|budget[ _-]*remaining/i.test(line) ? 'budget' :
     /\b(timeout|timed.out|deadline.exceeded)\b/i.test(line) ? 'timeout' :
     /\b(unknown|suspend|interrupted|emergency.stop)\b/i.test(line) ? 'interrupted' :
@@ -91,11 +94,27 @@ export function safeAgentLogLine(line: string): AgentLogDisplayLine | null {
   const content = line.replace(
     /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})|\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)\s+/,
     '',
-  ).replace(/^\[linux-agent\] /, '');
+  ).replace(/^\[(?:linux-agent|termux-agent)\] /, '');
   // These grammars match only safe fields emitted by the Linux Core logger.
   const hash = 'command sha256=([a-f0-9]{16})';
   const seconds = '(\\d{1,6}(?:\\.\\d{1,3})?)';
   const rules: Array<[RegExp, (parts: RegExpExecArray) => string]> = [
+    [/^TASK START ref=([a-f0-9]{12})$/,
+      m => 'Task started · ref=' + m[1]],
+    [/^TASK FINISHED ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
+      m => 'Execution finished · ref=' + m[1] + ' · ' + m[2]],
+    [/^TASK RESULT ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
+      m => 'Result stored locally · ref=' + m[1] + ' · ' + m[2]],
+    [/^STAGE START ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3})$/,
+      m => 'Stage started · ref=' + m[1] + ' · ' + m[2] + '/' + m[3]],
+    [/^STAGE FINISHED ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) exit=(\d{1,3}) elapsed=(\d{1,6}(?:\.\d)?)s$/,
+      m => 'Stage finished · ref=' + m[1] + ' · ' + m[2] + '/' + m[3] +
+        ' · exit=' + m[4] + ' · ' + m[5] + 's'],
+    [/^STAGE PROGRESS ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) progress=(\d{1,7})\/(\d{1,7})$/,
+      m => 'Stage progress · ref=' + m[1] + ' · ' + m[2] + '/' + m[3] +
+        ' · ' + m[4] + '/' + m[5]],
+    [/^GIT VERIFIED ref=([a-f0-9]{12})$/,
+      m => 'Git result publication verified · ref=' + m[1]],
     [new RegExp('^exec: ' + hash + '$'), m => 'exec: command sha256=' + m[1]],
     [new RegExp('^exec finished exit=(\\d{1,3}) elapsed=' + seconds + 's: ' + hash + '$'),
       m => 'exec finished · exit=' + m[1] + ' · ' + m[2] + 's · sha256=' + m[3]],
@@ -232,8 +251,11 @@ export class LocalAgentLogHost {
         const event = classifyAgentLogLine(line);
         const display = safeAgentLogLine(line);
         if (event) events.push(event);
-        else result.unclassifiedLines++;
-        if (display) result.lines.push(display);
+        if (display) {
+          result.lines.push(display);
+          if (display.text === 'Agent log entry (private or unsupported detail hidden)')
+            result.unclassifiedLines++;
+        }
       }
       result.events = events.slice(-30);
       result.state = 'ok';

@@ -164,3 +164,24 @@ test('bounded tail retains placeholders for every unrecognized record', () => {
     assert.ok(!JSON.stringify(result).includes('TOKEN=hidden'));
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
+
+test('Termux task/stage/Git progress is reconstructed without raw task identifiers', () => {
+  const ref = '012345abcdef';
+  const source = [
+    '2026-11-20_14:00:00.000000 [termux-agent] TASK START ref=' + ref,
+    '2026-11-20_14:00:01.000000 [termux-agent] STAGE START ref=' + ref + ' step=1/2',
+    '2026-11-20_14:00:04.000000 [termux-agent] STAGE PROGRESS ref=' + ref + ' step=1/2 progress=5/10',
+    '2026-11-20_14:00:05.000000 [termux-agent] STAGE FINISHED ref=' + ref + ' step=1/2 exit=0 elapsed=4.2s',
+    '2026-11-20_14:00:06.000000 [termux-agent] TASK RESULT ref=' + ref + ' status=done',
+    '2026-11-20_14:00:07.000000 [termux-agent] GIT VERIFIED ref=' + ref,
+    '2026-11-20_14:00:08.000000 [termux-agent] TASK RESULT ref=' + ref + ' status=done SECRET=hidden',
+  ];
+  const display = source.map(safeAgentLogLine);
+  assert.deepEqual(display.slice(0, 6).map(r => r.kind),
+    ['task', 'task', 'task', 'task', 'task', 'published']);
+  assert.match(display[3].text, /exit=0.*4.2s/);
+  assert.match(display[5].text, /publication verified/);
+  assert.equal(display[6].text, 'Agent task activity');
+  assert.ok(!JSON.stringify(display).includes('SECRET=hidden'));
+  assert.ok(!JSON.stringify(display).includes('TASK RESULT ref=' + ref));
+});
