@@ -10,6 +10,7 @@ import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane
 import { LocalAgentLogHost } from "../../src/modules/host/local-agent-log-diagnostics.ts"
 import { LocalAgentRawLogHost } from "../../src/modules/host/local-agent-raw-log.ts"
 import { LocalAgentOperationsHost, type AgentAction } from "../../src/modules/host/local-agent-operations.ts"
+import { SSHConnectionsHost } from "../../src/modules/host/ssh-connections.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
@@ -976,6 +977,7 @@ function termuxAdminApi(): Plugin {
   const agentLogs = new LocalAgentLogHost()
   const rawAgentLog = new LocalAgentRawLogHost()
   const localAgentOperations = new LocalAgentOperationsHost()
+  const sshConnections = new SSHConnectionsHost()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
   const terminal = new TermuxTerminal()
@@ -1128,6 +1130,9 @@ function termuxAdminApi(): Plugin {
               mode === "local-agent-logs" && url.searchParams.size === 1 ? agentLogs.inspect() :
               mode === "local-agent-operations" && url.searchParams.size === 1 ?
                 await localAgentOperations.inspect() :
+              mode === "ssh-connections" && url.searchParams.size === 1 ?
+                { connections: sshConnections.list(), activeSession: terminal.session(),
+                  terminal: terminal.status() } :
                mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :
@@ -1192,6 +1197,27 @@ function termuxAdminApi(): Plugin {
                   Object.keys(input).some(key => key !== "action" && key !== "name"))
                 throw new RangeError("Invalid Local Agent action")
               return await localAgentOperations.apply(input.name as AgentAction)
+            }
+            if (input.action === "ssh-profile") {
+              if (input.name === "connect" && typeof input.path === "string" &&
+                  Object.keys(input).every(key => ["action","name","path"].includes(key))) {
+                return { terminal: await terminal.startSSH(sshConnections.find(input.path)),
+                  connections: sshConnections.list(), activeSession: terminal.session() }
+              }
+              if (input.name === "delete" && typeof input.path === "string" &&
+                  Object.keys(input).every(key => ["action","name","path"].includes(key))) {
+                return { connections: sshConnections.delete(input.path),
+                  terminal: terminal.status(), activeSession: terminal.session() }
+              }
+              if (["add","update"].includes(input.name ?? "") && typeof input.content === "string" &&
+                  input.content.length <= 1500 &&
+                  Object.keys(input).every(key => ["action","name","path","content"].includes(key))) {
+                const info: unknown = JSON.parse(input.content)
+                return { connections: sshConnections.save(info,
+                  input.name === "update" ? input.path ?? "" : undefined),
+                  terminal: terminal.status(), activeSession: terminal.session() }
+              }
+              throw new RangeError("Invalid SSH connection operation")
             }
             if (input.action === "terminal") {
               if (input.name === "start") return { terminal: await terminal.start() }
