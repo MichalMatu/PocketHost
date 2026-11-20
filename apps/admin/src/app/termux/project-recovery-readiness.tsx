@@ -100,7 +100,7 @@ export function ProjectRecoveryReadiness({ refreshToken = 0 }: {
                   to={"/sites?site=" + encodeURIComponent(item.id)}>{item.name}</Link>
                 <p>{item.releases} local release(s) · {item.canRollback
                   ? "Rollback available" : "No immediate rollback target"}</p>
-                <p className="text-muted-foreground">Independent static backup: unverified</p>
+                <p className="text-muted-foreground">Download the active ZIP from the site page and keep it separately; off-device recovery remains unverified.</p>
               </div>)}
           </>}
         </section>
