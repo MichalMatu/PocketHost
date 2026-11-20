@@ -13,7 +13,9 @@ const summary = (value: Pick<LocalAgentOperationsData["agent"], "state" | "pid" 
     (value.uptimeSeconds !== null ? " · " + formatAgentDuration(value.uptimeSeconds) : "") :
     value.state === "stopped" ? "Stopped" : "Unavailable"
 
-export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: number }) {
+export function LocalAgentOperationsPanel({ refreshToken, scope = "agent" }: {
+  refreshToken: number; scope?: "agent" | "ssh"
+}) {
   const [data, setData] = React.useState<LocalAgentOperationsData | null>(null)
   const [error, setError] = React.useState("")
   const [busy, setBusy] = React.useState<AgentAction | null>(null)
@@ -70,8 +72,8 @@ export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: numb
     {error && <p role="alert" className="rounded-md border p-3 text-sm">{error}</p>}
     {!data && <p role="status" className="text-sm text-muted-foreground">Reading A8 service and task state…</p>}
     {data && <>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-4">
+        {scope === "agent" && <Card>
           <CardHeader><CardTitle className="text-base">Local Agent</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <p>{summary(data.agent)}</p>
@@ -100,9 +102,9 @@ export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: numb
               Stop is disabled while local claims lack results; ongoing effects must not be interrupted.
             </p>}
           </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">SSH / Termux terminal</CardTitle></CardHeader>
+        </Card>}
+        {scope === "ssh" && <Card>
+          <CardHeader><CardTitle className="text-base">Dedicated A8 SSH / Termux terminal</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <p>{summary(data.ssh)}</p>
             <p>SSH address: <code>{data.ssh.address}:{data.ssh.port}</code></p>
@@ -128,9 +130,9 @@ export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: numb
               The terminal opens an interactive shell on this A8. SSH is a separate service.
             </p>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
-      <Card>
+      {scope === "agent" && <Card>
         <CardHeader><CardTitle className="text-base">Task activity</CardTitle></CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex flex-wrap gap-x-6 gap-y-2">
@@ -162,9 +164,9 @@ export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: numb
               target="_blank" rel="noreferrer">agent-control</a>.
           </p>
         </CardContent>
-      </Card>
+      </Card>}
       <p className="text-xs text-muted-foreground">
-        Snapshot: {formatAgentTime(data.observedAt)}. Controls affect only the selected Galaxy A8 services.
+        Snapshot: {formatAgentTime(data.observedAt)}. Controls affect only the selected Galaxy A8 {scope === "ssh" ? "dedicated SSH service" : "Local Agent service"}.
       </p>
     </>}
   </div>
