@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-19
+last_reviewed: 2026-11-20
 purpose: PocketHost latest A8 DEV source, Lab receipts and bounded resume path
 ---
 
@@ -15,19 +15,20 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
-- Current verified A8 DEV live source: `5352c097246de249ac9d28a017135f4809d7e415`.
-  Guarded Local Agent task `pockethost-a8-vite-assets-guarded-deploy-5352c09-20261119-v1`:
-  **PASS**, HTTP 200, owned PID **7683**, start ticks **54253945**,
-  protected services unchanged. This attests panel safety, **not** all hosted-project readiness.
-- Prior A8 live `f8ab416` and guarded deploy PASS introduced responsive
-  tablet offcanvas navigation. `5351d88` adds larger mobile header and Hosting
-  touch targets while preserving the earlier changes.
-- A8 scoped checks for `32ea32d` and `5351d88`: **PASS** for changed-file
-  formatting and admin TypeScript. At `5352c09`, syntax, formatting,
-  structure, module boundaries, root lint and Node tests all **PASS**.
-  The broader UI suite at `f8ab416` hit a 300-second timeout;
-  **do not call full G2 PASS**. The `5351d88` interaction test exists
-  in source but was not separately run.
+- Current verified A8 DEV live source: `ff1559d85abdf45451886263ba003a7125dfa14d`.
+  Guarded Local Agent task `pockethost-a8-appearance-theme-fast-flow-ff1559d-20261120-v1`:
+  **PASS**, HTTP **200**, owned PID **23096**, start ticks **55007488**,
+  protected services verified unchanged, tests **NOT RUN**.
+- Current panel improvements: bounded/fail-closed reads in File Manager,
+  Terminal, Backups & Recovery, Agents & API, Platform and Network Access;
+  Appearance now uses the real browser-persisted theme provider instead of
+  a no-op form. These changes were deployed sequentially with exact-SHA A8
+  guard receipts; this is **deployment verification, not UI or functional QA**.
+- Historical scoped QA at `5352c097246de249ac9d28a017135f4809d7e415`
+  passed only its recorded syntax/format/structure/lint/Node categories.
+  Earlier admin TypeScript checks were similarly SHA-scoped. None qualifies
+  the current `ff1559d` code. Full G2, Hosting P0 browser acceptance,
+  Services S1–S4 owner sign-off and reboot G3 remain open.
 
 ## Private Mac Test Lab
 
