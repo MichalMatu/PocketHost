@@ -31,10 +31,26 @@ were earlier steps superseded by the accepted versions above. Their prior
 deploy and QA receipts are preserved in Git history and the current handoff;
 do not treat their historic pending statuses as the active release state.
 
+**New Cloudflare / MQTT / Health broad-MVP pass (20 November 2026):**
+current verified live DEV SHA `e3cd23c0e73e58c05bf25d9e4f19954f9064b160`
+(guarded deployment PASS, PID 22740, HTTP 200, unrelated services unchanged).
+Cloudflared 2026.11.1 is installed but no authenticated tunnel, credentials or public route
+exist, so Cloudflare edge connectivity remains **OPEN**. Mosquitto 2.1.4 is
+installed and running strictly on loopback 127.0.0.1:1883; real local
+Publish/Subscribe **PASS**. Existing Hosting health checks remain unchanged,
+with an added on-demand core-services view and MQTT protocol CONNACK probe.
+Independent local-agent receipt `pockethost-a8-mqtt-health-final-accept-e3cd23c-20261120-v1`
+**PASS** confirmed MQTT runit running, protocol ready, no LAN listener,
+Agent/SSH unchanged and all three module routes HTTP 200.
+Browser UI sign-off and Cloudflare account/tunnel integration remain open.
+
 ## Stage status
 
 | Stage                                         | Status                                     | Accepted or verified                                                                                                      | Still open                                                                                            |
 | --------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Cloudflare Tunnel                              | **INSTALLED / SETUP OPEN**                 | cloudflared 2026.11.1 installed and diagnostics deployed; package service stopped safely                                              | Named tunnel credentials, configuration, ingress and edge connection not tested                  |
+| Mosquitto MQTT                                 | **LOOPBACK DEVICE MVP PASS**             | Broker installed; 127.0.0.1:1883 only; MQTT publish/subscribe and protocol check PASS                                                | LAN exposure, broker UI lifecycle controls and reboot durability outside current scope           |
+| Core service Health checks                     | **DEVICE API PASS / BROWSER OPEN**       | Agent, SSH, MQTT CONNACK and Cloudflare on-demand view deployed; exact-SHA host API evidence PASS, no scheduler                    | Owner browser interaction sign-off and negative-path checks remain open                           |
 | A8 DEV platform / inventory / observability   | **Working DEV**                            | Owned panel/runit, private LAN, host inventory, monitoring and navigation; guarded SHA/PID/HTTP readback                  | Not a secure public production panel; boot durability untested                                        |
 | Static Hosting P0                             | **DEVICE FLOW PASS; visual MVP accepted**  | Own Create → Publish → Start → LAN HTTP, second release → verified content → rollback                                     | Final current-browser HTTP check, ZIP/folder general import/fault scenarios not fully qualified       |
 | Trusted Node Hosting P0                       | **DEVICE FLOW PASS; visual MVP accepted**  | Owner-token protection; Create/Stage/Deploy/HTTP/Logs/Update/Stop/Start/Rollback                                          | Final current-browser readiness/logs review, arbitrary source isolation and WAN prohibited            |
