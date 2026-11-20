@@ -8,7 +8,7 @@ import { localAgentOperationsSchema, type LocalAgentOperationsData,
 import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
 
 const api = "/api/v1/termux-admin"
-const summary = (value: LocalAgentOperationsData["agent"]) =>
+const summary = (value: Pick<LocalAgentOperationsData["agent"], "state" | "pid" | "uptimeSeconds">) =>
   value.state === "running" ? "Running · PID " + value.pid +
     (value.uptimeSeconds !== null ? " · " + formatAgentDuration(value.uptimeSeconds) : "") :
     value.state === "stopped" ? "Stopped" : "Unavailable"
