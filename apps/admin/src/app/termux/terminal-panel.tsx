@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 
@@ -76,13 +77,15 @@ export function TermuxTerminalPanel({
         status ? running ? "Terminal running" : "Stopped" : "Checking status"}</Badge>
     </div>
     <p className="text-xs text-muted-foreground">
-      Private LAN only. Shell commands have your Termux user's permissions. One browser client at a time.
+      Private LAN only. Uses native Termux Bash through ttyd; no Companion or Shizuku is required. Commands have your Termux user's permissions. One client at a time.
     </p>
     {detectionError && <p role="alert" className="text-sm text-destructive">
       Terminal availability could not be checked. Refresh to retry.
     </p>}
-    {detected === false && !detectionError && !running && <p className="text-sm">
-      ttyd is not installed. Install it in Packages before opening a terminal.
+    {detected === false && !detectionError && !running && <p role="status" className="text-sm">
+      Terminal is unavailable because <code>ttyd</code> is not installed in Termux.
+      Install it through <Link to="/packages" className="underline underline-offset-2">Packages</Link>,
+      then press Refresh. Companion is not needed.
     </p>}
     <div className="flex flex-wrap gap-2">
       {running

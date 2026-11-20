@@ -194,7 +194,8 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
   return <section className="space-y-3">
     <h3 className="font-medium">Files</h3>
     <p className="text-xs text-muted-foreground">Symlinks are never followed. Deletion is permanent.</p>
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center gap-2">
       <label htmlFor="file-location" className="text-sm">Location</label>
       <div className="relative">
         <select id="file-location" aria-label="Location"
@@ -208,8 +209,8 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
       </div>
       <Button size="sm" variant="outline" disabled={busy || !folder} onClick={() =>
         void load(root, crumbs.slice(0, -1).join("/"))}>Up</Button>
-    </div>
-    {quickLocations.length > 0 && <nav aria-label="Quick locations" className="flex flex-wrap items-center gap-2">
+      </div>
+    {quickLocations.length > 0 && <nav aria-label="Quick locations" className="flex flex-wrap items-center justify-end gap-2">
       <span className="text-xs text-muted-foreground">Quick access</span>
       {quickLocations.map(shortcut => <Button key={shortcut.root + "/" + shortcut.path}
         size="sm" variant="outline" disabled={busy}
@@ -218,6 +219,9 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         {shortcut.label}
       </Button>)}
     </nav>}
+    </div>
+    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
+      <div className="min-w-0 space-y-3">
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
@@ -295,6 +299,9 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         <p className="p-3 text-sm text-muted-foreground">No files in this directory.</p>}
       {listing?.truncated && <p className="p-2 text-xs">Directory listing limited to 300 entries.</p>}
     </div>
+      </div>
+      <div className="min-w-0 space-y-3 rounded-md border p-3">
+        <h4 className="text-sm font-semibold">File actions</h4>
     <Input placeholder="New folder, file, or source path" aria-label="Termux file source"
       value={target} onChange={event => chooseTarget(event.target.value)} />
     <div className="flex flex-wrap items-center gap-2">
@@ -328,6 +335,8 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         onChange={event => setContent(event.target.value)} />
       <Button size="sm" disabled={!target || busy} onClick={() => void perform("save", target)}>Save text</Button>
     </div>}
+      </div>
+    </div>
     {notice && <p role="status" className="text-sm">{notice}</p>}
     {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
   </section>
