@@ -16,6 +16,8 @@ export interface CloudflareTunnelDiagnostics {
   mode: 'read-only';
   service: 'cloudflared';
   observedAt: string;
+  /** Optional for backward compatibility with earlier diagnostic snapshots. */
+  binary?: { state: 'available' | 'missing' | 'unverified' };
   runit: { state: RunitState; uptimeSeconds: number | null; error: string | null };
   process: { pid: number; startTicks: string; rssMiB: number | null;
     identity: 'runit-consistent-not-owned' } | null;
@@ -167,6 +169,18 @@ export class CloudflareTunnelDiagnosticHost {
     return { ...base, error: 'runit-status-invalid' };
   }
 
+  /** Only the known Termux binary location is inspected; never execute cloudflared. */
+  private binary(): NonNullable<CloudflareTunnelDiagnostics['binary']> {
+    try {
+      const info = lstatSync(path.join(PREFIX, 'bin/cloudflared'));
+      return { state: info.isFile() && (info.mode & 0o111) !== 0
+        ? 'available' : 'unverified' };
+    } catch (error) {
+      return { state: (error as NodeJS.ErrnoException).code === 'ENOENT'
+        ? 'missing' : 'unverified' };
+    }
+  }
+
   private config(): CloudflareTunnelDiagnostics['config'] {
     const missing: CloudflareTunnelDiagnostics['config'] = {
       state: 'unavailable', tunnelDeclared: null, credentialsFileDeclared: null,
@@ -233,6 +247,7 @@ export class CloudflareTunnelDiagnosticHost {
   inspect(): CloudflareTunnelDiagnostics {
     const result: CloudflareTunnelDiagnostics = {
       version: 1, mode: 'read-only', service: SERVICE, observedAt: this.now(),
+      binary: this.binary(),
       runit: { state: 'unknown', uptimeSeconds: null, error: 'service-unavailable' },
       process: null,
       config: this.config(),
