@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
+import type { ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { formatAgentDuration } from "@/lib/local-agent-time"
 
 const short = (value: string | null) => value ? value.slice(0, 12) : "unverified"
@@ -24,7 +24,11 @@ export function ControlPlanePanel({
     </CardHeader>
     <CardContent className="space-y-3 text-sm">
       {loading && <p role="status">Reading control-plane diagnostics…</p>}
-      {error && <p role="alert">Control-plane diagnostics unavailable. {data ? "Last successful snapshot shown; it may be stale." : "No snapshot available."} No services were changed.</p>}
+      {error && <p role="alert">
+        Control-plane diagnostics unavailable.{" "}
+        {data ? "Last successful snapshot shown; it may be stale." : "No snapshot available."}{" "}
+        No services were changed.
+      </p>}
       {data && <>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border p-3 space-y-1">
