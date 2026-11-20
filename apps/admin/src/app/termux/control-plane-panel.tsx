@@ -21,7 +21,8 @@ export function ControlPlanePanel({ refreshToken = 0 }: { refreshToken?: number 
       setLoading(true)
     })
     void fetch("/api/v1/termux-admin?mode=control-plane-diagnostics", {
-      method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
+      method: "GET", credentials: "same-origin", cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
     }).then(async response => {
       if (!response.ok) throw Error("unavailable")
       return controlPlaneSchema.parse(await response.json() as unknown)

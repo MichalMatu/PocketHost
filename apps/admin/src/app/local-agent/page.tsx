@@ -21,7 +21,8 @@ export default function LocalAgentPage() {
       active = controller
       try {
         const response = await fetch("/api/v1/termux-admin?mode=local-agent-logs", {
-          method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
+          method: "GET", credentials: "same-origin", cache: "no-store",
+          signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
         })
         if (!response.ok) throw Error("unavailable")
         const data = localAgentLogSchema.parse(await response.json() as unknown)
