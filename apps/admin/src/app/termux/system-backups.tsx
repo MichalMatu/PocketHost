@@ -7,7 +7,7 @@ type Snapshot = { id: string; time: string; paths: string[] }
 type ResticState = { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean }
 const headers = { "Content-Type": "application/json", "X-PocketHost-Intent": "termux-admin" }
 async function get<T>(query: string): Promise<T> {
-  const response = await fetch(API + query, { credentials: "same-origin", cache: "no-store" })
+  const response = await fetch(API + query, { credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(10_000) })
   if (!response.ok) throw new Error("Restic inventory unavailable")
   return response.json() as Promise<T>
 }
@@ -25,7 +25,7 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
   const [message, setMessage] = React.useState("")
   const [error, setError] = React.useState("")
   const run = async (name: "backup" | "check" | "restore" | "forget", id?: string) => {
-    if (busy || !detected) return
+    if (busy || !detected || !status || !!error) return
     const prompt = name === "backup" ? "Create a local encrypted Restic backup of Termux " + scope + "?" :
       name === "restore" ? "Restore the selected snapshot into an isolated directory, without replacing running files?" :
       name === "forget" ? "Permanently forget and prune this selected backup?" :
@@ -83,6 +83,7 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
         : name === "forget" ? "Snapshot removal confirmed in inventory."
         : "Restic repository integrity check completed successfully.")
     } catch {
+      setStatus(null); setRecords(null)
       setError("Backup operation result unconfirmed. Refresh and inspect snapshots before retrying; no automatic retry.")
     } finally { setBusy(false) }
   }
@@ -92,12 +93,12 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
     void get<{ restic: ResticState }>("?mode=restic-status").then(async result => {
       if (!active) return
       setStatus(result.restic)
-      if (!result.restic.initialized) { setRecords([]); return }
+      if (!result.restic.initialized) { setRecords([]); setError(""); return }
       const listing = await get<{ snapshots: Snapshot[] }>("?mode=system-snapshots&scope=" + scope)
       if (!Array.isArray(listing.snapshots) || listing.snapshots.length > 40 ||
         !listing.snapshots.every(item => /^[a-f0-9]{64}$/.test(item.id))) throw new Error("Invalid backup records")
-      if (active) setRecords(listing.snapshots)
-    }).catch(() => { if (active) setError("Restic inventory unavailable. Last results retained.") })
+      if (active) { setRecords(listing.snapshots); setError("") }
+    }).catch(() => { if (active) { setStatus(null); setRecords(null); setError("Restic inventory unavailable. Refresh before using backup controls.") } })
     return () => { active = false }
   }, [detected, refreshToken, scope])
   return <section className="space-y-3 rounded-md border p-3">
@@ -112,11 +113,11 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
         <option value="prefix">PREFIX · installed Termux programs</option>
         <option value="all">HOME + PREFIX · full Termux</option>
       </select>
-      <Badge variant="outline">{status?.initialized ? "Encrypted repository ready" : "Not initialized"}</Badge>
+      <Badge variant="outline">{!status ? "Repository unverified" : status.initialized ? "Encrypted repository ready" : "Not initialized"}</Badge>
     </div>
     <div className="flex flex-wrap gap-2">
-      <Button size="sm" disabled={busy || !detected} onClick={() => void run("backup")}>Create full backup</Button>
-      <Button size="sm" variant="outline" disabled={busy || !detected || !status?.initialized}
+      <Button size="sm" disabled={busy || !detected || !status || !!error} onClick={() => void run("backup")}>Create full backup</Button>
+      <Button size="sm" variant="outline" disabled={busy || !detected || !status?.initialized || !!error}
         onClick={() => void run("check")}>Verify repository</Button>
 
     </div>
