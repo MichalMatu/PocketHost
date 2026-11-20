@@ -35,8 +35,16 @@ const logs = {
   source: "private-runit-svlogd", state: "ok",
   events: [{ kind: "budget", message: "Task stopped by execution budget",
     timestamp: "2026-11-20T11:59:00.000Z" }],
+  lines: [
+    { kind: "budget", text: "Task stopped by execution budget",
+      timestamp: "2026-11-20T11:59:00.000Z" },
+    { kind: "service", text: "exec finished · exit=0 · 3.2s · sha256=0123456789abcdef",
+      timestamp: "2026-11-20T11:59:04.000Z" },
+    { kind: "other", text: "Agent log entry (private or unsupported detail hidden)",
+      timestamp: null },
+  ],
   unclassifiedLines: 79, truncated: true,
-  notice: "sanitized-events-only-no-lifecycle-authority",
+  notice: "sanitized-log-tail-no-lifecycle-authority",
 }
 function mockFetch() {
   return vi.fn(async (url: string) => ({
@@ -68,10 +76,12 @@ describe("Local Agent read-only overview", () => {
     render(<LocalAgentPage />)
     fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
     expect(await screen.findByText("Task stopped by execution budget")).toBeTruthy()
-    expect(screen.getByText(/79 unrecognized lines/)).toBeTruthy()
-    expect(screen.getByText(/not a shell terminal/)).toBeTruthy()
-    fireEvent.change(screen.getByLabelText("Filter Agent events"), { target: { value: "transport" } })
-    expect(screen.getByText("No classified events match this view.")).toBeTruthy()
+    expect(screen.getByText(/79 entries have private or unsupported details masked/)).toBeTruthy()
+    expect(screen.getByText(/exec finished · exit=0/)).toBeTruthy()
+    expect(screen.getByText(/private or unsupported detail hidden/)).toBeTruthy()
+    expect(screen.getByText(/real read-only Agent service log/)).toBeTruthy()
+    fireEvent.change(screen.getByLabelText("Filter Agent log"), { target: { value: "transport" } })
+    expect(screen.getByText("No log entries match this filter.")).toBeTruthy()
     expect(screen.queryByText("Task stopped by execution budget")).toBeNull()
   })
 
@@ -85,13 +95,13 @@ describe("Local Agent read-only overview", () => {
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3))
     expect(fetcher.mock.calls.filter(call =>
       call[0].includes("mode=control-plane-diagnostics"))).toHaveLength(1)
-    fireEvent.click(screen.getByRole("button", { name: "Pause event updates" }))
+    fireEvent.click(screen.getByRole("button", { name: "Pause log updates" }))
     await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
     const pausedAt = fetcher.mock.calls.length
     await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
     expect(fetcher).toHaveBeenCalledTimes(pausedAt)
-    expect(screen.getByText("Event updates paused")).toBeTruthy()
-    fireEvent.click(screen.getByRole("button", { name: "Resume event updates" }))
+    expect(screen.getByText("Log updates paused")).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Resume log updates" }))
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     expect(fetcher.mock.calls.length).toBeGreaterThan(pausedAt)
     expect(fetcher.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)

@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node
 import os from 'node:os';
 import path from 'node:path';
 import {
-  classifyAgentLogLine, LocalAgentLogHost,
+  classifyAgentLogLine, safeAgentLogLine, LocalAgentLogHost,
 } from '../../src/modules/host/local-agent-log-diagnostics.ts';
 
 const sample = '2026-11-13T20:45:00Z task_budget_exhausted PRIVATE_TOKEN=secret-SUPER ' +
@@ -39,10 +39,15 @@ test('reads a bounded private svlogd tail and excludes arbitrary bytes', () => {
     assert.equal(result.source, 'private-runit-svlogd');
     assert.deepEqual(result.events.map(e => e.kind), ['budget', 'published']);
     assert.equal(result.unclassifiedLines, 1);
+    assert.equal(result.lines.length, 3);
+    assert.equal(result.lines[0].kind, 'budget');
+    assert.equal(result.lines[1].kind, 'published');
+    assert.equal(result.lines[2].kind, 'other');
+    assert.match(result.lines[2].text, /hidden/);
     assert.ok(!JSON.stringify(result).includes('secret-'));
     assert.ok(!JSON.stringify(result).includes('ACCESS_TOKEN'));
     assert.ok(!JSON.stringify(result).includes('id_ed25519'));
-    assert.equal(result.notice, 'sanitized-events-only-no-lifecycle-authority');
+    assert.equal(result.notice, 'sanitized-log-tail-no-lifecycle-authority');
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
 
@@ -124,5 +129,38 @@ test('installed svlogd current log renders a known timestamp without leaking pay
     assert.deepEqual(observed.events.map(e => e.timestamp),
       ['2026-11-13T21:58:57.311Z']);
     assert.ok(!JSON.stringify(observed).includes('secret=hidden'));
+  } finally { rmSync(f.home, { recursive: true, force: true }); }
+});
+
+test('safe tail reconstructs known command lifecycle but never prints private bytes', () => {
+  const messages = [
+    '2026-11-20_14:00:00.000000 [linux-agent] exec: command sha256=0123456789abcdef',
+    '2026-11-20_14:00:01.000000 [linux-agent] output summary stage=command-1 exit=0 captured_chars=342',
+    '2026-11-20_14:00:03.000000 [linux-agent] exec finished exit=0 elapsed=3.2s: command sha256=0123456789abcdef',
+    '2026-11-20_14:00:04.000000 private output SECRET=do-not-show command=cat ~/.ssh/id_ed25519',
+  ];
+  const entries = messages.map(safeAgentLogLine);
+  assert.equal(entries[0].text, 'exec: command sha256=0123456789abcdef');
+  assert.equal(entries[1].text, 'output summary · command-1 · exit=0 · captured=342 chars');
+  assert.equal(entries[2].text, 'exec finished · exit=0 · 3.2s · sha256=0123456789abcdef');
+  assert.equal(entries[3].kind, 'other');
+  assert.equal(entries[3].timestamp, '2026-11-20T14:00:04.000Z');
+  assert.ok(!JSON.stringify(entries).includes('SECRET='));
+  assert.ok(!JSON.stringify(entries).includes('id_ed25519'));
+});
+
+test('bounded tail retains placeholders for every unrecognized record', () => {
+  const f = fixture();
+  try {
+    writeFileSync(f.current, Array.from({ length: 150 }, (_, i) =>
+      '2026-11-20_14:01:00.000000 private output-' + i + ' TOKEN=hidden'
+    ).join('\n') + '\n');
+    const result = new LocalAgentLogHost(f.home).inspect();
+    assert.equal(result.state, 'ok');
+    assert.equal(result.lines.length, 120);
+    assert.equal(result.unclassifiedLines, 120);
+    assert.equal(result.truncated, true);
+    assert.ok(result.lines.every(line => line.text.includes('hidden')));
+    assert.ok(!JSON.stringify(result).includes('TOKEN=hidden'));
   } finally { rmSync(f.home, { recursive: true, force: true }); }
 });
