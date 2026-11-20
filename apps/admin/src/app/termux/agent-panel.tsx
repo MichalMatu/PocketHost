@@ -19,15 +19,18 @@ export function AgentApiPanel({ refreshToken = 0 }: { refreshToken?: number }) {
   React.useEffect(() => {
     let mounted = true
     void fetch("/api/v1/termux-admin?mode=agent-capabilities", {
-      credentials: "same-origin", cache: "no-store",
+      credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(10_000),
     }).then(async response => {
       if (!response.ok) throw new Error("Unavailable")
       return response.json() as Promise<Capabilities>
     }).then(value => {
       if (!mounted) return
-      if (value.version !== 1 || !Array.isArray(value.actions)) throw new Error("Invalid API")
+      if (value.version !== 1 || !Array.isArray(value.actions) ||
+        value.actions.length > 50 || !value.actions.every(action => typeof action === "string"))
+        throw new Error("Invalid API")
       setCapabilities(value)
-    }).catch(() => { if (mounted) setError("Agent API contract unavailable.") })
+      setError("")
+    }).catch(() => { if (mounted) { setCapabilities(null); setError("Agent API contract unavailable. Refresh to retry.") } })
     return () => { mounted = false }
   }, [refreshToken])
   return <section className="space-y-4 rounded-md border p-4">
