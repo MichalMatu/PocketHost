@@ -10,7 +10,6 @@ import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-l
 import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
 
 type View = "overview" | "tasks" | "console" | "diagnostics"
-type Filter = "all" | "errors" | "tasks" | "transport"
 const views: { value: View; label: string }[] = [
   { value: "overview", label: "Overview" },
   { value: "tasks", label: "Tasks & activity" },
@@ -22,12 +21,6 @@ const warnings: Record<string, string> = {
   "execution-timeout": "A recent task exceeded its execution time budget.",
   "repeated-long-execution": "Three of the last five tasks exceeded five minutes.",
   "execution-regression": "Execution time increased compared with earlier samples.",
-}
-const filters: Record<Filter, string[]> = {
-  all: [],
-  errors: ["failed", "budget", "timeout", "interrupted"],
-  tasks: ["task", "claim", "published", "budget", "failed", "timeout", "interrupted"],
-  transport: ["transport", "published"],
 }
 
 function Metric({ label, value, detail }: { label: string; value: string; detail?: string }) {
@@ -42,15 +35,18 @@ export default function LocalAgentPage() {
   const [view, setView] = React.useState<View>("overview")
   const [refreshToken, setRefreshToken] = React.useState(0)
   const [live, setLive] = React.useState(true)
-  const [filter, setFilter] = React.useState<Filter>("all")
   const [advanced, setAdvanced] = React.useState(false)
   const [logs, setLogs] = React.useState<LocalAgentLogData | null>(null)
-  const [logsLoading, setLogsLoading] = React.useState(true)
-  const [logsError, setLogsError] = React.useState(false)
   const [plane, setPlane] = React.useState<ControlPlaneDiagnostic | null>(null)
   const [planeLoading, setPlaneLoading] = React.useState(true)
   const [planeError, setPlaneError] = React.useState(false)
-  const consoleEnd = React.useRef<HTMLDivElement>(null)
+  const [rawText, setRawText] = React.useState("")
+  const [rawError, setRawError] = React.useState(false)
+  const [rawLoading, setRawLoading] = React.useState(true)
+  const [followTail, setFollowTail] = React.useState(true)
+  const rawCursor = React.useRef<string | null>(null)
+  const rawDecoder = React.useRef(new TextDecoder())
+  const rawViewport = React.useRef<HTMLDivElement>(null)
 
   React.useEffect(() => {
     const controller = new AbortController()
@@ -86,11 +82,10 @@ export default function LocalAgentPage() {
         })
         if (!response.ok) throw Error("unavailable")
         const data = localAgentLogSchema.parse(await response.json() as unknown)
-        if (!controller.signal.aborted) { setLogs(data); setLogsError(false) }
+        if (!controller.signal.aborted) setLogs(data)
       } catch {
-        if (!controller.signal.aborted) setLogsError(true)
+        // Timing aggregates are optional. Raw console has its own log transport.
       } finally {
-        if (!controller.signal.aborted) setLogsLoading(false)
         active = null
       }
     }
@@ -105,12 +100,62 @@ export default function LocalAgentPage() {
     }
   }, [refreshToken, live])
 
-  const displayLines = logs?.lines.filter(line =>
-    filter === "all" || filters[filter].includes(line.kind)) ?? []
   React.useEffect(() => {
-    if (view === "console" && live && displayLines.length > 0)
-      consoleEnd.current?.scrollIntoView?.({ block: "nearest" })
-  }, [view, live, logs, filter, displayLines.length])
+    if (view !== "console" || !live) return
+    let disposed = false
+    let pending = false
+    let request: AbortController | null = null
+    const readRaw = async () => {
+      if (pending || disposed) return
+      pending = true
+      setRawLoading(true)
+      try {
+        // Catch up immediately in 256 KiB chunks, then follow appended bytes.
+        for (let part = 0; part < 256 && !disposed; part++) {
+          const controller = new AbortController()
+          request = controller
+          const previous = rawCursor.current
+          const query = "/api/v1/termux-admin?mode=local-agent-raw-log" +
+            (previous === null ? "" : "&cursor=" + encodeURIComponent(previous))
+          const response = await fetch(query, {
+            method: "GET", credentials: "same-origin", cache: "no-store",
+            signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
+          })
+          if (!response.ok) throw Error("raw-log-unavailable")
+          const cursor = response.headers.get("X-Agent-Log-Cursor")
+          if (!cursor) throw Error("raw-log-cursor-missing")
+          const reset = response.headers.get("X-Agent-Log-Reset") === "1"
+          const more = response.headers.get("X-Agent-Log-More") === "1"
+          const bytes = new Uint8Array(await response.arrayBuffer())
+          if (disposed) return
+          if (reset) rawDecoder.current = new TextDecoder()
+          const text = rawDecoder.current.decode(bytes, { stream: true })
+          rawCursor.current = cursor
+          if (reset) setRawText(text)
+          else if (text) setRawText(previousText => previousText + text)
+          setRawError(false)
+          if (!more) break
+        }
+      } catch {
+        if (!disposed) setRawError(true)
+      } finally {
+        pending = false
+        request = null
+        if (!disposed) setRawLoading(false)
+      }
+    }
+    void readRaw()
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void readRaw()
+    }, 5000)
+    return () => { disposed = true; window.clearInterval(timer); request?.abort() }
+  }, [view, live, refreshToken])
+
+  React.useEffect(() => {
+    if (view === "console" && followTail && rawViewport.current) {
+      rawViewport.current.scrollTop = rawViewport.current.scrollHeight
+    }
+  }, [rawText, view, followTail])
 
   const agent = plane?.localAgent
   const latency = logs?.latency
@@ -120,8 +165,8 @@ export default function LocalAgentPage() {
   const intake = agent?.intake === "stop-present" ? "STOP marker present"
     : agent?.intake === "stop-absent" ? "STOP marker absent" : "Unverified"
   const currentClaim = agent?.unspooledClaims
-  const logState = logsError ? "Read failed" : !live ? "Log updates paused" : logsLoading ? "Reading" :
-    logs?.state === "ok" ? "Live log" : "Log unavailable"
+  const logState = rawError ? "Read failed" : !live ? "Paused" :
+    rawLoading ? "Reading" : "Raw log"
 
   return <BaseLayout title="Local Agent" description="Samsung A8 · private Termux diagnostics">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
@@ -135,7 +180,12 @@ export default function LocalAgentPage() {
           <Button size="sm" variant="outline" onClick={() => setLive(value => !value)}>
             {live ? "Pause log updates" : "Resume log updates"}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => setRefreshToken(value => value + 1)}>
+          <Button size="sm" variant="outline" onClick={() => {
+              rawCursor.current = null
+              rawDecoder.current = new TextDecoder()
+              setRawText("")
+              setRefreshToken(value => value + 1)
+            }>
             <RefreshCw className="size-4" /> Refresh
           </Button>
         </div>
@@ -251,54 +301,31 @@ export default function LocalAgentPage() {
           <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-2">
               <CardTitle className="flex items-center gap-2"><TerminalSquare className="size-4" />
-                Live Agent log</CardTitle>
+                Raw Agent log</CardTitle>
               <Badge variant="outline">{logState}</Badge>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
-                A8 private svlogd · {logs?.lines.length ?? 0} recent lines · sampled {formatAgentTime(logs?.observedAt)}
+                Termux svlogd/current · original lines · no filtering · updates every 5s
               </p>
-              <label className="flex items-center gap-2 text-xs">
-                Filter
-                <select aria-label="Filter Agent log" className="rounded-md border bg-background px-2 py-1.5"
-                  value={filter} onChange={event => setFilter(event.target.value as Filter)}>
-                  <option value="all">All</option>
-                  <option value="errors">Errors</option>
-                  <option value="tasks">Tasks</option>
-                  <option value="transport">Transport</option>
-                </select>
-              </label>
+              {!followTail && <Button variant="outline" size="sm"
+                onClick={() => setFollowTail(true)}>Follow tail</Button>}
             </div>
-            {logsError && <p role="alert" className="text-muted-foreground">
-              Log read failed. {logs ? "Last successful sample remains visible." : "No logs available."}
+            {rawError && <p role="alert" className="text-sm text-muted-foreground">
+              Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
             </p>}
-            <div aria-label="Agent event console"
-              className="max-h-80 min-h-40 overflow-auto rounded-md border bg-neutral-950 p-3 font-mono text-xs leading-relaxed text-neutral-200">
-              {logs?.state === "ok" && displayLines.length ? <ol className="space-y-1">
-                {displayLines.map((line, index) => <li key={index} className="break-words">
-                  <span className="text-neutral-400">[{line.timestamp ? formatAgentTime(line.timestamp) : "no time"}]</span>
-                  {" "}<span className="font-semibold">{line.kind.toUpperCase()}</span>
-                  {" "}{line.text}
-                </li>)}
-              </ol> : <p role="status" className="text-neutral-400">
-                {!logs ? "No log sample yet." : logs.state !== "ok"
-                  ? "The private Agent log is unavailable."
-                  : "No log entries match this filter."}
-              </p>}
-              <div ref={consoleEnd} />
+            <div ref={rawViewport} aria-label="Raw Agent console"
+              onScroll={event => {
+                const el = event.currentTarget
+                setFollowTail(el.scrollHeight - el.scrollTop - el.clientHeight < 48)
+              }}
+              className="h-[min(65vh,38rem)] min-h-72 overflow-auto rounded-md border bg-neutral-950 p-3 text-neutral-200">
+              <pre className="min-w-max whitespace-pre font-mono text-xs leading-relaxed">
+                {rawText || (rawLoading ? "Reading svlogd/current..." : "No entries in the current log.")}
+              </pre>
             </div>
-            {logs?.state === "ok" && <p className="text-xs text-muted-foreground">
-              {logs.unclassifiedLines} entries have private or unsupported details masked
-              {logs.truncated ? " · showing only the latest log tail" : ""}.
-            </p>}
-            <p className="text-xs text-muted-foreground">
-              Chronological A8 log, refreshed every 5 seconds. The updated Termux Agent will add
-              task and stage transitions after its separate native installation.
-              Command output and private details remain hidden on this unauthenticated LAN panel.
-              Only a verified Git receipt confirms publication.
-            </p>
           </CardContent>
         </Card>
       </section>}
