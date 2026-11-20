@@ -139,12 +139,12 @@ export class ProtectedServiceDiagnosticHost {
     const running = 'run: ' + argument + ': ';
     const stopped = 'down: ' + argument + ': ';
     if (output.startsWith(running)) {
-      const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:;|$)/.exec(output.slice(running.length));
+      const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:[;,]|$)/.exec(output.slice(running.length));
       const pid = Number(match?.[1]), seconds = Number(match?.[2]);
       if (match && Number.isSafeInteger(pid) && Number.isSafeInteger(seconds))
         return { state: 'running' as const, pid, uptimeSeconds: seconds, error: null };
     }
-    if (output.startsWith(stopped) && /^\d+s(?:;|$)/.test(output.slice(stopped.length)))
+    if (output.startsWith(stopped) && /^\d+s(?:[;,]|$)/.test(output.slice(stopped.length)))
       return { state: 'stopped' as const, pid: null, uptimeSeconds: null, error: null };
     return { ...base, error: 'runit-status-invalid' };
   }
