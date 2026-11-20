@@ -1,195 +1,51 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-20
-purpose: Single concise MVP status, priority and acceptance tracker
+last_reviewed: 2026-11-21
+purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in canonical checkpoint
 ---
 
-# PocketHost — MVP execution plan
+# PocketHost — MVP status and next acceptance
 
-**Canonical evidence:** [2026-11-18 A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md). This tracker states decisions and remaining work; it is not a release diary. Detailed older device receipts remain in [Hosting integration evidence](MVP_INTEGRATION_CHECKLIST.md), Local Agent Git task-results and Git history.
+**Canonical current evidence:** [21 November 2026 A8 checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md). **Resume instructions:** [current handoff](HANDOFF_NEXT_CHAT.md). Historical device details and older failed/skipped QA are preserved in [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md), [integration receipts](MVP_INTEGRATION_CHECKLIST.md) and Local Agent task results; this is **not a release diary**.
 
-**Current A8 Local Agent and SSH sprint (20 November 2026):** Agent
-`7415454b1fb2af7d3babe1c283c9e38848291d2b` is installed and independently
-Git-accepted (29/29 source QA, 26/26 manifest checks). PocketHost DEV panel
-`8e200b61283b6467d56e268bd1e47fe6a5ba55b6` deployed PASS with owned
-PID/start-tick and HTTP 200 readback, protected services unchanged. SSH
-controls, saved connections and terminal now live at `/services/ssh`, not
-the Local Agent screen. Dedicated SSH listening at `192.168.0.16:8022` was
-recovered independently; final lifecycle QA `pockethost-a8-ssh-lifecycle-profile-qa-fixed-20261120-v2`
-**PASS** on the exact panel SHA: restart, stop, start and port readback, plus
-add/edit/delete of a disposable profile. SSH final PID 8275, Agent PID 6821
-unchanged; user's saved profile preserved. Owner screenshots separately
-confirmed terminal shell, MacBook SSH authentication and disconnect flow.
-No source defect found in this QA scope. External/protected system sshd
-remains untouched and read-only. Security hardening remains a separate
-owner-deferred sprint.
+## Version boundary
 
-**Historical A8 log/UI work (20 November 2026):** old panel revisions
-`8fa67fc`, `cec1a94` and old Agent versions `2284897` / `9ff0bef`
-were earlier steps superseded by the accepted versions above. Their prior
-deploy and QA receipts are preserved in Git history and the current handoff;
-do not treat their historic pending statuses as the active release state.
+- **Last verified running A8 panel code:** `7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`, receipt `pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **26723**, start ticks **62843520**, HTTP **200**, protected services unchanged, **tests not run**.
+- At checkpoint start Git `main` was `fd8949b906514c4576430d5e2b7c16b0b4f82c9f`. Additional **docs-only** cleanup commits do not change running code. Read both Git HEAD and independently verified live SHA before a new deployment.
+- `PocketHost` branch inventory **only `main`**, open PRs **0**; nothing eligible for branch cleanup. Local Agent's separate active `agent-control` branch is transport infrastructure and is retained.
+- **`photomap.pl` not yet imported or migrated**, by owner decision. Use a disposable independent project to qualify remaining flows first.
 
-**Static export and project backup visibility (21 November 2026):**
-Latest verified A8 DEV live SHA **`7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`**
-(`pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`,
-guarded deploy PASS, HTTP 200, protected services unchanged, `tests=not-run`).
-Backups & Recovery now reads owned Static/Node release coverage while clearly
-separating rollback history from verified independent backups. Static Hosting
-offers **Download active ZIP** from the attested owned release; the ZIP import
-transport budget is 9 MiB while extracted asset total remains limited to
-8 MiB. The new export/download/reimport flow has **not** been functionally
-tested, and no user data or backup/restore was changed during deployment.
-Existing Node Restic backup→isolated restore remains a prior narrow PASS.
-Next: scoped, separately approved disposable Static ZIP round-trip and then
-persistent application storage recovery. `photomap.pl` remains untouched.
+## Module acceptance matrix
 
-**Autostart current-session visibility + independent Hosting inventory (20 November 2026):**
-A8 DEV now runs `02e05418f49f0200f3d61b66935a9c688affb972`
-(guarded deploy `pockethost-a8-autostart-session-ui-02e0541-deploy-20261120-v1`,
-PASS, PID 14515, HTTP 200, protected services unchanged, tests not run).
-Autostart page now reads present-time panel/Agent/SSH/MQTT state alongside
-Termux:Boot script count; never equates running process with reboot recovery.
-Read-only native script classification on A8: **3/3 executable boot hooks
-refer to runit; 2 refer to the Agent**, none directly names panel, SSH or MQTT;
-do not infer missing service startup because runit supervises them.
-Android Termux:Boot permission and a real post-reboot restoration remain unverified.
-Read-only Hosting intake inventory `pockethost-a8-independent-hosting-import-inventory-20261120-v1`:
-Static **200 / 1 item**, Node **200 / 1 item**, Hosting/Sites/Projects/
-Deployments/Project logs routes all HTTP 200. Static ZIP/folder and Node local
-files/folder/public GitHub import mechanisms already exist; their **new
-independent import flow was not re-tested**. The next functional MVP gap for a
-future production migration is persistent-data backup and verified project
-restore, not a duplicate import UI. `photomap.pl` stays untouched.
+| Moduł                         | Stan                                     | Granica odbioru                                                                                        |
+| ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `7dd7c787` and owned PID/HTTP attested; no latest-SHA broad QA                         |
+| SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
+| Static Hosting                | Core lifecycle PASS; ZIP QA OPEN         | Create/publish/v2/start/rollback previously accepted; active ZIP download deployed, re-import untested |
+| Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
+| Hosting / Deployments / Logs  | Basic routes PASS; browser sign-off OPEN | One Static + one Node catalog, pages HTTP 200; current-browser selection not signed off                |
+| Backups & Recovery            | Local Node Restic narrowly PASS          | Project coverage view deployed; Static ZIP, app data and independent restore incomplete                |
+| Services S1–S4                | READY_FOR_ACCEPTANCE                     | Owned fixed-template worker exercised; general custom worker/negative cases open                       |
+| Mosquitto MQTT                | Loopback MVP PASS                        | Runit + publish/subscribe + CONNACK at `127.0.0.1:1883`; LAN closed                                    |
+| Health checks                 | A8 API PASS; browser OPEN                | On-demand Agent/SSH/MQTT/Cloudflare checks; manual button and fault path acceptance open               |
+| Autostart / Termux:Boot       | Current-session visibility PASS          | 3/3 executable hooks; physical reboot/startup persistence unverified                                   |
+| Cloudflare shared tunnel      | Pi connector observed; new ingress OPEN  | One named tunnel on Pi to Pi `127.0.0.1:8000`; A8 optional connector stopped; no public route added    |
+| Android / Companion / Shizuku | PARTIAL / deferred                       | Basic UI and host diagnostics; physical optional bridge and public production mode not qualified       |
+| Full repo G2 / physical G3    | NOT CERTIFIED                            | Earlier scoped tests only; no broad latest-SHA QA and no reboot                                        |
 
-**Latest shared-tunnel / Autostart broad-MVP cut (20 November 2026):**
-A8 DEV now runs `8f93aa653d12457c0fca5b952a0ac729dea31e79`
-(`pockethost-a8-cloudflare-shared-pi-ui-8f93aa6-deploy-20261120-v1`,
-DEPLOY PASS, PID 9990, HTTP 200, protected services unchanged; QA not run).
-Cloudflare page supports the **single connector on Pi Zero** interpretation;
-no extra A8 tunnel/credentials are required, and no external DNS/ingress
-was changed. Safe, unactivated multi-origin plan:
-[CLOUDFLARE_SHARED_TUNNEL_MVP](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
-Pi's active connector currently routes to `http://127.0.0.1:8000` on Pi,
-and Pi→A8 LAN ports were observed reachable; public hostname/DNS and
-end-to-end public origin readiness remain open.
-Autostart A8 read-only inventory: **3/3 Termux:Boot scripts executable**,
-Agent/SSH/panel/Mosquitto running, A8 cloudflared intentionally stopped;
-Android permission and post-reboot persistence still **unverified**.
-`photomap.pl` will be a later independently imported complete project;
-no migration now.
+**Meaning:** DEPLOY PASS proves applied source, owner/PID/ticks, core HTTP and protected-service isolation. It **does not** prove fresh UI/test acceptance. Old scoped PASS applies only to the task, SHA and exact feature checked.
 
-**New Cloudflare / MQTT / Health broad-MVP pass (20 November 2026):**
-current verified live DEV SHA `e3cd23c0e73e58c05bf25d9e4f19954f9064b160`
-(guarded deployment PASS, PID 22740, HTTP 200, unrelated services unchanged).
-Cloudflared 2026.11.1 is installed but no authenticated tunnel, credentials or public route
-exist, so Cloudflare edge connectivity remains **OPEN**. Mosquitto 2.1.4 is
-installed and running strictly on loopback 127.0.0.1:1883; real local
-Publish/Subscribe **PASS**. Existing Hosting health checks remain unchanged,
-with an added on-demand core-services view and MQTT protocol CONNACK probe.
-Independent local-agent receipt `pockethost-a8-mqtt-health-final-accept-e3cd23c-20261120-v1`
-**PASS** confirmed MQTT runit running, protocol ready, no LAN listener,
-Agent/SSH unchanged and all three module routes HTTP 200.
-Browser UI sign-off and Cloudflare account/tunnel integration remain open.
+## Immediate priority — broad functionality before deep refinement
 
-## Stage status
+1. **Static ZIP closed loop:** separate approved manual QA on exact code SHA: export actual active ZIP, validate CRC/paths/files, import to a **new disposable owned Static project**, compare bytes/HTTP, check original untouched, clean only the fixture. Do not replace existing import.
+2. **Project recovery:** define app-owned persistent uploads/database/state and test backup→**isolated** restore on a fixture. Current Static versions are rollback history, not an independent backup; Node's earlier local Restic PASS need not be repeated. **Off-device Restic is deferred** until owner chooses destination and authorizes it.
+3. **One new project end to end:** reuse existing Static ZIP/folder and Node local/GitHub intake; demonstrate deployment, update, logs, health, rollback and retained data. Only after all base features work is `photomap.pl` the proposed real migration.
+4. **Cloudflare using Pi only:** inventory current Pi public hostname/DNS, choose a safe owned app on A8, prepare validated ingress candidate with preserved old Pi origin and same named tunnel. Do not route unauthenticated PocketHost admin, SSH or MQTT publicly. No change to DNS/connector yet. [Design](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
+5. **Separate physical acceptance:** Android Termux:Boot restore following an explicitly approved reboot; then pending Services S1–S4 worker controls/current-browser selection, scoped negative tests and **only when separately approved** full QA.
 
-| Stage                                         | Status                                     | Accepted or verified                                                                                                      | Still open                                                                                            |
-| --------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Cloudflare Tunnel                              | **REMOTE PI CONNECTOR VERIFIED / PUBLIC ROUTING OPEN**                 | cloudflared 2026.11.1 installed and diagnostics deployed; package service stopped safely                                              | Named tunnel credentials, configuration, ingress and edge connection not tested                  |
-| Mosquitto MQTT                                 | **LOOPBACK DEVICE MVP PASS**             | Broker installed; 127.0.0.1:1883 only; MQTT publish/subscribe and protocol check PASS                                                | LAN exposure, broker UI lifecycle controls and reboot durability outside current scope           |
-| Autostart / Android boot                       | **CURRENT-SESSION VISIBILITY DEPLOYED / REBOOT OPEN**            | Boot inventory confirmed; current Agent, SSH, panel and Mosquitto running | Android permission and post-reboot persistence unverified; no reboot performed |
-| Core service Health checks                     | **DEVICE API PASS / BROWSER OPEN**       | Agent, SSH, MQTT CONNACK and Cloudflare on-demand view deployed; exact-SHA host API evidence PASS, no scheduler                    | Owner browser interaction sign-off and negative-path checks remain open                           |
-| A8 DEV platform / inventory / observability   | **Working DEV**                            | Owned panel/runit, private LAN, host inventory, monitoring and navigation; guarded SHA/PID/HTTP readback                  | Not a secure public production panel; boot durability untested                                        |
-| Static Hosting P0                             | **DEVICE FLOW PASS; ZIP EXPORT DEPLOYED / ROUND-TRIP OPEN**  | Own Create → Publish → Start → LAN HTTP, second release → verified content → rollback                                     | Final current-browser HTTP check, ZIP/folder general import/fault scenarios not fully qualified       |
-| Trusted Node Hosting P0                       | **DEVICE FLOW PASS; visual MVP accepted**  | Owner-token protection; Create/Stage/Deploy/HTTP/Logs/Update/Stop/Start/Rollback                                          | Final current-browser readiness/logs review, arbitrary source isolation and WAN prohibited            |
-| Deployments / Project logs / Hosting overview | **Visual MVP accepted, targeted QA PASS**  | Owned Static/Node summaries, history, GET-only readiness, deep-link fail-closed and log secret redaction                  | Functional current-browser sign-off postponed                                                         |
-| Services S1–S4                                | **READY_FOR_ACCEPTANCE**                   | One full owned fixed-template worker lifecycle with Health/logs/archive/restore/retire                                    | Generic user script/Python, more negative paths, reboot/autostart and owner sign-off                  |
-| P1 UI/API safety                              | **Prior scoped PASS; formatting QA FAIL**  | Older Node/Static catalogs, uncertain Create and logs passed scoped QA; newer Boot/Hosting/LAN race fixes deployed safely | A8 QA at `5f1ee2a` failed formatting in 3 files; types and Node/UI tests skipped, full G2 open        |
-| Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
-| Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
+## Execution and definition of done
 
-**Latest verified A8 Local Agent log change (20 November 2026):**
-`fcbc2734094f41846eea43867d67a922a05a8f8a` **DEPLOY PASS**
-(owned PID/ticks, HTTP 200, protected services unchanged; QA not run).
-Legacy command entries are classed as tasks. A8 Termux Agent source
-`228489788d1e5c5045904ade95a2c50d791d20c9` is **native and Git accepted**
-(26 tests PASS, independent SSH switch, host Git canary done/0).
-TASK/STAGE/GIT VERIFIED entries were confirmed in the real service log;
-PocketHost browser visual/functional acceptance remains open.
-
-**Earlier verified DEV update (20 November 2026):** Local Agent live log
-deployment `fb3dcc0ed47e006e5ea370ef96854d0b7b6e43c0` **PASS**.
-A8 guarded readback: HTTP 200, owned PID/start ticks, protected services
-unchanged, QA not run. Console now presents a bounded chronological private
-svlogd log tail with safe execution progress fields. Arbitrary log content
-and credentials remain masked because the LAN panel has no authentication.
-Browser visual/functional acceptance remains open.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
-`b8c5f153db82f1716caa2d62326ffba8fdc79649` **PASS**
-(HTTP 200, owned PID/ticks, protected services unchanged; QA not run).
-The Local Agent read-only dashboard now shares one diagnostic snapshot across
-overview and advanced details, avoids duplicate API reads, and distinguishes
-paused event updates / stale diagnostic evidence. Owner browser acceptance open.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
-`83ada7caa6762aec0e0626f6290cfeff583a8fff` **PASS**
-(HTTP 200, PID/ticks readback, protected services unchanged, no QA).
-Phone Settings layout revised: correct bridge status labels, inline card
-error, stale sample labeling, aligned brightness/timeout controls.
-No changes to Android setting behavior; owner browser acceptance open.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
-`425ea80155dac58d9f2e47f095a11c077c31f7f8` **PASS**
-(HTTP 200, PID/ticks readback, protected services unchanged; no QA).
-Shizuku UX safety controls now confirm potentially disruptive actions, disable
-Android Shell when unauthorized, and make old inventory view-only until
-fresh bridge readback. No Shizuku installation or physical commands. Actual
-device effects and browser visual acceptance remain open.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded UI-only
-deployment `1bae685ea9ec69d43b7c2d139562601773581599` **PASS**
-(HTTP 200, owned PID/ticks, protected services unchanged, no QA).
-Shizuku searches and diagnostics layout unified based on user screenshots.
-Shizuku is not installed; physical functionality and browser visual acceptance
-remain unverified. No Android behavior or settings changed.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
-`5c6ccd4bb5c8b43f7ab1563de38d0a7a691fe66a` **PASS** (HTTP 200,
-owned PID/ticks attested, protected services unchanged; QA not run).
-Shared first-load spinner is now centered inside the content pane; full
-browser visual acceptance is still open. Terminal ttk/ttyd is not installed
-by this sprint. Older details follow.
-
-**Earlier verified DEV update (20 November 2026):** A8 guarded panel deploy of
-`54ea5624c7539d75d5e49cf5791a6bc8a49dfaaf` **PASS**
-(HTTP 200, PID/start ticks attested, protected services unchanged, no QA).
-Owner confirmed the earlier Dashboard battery-notice fix, then reported
-additional loading shifts and unequal File Manager cards. New shared loading
-shell/scrollbar stability and matched file-manager borders are deployed but
-**await owner browser verification**. Terminal is blocked by missing `ttyd`
-(not Companion); package installation requires separate authorization.
-Top-right page Refresh alignment and missing-`ttyd` guidance were
-subsequently deployed; no package was installed. Browser QA is still open.
-Hosting and G2/G3 acceptance remain open.
-
-## Prioritized remaining work
-
-1. **Hosting P0 functional sign-off — OWNER DEFERRED:** Node `Check readiness`, Static site HTTP and project-log selection, bounded screenshot/receipt; `running` alone is not readiness. No repeat of approved visual redesign.
-2. **Services S1–S4 final acceptance — OPEN:** verified own worker registration, runit lifecycle, health/recovery, safe negative paths; generic Python/JS execution must remain protected until separately qualified.
-3. **P1 maintainability/security:** address observed reproducible stale-state, authorization, logs or API issues in small coherent changes. The earlier P1 QA targets `263d64b`, `5cd0d80`, `e966f74`, `b1fde53` passed only recorded scopes; latest live code `5352c09` has scoped syntax/format/structure/lint/Node QA PASS and the earlier `5351d88` admin TypeScript check PASS; full G2 remains open.
-4. **Autostart after Android reboot — NEEDS DISTINCT OWNER AUTHORIZATION:** no physical reboot acceptance; protect Local Agent, panel and hosted apps.
-5. **Platform next:** LAN persistence and readback, verified Git/GitHub and SSH settings/keys, stronger admin network protection. No public exposure before threat model and TLS/auth.
-6. **Later product work:** ZIP/folder and npm/build edge cases, untrusted process isolation, custom domains/Cloudflare, Python/PHP and optional Companion/Shizuku.
-7. **Backlog without date:** [off-device Restic + independent restore](P1_OFF_DEVICE_RESTIC_PLAN.md), explicitly postponed by owner. Do not implement, test or transfer until reactivated.
-
-## Definition of done
-
-- `CODE`: implementation committed to current `main`.
-- `DEPLOY PASS`: one terminal verified A8 Local Agent fast-flow receipt proving exact live source, owner PID/ticks, baseline HTTP and protected-service isolation.
-- `SCOPED QA PASS`: separate explicit approval + test receipt for the **same exact source SHA and categories**; never implied by deploy or prior runs.
-- `DEVICE / OWNER ACCEPTED`: required physical browser/lifecycle evidence and explicit owner decision. `READY_FOR_ACCEPTANCE` is not `ACCEPTED`.
-
-**Standing constraints:** A8 Local Agent exclusively handles source QA, builds and guarded deploys; the paired Mac has a narrow owner-requested read-only Test Lab exception. No default QA, scheduler, auto-retry, unowned services, WAN/SSH/reboot or Restic transfer without separate owner decision. Docs-only changes never deploy. [Full rules](../AGENTS.md) and [quality gates](QUALITY_GATES.md).
+- **CODE:** committed to `main`; **DEPLOY PASS:** one terminal A8 Local Agent exact-SHA/owned-PID/HTTP/protected-services receipt; **SCOPED QA PASS:** separate, expressly approved SHA + selected categories receipt; **OWNER ACCEPTED:** physical/browser behavior and owner decision. Never collapse these statuses.
+- Only paired A8 Termux Local Agent performs device commands/builds/deploys/tests, aside from the narrow separately approved Mac Test Lab read-only exception. **No automatic tests**, scheduled checks or retry on unknown task state. Docs-only changes: Git update, **no deployment, build, QA or restart**.
+- Keep private DEV panel LAN-only. Preserve protected Local Agent, external services, Pi's live tunnel, user files and credentials. No public exposure, full reboot, off-device transfer or destructive restore without separate scoped permission.
