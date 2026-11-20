@@ -23,7 +23,8 @@ function ServiceCard({ service, title, mode, refreshToken }: {
       setData(null)
     })
     void fetch("/api/v1/termux-admin?mode=" + mode, {
-      method: "GET", credentials: "same-origin", cache: "no-store", signal: controller.signal,
+      method: "GET", credentials: "same-origin", cache: "no-store",
+      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
     }).then(async response => {
       if (!response.ok) throw Error("diagnostics-unavailable")
       const value = protectedServiceSchema.parse(await response.json() as unknown)
