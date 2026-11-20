@@ -15,6 +15,17 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
+- Latest A8 DEV live source `5c6ccd4bb5c8b43f7ab1563de38d0a7a691fe66a`,
+  task `pockethost-a8-centered-root-loading-5c6ccd4-20261120-v1`:
+  **DEPLOY PASS**, HTTP **200**, owned PID **32581**, start ticks
+  **55572565**, protected services unchanged, QA **NOT RUN**.
+  Reviewed screenshots at /settings/appearance: first-load fallback
+  positioned the loader at top-left inside the content pane. Corrected
+  the shared layout's center alignment, inline spinner geometry, and fallback
+  viewport sizing. Reviewed loading patterns across primary PocketHost screens;
+  local inventory/operation loaders stay within their sections.
+  Browser rendering remains unconfirmed until owner verification.
+
 - Latest verified A8 DEV: `54ea5624c7539d75d5e49cf5791a6bc8a49dfaaf`.
   Task `pockethost-a8-terminal-help-refresh-alignment-54ea562-20261120-v1`:
   **PASS**, HTTP **200**, owned PID **7552**, start ticks **55502910**,

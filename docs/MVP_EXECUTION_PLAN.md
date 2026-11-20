@@ -22,7 +22,14 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (20 November 2026):** A8 guarded panel deploy of
+**Latest verified DEV update (20 November 2026):** A8 guarded deployment
+`5c6ccd4bb5c8b43f7ab1563de38d0a7a691fe66a` **PASS** (HTTP 200,
+owned PID/ticks attested, protected services unchanged; QA not run).
+Shared first-load spinner is now centered inside the content pane; full
+browser visual acceptance is still open. Terminal ttk/ttyd is not installed
+by this sprint. Older details follow.
+
+**Earlier verified DEV update (20 November 2026):** A8 guarded panel deploy of
 `54ea5624c7539d75d5e49cf5791a6bc8a49dfaaf` **PASS**
 (HTTP 200, PID/start ticks attested, protected services unchanged, no QA).
 Owner confirmed the earlier Dashboard battery-notice fix, then reported
