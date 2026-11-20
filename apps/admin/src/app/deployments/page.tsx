@@ -8,6 +8,11 @@ import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hostin
 
 type CatalogState = "loading" | "ready" | "disabled" | "error"
 
+function readSignal(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(10_000)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 function shortRelease(id: string | null): string {
   return id ? id.slice(0, 12) + "…" : "none"
 }
@@ -31,7 +36,7 @@ export default function DeploymentsPage() {
     setStaticError(null)
     try {
       const response = await fetch("/api/v1/sites", {
-        cache: "no-store", credentials: "same-origin", signal,
+        cache: "no-store", credentials: "same-origin", signal: readSignal(signal),
       })
       if (signal?.aborted) return
       if (response.status === 404) {
@@ -61,7 +66,7 @@ export default function DeploymentsPage() {
     setNodeState("loading")
     setNodeError(null)
     try {
-      const report = await readNodeRuntimeCatalog(signal)
+      const report = await readNodeRuntimeCatalog(readSignal(signal))
       if (!signal?.aborted) {
         setNodeProjects(report.projects)
         setNodeState(report.enabled ? "ready" : "disabled")
