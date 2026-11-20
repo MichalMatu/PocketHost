@@ -9,25 +9,27 @@ purpose: Single concise MVP status, priority and acceptance tracker
 
 **Canonical evidence:** [2026-11-18 A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md). This tracker states decisions and remaining work; it is not a release diary. Detailed older device receipts remain in [Hosting integration evidence](MVP_INTEGRATION_CHECKLIST.md), Local Agent Git task-results and Git history.
 
-**Local Agent raw-console update (20 November 2026):** A8 DEV `8fa67fcbed7d51194246cf86d19f5635205ef3d0`
-deployed PASS (owned PID 17717, HTTP 200, protected services unchanged;
-tests not run). The console now displays the original `svlogd/current`
-contents and follows new bytes without classification or masking, at the
-owner's request for trusted LAN. Native Termux emitter source
-`9ff0befc18cca4e257fab90ed342604c71824a6d` adds full command/STDOUT
-logging but is **not yet installed on A8**; independent release work queued.
-Browser visual sign-off open. Security hardening deferred by owner to a
-separate sprint.
-
-**A8 SSH + Local Agent sprint (20 November 2026):** SSH 8022 restored
-via dedicated runit restart; agent PID preserved. PocketHost Control & SSH UI
-`cec1a94e12a330e89f672f8d4ca1776cc3c7d2e9` **DEPLOY PASS** (HTTP 200,
-owned PID/ticks, protected services unchanged). Local-Agent runtime
-`2284897` still installed; next candidate `7415454` 26-file bundle hashes
-PASS but exact native QA through Mac is pending. The operator switch and
-fresh Git acceptance must follow that result. No PocketHost functional
-test authorization/receipt or browser sign-off yet; security is a separate
+**Current A8 Local Agent and SSH sprint (20 November 2026):** Agent
+`7415454b1fb2af7d3babe1c283c9e38848291d2b` is installed and independently
+Git-accepted (29/29 source QA, 26/26 manifest checks). PocketHost DEV panel
+`8e200b61283b6467d56e268bd1e47fe6a5ba55b6` deployed PASS with owned
+PID/start-tick and HTTP 200 readback, protected services unchanged. SSH
+controls, saved connections and terminal now live at `/services/ssh`, not
+the Local Agent screen. Dedicated SSH listening at `192.168.0.16:8022` was
+recovered independently; final lifecycle QA `pockethost-a8-ssh-lifecycle-profile-qa-fixed-20261120-v2`
+**PASS** on the exact panel SHA: restart, stop, start and port readback, plus
+add/edit/delete of a disposable profile. SSH final PID 8275, Agent PID 6821
+unchanged; user's saved profile preserved. Owner screenshots separately
+confirmed terminal shell, MacBook SSH authentication and disconnect flow.
+No source defect found in this QA scope. External/protected system sshd
+remains untouched and read-only. Security hardening remains a separate
 owner-deferred sprint.
+
+**Historical A8 log/UI work (20 November 2026):** old panel revisions
+`8fa67fc`, `cec1a94` and old Agent versions `2284897` / `9ff0bef`
+were earlier steps superseded by the accepted versions above. Their prior
+deploy and QA receipts are preserved in Git history and the current handoff;
+do not treat their historic pending statuses as the active release state.
 
 ## Stage status
 
