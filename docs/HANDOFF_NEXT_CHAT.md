@@ -13,6 +13,26 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — A8 Local Agent log UX deployment
+
+- PocketHost A8 DEV latest **PASS**: `fcbc2734094f41846eea43867d67a922a05a8f8a`,
+  immutable A8 task `pockethost-a8-legacy-log-kind-fcbc273-20261120-v1`,
+  guarded HTTP **200**, owned PID **10972** / start ticks **59813053**,
+  protected services unchanged; **tests NOT RUN**.
+- Prior A8 task `pockethost-a8-agent-task-stage-log-342edded-20261120-v1`
+  deployed `342edded8f2584e45e7891099538296c02865558` **PASS**,
+  HTTP **200**, owned PID **4593** / ticks **59796933**, QA not run.
+- Legacy `exec`, `exec finished`, `output summary` now display under
+  **Tasks** rather than generic **Service**. New Termux `TASK`, `STAGE`
+  and `GIT VERIFIED` records are parsed as structured activity.
+- **NOT YET INSTALLED ON A8:** Termux Agent source `9132b74b1aa73bddbab4f984bfc3584e4b5cdfec`
+  adds task/stage/Git progress lines. It must be packaged, natively
+  qualified and switched by an **independent operator**, never an Agent Git
+  task that restarts its own service.
+- No public unfiltered stdout, credentials or commands: existing LAN panel
+  uses unauthenticated HTTP. Browser visual acceptance and exact-SHA QA
+  remain OPEN. No Mac/other-device service changed.
+
 ## Latest verified A8 DEV — Local Agent live log (20 November 2026)
 
 - Task `pockethost-a8-agent-live-log-fb3dcc0-20261120-v1`:

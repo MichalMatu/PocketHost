@@ -22,7 +22,16 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (20 November 2026):** Local Agent live log
+**Latest verified A8 Local Agent log change (20 November 2026):**
+`fcbc2734094f41846eea43867d67a922a05a8f8a` **DEPLOY PASS**
+(owned PID/ticks, HTTP 200, protected services unchanged; QA not run).
+Legacy command log entries are classed as tasks. Structured task/stage/Git
+progress support is in the panel, but corresponding Termux Agent source
+`9132b74b1aa73bddbab4f984bfc3584e4b5cdfec` has **not** been
+installed on A8. Independent native operator acceptance required before
+claiming full progress telemetry. User browser acceptance open.
+
+**Earlier verified DEV update (20 November 2026):** Local Agent live log
 deployment `fb3dcc0ed47e006e5ea370ef96854d0b7b6e43c0` **PASS**.
 A8 guarded readback: HTTP 200, owned PID/start ticks, protected services
 unchanged, QA not run. Console now presents a bounded chronological private
