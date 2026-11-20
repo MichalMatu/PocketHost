@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { localAgentOperationsSchema, type LocalAgentOperationsData,
   type AgentAction } from "@/lib/local-agent-operations-schema"
@@ -120,9 +120,9 @@ export function LocalAgentOperationsPanel({ refreshToken }: { refreshToken: numb
                 <Button size="sm" variant="outline" disabled={!!busy || !!error}
                   onClick={() => void operate("ssh-stop")}>Stop SSH</Button>
               </>}
-              <Button size="sm" variant="outline" asChild>
-                <Link to="/terminal">Open interactive terminal</Link>
-              </Button>
+              <Link to="/terminal" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Open interactive terminal
+              </Link>
             </div>
             <p className="text-xs text-muted-foreground">
               The terminal opens an interactive shell on this A8. SSH is a separate service.
