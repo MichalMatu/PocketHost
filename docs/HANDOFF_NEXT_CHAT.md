@@ -13,6 +13,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — Shared Pi Tunnel UX DEPLOY PASS + Autostart baseline
+
+- Owner selected a **broad working MVP first**, with `photomap.pl` reserved as a **future** independently added complete project; no PhotoMap code, data, DNS, account, or hosting mutation was requested or made.
+- PocketHost `main@8f93aa653d12457c0fca5b952a0ac729dea31e79` updates `/services/cloudflare`: visibly distinguishes the **existing remote Pi Zero connector** from the **optional local A8** cloudflared installation, corrects misleading prompts to create A8 credentials/new tunnel, and retains truthful A8-only diagnostics; no backend tunnel control added. A non-activated compatibility-first ingress runbook is committed at [CLOUDFLARE_SHARED_TUNNEL_MVP](CLOUDFLARE_SHARED_TUNNEL_MVP.md), using preserved Pi `http://127.0.0.1:8000` as fallback until the old public hostname is inventoried. No DNS/routes applied.
+- Guarded A8 task `pockethost-a8-cloudflare-shared-pi-ui-8f93aa6-deploy-20261120-v1` **DEPLOY PASS**: base `e3cd23c0e73e58c05bf25d9e4f19954f9064b160` → verified live `8f93aa653d12457c0fca5b952a0ac729dea31e79`, owner PID **9990**, start ticks **62675419**, cloudflare page loopback HTTP **200**, protected services **unchanged**, QA **not run**.
+- Autostart next-module read-only task `pockethost-a8-autostart-mvp-readonly-inventory-20261120-v1` **done/exit 0** on prior live SHA `e3cd23c0`: Termux:Boot API reports **3 scripts / 3 owner-executable**; independent file inspection confirms 3 local regular scripts, all executable. Local Agent, dedicated SSH, panel, panel-watch and Mosquitto are running, A8 cloudflared intentionally stopped. **Android boot app permission and actual post-reboot behavior unverified**. No script content/credentials returned, no reboot, no scheduler, no service mutations.
+- **Next:** finish bounded Autostart startup-chain evidence and then generic independent-project intake. Defer disruptive physical reboot and public app routing to separately approved operational windows. Do **not** install a second tunnel or expose the PocketHost DEV admin HTTP page to WAN.
+
 ## 20 November 2026 — Pi Zero existing Cloudflare tunnel integration inspection (READ ONLY)
 
 - Owner asked to **reuse one existing Pi Zero Cloudflare tunnel for A8**, without creating a second tunnel. Read-only via independent **Pi Zero 2 W** Local Agent Git namespace `pi-zero2w-linux` / installation `61bfc921-6445-4501-b215-1a79bb68ca55`; no credentials read into Git result, no tunnel lifecycle changes or route creation.
