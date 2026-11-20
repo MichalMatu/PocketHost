@@ -90,6 +90,7 @@ function validProcess(value: RunitProcess | undefined, observed: RunitHealth["ob
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(base + path, {
     credentials: "same-origin", cache: "no-store",
+    signal: AbortSignal.timeout(10_000),
   })
   if (!response.ok) throw new Error("Termux observation unavailable")
   return await response.json() as T
