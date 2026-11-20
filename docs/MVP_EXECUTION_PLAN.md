@@ -31,6 +31,24 @@ were earlier steps superseded by the accepted versions above. Their prior
 deploy and QA receipts are preserved in Git history and the current handoff;
 do not treat their historic pending statuses as the active release state.
 
+**Autostart current-session visibility + independent Hosting inventory (20 November 2026):**
+A8 DEV now runs `02e05418f49f0200f3d61b66935a9c688affb972`
+(guarded deploy `pockethost-a8-autostart-session-ui-02e0541-deploy-20261120-v1`,
+PASS, PID 14515, HTTP 200, protected services unchanged, tests not run).
+Autostart page now reads present-time panel/Agent/SSH/MQTT state alongside
+Termux:Boot script count; never equates running process with reboot recovery.
+Read-only native script classification on A8: **3/3 executable boot hooks
+refer to runit; 2 refer to the Agent**, none directly names panel, SSH or MQTT;
+do not infer missing service startup because runit supervises them.
+Android Termux:Boot permission and a real post-reboot restoration remain unverified.
+Read-only Hosting intake inventory `pockethost-a8-independent-hosting-import-inventory-20261120-v1`:
+Static **200 / 1 item**, Node **200 / 1 item**, Hosting/Sites/Projects/
+Deployments/Project logs routes all HTTP 200. Static ZIP/folder and Node local
+files/folder/public GitHub import mechanisms already exist; their **new
+independent import flow was not re-tested**. The next functional MVP gap for a
+future production migration is persistent-data backup and verified project
+restore, not a duplicate import UI. `photomap.pl` stays untouched.
+
 **Latest shared-tunnel / Autostart broad-MVP cut (20 November 2026):**
 A8 DEV now runs `8f93aa653d12457c0fca5b952a0ac729dea31e79`
 (`pockethost-a8-cloudflare-shared-pi-ui-8f93aa6-deploy-20261120-v1`,
@@ -67,7 +85,7 @@ Browser UI sign-off and Cloudflare account/tunnel integration remain open.
 | --------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | Cloudflare Tunnel                              | **REMOTE PI CONNECTOR VERIFIED / PUBLIC ROUTING OPEN**                 | cloudflared 2026.11.1 installed and diagnostics deployed; package service stopped safely                                              | Named tunnel credentials, configuration, ingress and edge connection not tested                  |
 | Mosquitto MQTT                                 | **LOOPBACK DEVICE MVP PASS**             | Broker installed; 127.0.0.1:1883 only; MQTT publish/subscribe and protocol check PASS                                                | LAN exposure, broker UI lifecycle controls and reboot durability outside current scope           |
-| Autostart / Android boot                       | **3/3 SCRIPTS FOUND / REBOOT OPEN**            | Boot inventory confirmed; current Agent, SSH, panel and Mosquitto running | Android permission and post-reboot persistence unverified; no reboot performed |
+| Autostart / Android boot                       | **CURRENT-SESSION VISIBILITY DEPLOYED / REBOOT OPEN**            | Boot inventory confirmed; current Agent, SSH, panel and Mosquitto running | Android permission and post-reboot persistence unverified; no reboot performed |
 | Core service Health checks                     | **DEVICE API PASS / BROWSER OPEN**       | Agent, SSH, MQTT CONNACK and Cloudflare on-demand view deployed; exact-SHA host API evidence PASS, no scheduler                    | Owner browser interaction sign-off and negative-path checks remain open                           |
 | A8 DEV platform / inventory / observability   | **Working DEV**                            | Owned panel/runit, private LAN, host inventory, monitoring and navigation; guarded SHA/PID/HTTP readback                  | Not a secure public production panel; boot durability untested                                        |
 | Static Hosting P0                             | **DEVICE FLOW PASS; visual MVP accepted**  | Own Create → Publish → Start → LAN HTTP, second release → verified content → rollback                                     | Final current-browser HTTP check, ZIP/folder general import/fault scenarios not fully qualified       |
