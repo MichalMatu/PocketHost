@@ -17,6 +17,13 @@ const intent = "owned-sites"
 const maxZip = 6 * 1024 * 1024
 const maxFolder = 8 * 1024 * 1024
 const maxStarterHtml = 32 * 1024
+
+/** Read-only site queries must settle; mutation requests retain their own lifecycle. */
+function readSignal(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(10_000)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 const starterHtml = `<!doctype html>
 <html lang="en">
 <head>
@@ -35,7 +42,7 @@ const starterHtml = `<!doctype html>
 </html>`
 
 async function readSites(signal?: AbortSignal): Promise<FleetSite[]> {
-  const response = await fetch(endpoint, { credentials: "same-origin", cache: "no-store", signal })
+  const response = await fetch(endpoint, { credentials: "same-origin", cache: "no-store", signal: readSignal(signal) })
   if (response.status === 404) throw new Error("Static hosting is disabled on this panel.")
   if (response.status === 403) throw new Error("Static hosting access denied.")
   if (!response.ok) throw new Error("Could not load static sites. Try Refresh.")
@@ -101,7 +108,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
 
   const readVersions = async () => {
     const response = await fetch(endpoint + "/" + site.id + "/releases", {
-      credentials: "same-origin", cache: "no-store",
+      credentials: "same-origin", cache: "no-store", signal: readSignal(),
     })
     if (!response.ok) throw new Error("Version history is unavailable.")
     setVersions(parseFleetReleases(await response.json()))
@@ -121,7 +128,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     setAssetsLoading(true)
     setError(null)
     void fetch(endpoint + "/" + site.id + "/files", {
-      method: "GET", credentials: "same-origin", cache: "no-store",
+      method: "GET", credentials: "same-origin", cache: "no-store", signal: readSignal(),
     }).then(async response => {
       if (!response.ok) throw new Error("Active site files are unavailable.")
       setAssets(parseH3Files(await response.json()))
@@ -147,7 +154,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     }
     setHtmlLoading(true)
     void fetch(endpoint + "/" + site.id + "/html", {
-      credentials: "same-origin", cache: "no-store",
+      credentials: "same-origin", cache: "no-store", signal: readSignal(),
     }).then(async response => {
       if (!response.ok) throw new Error("Could not load the published HTML for editing.")
       const result: unknown = await response.json()
@@ -202,7 +209,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           // The POST/PUT acknowledgement is not enough. Read back the exact
           // owned site independently, without reissuing the mutation.
           const response = await fetch(endpoint + "/" + site.id, {
-            credentials: "same-origin", cache: "no-store",
+            credentials: "same-origin", cache: "no-store", signal: readSignal(),
           })
           if (!response.ok) throw new Error("site-readback-unavailable")
           const observed = parseFleetSite(await response.json())
@@ -292,7 +299,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const verify = () => {
     void execute(async () => {
       const response = await fetch(endpoint + "/" + site.id + "/health", {
-        credentials: "same-origin", cache: "no-store",
+        credentials: "same-origin", cache: "no-store", signal: readSignal(),
       })
       if (!response.ok) throw new Error("HTTP verification is unavailable.")
       const ready = parseFleetHealth(await response.json())
@@ -302,7 +309,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const loadLogs = () => {
     void execute(async () => {
       const response = await fetch(endpoint + "/" + site.id + "/logs", {
-        credentials: "same-origin", cache: "no-store",
+        credentials: "same-origin", cache: "no-store", signal: readSignal(),
       })
       if (!response.ok) throw new Error("Owned logs are not available.")
       setLogs(parseFleetLogs(await response.json()))
