@@ -1,4 +1,5 @@
 import * as React from "react"
+import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cloudflareTunnelSchema, type CloudflareTunnelDiagnostic } from "@/lib/cloudflare-tunnel-schema"
@@ -25,6 +26,11 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
     })
     return () => controller.abort()
   }, [refreshToken])
+  const binary = data?.binary?.state ?? "unverified"
+  const hasConfig = data?.config.state === "ok" &&
+    data.config.tunnelDeclared && data.config.credentialsFileDeclared
+  const hasService = data?.runit.state === "running" || data?.runit.state === "stopped"
+  const localReady = binary === "available" && hasConfig && hasService
   return <Card>
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -36,6 +42,45 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
       {loading && <p role="status">Reading Cloudflare Tunnel diagnostics…</p>}
       {error && <p role="alert">Cloudflare Tunnel diagnostics unavailable. No services were changed.</p>}
       {data && !loading && <>
+        <section aria-label="Cloudflare setup readiness" className="space-y-3 rounded-md border p-3">
+          <h3 className="font-medium">
+            {localReady ? "Local setup detected · edge connection unverified" : "Setup required"}
+          </h3>
+          <div className="grid gap-2 text-sm sm:grid-cols-3">
+            <div>
+              <p className="text-xs text-muted-foreground">cloudflared binary</p>
+              <strong>{binary === "available" ? "Installed" :
+                binary === "missing" ? "Not installed" : "Not verified"}</strong>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Named tunnel configuration</p>
+              <strong>{hasConfig ? "Declared" :
+                data.config.state !== "ok" ? "Not available" : "Incomplete"}</strong>
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Service registration</p>
+              <strong>{hasService ? "Detected" : "Not verified"}</strong>
+            </div>
+          </div>
+          {!localReady && <>
+            <p className="text-xs text-muted-foreground">
+              No tunnel can be started from this read-only page. Complete the local prerequisites
+              before enabling an explicitly approved ingress route.
+            </p>
+            <ol className="list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
+              <li>Check whether cloudflared is available in{" "}
+                <Link to="/packages" className="underline underline-offset-2">
+                  Packages & Software</Link>.
+              </li>
+              <li>Create a named tunnel in your Cloudflare account and keep its credentials on A8.</li>
+              <li>Configure the tunnel ingress and a dedicated managed service, then refresh this page.</li>
+            </ol>
+          </>}
+          <p className="text-xs text-muted-foreground">
+            A running process or earlier registration log does not prove a live Cloudflare connection.
+            No public route is created by this screen.
+          </p>
+        </section>
         <div className="grid gap-3 sm:grid-cols-3">
           <div><p className="text-xs text-muted-foreground">Runit status</p><p>{data.runit.state} · {data.runit.uptimeSeconds === null ? "uptime unavailable" : data.runit.uptimeSeconds + "s"}</p></div>
           <div><p className="text-xs text-muted-foreground">Process</p><p>{data.process ? "PID " + data.process.pid + " · RSS " + (data.process.rssMiB === null ? "unavailable" : data.process.rssMiB + " MiB") : "Unverified"}</p></div>
@@ -65,7 +110,7 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
           </div>)}
           <p className="text-xs text-muted-foreground">Only event types and verified timestamps are exposed; raw logs and credential values stay on the device.</p>
         </div>
-        <p className="text-xs text-muted-foreground">Control and configuration changes remain disabled until separate service-specific authorization.</p>
+        <p className="text-xs text-muted-foreground">This page reports only local state. Installation, credentials, ingress changes and tunnel lifecycle are not performed automatically.</p>
       </>}
     </CardContent>
   </Card>
