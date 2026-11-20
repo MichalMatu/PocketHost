@@ -13,6 +13,13 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — dedicated A8 SSH port 8022 recovered, post-restart PASS
+
+- Owner explicitly authorized **restart of `a8-operator-sshd` only**. Used the existing Samsung A8 Local Agent `agent-control` transport; no Mac SSH, no separate scheduler, no unrelated restart.
+- Immutable A8 task `pockethost-a8-dedicated-ssh-8022-recovery-20261120-v1` **done / exit 0** (finished 2026-11-20 21:00:55 UTC): exact host identity, sshd config `-t` PASS; prior TCP `192.168.0.16:8022` connection refused (111); one runit restart of the dedicated service; SSH PID **6596 → 23219**, port **8022 OPEN**, Local Agent PID **6821 unchanged** with matching start ticks. No SSH config changes; STOP absent.
+- Separate read-only native A8 result `pockethost-a8-dedicated-ssh-8022-post-restart-readback-20261120-v1` **done / exit 0** (21:01:27 UTC): listener remains open, PocketHost `local-agent-operations` API returns `ssh.state=running`, `ssh.pid=23219`, `ssh.listen=open`, `ssh.address=192.168.0.16`, `ssh.port=8022`; Agent PID stays 6821.
+- Earlier "listener CLOSED" evidence below is historical and now superseded. No further restarts or QA were run. Owner browser acceptance of SSH terminal/saved profile actions remains open.
+
 ## 20 November 2026 — owner screenshot SSH listener CLOSED, independently diagnosed
 
 - Owner's post-deploy screenshots confirm migrated SSH panel and Agent-only overview; the dedicated SSH card reports `running PID 6596` but **`Listener: closed`**. "Other SSH service / sshd" is deliberately a separate protected read-only service and is not evidence about the dedicated listener.
