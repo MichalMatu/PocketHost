@@ -9,6 +9,16 @@ purpose: Single concise MVP status, priority and acceptance tracker
 
 **Canonical evidence:** [2026-11-18 A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md). This tracker states decisions and remaining work; it is not a release diary. Detailed older device receipts remain in [Hosting integration evidence](MVP_INTEGRATION_CHECKLIST.md), Local Agent Git task-results and Git history.
 
+**Local Agent raw-console update (20 November 2026):** A8 DEV `8fa67fcbed7d51194246cf86d19f5635205ef3d0`
+deployed PASS (owned PID 17717, HTTP 200, protected services unchanged;
+tests not run). The console now displays the original `svlogd/current`
+contents and follows new bytes without classification or masking, at the
+owner's request for trusted LAN. Native Termux emitter source
+`9ff0befc18cca4e257fab90ed342604c71824a6d` adds full command/STDOUT
+logging but is **not yet installed on A8**; independent release work queued.
+Browser visual sign-off open. Security hardening deferred by owner to a
+separate sprint.
+
 ## Stage status
 
 | Stage                                         | Status                                     | Accepted or verified                                                                                                      | Still open                                                                                            |

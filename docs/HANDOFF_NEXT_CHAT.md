@@ -13,6 +13,29 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — owner-requested raw Local Agent console
+
+- A8 PocketHost DEV **DEPLOY PASS** at `8fa67fcbed7d51194246cf86d19f5635205ef3d0`,
+  task `pockethost-a8-raw-svlogd-console-8fa67fc-20261120-v1`.
+  Guarded exact-source readback: owned PID **17717**, start ticks **60357296**,
+  HTTP **200**, protected services unchanged, **tests NOT RUN**.
+- The Live console now reads and displays actual binary bytes from the installed
+  Termux Agent's fixed `svlogd/current` file. A 256-KiB cursor stream
+  reconstructs the entire current file and follows future bytes every 5s,
+  including original timestamps, commands and line breaks. No parser,
+  categories, sanitization, inferred timestamps or auth tokens.
+- Agent source `9ff0befc18cca4e257fab90ed342604c71824a6d` adds opt-in
+  Termux-only complete `[CMD]` output and original task IDs. **Source only,
+  not yet running on A8:** external Mac SSH task
+  `galaxy-a8-raw-command-log-stage-9ff0bef-20261120-v1`
+  (candidate package + native QA) is queued; separate operator preparation
+  `galaxy-a8-raw-log-operator-baseline-inspection-20261120-v1` queued.
+  Never claim the new Agent is installed before independent switch and
+  fresh host Git task/result. Prior accepted runtime `2284897` remains live.
+- The owner explicitly deferred all new security, authentication, tokens and
+  redaction work to a **separate sprint**; follow root AGENTS P0.
+  Browser visual/functional sign-off for the new raw console remains open.
+
 ## 20 November 2026 — A8 Local Agent log UX deployment
 
 - PocketHost A8 DEV latest **PASS**: `fcbc2734094f41846eea43867d67a922a05a8f8a`,
@@ -30,9 +53,8 @@ is historical evidence, **not** the latest live SHA.
   independent guarded switch PASS, fresh host Git task/result done/0.
   Independent SSH verified actual TASK/STAGE/GIT VERIFIED records in svlogd.
   Browser console acceptance remains OPEN.
-- No public unfiltered stdout, credentials or commands: existing LAN panel
-  uses unauthenticated HTTP. Browser visual acceptance and exact-SHA QA
-  remain OPEN. No Mac/other-device service changed.
+- Historical status only: superseded by the owner-requested raw
+  private-LAN console at `8fa67fcbed7d51194246cf86d19f5635205ef3d0`. Browser acceptance remains OPEN.
 
 ## Latest verified A8 DEV — Local Agent live log (20 November 2026)
 
