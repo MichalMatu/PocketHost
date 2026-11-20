@@ -31,6 +31,20 @@ were earlier steps superseded by the accepted versions above. Their prior
 deploy and QA receipts are preserved in Git history and the current handoff;
 do not treat their historic pending statuses as the active release state.
 
+**Static export and project backup visibility (21 November 2026):**
+Latest verified A8 DEV live SHA **`7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`**
+(`pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`,
+guarded deploy PASS, HTTP 200, protected services unchanged, `tests=not-run`).
+Backups & Recovery now reads owned Static/Node release coverage while clearly
+separating rollback history from verified independent backups. Static Hosting
+offers **Download active ZIP** from the attested owned release; the ZIP import
+transport budget is 9 MiB while extracted asset total remains limited to
+8 MiB. The new export/download/reimport flow has **not** been functionally
+tested, and no user data or backup/restore was changed during deployment.
+Existing Node Restic backup→isolated restore remains a prior narrow PASS.
+Next: scoped, separately approved disposable Static ZIP round-trip and then
+persistent application storage recovery. `photomap.pl` remains untouched.
+
 **Autostart current-session visibility + independent Hosting inventory (20 November 2026):**
 A8 DEV now runs `02e05418f49f0200f3d61b66935a9c688affb972`
 (guarded deploy `pockethost-a8-autostart-session-ui-02e0541-deploy-20261120-v1`,
@@ -88,7 +102,7 @@ Browser UI sign-off and Cloudflare account/tunnel integration remain open.
 | Autostart / Android boot                       | **CURRENT-SESSION VISIBILITY DEPLOYED / REBOOT OPEN**            | Boot inventory confirmed; current Agent, SSH, panel and Mosquitto running | Android permission and post-reboot persistence unverified; no reboot performed |
 | Core service Health checks                     | **DEVICE API PASS / BROWSER OPEN**       | Agent, SSH, MQTT CONNACK and Cloudflare on-demand view deployed; exact-SHA host API evidence PASS, no scheduler                    | Owner browser interaction sign-off and negative-path checks remain open                           |
 | A8 DEV platform / inventory / observability   | **Working DEV**                            | Owned panel/runit, private LAN, host inventory, monitoring and navigation; guarded SHA/PID/HTTP readback                  | Not a secure public production panel; boot durability untested                                        |
-| Static Hosting P0                             | **DEVICE FLOW PASS; visual MVP accepted**  | Own Create → Publish → Start → LAN HTTP, second release → verified content → rollback                                     | Final current-browser HTTP check, ZIP/folder general import/fault scenarios not fully qualified       |
+| Static Hosting P0                             | **DEVICE FLOW PASS; ZIP EXPORT DEPLOYED / ROUND-TRIP OPEN**  | Own Create → Publish → Start → LAN HTTP, second release → verified content → rollback                                     | Final current-browser HTTP check, ZIP/folder general import/fault scenarios not fully qualified       |
 | Trusted Node Hosting P0                       | **DEVICE FLOW PASS; visual MVP accepted**  | Owner-token protection; Create/Stage/Deploy/HTTP/Logs/Update/Stop/Start/Rollback                                          | Final current-browser readiness/logs review, arbitrary source isolation and WAN prohibited            |
 | Deployments / Project logs / Hosting overview | **Visual MVP accepted, targeted QA PASS**  | Owned Static/Node summaries, history, GET-only readiness, deep-link fail-closed and log secret redaction                  | Functional current-browser sign-off postponed                                                         |
 | Services S1–S4                                | **READY_FOR_ACCEPTANCE**                   | One full owned fixed-template worker lifecycle with Health/logs/archive/restore/retire                                    | Generic user script/Python, more negative paths, reboot/autostart and owner sign-off                  |
