@@ -13,6 +13,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — Autostart session visibility DEPLOY PASS + independent Hosting intake readback
+
+- A8 confirmed Termux:Boot has **3 owner-executable scripts**. Script contents were classified **only on device** with no filename, command, credential or raw content returned: `pockethost-a8-autostart-script-purpose-summary-20261120-v1` **done/exit 0**, all three refer to runit, two refer to Local Agent, one to wakelock. None directly mentions SSH, Mosquitto or panel; their restoration depends on supervisor configuration and Android boot invocation. This is structural evidence only, **not a reboot acceptance**.
+- `apps/admin/src/app/services/autostart-page.tsx` now displays one manual current-session runtime readback from the existing local Agent/SSH and Mosquitto diagnostics: PocketHost HTTP panel, Agent, dedicated SSH port and MQTT broker; separate `unverified` states fail closed. The screen distinguishes **running now** from **started after reboot**; no timers, new scheduled tasks, new boot hooks, or protected service control.
+- Guarded A8 release `pockethost-a8-autostart-session-ui-02e0541-deploy-20261120-v1`: **DEPLOY PASS**, base `8f93aa653d12457c0fca5b952a0ac729dea31e79` → live source **`02e05418f49f0200f3d61b66935a9c688affb972`**, PID **14515**, start ticks **62718480**, loopback **/services/autostart HTTP 200**, protected services unchanged, `tests=not-run`. Do not claim separate browser rendering or UI QA.
+- Read-only independent Hosting intake snapshot `pockethost-a8-independent-hosting-import-inventory-20261120-v1`: **done/exit 0** on that exact live SHA; Static catalog **HTTP 200, 1 item**; Node catalog **HTTP 200, 1 item**; `/sites`, `/projects`, `/deployments`, `/runtime-logs`, `/hosting` all **HTTP 200**. Existing Static UI supports upload from ZIP/folder and Node UI supports local files/folder and public GitHub source; **no new project was created or deployed** and no PhotoMap files accessed. HTTP/catalog evidence is not successful import-flow QA.
+- **Next slice:** broad MVP integrity of an independently created project's **persistent files and recoverability**, especially static/project-level archive + restore (prior narrow Node local restore already accepted, off-device backup deferred). Do not reimplement import or repeat completed Node/Static v1-v2-rollback flows. Reboot remains for a separate explicit operational window; PhotoMap and its DNS untouched.
+
 ## 20 November 2026 — Shared Pi Tunnel UX DEPLOY PASS + Autostart baseline
 
 - Owner selected a **broad working MVP first**, with `photomap.pl` reserved as a **future** independently added complete project; no PhotoMap code, data, DNS, account, or hosting mutation was requested or made.
