@@ -15,22 +15,25 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
-- Current verified A8 DEV live source: `9bae95a41ab2ecbecda604cd103020949f22b62a`.
-  Guarded Local Agent task `pockethost-a8-termux-ui-fast-flow-9bae95a-20261120-v1`:
-  **PASS**, HTTP **200**, owned PID **9472**, start ticks **55238272**,
+- Latest verified live A8 DEV source: `1444596a94545e4d0cf64e2bab9befbb28fd74e8`.
+  Task `pockethost-a8-global-layout-file-1444596-20261120-v1`: **PASS**,
+  HTTP **200**, owned PID **19103**, start ticks **55446241**,
   protected services unchanged, tests **NOT RUN**.
-- Consecutive guarded deployments of `ec5839e`, `abb5739`, `b605b9c`,
-  `ad4e1f2`, and `9bae95a` all returned exact-SHA **PASS**.
-  Fixes: paint saved theme before loading; remove remote Google Fonts blocker;
-  bound failed lazy page loads with a recoverable error; reserve Dashboard card
-  slots; permit private revalidation of known Vite GET/HEAD module assets while
-  all APIs/HTML remain no-store; use File Manager space; clarify that Termux
-  terminal requires locally installed ttyd, not Companion.
-- **No scoped QA or browser interaction verification at these SHAs.**
-  Browser-level confirmation of reload flash/latency, Dashboard layout and
-  hosted Sites remains open. The terminal executable was not installed or
-  started by this sprint; package changes require separate authorization.
-  Historical scoped QA at `5352c09` does not attest to the newer code.
+- Preceding A8 task `pockethost-a8-dashboard-battery-layout-a51d3e5-20261120-v1`:
+  **PASS** at `a51d3e5`; removed transient battery notice from Dashboard
+  while retaining the Battery card. Owner confirmed Dashboard stable thereafter.
+- Current small UI fixes: stable shared scrollbar gutter and disabled global
+  smooth scrolling; shell-shaped first-load fallback instead of a center-only
+  spinner; File Manager equal-height bordered columns; explicit `ttyd` absent
+  status and Packages installation steps. **ttyd has not been installed**.
+- Prior A8 `9bae95a` fixes: initial theme paint; removed external Google Fonts;
+  recoverable lazy page load errors; stable Dashboard card slots; Vite asset
+  revalidation (API/HTML no-store); File Manager and terminal copy.
+- **No browser QA or functional acceptance at `1444596`**. The user has
+  reported layout shifting on multiple other pages, so broad browser
+  confirmation remains open. Terminal needs a separately authorized package
+  install before native Termux Bash can be started. Historical scoped QA
+  at `5352c09` does not attest to this newer version.
 
 ## Private Mac Test Lab
 

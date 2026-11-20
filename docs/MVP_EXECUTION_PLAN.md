@@ -23,13 +23,14 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
 **Latest verified DEV update (20 November 2026):** A8 guarded panel deploy of
-`9bae95a41ab2ecbecda604cd103020949f22b62a` **PASS**
-(HTTP 200, owned PID/start ticks, unchanged protected services, tests not run).
-New UI/DEV fixes target Dashboard jumps, reload flash, Vite asset revalidation,
-lazy-route failure feedback, File Manager layout and the Terminal ttyd notice.
-**These fixes are not browser-QA or functional acceptance results.** Hosted
-Sites and repeated-reload behavior must still be checked in a real browser.
-Full G2/G3, Hosting P0, Services owner acceptance and off-device recovery remain open.
+`1444596a94545e4d0cf64e2bab9befbb28fd74e8` **PASS**
+(HTTP 200, PID/start ticks attested, protected services unchanged, no QA).
+Owner confirmed the earlier Dashboard battery-notice fix, then reported
+additional loading shifts and unequal File Manager cards. New shared loading
+shell/scrollbar stability and matched file-manager borders are deployed but
+**await owner browser verification**. Terminal is blocked by missing `ttyd`
+(not Companion); package installation requires separate authorization.
+Hosting and G2/G3 acceptance remain open.
 
 ## Prioritized remaining work
 
