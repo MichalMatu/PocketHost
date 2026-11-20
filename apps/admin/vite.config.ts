@@ -1043,7 +1043,7 @@ function termuxAdminApi(): Plugin {
               const cursor = url.searchParams.get("cursor")
               if ((url.searchParams.size !== 1 && url.searchParams.size !== 2) ||
                   Array.from(url.searchParams.keys()).some(key => key !== "mode" && key !== "cursor") ||
-                  (cursor !== null && !/^\\d{1,20}:\\d{1,20}:\\d{1,16}$/.test(cursor))) {
+                  (cursor !== null && !/^[0-9]{1,20}:[0-9]{1,20}:[0-9]{1,16}$/.test(cursor))) {
                 response.statusCode = 400
                 response.end('invalid-cursor')
                 return
