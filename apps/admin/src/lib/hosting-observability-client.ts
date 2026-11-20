@@ -17,15 +17,21 @@ export type ProjectLogCatalog = {
 const STATIC_API = "/api/v1/sites"
 const STATIC_ID = /^site-[a-f0-9]{32}$/
 
+function readSignal(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(10_000)
+  return signal ? AbortSignal.any([signal, timeout]) : timeout
+}
+
 export async function readProjectLogCatalog(signal?: AbortSignal): Promise<ProjectLogCatalog> {
+  const requestSignal = readSignal(signal)
   const [staticResult, nodeResult] = await Promise.allSettled([
-    fetch(STATIC_API, { credentials: "same-origin", cache: "no-store", signal })
+    fetch(STATIC_API, { credentials: "same-origin", cache: "no-store", signal: requestSignal })
       .then(async response => {
         if (response.status === 404) return null
         if (!response.ok) throw new Error("Static site inventory unavailable")
         return parseFleetSites(await response.json())
       }),
-    readNodeCatalog(signal),
+    readNodeCatalog(requestSignal),
   ])
   if (signal?.aborted) throw new Error("Request cancelled")
 
@@ -61,16 +67,17 @@ export function redactProjectLog(line: string): string {
 }
 
 export async function readProjectLogLines(target: ProjectLogTarget, signal?: AbortSignal): Promise<string[]> {
+  const requestSignal = readSignal(signal)
   let lines: string[]
   if (target.kind === "node") {
     if (target.key !== "node:" + target.id)
       throw new Error("Invalid owned Node project identity")
-    lines = await readNodeLogs(target.id, signal)
+    lines = await readNodeLogs(target.id, requestSignal)
   } else {
     if (!STATIC_ID.test(target.id) || target.key !== "static:" + target.id)
       throw new Error("Invalid owned static project identity")
     const response = await fetch(STATIC_API + "/" + target.id + "/logs", {
-      credentials: "same-origin", cache: "no-store", signal,
+      credentials: "same-origin", cache: "no-store", signal: requestSignal,
     })
     if (!response.ok) throw new Error("Static site logs unavailable")
     lines = parseFleetLogs(await response.json())
