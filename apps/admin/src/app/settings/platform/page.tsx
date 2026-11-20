@@ -33,7 +33,8 @@ type SshStatus = {
 type LanStatus = { enabled: boolean; mode: "auto" | "manual"; bind: string | null }
 
 async function inspect<T>(route: string, signal: AbortSignal): Promise<T> {
-  const response = await fetch(route, { cache: "no-store", credentials: "same-origin", signal })
+  const boundedSignal = AbortSignal.any([signal, AbortSignal.timeout(10_000)])
+  const response = await fetch(route, { cache: "no-store", credentials: "same-origin", signal: boundedSignal })
   if (!response.ok) throw new Error("platform-status-unavailable")
   return await response.json() as T
 }
