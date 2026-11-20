@@ -1,6 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseShizukuStatus, parseShizukuApps, parseShizukuSystem, type ShizukuStatus } from "@/lib/shizuku-schema"
 
 type Probe = { latencyMs: number | null; message: string; observedAt?: string }
@@ -59,52 +59,79 @@ export function ShizukuDiagnosticsPanel() {
     void investigate()
     return () => controller.abort()
   }, [refresh])
+  const connection = !status
+    ? !loading && probes["Connection & CPU"] ? "Unavailable" : "Not checked"
+    : !status.connected ? "Disconnected"
+    : !status.authorized ? "Authorization required" : "Connected and authorized"
+
   return <Card>
-    <CardContent className="space-y-5 pt-4">
-      <div className="space-y-1">
-        <h2 className="font-medium">Shizuku connection diagnostics</h2>
-        <p className="text-xs text-muted-foreground">
-          Read-only checks run when this tab opens or when requested. No Android settings are changed.
-        </p>
-      </div>
-      <div className="flex flex-wrap items-center justify-end gap-3">
-        <Button size="sm" variant="outline" disabled={loading} onClick={() => setRefresh(current => current + 1)}>
+    <CardHeader>
+      <CardTitle>Shizuku connection diagnostics</CardTitle>
+      <CardDescription>
+        Read-only checks when opening this tab or on request. No Android settings are changed.
+      </CardDescription>
+      <CardAction>
+        <Button size="sm" variant="outline" disabled={loading}
+          onClick={() => setRefresh(current => current + 1)}>
           {loading ? "Checking…" : "Run diagnostics"}
         </Button>
-      </div>
-      <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-        {[
-          ["Connection", !status ? "Not checked" : status.connected && status.authorized ? "Connected and authorized" : "Not authorized"],
-          ["Shizuku mode", status?.mode?.toUpperCase() ?? "Unknown"],
-          ["Android UID", status?.uid == null ? "Not reported" : String(status.uid)],
-          ["Last verified sample", localSample(status?.observedAt)],
-          ["Data source", status?.source ?? "Unavailable"],
-        ].map(([label, value]) => <div key={label} className="min-w-0 space-y-1">
-          <dt className="text-muted-foreground">{label}</dt><dd className="mt-1 break-words font-medium">{value}</dd>
-        </div>)}
-      </dl>
-      <p className="text-xs text-muted-foreground">ADB / UID 2000 indicates Android shell permissions, not root access.</p>
-      <div className="space-y-2 border-t pt-4">
-        <h3 className="font-medium text-sm">API checks</h3>
-        <p className="text-xs text-muted-foreground">Response times for three independent read-only requests; not network or CPU performance.</p>
-        {endpoints.map(endpoint => {
-          const observation = probes[endpoint.name]
-          return <div key={endpoint.name} className="flex flex-wrap justify-between gap-2 border-b border-border/50 py-2 text-sm last:border-b-0">
-            <span>{endpoint.name}</span>
-            <span role="status" className="text-muted-foreground">
-              {observation ? observation.message +
-                (observation.latencyMs == null ? "" : " · " + observation.latencyMs + " ms") :
-                loading ? "Checking…" : "Not checked"}
-            </span>
-          </div>
-        })}
-      </div>
-      <section className="space-y-2 border-t pt-4" aria-label="Native capabilities">
-        <h3 className="text-sm font-medium">Native capabilities ({status?.capabilities?.length ?? 0})</h3>
-        {status?.capabilities?.length ? <ul className="divide-y divide-border/50">
+      </CardAction>
+    </CardHeader>
+    <CardContent className="space-y-6">
+      <section aria-labelledby="shizuku-connection-heading" className="space-y-3">
+        <h3 id="shizuku-connection-heading" className="text-sm font-semibold">Connection status</h3>
+        <dl className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            ["Connection", connection],
+            ["Shizuku mode", status?.mode?.toUpperCase() ?? "Unknown"],
+            ["Android UID", status?.uid == null ? "Not reported" : String(status.uid)],
+            ["Last verified sample", localSample(status?.observedAt)],
+            ["Data source", status?.source ?? "Unavailable"],
+          ].map(([label, value]) => <div key={label} className="min-w-0 space-y-1 rounded-md border p-3">
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="break-words text-sm font-medium">{value}</dd>
+          </div>)}
+        </dl>
+        <p className="text-xs text-muted-foreground">
+          ADB / UID 2000 indicates Android shell permissions, not root access.
+        </p>
+      </section>
+
+      <section aria-labelledby="shizuku-api-heading" className="space-y-3 border-t pt-5">
+        <div className="space-y-1">
+          <h3 id="shizuku-api-heading" className="text-sm font-semibold">API checks</h3>
+          <p className="text-xs text-muted-foreground">
+            Three independent read-only requests. Times indicate API response latency, not network or CPU performance.
+          </p>
+        </div>
+        <div className="divide-y rounded-md border">
+          {endpoints.map(endpoint => {
+            const observation = probes[endpoint.name]
+            return <div key={endpoint.name} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-3 py-3 text-sm">
+              <span className="font-medium">{endpoint.name}</span>
+              <span role="status" className="break-words text-xs text-muted-foreground">
+                {observation ? observation.message +
+                  (observation.latencyMs == null ? "" : " · " + observation.latencyMs + " ms") :
+                  loading ? "Checking…" : "Not checked"}
+              </span>
+            </div>
+          })}
+        </div>
+      </section>
+
+      <section className="space-y-3 border-t pt-5" aria-labelledby="shizuku-capabilities-heading">
+        <div className="space-y-1">
+          <h3 id="shizuku-capabilities-heading" className="text-sm font-semibold">
+            Native capabilities ({status?.capabilities?.length ?? 0})
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Features reported by the connected Android Companion.
+          </p>
+        </div>
+        {status?.capabilities?.length ? <ul className="divide-y rounded-md border px-3">
           {status.capabilities.map(capability => <li key={capability.id}
-            className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1 py-2 text-sm">
-            <div className="min-w-0">
+            className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3 text-sm">
+            <div className="min-w-0 flex-1">
               <p className="font-medium">{capability.title}</p>
               <p className="text-xs text-muted-foreground">{capability.description}</p>
             </div>
@@ -112,7 +139,9 @@ export function ShizukuDiagnosticsPanel() {
               {capability.available ? "Available" : "Unavailable"}
             </span>
           </li>)}
-        </ul> : <p className="text-muted-foreground text-sm">No authorized capability report.</p>}
+        </ul> : <p className="rounded-md border p-3 text-sm text-muted-foreground">
+          No authorized capability report.
+        </p>}
       </section>
     </CardContent>
   </Card>

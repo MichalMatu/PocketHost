@@ -49,6 +49,22 @@ async function readEntryJson(url: string, signal: AbortSignal, timeoutMs: number
   throw new Error("Android inventory unavailable")
 }
 
+/** Shared visual treatment for every Shizuku search field. */
+function SearchField({
+  label, placeholder, value, onChange,
+}: {
+  label: string
+  placeholder: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return <div className="relative min-w-0 flex-1">
+    <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+    <Input aria-label={label} className="pl-9" placeholder={placeholder}
+      value={value} onChange={event => onChange(event.target.value)} />
+  </div>
+}
+
 function unavailable(value: string | number | null | undefined, suffix = "") {
   return value == null ? "Unavailable" : String(value) + suffix
 }
@@ -251,12 +267,8 @@ export default function ShizukuPage() {
           <Card>
             <CardContent className="space-y-4 pt-4">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="relative min-w-48 flex-1">
-                  <Search className="text-muted-foreground absolute left-3 top-2.5 size-4" />
-                  <Input aria-label="Search Android packages" className="pl-9"
-                    value={appSearch} onChange={e => { setAppSearch(e.target.value); setAppPage(0) }}
-                    placeholder="Find application or package..." />
-                </div>
+                <SearchField label="Search Android packages" placeholder="Find application or package…"
+                  value={appSearch} onChange={value => { setAppSearch(value); setAppPage(0) }} />
                 {(["all", "user", "system"] as const).map(filter => (
                   <Button size="sm" key={filter} variant={packageFilter === filter ? "default" : "outline"}
                     onClick={() => { setPackageFilter(filter); setAppPage(0) }}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
@@ -330,9 +342,8 @@ export default function ShizukuPage() {
                             <Badge variant="outline">{appDetail.permissions.filter(permission => permission.granted).length} granted</Badge>
                             <Badge variant="outline">{appDetail.permissions.filter(permission => !permission.granted).length} not granted</Badge>
                           </div>
-                          <Input aria-label="Search Android permissions" value={permissionSearch}
-                            onChange={event => setPermissionSearch(event.target.value)}
-                            placeholder="Filter permission name…" />
+                          <SearchField label="Search Android permissions" placeholder="Filter permission name…"
+                            value={permissionSearch} onChange={setPermissionSearch} />
                           <div className="max-h-72 overflow-y-auto rounded-lg border">
                             {visiblePermissions.map(permission => (
                               <div key={permission.name} className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b p-2 text-sm last:border-b-0">
@@ -388,8 +399,8 @@ export default function ShizukuPage() {
         {section === "processes" && (
           <Card>
             <CardContent className="space-y-3 pt-4">
-              <Input aria-label="Search Android processes" value={processSearch}
-                onChange={e => { setProcessSearch(e.target.value); setProcessPage(0) }} placeholder="Search PID, user or process..." />
+              <SearchField label="Search Android processes" placeholder="Search PID, user or process…"
+                value={processSearch} onChange={value => { setProcessSearch(value); setProcessPage(0) }} />
               {!system || system.processError ? <p role="status" className="text-muted-foreground text-sm">{systemLoading ? "Loading Android processes…" : systemError ? "Android diagnostics request failed. Try Refresh." : "Process inventory unavailable; CPU headline remains independent."}</p> :
                 <>
                   <div className="relative max-h-[65vh] min-h-48 overflow-auto rounded-lg border">
@@ -455,9 +466,8 @@ export default function ShizukuPage() {
         {section === "services" && (
           <div className="space-y-3">
             <Card><CardContent className="space-y-3 pt-4">
-              <Input aria-label="Search Android services" value={serviceSearch}
-                onChange={e => { setServiceSearch(e.target.value); setServicePage(0) }}
-                placeholder="Search service component..." />
+              <SearchField label="Search Android services" placeholder="Search service component…"
+                value={serviceSearch} onChange={value => { setServiceSearch(value); setServicePage(0) }} />
               {!system || system.services.error ? (
                 <p role="status" className="text-muted-foreground text-sm">
                   {systemLoading ? "Loading Android services…" : systemError ? "Android system request failed. Try Refresh." :
