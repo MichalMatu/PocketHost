@@ -9,6 +9,7 @@ import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
 import { LocalAgentLogHost } from "../../src/modules/host/local-agent-log-diagnostics.ts"
 import { LocalAgentRawLogHost } from "../../src/modules/host/local-agent-raw-log.ts"
+import { LocalAgentOperationsHost, type AgentAction } from "../../src/modules/host/local-agent-operations.ts"
 import { listInstalledTermuxPackages, searchAvailableTermuxPackages } from "../../src/modules/host/termux-package-catalog.ts"
 import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin.ts"
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
@@ -974,6 +975,7 @@ function termuxAdminApi(): Plugin {
   const controlPlane = new ControlPlaneDiagnosticHost()
   const agentLogs = new LocalAgentLogHost()
   const rawAgentLog = new LocalAgentRawLogHost()
+  const localAgentOperations = new LocalAgentOperationsHost()
   const restic = new ResticWorkspaceAdmin(files)
   const fileRoots = new TermuxFileRoots()
   const terminal = new TermuxTerminal()
@@ -1124,6 +1126,8 @@ function termuxAdminApi(): Plugin {
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
               mode === "control-plane-diagnostics" && url.searchParams.size === 1 ? controlPlane.inspect() :
               mode === "local-agent-logs" && url.searchParams.size === 1 ? agentLogs.inspect() :
+              mode === "local-agent-operations" && url.searchParams.size === 1 ?
+                await localAgentOperations.inspect() :
                mode === "file-roots" ? { roots: fileRoots.available() } :
               mode === "terminal-status" ? { terminal: terminal.status() } :
               mode === "agent-capabilities" ? OWNER_AGENT_CAPABILITIES :
@@ -1180,6 +1184,14 @@ function termuxAdminApi(): Plugin {
                 input.name as "refresh" | "install" | "remove" | "upgrade" | "upgrade-all",
                 input.path,
               ) }
+            }
+            if (input.action === "local-agent-operations") {
+              const actions = ["agent-start","agent-stop","agent-pause","agent-resume",
+                "ssh-start","ssh-stop","ssh-restart"] as const
+              if (!input.name || !actions.includes(input.name as AgentAction) ||
+                  Object.keys(input).some(key => key !== "action" && key !== "name"))
+                throw new RangeError("Invalid Local Agent action")
+              return await localAgentOperations.apply(input.name as AgentAction)
             }
             if (input.action === "terminal") {
               if (input.name === "start") return { terminal: await terminal.start() }
