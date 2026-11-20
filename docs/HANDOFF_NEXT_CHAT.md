@@ -13,6 +13,14 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — SSH lifecycle + temporary profile API QA PASS, stage complete
+
+- Owner expressly approved one corrected functional execution on **pinned live PocketHost SHA `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`**, executed **only through Samsung Galaxy A8 Local Agent**. No Mac, external automation, test suite or additional device operations.
+- Immutable task `pockethost-a8-ssh-lifecycle-profile-qa-fixed-20261120-v2` on `MichalMatu/local-agent:agent-control`: **done / exit 0** at **2026-11-20T21:46:53Z**. Fixed only overescaped PID parsing in the previous QA task (no application code change). Exact live SHA and owner identity verified before any operations.
+- **Profile Add → Update → Delete PASS**, persisted readback, temporary `QA A8 SSH TEMP`/`QA A8 SSH EDIT` deleted. The pre-existing single saved profile remained identical. No terminal session was active or started during QA.
+- **Dedicated SSH Restart PASS** (PID 23219 → 8234, port 8022 OPEN), **Stop PASS** (port CLOSED), **Start PASS** (PID 8275, port OPEN). Local Agent PID 6821/start ticks unchanged, STOP absent; other observed protected services unchanged. This confirms the dashboard's **API-backed** lifecycle behavior; it does not claim a browser button click occurred.
+- No product defect was observed in this scope, so no source-code correction/deployment was required. The earlier pre-mutation HOLD is historical and superseded by this PASS. Existing owner browser acceptance of terminal login and disconnect is supported separately by screenshots; protected external sshd untouched.
+
 ## 20 November 2026 — SSH lifecycle and profile QA attempt HOLD, no mutation
 
 - Owner requested device tests of dedicated SSH Start/Stop/Restart and saved profile Edit/Delete, using only A8 Local Agent. Pinned active PocketHost source `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`.
