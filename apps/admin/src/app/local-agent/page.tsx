@@ -185,7 +185,7 @@ export default function LocalAgentPage() {
               rawDecoder.current = new TextDecoder()
               setRawText("")
               setRefreshToken(value => value + 1)
-            }>
+            }}>
             <RefreshCw className="size-4" /> Refresh
           </Button>
         </div>
