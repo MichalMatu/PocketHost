@@ -14,7 +14,7 @@ import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 
 const endpoint = "/api/v1/sites"
 const intent = "owned-sites"
-const maxZip = 6 * 1024 * 1024
+const maxZip = 9 * 1024 * 1024
 const maxFolder = 8 * 1024 * 1024
 const maxStarterHtml = 32 * 1024
 
@@ -254,7 +254,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     if (!file) return
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(async () => {
-      if (file.size > maxZip) throw new RangeError("ZIP is larger than 6 MiB.")
+      if (file.size > maxZip) throw new RangeError("ZIP is larger than 9 MiB.")
       return await mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip")
     }, "ZIP was published as a new immutable release.", true,
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
