@@ -6,6 +6,7 @@ import { inspectLocalGitWorkspace } from "../../src/modules/host/git-workspace-i
 import { inspectTermuxBoot } from "../../src/modules/host/termux-boot-inspection.ts"
 import { CloudflareTunnelDiagnosticHost } from "../../src/modules/host/cloudflare-tunnel-diagnostics.ts"
 import { ProtectedServiceDiagnosticHost } from "../../src/modules/host/protected-service-diagnostics.ts"
+import { inspectMqttLoopbackHealth } from "../../src/modules/host/mqtt-loopback-health.ts"
 import { ControlPlaneDiagnosticHost } from "../../src/modules/host/control-plane-diagnostics.ts"
 import { LocalAgentLogHost } from "../../src/modules/host/local-agent-log-diagnostics.ts"
 import { LocalAgentRawLogHost } from "../../src/modules/host/local-agent-raw-log.ts"
@@ -1126,6 +1127,8 @@ function termuxAdminApi(): Plugin {
               mode === "cloudflare-diagnostics" && url.searchParams.size === 1 ? cloudflare.inspect() :
               mode === "ssh-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("sshd") :
               mode === "mqtt-diagnostics" && url.searchParams.size === 1 ? protectedServices.inspect("mosquitto") :
+              mode === "mqtt-loopback-health" && url.searchParams.size === 1 ?
+                await inspectMqttLoopbackHealth() :
               mode === "control-plane-diagnostics" && url.searchParams.size === 1 ? controlPlane.inspect() :
               mode === "local-agent-logs" && url.searchParams.size === 1 ? agentLogs.inspect() :
               mode === "local-agent-operations" && url.searchParams.size === 1 ?
