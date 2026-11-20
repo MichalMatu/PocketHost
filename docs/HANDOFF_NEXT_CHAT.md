@@ -13,6 +13,13 @@ and [Local Agent transport](LOCAL_AGENT_TERMUX.md).
 The [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
 is historical evidence, **not** the latest live SHA.
 
+## 20 November 2026 — SSH lifecycle and profile QA attempt HOLD, no mutation
+
+- Owner requested device tests of dedicated SSH Start/Stop/Restart and saved profile Edit/Delete, using only A8 Local Agent. Pinned active PocketHost source `8e200b61283b6467d56e268bd1e47fe6a5ba55b6`.
+- Read-only native preflight `pockethost-a8-ssh-control-profile-preflight-20261120-v1` **done / exit 0**: live SHA and process ownership verified; Agent PID 6821, SSH PID 23219 and listener open, one saved profile, no terminal session. One unresolved claim in that snapshot was the executing preflight itself.
+- Functional task `pockethost-a8-ssh-lifecycle-profile-qa-20261120-v1` **failed / exit 1 before the first mutation**. The task's PID-parser regex was over-escaped, so its initial `assert agent_state == 'run' and agent_pid is not None` failed in the script precondition (line 62 of stdin). No profile add/edit/delete, no SSH restart/stop/start and no Agent lifecycle operation were executed.
+- **HOLD**: leave working SSH and user profile untouched. Do not automatically replay a failed QA task; a corrected one-shot exact-SHA test needs renewed owner approval. The approved functional scope remains not executed.
+
 ## 20 November 2026 — dedicated A8 SSH port 8022 recovered, post-restart PASS
 
 - Owner explicitly authorized **restart of `a8-operator-sshd` only**. Used the existing Samsung A8 Local Agent `agent-control` transport; no Mac SSH, no separate scheduler, no unrelated restart.
