@@ -1,10 +1,12 @@
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { HostingWorkloads } from "@/app/termux/hosting-workloads"
 import { RunitHealthPanel } from "@/app/termux/runit-health"
+import { CoreServicesHealthPanel } from "@/app/termux/core-services-health"
 
 export default function ServiceHealthChecksPage() {
   return <BaseLayout title="Health checks" description="On-demand readiness for verified Hosting workloads">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
+      <CoreServicesHealthPanel />
       <HostingWorkloads view="health" />
       <RunitHealthPanel />
       <p className="text-xs text-muted-foreground">
