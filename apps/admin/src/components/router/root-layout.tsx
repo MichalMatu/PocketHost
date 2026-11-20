@@ -28,8 +28,30 @@ export function RootLayout() {
 /** Shown on the very first load, before any route has rendered. */
 export function RootFallback() {
   return (
-    <div className="flex min-h-svh items-center justify-center">
-      <LoadingSpinner />
+    <div className="flex min-h-svh bg-sidebar text-sidebar-foreground">
+      <aside aria-hidden="true" className="hidden w-64 shrink-0 flex-col gap-5 px-4 py-5 md:flex">
+        <div className="flex h-10 items-center gap-3">
+          <div className="size-8 rounded-md bg-sidebar-primary/20" />
+          <div className="space-y-1.5">
+            <div className="h-3 w-24 rounded bg-sidebar-accent" />
+            <div className="h-2 w-28 rounded bg-sidebar-accent" />
+          </div>
+        </div>
+        {["w-16", "w-28", "w-24", "w-32", "w-20", "w-28"].map((width, index) => (
+          <div key={index} className={`h-4 rounded bg-sidebar-accent ${width}`} />
+        ))}
+      </aside>
+      <div className="flex min-h-svh min-w-0 flex-1 flex-col bg-background text-foreground md:m-2 md:ml-0 md:rounded-xl">
+        <div className="flex h-14 shrink-0 items-center gap-3 border-b px-4 lg:px-6">
+          <div className="size-8 rounded-md bg-muted" />
+          <div className="h-8 w-44 rounded-md bg-muted" />
+        </div>
+        <main className="flex min-h-48 flex-1 items-start px-4 py-5 lg:px-6">
+          <div role="status" className="flex items-center gap-2 text-sm text-muted-foreground">
+            <LoadingSpinner /> Loading page…
+          </div>
+        </main>
+      </div>
     </div>
   )
 }

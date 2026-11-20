@@ -74,6 +74,7 @@ export function TermuxTerminalPanel({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-medium">Interactive Termux terminal</h3>
       <Badge variant="outline">{error ? "Status unverified" :
+        detected === false && !running ? "ttyd not installed" :
         status ? running ? "Terminal running" : "Stopped" : "Checking status"}</Badge>
     </div>
     <p className="text-xs text-muted-foreground">
@@ -84,8 +85,9 @@ export function TermuxTerminalPanel({
     </p>}
     {detected === false && !detectionError && !running && <p role="status" className="text-sm">
       Terminal is unavailable because <code>ttyd</code> is not installed in Termux.
-      Install it through <Link to="/packages" className="underline underline-offset-2">Packages</Link>,
-      then press Refresh. Companion is not needed.
+      To enable it: open <Link to="/packages" className="font-medium underline underline-offset-2">Packages & Software</Link>,
+      choose Available, search for <code>ttyd</code>, then Preview install and Confirm.
+      After installation, return here and press Refresh. Companion is not needed.
     </p>}
     <div className="flex flex-wrap gap-2">
       {running
@@ -93,7 +95,7 @@ export function TermuxTerminalPanel({
           Stop terminal
         </Button>
         : <Button disabled={busy || !!error || !status || detected !== true} onClick={() => void run("start")}>
-          Start terminal
+          {detected === false ? "Install ttyd first" : "Start terminal"}
         </Button>}
     </div>
     {running ? <div className="space-y-2">

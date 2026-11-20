@@ -171,9 +171,11 @@
   }
 }
 
-/* Smooth scrolling for the entire page */
+/* Keep viewport width stable when asynchronously loaded pages gain a scrollbar.
+   Avoid document-level animated scrolling during route navigation/reloads. */
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+  scrollbar-gutter: stable;
 }
 
 /* Logo carousel animation */

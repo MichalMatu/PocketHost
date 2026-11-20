@@ -220,8 +220,8 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
       </Button>)}
     </nav>}
     </div>
-    <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
-      <div className="min-w-0 space-y-3">
+    <div className="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(20rem,1fr)]">
+      <div className="min-w-0 space-y-3 rounded-md border p-3">
     <Breadcrumb>
       <BreadcrumbList>
         <BreadcrumbItem>
