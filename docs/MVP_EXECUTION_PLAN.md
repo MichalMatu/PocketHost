@@ -23,6 +23,13 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
 **Latest verified DEV update (20 November 2026):** A8 guarded deployment
+`83ada7caa6762aec0e0626f6290cfeff583a8fff` **PASS**
+(HTTP 200, PID/ticks readback, protected services unchanged, no QA).
+Phone Settings layout revised: correct bridge status labels, inline card
+error, stale sample labeling, aligned brightness/timeout controls.
+No changes to Android setting behavior; owner browser acceptance open.
+
+**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
 `425ea80155dac58d9f2e47f095a11c077c31f7f8` **PASS**
 (HTTP 200, PID/ticks readback, protected services unchanged; no QA).
 Shizuku UX safety controls now confirm potentially disruptive actions, disable

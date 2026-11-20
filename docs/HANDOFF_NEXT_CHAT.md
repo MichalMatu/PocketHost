@@ -15,6 +15,21 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
+- Latest verified A8 DEV source `83ada7caa6762aec0e0626f6290cfeff583a8fff`,
+  task `pockethost-a8-phone-settings-ux-83ada7c-20261120-v1`:
+  **DEPLOY PASS**, HTTP **200**, owner PID **24775**, start ticks
+  **55819808**, protected services verified unchanged, QA **NOT RUN**.
+  Owner screenshot-driven Phone Settings UI improvement: the connection/error
+  message is now inside the Display & screen card instead of above it;
+  bridge unavailable is labeled "not verified" rather than claiming Shizuku
+  is missing; disconnected, unauthorized and settings API errors have
+  distinct guidance; previous samples no longer imply live data; brightness
+  and screen-timeout controls/labels are aligned with a consistent select
+  height/chevron, and descriptions are concise. No Android operations,
+  package installations or settings behavior changes. Browser visual
+  acceptance remains open.
+
+
 - Latest verified A8 DEV source: `425ea80155dac58d9f2e47f095a11c077c31f7f8`,
   task `pockethost-a8-shizuku-guarded-actions-425ea80-20261120-v1`:
   **DEPLOY PASS**, loopback HTTP **200**, owner PID **28660**,
