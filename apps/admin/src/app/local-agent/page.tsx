@@ -322,9 +322,7 @@ export default function LocalAgentPage() {
                 setFollowTail(el.scrollHeight - el.scrollTop - el.clientHeight < 48)
               }}
               className="h-[min(65vh,38rem)] min-h-72 overflow-auto rounded-md border bg-neutral-950 p-3 text-neutral-200">
-              <pre className="min-w-max whitespace-pre font-mono text-xs leading-relaxed">
-                {rawText || (rawLoading ? "Reading svlogd/current..." : "No entries in the current log.")}
-              </pre>
+              <pre className="min-w-max whitespace-pre font-mono text-xs leading-relaxed">{rawText || (rawLoading ? "Reading svlogd/current..." : "No entries in the current log.")}</pre>
             </div>
           </CardContent>
         </Card>
