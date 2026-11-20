@@ -22,7 +22,14 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (20 November 2026):** A8 guarded deployment
+**Latest verified DEV update (20 November 2026):** A8 guarded UI-only
+deployment `1bae685ea9ec69d43b7c2d139562601773581599` **PASS**
+(HTTP 200, owned PID/ticks, protected services unchanged, no QA).
+Shizuku searches and diagnostics layout unified based on user screenshots.
+Shizuku is not installed; physical functionality and browser visual acceptance
+remain unverified. No Android behavior or settings changed.
+
+**Earlier verified DEV update (20 November 2026):** A8 guarded deployment
 `5c6ccd4bb5c8b43f7ab1563de38d0a7a691fe66a` **PASS** (HTTP 200,
 owned PID/ticks attested, protected services unchanged; QA not run).
 Shared first-load spinner is now centered inside the content pane; full

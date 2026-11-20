@@ -15,6 +15,18 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
+- Latest verified A8 DEV live source `1bae685ea9ec69d43b7c2d139562601773581599`,
+  task `pockethost-a8-shizuku-search-diagnostics-1bae685-20261120-v1`:
+  **DEPLOY PASS**, HTTP **200**, owned PID **27171**, start ticks
+  **55646275**, protected services unchanged, QA **NOT RUN**.
+  Read-only visual UX update: one icon-bearing Shizuku search field design
+  for apps, permissions, processes and services; Diagnostics action moved
+  into header; connection status/API checks/native capabilities visually
+  separated. No Shizuku installation, Android operation, API behavior change,
+  physical QA or browser acceptance. User screenshots showed earlier
+  inconsistent search fields and an empty action-button row.
+
+
 - Latest A8 DEV live source `5c6ccd4bb5c8b43f7ab1563de38d0a7a691fe66a`,
   task `pockethost-a8-centered-root-loading-5c6ccd4-20261120-v1`:
   **DEPLOY PASS**, HTTP **200**, owned PID **32581**, start ticks
