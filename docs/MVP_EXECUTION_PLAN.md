@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-19
+last_reviewed: 2026-11-20
 purpose: Single concise MVP status, priority and acceptance tracker
 ---
 
@@ -22,7 +22,16 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Encrypted Node Restic                         | **Local narrow PASS; off-device DEFERRED** | One scoped backup → independent staging restore, 10 matching owned files                                                  | Full-device or Static backups, off-device disaster recovery and browser mutation activation           |
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
-**Latest verified DEV update (19 November 2026):** A8 guarded deploy of `5352c09` **PASS** (HTTP 200, owner PID/ticks and protected services verified). This includes `5351d88` tablet/header/Hosting touch-target improvements and a 20-second GET/HEAD-only Vite asset timeout to mitigate lazy-import failures. Exact-source A8 checks at `5352c09` passed syntax, format, structure, boundaries, lint and Node tests; prior incremental admin TypeScript QA at `5351d88` also passed. A paired Mac Lab run against live `5352c09` produced **9/9 rendered screenshots** of Dashboard, Hosting and Projects (mobile/tablet/desktop), zero overflow, small controls, JS errors or failed same-origin requests; host/network API shape checks passed. **Interactive Hosting acceptance, full UI/G2, Services owner sign-off and reboot G3 remain open.**
+**Latest verified DEV update (20 November 2026):** A8 guarded deployment of
+`ff1559d85abdf45451886263ba003a7125dfa14d` **PASS**
+(HTTP 200, owned PID/start ticks, protected services unchanged).
+Current UI fixes bound diagnostics and prevent ambiguous read results across
+File Manager, Terminal, Backups, Agents, Platform and Network Access; Appearance
+now persists the actual theme choice. **No new QA was run for these changes.**
+Last previously approved scoped source checks at `5352c09` and earlier
+Mac Test Lab screenshots apply only to their recorded SHAs/scopes.
+Interactive Hosting acceptance, current-code functional QA, full UI/G2,
+Services owner sign-off and reboot G3 remain open.
 
 ## Prioritized remaining work
 
