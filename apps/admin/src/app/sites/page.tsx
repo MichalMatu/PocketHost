@@ -410,6 +410,12 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             onClick={() => action("rollback")}><History /> Rollback</Button>
           <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
           <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
+          {site.activeRelease && <a
+            className="inline-flex min-h-9 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
+            href={endpoint + "/" + site.id + "/export"}
+            download={site.id + "-" + site.activeRelease + ".zip"}>
+            <FileArchive className="mr-2 size-4" /> Download active ZIP
+          </a>}
           <Button variant="outline" disabled={busy || assetsLoading || site.state === "unknown" || !site.activeRelease}
             onClick={toggleAssets}>
             <FolderOpen /> {assets !== null ? "Hide assets" : assetsLoading ? "Reading assets…" : "Inspect assets"}
