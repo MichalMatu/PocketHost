@@ -48,12 +48,14 @@ function BootSessionReadback({ refreshToken }: { refreshToken: number }) {
         ? mqttResult.value : null
       setStates({
         "PocketHost panel": "running",
-        "Local Agent": agent?.agent.state ?? "unverified",
+        "Local Agent": agent?.agent.state === "running" ? "running" :
+          agent?.agent.state === "stopped" ? "stopped" : "unverified",
         "Dedicated SSH": agent
           ? agent.ssh.state === "running" && agent.ssh.listen === "open"
             ? "running" : agent.ssh.state === "stopped" ? "stopped" : "unverified"
           : "unverified",
-        "Mosquitto broker": mqtt?.runit.state ?? "unverified",
+        "Mosquitto broker": mqtt?.runit.state === "running" ? "running" :
+          mqtt?.runit.state === "stopped" ? "stopped" : "unverified",
       })
       setObservedAt(new Date().toISOString())
     })
