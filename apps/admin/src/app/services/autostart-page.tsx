@@ -27,7 +27,8 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
     setBoot(null)
     try {
       const response = await fetch("/api/v1/termux-admin?mode=service-boot", {
-        credentials: "same-origin", cache: "no-store", signal: controller.signal,
+        credentials: "same-origin", cache: "no-store",
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
       })
       if (!response.ok) throw new Error("Boot diagnostics unavailable")
       const value = await response.json() as BootObservation
