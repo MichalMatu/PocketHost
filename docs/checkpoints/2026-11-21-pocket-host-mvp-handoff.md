@@ -1,0 +1,73 @@
+---
+status: checkpoint
+owner: core
+last_reviewed: 2026-11-21
+purpose: Canonical evidence-based A8 PocketHost broad MVP checkpoint and next-chat resume
+---
+
+# PocketHost — A8 MVP checkpoint / handoff (21 November 2026)
+
+## 1. Immutable baseline and what was actually verified
+
+- Repository: `MichalMatu/PocketHost`. **At audit start**, `main` was `fd8949b906514c4576430d5e2b7c16b0b4f82c9f` (docs-only HEAD); later documentation commits are **not** deployed code.
+- **Last independently attested A8 DEV runtime source:** `7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`. Native A8 Local Agent receipt `pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`: terminal **done / exit 0**, exact SHA, PID **26723**, `/proc` start ticks **62843520**, private loopback `/sites` **HTTP 200**, protected services unchanged, **tests not run**. This is a **deployment PASS**, not proof of ZIP downloads/reimport or full build/functional QA. Observed 2026-11-20T23:17:06Z.
+- Prior deploy `pockethost-a8-backup-project-coverage-30c1625-deploy-20261121-v1` **PASS** at `30c162510f67a725faa4ec3371a2a13dd77b67c4`, `/backups` HTTP 200, tests not run; superseded by the active code above.
+- Device: paired **Samsung Galaxy A8** with official Termux Local Agent; observed LAN `192.168.0.16`. PocketHost DEV admin observed at `192.168.0.16:18878` (subject to LAN changes). Execute via Git transport `MichalMatu/local-agent:agent-control`, host `android-termux-a8`, installation `fa8acc66-2f97-4600-845f-b35b0ada3a78`. The Local Agent is independent of panel restarts.
+- **No code, deployment, service, file, DNS or data mutation was made for this checkpoint.** This checkpoint and accompanying document cleanup are Git documentation edits only. No QA, backup, restore or reboot performed.
+
+## 2. Functional status by module
+
+| Scope | Verified working within recorded evidence | Unverified / next condition |
+| --- | --- | --- |
+| PocketHost panel, Dashboard, monitoring, menus | Guarded exact-SHA owner/PID/HTTP deploy; existing private LAN UI and earlier browser screenshots | Not a hardened/public panel; complete latest-version browser sign-off open |
+| Local Agent / SSH | Dedicated SSH `8022`; saved-profile Add/Edit/Delete, dedicated SSH Restart/Stop/Start and port checks **PASS** at `8e200b6`; user browser authenticated Mac shell and disconnected successfully | Do not conflate earlier SSH scoped QA with full `7dd7c78` regression; protected external `sshd` untouched |
+| Static Hosting | Own Create→Publish→Start→LAN HTTP, v2→content verification→Rollback previously physically PASS. ZIP/folder importer and immutable release inventory exist | **New active ZIP export** code deployed at `7dd7c78`, but exported bytes/CRC/download/reimport to disposable project **not yet tested**; generic edge cases open |
+| Trusted Node Hosting | Create/Stage/Deploy→HTTP/Logs→Update→Stop/Start/Rollback prior A8 evidence; one owned Node project inventoried | Trusted code shares Termux UID; no sandboxing, public exposure or final current-browser acceptance; persistent data recovery incomplete |
+| Hosting / Deployments / Project logs | Pages HTTP 200; one Static and one Node catalog item at read-only inventory `pockethost-a8-independent-hosting-import-inventory-20261120-v1`; prior visual MVP / scoped QA | New independent project import was **not re-executed** here; do not repeat existing import implementation |
+| Backups & Recovery | Local **encrypted Node Restic** backup→independent staging restore **10/10 files** previously PASS; new per-project read-only coverage view deployed. Static active ZIP export available in source and live panel | Local versions ≠ independent backup; Static ZIP round-trip, app database/uploads and off-device disaster recovery unverified; off-device Restic expressly deferred |
+| Services S1–S4 / runit | Owned fixed-template worker lifecycle Create/Start/Health/Logs/Stop/Archive/Restore/Retire once physically exercised | Status **READY_FOR_ACCEPTANCE**, not universal worker acceptance; custom JS/Python, failures and reboot still open |
+| Mosquitto MQTT | Termux **2.1.4** installed and runit running on **127.0.0.1:1883**; live Publish→Subscribe match, MQTT CONNACK `ready`, LAN 1883 closed. A8 receipt `pockethost-a8-mqtt-health-final-accept-e3cd23c-20261120-v1` **done/exit 0** | Deliberately loopback only; no LAN/public broker, advanced auth or post-reboot proof |
+| Health checks | On-demand Agent/SSH/MQTT/Cloudflare diagnostics, MQTT protocol probe; `/services/health` HTTP 200 at device acceptance | Browser control-click and negative-path acceptance still open; Cloudflare process alone is not public route health |
+| Autostart | **3/3 executable Termux:Boot scripts** observed; all reference runit, two reference Local Agent; current-session Agent/SSH/panel/MQTT readback UI deployed `02e0541` | Android Termux:Boot permission and **actual post-reboot restoration unverified**; no reboot performed |
+| Cloudflare shared tunnel | **Existing single named connector on Pi Zero 2 W** at `192.168.0.23`, systemd `cloudflared` **2026.10.4** active when checked. Effective Pi config uses `tunnel`, `credentials-file`, `url` to **Pi-local `http://127.0.0.1:8000`**, not A8. Pi→A8 TCP 18878/8022 reachable on final check. A8 `cloudflared` **2026.11.1** installed but stopped; updated screen identifies optional local connector vs shared Pi tunnel | Public hostname/DNS and edge-to-app HTTPS not verified; **no** new ingress/DNS, credential copy, tunnel restart, second connector or exposure of admin |
+| Android/Companion/Shizuku and broader P1 | Earlier source/UI and focused checks exist | Optional/advanced device operations deferred; earlier G2 formatting failure and skipped gates are historical, **no current full-repo G2 or physical G3 certification** |
+
+**Product verdict:** credible private-LAN **working DEV MVP for an owner and trusted Node code**. Not a production-grade public hosting platform, not independently disaster-recovery-tested, and not ready for a live `photomap.pl` cutover.
+
+## 3. Shared Cloudflare tunnel: chosen architecture, no cutover
+
+Keep Pi Zero as the **only active connector** for one existing named tunnel; preserve its current Pi origin. A future independently hosted A8 application gets a **separate hostname-specific ingress rule** pointing to its owned private LAN port, with the hostname routed to the **same tunnel ID**. Do not copy Pi config or credentials blindly: another `cloudflared` process would be a replica, and `127.0.0.1` on A8 would not be Pi. Review the actual old hostname and DNS before converting Pi's `url`-only config; preserve rollback. **Never expose PocketHost's unauthenticated DEV admin, SSH or anonymous MQTT.**
+
+Detailed design-only plan: [shared tunnel runbook](../CLOUDFLARE_SHARED_TUNNEL_MVP.md). It was not applied.
+
+## 4. Branch / work-noise audit
+
+- `MichalMatu/PocketHost`: exhaustive GitHub branch search yielded **only `main`** (cursor exhausted), and **0 open pull requests**. **No PocketHost work branches exist to delete.** No branch ref was removed or force-updated.
+- Related **`MichalMatu/local-agent` is a different, shared infrastructure repository**. Its branches observed: `main`, **`agent-control` (active native task/result transport)**, `chat-bridge-state`, `fix/control-rebase-self-heal-4.20.15`, `operator-control`. These were **not** deleted: they are outside PocketHost's branch scope and their merge/use state was not established. Do not delete `agent-control` while it operates.
+- Historic, immutable agent task/results and older Git commits are **evidence**, not working noise. The current handoff and MVP tracker are reduced to current facts; historical details remain in Git history and earlier checkpoints. No device temp files, user data, unverified local branches, or unrelated services removed.
+
+## 5. Concrete next steps — do not repeat completed work
+
+1. **Static export/import acceptance:** with separate owner-approved exact-SHA QA, download a real ZIP from an owned Static site; decode/check CRC, paths, count and bytes; import into a fresh disposable owned site; independently compare contents and HTTP, verify original site/other projects unchanged, clean up only that disposable fixture.
+2. **Recovery design + isolated data acceptance:** map persistent uploads/database and per-project ownership for independent apps; qualify one bounded local backup→staging restore of the **new fixture**. Do not repeat already accepted scoped Node Restic proof. Off-device Restic stays on HOLD until destination and permission are provided.
+3. **General independent-project MVP:** reuse existing Static ZIP/folder and Node local/GitHub import; verify one new unrelated project with deploy, logs, health, update, rollback, data persistence and isolation. This is preparatory for **future** `photomap.pl`; do **not** import it now.
+4. **Cloudflare once a safe app exists:** inventory the existing Pi hostname/DNS, stage and validate candidate ingress without changing the original route; explicit authorization before public hostname/DNS/tunnel reconfiguration.
+5. **Autostart/physical lifecycle:** book a separate explicit reboot scope and verify all owned/protected services, Termux:Boot permission, recovery and retained data. Not part of a docs cleanup.
+6. **Remaining acceptance:** S1–S4 generic workers, targeted latest-SHA browser controls and negative paths, then a separate explicitly scoped G2 quality pass. No blanket QA triggered by a request to continue.
+
+## 6. Rules for the next chat
+
+Read in order: [root agent rules](../../AGENTS.md) → [START_HERE](../START_HERE.md) → [current handoff](../HANDOFF_NEXT_CHAT.md) → [MVP tracker](../MVP_EXECUTION_PLAN.md) and this checkpoint as needed. Read the relevant nearest `AGENTS.md`, not the whole archive.
+
+- Always read **fresh Git `main`** and verify the **actual A8 live source, owner PID/ticks, clean checkouts, protected services and rollback** before any code/deploy action. Docs HEAD is not the running code.
+- Device commands, builds and deployments through **paired A8 Termux Local Agent** only. Separate paired Mac Test Lab has narrowly scoped read-only browser ability by explicit approval. Never use Codex, Work, GitHub Actions, another device or a scheduler for this project.
+- **Tests are OFF by default**; even a smoke/lint/build QA suite needs fresh approval for **exact SHA and categories**. Guarded deployment readback is not QA. Documentation-only commits require **no build, test or restart**.
+- Unknown task outcome → HOLD and investigate, **never** silently requeue. Preserve user/foreign services and data. No public WAN/admin/tunnel edits, reboot, data transfer or destructive restore without scope-specific consent.
+
+## 7. Evidence map
+
+- **A8 latest deploy receipt:** `MichalMatu/local-agent:agent-control` → `.agent/hosts/android-termux-a8/supervisor/fa8acc66-2f97-4600-845f-b35b0ada3a78/task-results/pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1.json`.
+- **SSH full lifecycle receipt:** same root → `pockethost-a8-ssh-lifecycle-profile-qa-fixed-20261120-v2.json`.
+- **MQTT + core health receipt:** same root → `pockethost-a8-mqtt-health-final-accept-e3cd23c-20261120-v1.json`.
+- **Pi tunnel configuration receipt:** `.agent/hosts/pi-zero2w-linux/supervisor/61bfc921-6445-4501-b215-1a79bb68ca55/task-results/pi-zero2w-cloudflared-ingress-keys-and-lan-followup-20261120-v1.json`; old local-origin readback `pi-zero2w-cloudflared-current-origin-readonly-20261120-v1.json`.
+- [18 November checkpoint](2026-11-18-a8-p1-hardening-checkpoint.md) (prior physical Static/Node/worker/Restic QA), [MVP integration evidence](../MVP_INTEGRATION_CHECKLIST.md), [Fast Flow](../DEV_ITERATION.md), [Local Agent runbook](../LOCAL_AGENT_TERMUX.md), [off-device Restic design (deferred)](../P1_OFF_DEVICE_RESTIC_PLAN.md).
