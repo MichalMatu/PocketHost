@@ -48,7 +48,7 @@ const logs = {
   unclassifiedLines: 79, truncated: true,
   notice: "sanitized-log-tail-no-lifecycle-authority",
 }
-const rawEntry = "2026-11-20_15:00:00.123456 [CMD] TOKEN=exact-secret command=echo raw\\n"
+const rawEntry = "2026-11-20_15:00:00.123456 [CMD] TOKEN=exact-secret command=echo raw\n"
 function mockFetch() {
   return vi.fn(async (url: string) => url.includes("mode=local-agent-raw-log")
     ? {
