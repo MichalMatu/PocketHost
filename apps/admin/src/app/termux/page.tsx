@@ -10,6 +10,7 @@ import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
 import { TermuxFileExplorer } from "@/app/termux/full-files"
 import { TermuxTerminalPanel } from "@/app/termux/terminal-panel"
 import { FullTermuxBackups } from "@/app/termux/system-backups"
+import { ProjectRecoveryReadiness } from "@/app/termux/project-recovery-readiness"
 import { AgentApiPanel } from "@/app/termux/agent-panel"
 import { PackageManager, WorkspaceBackupActions, ResticActions } from "@/app/termux/admin-actions"
 
@@ -126,6 +127,7 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           </section>}
 
           {section === "backups" && <section className="space-y-4">
+            <ProjectRecoveryReadiness refreshToken={sectionRefreshToken} />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Archive className="size-5" /> Backup readiness</CardTitle>
