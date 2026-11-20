@@ -22,6 +22,14 @@ export function formatAgentDuration(value: number | null): string {
   return (approximate ? "≈ " : "") + parts.join(" ")
 }
 
+/** Execution durations below a second should not be rounded down to zero. */
+export function formatAgentExecutionDuration(value: number | null): string {
+  if (value === null || !Number.isFinite(value) || value < 0) return "Not measured"
+  if (value > 0 && value < 0.1) return "<0.1 s"
+  if (value < 1) return value.toFixed(1) + " s"
+  return formatAgentDuration(value)
+}
+
 export function formatAgentTime(value: string | null | undefined): string {
   if (!value) return "Not recorded"
   const date = new Date(value)
