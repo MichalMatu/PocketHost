@@ -23,13 +23,15 @@ purpose: Single concise MVP status, priority and acceptance tracker
 | Platform advanced / Android integration       | **PARTIAL / DEFERRED**                     | LAN gateway settings/readbacks, limited Git/Boot diagnostics                                                              | Reboot persistence, SSH/GitHub write configuration, TLS/WAN policy, Companion/Shizuku, public domains |
 
 **Latest verified DEV update (20 November 2026):** A8 guarded panel deploy of
-`1444596a94545e4d0cf64e2bab9befbb28fd74e8` **PASS**
+`54ea5624c7539d75d5e49cf5791a6bc8a49dfaaf` **PASS**
 (HTTP 200, PID/start ticks attested, protected services unchanged, no QA).
 Owner confirmed the earlier Dashboard battery-notice fix, then reported
 additional loading shifts and unequal File Manager cards. New shared loading
 shell/scrollbar stability and matched file-manager borders are deployed but
 **await owner browser verification**. Terminal is blocked by missing `ttyd`
 (not Companion); package installation requires separate authorization.
+Top-right page Refresh alignment and missing-`ttyd` guidance were
+subsequently deployed; no package was installed. Browser QA is still open.
 Hosting and G2/G3 acceptance remain open.
 
 ## Prioritized remaining work

@@ -15,6 +15,20 @@ is historical evidence, **not** the latest live SHA.
 
 ## Verified A8 deployment
 
+- Latest verified A8 DEV: `54ea5624c7539d75d5e49cf5791a6bc8a49dfaaf`.
+  Task `pockethost-a8-terminal-help-refresh-alignment-54ea562-20261120-v1`:
+  **PASS**, HTTP **200**, owned PID **7552**, start ticks **55502910**,
+  protected services unchanged, QA **NOT RUN**, no Termux packages installed.
+- Scoped UI change: Terminal explains missing `ttyd` only when inventory says absent
+  (with link to Packages); otherwise hides dependency/install guidance.
+  Top-level Refresh moved to the upper-right on Sites, Network Access,
+  Deployments and Projects; Termux pages use a two-column toolbar so
+  Refresh remains right-aligned. Backend refresh actions unchanged.
+- Browser QA/functional acceptance at this SHA **not performed**.
+  Owner will install `ttyd` manually, then use Refresh in the panel.
+
+## Verified A8 deployment
+
 - Latest verified live A8 DEV source: `1444596a94545e4d0cf64e2bab9befbb28fd74e8`.
   Task `pockethost-a8-global-layout-file-1444596-20261120-v1`: **PASS**,
   HTTP **200**, owned PID **19103**, start ticks **55446241**,
