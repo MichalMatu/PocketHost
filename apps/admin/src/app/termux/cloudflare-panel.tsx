@@ -42,9 +42,26 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
       {loading && <p role="status">Reading Cloudflare Tunnel diagnostics…</p>}
       {error && <p role="alert">Cloudflare Tunnel diagnostics unavailable. No services were changed.</p>}
       {data && !loading && <>
+        <section aria-label="Existing external Cloudflare connector" className="space-y-2 rounded-md border p-3">
+          <h3 className="font-medium">Shared tunnel · connector on another host</h3>
+          <p className="text-xs text-muted-foreground">
+            A tunnel running on another device in the LAN can route a separate public hostname
+            to a hosted application on this device. A second cloudflared process or copy of
+            tunnel credentials is not needed on A8.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Preserve the remote connector's current origin. Once a specific application is ready,
+            add a hostname-specific ingress rule there and a DNS route to that same tunnel.
+            Do not route the unauthenticated PocketHost admin panel to the public Internet.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Remote tunnel connections and DNS are not observable from this A8-only page.
+            The diagnostics below describe only the optional local A8 connector.
+          </p>
+        </section>
         <section aria-label="Cloudflare setup readiness" className="space-y-3 rounded-md border p-3">
           <h3 className="font-medium">
-            {localReady ? "Local setup detected · edge connection unverified" : "Setup required"}
+            {localReady ? "Local A8 connector detected · edge unverified" : "Local A8 connector not configured (optional)"}
           </h3>
           <div className="grid gap-2 text-sm sm:grid-cols-3">
             <div>
@@ -64,17 +81,17 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
           </div>
           {!localReady && <>
             <p className="text-xs text-muted-foreground">
-              No tunnel can be started from this read-only page. Complete the local prerequisites
-              before enabling an explicitly approved ingress route.
+              This optional local connector is not set up. If you use a remote
+              LAN connector instead, there is no need to install tunnel credentials on A8.
             </p>
-            <ol className="list-decimal space-y-1 pl-5 text-xs text-muted-foreground">
-              <li>Check whether cloudflared is available in{" "}
-                <Link to="/packages" className="underline underline-offset-2">
-                  Packages & Software</Link>.
-              </li>
-              <li>Create a named tunnel in your Cloudflare account and keep its credentials on A8.</li>
-              <li>Configure the tunnel ingress and a dedicated managed service, then refresh this page.</li>
-            </ol>
+            <p className="text-xs text-muted-foreground">
+              To use a local connector instead, review{" "}
+              <Link to="/packages" className="underline underline-offset-2">
+                Packages & Software
+              </Link>{" "}
+              and configure it as a separately authorized service.
+              Do not duplicate an existing remote connector by default.
+            </p>
           </>}
           <p className="text-xs text-muted-foreground">
             A running process or earlier registration log does not prove a live Cloudflare connection.
