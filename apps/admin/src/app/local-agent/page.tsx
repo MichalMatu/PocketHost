@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
+import { SSHConnectionsPanel } from "@/app/local-agent/ssh-connections-panel"
 import { controlPlaneSchema, type ControlPlaneDiagnostic } from "@/lib/control-plane-schema"
 import { localAgentLogSchema, type LocalAgentLogData } from "@/lib/local-agent-logs-schema"
 import { formatAgentDuration, formatAgentTime } from "@/lib/local-agent-time"
@@ -330,8 +331,9 @@ export default function LocalAgentPage() {
         </Card>
       </section>}
 
-      {view === "control" && <section role="tabpanel" aria-label="Control & SSH">
+      {view === "control" && <section role="tabpanel" aria-label="Control & SSH" className="space-y-4">
         <LocalAgentOperationsPanel refreshToken={refreshToken} />
+        <SSHConnectionsPanel />
       </section>}
 
       {view === "diagnostics" && <section role="tabpanel" aria-label="Diagnostics" className="space-y-4">
