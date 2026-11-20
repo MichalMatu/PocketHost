@@ -41,10 +41,12 @@ export function HostingWorkloads({
     state: "loading", items: [],
   })
   const [probes, setProbes] = React.useState<Record<string, ProbeSample>>({})
+  const [retryToken, setRetryToken] = React.useState(0)
   const current = React.useRef<AbortController | null>(null)
 
   React.useEffect(() => {
     const controller = new AbortController()
+    const requestSignal = AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)])
     current.current = controller
     void Promise.resolve().then(() => {
       if (controller.signal.aborted) return
@@ -52,13 +54,13 @@ export function HostingWorkloads({
       setNodeProjects({ state: "loading", items: [] })
       setProbes({})
     })
-    void readStatic(controller.signal).then(value => {
+    void readStatic(requestSignal).then(value => {
       if (!controller.signal.aborted) setStaticSites(value)
     }).catch(() => {
       if (!controller.signal.aborted)
         setStaticSites({ state: "unavailable", items: [] })
     })
-    void readNode(controller.signal).then(value => {
+    void readNode(requestSignal).then(value => {
       if (!controller.signal.aborted) setNodeProjects(value)
     }).catch(() => {
       if (!controller.signal.aborted)
@@ -68,7 +70,7 @@ export function HostingWorkloads({
       controller.abort()
       if (current.current === controller) current.current = null
     }
-  }, [refreshToken])
+  }, [refreshToken, retryToken])
 
   const health = async (kind: "node" | "static", id: string, release: string | null) => {
     const controller = current.current
@@ -85,7 +87,8 @@ export function HostingWorkloads({
         ? "/api/v1/node-projects/" + id + "/health"
         : "/api/v1/sites/" + id + "/health"
       const response = await fetch(url, {
-        credentials: "same-origin", cache: "no-store", signal: controller.signal,
+        credentials: "same-origin", cache: "no-store",
+        signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
       })
       if (!response.ok) throw Error("readiness-unavailable")
       const payload: unknown = await response.json()
@@ -144,6 +147,10 @@ export function HostingWorkloads({
         ? "Manually probe the current verified release. Unknown or stopped workloads cannot be marked healthy. No periodic health polling or restart is enabled."
         : "PocketHost-owned Hosting workloads, independent of runit inventory. Runtime state does not prove HTTP readiness; health checks are on their own Services page."}
     </p>
+    {(staticSites.state === "unavailable" || nodeProjects.state === "unavailable") &&
+      <Button size="sm" variant="outline" onClick={() => setRetryToken(value => value + 1)}>
+        Retry hosting inventory
+      </Button>}
     <section className="space-y-2" aria-label="Node Hosting workloads">
       <h3 className="text-sm font-medium">Node.js projects</h3>
       {nodeProjects.state === "loading" && <p role="status" className="text-xs">Loading Node projects…</p>}
