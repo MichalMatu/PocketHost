@@ -13,7 +13,9 @@ export interface MqttLoopbackHealth {
  * No broker lifecycle authority, credentials, arbitrary destinations, topic
  * subscription, publishing, scheduled polling or network exposure.
  */
-export function inspectMqttLoopbackHealth(): Promise<MqttLoopbackHealth> {
+export function inspectMqttLoopbackHealth(
+  connectSocket: typeof createConnection = createConnection,
+): Promise<MqttLoopbackHealth> {
   const clientId = Buffer.from('pockethost-check', 'utf8');
   const header = Buffer.from([0, 4, 77, 81, 84, 84, 4, 2, 0, 5]);
   const remaining = header.length + 2 + clientId.length;
@@ -22,7 +24,7 @@ export function inspectMqttLoopbackHealth(): Promise<MqttLoopbackHealth> {
     Buffer.from([0, clientId.length]), clientId,
   ]);
   return new Promise(resolve => {
-    const socket = createConnection({ host: '127.0.0.1', port: 1883 });
+    const socket = connectSocket({ host: '127.0.0.1', port: 1883 });
     let finished = false;
     let received = Buffer.alloc(0);
     const finish = (state: MqttLoopbackHealth['state'],
