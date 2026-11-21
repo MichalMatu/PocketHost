@@ -17,17 +17,24 @@ afterEach(() => vi.unstubAllGlobals())
 describe("Service Autostart read-only boot observation", () => {
   it("ignores an older response after a newer Refresh has succeeded", async () => {
     const replies: Array<(response: { ok: boolean; json: () => Promise<unknown> }) => void> = []
-    const fetcher = vi.fn((_url: string, _options?: RequestInit) =>
-      new Promise<{ ok: boolean; json: () => Promise<unknown> }>(resolve => {
+    const fetcher = vi.fn((url: string, _options?: RequestInit) => {
+      // Agent and MQTT status are independent from boot observations.
+      if (!url.includes("mode=service-boot"))
+        return Promise.resolve({ ok: false, json: async () => ({}) })
+      return new Promise<{ ok: boolean; json: () => Promise<unknown> }>(resolve => {
         replies.push(resolve)
-      }))
+      })
+    })
     vi.stubGlobal("fetch", fetcher)
     render(<MemoryRouter><ServiceAutostartPage /></MemoryRouter>)
 
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(1))
+    await waitFor(() => expect(replies).toHaveLength(1))
     fireEvent.click(screen.getByRole("button", { name: "Refresh boot status" }))
-    await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
-    expect(fetcher.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+    await waitFor(() => expect(replies).toHaveLength(2))
+    const bootCalls = fetcher.mock.calls.filter(call =>
+      String(call[0]).includes("mode=service-boot"))
+    expect(bootCalls).toHaveLength(2)
+    expect(bootCalls[0]?.[1]?.signal?.aborted).toBe(true)
 
     const observation = {
       androidPermission: "not-verified",
