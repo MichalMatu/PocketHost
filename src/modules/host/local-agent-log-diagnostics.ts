@@ -123,7 +123,7 @@ export function safeAgentLogLine(line: string): AgentLogDisplayLine | null {
     [/^TASK BUDGET EXHAUSTED before stage command-(\d{1,3}): remaining=(\d{1,6}(?:\.\d)?)s required=(\d{1,6}(?:\.\d)?)s$/,
       m => 'budget exhausted · command-' + m[1] + ' · remaining=' + m[2] + 's · required=' + m[3] + 's'],
     [new RegExp('^(IDLE TIMEOUT|TIMEOUT) after ' + seconds + 's: ' + hash + '$'),
-      m => m[1].toLowerCase() + ' · after ' + m[2] + 's · sha256=' + m[3]],
+      m => (m[1] ?? '').toLowerCase() + ' · after ' + m[2] + 's · sha256=' + m[3]],
     [new RegExp('^MEMORY LIMIT after (\\d{1,3}) samples at ' + seconds + ' MB: ' + hash + '$'),
       m => 'memory limit · ' + m[1] + ' samples · ' + m[2] + ' MB · sha256=' + m[3]],
     [/^RSS memory measurement unavailable; continuing with time watchdogs$/,

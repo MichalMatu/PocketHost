@@ -34,7 +34,7 @@ export function inspectMqttLoopbackHealth(): Promise<MqttLoopbackHealth> {
     };
     socket.on('connect', () => socket.write(connect));
     socket.on('data', chunk => {
-      received = Buffer.concat([received, chunk]);
+      received = Buffer.concat([received, typeof chunk === 'string' ? Buffer.from(chunk) : chunk]);
       if (received.length < 4) return;
       if (received[0] !== 0x20 || received[1] !== 0x02 ||
           received[2] !== 0x00) {

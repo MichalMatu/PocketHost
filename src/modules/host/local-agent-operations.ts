@@ -46,7 +46,7 @@ export class LocalAgentOperationsHost {
       const r = spawnSync(PREFIX + '/bin/sv', args, {
         encoding: 'utf8', shell: false, timeout, maxBuffer: 4096,
       });
-      return { status: r.status, stdout: r.stdout ?? '', error: r.error };
+      return { status: r.status, stdout: r.stdout ?? '', ...(r.error ? { error: r.error } : {}) };
     });
   }
   private service(name: Service): string { return path.join(this.root, 'runit/services', name); }
@@ -85,7 +85,7 @@ export class LocalAgentOperationsHost {
     try {
       const text = readFileSync(path.join(this.service('termux-agent'), 'run'), 'utf8');
       const shas = [...new Set([...text.matchAll(/[a-f0-9]{40}/g)].map(m => m[0]))];
-      return shas.length === 1 ? shas[0] : null;
+      return shas.length === 1 ? (shas[0] ?? null) : null;
     } catch { return null; }
   }
   private pauseCapable(s: ProcessStatus, source: string | null): boolean {
