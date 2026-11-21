@@ -8,7 +8,7 @@ import { Feedback } from "./admin-actions-feedback"
 import { action, inspect } from "./admin-actions-api"
 
 import {
-  isPanelService, confirmedStoppedWorker,
+  isPanelService, confirmedStoppedWorker, validateRunitInventory,
   type WorkerTemplate, type PythonSourceReview, type PythonSourceHistory, type ArchivedEntry, type NodeSourceReview, type NodeSourceHistory, type RunitEntry,
 } from "./runit-service-inventory"
 
@@ -45,35 +45,7 @@ export function RunitServiceActions({
     setDone(null)
     setError(null)
     const data = await inspect<{ services: RunitEntry[]; archived?: ArchivedEntry[] }>("services")
-    if (!Array.isArray(data.services) || data.services.length > 100 ||
-        !data.services.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
-          typeof item.registered === "boolean" && typeof item.protected === "boolean" &&
-          ["standalone", "delegated", "read-only"].includes(item.control) &&
-          ((item.control === "read-only" && item.protected && !item.registered) ||
-            (item.control === "standalone" && !item.protected && item.registered && !!item.template) ||
-            (item.control === "delegated" && !item.protected && item.registered && !item.template)) &&
-          ["running", "stopped", "unknown"].includes(item.state) &&
-          (item.identity === undefined ||
-            ["verified", "unregistered", "legacy", "changed", "archive-conflict", "reserved"].includes(item.identity)) &&
-          (item.identityReason === undefined ||
-            ["run-sha-attested", "no-enrollment", "legacy-without-sha",
-             "service-target-changed", "service-not-published", "worker-provenance-changed", "run-script-changed", "archive-live-conflict",
-             "reserved-system-service"].includes(item.identityReason)) &&
-          (item.template === undefined ||
-            item.template === "heartbeat-worker-v1" || item.template === "python-heartbeat-v1" ||
-            item.template === "python-source-v1" || item.template === "node-source-v1") &&
-          (item.project === undefined ||
-            (item.control === "delegated" && !item.template &&
-              typeof item.project === "object" && item.project !== null &&
-              /^node-[a-f0-9]{32}$/.test(item.project.id) &&
-              typeof item.project.name === "string" &&
-              item.project.name.length > 0 && item.project.name.length <= 60))))
-      throw new Error("Invalid runit inventory")
-    if (!Array.isArray(data.archived) || data.archived.length > 4 ||
-        !data.archived.every(item => /^[a-z][a-z0-9-]{1,63}$/.test(item.name) &&
-          ["heartbeat-worker-v1", "python-heartbeat-v1", "python-source-v1", "node-source-v1"].includes(item.template) &&
-          ["restorable", "changed", "conflict"].includes(item.identity)))
-      throw new Error("Invalid archived worker inventory")
+    validateRunitInventory(data)
     setArchived(data.archived)
     setServices(data.services)
     setSourceReview(null)
