@@ -11,8 +11,9 @@ purpose: Minimal PocketHost A8 resume pointer; details in the canonical 21 Novem
 
 ## Current source versus running panel
 
-- **Latest verified PocketHost A8 DEV code:** `7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`, receipt `pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`: **PASS**, owned PID **26723**, start ticks **62843520**, private loopback HTTP **200**, protected services unchanged, **tests not run**.
-- At checkpoint creation, `main` was already ahead via **docs-only** commits (pre-checkpoint `fd8949b906514c4576430d5e2b7c16b0b4f82c9f`). Re-read fresh `main` and independently verify A8 live SHA/owner before doing anything. **Do not claim new documentation commits were deployed.**
+- **Latest verified PocketHost A8 DEV code:** `10508b0549cf6b313ecd753a4ca690d6abcd77bf`, receipt `pockethost-a8-lifecycle-lock-10508b0-deploy-20261121-v1`: **PASS**, owned PID **31351**, start ticks **68760474**, private loopback HTTP **200**, protected services unchanged, **tests not run**. This confirms the guarded DEV deployment, **not** a fresh QA run.
+- **Code-quality work since historical 21 Nov checkpoint:** modularized Runit host contracts, worker scripts, inode-pinned attestations, process observations and lifecycle lock; separated several large Termux admin UI modules and Static ZIP path diagnostics. This work is deployed up to the pinned SHA above, but specific UI/feature regression QA remains open.
+- The 21 November checkpoint records an **earlier historical baseline**. Current live evidence is the task receipt above. Re-read fresh `main` and independently verify A8 live SHA/owner before the next operation; **documentation-only commits after this receipt are not deployed code.**
 - Branch audit: `MichalMatu/PocketHost` **only `main`**, **0 open PRs**; no work branch to delete. `MichalMatu/local-agent:agent-control` is a **different, active shared transport repo/branch** and must not be cleaned up as PocketHost noise.
 - **This handoff/document cleanup performs no QA, build, deploy, reboot, data backup or site migration.**
 

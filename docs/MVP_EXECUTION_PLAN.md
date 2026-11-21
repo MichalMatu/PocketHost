@@ -11,8 +11,8 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified running A8 panel code:** `7dd7c787d2ae2c5c3e3931b8a7125b57c4d6441a`, receipt `pockethost-a8-static-zip-export-7dd7c78-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **26723**, start ticks **62843520**, HTTP **200**, protected services unchanged, **tests not run**.
-- At checkpoint start Git `main` was `fd8949b906514c4576430d5e2b7c16b0b4f82c9f`. Additional **docs-only** cleanup commits do not change running code. Read both Git HEAD and independently verified live SHA before a new deployment.
+- **Last verified running A8 panel code:** `10508b0549cf6b313ecd753a4ca690d6abcd77bf`, receipt `pockethost-a8-lifecycle-lock-10508b0-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **31351**, start ticks **68760474**, HTTP **200**, protected services unchanged, **tests not run**.
+- The 21 November canonical checkpoint is a **historical MVP baseline**. Subsequent code-quality refactors and the Static ZIP error-diagnostic fix were deployed through the receipt above. The present documentation update is **docs-only** and does not change the A8 runtime. Read Git HEAD and fresh actual A8 live SHA before new work.
 - `PocketHost` branch inventory **only `main`**, open PRs **0**; nothing eligible for branch cleanup. Local Agent's separate active `agent-control` branch is transport infrastructure and is retained.
 - **`photomap.pl` not yet imported or migrated**, by owner decision. Use a disposable independent project to qualify remaining flows first.
 
@@ -20,7 +20,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `7dd7c787` and owned PID/HTTP attested; no latest-SHA broad QA                         |
+| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `10508b05` and owned PID/HTTP attested; no latest-SHA broad QA                         |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core lifecycle PASS; ZIP QA OPEN         | Create/publish/v2/start/rollback previously accepted; active ZIP download deployed, re-import untested |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
