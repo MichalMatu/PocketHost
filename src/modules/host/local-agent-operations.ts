@@ -60,12 +60,11 @@ function portCheck(): Promise<'open' | 'closed' | 'unverified'> {
   });
 }
 export class LocalAgentOperationsHost {
+  private readonly home: string;
   private readonly root: string;
   private readonly run: Run;
-  constructor(
-    private readonly home = os.homedir(),
-    run?: Run,
-  ) {
+  constructor(home = os.homedir(), run?: Run) {
+    this.home = home;
     this.root = path.join(home, '.local/state/local-agent/termux');
     this.run =
       run ??
