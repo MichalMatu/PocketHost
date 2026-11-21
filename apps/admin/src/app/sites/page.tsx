@@ -151,6 +151,12 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               ack.history.length !== observed.history.length ||
               (expected && !expected(observed)))
             throw new Error("site-state-drift")
+          // A release change must invalidate the open editor. Otherwise a
+          // rollback can resurrect stale HTML under an earlier release ID.
+          if (observed.activeRelease !== site.activeRelease) {
+            setShowHtmlEditor(false)
+            setEditorRelease(undefined)
+          }
         } catch {
           setError("Site action result unconfirmed. Refresh the exact site state before retrying.")
           return

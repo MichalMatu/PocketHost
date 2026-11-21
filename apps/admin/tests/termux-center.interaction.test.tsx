@@ -165,7 +165,10 @@ describe("H3 strict read-only contracts", () => {
     await screen.findByText("Backup readiness")
     expect(screen.getByRole("link", { name: /website versions/i }).getAttribute("href")).toBe("/sites")
     expect(screen.queryByText("View release history")).toBeNull()
-    expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
+    expect(screen.getByText("Project recovery coverage")).toBeTruthy()
+    await waitFor(() => expect(calls.mock.calls.some(call =>
+      String(call[0]) === "/api/v1/sites")).toBe(true))
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
   it("navigates from the generic Services overview without loading foreign inventories", () => {
@@ -178,13 +181,13 @@ describe("H3 strict read-only contracts", () => {
       ["Autostart", "/services/autostart"],
       ["Hosting workloads", "/services/hosting"],
       ["Health checks", "/services/health"],
-      ["Local Agent", "/local-agent"],
       ["Cloudflare Tunnel", "/services/cloudflare"],
       ["SSH", "/services/ssh"],
       ["Mosquitto MQTT", "/services/mqtt"],
     ]) {
       expect(screen.getByRole("link", { name: label }).getAttribute("href")).toBe(url)
     }
+    expect(screen.queryByRole("link", { name: "Local Agent" })).toBeNull()
     expect(calls).not.toHaveBeenCalled()
   })
 })
