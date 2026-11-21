@@ -30,7 +30,9 @@ describe("Service Autostart read-only boot observation", () => {
     render(<MemoryRouter><ServiceAutostartPage /></MemoryRouter>)
 
     await waitFor(() => expect(replies).toHaveLength(1))
-    fireEvent.click(screen.getByRole("button", { name: "Refresh boot status" }))
+    const refreshButton = screen.getByRole("button", { name: "Refresh boot status" }) as HTMLButtonElement
+    expect(refreshButton.disabled).toBe(false)
+    fireEvent.click(refreshButton)
     await waitFor(() => expect(replies).toHaveLength(2))
     const bootCalls = fetcher.mock.calls.filter(call =>
       String(call[0]).includes("mode=service-boot"))
