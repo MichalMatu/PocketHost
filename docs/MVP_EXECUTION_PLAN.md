@@ -21,7 +21,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `9c3af55`; PID/ticks/HTTP and protected services attested, scoped QA PASS as above      |
+| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `9c3af55`; PID/ticks/HTTP and protected services attested, scoped QA PASS as above     |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core lifecycle PASS; ZIP QA OPEN         | Create/publish/v2/start/rollback previously accepted; active ZIP download deployed, re-import untested |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |

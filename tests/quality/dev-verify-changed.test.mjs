@@ -179,3 +179,15 @@ test('QA diagnostic includes ESLint file and location before the total', () => {
   assert.match(message, /164:8\s+error/);
   assert.ok(message.length <= 1800);
 });
+
+test('UI failure diagnostics retain all failed cases after many suite headings', () => {
+  const stdout = [
+    ...Array.from({ length: 9 }, (_, index) => '❯ tests/suite-' + index + '.interaction.test.tsx'),
+    ...Array.from({ length: 6 }, (_, index) => '× failed case ' + index),
+    'Tests 6 failed | 59 passed (65)',
+  ].join('\n');
+  const message = compactCheckFailure(stdout, 'AssertionError: expected call count', '');
+  assert.match(message, /failed case 5/);
+  assert.match(message, /Tests 6 failed/);
+  assert.ok(message.length <= 1800);
+});

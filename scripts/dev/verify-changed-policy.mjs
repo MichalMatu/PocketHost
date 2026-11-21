@@ -156,7 +156,8 @@ export function compactCheckFailure(stdout, stderr, failure) {
     .split('\n')
     .map((line) => line.trim())
     .filter(Boolean);
-  const names = lines.filter((line) => /^(?:FAIL\b|[×✗✖]\s|❯\s)/.test(line));
+  const failedTests = lines.filter((line) => /^[×✗✖]\s/.test(line));
+  const names = lines.filter((line) => /^(?:FAIL\b|❯\s)/.test(line));
   const locations = lines.filter((line) =>
     /(?:\.(?:mjs|js|ts|tsx)$|^\d+:\d+\s+error\b|\berror\s{2,})/.test(line),
   );
@@ -164,7 +165,12 @@ export function compactCheckFailure(stdout, stderr, failure) {
     /^(?:Test Files\b|Tests\b|AssertionError\b|TestingLibraryElementError\b|Error:)/.test(line),
   );
   const selected = [
-    ...new Set([...names.slice(0, 8), ...locations.slice(0, 8), ...summary.slice(-8)]),
+    ...new Set([
+      ...failedTests.slice(0, 24),
+      ...names.slice(0, 10),
+      ...locations.slice(0, 6),
+      ...summary.slice(-8),
+    ]),
   ].join('\n');
   return (selected || all.slice(-1800)).slice(0, 1800);
 }
