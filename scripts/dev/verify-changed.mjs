@@ -13,6 +13,7 @@ import {
   prepareChangedVerification,
   runChangedVerification,
   selectApprovedVerification,
+  compactCheckFailure,
 } from './verify-changed-policy.mjs';
 import { resolveTermuxCheckCommand } from './termux-check-command.mjs';
 
@@ -187,7 +188,7 @@ if (!optionsValid) {
           ok,
           code: output.status,
           elapsedMs: Date.now() - began,
-          ...(ok ? {} : { error: tail(diagnosticOutput || 'Command failed') }),
+          ...(ok ? {} : { error: compactCheckFailure(output.stdout, output.stderr, output.error?.message || diagnosticOutput || 'Command failed') }),
         };
       });
       emit(

@@ -6,6 +6,7 @@ import {
   prepareChangedVerification,
   runChangedVerification,
   selectApprovedVerification,
+  compactCheckFailure,
 } from '../../scripts/dev/verify-changed-policy.mjs';
 
 const deps = {
@@ -144,4 +145,24 @@ test('Termux QA maps pinned check commands to node instead of absent /usr/bin/en
     },
   );
   assert.ok(checks.some((item) => item.label === 'admin incremental typecheck'));
+});
+
+test('UI QA receipt preserves failing test identity instead of trailing HTML dump', () => {
+  const stdout =
+    ' FAIL  tests/site-fleet.interaction.test.tsx > editor > saves revisions\n' +
+    ' Test Files 1 failed | 8 passed (9)\n Tests 1 failed | 58 passed (59)\n';
+  const stderr =
+    'TestingLibraryElementError: Unable to find the Save button\n' +
+    '<div class="page">' + '<svg></svg>'.repeat(2500) + '</div>';
+  const message = compactCheckFailure(stdout, stderr, '');
+  assert.match(message, /FAIL  tests\/site-fleet\.interaction\.test\.tsx/);
+  assert.match(message, /Test Files 1 failed/);
+  assert.match(message, /TestingLibraryElementError/);
+  assert.ok(message.length <= 1800);
+  assert.ok(!message.includes('<svg>'));
+});
+
+test('QA receipts retain generic compiler failures without Vitest markers', () => {
+  const message = compactCheckFailure('', 'src/file.ts(4,2): error TS1294: unsupported syntax', '');
+  assert.match(message, /TS1294/);
 });

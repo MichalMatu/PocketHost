@@ -141,3 +141,20 @@ export function runChangedVerification(checks, execute) {
     ? { status: 'FAIL', failedAt: failedChecks[0], failedChecks, checks: results }
     : { status: 'PASS', checks: results };
 }
+
+/**
+ * Keep the failing Vitest assertion and test name visible even when jsdom
+ * appends a large DOM dump after the reporter summary.
+ */
+export function compactCheckFailure(stdout, stderr, failure) {
+  const ansi = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
+  const clean = (value) => String(value ?? '').replace(ansi, '');
+  const all = [clean(stdout), clean(stderr), clean(failure)].filter(Boolean).join('\n');
+  const lines = all.split('\n').map((line) => line.trim()).filter(Boolean);
+  const names = lines.filter((line) => /^(?:FAIL\b|[×✗✖]\s|❯\s)/.test(line));
+  const summary = lines.filter((line) =>
+    /^(?:Test Files\b|Tests\b|AssertionError\b|TestingLibraryElementError\b|Error:)/.test(line),
+  );
+  const selected = [...new Set([...names.slice(0, 8), ...summary.slice(-8)])].join('\n');
+  return (selected || all.slice(-1800)).slice(0, 1800);
+}
