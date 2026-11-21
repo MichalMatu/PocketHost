@@ -13,7 +13,7 @@ export function assetName(name: unknown): string {
     typeof name !== 'string' ||
     name.length > 180 ||
     name.includes('\\') ||
-    name.includes('\\0') ||
+    name.includes('\0') ||
     name.startsWith('/') ||
     /[?#:]/.test(name)
   ) throw new RangeError('Unsafe asset path');
@@ -22,7 +22,7 @@ export function assetName(name: unknown): string {
   if (
     parts.length > 6 ||
     parts.some((part) => !part || part === '..' || part === '.' || part.startsWith('.')) ||
-    !parts.every((part) => /^[\\p{L}\\p{N}_ ()@+-][\\p{L}\\p{N}_. ()@+-]*$/u.test(part)) ||
+    !parts.every((part) => /^[\p{L}\p{N}_ ()@+-][\p{L}\p{N}_. ()@+-]*$/u.test(part)) ||
     !ext ||
     !ALLOWED_ASSETS.has(ext)
   ) throw new RangeError('Asset path denied');
