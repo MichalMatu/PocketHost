@@ -1,4 +1,8 @@
 import { createHash, randomUUID } from 'node:crypto';
+import {
+  PREFIX, SERVICE_NAME, isStagedWorker, builtinWorkerRunScript,
+  builtinWorkerLogScript, valid,
+} from './termux-worker-scripts.ts';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
@@ -35,8 +39,6 @@ import {
   type HeartbeatThresholdSeconds,
 } from './worker-heartbeat-policy.ts';
 
-const PREFIX = '/data/data/com.termux/files/usr';
-const SERVICE_NAME = /^[a-z][a-z0-9-]{1,63}$/;
 // A service name or the existence of a runit directory is never evidence of
 // PocketHost ownership. Only a trusted in-process provisioner can enroll a new
 // unit, and every subsequent operation re-attests its canonical target.
@@ -58,8 +60,6 @@ export type WorkerTemplate =
   'heartbeat-worker-v1' | 'python-heartbeat-v1' | 'python-source-v1' | 'node-source-v1';
 type StagedWorkerTemplate = 'python-source-v1' | 'node-source-v1';
 type FixedWorkerTemplate = Exclude<WorkerTemplate, StagedWorkerTemplate>;
-const isStagedWorker = (template: WorkerTemplate): template is StagedWorkerTemplate =>
-  template === 'python-source-v1' || template === 'node-source-v1';
 
 interface Registration {
   name: string;
@@ -157,86 +157,6 @@ export interface TermuxService {
   control: 'standalone' | 'delegated' | 'read-only';
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
-}
-
-/**
- * Fixed, exact source identity for both available standalone templates.
- * This function is the allowed execution policy, not merely a display
- * label; recovery re-computes the same SHA-256 before re-enrollment.
- */
-function builtinWorkerRunScript(template: WorkerTemplate, target: string): string {
-  if (
-    !['heartbeat-worker-v1', 'python-heartbeat-v1', 'python-source-v1', 'node-source-v1'].includes(
-      template,
-    )
-  )
-    throw new RangeError('Invalid builtin worker');
-  if (target !== path.join(PREFIX, 'var', 'sv', path.basename(target)))
-    throw new Error('Unexpected builtin target path');
-  const sh = path.join(PREFIX, 'bin', 'sh');
-  const env = path.join(PREFIX, 'bin', 'env');
-  const runtime = path.join(
-    PREFIX,
-    'bin',
-    template === 'python-heartbeat-v1' || template === 'python-source-v1' ? 'python' : 'node',
-  );
-  if (isStagedWorker(template))
-    return (
-      '#!' +
-      sh +
-      '\nexec ' +
-      env +
-      ' -i PATH=' +
-      path.join(PREFIX, 'bin') +
-      ' HOME=' +
-      target +
-      ' TMPDIR=' +
-      path.join(PREFIX, 'tmp') +
-      ' ' +
-      runtime +
-      (template === 'python-source-v1' ? ' -I -u ' : ' ') +
-      path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs') +
-      '\n'
-    );
-  const code =
-    template === 'python-heartbeat-v1'
-      ? 'import time\nprint("PocketHost Python worker started", flush=True)\nwhile True:\n    time.sleep(60)\n    print("PocketHost Python worker heartbeat", flush=True)'
-      : 'console.log("PocketHost Node worker started"); setInterval(() => console.log("PocketHost Node worker heartbeat"), 60000)';
-  return (
-    '#!' +
-    sh +
-    '\nexec ' +
-    env +
-    ' -i PATH=' +
-    path.join(PREFIX, 'bin') +
-    ' HOME=' +
-    target +
-    ' TMPDIR=' +
-    path.join(PREFIX, 'tmp') +
-    ' ' +
-    runtime +
-    (template === 'python-heartbeat-v1' ? ' -I -u -c ' : ' -e ') +
-    "'" +
-    code +
-    "'\n"
-  );
-}
-
-/**
- * Runit's log child executes its own script. Reattest this exact fixed
- * source as well: verifying only the main run script is insufficient.
- */
-function builtinWorkerLogScript(name: string): string {
-  valid(name);
-  const sh = path.join(PREFIX, 'bin', 'sh');
-  const svlogd = path.join(PREFIX, 'bin', 'svlogd');
-  const logTarget = path.join(PREFIX, 'var', 'log', 'sv', name);
-  return '#!' + sh + '\nexec ' + svlogd + ' -tt ' + logTarget + '\n';
-}
-
-function valid(name: string): void {
-  if (typeof name !== 'string' || !SERVICE_NAME.test(name))
-    throw new RangeError('Invalid runit service name');
 }
 
 /** SHA-256 of private staged source, via inode-pinned NOFOLLOW read. */
