@@ -7,7 +7,7 @@ export type {
 } from './termux-service-models.ts';
 
 import {
-  stagedWorkerSourceHash, pythonWorkerSourceHash, safeFile, releaseRecoveryLock,
+  stagedWorkerSourceHash, pythonWorkerSourceHash, safeFile, releaseRecoveryLock, runSha256,
 } from './termux-file-attestation.ts';
 import {
   PREFIX, SERVICE_NAME, isStagedWorker, builtinWorkerRunScript,
@@ -299,7 +299,7 @@ export class TermuxServiceAdmin {
         dir.uid !== process.getuid?.() ||
         (dir.mode & 0o077) !== 0 ||
         realpathSync(target) !== target ||
-        this.runSha256(target) !== record.runSha256 ||
+        runSha256(target) !== record.runSha256 ||
         createHash('sha256')
           .update(builtinWorkerRunScript(record.template, target))
           .digest('hex') !== record.runSha256 ||
@@ -1070,7 +1070,7 @@ export class TermuxServiceAdmin {
         typeof proof.instanceId === 'string' &&
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(proof.instanceId) &&
         proof.runSha256 === record?.runSha256 &&
-        this.runSha256(target) === proof.runSha256;
+        runSha256(target) === proof.runSha256;
       const expectedDigest =
         proof.template === 'heartbeat-worker-v1' ||
         proof.template === 'python-heartbeat-v1' ||
@@ -1173,61 +1173,6 @@ export class TermuxServiceAdmin {
     }
   }
 
-  /** Re-attest the opened inode, never hash a path after a separate lstat. */
-  private runSha256(target: string): string | null {
-    let fd: number | undefined;
-    try {
-      const file = path.join(target, 'run');
-      const stat = lstatSync(file);
-      if (
-        !stat.isFile() ||
-        stat.isSymbolicLink() ||
-        stat.nlink !== 1 ||
-        stat.uid !== process.getuid?.() ||
-        (stat.mode & 0o022) !== 0 ||
-        (stat.mode & 0o111) === 0 ||
-        stat.size > 20000
-      )
-        return null;
-      fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
-      const opened = fstatSync(fd);
-      if (
-        !opened.isFile() ||
-        opened.dev !== stat.dev ||
-        opened.ino !== stat.ino ||
-        opened.size !== stat.size ||
-        opened.mtimeMs !== stat.mtimeMs ||
-        opened.mode !== stat.mode ||
-        opened.nlink !== 1 ||
-        opened.uid !== stat.uid
-      )
-        return null;
-      const bytes = readFileSync(fd);
-      const after = fstatSync(fd);
-      const current = lstatSync(file);
-      if (
-        bytes.length !== stat.size ||
-        after.dev !== stat.dev ||
-        after.ino !== stat.ino ||
-        after.size !== stat.size ||
-        after.mtimeMs !== stat.mtimeMs ||
-        current.dev !== stat.dev ||
-        current.ino !== stat.ino ||
-        current.size !== stat.size ||
-        current.mtimeMs !== stat.mtimeMs ||
-        current.mode !== stat.mode ||
-        current.nlink !== 1 ||
-        current.uid !== stat.uid
-      )
-        return null;
-      return createHash('sha256').update(bytes).digest('hex');
-    } catch {
-      return null;
-    } finally {
-      if (fd !== undefined) closeSync(fd);
-    }
-  }
-
   private identity(
     name: string,
     target: string | undefined,
@@ -1243,7 +1188,7 @@ export class TermuxServiceAdmin {
     if (!entry) return 'unregistered';
     if (!target || entry.target !== target) return 'changed';
     if (!entry.runSha256) return 'legacy';
-    return this.runSha256(target) === entry.runSha256 ? 'verified' : 'changed';
+    return runSha256(target) === entry.runSha256 ? 'verified' : 'changed';
   }
 
   /**
@@ -1279,7 +1224,7 @@ export class TermuxServiceAdmin {
       (current.mode & 0o022) !== 0
     )
       throw new Error('Untrusted provisioned service directory');
-    if (this.runSha256(target) !== provenance.runSha256)
+    if (runSha256(target) !== provenance.runSha256)
       throw new Error('Provisioned run script identity mismatch');
     this.save([
       ...registrations,
@@ -1315,7 +1260,7 @@ export class TermuxServiceAdmin {
       target !== provenance.target ||
       target !== existing.target ||
       !/^[a-f0-9]{64}$/.test(provenance.runSha256) ||
-      this.runSha256(target) !== provenance.runSha256
+      runSha256(target) !== provenance.runSha256
     ) {
       throw new Error('Changed provisioned identity unverified');
     }
