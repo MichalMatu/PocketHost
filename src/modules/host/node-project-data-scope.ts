@@ -20,6 +20,31 @@ export interface NodeProjectDataScopeReport {
   consistency: 'offline-required';
 }
 
+/**
+ * Advisory only: a stopped runit observation is not an atomic DB checkpoint.
+ * No caller may treat this review as approval to execute a backup.
+ */
+export function reviewNodeDataOfflinePrerequisites(
+  data: NodeProjectDataScopeReport,
+  runtime: {
+    state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
+    desired: 'stopped' | 'running';
+  },
+): {
+  status: 'data-not-configured' | 'ownership-unverified' | 'project-not-stopped' | 'manual-review-required';
+  runtimeState: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
+  snapshotEnabled: false;
+} {
+  const status = data.state !== 'owned-private'
+    ? 'data-not-configured'
+    : runtime.state === 'unknown' || runtime.state === 'not-provisioned'
+      ? 'ownership-unverified'
+      : runtime.state !== 'stopped' || runtime.desired !== 'stopped'
+        ? 'project-not-stopped'
+        : 'manual-review-required';
+  return { status, runtimeState: runtime.state, snapshotEnabled: false };
+}
+
 /** Read-only inspection: data is separate from immutable Node releases and source Restic. */
 export class NodeProjectDataScope {
   private readonly projectRoot: string;

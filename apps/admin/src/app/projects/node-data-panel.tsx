@@ -11,6 +11,12 @@ type DataScope = {
   backupReady: false
   consistency: "offline-required"
 }
+type RecoveryReview = {
+  status: "data-not-configured" | "ownership-unverified" | "project-not-stopped" | "manual-review-required"
+  runtimeState: "not-provisioned" | "stopped" | "running" | "unknown"
+  snapshotEnabled: false
+}
+type Readout = { data: DataScope; recovery: RecoveryReview }
 type Props = {
   projectId: string | null
   ownerAuthorized: boolean
@@ -37,9 +43,22 @@ function parseScope(input: unknown, projectId: string): DataScope {
   return value as DataScope
 }
 
+function parseRecovery(value: unknown): RecoveryReview {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid Node recovery prerequisites")
+  const result = value as Record<string, unknown>
+  if (Object.keys(result).sort().join(",") !== "runtimeState,snapshotEnabled,status" ||
+      !["data-not-configured", "ownership-unverified", "project-not-stopped",
+        "manual-review-required"].includes(String(result.status)) ||
+      !["not-provisioned", "stopped", "running", "unknown"].includes(String(result.runtimeState)) ||
+      result.snapshotEnabled !== false)
+    throw new Error("Invalid Node recovery prerequisites")
+  return result as RecoveryReview
+}
+
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
 export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
-  const [report, setReport] = React.useState<DataScope | null>(null)
+  const [report, setReport] = React.useState<Readout | null>(null)
   const requestVersion = React.useRef(0)
   React.useEffect(() => {
     requestVersion.current += 1
@@ -55,7 +74,8 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     const response = await getJson(api + "/" + requestedId + "/data-scope")
     if (version !== requestVersion.current)
       throw new Error("Node project or owner session changed. Inspect again.")
-    setReport(parseScope(response.data, requestedId))
+    setReport({ data: parseScope(response.data, requestedId),
+      recovery: parseRecovery(response.recovery) })
   }
 
   return <details data-testid="node-data-panel" className="rounded-xl border bg-card text-card-foreground">
@@ -73,11 +93,19 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
         Unlock the Node owner session to inspect private application data.
       </p>}
       {report && <div role="status" aria-label="Node application data status" className="space-y-1 text-sm">
-        <p>Storage: {report.state === "not-configured" ? "not configured" : "owned private directory verified"}.</p>
-        <p>Files: {report.fileCount} · Size: {report.totalBytes.toLocaleString()} bytes.</p>
+        <p>Storage: {report.data.state === "not-configured" ? "not configured" : "owned private directory verified"}.</p>
+        <p>Files: {report.data.fileCount} · Size: {report.data.totalBytes.toLocaleString()} bytes.</p>
+        <p>Runtime observation: {report.recovery.runtimeState}.</p>
         <p className="text-xs text-muted-foreground">
-          Recovery: not enabled. A stopped, verified project and separate operation approval are required.
+          {report.recovery.status === "data-not-configured"
+            ? "Recovery blocked: persistent application data is not configured."
+            : report.recovery.status === "ownership-unverified"
+              ? "Recovery blocked: owned runtime stop has not been verified."
+              : report.recovery.status === "project-not-stopped"
+                ? "Recovery blocked: stop the owned project and verify its stopped state."
+                : "Stopped state observed. Offline database consistency still requires separate review."}
         </p>
+        <p className="text-xs text-muted-foreground">Snapshot creation and restore remain disabled.</p>
       </div>}
       <p className="text-xs text-muted-foreground">
         No application-data snapshot or restore action is available here. Local staging code is not yet

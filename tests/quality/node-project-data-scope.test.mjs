@@ -12,7 +12,7 @@ import {
   chmodSync,
 } from 'node:fs';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeProjectDataScope } from '../../src/modules/host/node-project-data-scope.ts';
+import { NodeProjectDataScope, reviewNodeDataOfflinePrerequisites } from '../../src/modules/host/node-project-data-scope.ts';
 
 function fixture(t) {
   const temp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-node-data-scope-'));
@@ -80,6 +80,27 @@ test('mutable Node data inventory is isolated between two owned projects', (t) =
     consistency: 'offline-required',
   });
   assert.equal(inspector.inspect(neighbor.id).fileCount, 1);
+});
+
+test('Node data recovery review fails closed for running, unknown and absent runtime', (t) => {
+  const { project, inspector, dataRoot, ownedData } = fixture(t);
+  const missing = inspector.inspect(project.id);
+  assert.deepEqual(reviewNodeDataOfflinePrerequisites(missing, {
+    state: 'stopped', desired: 'stopped',
+  }), { status: 'data-not-configured', runtimeState: 'stopped', snapshotEnabled: false });
+  createScope(dataRoot, ownedData);
+  const present = inspector.inspect(project.id);
+  for (const [state, desired, status] of [
+    ['running', 'running', 'project-not-stopped'],
+    ['unknown', 'stopped', 'ownership-unverified'],
+    ['not-provisioned', 'stopped', 'ownership-unverified'],
+    ['stopped', 'running', 'project-not-stopped'],
+    ['stopped', 'stopped', 'manual-review-required'],
+  ]) {
+    assert.deepEqual(reviewNodeDataOfflinePrerequisites(present, { state, desired }), {
+      status, runtimeState: state, snapshotEnabled: false,
+    });
+  }
 });
 
 test('mutable Node data refuses symlinks, foreign categories, permissive and linked files', (t) => {

@@ -5,7 +5,7 @@ import { NodeRunitHost } from "../../../src/modules/host/node-runit-host.ts"
 import { NodeDependencyPreparer } from "../../../src/modules/host/node-dependency-preparer.ts"
 import { NodeBuildPreparer } from "../../../src/modules/host/node-build-preparer.ts"
 import { NodeProjectBackupHost } from "../../../src/modules/host/node-project-backup-host.ts"
-import { NodeProjectDataScope } from "../../../src/modules/host/node-project-data-scope.ts"
+import { NodeProjectDataScope, reviewNodeDataOfflinePrerequisites } from "../../../src/modules/host/node-project-data-scope.ts"
 import { reportDashboardOwnedEvent } from "../../../src/modules/host/dashboard-telemetry-history.ts"
 import path from "path"
 import os from "node:os"
@@ -98,6 +98,11 @@ export function nodeProjectApi(): Plugin {
           artifactVerified, artifact, blockers,
         }
       }
+      const reviewData = (id: string) => {
+        const data = nodeData!.inspect(id)
+        const recovery = reviewNodeDataOfflinePrerequisites(data, runtime!.status(id))
+        return { data, recovery }
+      }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
       // Explicit owner authentication, independent of the caller's intent header.
       // Never disclose or log this private host-configured token.
@@ -166,7 +171,7 @@ export function nodeProjectApi(): Plugin {
               } :
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :
-              id && op === "data-scope" ? { data: nodeData!.inspect(id) } :
+              id && op === "data-scope" ? reviewData(id) :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
               id && op === "dependency-review" ? {
