@@ -107,7 +107,10 @@ export class NodeProjectDataSnapshots {
     if (report.state !== 'owned-private') {
       throw new Error('No explicitly provisioned private Node project data');
     }
-    if (readdirSync(root).join(',') !== projectId) {
+    // The live shared data root may hold many separately owned projects.
+    // A detached snapshot or staging restore must contain exactly one.
+    const entries = readdirSync(root);
+    if (root !== this.sourceRoot && (entries.length !== 1 || entries[0] !== projectId)) {
       throw new Error('Snapshot data includes unexpected projects');
     }
     const files: string[] = [];

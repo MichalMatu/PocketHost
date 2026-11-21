@@ -79,6 +79,23 @@ test('Node app-data backup rejects source links and interrupted offline proof', 
   assert.throws(() => host.create(project.id, true, () => true), /Unverified|Untrusted/);
 });
 
+test('Node app-data archives only the requested project in a multi-project root', (t) => {
+  const { home, project, host, source, archive } = fixture(t);
+  const second = new NodeProjectHost(path.join(home, 'projects')).create('Unrelated fixture');
+  const unrelated = path.join(source, second.id);
+  mkdirSync(unrelated, { mode: 0o700 });
+  mkdirSync(path.join(unrelated, 'db'), { mode: 0o700 });
+  writeFileSync(path.join(unrelated, 'db', 'other.sqlite'), 'independent bytes', {
+    mode: 0o600,
+  });
+  const snapshot = host.create(project.id, true, () => true);
+  assert.equal(snapshot.files, 2);
+  const restored = host.restoreToStaging(project.id, snapshot.snapshot, true);
+  assert.equal(readdirSync(restored.restoredTo).join(','), project.id);
+  assert.equal(existsSync(path.join(archive, snapshot.snapshot, 'data', second.id)), false);
+  assert.equal(readFileSync(path.join(unrelated, 'db', 'other.sqlite'), 'utf8'), 'independent bytes');
+});
+
 test('Node app-data staged restore fails on changed snapshot without modifying source', (t) => {
   const { project, host, archive, folder, db } = fixture(t);
   const snapshot = host.create(project.id, true, () => true);
