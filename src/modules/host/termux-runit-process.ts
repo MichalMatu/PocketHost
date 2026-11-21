@@ -98,3 +98,61 @@ export function observeRunitProcess(
     return unavailable;
   }
 }
+
+/** Read-only runit liveness; never grants lifecycle ownership. */
+export function readRunitState(serviceRoot: string, name: string): TermuxService['state'] {
+  try {
+    const result = spawnSync(
+      path.join(PREFIX, 'bin', 'sv'),
+      ['status', path.join(serviceRoot, name)],
+      {
+        encoding: 'utf8',
+        shell: false,
+        timeout: 1500,
+        maxBuffer: 2048,
+      },
+    );
+    if (result.stdout.startsWith('run: ')) return 'running';
+    if (result.stdout.startsWith('down: ')) return 'stopped';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+
+/** Read-only runit down-marker readback, with callback ownership re-attestation. */
+export function readRunitAutostart(
+  serviceRoot: string,
+  name: string,
+  registered: boolean,
+  verifyTarget: () => string,
+): boolean | null {
+  try {
+    // Protected services remain read-only, but a fixed real runit
+    // directory can reveal the autostart marker without granting control.
+    const root = lstatSync(serviceRoot);
+    const target = path.join(serviceRoot, name);
+    const entry = lstatSync(target);
+    if (!root.isDirectory() || root.isSymbolicLink()) return null;
+    // termux-services commonly publishes its units as symlinks from
+    // var/service to var/sv. A verified registered unit may use this
+    // canonical form, but an unregistered alias remains read-only.
+    if (entry.isSymbolicLink()) {
+      if (!registered) return null;
+    } else if (!entry.isDirectory()) return null;
+    // Re-attest the exact symlink target before reading its down marker.
+    if (registered) verifyTarget();
+    const marker = path.join(serviceRoot, name, 'down');
+    try {
+      const state = lstatSync(marker);
+      return state.isFile() && !state.isSymbolicLink() ? false : null;
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
+      throw error;
+    }
+  } catch {
+    return null;
+  }
+}
+

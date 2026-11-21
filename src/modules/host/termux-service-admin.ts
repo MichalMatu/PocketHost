@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { observeRunitProcess } from './termux-runit-process.ts';
+import { observeRunitProcess, readRunitState, readRunitAutostart } from './termux-runit-process.ts';
 import type {
   WorkerTemplate, StagedWorkerTemplate, FixedWorkerTemplate, Registration, ArchivedWorker, ArchivedWorkerSummary, ServiceIdentity, ServiceIdentityReason, ServiceOperation, RecoveryAttemptRecord, RunitRecoveryReview, RunitProcessObservation, RunitHealthReadback, WorkerHealthOverview, TermuxService,
 } from './termux-service-models.ts';
@@ -577,8 +577,8 @@ export class TermuxServiceAdmin {
     const recent = item ? item.attemptedAtMs.filter((at) => nowMs - at < RECOVERY_WINDOW_MS) : [];
     const attempts = recent.length;
     const lastAttemptAtMs = recent.at(-1) ?? null;
-    const observed = this.probe(name);
-    const autostart = this.enabled(name, true);
+    const observed = readRunitState(this.serviceRoot, name);
+    const autostart = readRunitAutostart(this.serviceRoot, name, true, () => this.target(name));
     const decision = evaluateHealthPolicy(
       {
         readinessTimeoutMs: 5000,
@@ -1061,7 +1061,7 @@ export class TermuxServiceAdmin {
       if (!this.managedWorkerTemplate(name, target, registrations)) {
         throw new Error('Only an attested PocketHost template worker can be archived');
       }
-      if (this.probe(name) !== 'stopped' || this.enabled(name, true) !== false) {
+      if (readRunitState(this.serviceRoot, name) !== 'stopped' || readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false) {
         throw new Error('Archive requires a stopped worker with autostart disabled');
       }
       const published = path.join(this.serviceRoot, name);
@@ -1071,8 +1071,8 @@ export class TermuxServiceAdmin {
       });
       if (result.exit !== 0) throw new Error('Runit supervisor refused exit');
       if (
-        this.probe(name) === 'running' ||
-        this.enabled(name, true) !== false ||
+        readRunitState(this.serviceRoot, name) === 'running' ||
+        readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false ||
         !this.managedWorkerTemplate(name, target, this.registry())
       ) {
         throw new Error('Worker identity or stopped state changed during retirement');
@@ -1242,28 +1242,8 @@ export class TermuxServiceAdmin {
     return !target || recorded?.target !== target ? 'service-target-changed' : 'run-script-changed';
   }
 
-  private probe(name: string): TermuxService['state'] {
-    try {
-      const result = spawnSync(
-        path.join(PREFIX, 'bin', 'sv'),
-        ['status', path.join(this.serviceRoot, name)],
-        {
-          encoding: 'utf8',
-          shell: false,
-          timeout: 1500,
-          maxBuffer: 2048,
-        },
-      );
-      if (result.stdout.startsWith('run: ')) return 'running';
-      if (result.stdout.startsWith('down: ')) return 'stopped';
-      return 'unknown';
-    } catch {
-      return 'unknown';
-    }
-  }
-
   list(
-    probe: (name: string) => TermuxService['state'] = (name) => this.probe(name),
+    probe: (name: string) => TermuxService['state'] = (name) => readRunitState(this.serviceRoot, name),
   ): TermuxService[] {
     const registrations = this.registry();
     let published: string[];
@@ -1331,38 +1311,9 @@ export class TermuxServiceAdmin {
         // Never probe a vanished or unresolved service or report persisted
         // autostart from its stale registry record.
         state: resolved ? probe(name) : 'unknown',
-        enabled: resolved ? this.enabled(name, registered) : null,
+        enabled: resolved ? readRunitAutostart(this.serviceRoot, name, registered, () => this.target(name)) : null,
       };
     });
-  }
-
-  private enabled(name: string, registered: boolean): boolean | null {
-    try {
-      // Protected services remain read-only, but a fixed real runit
-      // directory can reveal the autostart marker without granting control.
-      const root = lstatSync(this.serviceRoot);
-      const target = path.join(this.serviceRoot, name);
-      const entry = lstatSync(target);
-      if (!root.isDirectory() || root.isSymbolicLink()) return null;
-      // termux-services commonly publishes its units as symlinks from
-      // var/service to var/sv. A verified registered unit may use this
-      // canonical form, but an unregistered alias remains read-only.
-      if (entry.isSymbolicLink()) {
-        if (!registered) return null;
-      } else if (!entry.isDirectory()) return null;
-      // Re-attest the exact symlink target before reading its down marker.
-      if (registered) this.target(name);
-      const marker = path.join(this.serviceRoot, name, 'down');
-      try {
-        const state = lstatSync(marker);
-        return state.isFile() && !state.isSymbolicLink() ? false : null;
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
-        throw error;
-      }
-    } catch {
-      return null;
-    }
   }
 
   /** Exact named registration check: never scan or infer ownership from other services. */
@@ -1422,7 +1373,7 @@ export class TermuxServiceAdmin {
         name,
         after.instanceId,
         after.template,
-        this.probe(name),
+        readRunitState(this.serviceRoot, name),
         path.join(PREFIX, 'var', 'log', 'sv', name),
       ),
     };
@@ -1560,8 +1511,8 @@ export class TermuxServiceAdmin {
       if (
         this.target(name) !== target ||
         this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1' ||
-        this.probe(name) !== 'stopped' ||
-        this.enabled(name, true) !== false ||
+        readRunitState(this.serviceRoot, name) !== 'stopped' ||
+        readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false ||
         pythonWorkerSourceHash(target) !== expectedSha256
       )
         throw new Error('Python source changed before revision commit');
@@ -1916,8 +1867,8 @@ export class TermuxServiceAdmin {
       if (
         this.target(name) !== target ||
         this.managedWorkerTemplate(name, target, this.registry()) !== 'node-source-v1' ||
-        this.probe(name) !== 'stopped' ||
-        this.enabled(name, true) !== false ||
+        readRunitState(this.serviceRoot, name) !== 'stopped' ||
+        readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false ||
         stagedWorkerSourceHash(target, 'node-source-v1') !== expectedSha256
       )
         throw new Error('Node.js source changed before revision commit');
@@ -2223,8 +2174,8 @@ export class TermuxServiceAdmin {
       expected !== sourceSha256
     )
       throw new Error('Python source fingerprint changed');
-    const observed = this.probe(name);
-    const autostart = this.enabled(name, true);
+    const observed = readRunitState(this.serviceRoot, name);
+    const autostart = readRunitAutostart(this.serviceRoot, name, true, () => this.target(name));
     if (
       this.target(name) !== target ||
       this.managedWorkerTemplate(name, target, this.registry()) !== 'python-source-v1'
@@ -2264,8 +2215,8 @@ export class TermuxServiceAdmin {
     const file = lstatSync(path.join(target, 'worker.mjs'));
     if (!sourceSha256 || !file.isFile() || file.size === 0 || file.size > 32 * 1024)
       throw new Error('Node source identity changed');
-    const observed = this.probe(name);
-    const autostart = this.enabled(name, true);
+    const observed = readRunitState(this.serviceRoot, name);
+    const autostart = readRunitAutostart(this.serviceRoot, name, true, () => this.target(name));
     if (
       this.target(name) !== target ||
       stagedWorkerSourceHash(target, 'node-source-v1') !== sourceSha256 ||
@@ -2336,9 +2287,9 @@ export class TermuxServiceAdmin {
     const current = this.target(name);
     if (this.identity(name, current, registrations) !== 'verified')
       throw new Error('Service identity unverified; health inspection refused');
-    const observed = this.probe(name);
+    const observed = readRunitState(this.serviceRoot, name);
     const runitProcess = observeRunitProcess(this.serviceRoot, name, observed);
-    const autostart = this.enabled(name, true);
+    const autostart = readRunitAutostart(this.serviceRoot, name, true, () => this.target(name));
     const template = this.managedWorkerTemplate(name, current, registrations);
     const heartbeat: HeartbeatReadback =
       template && !isStagedWorker(template)
@@ -2670,7 +2621,7 @@ export class TermuxServiceAdmin {
       // runit state by removing/creating the "down" marker. A zero exit
       // code does not itself prove the requested policy is now recorded.
       const desired = operation === 'enable';
-      const before = this.enabled(name, true);
+      const before = readRunitAutostart(this.serviceRoot, name, true, () => this.target(name));
       if (before === null) throw new Error('Autostart state cannot be attested');
       const result = await run(
         path.join(PREFIX, 'bin', desired ? 'sv-enable' : 'sv-disable'),
@@ -2683,7 +2634,7 @@ export class TermuxServiceAdmin {
       if (
         this.target(name) !== target ||
         this.identity(name, target, this.registry()) !== 'verified' ||
-        this.enabled(name, true) !== desired
+        readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== desired
       ) {
         throw new Error('Autostart write acknowledged but persistent readback unverified');
       }
