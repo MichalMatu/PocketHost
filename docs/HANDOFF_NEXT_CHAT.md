@@ -11,14 +11,14 @@ purpose: One current resume pointer; evidence and architecture inventory in the 
 
 ## Version and proof boundary
 
-- Source reviewed on `main`: `96e3a1226eed352c0ab3ed510610a66b2a34b8c7` before the **documentation-only checkpoint**. Verify fresh `main` for every next task. Docs commits are **not** deployed runtime.
-- **Last attested** running A8 DEV code: `96c2879d20fcfcbb6c59832e4706775adfec7ff4`, guarded deployment `pockethost-a8-node-backup-source-96c2879-deploy-20261121-v1`: PASS, owned PID/start ticks, loopback HTTP 200, protected services unchanged. **No new live A8 probe was performed by the 22 November documentation audit.**
+- Source change: `009ee552b87e1f14d9178781c7250582fcc755b4` introduced the **read-only**, strictly owned Node mutable-data scope, fixture tests and module documentation. Follow-up documentation commits are **not** deployed runtime.
+- **Last attested A8 DEV code:** `009ee552b87e1f14d9178781c7250582fcc755b4`, guarded deployment `pockethost-a8-node-mutable-data-scope-009ee55-deploy-20261122-v1`: **PASS**, owned PID **1216**, start ticks **71571850**, loopback HTTP **200**, protected services unchanged; tests **not run**. Preceding A8 read-only inventory `pockethost-a8-node-mutable-data-readonly-inventory-20261122-v2`: one owned Node project, project data and snapshots roots **absent**.
 - **Latest scoped A8 QA:** `73b2da81144b207d0437e6ee56e209913eee6d99`, `pockethost-a8-node-backup-qa-73b2da8-20261121-v2`: `format,structure,boundaries,root-lint,root-types,node,syntax` PASS. Earlier broad changed-scope QA PASS at `6585afe`, 65/65 UI. Neither is full G2/admin build or physical G3.
-- **Static ZIP** active export -> independent temporary reimport/HTTP byte equality PASS; browser ZIP upload still OPEN. **Node Restic** attested source and nested assets follow-up QA PASS; mutable application uploads/DBs are **not backed up**. Older detailed evidence: [21 November checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md).
+- **Static ZIP** active export -> independent temporary reimport/HTTP byte equality PASS; browser ZIP upload still OPEN. **Node Restic** attested source and nested assets QA PASS. The new `NodeProjectDataScope` separately inspects a private `uploads/db/state` namespace, rejecting links, foreign entries and over-budget files. It **does not create directories, back up mutable files, guarantee DB consistency or perform restore**, and it has not received scoped QA. Older device evidence: [21 November checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md).
 
 ## Current next work
 
-1. Project-owned **mutable data** model and local backup -> isolated staging restore on an independent disposable fixture; not a new Restic source-only repetition. Never alter live projects.
+1. **Mutable-data next stage:** exact-SHA QA of the new read-only inspector, then fixture-only provisioning and offline-consistent backup -> isolated staging restore. No live user data, no background backup; existing Node source Restic must remain independent.
 2. Browser ZIP-upload acceptance into a newly created disposable owned site, with verified cleanup. Existing live API ZIP isolated reimport is already PASS.
 3. Generic independent project create/import -> deploy -> health/logs -> update/rollback -> retained data; no `photomap.pl` migration yet.
 4. Later: shared Pi Zero Cloudflare **one named tunnel** for an explicitly safe app only, physical Termux:Boot reboot, S1–S4 acceptance and comprehensive G2/G3 as separately authorized.
