@@ -12,21 +12,36 @@ function fixture() {
   mkdirSync(folder, { recursive: true, mode: 0o700 });
   const file = path.join(folder, 'task-latency-v1.json');
   const snapshot = {
-    version: 1, source: 'termux-agent-local-task-spool', mode: 'event-driven',
-    observedAt: '2026-11-14T12:00:00+00:00', sampleCount: 1,
-    medianSeconds: 12.4, p95Seconds: 12.4, latestSeconds: 12.4,
+    version: 1,
+    source: 'termux-agent-local-task-spool',
+    mode: 'event-driven',
+    observedAt: '2026-11-14T12:00:00+00:00',
+    sampleCount: 1,
+    medianSeconds: 12.4,
+    p95Seconds: 12.4,
+    latestSeconds: 12.4,
     alerts: ['execution-regression'],
     recent: [{ at: '2026-11-14T12:00:00+00:00', seconds: 12.4, status: 'done' }],
-    samples: [{ key: '0123456789abcdef01234567', at: '2026-11-14T12:00:00+00:00',
-      seconds: 12.4, status: 'done', timeout: false }],
+    samples: [
+      {
+        key: '0123456789abcdef01234567',
+        at: '2026-11-14T12:00:00+00:00',
+        seconds: 12.4,
+        status: 'done',
+        timeout: false,
+      },
+    ],
   };
   return { home, folder, file, snapshot };
 }
 test('reads fixed private timing path and projects only sanitized aggregates', () => {
   const f = fixture();
   try {
-    writeFileSync(f.file, JSON.stringify({ ...f.snapshot, secret: 'NEVER_RETURN', tasks: ['private-command'] }),
-      { mode: 0o600 });
+    writeFileSync(
+      f.file,
+      JSON.stringify({ ...f.snapshot, secret: 'NEVER_RETURN', tasks: ['private-command'] }),
+      { mode: 0o600 },
+    );
     const output = new LocalAgentLatencyHost(f.home).inspect();
     assert.equal(output.state, 'ok');
     assert.deepEqual(output.alerts, ['execution-regression']);
@@ -35,7 +50,9 @@ test('reads fixed private timing path and projects only sanitized aggregates', (
     for (const sensitive of ['NEVER_RETURN', 'private-command', '0123456789abcdef01234567'])
       assert.ok(!JSON.stringify(output).includes(sensitive));
     assert.equal(output.mode, 'event-driven');
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 test('missing, symlinked, group-readable and oversized files fail closed', () => {
   const f = fixture();
@@ -52,7 +69,9 @@ test('missing, symlinked, group-readable and oversized files fail closed', () =>
     assert.equal(host.inspect().state, 'ok');
     writeFileSync(f.file, 'x'.repeat(32769));
     assert.equal(host.inspect().state, 'unsafe');
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 test('schema corruption and forged performance alarms do not reach browser', () => {
   const f = fixture();
@@ -68,7 +87,9 @@ test('schema corruption and forged performance alarms do not reach browser', () 
       writeFileSync(f.file, JSON.stringify(bad), { mode: 0o600 });
       assert.equal(host.inspect().state, 'unsafe');
     }
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 test('existing log endpoint projection keeps timing optional and read-only', () => {
   const f = fixture();
@@ -77,7 +98,9 @@ test('existing log endpoint projection keeps timing optional and read-only', () 
     const report = new LocalAgentLogHost(f.home).inspect();
     assert.equal(report.latency.state, 'ok');
     assert.deepEqual(report.latency.alerts, ['execution-regression']);
-    assert.equal(report.notice, 'sanitized-events-only-no-lifecycle-authority');
+    assert.equal(report.notice, 'sanitized-log-tail-no-lifecycle-authority');
     assert.ok(!JSON.stringify(report).includes('0123456789abcdef01234567'));
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
