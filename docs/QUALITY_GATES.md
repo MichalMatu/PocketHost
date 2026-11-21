@@ -20,7 +20,7 @@ A **QA PASS** requires fresh owner approval naming the exact 40-character SHA an
 
 `npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
 
-Latest guarded A8 DEV source `f9e52c83d7884d6db84e3946de9c4e017d930059` is **DEPLOY PASS**, receipt `pockethost-a8-node-data-multisite-f9e52c8-deploy-20261122-v1` (PID 9021, start ticks 71636843, HTTP 200, protected services unchanged). **No QA or app-data backup/restore ran.** Last scoped QA at `73b2da8` PASS for format, structure, boundaries, root lint/TS, Node, syntax; earlier UI 65/65 PASS at `6585afe`. Snapshot code and fixture tests are committed but **unverified**; they are not equivalent to full G2, browser acceptance or real DB recovery.
+Latest guarded A8 DEV source `2fffd41e9e1681d154a921465040d0c0a007ab1e` is **DEPLOY PASS**, receipt `pockethost-a8-node-data-visibility-2fffd41-deploy-20261122-v1` (PID 15121, start ticks 71697467, HTTP 200, protected services unchanged). **Tests were not run**; data-scope UI/endpoint and offline snapshot/staging tests remain unverified. Latest separate scoped QA remains PASS at `73b2da8` (format, structure, boundaries, root lint/TS, Node, syntax); older UI 65/65 PASS at `6585afe`. No mutable app-data snapshot/restore, full G2, browser sign-off or physical G3 was certified.
 
 ## Source-audit coverage limitation
 
