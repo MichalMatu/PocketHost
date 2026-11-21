@@ -3,13 +3,16 @@ import { AppWindow, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { RemoteShellPanel } from "./remote-shell-panel"
 import { AndroidActionButton } from "./android-action-button"
 import { ShizukuDiagnosticsPanel } from "./diagnostics-panel"
 import {
   type Section, type PackageFilter, PAGE_SIZE, readJson, readEntryJson,
-  SearchField, unavailable, processMiB, LastSample, ShizukuNavigation, ShizukuBridgeWarning,
+  unavailable, processMiB,
+} from "./shizuku-page-data"
+import {
+  SearchField, LastSample, ShizukuNavigation, ShizukuBridgeWarning,
 } from "./shizuku-page-support"
 import {
   parseShizukuStatus, parseShizukuApps, parseShizukuSystem, parseShizukuApp,
