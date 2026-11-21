@@ -11,17 +11,17 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified running A8 panel code:** `76fb23ace36ae01783c7055c79255731e3e79ce5`, receipt `pockethost-a8-qa-remediation-76fb23a-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **18469**, start ticks **68924890**, HTTP **200**, protected services unchanged, **tests not run**.
+- **Last verified running A8 panel code:** `2f732675c7e9f67f7538f9f9c03c89b7ae9c3f34`, receipt `pockethost-a8-shizuku-lint-2f73267-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **8539**, start ticks **69121594**, HTTP **200**, protected services unchanged, **tests not run**.
 - The 21 November canonical checkpoint is a **historical MVP baseline**. Subsequent code-quality refactors and the Static ZIP error-diagnostic fix were deployed through the receipt above. The present documentation update is **docs-only** and does not change the A8 runtime. Read Git HEAD and fresh actual A8 live SHA before new work.
 - `PocketHost` branch inventory **only `main`**, open PRs **0**; nothing eligible for branch cleanup. Local Agent's separate active `agent-control` branch is transport infrastructure and is retained.
-- **QA boundary:** one-shot check for `be32b15c` failed formatting (11 files), docs metadata/index and 3 lint imports; structure, boundaries, Markdown lint passed; typechecks and Node/UI suites skipped. `76fb23a` remediates lint/docs/type import but has **no fresh QA**. New scope-and-SHA consent required.
+- **QA boundary:** `0cadb80` PASS for syntax, format, structure, docs, boundaries, root lint and Markdown; admin lint FAIL (Shizuku: 2 errors, 4 warnings). TypeScript and Node/UI tests skipped. `2f73267` remediates Shizuku, deployed but **not retested**. New exact-SHA owner approval required.
 - **`photomap.pl` not yet imported or migrated**, by owner decision. Use a disposable independent project to qualify remaining flows first.
 
 ## Module acceptance matrix
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `76fb23ac` and owned PID/HTTP attested; no latest-SHA broad QA                         |
+| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `2f732675` and owned PID/HTTP attested; no latest-SHA broad QA                         |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core lifecycle PASS; ZIP QA OPEN         | Create/publish/v2/start/rollback previously accepted; active ZIP download deployed, re-import untested |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
