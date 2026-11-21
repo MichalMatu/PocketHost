@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
+import { NodeDataPanel } from "./node-data-panel"
 import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
@@ -1021,6 +1022,8 @@ export default function ProjectsPage() {
           </div>
         </div>
       </details>
+      <NodeDataPanel projectId={selected?.id ?? null} ownerAuthorized={ownerAuthorized}
+        busy={busy} action={action} getJson={getJson} />
       <NodeBackupPanel catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
         busy={busy} action={action} getJson={getJson} onMessage={setMessage} />
       </div>

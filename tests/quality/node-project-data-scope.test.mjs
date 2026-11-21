@@ -60,6 +60,28 @@ test('mutable Node data inventory counts only private uploads and databases with
   assert.equal(inventory.backupReady, false);
   assert.equal(inventory.consistency, 'offline-required');
 });
+test('mutable Node data inventory is isolated between two owned projects', (t) => {
+  const { project, inspector, root, dataRoot, ownedData } = (() => {
+    const item = fixture(t);
+    return { ...item, root: path.join(item.temp, 'projects') };
+  })();
+  createScope(dataRoot, ownedData);
+  const neighbor = new NodeProjectHost(root).create('Other project');
+  const neighborData = path.join(dataRoot, neighbor.id);
+  mkdirSync(neighborData, { mode: 0o700 });
+  mkdirSync(path.join(neighborData, 'uploads'), { mode: 0o700 });
+  writeFileSync(path.join(neighborData, 'uploads', 'other.txt'), 'neighbor', { mode: 0o600 });
+  assert.deepEqual(inspector.inspect(project.id), {
+    projectId: project.id,
+    state: 'owned-private',
+    fileCount: 0,
+    totalBytes: 0,
+    backupReady: false,
+    consistency: 'offline-required',
+  });
+  assert.equal(inspector.inspect(neighbor.id).fileCount, 1);
+});
+
 test('mutable Node data refuses symlinks, foreign categories, permissive and linked files', (t) => {
   const { temp, project, inspector, dataRoot, ownedData } = fixture(t);
   createScope(dataRoot, ownedData);

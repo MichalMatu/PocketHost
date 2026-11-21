@@ -89,6 +89,10 @@ WAN or laptop-browser URL.
 
 `NodeProjectDataSnapshots` now provides a detached local snapshot and restore-to-staging implementation for individually verified Node `uploads/`, `db/` and `state/`. Each snapshot requires a one-shot approval and an injected **authoritative offline-state callback** checked before and after copying; hash manifests verify bytes, and corrupt snapshots are rejected. The restore target is a new private staging folder, **never** a live project directory. No automatic jobs, panel routes, encryption, off-device transfer, DB transaction/SQLite checkpoint coordination, or runtime state injection have been enabled. The fixture-only tests are committed but **not run**, and the `f9e52c8` code deployment is PASS only for guarded panel liveness and source/ownership. Local snapshots are **unencrypted**. No persistent mutable-data directory has been provisioned, so do not claim proven recovery yet.
 
+### Read-only project data inventory in the UI
+
+An owner-authenticated `GET /api/v1/node-projects/:id/data-scope` returns only the independently checked project ID, storage state, file count, total bytes and fixed recovery-disabled/offline-required flags. `/projects` displays these when the owner explicitly clicks **Inspect data storage**. The request does **not** enumerate file names or read file contents, create directories, run backup/restore, or mark the app database consistent. Owner lock/project selection invalidates the displayed result. The mutable-data snapshot/staging source remains a separate, non-exposed implementation awaiting QA and owned-runtime integration.
+
 ## Original parallel sprint contract (historical)
 
 Only `/api/v1/node-projects` gains `GET /owner-session` and owner-token
