@@ -1,4 +1,4 @@
-import { assetName } from './site-asset-validation.ts';
+import { assetName, siteCrc32 } from '../../shared/static-site-assets.ts';
 
 /**
  * One bounded, import-compatible ZIP archive containing owned static assets.
@@ -23,7 +23,7 @@ export function packStaticZip(files: ReadonlyArray<{ name: string; bytes: Buffer
     }
     const encoded = Buffer.from(name, 'utf8');
     if (encoded.length > 65535) throw new RangeError('ZIP filename too long');
-    const crc = checksum(file.bytes);
+    const crc = siteCrc32(file.bytes);
     const header = Buffer.alloc(30);
     header.writeUInt32LE(0x04034b50, 0);
     header.writeUInt16LE(20, 4); // ZIP 2.0 minimum
@@ -57,13 +57,3 @@ export function packStaticZip(files: ReadonlyArray<{ name: string; bytes: Buffer
   return Buffer.concat([...local, ...central, end], offset + centralLength + end.length);
 }
 
-function checksum(bytes: Buffer): number {
-  let value = 0xffffffff;
-  for (const byte of bytes) {
-    value ^= byte;
-    for (let i = 0; i < 8; i++) {
-      value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0);
-    }
-  }
-  return (value ^ 0xffffffff) >>> 0;
-}

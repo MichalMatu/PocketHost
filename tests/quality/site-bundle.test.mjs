@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { deflateRawSync } from 'node:zlib';
+import { packStaticZip } from '../../src/modules/host/site-fleet-zip.ts';
 import {
   decodeSiteZip,
   decodeSiteFolder,
@@ -217,4 +218,25 @@ test('H2 static assets are strict and empty index is never a valid release', () 
       ]),
     /Duplicate/,
   );
+});
+
+test('H2 export/import: active-release ZIP round-trips UTF-8 paths and exact asset bytes', () => {
+  const files = [
+    { name: 'index.html', bytes: Buffer.from(index) },
+    { name: 'assets/żółw.svg', bytes: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>') },
+    { name: 'css/site.css', bytes: Buffer.from('body { color: navy }') },
+  ];
+  const restored = decodeSiteZip(packStaticZip(files));
+  assert.deepEqual(restored.map(({ name }) => name), files.map(({ name }) => name));
+  for (let i = 0; i < files.length; i++) {
+    assert.deepEqual(restored[i].bytes, files[i].bytes);
+  }
+});
+
+test('H2 export and import use the same asset path rejection rules', () => {
+  const bad = [
+    { name: 'index.html', bytes: Buffer.from(index) },
+    { name: 'assets/../escape.css', bytes: Buffer.from('bad') },
+  ];
+  assert.throws(() => packStaticZip(bad), /path denied/i);
 });

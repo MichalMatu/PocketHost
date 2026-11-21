@@ -1,59 +1,22 @@
 import { inflateRawSync } from 'node:zlib';
+import { assetName, siteCrc32 } from '../../shared/static-site-assets.ts';
 
 export const MAX_SITE_BYTES = 8 * 1024 * 1024;
 // Bounded ZIP transport overhead above the 8 MiB extracted site limit.
 export const MAX_UPLOAD_BYTES = 9 * 1024 * 1024;
 export const MAX_SITE_FILES = 100;
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
-const allowedExtensions = new Set([
-  'html',
-  'htm',
-  'css',
-  'js',
-  'mjs',
-  'json',
-  'txt',
-  'svg',
-  'png',
-  'jpg',
-  'jpeg',
-  'webp',
-  'gif',
-  'ico',
-  'woff',
-  'woff2',
-  'ttf',
-  'otf',
-  'wasm',
-]);
-
 export interface SiteBundleFile {
   name: string;
   bytes: Buffer;
 }
 
 function safeName(input: string): string {
-  if (
-    !input ||
-    input.length > 180 ||
-    input.includes('\\') ||
-    input.includes('\0') ||
-    input.startsWith('/') ||
-    /[?#:]/.test(input)
-  )
-    throw new RangeError('Invalid uploaded file path');
-  const parts = input.split('/');
-  if (
-    parts.some((part) => !part || part === '.' || part === '..' || part.startsWith('.')) ||
-    parts.length > 6 ||
-    !parts.every((part) => /^[\p{L}\p{N}_ ()@+-][\p{L}\p{N}_. ()@+-]*$/u.test(part))
-  )
-    throw new RangeError('Unsafe uploaded file path');
-  const extension = parts.at(-1)?.split('.').at(-1)?.toLowerCase();
-  if (!extension || !allowedExtensions.has(extension)) {
-    throw new RangeError('Unsupported static asset extension');
+  try {
+    return assetName(input);
+  } catch {
+    throw new RangeError('Invalid or unsupported uploaded file path');
   }
-  return input;
 }
 
 export function validateSiteBundle(files: ReadonlyArray<SiteBundleFile>): SiteBundleFile[] {
@@ -80,17 +43,6 @@ export function validateSiteBundle(files: ReadonlyArray<SiteBundleFile>): SiteBu
   if (!seen.has('index.html') || !items.find((item) => item.name === 'index.html')?.bytes.length)
     throw new RangeError('Site requires a nonempty root index.html');
   return items;
-}
-
-function crc32(data: Buffer): number {
-  let crc = 0xffffffff;
-  for (const byte of data) {
-    crc ^= byte;
-    for (let bit = 0; bit < 8; bit++) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0;
 }
 
 /** Parse only bounded classic ZIP with central directory; never shell out or extract paths. */
@@ -176,7 +128,7 @@ export function decodeSiteZip(zip: Buffer): SiteBundleFile[] {
         : inflateRawSync(zip.subarray(begin, begin + compressed), {
             maxOutputLength: MAX_FILE_BYTES + 1,
           });
-    if (bytes.length !== expanded || crc32(bytes) !== expectedCrc)
+    if (bytes.length !== expanded || siteCrc32(bytes) !== expectedCrc)
       throw new RangeError('ZIP data integrity mismatch');
     files.push({ name: filename, bytes });
   }
