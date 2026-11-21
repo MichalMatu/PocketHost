@@ -1,5 +1,6 @@
 ---
 status: design-only
+owner: core
 last_reviewed: 2026-11-21
 purpose: Prepare the existing Pi Zero Cloudflare connector for future independent A8 applications without a second tunnel
 ---

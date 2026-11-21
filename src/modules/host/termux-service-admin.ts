@@ -2,7 +2,7 @@ import { createHash, randomUUID } from 'node:crypto';
 import { observeRunitProcess, readRunitState, readRunitAutostart } from './termux-runit-process.ts';
 import { isReserved, resolveRunitServiceTarget } from './termux-service-path.ts';
 import type {
-  WorkerTemplate, StagedWorkerTemplate, FixedWorkerTemplate, Registration, ArchivedWorker, ArchivedWorkerSummary, ServiceIdentity, ServiceIdentityReason, ServiceOperation, RecoveryAttemptRecord, RunitRecoveryReview, RunitProcessObservation, RunitHealthReadback, WorkerHealthOverview, TermuxService,
+  WorkerTemplate, StagedWorkerTemplate, FixedWorkerTemplate, Registration, ArchivedWorker, ArchivedWorkerSummary, ServiceIdentity, ServiceIdentityReason, ServiceOperation, RecoveryAttemptRecord, RunitRecoveryReview, RunitHealthReadback, WorkerHealthOverview, TermuxService,
 } from './termux-service-models.ts';
 export type {
   WorkerTemplate, ArchivedWorkerSummary, ServiceIdentityReason, ServiceOperation, RunitRecoveryReview, RunitProcessObservation, RunitHealthReadback, WorkerHealthOverview, TermuxService,
@@ -16,7 +16,6 @@ import {
   PREFIX, SERVICE_NAME, isStagedWorker, builtinWorkerRunScript,
   builtinWorkerLogScript, valid,
 } from './termux-worker-scripts.ts';
-import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   constants,
@@ -49,6 +48,7 @@ import {
 import {
   WorkerHeartbeatPolicy,
   type HeartbeatThresholdSeconds,
+  type HeartbeatReadback,
 } from './worker-heartbeat-policy.ts';
 
 // A service name or the existence of a runit directory is never evidence of

@@ -22,7 +22,6 @@ import { createServer } from 'node:net';
 import { assetName } from './site-asset-validation.ts';
 import {
   validateName,
-  type SiteDeployment,
   type RecordOnDisk,
   type FleetProject,
   type FleetFile,
