@@ -2,19 +2,48 @@ import { createHash, randomUUID } from 'node:crypto';
 import { observeRunitProcess, readRunitState, readRunitAutostart } from './termux-runit-process.ts';
 import { isReserved, resolveRunitServiceTarget } from './termux-service-path.ts';
 import type {
-  WorkerTemplate, StagedWorkerTemplate, FixedWorkerTemplate, Registration, ArchivedWorker, ArchivedWorkerSummary, ServiceIdentity, ServiceIdentityReason, ServiceOperation, RecoveryAttemptRecord, RunitRecoveryReview, RunitHealthReadback, WorkerHealthOverview, TermuxService,
+  WorkerTemplate,
+  StagedWorkerTemplate,
+  FixedWorkerTemplate,
+  Registration,
+  ArchivedWorker,
+  ArchivedWorkerSummary,
+  ServiceIdentity,
+  ServiceIdentityReason,
+  ServiceOperation,
+  RecoveryAttemptRecord,
+  RunitRecoveryReview,
+  RunitHealthReadback,
+  WorkerHealthOverview,
+  TermuxService,
 } from './termux-service-models.ts';
 export type {
-  WorkerTemplate, ArchivedWorkerSummary, ServiceIdentityReason, ServiceOperation, RunitRecoveryReview, RunitProcessObservation, RunitHealthReadback, WorkerHealthOverview, TermuxService,
+  WorkerTemplate,
+  ArchivedWorkerSummary,
+  ServiceIdentityReason,
+  ServiceOperation,
+  RunitRecoveryReview,
+  RunitProcessObservation,
+  RunitHealthReadback,
+  WorkerHealthOverview,
+  TermuxService,
 } from './termux-service-models.ts';
 
 import {
-  stagedWorkerSourceHash, pythonWorkerSourceHash, safeFile, releaseRecoveryLock, runSha256,
+  stagedWorkerSourceHash,
+  pythonWorkerSourceHash,
+  safeFile,
+  releaseRecoveryLock,
+  runSha256,
   acquireStandaloneLifecycleLock,
 } from './termux-file-attestation.ts';
 import {
-  PREFIX, SERVICE_NAME, isStagedWorker, builtinWorkerRunScript,
-  builtinWorkerLogScript, valid,
+  PREFIX,
+  SERVICE_NAME,
+  isStagedWorker,
+  builtinWorkerRunScript,
+  builtinWorkerLogScript,
+  valid,
 } from './termux-worker-scripts.ts';
 import {
   existsSync,
@@ -1035,7 +1064,10 @@ export class TermuxServiceAdmin {
       if (!this.managedWorkerTemplate(name, target, registrations)) {
         throw new Error('Only an attested PocketHost template worker can be archived');
       }
-      if (readRunitState(this.serviceRoot, name) !== 'stopped' || readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false) {
+      if (
+        readRunitState(this.serviceRoot, name) !== 'stopped' ||
+        readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false
+      ) {
         throw new Error('Archive requires a stopped worker with autostart disabled');
       }
       const published = path.join(this.serviceRoot, name);
@@ -1217,7 +1249,8 @@ export class TermuxServiceAdmin {
   }
 
   list(
-    probe: (name: string) => TermuxService['state'] = (name) => readRunitState(this.serviceRoot, name),
+    probe: (name: string) => TermuxService['state'] = (name) =>
+      readRunitState(this.serviceRoot, name),
   ): TermuxService[] {
     const registrations = this.registry();
     let published: string[];
@@ -1285,7 +1318,9 @@ export class TermuxServiceAdmin {
         // Never probe a vanished or unresolved service or report persisted
         // autostart from its stale registry record.
         state: resolved ? probe(name) : 'unknown',
-        enabled: resolved ? readRunitAutostart(this.serviceRoot, name, registered, () => this.target(name)) : null,
+        enabled: resolved
+          ? readRunitAutostart(this.serviceRoot, name, registered, () => this.target(name))
+          : null,
       };
     });
   }

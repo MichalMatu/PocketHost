@@ -40,39 +40,70 @@ export function validateCodeBudgets(root = repositoryRoot) {
     const testFile = relative.startsWith('tests/') || relative.startsWith('apps/admin/tests/');
     const maximum = legacyBytes.get(relative) ?? (testFile ? TEST_BYTES : BASE_BYTES);
     const bytes = statSync(file).size;
-    if (bytes > maximum) errors.push('Oversized code file: ' + relative + ' (' + bytes + ' > ' + maximum + ')');
+    if (bytes > maximum)
+      errors.push('Oversized code file: ' + relative + ' (' + bytes + ' > ' + maximum + ')');
     const source = readFileSync(file, 'utf8');
     const lines = source.split('\n').length;
-    if (!legacyBytes.has(relative) && lines > (testFile ? TEST_LINES : (relative === 'apps/admin/src/components/ui/sidebar.tsx' ? 727 : BASE_LINES)))
+    if (
+      !legacyBytes.has(relative) &&
+      lines >
+        (testFile
+          ? TEST_LINES
+          : relative === 'apps/admin/src/components/ui/sidebar.tsx'
+            ? 727
+            : BASE_LINES)
+    )
       errors.push('Too many lines: ' + relative + ' (' + lines + ')');
-    if (relative.startsWith('apps/admin/src/') &&
-        /^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?['"](?:node:(?:fs|child_process|os|net|http|https)|[^'"]*src\/modules\/host\/)/m.test(source))
+    if (
+      relative.startsWith('apps/admin/src/') &&
+      /^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?['"](?:node:(?:fs|child_process|os|net|http|https)|[^'"]*src\/modules\/host\/)/m.test(
+        source,
+      )
+    )
       errors.push('Host-only import in browser UI: ' + relative);
   }
   function walk(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
       const full = path.join(directory, entry.name);
       const relative = path.relative(root, full).split(path.sep).join('/');
-      if (entry.isSymbolicLink()) { errors.push('Symlink in source: ' + relative); continue; }
+      if (entry.isSymbolicLink()) {
+        errors.push('Symlink in source: ' + relative);
+        continue;
+      }
       if (entry.isDirectory()) {
         if (!['node_modules', 'dist', 'coverage', '.tmp'].includes(entry.name)) walk(full);
       } else if (entry.isFile() && /\.(?:ts|tsx|mjs)$/.test(entry.name)) inspect(full, relative);
     }
   }
-  for (const relative of ['src', 'apps/admin/src', 'apps/admin/plugins', 'apps/admin/tests', 'tests', 'ops', 'scripts']) {
+  for (const relative of [
+    'src',
+    'apps/admin/src',
+    'apps/admin/plugins',
+    'apps/admin/tests',
+    'tests',
+    'ops',
+    'scripts',
+  ]) {
     try {
       const directory = path.join(root, relative);
       if (statSync(directory).isDirectory()) walk(directory);
-    } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+    }
   }
   const vite = path.join(root, 'apps/admin/vite.config.ts');
-  try { if (statSync(vite).isFile()) inspect(vite, 'apps/admin/vite.config.ts'); }
-  catch (error) { if (error.code !== 'ENOENT') throw error; }
+  try {
+    if (statSync(vite).isFile()) inspect(vite, 'apps/admin/vite.config.ts');
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
   return errors.sort();
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const errors = validateCodeBudgets();
-  if (errors.length) { console.error(errors.join('\n')); process.exitCode = 1; }
-  else console.log('Code budgets and browser/module boundary: PASS');
+  if (errors.length) {
+    console.error(errors.join('\n'));
+    process.exitCode = 1;
+  } else console.log('Code budgets and browser/module boundary: PASS');
 }

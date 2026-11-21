@@ -27,20 +27,14 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [showHtmlEditor, setShowHtmlEditor] = React.useState(false)
   const [htmlLoading, setHtmlLoading] = React.useState(false)
   const [editorRelease, setEditorRelease] = React.useState<string | null | undefined>(undefined)
-  const editorReady = editorRelease !== undefined && editorRelease === site.activeRelease
+  const editorVisible = showHtmlEditor &&
+    (editorRelease === undefined || editorRelease === site.activeRelease)
+  const editorReady = editorVisible && editorRelease !== undefined
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
-  React.useEffect(() => {
-    // A publish/restore/rollback changes the immutable source. Never leave
-    // an editor bound to the previous release and accidentally overwrite it.
-    if (showHtmlEditor && editorRelease !== undefined && editorRelease !== site.activeRelease) {
-      setShowHtmlEditor(false)
-      setEditorRelease(undefined)
-    }
-  }, [showHtmlEditor, editorRelease, site.activeRelease])
 
   const readVersions = async () => {
     const response = await fetch(endpoint + "/" + site.id + "/releases", {
@@ -74,7 +68,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     }).finally(() => setAssetsLoading(false))
   }
   const toggleHtmlEditor = () => {
-    if (showHtmlEditor) {
+    if (editorVisible) {
       setShowHtmlEditor(false)
       setEditorRelease(undefined)
       return
@@ -289,15 +283,15 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             <Button size="sm" variant="outline"
               disabled={busy || htmlLoading || site.state === "unknown" || site.fileCount > 1}
               onClick={toggleHtmlEditor}>
-              {showHtmlEditor ? "Hide HTML editor" :
+              {editorVisible ? "Hide HTML editor" :
                 site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
             </Button>
           </div>
           {site.fileCount > 1 && <p className="text-xs text-muted-foreground">
             The quick editor is for single-file HTML sites. Existing multi-file releases are left unchanged.
           </p>}
-          {showHtmlEditor && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
-          {showHtmlEditor && editorReady && <div className="space-y-2">
+          {editorVisible && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
+          {editorReady && <div className="space-y-2">
             <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
               index.html source
             </label>
@@ -416,8 +410,8 @@ export default function SitesPage() {
   }, [reload])
   const refresh = async () => {
     setLoading(true)
-    try { await reload() } catch {}
-    finally { setLoading(false) }
+    await reload().catch(() => undefined)
+    setLoading(false)
   }
   const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()

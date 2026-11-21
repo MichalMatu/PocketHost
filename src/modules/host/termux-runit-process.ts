@@ -45,8 +45,7 @@ export function observeRunitProcess(
     if (!match) return null;
     const pid = Number(match[1]);
     const uptimeSeconds = Number(match[2]);
-    if (!Number.isSafeInteger(pid) || pid <= 1 || !Number.isSafeInteger(uptimeSeconds))
-      return null;
+    if (!Number.isSafeInteger(pid) || pid <= 1 || !Number.isSafeInteger(uptimeSeconds)) return null;
     return { pid, uptimeSeconds };
   };
   try {
@@ -64,8 +63,7 @@ export function observeRunitProcess(
     if (stat.length > 4096) return unavailable;
     const open = stat.indexOf(' (');
     const close = stat.lastIndexOf(') ');
-    if (open < 1 || close <= open || Number(stat.slice(0, open)) !== first.pid)
-      return unavailable;
+    if (open < 1 || close <= open || Number(stat.slice(0, open)) !== first.pid) return unavailable;
     // After "(comm)", index 0 is proc stat field 3; index 19 is starttime (22).
     const fields = stat
       .slice(close + 2)
@@ -120,7 +118,6 @@ export function readRunitState(serviceRoot: string, name: string): TermuxService
   }
 }
 
-
 /** Read-only runit down-marker readback, with callback ownership re-attestation. */
 export function readRunitAutostart(
   serviceRoot: string,
@@ -155,4 +152,3 @@ export function readRunitAutostart(
     return null;
   }
 }
-

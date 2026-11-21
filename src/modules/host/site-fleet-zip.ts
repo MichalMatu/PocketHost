@@ -17,8 +17,11 @@ export function packStaticZip(files: ReadonlyArray<{ name: string; bytes: Buffer
     const lower = name.toLowerCase();
     if (names.has(lower)) throw new RangeError('Duplicate ZIP entry');
     names.add(lower);
-    if (!Buffer.isBuffer(file.bytes) || file.bytes.length > 2 * 1024 * 1024 ||
-        (total += file.bytes.length) > 8 * 1024 * 1024) {
+    if (
+      !Buffer.isBuffer(file.bytes) ||
+      file.bytes.length > 2 * 1024 * 1024 ||
+      (total += file.bytes.length) > 8 * 1024 * 1024
+    ) {
       throw new RangeError('ZIP content budget exceeded');
     }
     const encoded = Buffer.from(name, 'utf8');
@@ -56,4 +59,3 @@ export function packStaticZip(files: ReadonlyArray<{ name: string; bytes: Buffer
   end.writeUInt32LE(offset, 16);
   return Buffer.concat([...local, ...central, end], offset + centralLength + end.length);
 }
-

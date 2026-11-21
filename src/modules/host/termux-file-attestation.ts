@@ -1,7 +1,14 @@
 import { createHash } from 'node:crypto';
 import {
-  closeSync, constants, fstatSync, lstatSync, openSync,
-  readFileSync, unlinkSync, mkdirSync, realpathSync,
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readFileSync,
+  unlinkSync,
+  mkdirSync,
+  realpathSync,
 } from 'node:fs';
 import path from 'node:path';
 
@@ -9,7 +16,10 @@ type StagedWorkerTemplate = 'python-source-v1' | 'node-source-v1';
 
 /** Keep the existing inode-pinned read and lock checks unchanged. */
 /** SHA-256 of private staged source, via inode-pinned NOFOLLOW read. */
-export function stagedWorkerSourceHash(target: string, template: StagedWorkerTemplate): string | null {
+export function stagedWorkerSourceHash(
+  target: string,
+  template: StagedWorkerTemplate,
+): string | null {
   const file = path.join(target, template === 'python-source-v1' ? 'worker.py' : 'worker.mjs');
   let fd: number | undefined;
   try {
@@ -225,9 +235,7 @@ export function acquireStandaloneLifecycleLock(registerFile: string): () => void
     fd = openSync(lockPath, 'wx', 0o600);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-      throw new Error(
-        'Another standalone worker operation is in progress or needs reconciliation',
-      );
+      throw new Error('Another standalone worker operation is in progress or needs reconciliation');
     throw error;
   }
   return () => {

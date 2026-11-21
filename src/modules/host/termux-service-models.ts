@@ -103,4 +103,3 @@ export interface TermuxService {
   state: 'running' | 'stopped' | 'unknown';
   enabled?: boolean | null;
 }
-

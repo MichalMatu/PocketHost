@@ -24,14 +24,8 @@ export function resolveRunitServiceTarget(serviceRoot: string, name: string): st
   const resolved = realpathSync(candidate);
   if (isReserved(name, resolved)) throw new Error('Protected service');
   const canonicalServiceRoot = realpathSync(serviceRoot);
-  const allowedRoots = [
-    canonicalServiceRoot + path.sep,
-    path.join(PREFIX, 'var', 'sv') + path.sep,
-  ];
-  if (
-    !allowedRoots.some((root) => resolved.startsWith(root)) ||
-    !statSync(resolved).isDirectory()
-  )
+  const allowedRoots = [canonicalServiceRoot + path.sep, path.join(PREFIX, 'var', 'sv') + path.sep];
+  if (!allowedRoots.some((root) => resolved.startsWith(root)) || !statSync(resolved).isDirectory())
     throw new Error('Service points outside accepted runit root');
   return resolved;
 }

@@ -87,4 +87,3 @@ export function valid(name: string): void {
   if (typeof name !== 'string' || !SERVICE_NAME.test(name))
     throw new RangeError('Invalid runit service name');
 }
-

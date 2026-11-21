@@ -27,7 +27,12 @@ import {
   type FleetFile,
   type FleetRelease,
 } from './site-fleet-contract.ts';
-export type { SiteDeployment, FleetProject, FleetFile, FleetRelease } from './site-fleet-contract.ts';
+export type {
+  SiteDeployment,
+  FleetProject,
+  FleetFile,
+  FleetRelease,
+} from './site-fleet-contract.ts';
 import { packStaticZip } from './site-fleet-zip.ts';
 import os from 'node:os';
 import path from 'node:path';
