@@ -157,7 +157,7 @@ test('UI QA receipt preserves failing test identity instead of trailing HTML dum
     '<svg></svg>'.repeat(2500) +
     '</div>';
   const message = compactCheckFailure(stdout, stderr, '');
-  assert.match(message, /FAIL  tests\/site-fleet\.interaction\.test\.tsx/);
+  assert.match(message, /FAIL\s{2}tests\/site-fleet\.interaction\.test\.tsx/);
   assert.match(message, /Test Files 1 failed/);
   assert.match(message, /TestingLibraryElementError/);
   assert.ok(message.length <= 1800);
@@ -168,7 +168,6 @@ test('QA receipts retain generic compiler failures without Vitest markers', () =
   const message = compactCheckFailure('', 'src/file.ts(4,2): error TS1294: unsupported syntax', '');
   assert.match(message, /TS1294/);
 });
-
 
 test('QA diagnostic includes ESLint file and location before the total', () => {
   const stderr =

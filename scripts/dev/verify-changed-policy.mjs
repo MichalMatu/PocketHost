@@ -157,9 +157,8 @@ export function compactCheckFailure(stdout, stderr, failure) {
     .map((line) => line.trim())
     .filter(Boolean);
   const names = lines.filter((line) => /^(?:FAIL\b|[×✗✖]\s|❯\s)/.test(line));
-  const locations = lines.filter(
-    (line) =>
-      /(?:\.(?:mjs|js|ts|tsx)$|^\d+:\d+\s+error\b|\berror\s{2,})/.test(line),
+  const locations = lines.filter((line) =>
+    /(?:\.(?:mjs|js|ts|tsx)$|^\d+:\d+\s+error\b|\berror\s{2,})/.test(line),
   );
   const summary = lines.filter((line) =>
     /^(?:Test Files\b|Tests\b|AssertionError\b|TestingLibraryElementError\b|Error:)/.test(line),
