@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { observeRunitProcess, readRunitState, readRunitAutostart } from './termux-runit-process.ts';
+import { isReserved, resolveRunitServiceTarget } from './termux-service-path.ts';
 import type {
   WorkerTemplate, StagedWorkerTemplate, FixedWorkerTemplate, Registration, ArchivedWorker, ArchivedWorkerSummary, ServiceIdentity, ServiceIdentityReason, ServiceOperation, RecoveryAttemptRecord, RunitRecoveryReview, RunitProcessObservation, RunitHealthReadback, WorkerHealthOverview, TermuxService,
 } from './termux-service-models.ts';
@@ -54,25 +55,13 @@ import {
 // PocketHost ownership. Only a trusted in-process provisioner can enroll a new
 // unit, and every subsequent operation re-attests its canonical target.
 // Preexisting service registrations keep their exact-target constraint.
-const SYSTEM_SERVICE_NAMES = new Set([
-  'sshd',
-  'ssh-agent',
-  'termux-agent',
-  'pockethost-panel',
-  'pockethost-panel-watch',
-]);
 const MAX_ENTRIES = 100;
 const MAX_MANAGED = 32;
 const MAX_TEMPLATE_WORKERS = 4;
 const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 const RECOVERY_MAX_ATTEMPTS = 2;
-function isReserved(name: string, resolved?: string): boolean {
-  return (
-    SYSTEM_SERVICE_NAMES.has(name) ||
-    (resolved !== undefined && SYSTEM_SERVICE_NAMES.has(path.basename(resolved)))
-  );
-}
+
 /**
  * No service is adopted by observation. Only an explicit registration of
  * an existing exact canonical runit target confers management capability.
@@ -779,22 +768,7 @@ export class TermuxServiceAdmin {
   }
 
   private target(name: string): string {
-    valid(name);
-    const candidate = path.join(this.serviceRoot, name);
-    if (!existsSync(candidate)) throw new Error('Runit service unavailable');
-    const resolved = realpathSync(candidate);
-    if (isReserved(name, resolved)) throw new Error('Protected service');
-    const canonicalServiceRoot = realpathSync(this.serviceRoot);
-    const allowedRoots = [
-      canonicalServiceRoot + path.sep,
-      path.join(PREFIX, 'var', 'sv') + path.sep,
-    ];
-    if (
-      !allowedRoots.some((root) => resolved.startsWith(root)) ||
-      !statSync(resolved).isDirectory()
-    )
-      throw new Error('Service points outside accepted runit root');
-    return resolved;
+    return resolveRunitServiceTarget(this.serviceRoot, name);
   }
 
   /**
