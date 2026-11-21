@@ -165,17 +165,30 @@ test('M2 restored Node scope refuses symlink insertion instead of importing exte
 test('M2 Node Restic backs up only attested multi-file text and binary source, restoring to staging', async (t) => {
   const { root, state, host, projects } = setup(t);
   const project = projects.create('Source assets');
-  const image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
-  const extras = { 'index.html': '<main>Verified</main>', 'src/main.ts': 'export const answer = 42' };
+  const image =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
+  const extras = {
+    'index.html': '<main>Verified</main>',
+    'src/main.ts': 'export const answer = 42',
+  };
   const assets = { 'public/img/logo.png': image };
-  const packageJson = { name: 'assets-fixture', version: '1.0.0', scripts: { start: 'node server.mjs' } };
+  const packageJson = {
+    name: 'assets-fixture',
+    version: '1.0.0',
+    scripts: { start: 'node server.mjs' },
+  };
   const packageLock = {
-    name: 'assets-fixture', version: '1.0.0', lockfileVersion: 3,
+    name: 'assets-fixture',
+    version: '1.0.0',
+    lockfileVersion: 3,
     packages: { '': { name: 'assets-fixture', version: '1.0.0' } },
   };
   const staged = projects.stage(project.id, {
-    packageJson, packageLock, serverSource: "console.log('ready')",
-    extraFiles: extras, assetFiles: assets,
+    packageJson,
+    packageLock,
+    serverSource: "console.log('ready')",
+    extraFiles: extras,
+    assetFiles: assets,
   });
   const calls = [];
   const snapshot = 'e'.repeat(64);
@@ -186,9 +199,16 @@ test('M2 Node Restic backs up only attested multi-file text and binary source, r
       writeFileSync(path.join(state, 'repo', 'config'), '{}', { mode: 0o600 });
     }
     if (args.includes('snapshots')) {
-      return { exit: 0, output: JSON.stringify([{
-        id: snapshot, time: '2026-11-21T22:00:00Z', paths: [root],
-      }]) };
+      return {
+        exit: 0,
+        output: JSON.stringify([
+          {
+            id: snapshot,
+            time: '2026-11-21T22:00:00Z',
+            paths: [root],
+          },
+        ]),
+      };
     }
     if (args.includes('restore')) {
       const destination = args[args.indexOf('--target') + 1];
@@ -198,7 +218,7 @@ test('M2 Node Restic backs up only attested multi-file text and binary source, r
     return { exit: 0, output: 'ok' };
   };
   await host.backup(true, run);
-  assert.ok(calls.some(args => args.includes('backup')));
+  assert.ok(calls.some((args) => args.includes('backup')));
   const restored = await host.restoreToStaging(snapshot, true, run);
   assert.equal(restored.verifiedProjects, 1);
   assert.ok(restored.restoredTo.startsWith(path.join(state, 'restores') + path.sep));
@@ -213,9 +233,15 @@ test('M2 Node Restic excludes mutable application data and rejects foreign neste
   const { root, host, projects } = setup(t);
   const project = projects.create('No unknown data');
   const src = {
-    packageJson: { name: 'scoped-fixture', version: '1.0.0', scripts: { start: 'node server.mjs' } },
+    packageJson: {
+      name: 'scoped-fixture',
+      version: '1.0.0',
+      scripts: { start: 'node server.mjs' },
+    },
     packageLock: {
-      name: 'scoped-fixture', version: '1.0.0', lockfileVersion: 3,
+      name: 'scoped-fixture',
+      version: '1.0.0',
+      lockfileVersion: 3,
       packages: { '': { name: 'scoped-fixture', version: '1.0.0' } },
     },
     serverSource: "console.log('ready')",
@@ -224,9 +250,14 @@ test('M2 Node Restic excludes mutable application data and rejects foreign neste
   const staged = projects.stage(project.id, src);
   const folder = path.join(root, project.id, 'releases', staged.project.candidateRelease);
   let invocations = 0;
-  const run = async () => { invocations++; return { exit: 0, output: 'ok' }; };
+  const run = async () => {
+    invocations++;
+    return { exit: 0, output: 'ok' };
+  };
   mkdirSync(path.join(root, project.id, 'uploads'), { mode: 0o700 });
-  writeFileSync(path.join(root, project.id, 'uploads', 'record.db'), 'persistent state', { mode: 0o600 });
+  writeFileSync(path.join(root, project.id, 'uploads', 'record.db'), 'persistent state', {
+    mode: 0o600,
+  });
   await assert.rejects(host.backup(true, run), /Unexpected entry/);
   assert.equal(invocations, 0);
   rmSync(path.join(root, project.id, 'uploads'), { recursive: true });
