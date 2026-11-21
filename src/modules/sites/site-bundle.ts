@@ -15,7 +15,7 @@ function safeName(input: string): string {
   try {
     return assetName(input);
   } catch {
-    throw new RangeError('Invalid or unsupported uploaded file path');
+    throw new RangeError('Unsafe or Unsupported uploaded file path');
   }
 }
 
