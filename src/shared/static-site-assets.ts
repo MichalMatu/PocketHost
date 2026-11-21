@@ -1,13 +1,25 @@
-/**
- * Common static-asset contract for both ZIP import and active-release export.
- * Keep names and CRC rules identical so an exported release can be re-imported
- * without a separate interpretation of paths or bytes.
- */
+/** Shared asset-name validation for static ZIP import and active-release export. */
 const ALLOWED_ASSETS = new Set([
-  'html', 'htm', 'css', 'js', 'mjs', 'json', 'txt', 'svg', 'png', 'jpg',
-  'jpeg', 'webp', 'gif', 'ico', 'woff', 'woff2', 'ttf', 'otf', 'wasm',
+  'html',
+  'htm',
+  'css',
+  'js',
+  'mjs',
+  'json',
+  'txt',
+  'svg',
+  'png',
+  'jpg',
+  'jpeg',
+  'webp',
+  'gif',
+  'ico',
+  'woff',
+  'woff2',
+  'ttf',
+  'otf',
+  'wasm',
 ]);
-
 export function assetName(name: unknown): string {
   if (
     typeof name !== 'string' ||
@@ -16,20 +28,22 @@ export function assetName(name: unknown): string {
     name.includes('\0') ||
     name.startsWith('/') ||
     /[?#:]/.test(name)
-  ) throw new RangeError('Unsafe asset path');
+  )
+    throw new RangeError('Unsafe asset path');
   const parts = name.split('/');
   const ext = parts.at(-1)?.split('.').at(-1)?.toLowerCase();
   if (
     parts.length > 6 ||
-    parts.some((part) => !part || part === '..' || part === '.' || part.startsWith('.')) ||
-    !parts.every((part) => /^[\p{L}\p{N}_ ()@+-][\p{L}\p{N}_. ()@+-]*$/u.test(part)) ||
+    parts.some((x) => !x || x === '..' || x === '.' || x.startsWith('.')) ||
+    !parts.every((x) => /^[\p{L}\p{N}_ ()@+-][\p{L}\p{N}_. ()@+-]*$/u.test(x)) ||
     !ext ||
     !ALLOWED_ASSETS.has(ext)
-  ) throw new RangeError('Asset path denied');
+  )
+    throw new RangeError('Asset path denied');
   return name;
 }
 
-/** CRC32 (ZIP / IEEE), shared by import verification and export encoding. */
+/** CRC32 (ZIP / IEEE) shared by import integrity checks and export encoding. */
 export function siteCrc32(bytes: Uint8Array): number {
   let crc = 0xffffffff;
   for (const byte of bytes) {
