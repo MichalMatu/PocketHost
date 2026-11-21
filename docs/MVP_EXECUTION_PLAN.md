@@ -11,8 +11,8 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified running A8 panel code:** `6585afee5a67ce2768be9577fd6a7c173b284668`, guarded receipt `pockethost-a8-autostart-refresh-6585afe-deploy-20261121-v1`: **DEPLOY PASS**, PID **8299**, start ticks **70992303**, loopback HTTP **200**, protected services unchanged. Deployment tests not run.
-- **Changed-scope QA:** A8 receipt `pockethost-a8-qa-closure-6585afe-20261121-v1` **PASS** across 53 changed paths: format, structure, boundaries, docs, Markdown, both lint/typecheck scopes, Node, UI and syntax. Does **not** certify full G2 coverage, admin build or device reboot.
+- **Last verified running A8 panel code:** `96c2879d20fcfcbb6c59832e4706775adfec7ff4`, guarded receipt `pockethost-a8-node-backup-source-96c2879-deploy-20261121-v1`: **DEPLOY PASS**, PID **9127**, start ticks **71322745**, loopback HTTP **200**, protected services unchanged. Test-only formatting commit `73b2da8` is not deployed.
+- **Changed-scope QA:** broad A8 receipt `pockethost-a8-qa-closure-6585afe-20261121-v1` **PASS** (65/65 UI); newer Node backup scope at `73b2da8` **PASS** for format, structure, boundaries, root lint/TypeScript, Node and syntax (`pockethost-a8-node-backup-qa-73b2da8-20261121-v2`). Full G2 coverage/admin build and physical G3 are separate.
 - **Later test-only code:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent Static ZIP reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. No panel restart; live code remains `6585afe`.
 - **Live ZIP exercise:** API active ZIP export → strict archive decode → independent temporary Static project import/HTTP byte verification **PASS** (1 file, 432 bytes; 550-byte ZIP), original untouched, fixture removed. Receipt `pockethost-a8-live-static-export-isolated-import-6585afe-20261121-v1`. Browser ZIP-upload path and independently durable Static backup remain OPEN.
 - The [canonical checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) is a historical MVP baseline. `PocketHost` branch inventory only `main`, last checked open PRs **0**; Local Agent `agent-control` is active transport, not cleanup debris. **`photomap.pl` remains unmigrated.**
@@ -21,12 +21,12 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent            | Operational DEPLOY + scoped QA PASS      | Live 6585afe; owner PID/ticks/HTTP/protected services PASS; changed-scope Node/UI QA PASS                  |
+| A8 DEV / Local Agent            | Operational DEPLOY + scoped QA PASS      | Live 96c2879; owner PID/ticks/HTTP/protected services PASS; scoped Node QA PASS                         |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                  | Core + isolated ZIP PASS; browser OPEN   | Real A8 ZIP export and isolated import/HTTP equality PASS; browser ZIP upload still open                   |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
 | Hosting / Deployments / Logs  | Basic routes PASS; browser sign-off OPEN | One Static + one Node catalog, pages HTTP 200; current-browser selection not signed off                |
-| Backups & Recovery              | Local Node Restic narrowly PASS          | Static ZIP portable copy PASS; persistent app data and independent/off-device recovery open                |
+| Backups & Recovery              | Local Node Restic narrowly PASS          | Attested multi-file source/assets backup QA PASS; mutable uploads/database recovery OPEN              |
 | Services S1–S4                | READY_FOR_ACCEPTANCE                     | Owned fixed-template worker exercised; general custom worker/negative cases open                       |
 | Mosquitto MQTT                | Loopback MVP PASS                        | Runit + publish/subscribe + CONNACK at `127.0.0.1:1883`; LAN closed                                    |
 | Health checks                 | A8 API PASS; browser OPEN                | On-demand Agent/SSH/MQTT/Cloudflare checks; manual button and fault path acceptance open               |
