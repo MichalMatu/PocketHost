@@ -30,7 +30,7 @@ class MockSocket extends EventEmitter {
 function probe() {
   const socket = new MockSocket();
   const connections = [];
-  const result = inspectMqttLoopbackHealth(options => {
+  const result = inspectMqttLoopbackHealth((options) => {
     connections.push(options);
     return socket;
   });

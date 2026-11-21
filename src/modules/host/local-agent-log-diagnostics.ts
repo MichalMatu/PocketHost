@@ -1,15 +1,33 @@
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync } from 'node:fs';
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  realpathSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { LocalAgentLatencyHost, type LocalAgentLatencyDiagnostics } from './local-agent-latency-diagnostics.ts';
+import {
+  LocalAgentLatencyHost,
+  type LocalAgentLatencyDiagnostics,
+} from './local-agent-latency-diagnostics.ts';
 
 /**
  * The installed Termux Agent's dedicated private svlogd current file.
  * No user-controlled path, process signaling, raw log output or Git fetch.
  */
 export type AgentLogKind =
-  'budget' | 'failed' | 'timeout' | 'interrupted' | 'published' |
-  'claim' | 'transport' | 'service' | 'task';
+  | 'budget'
+  | 'failed'
+  | 'timeout'
+  | 'interrupted'
+  | 'published'
+  | 'claim'
+  | 'transport'
+  | 'service'
+  | 'task';
 
 export type AgentLogEvent = {
   kind: AgentLogKind;
@@ -50,33 +68,51 @@ const LABELS: Record<AgentLogKind, string> = {
 };
 
 function agentLogTime(line: string): string | null {
-  const iso = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))(?=\s|$)/.exec(line);
+  const iso = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))(?=\s|$)/.exec(
+    line,
+  );
   // svlogd -tt uses UTC YYYY-MM-DD_HH:MM:SS.fraction, not ISO T/Z.
   const runit = /^(\d{4}-\d{2}-\d{2})_(\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?(?=\s|$)/.exec(line);
-  const rawTime = iso?.[1] ?? (runit
-    ? runit[1] + 'T' + runit[2] +
-      '.' + (runit[3] ?? '0').padEnd(3, '0').slice(0, 3) + 'Z'
-    : null);
+  const rawTime =
+    iso?.[1] ??
+    (runit
+      ? runit[1] + 'T' + runit[2] + '.' + (runit[3] ?? '0').padEnd(3, '0').slice(0, 3) + 'Z'
+      : null);
   const parsed = rawTime === null ? NaN : Date.parse(rawTime);
-  const valid = Number.isFinite(parsed) && (!runit ||
-    new Date(parsed).toISOString().startsWith(runit[1] + 'T' + runit[2]));
+  const valid =
+    Number.isFinite(parsed) &&
+    (!runit || new Date(parsed).toISOString().startsWith(runit[1] + 'T' + runit[2]));
   return valid ? new Date(parsed).toISOString() : null;
 }
 
 /** No captured group, original line, paths or user-supplied text crosses the API. */
 export function classifyAgentLogLine(line: string): AgentLogEvent | null {
-  const kind: AgentLogKind | null =
-    /\[termux-agent\] GIT VERIFIED ref=[a-f0-9]{12}(?:\s|$)/.test(line) ? 'published' :
-    /\[termux-agent\] (?:TASK|STAGE) (?:START|FINISHED|RESULT|PROGRESS) ref=[a-f0-9]{12}(?:\s|$)/.test(line) ? 'task' :
-    /task_budget_exhausted|budget[ _-]+exhausted|budget[ _-]*remaining/i.test(line) ? 'budget' :
-    /\b(timeout|timed.out|deadline.exceeded)\b/i.test(line) ? 'timeout' :
-    /\b(unknown|suspend|interrupted|emergency.stop)\b/i.test(line) ? 'interrupted' :
-    (/\b(failed|failure|error|exception|traceback|fatal)\b/i.test(line) ||
-      /\bexec finished exit=[1-9]\d*\b/i.test(line)) ? 'failed' :
-    /\b(published|publishing|publish.pending|result.publication)\b/i.test(line) ? 'published' :
-    /\b(claimed|claiming|task.claim)\b/i.test(line) ? 'claim' :
-    /\b(git.fetch|git.push|git.transport|remote.ref|git.error)\b/i.test(line) ? 'transport' :
-    /\b(started|starting|stopped|serving|polling|service.ready)\b/i.test(line) ? 'service' : null;
+  const kind: AgentLogKind | null = /\[termux-agent\] GIT VERIFIED ref=[a-f0-9]{12}(?:\s|$)/.test(
+    line,
+  )
+    ? 'published'
+    : /\[termux-agent\] (?:TASK|STAGE) (?:START|FINISHED|RESULT|PROGRESS) ref=[a-f0-9]{12}(?:\s|$)/.test(
+          line,
+        )
+      ? 'task'
+      : /task_budget_exhausted|budget[ _-]+exhausted|budget[ _-]*remaining/i.test(line)
+        ? 'budget'
+        : /\b(timeout|timed.out|deadline.exceeded)\b/i.test(line)
+          ? 'timeout'
+          : /\b(unknown|suspend|interrupted|emergency.stop)\b/i.test(line)
+            ? 'interrupted'
+            : /\b(failed|failure|error|exception|traceback|fatal)\b/i.test(line) ||
+                /\bexec finished exit=[1-9]\d*\b/i.test(line)
+              ? 'failed'
+              : /\b(published|publishing|publish.pending|result.publication)\b/i.test(line)
+                ? 'published'
+                : /\b(claimed|claiming|task.claim)\b/i.test(line)
+                  ? 'claim'
+                  : /\b(git.fetch|git.push|git.transport|remote.ref|git.error)\b/i.test(line)
+                    ? 'transport'
+                    : /\b(started|starting|stopped|serving|polling|service.ready)\b/i.test(line)
+                      ? 'service'
+                      : null;
   if (!kind) return null;
   return { kind, message: LABELS[kind], timestamp: agentLogTime(line) };
 }
@@ -91,76 +127,125 @@ export function safeAgentLogLine(line: string): AgentLogDisplayLine | null {
   if (!line.trim()) return null;
   const event = classifyAgentLogLine(line);
   const timestamp = agentLogTime(line);
-  const content = line.replace(
-    /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})|\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)\s+/,
-    '',
-  ).replace(/^\[(?:linux-agent|termux-agent)\] /, '');
+  const content = line
+    .replace(
+      /^(?:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})|\d{4}-\d{2}-\d{2}_\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?)\s+/,
+      '',
+    )
+    .replace(/^\[(?:linux-agent|termux-agent)\] /, '');
   // These grammars match only safe fields emitted by the Linux Core logger.
   const hash = 'command sha256=([a-f0-9]{16})';
   const seconds = '(\\d{1,6}(?:\\.\\d{1,3})?)';
   const rules: Array<[RegExp, (parts: RegExpExecArray) => string]> = [
-    [/^TASK START ref=([a-f0-9]{12})$/,
-      m => 'Task started · ref=' + m[1]],
-    [/^TASK FINISHED ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
-      m => 'Execution finished · ref=' + m[1] + ' · ' + m[2]],
-    [/^TASK RESULT ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
-      m => 'Result stored locally · ref=' + m[1] + ' · ' + m[2]],
-    [/^STAGE START ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3})$/,
-      m => 'Stage started · ref=' + m[1] + ' · ' + m[2] + '/' + m[3]],
-    [/^STAGE FINISHED ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) exit=(\d{1,3}) elapsed=(\d{1,6}(?:\.\d)?)s$/,
-      m => 'Stage finished · ref=' + m[1] + ' · ' + m[2] + '/' + m[3] +
-        ' · exit=' + m[4] + ' · ' + m[5] + 's'],
-    [/^STAGE PROGRESS ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) progress=(\d{1,7})\/(\d{1,7})$/,
-      m => 'Stage progress · ref=' + m[1] + ' · ' + m[2] + '/' + m[3] +
-        ' · ' + m[4] + '/' + m[5]],
-    [/^GIT VERIFIED ref=([a-f0-9]{12})$/,
-      m => 'Git result publication verified · ref=' + m[1]],
-    [new RegExp('^exec: ' + hash + '$'), m => 'exec: command sha256=' + m[1]],
-    [new RegExp('^exec finished exit=(\\d{1,3}) elapsed=' + seconds + 's: ' + hash + '$'),
-      m => 'exec finished · exit=' + m[1] + ' · ' + m[2] + 's · sha256=' + m[3]],
-    [/^output summary stage=command-(\d{1,3}) exit=(\d{1,3}) captured_chars=(\d{1,8})(?:; showing bounded tail)?$/,
-      m => 'output summary · command-' + m[1] + ' · exit=' + m[2] + ' · captured=' + m[3] + ' chars'],
-    [/^TASK BUDGET EXHAUSTED before stage command-(\d{1,3}): remaining=(\d{1,6}(?:\.\d)?)s required=(\d{1,6}(?:\.\d)?)s$/,
-      m => 'budget exhausted · command-' + m[1] + ' · remaining=' + m[2] + 's · required=' + m[3] + 's'],
-    [new RegExp('^(IDLE TIMEOUT|TIMEOUT) after ' + seconds + 's: ' + hash + '$'),
-      m => (m[1] ?? '').toLowerCase() + ' · after ' + m[2] + 's · sha256=' + m[3]],
-    [new RegExp('^MEMORY LIMIT after (\\d{1,3}) samples at ' + seconds + ' MB: ' + hash + '$'),
-      m => 'memory limit · ' + m[1] + ' samples · ' + m[2] + ' MB · sha256=' + m[3]],
-    [/^RSS memory measurement unavailable; continuing with time watchdogs$/,
-      () => 'RSS unavailable · time watchdogs still enabled'],
-    [/^termux-agent: latency history unavailable \([A-Za-z]{1,45}\)$/,
-      () => 'Termux latency history unavailable'],
+    [/^TASK START ref=([a-f0-9]{12})$/, (m) => 'Task started · ref=' + m[1]],
+    [
+      /^TASK FINISHED ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
+      (m) => 'Execution finished · ref=' + m[1] + ' · ' + m[2],
+    ],
+    [
+      /^TASK RESULT ref=([a-f0-9]{12}) status=(done|failed|unknown)$/,
+      (m) => 'Result stored locally · ref=' + m[1] + ' · ' + m[2],
+    ],
+    [
+      /^STAGE START ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3})$/,
+      (m) => 'Stage started · ref=' + m[1] + ' · ' + m[2] + '/' + m[3],
+    ],
+    [
+      /^STAGE FINISHED ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) exit=(\d{1,3}) elapsed=(\d{1,6}(?:\.\d)?)s$/,
+      (m) =>
+        'Stage finished · ref=' +
+        m[1] +
+        ' · ' +
+        m[2] +
+        '/' +
+        m[3] +
+        ' · exit=' +
+        m[4] +
+        ' · ' +
+        m[5] +
+        's',
+    ],
+    [
+      /^STAGE PROGRESS ref=([a-f0-9]{12}) step=(\d{1,3})\/(\d{1,3}) progress=(\d{1,7})\/(\d{1,7})$/,
+      (m) => 'Stage progress · ref=' + m[1] + ' · ' + m[2] + '/' + m[3] + ' · ' + m[4] + '/' + m[5],
+    ],
+    [/^GIT VERIFIED ref=([a-f0-9]{12})$/, (m) => 'Git result publication verified · ref=' + m[1]],
+    [new RegExp('^exec: ' + hash + '$'), (m) => 'exec: command sha256=' + m[1]],
+    [
+      new RegExp('^exec finished exit=(\\d{1,3}) elapsed=' + seconds + 's: ' + hash + '$'),
+      (m) => 'exec finished · exit=' + m[1] + ' · ' + m[2] + 's · sha256=' + m[3],
+    ],
+    [
+      /^output summary stage=command-(\d{1,3}) exit=(\d{1,3}) captured_chars=(\d{1,8})(?:; showing bounded tail)?$/,
+      (m) =>
+        'output summary · command-' + m[1] + ' · exit=' + m[2] + ' · captured=' + m[3] + ' chars',
+    ],
+    [
+      /^TASK BUDGET EXHAUSTED before stage command-(\d{1,3}): remaining=(\d{1,6}(?:\.\d)?)s required=(\d{1,6}(?:\.\d)?)s$/,
+      (m) =>
+        'budget exhausted · command-' +
+        m[1] +
+        ' · remaining=' +
+        m[2] +
+        's · required=' +
+        m[3] +
+        's',
+    ],
+    [
+      new RegExp('^(IDLE TIMEOUT|TIMEOUT) after ' + seconds + 's: ' + hash + '$'),
+      (m) => (m[1] ?? '').toLowerCase() + ' · after ' + m[2] + 's · sha256=' + m[3],
+    ],
+    [
+      new RegExp('^MEMORY LIMIT after (\\d{1,3}) samples at ' + seconds + ' MB: ' + hash + '$'),
+      (m) => 'memory limit · ' + m[1] + ' samples · ' + m[2] + ' MB · sha256=' + m[3],
+    ],
+    [
+      /^RSS memory measurement unavailable; continuing with time watchdogs$/,
+      () => 'RSS unavailable · time watchdogs still enabled',
+    ],
+    [
+      /^termux-agent: latency history unavailable \([A-Za-z]{1,45}\)$/,
+      () => 'Termux latency history unavailable',
+    ],
   ];
   for (const [rule, makeText] of rules) {
     const parts = rule.exec(content);
     if (parts) {
       const legacyCommand = /^(?:exec:|exec finished|output summary)/.test(content);
-      return { kind: event?.kind ?? (legacyCommand ? 'task' : 'service'),
-        text: makeText(parts).slice(0, 180), timestamp };
+      return {
+        kind: event?.kind ?? (legacyCommand ? 'task' : 'service'),
+        text: makeText(parts).slice(0, 180),
+        timestamp,
+      };
     }
   }
   // Unknown content is deliberately never copied to an unauthenticated LAN.
-  return { kind: event?.kind ?? 'other',
+  return {
+    kind: event?.kind ?? 'other',
     text: event?.message ?? 'Agent log entry (private or unsupported detail hidden)',
-    timestamp };
+    timestamp,
+  };
 }
 
 export class LocalAgentLogHost {
   private readonly home: string;
   private readonly now: () => string;
-  constructor(
-    home = os.homedir(),
-    now: () => string = () => new Date().toISOString(),
-  ) {
+  constructor(home = os.homedir(), now: () => string = () => new Date().toISOString()) {
     this.home = home;
     this.now = now;
   }
 
   inspect(): LocalAgentLogDiagnostics {
     const result: LocalAgentLogDiagnostics = {
-      version: 1, mode: 'read-only', observedAt: this.now(),
+      version: 1,
+      mode: 'read-only',
+      observedAt: this.now(),
       source: 'private-runit-svlogd',
-      state: 'unavailable', events: [], lines: [], unclassifiedLines: 0, truncated: false,
+      state: 'unavailable',
+      events: [],
+      lines: [],
+      unclassifiedLines: 0,
+      truncated: false,
       notice: 'sanitized-log-tail-no-lifecycle-authority',
       latency: new LocalAgentLatencyHost(this.home).inspect(),
     };
@@ -179,13 +264,17 @@ export class LocalAgentLogHost {
         path.join(base, 'services/termux-agent/log/main/current'),
         path.join(base, 'services/termux-agent/log/current'),
       ];
-      const stableParents = [this.home, path.join(this.home, '.local'),
+      const stableParents = [
+        this.home,
+        path.join(this.home, '.local'),
         path.join(this.home, '.local/state'),
-        path.join(this.home, '.local/state/local-agent'), root, base];
+        path.join(this.home, '.local/state/local-agent'),
+        root,
+        base,
+      ];
       for (const directory of stableParents) {
         const stat = lstatSync(directory);
-        if (!stat.isDirectory() || stat.isSymbolicLink() ||
-            realpathSync(directory) !== directory) {
+        if (!stat.isDirectory() || stat.isSymbolicLink() || realpathSync(directory) !== directory) {
           result.state = 'unsafe-log';
           return result;
         }
@@ -199,8 +288,7 @@ export class LocalAgentLogHost {
           folder = path.join(folder, part);
           try {
             const entry = lstatSync(folder);
-            if (!entry.isDirectory() || entry.isSymbolicLink() ||
-                realpathSync(folder) !== folder) {
+            if (!entry.isDirectory() || entry.isSymbolicLink() || realpathSync(folder) !== folder) {
               result.state = 'unsafe-log';
               return result;
             }
@@ -245,7 +333,7 @@ export class LocalAgentLogHost {
       const lines = raw.split(/\r?\n/);
       if (offset > 0) lines.shift(); // skip incomplete first log record
       result.truncated = offset > 0;
-      const completeLines = lines.filter(line => line.trim());
+      const completeLines = lines.filter((line) => line.trim());
       const last = completeLines.slice(-120);
       result.truncated ||= completeLines.length > 120;
       const events: AgentLogEvent[] = [];
