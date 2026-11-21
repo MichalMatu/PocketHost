@@ -1,0 +1,83 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import os from 'node:os';
+import path from 'node:path';
+import {
+  mkdtempSync,
+  mkdirSync,
+  rmSync,
+  writeFileSync,
+  symlinkSync,
+  linkSync,
+  chmodSync,
+} from 'node:fs';
+import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
+import { NodeProjectDataScope } from '../../src/modules/host/node-project-data-scope.ts';
+
+function fixture(t) {
+  const temp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-node-data-scope-'));
+  t.after(() => rmSync(temp, { recursive: true, force: true }));
+  const projectsRoot = path.join(temp, 'projects');
+  const dataRoot = path.join(temp, 'data');
+  const project = new NodeProjectHost(projectsRoot).create('Data scope fixture');
+  const inspector = new NodeProjectDataScope(projectsRoot, dataRoot);
+  const ownedData = path.join(dataRoot, project.id);
+  return { temp, project, inspector, dataRoot, ownedData };
+}
+function createScope(dataRoot, ownedData) {
+  mkdirSync(dataRoot, { mode: 0o700 });
+  mkdirSync(ownedData, { mode: 0o700 });
+  mkdirSync(path.join(ownedData, 'uploads'), { mode: 0o700 });
+  mkdirSync(path.join(ownedData, 'db'), { mode: 0o700 });
+}
+test('mutable Node data remains independent and unconfigured until explicitly provisioned', (t) => {
+  const { project, inspector } = fixture(t);
+  assert.deepEqual(inspector.inspect(project.id), {
+    projectId: project.id,
+    state: 'not-configured',
+    fileCount: 0,
+    totalBytes: 0,
+    backupReady: false,
+    consistency: 'offline-required',
+  });
+  assert.throws(() => inspector.inspect('node-' + 'a'.repeat(32)), /Node|project/i);
+  assert.throws(
+    () => new NodeProjectDataScope('/tmp/source', '/tmp/source/data'),
+    /separate/,
+  );
+});
+test('mutable Node data inventory counts only private uploads and databases without backups', (t) => {
+  const { project, inspector, dataRoot, ownedData } = fixture(t);
+  createScope(dataRoot, ownedData);
+  mkdirSync(path.join(ownedData, 'uploads', 'images'), { mode: 0o700 });
+  const sample = Buffer.from([0, 255, 12, 42]);
+  writeFileSync(path.join(ownedData, 'uploads', 'images', 'picture.png'), sample, { mode: 0o600 });
+  writeFileSync(path.join(ownedData, 'db', 'app.sqlite'), 'fixture db bytes', { mode: 0o600 });
+  const inventory = inspector.inspect(project.id);
+  assert.equal(inventory.state, 'owned-private');
+  assert.equal(inventory.fileCount, 2);
+  assert.equal(inventory.totalBytes, sample.length + Buffer.byteLength('fixture db bytes'));
+  assert.equal(inventory.backupReady, false);
+  assert.equal(inventory.consistency, 'offline-required');
+});
+test('mutable Node data refuses symlinks, foreign categories, permissive and linked files', (t) => {
+  const { temp, project, inspector, dataRoot, ownedData } = fixture(t);
+  createScope(dataRoot, ownedData);
+  const outside = path.join(temp, 'unowned.txt');
+  writeFileSync(outside, 'outside', { mode: 0o600 });
+  const link = path.join(ownedData, 'uploads', 'linked.txt');
+  symlinkSync(outside, link);
+  assert.throws(() => inspector.inspect(project.id), /Unverified/);
+  rmSync(link);
+  const wrong = path.join(ownedData, 'secrets');
+  mkdirSync(wrong, { mode: 0o700 });
+  assert.throws(() => inspector.inspect(project.id), /category/);
+  rmSync(wrong, { recursive: true });
+  const file = path.join(ownedData, 'db', 'records.sqlite');
+  writeFileSync(file, 'owned bytes', { mode: 0o600 });
+  chmodSync(file, 0o644);
+  assert.throws(() => inspector.inspect(project.id), /Unverified/);
+  chmodSync(file, 0o600);
+  linkSync(file, path.join(ownedData, 'uploads', 'hardlink.sqlite'));
+  assert.throws(() => inspector.inspect(project.id), /Unverified/);
+});

@@ -80,6 +80,11 @@ The panel reports the local loopback address
 unless a separately authorized ingress design is implemented. It is not a
 WAN or laptop-browser URL.
 
+
+## Mutable application data — scoped implementation boundary
+
+`NodeProjectDataScope` inspects a separate private directory under `~/.local/state/pockethost/node-project-data/<owned-node-id>` with fixed `uploads/`, `db/` and `state/` categories. It rejects unknown entries, links, permissive ownership, over-budget files and nested paths. This is **read-only inventory and scope validation**: it neither creates data roots nor captures a database-consistent backup or restores any application data. The existing source Restic backup remains separate, and no runtime environment variable or public API endpoint is enabled yet. A future staged restore requires explicit offline/consistency verification and separate approval.
+
 ## Original parallel sprint contract (historical)
 
 Only `/api/v1/node-projects` gains `GET /owner-session` and owner-token
