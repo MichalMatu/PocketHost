@@ -17,7 +17,8 @@ afterEach(() => vi.unstubAllGlobals())
 describe("Service Autostart read-only boot observation", () => {
   it("ignores an older response after a newer Refresh has succeeded", async () => {
     const replies: Array<(response: { ok: boolean; json: () => Promise<unknown> }) => void> = []
-    const fetcher = vi.fn((url: string, _options?: RequestInit) => {
+    const fetcher = vi.fn((url: string, options?: RequestInit) => {
+      expect(options?.method ?? "GET").toBe("GET")
       // Agent and MQTT status are independent from boot observations.
       if (!url.includes("mode=service-boot"))
         return Promise.resolve({ ok: false, json: async () => ({}) })
