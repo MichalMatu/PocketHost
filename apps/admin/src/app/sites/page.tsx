@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
-import { parseFleetHealth, parseFleetLogs, parseFleetReleases, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
+import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64 } from "./site-client"
 
