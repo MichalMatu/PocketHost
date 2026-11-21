@@ -161,3 +161,77 @@ test('M2 restored Node scope refuses symlink insertion instead of importing exte
   await assert.rejects(host.restoreToStaging(snapshot, true, run), /Unexpected entry/);
   assert.equal(projects.inspect(project.id).activeRelease, null);
 });
+
+test('M2 Node Restic backs up only attested multi-file text and binary source, restoring to staging', async (t) => {
+  const { root, state, host, projects } = setup(t);
+  const project = projects.create('Source assets');
+  const image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
+  const extras = { 'index.html': '<main>Verified</main>', 'src/main.ts': 'export const answer = 42' };
+  const assets = { 'public/img/logo.png': image };
+  const packageJson = { name: 'assets-fixture', version: '1.0.0', scripts: { start: 'node server.mjs' } };
+  const packageLock = {
+    name: 'assets-fixture', version: '1.0.0', lockfileVersion: 3,
+    packages: { '': { name: 'assets-fixture', version: '1.0.0' } },
+  };
+  const staged = projects.stage(project.id, {
+    packageJson, packageLock, serverSource: "console.log('ready')",
+    extraFiles: extras, assetFiles: assets,
+  });
+  const calls = [];
+  const snapshot = 'e'.repeat(64);
+  const run = async (_binary, args) => {
+    calls.push(args);
+    if (args.includes('init')) {
+      mkdirSync(path.join(state, 'repo'), { recursive: true, mode: 0o700 });
+      writeFileSync(path.join(state, 'repo', 'config'), '{}', { mode: 0o600 });
+    }
+    if (args.includes('snapshots')) {
+      return { exit: 0, output: JSON.stringify([{
+        id: snapshot, time: '2026-11-21T22:00:00Z', paths: [root],
+      }]) };
+    }
+    if (args.includes('restore')) {
+      const destination = args[args.indexOf('--target') + 1];
+      mkdirSync(destination, { recursive: true, mode: 0o700 });
+      cpSync(root, path.join(destination, path.basename(root)), { recursive: true });
+    }
+    return { exit: 0, output: 'ok' };
+  };
+  await host.backup(true, run);
+  assert.ok(calls.some(args => args.includes('backup')));
+  const restored = await host.restoreToStaging(snapshot, true, run);
+  assert.equal(restored.verifiedProjects, 1);
+  assert.ok(restored.restoredTo.startsWith(path.join(state, 'restores') + path.sep));
+  const reimport = new NodeProjectHost(path.join(restored.restoredTo, path.basename(root)));
+  assert.deepEqual(reimport.candidateSource(project.id).extraFiles, extras);
+  assert.deepEqual(reimport.candidateSource(project.id).assetFiles, assets);
+  assert.equal(reimport.inspect(project.id).candidateRelease, staged.project.candidateRelease);
+  assert.equal(projects.inspect(project.id).candidateRelease, staged.project.candidateRelease);
+});
+
+test('M2 Node Restic excludes mutable application data and rejects foreign nested source before CLI', async (t) => {
+  const { root, host, projects } = setup(t);
+  const project = projects.create('No unknown data');
+  const src = {
+    packageJson: { name: 'scoped-fixture', version: '1.0.0', scripts: { start: 'node server.mjs' } },
+    packageLock: {
+      name: 'scoped-fixture', version: '1.0.0', lockfileVersion: 3,
+      packages: { '': { name: 'scoped-fixture', version: '1.0.0' } },
+    },
+    serverSource: "console.log('ready')",
+    extraFiles: { 'src/main.ts': 'export const x = 1' },
+  };
+  const staged = projects.stage(project.id, src);
+  const folder = path.join(root, project.id, 'releases', staged.project.candidateRelease);
+  let invocations = 0;
+  const run = async () => { invocations++; return { exit: 0, output: 'ok' }; };
+  mkdirSync(path.join(root, project.id, 'uploads'), { mode: 0o700 });
+  writeFileSync(path.join(root, project.id, 'uploads', 'record.db'), 'persistent state', { mode: 0o600 });
+  await assert.rejects(host.backup(true, run), /Unexpected entry/);
+  assert.equal(invocations, 0);
+  rmSync(path.join(root, project.id, 'uploads'), { recursive: true });
+  writeFileSync(path.join(folder, 'src', 'untracked.ts'), 'untracked', { mode: 0o600 });
+  await assert.rejects(host.backup(true, run), /Unexpected file|Unexpected entry/);
+  assert.equal(invocations, 0);
+  assert.equal(projects.inspect(project.id).candidateRelease, staged.project.candidateRelease);
+});

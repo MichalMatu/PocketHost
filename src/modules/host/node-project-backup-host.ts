@@ -60,12 +60,7 @@ export class NodeProjectBackupHost {
     };
     exact(root, projectIds, projectIds);
     const marker = new Set(['.pockethost-node.json', '.pockethost-node-runtime.json', 'releases']);
-    const releaseFiles = new Set([
-      'package.json',
-      'package-lock.json',
-      'server.mjs',
-      '.pockethost-node-source.json',
-    ]);
+    const attested = new NodeProjectHost(root);
     for (const project of projects) {
       const folder = path.join(root, project.id);
       exact(folder, marker, new Set(['releases']));
@@ -74,8 +69,39 @@ export class NodeProjectBackupHost {
         if (!/^r-[a-f0-9]{32}$/.test(item.name) || !item.isDirectory() || item.isSymbolicLink()) {
           throw new Error('Unexpected release in private Node backup scope');
         }
+        // The source attestation determines the ONLY allowed nested files.
+        // Runtime uploads/databases and generated build/dependency directories
+        // remain outside this release-only backup contract.
+        const verified = attested.release(project.id, item.name);
+        const extra = Object.keys(verified.source.extraFiles ?? {});
+        const assets = Object.keys(verified.source.assetFiles ?? {});
+        const manifestFiles = [
+          'package.json',
+          'package-lock.json',
+          'server.mjs',
+          '.pockethost-node-source.json',
+          ...(extra.length || assets.length ? ['.pockethost-node-extra-files.json'] : []),
+          ...(assets.length ? ['.pockethost-node-asset-files.json'] : []),
+          ...extra,
+          ...assets,
+        ];
+        const expected = new Map<string, { names: Set<string>; directories: Set<string> }>();
+        for (const filename of manifestFiles) {
+          const parts = filename.split('/');
+          for (let depth = 0; depth < parts.length; depth++) {
+            const relative = parts.slice(0, depth).join('/');
+            if (!expected.has(relative)) {
+              expected.set(relative, { names: new Set(), directories: new Set() });
+            }
+            const entries = expected.get(relative)!;
+            entries.names.add(parts[depth]!);
+            if (depth < parts.length - 1) entries.directories.add(parts[depth]!);
+          }
+        }
         const dir = path.join(releases, item.name);
-        exact(dir, releaseFiles, new Set());
+        for (const [relative, entries] of expected) {
+          exact(path.join(dir, relative), entries.names, entries.directories);
+        }
       }
     }
     if (existsSync(path.join(root, '.node-ports.lock'))) {
