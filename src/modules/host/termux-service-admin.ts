@@ -9,6 +9,7 @@ export type {
 
 import {
   stagedWorkerSourceHash, pythonWorkerSourceHash, safeFile, releaseRecoveryLock, runSha256,
+  acquireStandaloneLifecycleLock,
 } from './termux-file-attestation.ts';
 import {
   PREFIX, SERVICE_NAME, isStagedWorker, builtinWorkerRunScript,
@@ -399,7 +400,7 @@ export class TermuxServiceAdmin {
       ].includes(template)
     )
       throw new RangeError('Invalid archived worker template');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const archived = this.archivedRegistry();
       const record = archived.find((item) => item.name === name);
@@ -517,7 +518,7 @@ export class TermuxServiceAdmin {
       ].includes(template)
     )
       throw new RangeError('Invalid archived worker template');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const archived = this.archivedRegistry();
       const record = archived.find((item) => item.name === name);
@@ -797,56 +798,6 @@ export class TermuxServiceAdmin {
   }
 
   /**
-   * Cross-process lease for creation, archiving, restoring and LAN lifecycle
-   * of owned standalone workers. Hold it across the complete filesystem and
-   * runit transaction: a per-process UI queue cannot protect two adapters.
-   * An abandoned lock stays in place for independent manual reconciliation.
-   */
-  private acquireStandaloneLifecycleLock(): () => void {
-    const folder = path.dirname(this.registerFile);
-    mkdirSync(folder, { recursive: true, mode: 0o700 });
-    const parent = lstatSync(folder);
-    if (
-      !parent.isDirectory() ||
-      parent.isSymbolicLink() ||
-      parent.uid !== process.getuid?.() ||
-      (parent.mode & 0o077) !== 0 ||
-      realpathSync(folder) !== folder
-    )
-      throw new Error('Unsafe standalone worker lock directory');
-    const lockPath = path.join(folder, '.h3-standalone-lifecycle.lock');
-    let fd: number;
-    try {
-      fd = openSync(lockPath, 'wx', 0o600);
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'EEXIST')
-        throw new Error(
-          'Another standalone worker operation is in progress or needs reconciliation',
-        );
-      throw error;
-    }
-    return () => {
-      try {
-        const held = fstatSync(fd);
-        const current = lstatSync(lockPath);
-        if (
-          !current.isFile() ||
-          current.isSymbolicLink() ||
-          current.dev !== held.dev ||
-          current.ino !== held.ino ||
-          current.nlink !== 1 ||
-          current.uid !== process.getuid?.() ||
-          (current.mode & 0o077) !== 0
-        )
-          throw new Error('Standalone worker lock changed; refusing cleanup');
-        unlinkSync(lockPath);
-      } finally {
-        closeSync(fd);
-      }
-    };
-  }
-
-  /**
    * First standalone service template: an owned, stopped heartbeat worker.
    * This does NOT accept user code, shell, source path, PID, service target,
    * existing service adoption, or a network port. A name is only a label.
@@ -883,7 +834,7 @@ export class TermuxServiceAdmin {
       throw new RangeError('Custom source refused by fixed templates');
     }
     if (isReserved(name)) throw new Error('Protected service');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       if (this.registry().length >= MAX_MANAGED)
         throw new RangeError('Managed service quota reached');
@@ -1103,7 +1054,7 @@ export class TermuxServiceAdmin {
   ): Promise<{ changed: boolean; archived: boolean; retainedFiles: boolean }> {
     valid(name);
     if (isReserved(name)) throw new Error('Protected service');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const registrations = this.registry();
       const target = this.target(name);
@@ -1499,7 +1450,7 @@ export class TermuxServiceAdmin {
       Buffer.byteLength(source) > 32 * 1024
     )
       throw new RangeError('Invalid Python revision request');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const review = this.inspectPythonSource(name);
       if (review.sourceSha256 !== expectedSha256)
@@ -1855,7 +1806,7 @@ export class TermuxServiceAdmin {
       Buffer.byteLength(source) > 32 * 1024
     )
       throw new RangeError('Invalid Node.js revision request');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const review = this.inspectNodeSource(name);
       if (review.sourceSha256 !== expectedSha256)
@@ -2668,7 +2619,7 @@ export class TermuxServiceAdmin {
     if (!['start', 'stop', 'restart', 'enable', 'disable'].includes(operation))
       throw new RangeError('Unsupported standalone runit operation');
     if (isReserved(name)) throw new Error('Protected service');
-    const release = this.acquireStandaloneLifecycleLock();
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
     try {
       const target = this.target(name);
       const template = this.managedWorkerTemplate(name, target, this.registry());

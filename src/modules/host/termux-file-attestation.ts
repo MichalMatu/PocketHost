@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import {
   closeSync, constants, fstatSync, lstatSync, openSync,
-  readFileSync, unlinkSync,
+  readFileSync, unlinkSync, mkdirSync, realpathSync,
 } from 'node:fs';
 import path from 'node:path';
 
@@ -199,4 +199,54 @@ export function runSha256(target: string): string | null {
   } finally {
     if (fd !== undefined) closeSync(fd);
   }
+}
+
+/**
+ * Cross-process lease for creation, archiving, restoring and LAN lifecycle
+ * of owned standalone workers. Hold it across the complete filesystem and
+ * runit transaction: a per-process UI queue cannot protect two adapters.
+ * An abandoned lock stays in place for independent manual reconciliation.
+ */
+export function acquireStandaloneLifecycleLock(registerFile: string): () => void {
+  const folder = path.dirname(registerFile);
+  mkdirSync(folder, { recursive: true, mode: 0o700 });
+  const parent = lstatSync(folder);
+  if (
+    !parent.isDirectory() ||
+    parent.isSymbolicLink() ||
+    parent.uid !== process.getuid?.() ||
+    (parent.mode & 0o077) !== 0 ||
+    realpathSync(folder) !== folder
+  )
+    throw new Error('Unsafe standalone worker lock directory');
+  const lockPath = path.join(folder, '.h3-standalone-lifecycle.lock');
+  let fd: number;
+  try {
+    fd = openSync(lockPath, 'wx', 0o600);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST')
+      throw new Error(
+        'Another standalone worker operation is in progress or needs reconciliation',
+      );
+    throw error;
+  }
+  return () => {
+    try {
+      const held = fstatSync(fd);
+      const current = lstatSync(lockPath);
+      if (
+        !current.isFile() ||
+        current.isSymbolicLink() ||
+        current.dev !== held.dev ||
+        current.ino !== held.ino ||
+        current.nlink !== 1 ||
+        current.uid !== process.getuid?.() ||
+        (current.mode & 0o077) !== 0
+      )
+        throw new Error('Standalone worker lock changed; refusing cleanup');
+      unlinkSync(lockPath);
+    } finally {
+      closeSync(fd);
+    }
+  };
 }
