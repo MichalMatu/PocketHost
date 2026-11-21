@@ -153,7 +153,9 @@ test('UI QA receipt preserves failing test identity instead of trailing HTML dum
     ' Test Files 1 failed | 8 passed (9)\n Tests 1 failed | 58 passed (59)\n';
   const stderr =
     'TestingLibraryElementError: Unable to find the Save button\n' +
-    '<div class="page">' + '<svg></svg>'.repeat(2500) + '</div>';
+    '<div class="page">' +
+    '<svg></svg>'.repeat(2500) +
+    '</div>';
   const message = compactCheckFailure(stdout, stderr, '');
   assert.match(message, /FAIL  tests\/site-fleet\.interaction\.test\.tsx/);
   assert.match(message, /Test Files 1 failed/);
@@ -165,4 +167,16 @@ test('UI QA receipt preserves failing test identity instead of trailing HTML dum
 test('QA receipts retain generic compiler failures without Vitest markers', () => {
   const message = compactCheckFailure('', 'src/file.ts(4,2): error TS1294: unsupported syntax', '');
   assert.match(message, /TS1294/);
+});
+
+
+test('QA diagnostic includes ESLint file and location before the total', () => {
+  const stderr =
+    '/repo/scripts/dev/verify-changed-policy.mjs\n' +
+    '  164:8  error  Unexpected variable  no-unused-vars\n' +
+    '✖ 1 problem (1 error, 0 warnings)';
+  const message = compactCheckFailure('', stderr, '');
+  assert.match(message, /verify-changed-policy\.mjs/);
+  assert.match(message, /164:8\s+error/);
+  assert.ok(message.length <= 1800);
 });

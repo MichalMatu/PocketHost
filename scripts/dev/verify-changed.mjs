@@ -181,14 +181,19 @@ if (!optionsValid) {
         const resolved = resolveTermuxCheckCommand(check, root, process.execPath);
         const output = command(resolved.file, resolved.args, path.join(root, check.cwd));
         const ok = !output.error && output.status === 0;
-        const diagnosticOutput = [output.stdout, output.stderr, output.error?.message]
-          .filter(Boolean)
-          .join('\n');
         return {
           ok,
           code: output.status,
           elapsedMs: Date.now() - began,
-          ...(ok ? {} : { error: compactCheckFailure(output.stdout, output.stderr, output.error?.message || diagnosticOutput || 'Command failed') }),
+          ...(ok
+            ? {}
+            : {
+                error: compactCheckFailure(
+                  output.stdout,
+                  output.stderr,
+                  output.error?.message || 'Command failed',
+                ),
+              }),
         };
       });
       emit(

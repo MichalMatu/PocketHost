@@ -93,8 +93,10 @@ export function selectApprovedVerification(checks, scope) {
   )
     throw new Error('Invalid explicit QA scope');
   const ids = scope.split(',');
-  if (new Set(ids).size !== ids.length ||
-      ids.some((id) => id !== 'syntax' && !approvalLabels.has(id)))
+  if (
+    new Set(ids).size !== ids.length ||
+    ids.some((id) => id !== 'syntax' && !approvalLabels.has(id))
+  )
     throw new Error('Duplicate or unknown approved QA scope');
   const matched = new Map(ids.map((id) => [id, 0]));
   const selected = checks.filter((check) => {
@@ -150,11 +152,20 @@ export function compactCheckFailure(stdout, stderr, failure) {
   const ansi = new RegExp(String.fromCharCode(27) + '\\[[0-9;]*m', 'g');
   const clean = (value) => String(value ?? '').replace(ansi, '');
   const all = [clean(stdout), clean(stderr), clean(failure)].filter(Boolean).join('\n');
-  const lines = all.split('\n').map((line) => line.trim()).filter(Boolean);
+  const lines = all
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
   const names = lines.filter((line) => /^(?:FAIL\b|[×✗✖]\s|❯\s)/.test(line));
+  const locations = lines.filter(
+    (line) =>
+      /(?:\.(?:mjs|js|ts|tsx)$|^\d+:\d+\s+error\b|\berror\s{2,})/.test(line),
+  );
   const summary = lines.filter((line) =>
     /^(?:Test Files\b|Tests\b|AssertionError\b|TestingLibraryElementError\b|Error:)/.test(line),
   );
-  const selected = [...new Set([...names.slice(0, 8), ...summary.slice(-8)])].join('\n');
+  const selected = [
+    ...new Set([...names.slice(0, 8), ...locations.slice(0, 8), ...summary.slice(-8)]),
+  ].join('\n');
   return (selected || all.slice(-1800)).slice(0, 1800);
 }
