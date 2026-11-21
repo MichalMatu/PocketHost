@@ -20,6 +20,15 @@ import {
 } from 'node:fs';
 import { createServer } from 'node:net';
 import { assetName } from './site-asset-validation.ts';
+import {
+  validateName,
+  type SiteDeployment,
+  type RecordOnDisk,
+  type FleetProject,
+  type FleetFile,
+  type FleetRelease,
+} from './site-fleet-contract.ts';
+export type { SiteDeployment, FleetProject, FleetFile, FleetRelease } from './site-fleet-contract.ts';
 import { packStaticZip } from './site-fleet-zip.ts';
 import os from 'node:os';
 import path from 'node:path';
@@ -34,58 +43,6 @@ const ID = /^site-[a-f0-9]{32}$/;
 const RELEASE = /^r-[a-f0-9]{32}$/;
 const MAX_FILE = 2 * 1024 * 1024;
 const MAX_TOTAL = 8 * 1024 * 1024;
-export interface SiteDeployment {
-  at: string;
-  action: 'publish' | 'rollback' | 'restore' | 'prune';
-  from: string | null;
-  to: string;
-}
-interface RecordOnDisk {
-  schema: 1;
-  id: string;
-  name: string;
-  owner: 'pockethost-h2';
-  instance: string;
-  port: number;
-  activeRelease: string | null;
-  previousRelease: string | null;
-  process: { pid: number; ticks: string; startedAt: string } | null;
-  createdAt: string;
-  history: SiteDeployment[];
-}
-export interface FleetProject {
-  id: string;
-  name: string;
-  kind: 'static-site';
-  state: 'stopped' | 'running' | 'unknown';
-  port: number;
-  activeRelease: string | null;
-  previousRelease: string | null;
-  canRollback: boolean;
-  pid: number | null;
-  startTicks: string | null;
-  fileCount: number;
-  bytes: number;
-  releases: number;
-  memoryBytes: number | null;
-  uptimeSeconds: number | null;
-  healthy: boolean | null;
-  history: SiteDeployment[];
-}
-export interface FleetFile {
-  name: string;
-  bytes: Buffer;
-}
-
-export interface FleetRelease {
-  id: string;
-  createdAt: string;
-  fileCount: number;
-  bytes: number;
-  active: boolean;
-  rollbackTarget: boolean;
-}
-
 function directory(folder: string): void {
   const s = lstatSync(folder);
   if (!s.isDirectory() || s.isSymbolicLink() || realpathSync(folder) !== folder)
@@ -139,16 +96,6 @@ function state(marker: RecordOnDisk, dir: string): FleetProject['state'] {
   if (!marker.process) return 'stopped';
   if (owned(marker, dir)) return 'running';
   return present(marker.process.pid) ? 'unknown' : 'stopped';
-}
-function validateName(name: unknown): string {
-  if (
-    typeof name !== 'string' ||
-    name.trim().length < 2 ||
-    name.trim().length > 60 ||
-    !/^[\p{L}\p{N}][\p{L}\p{N} ._-]*$/u.test(name.trim())
-  )
-    throw new RangeError('Site name must contain 2–60 safe characters');
-  return name.trim();
 }
 function requireRelease(root: string, release: string): string {
   if (!RELEASE.test(release)) throw new Error('Invalid owned release identity');
