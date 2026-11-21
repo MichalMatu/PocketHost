@@ -1,25 +1,28 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-19
-purpose: Typed module ownership
+last_reviewed: 2026-11-22
+purpose: Actual module ownership, implementation coverage and separation limitations
 ---
 
-# Module boundaries
+# Module ownership and separation
 
-Host exclusively owns OS and process effects; all other modules use typed contracts. Modules, externally observed services, explicitly managed services and Hosting projects remain distinct. See [architecture](ARCHITECTURE.md).
+**Boundary:** `apps/admin/src` is browser UI and API clients; `apps/admin/vite.config.ts` and `apps/admin/plugins` are Node-side API bridges; `src/shared` contains portable contracts; `src/modules/host` owns Termux filesystem/process/runit side effects. Other registered modules provide pure policy, validation and projections. Discovery never implies ownership. See [architecture](ARCHITECTURE.md) and [code map](CODE_MAP.md).
 
-## Map and limitations
+The `project.structure.json` registry includes **10 modules**; this is not a list of 10 fully delivered subsystems. Source inventory at `96e3a12`:
 
-- Browser views and bounded API parsers: `apps/admin/src/app` and `apps/admin/src/lib`.
-- Portable typed contracts: `src/shared`; no host-only imports.
-- Termux process/filesystem/runit effects: `src/modules/host` and the guarded
-  server-side API bridge in `apps/admin/plugins`; never import these in browser UI.
-- Static sites and trusted Node projects have separate identity, process and
-  release roots; observed external services never become owned automatically.
+| Module | Code files | Implemented responsibility |
+| --- | ---: | --- |
+| `host` | 63 | Privileged adapters, guarded Static/Node lifecycle, services, diagnostics and persistence |
+| `runtime` | 3 | Verified owned-instance state machines and registration |
+| `sites` | 2 | Static bundle validation, ZIP/folder parsing and demo specification |
+| `config` | 1 | Typed hosting-registry facade backed by `shared` |
+| `observability` | 1 | Read-only host snapshot projection |
+| `packages` | 1 | Portable Node dependency-planning facade |
+| `ai`, `diagnostics`, `inventory`, `shizuku` | 0 each | Registered scope placeholders; no independent implementation files |
 
-`check-boundaries.mjs` and `check-code-budgets.mjs` cover only documented
-static rules and pinned legacy size limits, not the entire runtime dependency
-or ownership graph. Large pinned files remain modularity debt. Split only
-with a concrete behavior-preserving reason and exact-SHA owner-approved QA.
-See [code map](CODE_MAP.md) and [quality gates](QUALITY_GATES.md).
+A package facade may be a single re-export, not a separate executable. Native Shizuku/Companion bridges and host diagnostics do not mean the empty `src/modules/shizuku` or `src/modules/diagnostics` directories implement those systems.
+
+**Enforced checks:** `scripts/quality/check-structure.mjs` validates registered paths; `check-boundaries.mjs` checks relative imports and host-only imports in **`src/`**; `check-code-budgets.mjs` caps new files and flags selected browser host imports. The latter checks are conservative regex/static scans, **not** a complete TypeScript/Vite dependency graph or runtime isolation proof. The latest A8 scoped boundaries/structure QA passed at `73b2da8`; no current-checkpoint QA was run.
+
+**Known debt:** `host` contains 63 of 71 module implementation files, and large pinned files remain (`termux-service-admin.ts`, `node-runit-host.ts`). The Vite API composition file is also large. Prefer small extraction by feature/transport contract, preserve ownership guards, and request separately scoped exact-SHA QA before claiming a refactor safe. Details and priorities: [22 November source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).

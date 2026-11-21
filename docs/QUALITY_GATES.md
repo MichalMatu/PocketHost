@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-19
+last_reviewed: 2026-11-22
 purpose: Separate guarded deployment from independently approved QA
 ---
 
@@ -21,3 +21,7 @@ A **QA PASS** requires fresh owner approval naming the exact 40-character SHA an
 `npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
 
 Latest guarded A8 DEV source `96c2879d20fcfcbb6c59832e4706775adfec7ff4` is **DEPLOY PASS** (PID 9127, start ticks 71322745, HTTP 200, protected services unchanged), receipt `pockethost-a8-node-backup-source-96c2879-deploy-20261121-v1`. Scoped QA of the runtime source plus test-only formatting commit `73b2da8` is **PASS** for format, structure, boundaries, root lint/TypeScript, Node and syntax (`pockethost-a8-node-backup-qa-73b2da8-20261121-v2`); no further restart. Earlier broad changed-scope QA including 65/65 UI passed on `6585afe`. Static ZIP isolated reimport also passed. Mutable application uploads/databases, full G2 coverage/admin build and physical G3 remain OPEN; none is certified by these results.
+
+## Source-audit coverage limitation
+
+The `check:boundaries` implementation statically examines imports under `src/`. The separate code-budget scan contains selected browser-import heuristics; neither walks the entire Vite/plugin/UI dependency graph or proves runtime ownership. A PASS is meaningful **within that gate's scope**, not proof of universal modularity or application-data recovery. The [22 November source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md) records the inspected boundaries and outstanding extraction debt. No QA was run during that documentation-only review.

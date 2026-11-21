@@ -1,6 +1,6 @@
 # PocketHost documentation
 
-**Start:** [current checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md), [MVP tracker](MVP_EXECUTION_PLAN.md), [root AGENTS](../AGENTS.md). Full old active docs are in Git: `git show 3513e452d2d98b3615ec2305247a2eaa5deabf8c:<path>`. Detailed technical and historical files are reference-only, not required context.
+**Start:** [22 Nov current source/modules checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md), [current handoff](HANDOFF_NEXT_CHAT.md), [MVP tracker](MVP_EXECUTION_PLAN.md), [root AGENTS](../AGENTS.md). The [21 Nov device evidence](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and older checkpoints are historical; do not load the entire archive. The current A8 live SHA must be independently verified before any new deployment.
 
 - [ADMIN_MVP](ADMIN_MVP.md)
 - [ARCHITECTURE](ARCHITECTURE.md)

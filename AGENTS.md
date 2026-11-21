@@ -23,7 +23,7 @@ optional hardening, do not silently enable WAN access.
 
 ## Entry
 
-Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current evidence lives in the [21 November A8 checkpoint](docs/checkpoints/2026-11-21-pocket-host-mvp-handoff.md); [18 November evidence](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md) and older checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
+Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current delivery and module evidence lives in the [22 November source checkpoint](docs/checkpoints/2026-11-22-source-modules-documentation-checkpoint.md); [21 November A8 evidence](docs/checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and [18 November evidence](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md) and older checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
 
 ## Execution
 

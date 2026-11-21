@@ -1,21 +1,21 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-21
+last_reviewed: 2026-11-22
 purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in canonical checkpoint
 ---
 
 # PocketHost — MVP status and next acceptance
 
-**Canonical current evidence:** [21 November 2026 A8 checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md). **Resume instructions:** [current handoff](HANDOFF_NEXT_CHAT.md). Historical device details and older failed/skipped QA are preserved in [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md), [integration receipts](MVP_INTEGRATION_CHECKLIST.md) and Local Agent task results; this is **not a release diary**.
+**Current 22 November source and module checkpoint:** [modularity/documentation audit](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md). **Last A8 device evidence:** [21 November checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md). **Resume instructions:** [current handoff](HANDOFF_NEXT_CHAT.md). Historical device details and older failed/skipped QA are preserved in [18 November checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md), [integration receipts](MVP_INTEGRATION_CHECKLIST.md) and Local Agent task results; this is **not a release diary**.
 
 ## Version boundary
 
 - **Last verified running A8 panel code:** `96c2879d20fcfcbb6c59832e4706775adfec7ff4`, guarded receipt `pockethost-a8-node-backup-source-96c2879-deploy-20261121-v1`: **DEPLOY PASS**, PID **9127**, start ticks **71322745**, loopback HTTP **200**, protected services unchanged. Test-only formatting commit `73b2da8` is not deployed.
 - **Changed-scope QA:** broad A8 receipt `pockethost-a8-qa-closure-6585afe-20261121-v1` **PASS** (65/65 UI); newer Node backup scope at `73b2da8` **PASS** for format, structure, boundaries, root lint/TypeScript, Node and syntax (`pockethost-a8-node-backup-qa-73b2da8-20261121-v2`). Full G2 coverage/admin build and physical G3 are separate.
-- **Later test-only code:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent Static ZIP reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. No panel restart; live code remains `6585afe`.
+- **Static ZIP test-only addition:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. That test-only commit did not restart the panel. A **later** guarded Node backup code deployment moved the last attested live SHA to `96c2879`.
 - **Live ZIP exercise:** API active ZIP export → strict archive decode → independent temporary Static project import/HTTP byte verification **PASS** (1 file, 432 bytes; 550-byte ZIP), original untouched, fixture removed. Receipt `pockethost-a8-live-static-export-isolated-import-6585afe-20261121-v1`. Browser ZIP-upload path and independently durable Static backup remain OPEN.
-- The [canonical checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) is a historical MVP baseline. `PocketHost` branch inventory only `main`, last checked open PRs **0**; Local Agent `agent-control` is active transport, not cleanup debris. **`photomap.pl` remains unmigrated.**
+- The [21 November checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) is a historical MVP baseline; the [22 November checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md) adds source-only separation findings, not a new device acceptance. `PocketHost` branch inventory only `main`, last checked open PRs **0**; Local Agent `agent-control` is active transport, not cleanup debris. **`photomap.pl` remains unmigrated.**
 
 ## Module acceptance matrix
 
