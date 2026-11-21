@@ -15,7 +15,9 @@ const legacyBytes = new Map([
   ['apps/admin/src/app/settings/notifications/page.tsx', 36311],
   ['apps/admin/src/app/shizuku/page.tsx', 33172],
   ['apps/admin/src/app/sites/page.tsx', 28679],
-  ['apps/admin/src/app/termux/admin-actions.tsx', 97648],
+  // Runit control flow moved unchanged out of the old 97 KB admin-actions legacy file.
+  // Keep only this relocated debt pinned: it must shrink, never grow.
+  ['apps/admin/src/app/termux/runit-service-actions.tsx', 61859],
   ['apps/admin/src/app/termux/runit-health.tsx', 33480],
   ['apps/admin/src/app/termux/system-page.tsx', 37824],
   ['apps/admin/src/utils/shadcn-ui-theme-presets.ts', 30629],
