@@ -11,7 +11,7 @@ purpose: Minimal PocketHost entrypoint and verified A8 resume links
 2. Use the **[21 November 2026 canonical A8 checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md)** for evidence, module acceptance, deployed versus docs-only SHA and next work. Older material is in the [checkpoint index](checkpoints/README.md); do not preload it.
 3. Before any change, independently verify current Git `main`, actual live A8 SHA, protected service ownership and the nearest scoped `AGENTS.md`. Use [A8 Local Agent transport](LOCAL_AGENT_TERMUX.md), [FAST FLOW rules](DEV_ITERATION.md) and the separately authorized [Mac Test Lab](TEST_LAB.md) only as scoped.
 
-**Last verified A8 DEV code:** `43abbf6ebe0ac2f139fbb10471c62a19022f106b` (receipt `pockethost-a8-type-fixes-43abbf6-deploy-20261121-v1`, guarded deployment PASS, HTTP 200, tests **not run**). Documentation commits are not deployments; see [current handoff](HANDOFF_NEXT_CHAT.md).
+**Last verified A8 DEV code:** `9c3af55d591ea0805b8a90a70b4a7483e01379d9` (receipt `pockethost-a8-qa-diagnostic-9c3af55-deploy-20261121-v1`, guarded **DEPLOY PASS**, HTTP 200, protected services unchanged; deployment tests not run). Separate `format,root-lint,node,syntax` QA **PASS** on the same SHA; UI QA receipt outstanding at last inspection. See [current handoff](HANDOFF_NEXT_CHAT.md).
 
 **Working MVP:** private-LAN PocketHost + trusted Static and Node Hosting core, dedicated SSH, loopback MQTT, on-demand health and Autostart observation. Pi Zero's **single existing Cloudflare connector** remains unchanged. No public admin exposure.
 

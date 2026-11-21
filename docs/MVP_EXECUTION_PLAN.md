@@ -11,17 +11,17 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified running A8 panel code:** `43abbf6ebe0ac2f139fbb10471c62a19022f106b`, receipt `pockethost-a8-type-fixes-43abbf6-deploy-20261121-v1`: exact-SHA **DEPLOY PASS**, PID **14669**, start ticks **69843993**, HTTP **200**, protected services unchanged, **tests not run**.
-- The 21 November canonical checkpoint is a **historical MVP baseline**. Subsequent code-quality refactors and the Static ZIP error-diagnostic fix were deployed through the receipt above. The present documentation update is **docs-only** and does not change the A8 runtime. Read Git HEAD and fresh actual A8 live SHA before new work.
+- **Last verified running A8 panel code:** `9c3af55d591ea0805b8a90a70b4a7483e01379d9`, guarded receipt `pockethost-a8-qa-diagnostic-9c3af55-deploy-20261121-v1`: **DEPLOY PASS**, PID **21352**, start ticks **70839131**, loopback HTTP **200**, protected services unchanged. Deployment tests not run.
+- The 21 November canonical checkpoint is a historical MVP baseline, not the current runtime SHA. Recent QA tooling corrections are deployed through the SHA above. Subsequent documentation commits are docs-only; verify live SHA independently before execution.
 - `PocketHost` branch inventory **only `main`**, open PRs **0**; nothing eligible for branch cleanup. Local Agent's separate active `agent-control` branch is transport infrastructure and is retained.
-- **QA boundary:** `2f73267` passed syntax, format, structure, docs, boundaries, root/admin lint and Markdown. Root TypeScript failed on 4 errors in Local Agent/MQTT; admin TypeScript, Node (10 test files) and UI (9 test files) skipped. `43abbf6` fixes identified errors, **deployed but untested**. Separate exact-SHA approval required for follow-up QA.
+- **QA boundary:** exact `9c3af55` A8 receipt `pockethost-a8-qa-gates-9c3af55-20261121-v1` passed `format,root-lint,node,syntax` (48 changed paths). A separately queued `ui` 300-second run has no terminal result at last inspection. Other categories/full G2 are not certified at this SHA; older failures and fixes remain in the immutable receipts.
 - **`photomap.pl` not yet imported or migrated**, by owner decision. Use a disposable independent project to qualify remaining flows first.
 
 ## Module acceptance matrix
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `43abbf6e` and owned PID/HTTP attested; no latest-SHA broad QA                         |
+| A8 DEV / Local Agent          | Operational DEPLOY PASS                  | Exact live code `9c3af55`; PID/ticks/HTTP and protected services attested, scoped QA PASS as above      |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core lifecycle PASS; ZIP QA OPEN         | Create/publish/v2/start/rollback previously accepted; active ZIP download deployed, re-import untested |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
