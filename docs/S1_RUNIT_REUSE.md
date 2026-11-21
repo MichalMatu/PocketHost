@@ -1,11 +1,20 @@
 ---
-status: in-progress
+status: historical-reference
 owner: core
-last_reviewed: 2026-11-14
+last_reviewed: 2026-11-22
 purpose: S1 termux-services source review and verified service enrollment boundary
 ---
 
 # S1 — reuse upstream runit, do not build another supervisor
+
+**Reference-only progression notes (14 November design).** Later A8 evidence
+qualified one owned fixed-template worker; general S1–S4 remains
+**READY_FOR_ACCEPTANCE**, not universally accepted. Headings below saying
+"current" or "not physically tested" refer to the older increment, **not**
+the latest system status. Use the [current MVP tracker](MVP_EXECUTION_PLAN.md)
+and [22 November checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md)
+for next actions. Preserve this technical record; do not rerun old experiments
+because this reference document contains an earlier pending step.
 
 ## Open-source decision
 

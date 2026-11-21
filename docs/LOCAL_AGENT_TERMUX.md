@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-18
+last_reviewed: 2026-11-22
 purpose: Exclusive Samsung host executor and private Git task/result runbook
 ---
 
@@ -53,16 +53,16 @@ uninstalled, separately qualified capability.
 The owner selected the **already-paired Galaxy A8 only** for PocketHost execution.
 Get exact private host/installation IDs from verified private task/results, never
 from S22. **Do not pin a historic live SHA in this runbook.** The
-[verified current A8 checkpoint](checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md)
-records the last known live code, PID/ticks and QA; re-read actual
-device/agent receipts before any new task. The [active handoff](HANDOFF_NEXT_CHAT.md)
-contains the next-chat autonomous P1 sprint cutline. Old Services S4 QA
+[current handoff](HANDOFF_NEXT_CHAT.md) and [21 November device checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md)
+record the latest documented live code and acceptance evidence; re-read actual
+device/agent receipts before any new task. The [22 November source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md)
+records the latest docs-only audit; it is **not** a fresh A8 device probe. Old Services S4 QA
 and earlier DEV versions are historical evidence, not the current state.
 
 
 The installed A8 **Local Agent** bundle, confirmed independently by private task `pockethost-a8-agent-bundle-identity-20261114-v1`, is **`c39cd958c76cca0aaf2d30a654bdc4305c0a3228`**; runit was running. The newer Termux Git-poll historical-result lookup optimization at source `4d58ae544a1d7d73a6235e6b067152a605bb9635` is **not present in this installed release**. Do not mistake source availability or successful Git intake for a deployed Agent upgrade. An Agent update must use a separately approved, external operator with rollback and exact source acceptance; never self-update/restart it using its own immutable task.
 
-The standard Termux runit supervisor and A8 PocketHost-owned panel/watch services are running; `sshd` and `ssh-agent` remained disabled, external and not adopted. A separate boot hook was configured for runit, but boot recovery has not been physically verified. No new periodic scheduler was added.
+At the earlier A8 installation observation, the standard Termux runit supervisor and PocketHost-owned panel/watch were running; the independently managed system `sshd` and `ssh-agent` were disabled/external and never adopted. A separately owned dedicated PocketHost SSH listener was later functionally exercised; verify actual current process state before new operations. A separate boot hook was configured for runit, but boot recovery has not been physically verified. No new periodic scheduler was added.
 
 ## Installed boundary
 

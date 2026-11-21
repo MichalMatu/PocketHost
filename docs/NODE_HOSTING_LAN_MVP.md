@@ -1,7 +1,8 @@
 ---
-status: proposed
+status: accepted-with-follow-up
 owner: host
-purpose: Node.js private-LAN owner API contract and A8 acceptance
+last_reviewed: 2026-11-22
+purpose: Current private-LAN Node owner API contract and scoped A8 acceptance
 ---
 
 # Node.js Hosting — private owner MVP
@@ -79,7 +80,7 @@ The panel reports the local loopback address
 unless a separately authorized ingress design is implemented. It is not a
 WAN or laptop-browser URL.
 
-## Parallel sprint contract
+## Original parallel sprint contract (historical)
 
 Only `/api/v1/node-projects` gains `GET /owner-session` and owner-token
 access checks. Existing response shapes and successful operation paths remain
@@ -88,11 +89,15 @@ unchanged. Shared `lan-gateway.mjs` changes only the timeout budget for
 for lifecycle, 90 seconds for GitHub import, 30 seconds for reads/other).
 No `/sites`, `/deployments`, `/runtime-logs` or `/hosting` changes.
 
-## Acceptance pending device and test authorization
+## Verified scope and remaining acceptance
 
-No source commit is physical acceptance. A8 must independently confirm the
-owner token denial path, one trusted app's Create → Stage → Prepare → Deploy →
-HTTP → Logs → Update → Stop → Start → Rollback and exact live SHA/ownership.
-Do not deploy to the shared panel, trigger runit, execute a test suite, lint,
-format, typecheck, smoke or QA without separate scoped owner approval. Keep
-the running panel and other parallel checkouts unchanged.
+The verified Samsung A8 trusted Node fixture previously completed owner-token
+negative access, Create → Stage → Deploy → HTTP/Logs → Update → Stop/Start →
+Rollback under its recorded exact SHA. The later `96c2879` source/asset backup
+fix was guarded-deployed, with separate scoped QA at `73b2da8`. **Neither**
+evidence set establishes full latest-browser sign-off, generic independent
+project data recovery, untrusted-code isolation, full G2 or G3. See the
+[current checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md)
+and [MVP acceptance](MVP_EXECUTION_PLAN.md). No build, app execution or QA
+is implied by this document refresh; new physical/device or automated test
+runs require separately scoped owner approval.

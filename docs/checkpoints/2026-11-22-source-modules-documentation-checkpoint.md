@@ -18,9 +18,9 @@ purpose: Source-level module separation, documentation currency and delivery che
 
 ## Module separation — source inventory
 
-The registered module set in `project.structure.json` has **10** entries. Among `src/modules/*`, **71** implementation `*.ts/*.mjs/*.mts` files were present at the source snapshot; distribution is intentionally uneven:
+The registered module set in `project.structure.json` has **10** entries. Among `src/modules/*`, **71** source or declaration `*.ts/*.mjs/*.mts` files were present at the source snapshot; distribution is intentionally uneven:
 
-| Module | Implementation files | Observed role / maturity |
+| Module | Source/declaration files | Observed role / maturity |
 | --- | ---: | --- |
 | `host` | 63 | Termux OS/filesystem/process/runit adapters and hosting operations; largest implementation area |
 | `runtime` | 3 | Pure registered/owned runtime state and port contracts |
