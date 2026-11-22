@@ -176,6 +176,13 @@ function gallery(report) {
             escapeHtml(c.bottomFile) +
             '" loading="lazy"/></a>'
           : '') +
+        (c.createPanelFile
+          ? '<p>Node create panel · UI only, no submission</p><a href="' +
+            escapeHtml(c.createPanelFile) +
+            '"><img src="' +
+            escapeHtml(c.createPanelFile) +
+            '" loading="lazy"/></a>'
+          : '') +
         '</article>'
       );
     })
@@ -383,6 +390,33 @@ async function main() {
               await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
             }
           }
+          // Whitelisted click-only UI inspection: expand one local details
+          // element and screenshot that element. Network mutations remain blocked.
+          if (route === 'projects' && cap.rendered) {
+            const panel = page.locator('details[data-testid="node-create-panel"]');
+            let originallyOpen = false;
+            let panelFound = false;
+            try {
+              if (await panel.count() !== 1) throw Error('Missing Node create panel');
+              panelFound = true;
+              originallyOpen = await panel.evaluate((element) => element.open);
+              if (!originallyOpen) await panel.locator('summary').click({ timeout: 5000 });
+              if (!(await panel.evaluate((element) => element.open)))
+                throw Error('Node create panel did not expand');
+              const createFile = screenshotName(route, vp.name, 'create-panel');
+              const createPath = join(folder, createFile);
+              await panel.screenshot({ path: createPath, animations: 'disabled', timeout: 12000 });
+              await chmod(createPath, 0o600);
+              cap.createPanelFile = createFile;
+            } catch {
+              cap.createPanelError = 'Node create panel capture unavailable';
+            } finally {
+              if (panelFound && !originallyOpen)
+                await panel.evaluate((element) => { element.open = false; }).catch(() => {});
+              await page.evaluate(() =>
+                globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+            }
+          }
           cap.stage = 'complete';
           if (!cap.rendered) cap.error = navigationError ?? 'React content not confirmed';
         } catch {
@@ -434,11 +468,13 @@ async function main() {
       readOnly: true,
       screenshots: captures.reduce(
         (sum, c) =>
-          sum + Number(Boolean(c.file)) + Number(Boolean(c.middleFile)) + Number(Boolean(c.bottomFile)),
+          sum + Number(Boolean(c.file)) + Number(Boolean(c.middleFile)) +
+          Number(Boolean(c.bottomFile)) + Number(Boolean(c.createPanelFile)),
         0,
       ),
       middleScreenshots: captures.filter((c) => c.middleFile).length,
       bottomScreenshots: captures.filter((c) => c.bottomFile).length,
+      createPanelScreenshots: captures.filter((c) => c.createPanelFile).length,
       failures: captures.filter((c) => c.error).length,
       notRendered: captures.filter((c) => !c.rendered).length,
       overflowing: captures.filter((c) => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0)

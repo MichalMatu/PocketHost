@@ -26,6 +26,11 @@ test('Test Lab permits exact top/middle/bottom viewport screenshots for known ro
       assert.equal(isAllowedScreenshotName(bottom), true);
     }
   }
+  for (const viewport of ['mobile', 'tablet', 'desktop']) {
+    const create = screenshotName('projects', viewport, 'create-panel');
+    assert.equal(create, 'projects-' + viewport + '-create-panel.png');
+    assert.equal(isAllowedScreenshotName(create), true);
+  }
 });
 
 test('Test Lab never accepts path escape or arbitrary screenshot selection', () => {
@@ -36,6 +41,10 @@ test('Test Lab never accepts path escape or arbitrary screenshot selection', () 
     'network-mobile-bottom-bottom.png',
     'network-mobile-middle-middle.png',
     'network-mobile-center.png',
+    'network-mobile-create-panel.png',
+    'projects-wide-create-panel.png',
+    'projects-mobile-create-panel.jpg',
+    'projects-mobile-create-panel.png/../x',
     'unknown-mobile.png',
     'dashboard-wide.png',
     '/dashboard-mobile.png',
@@ -49,4 +58,5 @@ test('Test Lab never accepts path escape or arbitrary screenshot selection', () 
   assert.throws(() => screenshotName('dashboard', 'wide'));
   assert.throws(() => screenshotName('dashboard', 'mobile', 'full'));
   assert.throws(() => screenshotName('dashboard', 'mobile', 'center'));
+  assert.throws(() => screenshotName('dashboard', 'mobile', 'create-panel'));
 });

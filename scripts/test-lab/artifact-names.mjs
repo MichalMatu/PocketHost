@@ -8,7 +8,8 @@ export function screenshotName(route, viewport, position = 'top') {
     !ROUTE.test(route) ||
     typeof viewport !== 'string' ||
     !VIEWPORT.test(viewport) ||
-    !['top', 'middle', 'bottom'].includes(position)
+    !['top', 'middle', 'bottom', 'create-panel'].includes(position) ||
+    (position === 'create-panel' && route !== 'projects')
   ) {
     throw Error('Screenshot selection not allowlisted');
   }
@@ -17,6 +18,6 @@ export function screenshotName(route, viewport, position = 'top') {
 
 export function isAllowedScreenshotName(name) {
   if (typeof name !== 'string') return false;
-  const match = /^([a-z]+)-(mobile|tablet|desktop)(-(?:middle|bottom))?\.png$/.exec(name);
-  return Boolean(match && ROUTE.test(match[1]));
+  const match = /^([a-z]+)-(mobile|tablet|desktop)(-(?:middle|bottom|create-panel))?\.png$/.exec(name);
+  return Boolean(match && ROUTE.test(match[1]) && (match[3] !== '-create-panel' || match[1] === 'projects'));
 }
