@@ -200,6 +200,13 @@ function gallery(report) {
             escapeHtml(c.file) +
             '" loading="lazy"/></a>'
           : '') +
+        (c.middleFile
+          ? '<p>Middle viewport · same route</p><a href="' +
+            escapeHtml(c.middleFile) +
+            '"><img src="' +
+            escapeHtml(c.middleFile) +
+            '" loading="lazy"/></a>'
+          : '') +
         (c.bottomFile
           ? '<p>Bottom viewport · same route</p><a href="' +
             escapeHtml(c.bottomFile) +
@@ -367,6 +374,27 @@ async function main() {
           await page.screenshot({ path: absolute, animations: 'disabled', timeout: 12000 });
           await chmod(absolute, 0o600);
           cap.file = filename;
+          // Cap tall pages to three local viewport screenshots; never full-page
+          // capture. This adds a mid-page observation without clicking or writes.
+          if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height * 2 + 120) {
+            try {
+              const at = await page.evaluate((height) => {
+                globalThis.window.scrollTo(0, Math.round(height / 2));
+                return globalThis.window.scrollY;
+              }, cap.geometry.documentHeight - vp.height);
+              if (at <= 0) throw Error('Middle scroll did not advance');
+              await page.waitForTimeout(250);
+              const middle = screenshotName(route, vp.name, 'middle');
+              const middlePath = join(folder, middle);
+              await page.screenshot({ path: middlePath, animations: 'disabled', timeout: 12000 });
+              await chmod(middlePath, 0o600);
+              cap.middleFile = middle;
+            } catch {
+              cap.middleError = 'Middle viewport screenshot unavailable';
+            } finally {
+              await page.evaluate(() => globalThis.window.scrollTo(0, 0)).catch(() => {});
+            }
+          }
           // A second viewport covers content below the fold without changing
           // the read-only route scope or capturing an unbounded full-page image.
           if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height + 120) {
@@ -436,9 +464,11 @@ async function main() {
       sourceSha: config.sha,
       readOnly: true,
       screenshots: captures.reduce(
-        (sum, c) => sum + Number(Boolean(c.file)) + Number(Boolean(c.bottomFile)),
+        (sum, c) =>
+          sum + Number(Boolean(c.file)) + Number(Boolean(c.middleFile)) + Number(Boolean(c.bottomFile)),
         0,
       ),
+      middleScreenshots: captures.filter((c) => c.middleFile).length,
       bottomScreenshots: captures.filter((c) => c.bottomFile).length,
       failures: captures.filter((c) => c.error).length,
       notRendered: captures.filter((c) => !c.rendered).length,

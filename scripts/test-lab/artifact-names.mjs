@@ -8,15 +8,15 @@ export function screenshotName(route, viewport, position = 'top') {
     !ROUTE.test(route) ||
     typeof viewport !== 'string' ||
     !VIEWPORT.test(viewport) ||
-    !['top', 'bottom'].includes(position)
+    !['top', 'middle', 'bottom'].includes(position)
   ) {
     throw Error('Screenshot selection not allowlisted');
   }
-  return route + '-' + viewport + (position === 'bottom' ? '-bottom' : '') + '.png';
+  return route + '-' + viewport + (position === 'top' ? '' : '-' + position) + '.png';
 }
 
 export function isAllowedScreenshotName(name) {
   if (typeof name !== 'string') return false;
-  const match = /^([a-z]+)-(mobile|tablet|desktop)(-bottom)?\.png$/.exec(name);
+  const match = /^([a-z]+)-(mobile|tablet|desktop)(-(?:middle|bottom))?\.png$/.exec(name);
   return Boolean(match && ROUTE.test(match[1]));
 }

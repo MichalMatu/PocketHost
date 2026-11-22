@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { screenshotName, isAllowedScreenshotName } from '../../scripts/test-lab/artifact-names.mjs';
 
-test('Test Lab permits exact top/bottom viewport screenshots for known routes only', () => {
+test('Test Lab permits exact top/middle/bottom viewport screenshots for known routes only', () => {
   for (const route of [
     'dashboard',
     'hosting',
@@ -16,10 +16,13 @@ test('Test Lab permits exact top/bottom viewport screenshots for known routes on
   ]) {
     for (const viewport of ['mobile', 'tablet', 'desktop']) {
       const top = screenshotName(route, viewport);
+      const middle = screenshotName(route, viewport, 'middle');
       const bottom = screenshotName(route, viewport, 'bottom');
       assert.equal(top, route + '-' + viewport + '.png');
+      assert.equal(middle, route + '-' + viewport + '-middle.png');
       assert.equal(bottom, route + '-' + viewport + '-bottom.png');
       assert.equal(isAllowedScreenshotName(top), true);
+      assert.equal(isAllowedScreenshotName(middle), true);
       assert.equal(isAllowedScreenshotName(bottom), true);
     }
   }
@@ -31,6 +34,8 @@ test('Test Lab never accepts path escape or arbitrary screenshot selection', () 
     'network-mobile.png/../../x',
     'network-mobile-bottom.jpg',
     'network-mobile-bottom-bottom.png',
+    'network-mobile-middle-middle.png',
+    'network-mobile-center.png',
     'unknown-mobile.png',
     'dashboard-wide.png',
     '/dashboard-mobile.png',
@@ -43,4 +48,5 @@ test('Test Lab never accepts path escape or arbitrary screenshot selection', () 
   assert.throws(() => screenshotName('../dashboard', 'mobile'));
   assert.throws(() => screenshotName('dashboard', 'wide'));
   assert.throws(() => screenshotName('dashboard', 'mobile', 'full'));
+  assert.throws(() => screenshotName('dashboard', 'mobile', 'center'));
 });
