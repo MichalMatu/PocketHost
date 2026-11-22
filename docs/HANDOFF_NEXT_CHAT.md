@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — broader opt-in Visual QA coverage
+
+- **Source-only change:** `17bafef529b68c7d01822c5a2788ee31d35877ad` centralizes the read-only navigation route registry in `scripts/test-lab/artifact-names.mjs` and expands the opt-in allowlist to **27 real static screens** verified against `apps/admin/src/config/routes.tsx` and `config/navigation.ts`. `capture.mjs` and the local preview naming gate share the registry, with expanded `test-lab-artifact-names.test.mjs` contract coverage. The default capture remains `dashboard,hosting,projects`, the 12-route-per-run upper bound remains, and browser mutations are still blocked.
+- **QA/DEV:** source committed but **A8 QA not run**; no Mac browser capture, panel runtime change, build, deploy, screenshot upload or scheduler. A8 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still has no terminal result in the latest private Git branch check; tasks 650, results 649. Do **not** replace or overlap the unknown task. After a terminal result, pick fresh exact `main` SHA and targeted scoped checks, then consider guarded DEV for panel runtime changes only after QA PASS and live ownership guards. Last confirmed DEV PASS remains N11.
+- **Current code after this source-only change:** `main` includes `17bafef`. Docs-only checkpoint follows; verify HEAD again before new work.
+
 ## 22 November continuation — capture failure reporting
 
 - **Source-only Visual QA fix:** `8a35bebafec0ce83a8393be3d147ec2db98576ea` adds `scripts/test-lab/capture-warnings.mjs`, local gallery warnings for failed top/middle/bottom/Node create-panel snapshots, additive `captureSummary` counters in `report.json` and summary output, plus `tests/quality/test-lab-capture-warnings.test.mjs`. The previous `failures` count retains its original primary-capture meaning. No screenshot was captured or transmitted.
