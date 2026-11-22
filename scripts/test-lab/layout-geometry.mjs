@@ -3,8 +3,10 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
   const width = win.innerWidth;
   let outside = 0;
   let smallControls = 0;
+  let unlabeledControls = 0;
   const smallSamples = [];
   const overflowSamples = [];
+  const unlabeledSamples = [];
   for (const node of Array.from(doc.querySelectorAll('body *')).slice(0, 5000)) {
     const r = node.getBoundingClientRect();
     if (r.height <= 0 || r.width <= 0) continue;
@@ -24,6 +26,21 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
           ...sample(),
           side: r.left < -2 ? 'left' : 'right',
         });
+      }
+    }
+    if (
+      node.matches("button,a[href],[role='button']") &&
+      !node.textContent?.trim() &&
+      !['aria-label', 'aria-labelledby', 'title'].some((name) =>
+        node.getAttribute(name)?.trim(),
+      ) &&
+      !node.querySelector(
+        '[aria-label],[aria-labelledby],svg title,img[alt]:not([alt=""])',
+      )
+    ) {
+      unlabeledControls++;
+      if (unlabeledSamples.length < 16) {
+        unlabeledSamples.push({ ...sample(), icon: Boolean(node.querySelector('svg')) });
       }
     }
     if (
@@ -47,5 +64,7 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
     overflowSamples,
     smallControls,
     smallSamples,
+    unlabeledControls,
+    unlabeledSamples,
   };
 }

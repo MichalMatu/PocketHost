@@ -140,7 +140,9 @@ function gallery(report) {
         (c.navigationMode === 'spa' ? 'SPA route' : 'HTTP ' + c.status) +
         ', overflow ' +
         (c.geometry?.horizontalOverflow ?? '?') +
-        'px, JS errors ' +
+        'px, unlabeled controls ' +
+        (c.geometry?.unlabeledControls ?? '?') +
+        ', JS errors ' +
         c.jsErrors;
       return (
         '<article><h2>' +
@@ -478,6 +480,7 @@ async function main() {
       overflowing: captures.filter((c) => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0)
         .length,
       overflowCases: captures.filter((c) => (c.geometry?.horizontalOverflow || 0) > 0).length,
+      unlabeledCases: captures.filter((c) => c.rendered && (c.geometry?.unlabeledControls || 0) > 0).length,
       jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
       failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
       blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),
