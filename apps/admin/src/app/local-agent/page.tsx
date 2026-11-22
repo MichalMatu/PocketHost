@@ -46,6 +46,7 @@ export default function LocalAgentPage() {
   const [rawText, setRawText] = React.useState("")
   const [rawError, setRawError] = React.useState(false)
   const [rawLoading, setRawLoading] = React.useState(true)
+  const [rawRetryToken, setRawRetryToken] = React.useState(0)
   const [followTail, setFollowTail] = React.useState(true)
   const [copyStatus, setCopyStatus] = React.useState("")
   const rawCursor = React.useRef<string | null>(null)
@@ -132,10 +133,13 @@ export default function LocalAgentPage() {
           const more = response.headers.get("X-Agent-Log-More") === "1"
           const bytes = new Uint8Array(await response.arrayBuffer())
           if (disposed) return
-          if (reset) rawDecoder.current = new TextDecoder()
+          // A cursorless refresh starts a new authoritative snapshot, even if
+          // the server does not explicitly mark the response as a rotation.
+          const replace = reset || previous === null
+          if (replace) rawDecoder.current = new TextDecoder()
           const text = rawDecoder.current.decode(bytes, { stream: true })
           rawCursor.current = cursor
-          if (reset) setRawText(text)
+          if (replace) setRawText(text)
           else if (text) setRawText(previousText => previousText + text)
           setRawError(false)
           if (!more) break
@@ -153,7 +157,7 @@ export default function LocalAgentPage() {
       if (document.visibilityState === "visible") void readRaw()
     }, 5000)
     return () => { disposed = true; window.clearInterval(timer); request?.abort() }
-  }, [view, live, refreshToken])
+  }, [view, live, refreshToken, rawRetryToken])
 
   React.useEffect(() => {
     if (view === "console" && followTail && rawViewport.current) {
@@ -210,7 +214,8 @@ export default function LocalAgentPage() {
           <Button size="sm" variant="outline" onClick={() => {
               rawCursor.current = null
               rawDecoder.current = new TextDecoder()
-              setRawText("")
+              // Retain the previously confirmed source lines until the new
+              // snapshot succeeds; a failed refresh must not erase evidence.
               setRefreshToken(value => value + 1)
             }}>
             <RefreshCw className="size-4" /> Refresh
@@ -348,9 +353,16 @@ export default function LocalAgentPage() {
               </div>
             </div>
             {copyStatus && <p role="status" className="text-xs text-muted-foreground">{copyStatus}</p>}
-            {rawError && <p role="alert" className="text-sm text-muted-foreground">
-              Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
-            </p>}
+            {rawError && <div className="flex flex-wrap items-center gap-3">
+              <p role="alert" className="text-sm text-muted-foreground">
+                Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
+              </p>
+              <Button variant="outline" size="sm" disabled={!live || rawLoading}
+                onClick={() => {
+                  setRawError(false)
+                  setRawRetryToken(value => value + 1)
+                }}>Retry raw log</Button>
+            </div>}
             <div ref={rawViewport} aria-label="Raw Agent console"
               onScroll={event => {
                 const el = event.currentTarget

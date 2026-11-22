@@ -97,6 +97,45 @@ describe("Local Agent read-only overview", () => {
     expect(fetcher.mock.calls.some(([url]) => url.includes("mode=local-agent-raw-log"))).toBe(true)
   })
 
+  it("retains exact raw lines on failed refresh and replaces them once retry succeeds", async () => {
+    const newer = "2026-11-20_15:00:01.000000 second original line\n"
+    let rawCalls = 0
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        rawCalls++
+        if (rawCalls === 2) return { ok: false }
+        return {
+          ok: true,
+          headers: new Headers({
+            "X-Agent-Log-Cursor": rawCalls === 1 ? "12:345:79" : "12:345:120",
+            "X-Agent-Log-Reset": "0",
+            "X-Agent-Log-More": "0",
+          }),
+          arrayBuffer: async () => new TextEncoder().encode(
+            rawCalls === 1 ? rawEntry : rawEntry + newer,
+          ).buffer,
+        }
+      }
+      return {
+        ok: true,
+        json: async () => url.includes("mode=control-plane-diagnostics") ? controlPlane : logs,
+      }
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<LocalAgentPage />)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("Last read is still shown.")
+    expect(raw.textContent).toBe(rawEntry)
+    fireEvent.click(screen.getByRole("button", { name: "Retry raw log" }))
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry + newer))
+    expect(screen.queryByText(/Raw log read failed/)).toBeNull()
+    expect(rawCalls).toBe(3)
+    expect(fetcher.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true)
+  })
+
   it("polls event summaries every five seconds, not service state; pause is browser-only", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const fetcher = mockFetch()
