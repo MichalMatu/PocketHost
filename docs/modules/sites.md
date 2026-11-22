@@ -15,7 +15,7 @@ The browser /sites upload picker rejects an empty or oversized/non-ZIP selection
 
 ## Create new site with first ZIP release
 
-The /sites creation form optionally accepts a first ZIP. The browser validates its filename/size before POST, creates an inert stopped site, independently re-reads the exact owner inventory, and only then sends one ZIP PUT to that new site's immutable-release endpoint. After an acknowledged upload it compares an exact site GET and another inventory GET before reporting a published release. Definitive ZIP rejection leaves the new empty site visible; uncertain upload or readback state hides operation cards and requires explicit refresh. No automatic retry, start, deletion, or changes to existing sites. UI regression fixtures are committed and need exact-SHA, separately approved QA.
+The /sites creation form optionally accepts an initial ZIP. A **single owner-intent POST** to `/api/v1/sites/import?name=<encoded>` sends raw ZIP bytes; the server decodes/validates the archive before allocating the site and then creates the stopped site and its first immutable release within the serialized write handler. The UI independently compares the returned release with both the owned-site inventory and an exact-site GET before confirming. A definitive invalid ZIP (HTTP 400) does not create a site; unexpected failures after site allocation can still leave an inert site requiring explicit inventory refresh. No automatic retry, start, deletion or changes to existing sites. Browser interaction QA is still OPEN.
 
 ## Static form error boundaries (2026-11-22)
 
@@ -23,7 +23,7 @@ A definite HTTP 400 for an invalid new site name is reported next to the creatio
 
 ## Initial ZIP structural preflight (2026-11-22)
 
-Before POST creating a new Static site with a first ZIP, the browser performs a bounded classic ZIP envelope check (EOCD, central-directory and local-file headers) on the selected file. Obvious renamed text/invalid archives never create an empty site. This is intentionally not a full extraction or CRC validation: the server remains authoritative, and a structurally plausible ZIP missing root index.html can still be definitely rejected after creation. The existing direct ZIP upload flow does not perform this initial-site preflight. New interaction regression uses a valid one-file ZIP fixture plus malformed-file and server-400 scenarios; QA has not been executed.
+Before POST creating a new Static site with a first ZIP, the browser performs a bounded classic ZIP envelope check (EOCD, central-directory and local-file headers) on the selected file. Obvious renamed text/invalid archives never create an empty site. This is intentionally not full decompression or CRC validation: the server is authoritative and now rejects invalid ZIP contents **before** allocating a site in the initial-import API. The existing direct ZIP upload flow does not perform this initial-site preflight. New interaction regression uses a valid one-file ZIP fixture plus malformed-file and server-400 scenarios; QA has not been executed.
 
 ## Initial ZIP index inventory preflight (2026-11-22)
 
