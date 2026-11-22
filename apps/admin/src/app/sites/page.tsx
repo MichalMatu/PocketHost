@@ -17,9 +17,12 @@ import { endpoint, maxZip, maxStarterHtml, readSignal, starterHtml, readSites, m
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
   const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
-  // Only a fresh owned-site inventory can unlock actions after a
-  // potentially committed mutation. Read-only requests cannot.
-  React.useEffect(() => setOutcomeUnknown(false), [site])
+  // Only a fresh owned inventory may clear uncertain writes and stale views.
+  React.useEffect(() => {
+    setOutcomeUnknown(false)
+    setAssets(null)
+    setVersions(null)
+  }, [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const [health, setHealth] = React.useState<boolean | null>(null)
