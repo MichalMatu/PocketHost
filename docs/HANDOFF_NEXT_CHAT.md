@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — mobile navigation Visual QA (opt-in)
+
+- **Code commit:** `1e960ecf09e22a8224339863ff004a00f403924f` implements `--mobile-menu=true` in `scripts/test-lab/capture.mjs` to capture a local, viewport-bounded screenshot of the opened mobile sidebar for explicitly allowlisted routes, without enabling it for the default run. `mobile-navigation-capture.mjs` uses the existing sidebar trigger and restores the original drawer state on success or failure. `artifact-names.mjs` permits `<route>-mobile-menu.png` only for the mobile viewport. Local gallery, report summary and optional warning counts include the extra shot. Existing GET-only interception and no-transmission rules remain unchanged.
+- **QA scope added but not run:** expanded `tests/quality/test-lab-artifact-names.test.mjs` and `test-lab-capture-warnings.test.mjs`, plus `test-lab-mobile-navigation-capture.test.mjs` for open/closed/error cleanup. This is source-only tooling; no Mac screenshot, A8 test, build, runtime deployment or scheduler was invoked.
+- **Blocker:** private `MichalMatu/local-agent:agent-control` still contains unmatched immutable A8 N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1`, with no terminal result during this turn. Do not overlap or retry the task. After its terminal result, select a fresh exact source SHA, run appropriate targeted A8 QA, and only after PASS verify live ownership/rollback guards for a warranted DEV runtime deployment. Last confirmed A8 DEV is N11 `c4dedfd`.
+
 ## 22 November continuation — unlabeled control diagnostics
 
 - **Source-only Visual QA:** `815a9babcc5f39dd6f639a46ccff0f265891aefe` adds bounded, metadata-only unlabeled button/link detection to `scripts/test-lab/layout-geometry.mjs`, local gallery counts and one command-summary count in `capture.mjs`. The heuristic checks visible interactive elements without text, ARIA labels/references, title or labeled descendants; its 16 structural samples include no label values. It is a triage hint, **not** a full accessible-name audit. Added `tests/quality/test-lab-unlabeled-controls.test.mjs` with two test cases; not yet executed on A8.
