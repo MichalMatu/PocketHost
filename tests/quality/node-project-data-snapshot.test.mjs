@@ -32,6 +32,8 @@ function fixture(t) {
   const png = Buffer.from([0, 3, 255, 11, 44]);
   writeFileSync(path.join(folder, 'db', 'app.sqlite'), db, { mode: 0o600 });
   writeFileSync(path.join(folder, 'uploads', 'images', 'icon.png'), png, { mode: 0o600 });
+  mkdirSync(path.join(folder, 'state'), { mode: 0o700 });
+  mkdirSync(path.join(folder, 'uploads', 'empty'), { mode: 0o700 });
   const host = new NodeProjectDataSnapshots(projectRoot, source, archive);
   return { home, project, folder, source, archive, host, db, png };
 }
@@ -54,6 +56,9 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
   assert.equal(snapshot.files, 2);
   assert.equal(snapshot.bytes, db.length + png.length);
   assert.ok(snapshot.snapshot.startsWith('snapshot-'));
+  const manifest = JSON.parse(readFileSync(path.join(archive, snapshot.snapshot, 'manifest.json'), 'utf8'));
+  assert.equal(manifest.schema, 2);
+  assert.deepEqual(manifest.directories, ['db', 'state', 'uploads', 'uploads/empty', 'uploads/images']);
   assert.equal(readFileSync(path.join(folder, 'db', 'app.sqlite')).toString(), db.toString());
   assert.throws(() => host.restoreToStaging(project.id, snapshot.snapshot, false), /approval/);
   const restored = host.restoreToStaging(project.id, snapshot.snapshot, true);
@@ -65,6 +70,8 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
     png,
   );
   assert.equal(readdirSync(archive).filter((name) => name.startsWith('snapshot-')).length, 1);
+  assert.deepEqual(readdirSync(path.join(restored.restoredTo, project.id, 'state')), []);
+  assert.deepEqual(readdirSync(path.join(restored.restoredTo, project.id, 'uploads', 'empty')), []);
 });
 
 test('Node app-data backup rejects source links and interrupted offline proof', (t) => {
@@ -94,6 +101,18 @@ test('Node app-data archives only the requested project in a multi-project root'
   assert.equal(readdirSync(restored.restoredTo).join(','), project.id);
   assert.equal(existsSync(path.join(archive, snapshot.snapshot, 'data', second.id)), false);
   assert.equal(readFileSync(path.join(unrelated, 'db', 'other.sqlite'), 'utf8'), 'independent bytes');
+});
+
+test('Node app-data rejects changed empty-directory layout in a snapshot', (t) => {
+  const { project, host, archive, folder, db } = fixture(t);
+  const snapshot = host.create(project.id, true, () => true);
+  const changed = path.join(archive, snapshot.snapshot, 'data', project.id, 'uploads', 'empty');
+  rmSync(changed, { recursive: true });
+  assert.throws(
+    () => host.restoreToStaging(project.id, snapshot.snapshot, true),
+    /integrity mismatch/,
+  );
+  assert.deepEqual(readFileSync(path.join(folder, 'db', 'app.sqlite')), db);
 });
 
 test('Node app-data staged restore fails on changed snapshot without modifying source', (t) => {

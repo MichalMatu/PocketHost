@@ -21,17 +21,30 @@ import { NodeProjectDataScope } from './node-project-data-scope.ts';
 const SNAPSHOT_ID = /^snapshot-[a-f0-9]{32}$/;
 const MAX_MANIFEST_BYTES = 64 * 1024;
 const MAX_FILES = 200;
+const MAX_DIRECTORIES = 200;
+const DATA_CATEGORIES = new Set(['uploads', 'db', 'state']);
+const CHILD_NAME = /^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u;
 const MAX_BYTES = 32 * 1024 * 1024;
 const MAX_FILE_BYTES = 16 * 1024 * 1024;
 const MAX_DEPTH = 6;
 
 type FileDigest = { path: string; bytes: number; sha256: string };
+type SnapshotContents = { directories: string[]; files: FileDigest[] };
 type SnapshotManifest = {
-  schema: 1;
+  schema: 1 | 2;
   projectId: string;
   createdAt: string;
+  directories?: string[]; // v2: include empty directories; v1 had files only
   files: FileDigest[];
 };
+
+function validDataPath(relative: string, directory: boolean): boolean {
+  const parts = relative.split('/');
+  const maxParts = directory ? MAX_DEPTH : MAX_DEPTH + 1;
+  return parts.length >= (directory ? 1 : 2) && parts.length <= maxParts &&
+    DATA_CATEGORIES.has(parts[0]!) &&
+    parts.slice(1).every((name) => name.length <= 120 && CHILD_NAME.test(name));
+}
 export interface NodeDataSnapshotResult {
   snapshot: string;
   projectId: string;
@@ -99,7 +112,7 @@ export class NodeProjectDataSnapshots {
     this.privateEntry(this.snapshotRoot, true);
   }
 
-  private ownedData(root: string, projectId: string): { files: string[]; bytes: number } {
+  private ownedData(root: string, projectId: string): { directories: string[]; files: string[]; bytes: number } {
     const report = new NodeProjectDataScope(
       this.projectRoot(),
       root,
@@ -113,6 +126,7 @@ export class NodeProjectDataSnapshots {
     if (root !== this.sourceRoot && (entries.length !== 1 || entries[0] !== projectId)) {
       throw new Error('Snapshot data includes unexpected projects');
     }
+    const directories: string[] = [];
     const files: string[] = [];
     const visit = (folder: string, relative: string, depth: number): void => {
       if (depth > MAX_DEPTH) throw new RangeError('Node data depth limit');
@@ -121,6 +135,11 @@ export class NodeProjectDataSnapshots {
         const name = relative ? relative + '/' + entry.name : entry.name;
         const absolute = path.join(folder, entry.name);
         if (entry.isDirectory()) {
+          if (!validDataPath(name, true)) throw new Error('Invalid Node data directory');
+          directories.push(name);
+          if (directories.length > MAX_DIRECTORIES) {
+            throw new RangeError('Node data directory budget exceeded');
+          }
           visit(absolute, name, depth + 1);
         } else {
           this.privateEntry(absolute, false);
@@ -130,8 +149,9 @@ export class NodeProjectDataSnapshots {
     };
     visit(path.join(root, projectId), '', 0);
     files.sort();
+    directories.sort();
     if (files.length !== report.fileCount) throw new Error('Node data files changed');
-    return { files, bytes: report.totalBytes };
+    return { directories, files, bytes: report.totalBytes };
   }
 
   // The verified project catalog is the only source of owned Node project IDs.
@@ -175,17 +195,22 @@ export class NodeProjectDataSnapshots {
     root: string,
     projectId: string,
     destination?: string,
-  ): FileDigest[] {
+  ): SnapshotContents {
     const inventory = this.ownedData(root, projectId);
-    const manifest: FileDigest[] = [];
+    const files: FileDigest[] = [];
+    if (destination) {
+      for (const relative of inventory.directories) {
+        mkdirSync(path.join(destination, projectId, relative), { recursive: true, mode: 0o700 });
+      }
+    }
     let total = 0;
     for (const relative of inventory.files) {
       const bytes = this.readPrivateFile(path.join(root, projectId, relative));
       total += bytes.length;
-      if (manifest.length >= MAX_FILES || total > MAX_BYTES) {
+      if (files.length >= MAX_FILES || total > MAX_BYTES) {
         throw new RangeError('Node data snapshot budget exceeded');
       }
-      manifest.push({
+      files.push({
         path: relative,
         bytes: bytes.length,
         sha256: createHash('sha256').update(bytes).digest('hex'),
@@ -199,7 +224,7 @@ export class NodeProjectDataSnapshots {
     if (total !== inventory.bytes) {
       throw new Error('Node app data changed during snapshot');
     }
-    return manifest;
+    return { directories: inventory.directories, files };
   }
 
   private manifest(snapshot: string, projectId: string): SnapshotManifest {
@@ -219,13 +244,33 @@ export class NodeProjectDataSnapshots {
       throw new Error('Invalid Node snapshot manifest');
     }
     const item = raw as Record<string, unknown>;
+    const keys = Object.keys(item).sort().join(',');
+    const isV1 = item.schema === 1 && keys === 'createdAt,files,projectId,schema';
+    const isV2 = item.schema === 2 && keys === 'createdAt,directories,files,projectId,schema';
     if (
-      Object.keys(item).sort().join(',') !== 'createdAt,files,projectId,schema' ||
-      item.schema !== 1 || item.projectId !== projectId ||
+      (!isV1 && !isV2) || item.projectId !== projectId ||
       typeof item.createdAt !== 'string' || !Number.isFinite(Date.parse(item.createdAt)) ||
-      !Array.isArray(item.files) || item.files.length > MAX_FILES
+      !Array.isArray(item.files) || item.files.length > MAX_FILES ||
+      (isV2 && (!Array.isArray(item.directories) || item.directories.length > MAX_DIRECTORIES))
     ) {
       throw new Error('Untrusted Node snapshot manifest');
+    }
+    if (isV2) {
+      const directories = item.directories as unknown[];
+      let previousDirectory = '';
+      const present = new Set<string>();
+      for (const relative of directories) {
+        if (typeof relative !== 'string' || relative <= previousDirectory ||
+            !validDataPath(relative, true)) {
+          throw new Error('Invalid Node snapshot directory metadata');
+        }
+        const parts = relative.split('/');
+        if (parts.length > 1 && !present.has(parts.slice(0, -1).join('/'))) {
+          throw new Error('Node snapshot directory parent is missing');
+        }
+        present.add(relative);
+        previousDirectory = relative;
+      }
     }
     const files = item.files as unknown[];
     let bytes = 0;
@@ -238,8 +283,8 @@ export class NodeProjectDataSnapshots {
       if (
         Object.keys(entry).sort().join(',') !== 'bytes,path,sha256' ||
         typeof entry.path !== 'string' || entry.path <= previous ||
-        !/^(uploads|db|state)\/[\p{L}\p{N}][\p{L}\p{N}._/-]*$/u.test(entry.path) ||
-        entry.path.split('/').some((s) => s === '.' || s === '..' || s === '') ||
+        !validDataPath(entry.path, false) ||
+        (isV2 && !(item.directories as string[]).includes(entry.path.split('/').slice(0, -1).join('/'))) ||
         !Number.isSafeInteger(entry.bytes) || (entry.bytes as number) < 0 ||
         (entry.bytes as number) > MAX_FILE_BYTES ||
         typeof entry.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(entry.sha256)
@@ -256,8 +301,9 @@ export class NodeProjectDataSnapshots {
   private validatedSnapshot(snapshot: string, projectId: string): SnapshotManifest {
     const manifest = this.manifest(snapshot, projectId);
     const actual = this.collect(path.join(this.snapshotRoot, snapshot, 'data'), projectId);
-    if (JSON.stringify(actual) !== JSON.stringify(manifest.files)) {
-      throw new Error('Snapshot file integrity mismatch');
+    if (JSON.stringify(actual.files) !== JSON.stringify(manifest.files) ||
+        (manifest.schema === 2 && JSON.stringify(actual.directories) !== JSON.stringify(manifest.directories))) {
+      throw new Error('Snapshot file or directory integrity mismatch');
     }
     return manifest;
   }
@@ -282,15 +328,16 @@ export class NodeProjectDataSnapshots {
       const data = path.join(pending, 'data');
       mkdirSync(data, { mode: 0o700 });
       mkdirSync(path.join(data, projectId), { mode: 0o700 });
+      const copied = this.collect(this.sourceRoot, projectId, data);
       const manifest: SnapshotManifest = {
-        schema: 1,
+        schema: 2,
         projectId,
         createdAt: new Date().toISOString(),
-        files: this.collect(this.sourceRoot, projectId, data),
+        ...copied,
       };
       if (!assertOffline()) throw new Error('Node project became active during backup');
       const second = this.collect(this.sourceRoot, projectId);
-      if (JSON.stringify(second) !== JSON.stringify(manifest.files)) {
+      if (JSON.stringify(second) !== JSON.stringify(copied)) {
         throw new Error('Node data changed during snapshot');
       }
       writeFileSync(path.join(pending, 'manifest.json'), JSON.stringify(manifest), {
@@ -332,7 +379,8 @@ export class NodeProjectDataSnapshots {
         projectId,
         staging,
       );
-      if (JSON.stringify(copied) !== JSON.stringify(manifest.files)) {
+      if (JSON.stringify(copied.files) !== JSON.stringify(manifest.files) ||
+          (manifest.schema === 2 && JSON.stringify(copied.directories) !== JSON.stringify(manifest.directories))) {
         throw new Error('Staged Node data does not match verified snapshot');
       }
       this.ownedData(staging, projectId);
