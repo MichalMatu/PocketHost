@@ -8,8 +8,9 @@ it("shortens presented IDs", () => {
 it("distinguishes deployment and staged source roles", () => {
   expect(releaseRole(candidate, candidate.id, true)).toBe("Running release")
   expect(releaseRole(candidate, candidate.id, false)).toMatch(/stopped/)
-  expect(releaseRole(candidate, null, false)).toMatch(/Staged candidate/)
-  expect(releaseRole({ ...candidate, candidate: false, previousCandidate: true }, null, false)).toMatch(/not automatic rollback/)
+  expect(releaseRole(candidate, null, false)).toBe("Prepared update — not running")
+  expect(releaseRole({ ...candidate, candidate: false, previousCandidate: true }, null, false))
+    .toBe("Older prepared source")
 })
 it("does not invent malformed event time", () => {
   expect(localEventTime("invalid timestamp")).toBe("invalid timestamp")

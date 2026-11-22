@@ -15,7 +15,8 @@ import { useNodeProjectLogs } from "./use-node-project-logs"
 import { NodeProjectLogFeedback } from "./node-project-log-feedback"
 import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
 import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
-import { shortRelease, localEventTime } from "./node-project-display"
+import { shortRelease } from "./node-project-display"
+import { NodeRuntimeHistory } from "./node-runtime-history"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
   validatedExtras, validatedAssets, parseProjectCatalog, parseNodeHealth, requestJson, NodeProjectValidationError,
@@ -663,16 +664,7 @@ export default function ProjectsPage() {
               {!executionEnabled && ownerAuthorized && <p className="text-xs text-muted-foreground">
                 Execution unavailable; review runtime permissions.
               </p>}
-              {runtime?.history?.length ? <details data-testid="node-history" className="rounded-lg border p-3 text-xs">
-                <summary className="cursor-pointer font-medium">Runtime history ({runtime.history.length})</summary>
-                <ol className="mt-2 space-y-1" aria-label="Node runtime history">
-                  {runtime.history.slice(-8).reverse().map((event, i) =>
-                    <li key={event.at + i}>
-                      <span className="text-muted-foreground">{localEventTime(event.at)}</span> · {event.action} ·
-                      <span title={event.release}> {shortRelease(event.release)}</span>
-                    </li>)}
-                </ol>
-              </details> : null}
+              <NodeRuntimeHistory history={runtime?.history ?? []} />
               {preview && <pre aria-label="Local Node response" className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
                 {preview.body}
               </pre>}
