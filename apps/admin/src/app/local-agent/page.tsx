@@ -50,6 +50,8 @@ export default function LocalAgentPage() {
   const [followTail, setFollowTail] = React.useState(true)
   const [copyStatus, setCopyStatus] = React.useState("")
   const rawCursor = React.useRef<string | null>(null)
+  // Manual reads remain available while periodic log updates are paused.
+  const rawManualRead = React.useRef(false)
   const rawDecoder = React.useRef(new TextDecoder())
   const rawViewport = React.useRef<HTMLDivElement>(null)
 
@@ -106,7 +108,8 @@ export default function LocalAgentPage() {
   }, [refreshToken, live])
 
   React.useEffect(() => {
-    if (view !== "console" || !live) return
+    if (view !== "console" || (!live && !rawManualRead.current)) return
+    rawManualRead.current = false
     let disposed = false
     let pending = false
     let request: AbortController | null = null
@@ -158,10 +161,14 @@ export default function LocalAgentPage() {
       }
     }
     void readRaw()
-    const timer = window.setInterval(() => {
+    const timer = live ? window.setInterval(() => {
       if (document.visibilityState === "visible") void readRaw()
-    }, 5000)
-    return () => { disposed = true; window.clearInterval(timer); request?.abort() }
+    }, 5000) : null
+    return () => {
+      disposed = true
+      if (timer !== null) window.clearInterval(timer)
+      request?.abort()
+    }
   }, [view, live, refreshToken, rawRetryToken])
 
   React.useEffect(() => {
@@ -220,6 +227,7 @@ export default function LocalAgentPage() {
             {live ? "Pause log updates" : "Resume log updates"}
           </Button>
           <Button size="sm" variant="outline" onClick={() => {
+              rawManualRead.current = true
               rawCursor.current = null
               rawDecoder.current = new TextDecoder()
               // Retain the previously confirmed source lines until the new
@@ -365,8 +373,9 @@ export default function LocalAgentPage() {
               <p role="alert" className="text-sm text-muted-foreground">
                 Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
               </p>
-              <Button variant="outline" size="sm" disabled={!live || rawLoading}
+              <Button variant="outline" size="sm" disabled={rawLoading}
                 onClick={() => {
+                  rawManualRead.current = true
                   setRawError(false)
                   setRawRetryToken(value => value + 1)
                 }}>Retry raw log</Button>

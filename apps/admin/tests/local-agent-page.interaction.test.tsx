@@ -200,6 +200,45 @@ describe("Local Agent read-only overview", () => {
     }
   })
 
+  it("allows manual raw refresh while paused without restarting the five-second poller", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
+    const next = "2026-11-20_15:00:01.000001 another source line\n"
+    let rawCalls = 0
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        rawCalls++
+        return {
+          ok: true,
+          headers: new Headers({
+            "X-Agent-Log-Cursor": rawCalls === 1 ? "12:345:79" : "12:345:120",
+            "X-Agent-Log-Reset": "0",
+            "X-Agent-Log-More": "0",
+          }),
+          arrayBuffer: async () => new TextEncoder().encode(
+            rawCalls === 1 ? rawEntry : rawEntry + next,
+          ).buffer,
+        }
+      }
+      return { ok: true, json: async () =>
+        url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+    fireEvent.click(screen.getByRole("button", { name: "Pause log updates" }))
+    const paused = rawCalls
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(rawCalls).toBe(paused)
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry + next))
+    expect(rawCalls).toBe(paused + 1)
+    expect(screen.getByText("Log updates paused")).toBeTruthy()
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000) })
+    expect(rawCalls).toBe(paused + 1)
+  })
+
   it("polls event summaries every five seconds, not service state; pause is browser-only", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const fetcher = mockFetch()
