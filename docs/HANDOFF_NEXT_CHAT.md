@@ -2,27 +2,33 @@
 status: active
 owner: core
 last_reviewed: 2026-11-22
-purpose: Current verified night sprint evidence, exact deployed SHA and next safe code slice
+purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code slice
 ---
 
 # PocketHost — current handoff
 
-**Plan:** [night autonomous sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Prior checkpoint:** [post-demo cleanup](checkpoints/2026-11-22-demo-cleanup-overnight-handoff.md). **Mandatory:** [root AGENTS](../AGENTS.md), [A8 transport](LOCAL_AGENT_TERMUX.md), [FAST FLOW](DEV_ITERATION.md), [MVP acceptance](MVP_EXECUTION_PLAN.md).
+**Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
-## Verified source, QA and DEV
+## Verified N1–N8 evidence
 
-- Last code snapshot before this documentation-only handoff commit: `7bd95db167977bf15018170d69574905a6a2101f` on `PocketHost/main`. Re-read fresh main and immutable A8 receipts next turn; this document is not a live device poll.
-- **Latest A8 DEV guarded DEPLOY PASS:** `97fccbcbdfca4704a56cf234d722fac3bae95ac8`, task `pockethost-a8-night-n4-97fccbc-deploy-20261122-v1`. Owned PID `11454`, start ticks `73435287`, loopback HTTP `200`, protected services unchanged, tests `not-run` in deploy. No subsequent panel restart for docs or Test Lab source.
-- **N1 QA mapping:** `b161a5a` + `83063b7` code; targeted A8 syntax, format, structure, root lint and Node evidence PASS across the pinned receipts. N1 guarded DEV PASS, later superseded.
-- **N2 Static create/import:** `1c114cfe4047ab386dcdcf63b50800ae1530d05f`; extracted exact-site readback and added pending/duplicate-submit regression. A8 `format,admin-types,ui` PASS, guarded DEV PASS.
-- **N3 Node Projects selection readback:** `3d79d2c` + fixture `2739e4c` + unused-import correction `803cf7528505f797b349e71b92fb2b8f226583c2`. A8 `format,admin-types,ui` PASS at final code; guarded DEV PASS, superseded by N4.
-- **N4 raw Local Agent console:** `73c2827` + fixture `3c99b1c` + test repair `97fccbcbdfca4704a56cf234d722fac3bae95ac8`. A failed refresh now retains original raw source lines; an explicit retry uses the existing browser poll mechanism. A8 format and admin TypeScript PASS at `3c99b1c`, targeted format/UI PASS at `97fccbc`; guarded DEV PASS above. No new Agent process or poller.
-- **N5 read-only Test Lab tooling:** `92e1756` and formatted/lint-corrected `7bd95db167977bf15018170d69574905a6a2101f`. Added local bottom-of-page screenshots, document-height geometry and shared strict screenshot-name validation. A8 `syntax,format,structure,root-lint,node` QA **PASS** at `7bd95db`, task `pockethost-a8-night-n5-7bd95db-qa-20261122-v1`. **No DEV deploy/restart warranted** for isolated Test Lab tools; no Mac capture, off-device screenshot publication or private LAN transfer performed. Actual Mac browser qualification remains OPEN and needs current exact source/live panel origin scope, not stale 19 November endpoints.
+- Source `main` immediately before this docs-only commit: `309298674040ee59f648911602ac6364740d9ff1`. Always read fresh `main` before another code change.
+- **Latest guarded Samsung A8 DEV PASS:** `309298674040ee59f648911602ac6364740d9ff1`, task `pockethost-a8-night-n8-3092986-deploy-20261122-v1`: owned PID `29629`, start ticks `73600929`, loopback HTTP `200`, guarded owner/live SHA and protected services unchanged. These are recorded terminal receipt values, not a current live poll.
+- **N1** — `b161a5a`, fix `83063b7`: faster safe deleted-UI QA impact mapping. Scoped A8 syntax/format/Node plus applicable root checks PASS; guarded DEV PASS, superseded.
+- **N2** — `1c114cf`: separated Static Hosting create/import readback verification, pending/duplicate-submit feedback and fixture. Scoped A8 format/admin-types/UI PASS; guarded DEV PASS, superseded.
+- **N3** — `3d79d2c` / `2739e4c` / `803cf75`: Node Projects selection-scoped release/runtime reads and stale-result fixture. Scoped A8 format/admin-types/UI PASS; guarded DEV PASS, superseded.
+- **N4** — `73c2827` / `3c99b1c` / `97fccbc`: Local Agent raw console preserves original lines after failed refresh and offers retry; router/fixture correction. Scoped A8 format/admin-types/UI PASS across relevant final commits; guarded DEV PASS, superseded.
+- **N5** — `92e1756` / `7bd95db`: read-only Test Lab screenshots of page bottoms with local artifacts, document-height geometry and allowlisted names. Scoped A8 syntax/format/structure/lint/Node PASS. **No panel deploy** for Test Lab source-only changes; actual Mac browser screenshot acceptance remains **OPEN**. Never publish screenshots or LAN data externally without separate authorization.
+- **N6** — `0bbf2a` / `f9074ef` / `6f0c438` / final `86bbbaa90fdceb5ddd606066dd550adebb53c9aa`: project-scoped Node raw log reader, stale async response guard and fixture. Early TypeScript syntax FAILs fixed; final A8 `format,admin-types,ui` PASS, task `pockethost-a8-night-n6-86bbbaa-qa-20261122-v1`; guarded DEV PASS, superseded.
+- **N7** — `3b39fbd3ebe975e611d923fb4c7df240a355383e`: Node releases explicit not-checked/empty/error states and read-only Retry. A8 `format,admin-types,ui` PASS task `pockethost-a8-night-n7-3b39fbd-qa-20261122-v1`; guarded DEV PASS, superseded.
+- **N8** — `309298674040ee59f648911602ac6364740d9ff1`: read-only Refresh releases independent of full catalog, GET-only fixture. A8 `format,admin-types,ui` PASS task `pockethost-a8-night-n8-3092986-qa-20261122-v1`; guarded DEV PASS above.
+- At checkpoint, A8 transport task/result directories were paired, with **no pending task**. Do not assume continued idle without rechecking.
 
-**Not accepted:** true browser ZIP/folder/custom HTML create/import with served-byte equality and verified cleanup; independent Node project end-to-end; mutable application data recovery; broad G2 build/coverage; physical G3 reboot; public cutover and new visual-test Mac acceptance. Do not infer these from scoped QA or runtime readback.
+## Still OPEN
 
-## Next code slice — N6
+Real browser Static ZIP/folder/custom HTML import, served-byte comparison and cleanup; independently created Node project acceptance; mutable-data restore; comprehensive G2 qualification; physical G3 reboot; public cutover; actual Mac Test Lab browser capture. Targeted QA and HTTP readback do **not** prove these.
 
-From fresh `main`, improve the existing read-only **Node Projects log feedback** at `apps/admin/src/app/projects/page.tsx`: old `/logs` responses can outlive a deep-link project selection. Extract a bounded scoped log reader that invalidates pending reads on project switch, preserves real original log lines and shows loading/error state; add fixture-only interaction regression. Preserve owner token/API and all existing stage/deploy guards. Then run separate exact-SHA A8 focused `format,admin-types,ui` checks and only guarded DEV deploy after PASS. If any task is pending/unknown, do not queue overlapping device work; progress an independent source-only slice instead.
+## Next sprint N9
 
-Chat Bridge continuation requires the existing external trigger. Do not add schedulers, Actions, Codex/Work, unrelated service operations, WAN/DNS/tunnel updates, physical reboots or writes to real hosted sites/databases. Docs-only handoff updates require no build, QA or restart.
+From newly verified `main`, address **stale Node Projects read-only Health/Preview responses** in `apps/admin/src/app/projects/page.tsx` (around Check live readiness / Preview local response). Like N6 logs, a delayed response must not update the new project after switching the selected project. Add one bounded cancellation/generation guard and fixture-only UI regression. Preserve exact source lines, full owner-token API contract and all deploy approvals. Run scoped A8 `format,admin-types,ui` and guarded DEV only after exact-SHA QA PASS. If blocked, pick another independent source-only module, not a retry of an unknown task.
+
+No new scheduler, GitHub Actions, Codex/Work, unrelated services, public DNS/tunnels, real data writes or device reboot. Mac may run only the previously scoped private read-only Test Lab with verified origin/SHA; no screenshot export. Docs-only checkpoint does not require tests or panel restart. Night continuation still requires external Chat Bridge invocation; this chat does not run in the background after it ends.
