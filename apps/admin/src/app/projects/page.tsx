@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
+import { NodeProjectPicker } from "./node-project-picker"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
 import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
@@ -236,32 +237,26 @@ export default function ProjectsPage() {
           }
         })}>Refresh</Button>
       </div>
-      {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {projects.length === 0 ? <p className="text-muted-foreground text-sm">No Node projects yet.</p> :
-          <div className="flex flex-wrap gap-2">{projects.map(project =>
-            <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
-              disabled={busy} onClick={() => action(async () => {
-                setSearchParams(current => {
-                  const next = new URLSearchParams(current)
-                  next.delete("project")
-                  return next
-                }, { replace: true })
-                invalidateRead()
-                beginInspection()
-                resetLogs()
-                setSelectedId(project.id); setApproved(false)
-                setPreview(null)
-                setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
-                setExtraFiles({}); setAssetFiles({})
-                setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
-                setDependencyReview(null)
-                setGithubRepository("")
-                await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
-              })}>{project.name}</Button>)}</div>}
-        </CardContent>
-      </Card>}
+      {catalogState === "ready" &&
+        <NodeProjectPicker projects={projects} selectedId={selectedId} busy={busy}
+          onSelect={(project) => action(async () => {
+            setSearchParams(current => {
+              const next = new URLSearchParams(current)
+              next.delete("project")
+              return next
+            }, { replace: true })
+            invalidateRead()
+            beginInspection()
+            resetLogs()
+            setSelectedId(project.id); setApproved(false)
+            setPreview(null)
+            setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
+            setExtraFiles({}); setAssetFiles({})
+            setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
+            setDependencyReview(null)
+            setGithubRepository("")
+            await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
+          })} />}
       <Card id="node-owner-access">
         <CardContent className="space-y-2 py-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
