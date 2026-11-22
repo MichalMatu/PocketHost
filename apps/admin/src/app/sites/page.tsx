@@ -4,6 +4,7 @@ import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Uplo
 
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
+import { useOwnedSiteInventory } from "./use-owned-site-inventory"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -427,7 +428,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
 export default function SitesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedSiteId = searchParams.get("site")
-  const [sites, setSites] = React.useState<FleetSite[]>([])
+  const { sites, setSites, loading, error, setError, reload, refresh } = useOwnedSiteInventory()
   const [name, setName] = React.useState("")
   const [initialZip, setInitialZip] = React.useState<File | null>(null)
   const [initialFolder, setInitialFolder] = React.useState<File[]>([])
@@ -439,34 +440,10 @@ export default function SitesPage() {
     initialFolderInput.current?.setAttribute("webkitdirectory", "")
     initialFolderInput.current?.setAttribute("directory", "")
   }, [])
-  const [loading, setLoading] = React.useState(true)
   const [creating, setCreating] = React.useState(false)
-  const [error, setError] = React.useState<string | null>(null)
   const [inputError, setInputError] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
 
-  const reload = React.useCallback(async (signal?: AbortSignal) => {
-    const entries = await readSites(signal).catch(cause => {
-      if (!signal?.aborted) {
-        setSites([])
-        setError(cause instanceof Error ? cause.message : "Could not load static sites.")
-      }
-      throw cause
-    })
-    if (!signal?.aborted) { setSites(entries); setError(null) }
-  }, [])
-  React.useEffect(() => {
-    const controller = new AbortController()
-    void Promise.resolve().then(() => reload(controller.signal))
-      .catch(() => {})
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
-    return () => controller.abort()
-  }, [reload])
-  const refresh = async () => {
-    setLoading(true)
-    await reload().catch(() => undefined)
-    setLoading(false)
-  }
   const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (creating || loading || error !== null || sites.length >= 8) return
