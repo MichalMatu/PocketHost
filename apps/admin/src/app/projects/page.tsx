@@ -8,6 +8,7 @@ import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-impor
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
 import { NodeProjectPicker } from "./node-project-picker"
+import { NodeRuntimeDetails } from "./node-runtime-details"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
 import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
@@ -345,42 +346,8 @@ export default function ProjectsPage() {
               {!ownerAuthorized && <p role="status" className="text-xs text-muted-foreground">
                 Read-only · <a href="#node-owner-access" className="underline underline-offset-4">Unlock owner access</a>
               </p>}
-              <details data-testid="node-runtime-details" className="rounded-lg border px-3 py-2 text-xs">
-                <summary className="cursor-pointer font-medium">Technical details</summary>
-                <div className="mt-2 space-y-2 text-muted-foreground">
-              <p aria-label="Node local address" className="text-sm">
-                Device loopback: {runtime?.port ? `http://127.0.0.1:${runtime.port}/` : "not assigned"}.
-                Not a public or directly reachable LAN URL.
-              </p>
-              <p className="text-sm">Staged candidate plan: {plan?.reason ?? "not checked"} · Dependencies: {plan?.dependencyCount ?? "unknown"} · Port: {runtime?.port ?? "not allocated"} · Node: {plan?.nodeVersion ?? "unknown"} · npm: {plan?.npmVersion ?? "unknown"}</p>
-              {buildReview && <p className="text-muted-foreground text-xs"
-                aria-label="Node build setup">
-                Build: {buildReview.status} · Script: {buildReview.script ?? "not required"} ·
-                Dependencies prepared: {String(buildReview.dependenciesPrepared)} ·
-                Artifact verified: {String(buildReview.artifactVerified)} ·
-                {buildReview.artifact && <>
-                  Files: {buildReview.artifact.files.join(", ") || "none"}
-                  {buildReview.artifact.truncated ? " (more files)" : ""} ·
-                  Size: {buildReview.artifact.bytes} bytes ·
-                </>}
-                Blockers: {buildReview.blockers.length ? buildReview.blockers.join(", ") : "none"}
-              </p>}
-              {dependencyReview && <p className="text-muted-foreground text-xs"
-                aria-label="Node dependency setup">
-                Setup: {dependencyReview.status} · Dependencies: {dependencyReview.dependencyCount} ·
-                Install: {dependencyReview.installRequired ? dependencyReview.installCommand?.join(" ") : "not required"} ·
-                Build: {dependencyReview.buildRequired ? dependencyReview.buildCommand?.join(" ") : "not required"} ·
-                Blockers: {dependencyReview.blockers.length ? dependencyReview.blockers.join(", ") : "none"} ·
-                {dependencyReview.status === "prepared"
-                  ? " Installed package bytes verified; no npm command executed during this review."
-                  : " Not executed; installation/build requires separate approval."}
-              </p>}
-              <p className="text-sm">Last: <span title={runtime?.lastGoodRelease ?? undefined}>{shortRelease(runtime?.lastGoodRelease)}</span> · Previous: <span title={runtime?.previousGoodRelease ?? undefined}>{shortRelease(runtime?.previousGoodRelease)}</span> · Desired: {runtime?.desired ?? "unknown"}</p>
-              <p className="text-muted-foreground text-xs">Health policy (read-only): {runtime?.healthDecision?.reason ?? "not checked"}.
-                No automatic restart is authorized.
-              </p>
-                </div>
-              </details>
+              <NodeRuntimeDetails runtime={runtime} plan={plan}
+                buildReview={buildReview} dependencyReview={dependencyReview} />
               {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
                   (plan.dependencyIssues?.length ?? 0) > 0) &&
                 <p role="alert" className="text-sm text-destructive">{[
