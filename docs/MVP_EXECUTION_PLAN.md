@@ -11,7 +11,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified A8 DEV:** `170aed953b7eb89a9b90330fdff106c8cbc52e6f`, guarded receipt `pockethost-a8-readonly-recovery-checklist-170aed9-deploy-20261122-v1` **DEPLOY PASS**, PID **11439**, ticks **71958880**, HTTP 200, protected services unchanged. New read-only Node recovery checklist, no backup/restore API. **New SHA QA OPEN**; last scoped QA PASS at older `9b910d8dc353c512333b290a6749c60ad3df530f` only.
+- **Last verified A8 DEV:** `84434bed6f40785055e7f26a69f5e244d7dbd57c`, receipt `pockethost-a8-node-snapshot-index-84434be-deploy-20261122-v1` **DEPLOY PASS** (PID 18226, ticks 72026835, HTTP 200, protected services unchanged). Adds owner-only read-only detached snapshot metadata listing; **no live backup/restore and no QA for new SHA**. Last seven-check QA PASS at older `9b910d8dc353c512333b290a6749c60ad3df530f`.
 - **Newest independently executed QA:** `9b910d8dc353c512333b290a6749c60ad3df530f` **PASS** for `format,structure,boundaries,root-lint,root-types,node,syntax` (receipt `pockethost-a8-node-data-qa-9b910d8-20261122-v1`). Former format failures at `590c576` and `6d38d32` are resolved by exact Prettier correction. The older 65/65 UI QA at `6585afe` does not replace newest-browser acceptance. Full G2 and physical G3 remain separate.
 - **Static ZIP test-only addition:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. That test-only commit did not restart the panel. A **later** guarded Node backup code deployment moved the last attested live SHA to `96c2879`.
 - **Live ZIP exercise:** API active ZIP export → strict archive decode → independent temporary Static project import/HTTP byte verification **PASS** (1 file, 432 bytes; 550-byte ZIP), original untouched, fixture removed. Receipt `pockethost-a8-live-static-export-isolated-import-6585afe-20261121-v1`. Browser ZIP-upload path and independently durable Static backup remain OPEN.
@@ -21,12 +21,12 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | DEPLOY PASS; recovery view QA OPEN       | Live 170aed9, PID 11439/ticks/HTTP/protected services PASS; older scoped QA at 9b910d8             |
+| A8 DEV / Local Agent          | DEPLOY PASS; new snapshot index QA OPEN | Live 84434be PID 18226, ticks/HTTP/protected services PASS; last QA at 9b910d8                    |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core + isolated ZIP PASS; browser OPEN   | Real A8 ZIP export and isolated import/HTTP equality PASS; browser ZIP upload still open               |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
 | Hosting / Deployments / Logs  | Basic routes PASS; browser sign-off OPEN | One Static + one Node catalog, pages HTTP 200; current-browser selection not signed off                |
-| Backups & Recovery            | Source Restic PASS; mutable data PARTIAL | Per-category Node data inventory deployed; snapshot fixtures PASS at 9b910d8, latest UI QA OPEN     |
+| Backups & Recovery            | Source Restic PASS; mutable data PARTIAL | Read-only local snapshot manifest index deployed, integrity not checked; app-data recovery OPEN     |
 | Services S1–S4                | READY_FOR_ACCEPTANCE                     | Owned fixed-template worker exercised; general custom worker/negative cases open                       |
 | Mosquitto MQTT                | Loopback MVP PASS                        | Runit + publish/subscribe + CONNACK at `127.0.0.1:1883`; LAN closed                                    |
 | Health checks                 | A8 API PASS; browser OPEN                | On-demand Agent/SSH/MQTT/Cloudflare checks; manual button and fault path acceptance open               |
@@ -40,7 +40,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 ## Immediate priority — broad functionality before deep refinement
 
 1. **Static ZIP scoped PASS; browser OPEN:** actual A8 export → strict decode → isolated reimport/HTTP byte equality PASS, original unchanged and temporary fixture removed. Next browser upload to a separately created disposable owned site requires safe verified cleanup; do not confuse the isolated host path with browser flow.
-2. **Project recovery (next):** app-data category inventory and fail-closed recovery checklist deployed. Database consistency and one-shot approval remain unverified, backup/restore not exposed. Exact-SHA functional QA then disposable A8 snapshot/staging proof still OPEN; no live data manipulation.
+2. **Project recovery (next):** per-category data inventory, recovery checklist, and read-only detached snapshot metadata index deployed. Metadata does not certify a backup; no snapshot action exposed. Exact-SHA QA and disposable A8 offline snapshot/checksum/staging acceptance are next; real database consistency and off-device protection still OPEN.
 3. **One new project end to end:** reuse existing Static ZIP/folder and Node local/GitHub intake; demonstrate deployment, update, logs, health, rollback and retained data. Only after all base features work is `photomap.pl` the proposed real migration.
 4. **Cloudflare using Pi only:** inventory current Pi public hostname/DNS, choose a safe owned app on A8, prepare validated ingress candidate with preserved old Pi origin and same named tunnel. Do not route unauthenticated PocketHost admin, SSH or MQTT publicly. No change to DNS/connector yet. [Design](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
 5. **Separate physical acceptance:** Android Termux:Boot restore following an explicitly approved reboot; then pending Services S1–S4 worker controls/current-browser selection, scoped negative tests and **only when separately approved** full QA.
