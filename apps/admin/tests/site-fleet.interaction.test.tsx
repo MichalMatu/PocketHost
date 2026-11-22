@@ -276,6 +276,71 @@ describe("H2 browser site-manager lifecycle", () => {
   })
 
 
+
+  it("creates a stopped website with first starter HTML release in one POST", async () => {
+    const user = userEvent.setup()
+    let sites: ReturnType<typeof project>[] = []
+    const published = {
+      ...project("stopped", true),
+      fileCount: 1,
+      bytes: 432,
+      releases: 1,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites }) }
+      if (url === "/api/v1/sites/import?name=My%20own%20site" && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
+        expect((options.headers as Record<string, string>)["Content-Type"]).toBe("application/json")
+        const payload = JSON.parse(String(options.body))
+        expect(payload.files).toHaveLength(1)
+        expect(payload.files[0].name).toBe("index.html")
+        expect(atob(payload.files[0].base64)).toContain("<h1>My first PocketHost site</h1>")
+        sites = [published]
+        return { ok: true, json: async () => ({ site: published }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: sites[0] }) }
+      throw new Error("Unexpected site request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    await user.click(screen.getByRole("button", { name: "Create with starter HTML" }))
+    await screen.findByText(/created and starter HTML published as its first immutable release/)
+    expect(calls.mock.calls.filter(([, options]) => options?.method).map(([, options]) => options?.method))
+      .toEqual(["POST"])
+    expect(calls.mock.calls.some(([url, options]) =>
+      String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
+    expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
+    expect((screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }) as HTMLInputElement).checked)
+      .toBe(false)
+  })
+
+  it("disables starter HTML when a ZIP or folder is selected", async () => {
+    const user = userEvent.setup()
+    const calls = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    const starter = screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }) as HTMLInputElement
+    await user.click(starter)
+    expect(starter.checked).toBe(true)
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"), makeStaticZip())
+    expect(starter.checked).toBe(false)
+    expect(starter.disabled).toBe(true)
+    expect(screen.getByRole("button", { name: "Create and import ZIP" })).toBeTruthy()
+    await user.upload(screen.getByLabelText("Initial folder (optional)"),
+      new File(["<h1>Folder</h1>"], "index.html"))
+    expect(starter.disabled).toBe(true)
+    expect(starter.checked).toBe(false)
+    expect(screen.getByRole("button", { name: "Create and import folder" })).toBeTruthy()
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("creates and publishes an initial folder in one POST with exact-site readback", async () => {
     const user = userEvent.setup()
     let current: ReturnType<typeof project>[] = []

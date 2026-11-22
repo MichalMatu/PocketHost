@@ -424,6 +424,7 @@ export default function SitesPage() {
   const [name, setName] = React.useState("")
   const [initialZip, setInitialZip] = React.useState<File | null>(null)
   const [initialFolder, setInitialFolder] = React.useState<File[]>([])
+  const [publishStarter, setPublishStarter] = React.useState(false)
   const initialZipInput = React.useRef<HTMLInputElement>(null)
   const initialFolderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
@@ -463,7 +464,8 @@ export default function SitesPage() {
     if (creating || loading || error !== null || sites.length >= 8) return
     const firstRelease = initialZip
     const firstFolder = initialFolder
-    const hasFirstFiles = firstRelease !== null || firstFolder.length > 0
+    const starter = publishStarter && firstRelease === null && firstFolder.length === 0
+    const hasFirstFiles = firstRelease !== null || firstFolder.length > 0 || starter
     if (firstRelease) {
       const invalid = validateStaticZipSelection(firstRelease)
       if (invalid) {
@@ -488,11 +490,14 @@ export default function SitesPage() {
         // Both initial import formats use the same single server-validated
         // create-and-publish endpoint. Prepare folder data before any POST.
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
+        const starterPayload = starter ? JSON.stringify({ files: [{
+          name: "index.html", base64: encodeBase64(new TextEncoder().encode(starterHtml)),
+        }] }) : null
         const importEndpoint = endpoint + "/import?name=" + encodeURIComponent(name.trim())
         created = firstRelease
           ? await mutate(importEndpoint, "POST", firstRelease, "application/zip")
-          : folderPayload !== null
-            ? await mutate(importEndpoint, "POST", folderPayload, "application/json")
+          : folderPayload !== null || starterPayload !== null
+            ? await mutate(importEndpoint, "POST", folderPayload ?? starterPayload!, "application/json")
             : await mutate(endpoint + "/", "POST",
               JSON.stringify({ name }), "application/json")
       } catch (cause) {
@@ -549,11 +554,12 @@ export default function SitesPage() {
         setName("")
         setInitialZip(null)
         setInitialFolder([])
+        setPublishStarter(false)
         if (initialZipInput.current) initialZipInput.current.value = ""
         if (initialFolderInput.current) initialFolderInput.current.value = ""
         setNotice(hasFirstFiles
           ? 'Site "' + created.name + '" created and ' +
-            (firstRelease ? "ZIP" : "folder") +
+            (firstRelease ? "ZIP" : firstFolder.length ? "folder" : "starter HTML") +
             ' published as its first immutable release. Press Start when ready.'
           : 'Site "' + created.name + '" created. Edit HTML to publish the first release.')
       } catch {
@@ -592,7 +598,8 @@ export default function SitesPage() {
                 <Button type="submit"
                   disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
                   <FolderOpen /> {initialZip ? "Create and import ZIP" :
-                    initialFolder.length ? "Create and import folder" : "Create site"}
+                    initialFolder.length ? "Create and import folder" :
+                    publishStarter ? "Create with starter HTML" : "Create site"}
                 </Button>
               </div>
               <div className="space-y-1">
@@ -606,6 +613,7 @@ export default function SitesPage() {
                     setInitialZip(picked)
                     if (picked) {
                       setInitialFolder([])
+                      setPublishStarter(false)
                       if (initialFolderInput.current) initialFolderInput.current.value = ""
                     }
                     setInputError(null)
@@ -625,6 +633,7 @@ export default function SitesPage() {
                     setInitialFolder(selected)
                     if (selected.length) {
                       setInitialZip(null)
+                      setPublishStarter(false)
                       if (initialZipInput.current) initialZipInput.current.value = ""
                     }
                     setInputError(null)
@@ -633,6 +642,22 @@ export default function SitesPage() {
                   Up to 100 files, 2 MiB each, 8 MiB total. Include index.html.
                   The server validates all files before creating the stopped site.
                   No automatic retry or start.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label className="flex items-center gap-2 text-sm font-medium">
+                  <input type="checkbox" className="size-4"
+                    checked={publishStarter}
+                    disabled={creating || loading || initialZip !== null || initialFolder.length > 0}
+                    onChange={event => {
+                      setPublishStarter(event.currentTarget.checked)
+                      setInputError(null)
+                    }} />
+                  Publish starter HTML on creation
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Instead of uploading files, publish a sample index.html as the first stopped release.
+                  You can edit it after creation. No automatic start.
                 </p>
                 {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
               </div>
