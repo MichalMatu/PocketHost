@@ -133,6 +133,11 @@ export default function LocalAgentPage() {
           const more = response.headers.get("X-Agent-Log-More") === "1"
           const bytes = new Uint8Array(await response.arrayBuffer())
           if (disposed) return
+          // "More" must advance. Preserve the last confirmed lines and report
+          // a failed read instead of repeating an empty or duplicate chunk.
+          if ((more && bytes.length === 0) ||
+              (!reset && previous !== null && cursor === previous && bytes.length > 0))
+            throw Error("raw-log-cursor-stalled")
           // A cursorless refresh starts a new authoritative snapshot, even if
           // the server does not explicitly mark the response as a rotation.
           const replace = reset || previous === null
@@ -177,10 +182,13 @@ export default function LocalAgentPage() {
         field.style.position = "fixed"
         field.style.opacity = "0"
         document.body.appendChild(field)
-        field.select()
-        const copied = document.execCommand("copy")
-        field.remove()
-        if (!copied) throw new Error("copy-not-supported")
+        try {
+          field.select()
+          if (!document.execCommand("copy")) throw new Error("copy-not-supported")
+        } finally {
+          // A rejected browser copy must not leave a hidden log textarea behind.
+          field.remove()
+        }
       }
       setCopyStatus("Copied loaded log")
     } catch {

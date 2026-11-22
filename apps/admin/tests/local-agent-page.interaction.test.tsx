@@ -137,6 +137,69 @@ describe("Local Agent read-only overview", () => {
     expect(fetcher.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true)
   })
 
+
+  it.each(["empty continuation", "duplicate continuation"] as const)(
+    "stops a stalled raw log %s without repeating requests or modifying genuine lines",
+    async failure => {
+      let rawCalls = 0
+      const fetcher = vi.fn(async (url: string) => {
+        if (url.includes("mode=local-agent-raw-log")) {
+          rawCalls++
+          const bytes = new TextEncoder().encode(
+            rawCalls === 1 || failure === "duplicate continuation" ? rawEntry : "",
+          )
+          return {
+            ok: true,
+            headers: new Headers({
+              "X-Agent-Log-Cursor": "12:345:79",
+              "X-Agent-Log-Reset": "0",
+              "X-Agent-Log-More": "1",
+            }),
+            arrayBuffer: async () => bytes.buffer,
+          }
+        }
+        return { ok: true, json: async () =>
+          url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+      })
+      vi.stubGlobal("fetch", fetcher)
+      render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+      fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+      const raw = await screen.findByLabelText("Raw Agent console")
+      await waitFor(() =>
+        expect(screen.getByText(/Raw log read failed/)).toBeTruthy())
+      expect(raw.textContent).toBe(rawEntry)
+      expect(rawCalls).toBe(2)
+      expect(fetcher.mock.calls.filter(([url]) =>
+        url.includes("mode=local-agent-raw-log"))).toHaveLength(2)
+    },
+  )
+
+  it("always removes the temporary raw-log clipboard field when copy is refused", async () => {
+    const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard")
+    const command = Object.getOwnPropertyDescriptor(document, "execCommand")
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined })
+    Object.defineProperty(document, "execCommand", {
+      configurable: true,
+      value: () => { throw new Error("copy rejected") },
+    })
+    try {
+      vi.stubGlobal("fetch", mockFetch())
+      render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+      fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+      const raw = await screen.findByLabelText("Raw Agent console")
+      await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+      fireEvent.click(screen.getByRole("button", { name: "Copy loaded log" }))
+      expect(await screen.findByText("Copy unavailable in this browser")).toBeTruthy()
+      expect(document.querySelector('textarea')).toBeNull()
+      expect(raw.textContent).toBe(rawEntry)
+    } finally {
+      if (clipboard) Object.defineProperty(navigator, "clipboard", clipboard)
+      else Reflect.deleteProperty(navigator, "clipboard")
+      if (command) Object.defineProperty(document, "execCommand", command)
+      else Reflect.deleteProperty(document, "execCommand")
+    }
+  })
+
   it("polls event summaries every five seconds, not service state; pause is browser-only", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const fetcher = mockFetch()
