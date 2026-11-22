@@ -1034,19 +1034,20 @@ export default function ProjectsPage() {
                 const submittedName = name.trim()
                 try {
                   const data = await getJson(api + "/", "POST", { name: submittedName })
-                  if (!validProject(data.project) || data.project.name !== submittedName)
+                  const createdProject = data.project
+                  if (!validProject(createdProject) || createdProject.name !== submittedName)
                     throw new Error("Unverified create acknowledgement")
                   const catalog = await refresh()
-                  if (!catalog.some(project => project.id === data.project.id && project.name === submittedName))
+                  if (!catalog.some(project => project.id === createdProject.id && project.name === submittedName))
                     throw new Error("Created project not found in verified catalog")
                   invalidateRead()
                   beginInspection()
                   resetLogs()
-                  setSelectedId(data.project.id); setName(""); setApproved(false)
+                  setSelectedId(createdProject.id); setName(""); setApproved(false)
                   setPreview(null)
                   setCreatePhase("confirmed")
                   setMessage("Private Node project created.")
-                  void loadRuntime(data.project.id).catch(() => {
+                  void loadRuntime(createdProject.id).catch(() => {
                     setError("Project confirmed in catalog, but runtime readback failed. Refresh runtime status.")
                   })
                 } catch (cause) {
