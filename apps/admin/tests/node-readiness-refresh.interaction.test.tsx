@@ -45,7 +45,8 @@ it("clears an earlier ready state while a second probe is pending and after it f
       healthReads++
       if (healthReads === 2) return second
       return { ok: true, json: async () => ({ health: {
-        state: "running", release, ready: true,
+        state: "running", release: healthReads === 3 ? "r-" + "c".repeat(32) : release,
+        ready: true,
       } }) }
     }
     throw new Error("Unexpected request: " + url + " " + String(options?.method))
@@ -69,6 +70,17 @@ it("clears an earlier ready state while a second probe is pending and after it f
   expect(await screen.findByText("Could not load Node projects. Try Refresh.")).toBeTruthy()
   expect(screen.getByLabelText("Node runtime summary").textContent)
     .toContain("HTTP readiness: not checked")
+  // A later health GET from a different running release must invalidate
+  // the old runtime review instead of restoring the green readiness label.
+  await waitFor(() => expect((screen.getByRole("button", { name: "Check live readiness" }) as HTMLButtonElement)
+    .disabled).toBe(false))
+  await user.click(screen.getByRole("button", { name: "Check live readiness" }))
+  expect(await screen.findByText("Node runtime changed since review. Inspect runtime again before acting."))
+    .toBeTruthy()
+  expect(screen.getByLabelText("Node runtime summary").textContent).toContain("unverified")
+  expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("HTTP readiness: not checked")
+  expect(healthReads).toBe(3)
   expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 

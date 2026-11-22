@@ -434,7 +434,19 @@ export default function ProjectsPage() {
                   setHealth(null)
                   const response = await readScoped(selected.id, "health")
                   if (!response) return
-                  setHealth(parseNodeHealth(response.health))
+                  const observed = parseNodeHealth(response.health)
+                  // A host may have switched releases since the last runtime read.
+                  // Do not display "ready" for another release or keep stale approvals.
+                  if (observed.ready === true &&
+                      (runtime?.state !== "running" || observed.release !== runtime?.activeRelease)) {
+                    invalidateRead()
+                    beginInspection()
+                    resetLogs()
+                    setApproved(false)
+                    setPreview(null)
+                    throw new Error("Node runtime changed since review. Inspect runtime again before acting.")
+                  }
+                  setHealth(observed)
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized ||
