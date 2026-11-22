@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node release inventory contradiction rejection
+
+- **Source commit:** `11367718fc42a9a38d0d201ac699b3a21692ea0e` updates `apps/admin/src/app/projects/node-project-client.ts` parser: a single immutable release record may not claim both `candidate` and `previousCandidate`, and `sourceIntegrity` must be a primitive string rather than an object that stringifies to `verified`. Both contradictions now fail closed with the existing invalid-inventory error; independently marked current/previous releases and legacy warnings remain supported. No Node API endpoint, mutation, owner authorization, deployment or service code altered.
+- **Tests, not executed:** two new tests in `apps/admin/tests/node-project-client.test.ts` cover mutual exclusion and primitive integrity type, plus a valid current/previous pair. Run on the official verified A8 once N12 is resolved; bounded categories `format,admin-types,ui` for the current 40-char `main`, with dependent Node/Static Hosting/Local Agent UI tests from preceding turns. No actual QA PASS claimed.
+- **A8 HOLD:** `MichalMatu/local-agent:agent-control` still contains 650 tasks / 649 results; immutable task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` has no terminal result, daemon claims `unverified` and warns `host_task_record_unsafe_or_unbounded`. Neither an idle daemon nor an older N12 result proves this exact task done. Do not queue another task or retry; reconcile live A8 claims and terminal receipt first. Guarded DEV only after actual targeted QA PASS and owned PID/start/HTTP/protected service verification.
+- No A8 QA/build/deploy, Mac Test Lab, restart, scheduler, WAN operation or unrelated service changes this turn. Latest historical guarded DEV evidence is separate from this source SHA.
+
 ## 22 November continuation — Node runtime plan freshness
 
 - **Code commit:** `4e3ba5b35afda0a391b6bb98b1bfce591f7b7ae1` updates `apps/admin/src/app/projects/use-node-project-inspection.ts`. On each new scoped runtime/plan read, existing runtime, plan, executionEnabled and dependent runtime/health/dependency/build reviews are immediately invalidated. A pending, rejected or malformed new read no longer leaves stale `plan.allowed` and `executionEnabled` values usable by the UI's publish guard. Existing success response validation and stale-generation checks remain; review invalidation occurs once at request start rather than again after success.
