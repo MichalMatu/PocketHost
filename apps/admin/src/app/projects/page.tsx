@@ -216,6 +216,8 @@ export default function ProjectsPage() {
       : operation === "rollback" ? runtime?.previousGoodRelease : runtime?.activeRelease
     setApproved(false)
     setExecutionEnabled(false)
+    // Existing readiness belongs to the previous runtime; the mutation may stop or replace it.
+    setHealth(null)
     setRuntime(null)
     setPlan(null)
     let result: Record<string, unknown>
@@ -407,6 +409,8 @@ export default function ProjectsPage() {
                       "Owned Node release started and readiness verified by host.")
                   })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+                  // A failed or pending GET must not keep the previous probe marked ready.
+                  setHealth(null)
                   const response = await readScoped(selected.id, "health")
                   if (!response) return
                   setHealth(parseNodeHealth(response.health))
