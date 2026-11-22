@@ -2,22 +2,23 @@
 status: active
 owner: core
 last_reviewed: 2026-11-22
-purpose: Single current resume pointer with exact-SHA evidence and autonomous next tasks
+purpose: Current exact-SHA A8 DEV evidence and next independent coding task
 ---
 
 # PocketHost — current handoff
 
-**Current checkpoint:** [post-demo cleanup and overnight handoff](checkpoints/2026-11-22-demo-cleanup-overnight-handoff.md). **Next work:** [autonomous coding queue](NIGHT_AUTONOMOUS_SPRINT.md). **Acceptance:** [MVP tracker](MVP_EXECUTION_PLAN.md). **Mandatory:** [AGENTS](../AGENTS.md), [A8 transport](LOCAL_AGENT_TERMUX.md) and [FAST FLOW](DEV_ITERATION.md).
+**Execution queue:** [night sprint plan](NIGHT_AUTONOMOUS_SPRINT.md). **Previous checkpoint:** [post-demo cleanup](checkpoints/2026-11-22-demo-cleanup-overnight-handoff.md). **Acceptance:** [MVP tracker](MVP_EXECUTION_PLAN.md). **Required:** [root AGENTS](../AGENTS.md), [A8 transport](LOCAL_AGENT_TERMUX.md), [FAST FLOW](DEV_ITERATION.md).
 
-## Verified code, deployment and QA
+## Verified code, QA and DEV
 
-- GitHub `main` at the checkpoint: `d0468ab0e4e7b2830c998aab6f406b2f15ad5a0b`. The upstream `Framework / CMS examples` group and sample routes/assets are gone: **158 removed tracked files, 6,083,773 blob bytes**, accounting not a measured production bundle saving. Real management routes and appearance settings retained. Read fresh `main` on each turn.
-- Last verified A8 DEV `d0468ab0e4e7b2830c998aab6f406b2f15ad5a0b`: guarded **DEPLOY PASS** `pockethost-a8-demo-removal-d0468ab-deploy-20261122-v1`, PID `12014`, ticks `73133851`, HTTP `200`, protected services unchanged; not a fresh running-device probe beyond the task receipt.
-- Core scope **QA PASS** at `8f682579ce2a9160be5a37fcc2d6490b826ef80d`: syntax, format, structure, root lint, admin TS and Node contract tests (`pockethost-a8-demo-removal-8f68257-core-qa-20261122-v1`). Later changes were UI-test fixes. Latest `d0468ab0e4e7b2830c998aab6f406b2f15ad5a0b` targeted **format + UI PASS**: `pockethost-a8-demo-removal-d0468ab-platform-qa-20261122-v1`. Other demo-related focused UI checks passed except two platform test-context fixtures later corrected. Do not claim broad G2/UI PASS or physical G3.
-- Real browser ZIP/folder/custom HTML file upload + served-byte equality + cleanup remain **OPEN**. Also OPEN: generic independently created Node project browser end-to-end signoff, mutable-data restore, full G2 build/coverage, physical Termux:Boot reboot and public cutover.
+- Last product-code `main` snapshot before this documentation-only handoff: `1c114cfe4047ab386dcdcf63b50800ae1530d05f`. Re-read fresh `main` on every externally invoked turn.
+- **Latest guarded A8 DEV PASS:** `1c114cfe4047ab386dcdcf63b50800ae1530d05f`, task `pockethost-a8-night-n2-1c114cf-deploy-20261122-v1`; owned PID `25554`, start ticks `73265102`, loopback HTTP `200`, protected services unchanged. This is terminal receipt evidence, not a continuously observed device probe.
+- **N1 — scoped deleted-UI QA mapping:** `b161a5a961627441de19611adacfba72cc00f80e`, then format fix `83063b751325c60367d7022a4aa6d6a0fea11f5c`. Targeted A8 syntax, structure, root lint, format and dependency-mapped Node checks PASS over the two exact-source receipts; final `83063b7` syntax/format/Node task `pockethost-a8-night-n1-83063b7-qa-20261122-v1` PASS. Guarded DEV `83063b7` PASS, subsequently superseded by N2.
+- **N2 — Static create/import readback extraction:** `1c114cfe4047ab386dcdcf63b50800ae1530d05f`. Extracted verification into `apps/admin/src/app/sites/verify-created-site.ts`, shortened legacy page, added in-progress feedback and a duplicate-submit fixture. Separate A8 `format,admin-types,ui` task `pockethost-a8-night-n2-1c114cf-qa-20261122-v1` **PASS**, then guarded DEV PASS above.
+- These checks are scoped. Real browser ZIP/folder/custom HTML upload, served-byte equality and cleanup; independently created Node project browser acceptance; mutable-data restore; comprehensive G2 build/coverage; physical reboot G3; and public cutover remain **OPEN**. No owner acceptance or full-suite PASS inferred.
 
 ## Next code
 
-**Start N1** in [night plan](NIGHT_AUTONOMOUS_SPRINT.md): make dependent QA quick and deterministic after large demo removal, without weakening deployment guards; then N2 Static create/import UX, N3 Node Projects UI, N4 Local Agent log console, N5 read-only screenshot/geometry Test Lab. Deliver one focused source change per Bridge turn and continue on later turns. A timed-out or failing *noncritical broad* QA gate should not halt all unrelated coding; record failure, fix or park that feature, and move to a safe independent slice. **Do not deploy unverified/broken changes.**
+**Start N3** from [night queue](NIGHT_AUTONOMOUS_SPRINT.md) on freshly verified `main`: extract one bounded Node Projects read-only selection, release-status or log-feedback controller from `apps/admin/src/app/projects/page.tsx`; preserve ownership-token flow, safe errors and existing API. Add narrow UI regression for stale async response and release selection. Use fixture-only QA and one exact-SHA guarded A8 DEV deployment after scope-limited QA PASS. If N3 is blocked, continue an independent N4 Local Agent console source slice without retrying an unknown task. Do not run generic Node rollout or mutable user-data tests.
 
-Only paired Samsung A8 Termux Local Agent via `MichalMatu/local-agent:agent-control` performs build/QA/deploy; Mac exception is read-only Test Lab only. Owner has standing QA/guarded DEV consent; no repeated approval requests. No new scheduler, actions, Codex/Work, unsafe live-data/browser mutations, public tunnel changes, physical reboot or protected-service changes. Docs-only changes: commit, no device QA/build/restart. Each chat turn is finite; continuation requires another external Chat Bridge invocation.
+Only paired Samsung A8 via `MichalMatu/local-agent:agent-control` performs builds, source/UI QA and guarded DEV deployment. No schedulers, Actions, Codex/Work, public/cloud routing, protected-service changes or real hosted-data writes. Docs-only handoff updates need no QA, build or restart. An external Chat Bridge invocation must initiate the next turn; this chat cannot itself keep running overnight.
