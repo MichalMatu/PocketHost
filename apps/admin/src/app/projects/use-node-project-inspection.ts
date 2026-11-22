@@ -1,6 +1,6 @@
 import * as React from "react"
 import {
-  api, parseCandidates,
+  api, parseCandidates, parseRuntimeState,
   type Candidate, type RuntimeState, type RuntimePlan,
 } from "./node-project-client"
 
@@ -85,8 +85,7 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
       return null
     }
     if (!current()) return null
-    if (!status.runtime || typeof status.runtime !== "object" ||
-        Array.isArray(status.runtime) || !preview.plan ||
+    if (!preview.plan ||
         typeof preview.plan !== "object" || Array.isArray(preview.plan))
       throw new Error("Invalid Node runtime report")
     const reviewedPlan = preview.plan as Record<string, unknown>
@@ -123,13 +122,7 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
           !Array.isArray(reviewedPlan.conflicts) ||
           typeof reviewedPlan.reason !== "string")))
       throw new Error("Invalid Node runtime plan")
-    const observed = status.runtime as RuntimeState
-    if (!["not-provisioned", "stopped", "running", "unknown"].includes(observed.state) ||
-        !["stopped", "running"].includes(observed.desired) ||
-        (observed.activeRelease !== null &&
-         (typeof observed.activeRelease !== "string" ||
-          !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
-      throw new Error("Invalid Node runtime state")
+    const observed = parseRuntimeState(status.runtime)
     setRuntime(observed)
     // Read-only legacy responses can omit lists; always give the renderer
     // complete, typed values so it never tries .length or spread on undefined.

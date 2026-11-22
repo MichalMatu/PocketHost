@@ -147,3 +147,41 @@ it.each([
   expect(hook.result.current.plan).toBeNull()
   expect(hook.result.current.executionEnabled).toBe(false)
 })
+
+it.each([
+  { history: { length: 1 } },
+  { history: [{ at: "broken", action: "start", release }] },
+  { history: [{ at: "2026-11-22T16:00:00.000Z", action: { name: "start" }, release }] },
+  { port: "19300" },
+  { lastGoodRelease: { id: release } },
+  { previousGoodRelease: "not-a-release" },
+  { healthDecision: { action: "none", reason: { broken: true }, nextEligibleAtMs: null } },
+] as const)("rejects invalid runit runtime fields before enabling any action", async invalid => {
+  const getJson = reader()
+  const hook = renderHook(() => useNodeProjectInspection(getJson, vi.fn()))
+  await act(async () => { await hook.result.current.loadRuntime(ID) })
+  expect(hook.result.current.executionEnabled).toBe(true)
+  getJson.mockImplementation(async url => url.endsWith("/runtime")
+    ? { runtime: { ...runtime, ...invalid }, executionEnabled: true } : preview)
+  await act(async () => {
+    await expect(hook.result.current.loadRuntime(ID))
+      .rejects.toThrow("Invalid Node runtime state")
+  })
+  expect(hook.result.current.runtime).toBeNull()
+  expect(hook.result.current.plan).toBeNull()
+  expect(hook.result.current.executionEnabled).toBe(false)
+})
+
+it("keeps a valid runit history in order and normalizes missing legacy history", async () => {
+  const getJson = reader()
+  const hook = renderHook(() => useNodeProjectInspection(getJson, vi.fn()))
+  const event = { at: "2026-11-22T16:00:00.000Z", action: "stop", release }
+  getJson.mockImplementation(async url => url.endsWith("/runtime")
+    ? { runtime: { ...runtime, history: [event] }, executionEnabled: true } : preview)
+  await act(async () => { await hook.result.current.loadRuntime(ID) })
+  expect(hook.result.current.runtime?.history).toEqual([event])
+  getJson.mockImplementation(async url => url.endsWith("/runtime")
+    ? { runtime: { ...runtime, history: undefined }, executionEnabled: false } : preview)
+  await act(async () => { await hook.result.current.loadRuntime(ID) })
+  expect(hook.result.current.runtime?.history).toEqual([])
+})

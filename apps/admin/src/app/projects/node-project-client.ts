@@ -70,6 +70,49 @@ export type RuntimeState = {
   history: { at: string; action: string; release: string }[]
   healthDecision?: { action: string; reason: string; nextEligibleAtMs: number | null }
 }
+/** Validate the owned runit runtime report before the UI renders history or release controls. */
+export function parseRuntimeState(value: unknown): RuntimeState {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid Node runtime report")
+  const runtime = value as Record<string, unknown>
+  const release = (input: unknown) =>
+    input === null || (typeof input === "string" && /^r-[a-f0-9]{32}$/.test(input))
+  const history = runtime.history === undefined ? [] : runtime.history
+  if (!["not-provisioned", "stopped", "running", "unknown"].includes(String(runtime.state)) ||
+      !["stopped", "running"].includes(String(runtime.desired)) ||
+      !release(runtime.activeRelease) ||
+      (runtime.lastGoodRelease !== undefined && !release(runtime.lastGoodRelease)) ||
+      (runtime.previousGoodRelease !== undefined && !release(runtime.previousGoodRelease)) ||
+      (runtime.port !== null && runtime.port !== undefined &&
+       (!Number.isSafeInteger(runtime.port) || (runtime.port as number) < 1024 ||
+        (runtime.port as number) > 65535)) ||
+      !Array.isArray(history) || history.length > 24 ||
+      !history.every(entry => entry && typeof entry === "object" && !Array.isArray(entry) &&
+        typeof entry.at === "string" && Number.isFinite(Date.parse(entry.at)) &&
+        ["start", "update", "stop", "failed", "rollback"].includes(entry.action) &&
+        typeof entry.release === "string" && /^r-[a-f0-9]{32}$/.test(entry.release)))
+    throw new Error("Invalid Node runtime state")
+  const decision = runtime.healthDecision
+  if (decision !== undefined &&
+      (!decision || typeof decision !== "object" || Array.isArray(decision) ||
+       typeof (decision as Record<string, unknown>).action !== "string" ||
+       typeof (decision as Record<string, unknown>).reason !== "string" ||
+       ((decision as Record<string, unknown>).nextEligibleAtMs !== null &&
+        (!Number.isSafeInteger((decision as Record<string, unknown>).nextEligibleAtMs) ||
+         ((decision as Record<string, unknown>).nextEligibleAtMs as number) < 0))))
+    throw new Error("Invalid Node runtime state")
+  return {
+    state: runtime.state as RuntimeState["state"],
+    desired: runtime.desired as RuntimeState["desired"],
+    port: (runtime.port as number | null | undefined) ?? null,
+    activeRelease: runtime.activeRelease as string | null,
+    lastGoodRelease: (runtime.lastGoodRelease as string | null | undefined) ?? null,
+    previousGoodRelease: (runtime.previousGoodRelease as string | null | undefined) ?? null,
+    history: history as RuntimeState["history"],
+    ...(decision !== undefined ? { healthDecision: decision as RuntimeState["healthDecision"] } : {}),
+  }
+}
+
 export type RuntimePlan = {
   release: string | null
   port: number | null
