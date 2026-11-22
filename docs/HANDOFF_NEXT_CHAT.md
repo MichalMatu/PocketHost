@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node log freshness during reload
+
+- **Code:** `c05e11ef7d728a2af27287b0cfae57be3d8efaa2` changes only `apps/admin/src/app/projects/use-node-project-logs.ts` and its new targeted interaction test. A new project log GET now clears the previous confirmed `logLines` immediately while showing the existing “Reading Node logs…” state. Previously the UI retained old source lines during a pending refresh, misleadingly displaying them as current. Successful reads still display the original line text/order unchanged; rejected or invalid reports stay empty and show the existing retry error; selection generation and stale-response logic preserved.
+- **Tests authored but not run:** `apps/admin/tests/node-project-logs-refresh.interaction.test.tsx` covers old-line removal during pending GET, failed refresh, and delayed superseded response after a newer success. No A8 execution, format, typecheck, build, browser screenshots or DEV deploy in this turn.
+- **A8 state unchanged / HOLD:** `MichalMatu/local-agent:agent-control` has **650 task JSON files and 650 result JSON files**; N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` terminal result is `UNKNOWN` with `interrupted_or_uncertain_execution_no_replay`, not a PASS. The A8 daemon reports idle but `host_claims.status=unverified` and `host_task_record_unsafe_or_unbounded`. Do not queue/retry overlapping tests while host/claim verification is untrusted. After trusted reconciliation, use current exact 40-char `main`, bounded `format,admin-types,ui` with Node Logs, Node Plans, Static Sites and Local Agent UI regressions; guarded DEV only after QA PASS plus owned live SHA/PID/start/HTTP/protected-service checks.
+- No scheduler, unsafe restart, Agent upgrade, public network operations, foreign services or customer data changes.
+
 ## 22 November continuation — Node legacy plan display normalization
 
 - **Code:** `6a561c81fa79e07f9f1d7de529160716da6fd642` fixes `apps/admin/src/app/projects/use-node-project-inspection.ts` so read-only legacy API plan responses with omitted `missingTools`, `conflicts`, and `dependencyIssues` produce safe empty arrays rather than crashing `ProjectsPage` through `.length`/spread. It also produces complete typed display defaults for optional fields and rejects invalid reason/count/version/port/dependency issues; actionable `allowed=true` plans must include a valid release, reason and lists. No host runtime, public API or deployments changed.
