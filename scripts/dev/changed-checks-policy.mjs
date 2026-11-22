@@ -36,15 +36,15 @@ export function planChangedChecks(
     if (deleted.has(file)) {
       // A removed page is covered by management route/404 contracts and a full
       // TypeScript closure check. Other source deletion requires explicit review.
-      const browserCode =
-        (file.startsWith('apps/admin/src/app/') ||
-          file.startsWith('apps/admin/src/components/')) &&
-        /\.(?:ts|tsx|js|jsx|md)$/.test(file);
+      const browserSource =
+        file.startsWith('apps/admin/src/app/') ||
+        file.startsWith('apps/admin/src/components/');
       const browserAsset =
         file.startsWith('apps/admin/public/') || file.startsWith('apps/admin/src/assets/');
-      if (!browserCode && !browserAsset) {
+      if (!browserSource && !browserAsset) {
         review.push('Deletion needs explicit impact review: ' + file);
-      } else if (browserCode) {
+      } else if (browserSource) {
+        // Includes deleted UI data fixtures, JSON and styles, not only TSX.
         adminTypes = true;
         node.add('tests/quality/admin-preservation.test.mjs');
         ui.add('tests/management-navigation.interaction.test.tsx');

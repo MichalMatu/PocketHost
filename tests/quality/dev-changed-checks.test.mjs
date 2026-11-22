@@ -160,6 +160,7 @@ test('deleted UI examples do not send nonexistent paths to format or lint', () =
   const deletedPaths = [
     'apps/admin/src/app/mail/page.tsx',
     'apps/admin/src/components/pricing-plans.tsx',
+    'apps/admin/src/app/users/data.json',
     'apps/admin/public/feature-1-light.png',
   ];
   const plan = planChangedChecks(deletedPaths, {}, { deletedPaths, includeAdminLint: true });
