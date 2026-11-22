@@ -108,7 +108,12 @@ export default function LocalAgentPage() {
   }, [refreshToken, live])
 
   React.useEffect(() => {
-    if (view !== "console" || (!live && !rawManualRead.current)) return
+    if (view !== "console") return
+    if (!live && !rawManualRead.current) {
+      // Pausing an active read aborts its request; don't leave Loading stuck.
+      setRawLoading(false)
+      return
+    }
     rawManualRead.current = false
     let disposed = false
     let pending = false

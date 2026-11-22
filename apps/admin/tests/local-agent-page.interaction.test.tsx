@@ -239,6 +239,44 @@ describe("Local Agent read-only overview", () => {
     expect(rawCalls).toBe(paused + 1)
   })
 
+  it("can retry a failed manual raw read while remaining paused", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
+    let rawCalls = 0
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        rawCalls++
+        if (rawCalls === 2) return { ok: false }
+        return {
+          ok: true,
+          headers: new Headers({
+            "X-Agent-Log-Cursor": "12:345:79",
+            "X-Agent-Log-Reset": "0",
+            "X-Agent-Log-More": "0",
+          }),
+          arrayBuffer: async () => new TextEncoder().encode(rawEntry).buffer,
+        }
+      }
+      return { ok: true, json: async () =>
+        url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+    fireEvent.click(screen.getByRole("button", { name: "Pause log updates" }))
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    const retry = await screen.findByRole("button", { name: "Retry raw log" })
+    await waitFor(() => expect((retry as HTMLButtonElement).disabled).toBe(false))
+    fireEvent.click(retry)
+    await waitFor(() => expect(screen.queryByText(/Raw log read failed/)).toBeNull())
+    expect(raw.textContent).toBe(rawEntry)
+    expect(rawCalls).toBe(3)
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+    expect(rawCalls).toBe(3)
+    expect(screen.getByText("Log updates paused")).toBeTruthy()
+  })
+
   it("polls event summaries every five seconds, not service state; pause is browser-only", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const fetcher = mockFetch()
