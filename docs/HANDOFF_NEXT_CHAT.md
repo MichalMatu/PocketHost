@@ -18,7 +18,7 @@ purpose: One current resume pointer; evidence and architecture inventory in the 
 
 ## Current next work
 
-1. **Next:** fresh owner QA approval for exact source SHA `d2d5564ecc363b3542b3cd398e7104cf3ccc8d9d` and check categories covering Static browser HTML/ZIP/folder UI regressions plus relevant format/types/node gates, then separately scoped real browser create/import on a disposable owned site with served-byte check and cleanup. Do not touch existing sites, real Node DBs or protected services.
+1. **Next:** run scoped A8 QA for the current exact source SHA under standing owner consent (`format,admin-types,ui` as relevant, plus narrowly selected additional checks), then separately plan browser create/import on a disposable owned site with served-byte check and verified cleanup. Do not touch existing sites, real Node DBs or protected services without distinct operation scope.
 2. Real browser HTML/ZIP/folder acceptance OPEN: operational A8 deployment passed, but the new interaction tests remain unrun and no live browser upload performed.
 3. Generic independent project create/import -> deploy -> health/logs -> update/rollback -> retained data; no `photomap.pl` migration yet.
 4. Later: shared Pi Zero Cloudflare **one named tunnel** for an explicitly safe app only, physical Termux:Boot reboot, S1–S4 acceptance and comprehensive G2/G3 as separately authorized.
@@ -27,4 +27,4 @@ purpose: One current resume pointer; evidence and architecture inventory in the 
 
 ## Guardrails
 
-Only paired Samsung A8 official Termux Local Agent via `MichalMatu/local-agent:agent-control` handles device operations/builds/deploys/QA. Keep code on current `main`, use one guarded deploy/readback per code change, and require a **fresh explicit exact-40-hex-SHA + check-category authorization for each QA**. Docs-only edits: Git commit, **no test/build/restart**. No Codex, Work, Actions, scheduler, automatic retry, Pi DNS/tunnel changes, public admin exposure, unowned services, reboot, destructive restore or off-device transfer.
+Only paired Samsung A8 official Termux Local Agent via `MichalMatu/local-agent:agent-control` handles device operations/builds/deploys/QA. Keep code on current `main`, use one guarded deploy/readback per code change, and apply **standing owner approval for necessary non-destructive QA in every future sprint**; select categories and pin the exact 40-character SHA in each one-shot A8 QA command without requesting new consent. Docs-only edits: Git commit, **no test/build/restart**. No Codex, Work, Actions, scheduler, automatic retry, Pi DNS/tunnel changes, public admin exposure, unowned services, reboot, destructive restore or off-device transfer.
