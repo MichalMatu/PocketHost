@@ -178,6 +178,96 @@ describe("H2 browser site-manager lifecycle", () => {
     },
   )
 
+
+  it("creates and imports a first ZIP release only after independent site creation readback", async () => {
+    const user = userEvent.setup()
+    let current: ReturnType<typeof project>[] = []
+    const imported = {
+      ...project("stopped", true),
+      fileCount: 1,
+      bytes: 23,
+      releases: 1,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: current }) }
+      if (url === "/api/v1/sites/" && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
+        current = [project()]
+        return { ok: true, json: async () => ({ site: current[0] }) }
+      }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT") {
+        expect(current[0]?.activeRelease).toBeNull()
+        expect((options.headers as Record<string, string>)["Content-Type"]).toBe("application/zip")
+        expect((options.body as File).name).toBe("first.zip")
+        current = [imported]
+        return { ok: true, json: async () => ({ site: imported }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: current[0] }) }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      new File(["first fixture archive"], "first.zip", { type: "application/zip" }))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText(/created and ZIP published as its first immutable release/)
+    const operations = calls.mock.calls
+      .filter(([, options]) => options?.method)
+      .map(([, options]) => options?.method)
+    expect(operations).toEqual(["POST", "PUT"])
+    expect(calls.mock.calls.some(([url, options]) =>
+      String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
+    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(screen.getByRole("button", { name: "Create site" })).toBeTruthy()
+    expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
+  })
+
+  it("rejects empty first-release ZIP before site creation", async () => {
+    const user = userEvent.setup()
+    const requests = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      new File([], "empty.zip", { type: "application/zip" }))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText("The selected ZIP is empty.")
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
+  it("keeps a confirmed new site when its initial ZIP is definitively rejected", async () => {
+    const user = userEvent.setup()
+    let created = false
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: created ? [project()] : [] }) }
+      if (url === "/api/v1/sites/" && options?.method === "POST") {
+        created = true
+        return { ok: true, json: async () => ({ site: project() }) }
+      }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT")
+        return { ok: false, status: 400 }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      new File(["invalid archive"], "bad.zip", { type: "application/zip" }))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText(/was created without a release. ZIP rejected/)
+    expect(screen.getByText(ID)).toBeTruthy()
+    expect(requests.mock.calls.filter(([, opts]) => opts?.method === "POST")).toHaveLength(1)
+    expect(requests.mock.calls.filter(([, opts]) => opts?.method === "PUT")).toHaveLength(1)
+  })
+
   it("starts only the selected PocketHost-owned site through Hosting with explicit intent", async () => {
     const user = userEvent.setup()
     let current = project("stopped", true)

@@ -402,6 +402,8 @@ export default function SitesPage() {
   const selectedSiteId = searchParams.get("site")
   const [sites, setSites] = React.useState<FleetSite[]>([])
   const [name, setName] = React.useState("")
+  const [initialZip, setInitialZip] = React.useState<File | null>(null)
+  const initialZipInput = React.useRef<HTMLInputElement>(null)
   const [loading, setLoading] = React.useState(true)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -431,7 +433,16 @@ export default function SitesPage() {
   }
   const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (creating || sites.length >= 8) return
+    if (creating || loading || error !== null || sites.length >= 8) return
+    const firstRelease = initialZip
+    if (firstRelease) {
+      const invalid = validateStaticZipSelection(firstRelease)
+      if (invalid) {
+        setError(invalid)
+        setNotice(null)
+        return
+      }
+    }
     setCreating(true)
     setError(null)
     setNotice(null)
@@ -462,10 +473,63 @@ export default function SitesPage() {
           throw new Error("create-readback-mismatch")
         setSites(observed)
         setName("")
-        setNotice('Site "' + created.name + '" created. Edit HTML to publish the first release.')
+        setInitialZip(null)
+        if (initialZipInput.current) initialZipInput.current.value = ""
       } catch {
         setSites([])
         setError("Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
+        return
+      }
+      if (!firstRelease) {
+        setNotice('Site "' + created.name + '" created. Edit HTML to publish the first release.')
+        return
+      }
+      // A first ZIP release is a second explicit mutation. Never issue it
+      // unless creation was independently confirmed in the owned inventory.
+      let imported: FleetSite
+      try {
+        imported = await mutate(endpoint + "/" + created.id + "/deploy",
+          "PUT", firstRelease, "application/zip")
+      } catch (cause) {
+        if (cause instanceof StaticSiteInputRejected) {
+          setNotice('Site "' + created.name +
+            '" was created without a release. ZIP rejected; select a valid ZIP in its site card.')
+        } else {
+          setSites([])
+          setError('Site "' + created.name +
+            '" was created, but ZIP import result is unconfirmed. Refresh before retrying; no automatic retry.')
+        }
+        return
+      }
+      try {
+        const response = await fetch(endpoint + "/" + created.id, {
+          credentials: "same-origin", cache: "no-store", signal: readSignal(),
+        })
+        if (!response.ok) throw new Error("readback-unavailable")
+        const current = parseFleetSite(await response.json())
+        const inventory = await readSites()
+        const matches = inventory.filter(site => site.id === created.id)
+        if (matches.length !== 1 ||
+            imported.id !== created.id || current.id !== created.id ||
+            current.name !== created.name || current.port !== created.port ||
+            imported.activeRelease === null ||
+            current.activeRelease !== imported.activeRelease ||
+            current.previousRelease !== null || current.canRollback ||
+            current.state !== "stopped" || current.pid !== null ||
+            current.fileCount < 1 || current.bytes < 1 ||
+            imported.fileCount !== current.fileCount || imported.bytes !== current.bytes ||
+            imported.releases !== current.releases ||
+            matches[0]?.activeRelease !== current.activeRelease ||
+            matches[0]?.fileCount !== current.fileCount ||
+            matches[0]?.bytes !== current.bytes)
+          throw new Error("first-release-readback-mismatch")
+        setSites(inventory)
+        setNotice('Site "' + created.name +
+          '" created and ZIP published as its first immutable release. Press Start when ready.')
+      } catch {
+        setSites([])
+        setError('Site "' + created.name +
+          '" was created and ZIP upload acknowledged, but its release could not be confirmed. Refresh before retrying; no automatic retry.')
       }
     } finally { setCreating(false) }
   }
@@ -484,13 +548,33 @@ export default function SitesPage() {
             <CardDescription>HTML, CSS and JavaScript. Import a ZIP or folder; up to eight sites.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={createSite} className="flex flex-col gap-3 sm:flex-row">
-              <label htmlFor="new-owned-site" className="sr-only">Site name</label>
-              <Input id="new-owned-site" value={name} onChange={event => setName(event.target.value)}
-                placeholder="My first site" minLength={2} maxLength={60} required />
-              <Button type="submit" disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
-                <FolderOpen /> Create site
-              </Button>
+            <form onSubmit={createSite} className="space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <label htmlFor="new-owned-site" className="sr-only">Site name</label>
+                <Input id="new-owned-site" value={name}
+                  disabled={creating || loading}
+                  onChange={event => setName(event.target.value)}
+                  placeholder="My first site" minLength={2} maxLength={60} required />
+                <Button type="submit"
+                  disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
+                  <FolderOpen /> {initialZip ? "Create and import ZIP" : "Create site"}
+                </Button>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="initial-owned-site-zip" className="text-sm font-medium">
+                  Initial ZIP (optional)
+                </label>
+                <Input id="initial-owned-site-zip" type="file" ref={initialZipInput}
+                  accept=".zip,application/zip" disabled={creating || loading}
+                  onChange={event => {
+                    setInitialZip(event.currentTarget.files?.[0] ?? null)
+                    setError(null)
+                  }} />
+                <p className="text-xs text-muted-foreground">
+                  Optional first release, max 9 MiB compressed. Creates a stopped site, then imports ZIP
+                  only after confirming the new site's identity. No automatic retry or start.
+                </p>
+              </div>
             </form>
           </CardContent>
         </Card>
