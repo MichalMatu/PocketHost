@@ -73,7 +73,7 @@ it("rejects duplicate Node catalog ids before rendering ambiguous project button
   const requests = vi.fn(async () => response([duplicate, { ...duplicate, name: "Conflicting identity" }]))
   vi.stubGlobal("fetch", requests)
   render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
-  expect(await screen.findByRole("alert")).toHaveTextContent("Invalid Node project registry response")
+  expect((await screen.findByRole("alert")).textContent).toContain("Invalid Node project registry response")
   expect(screen.queryByRole("button", { name: "Same identity" })).toBeNull()
   expect(screen.queryByRole("button", { name: "Conflicting identity" })).toBeNull()
   expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
