@@ -10,37 +10,57 @@ export function useSiteVersions(
   const [versions, setVersions] = React.useState<FleetRelease[] | null>(null)
   const [versionsLoading, setVersionsLoading] = React.useState(false)
   const opened = React.useRef(false)
+  const requestSequence = React.useRef(0)
 
-  const read = async () => {
-    const revision = epoch.current
-    const response = await fetch(endpoint + "/" + site.id + "/releases", {
-      credentials: "same-origin", cache: "no-store", signal: readSignal(),
-    })
-    if (!response.ok) throw new Error("Version history is unavailable.")
-    const parsed = parseFleetReleases(await response.json())
-    if (revision === epoch.current && opened.current) setVersions(parsed)
-  }
   const load = () => {
     const revision = epoch.current
+    const request = ++requestSequence.current
+    const current = () =>
+      revision === epoch.current && request === requestSequence.current
     setVersionsLoading(true)
-    void read().catch(cause => {
-      if (revision === epoch.current && opened.current) {
+    void fetch(endpoint + "/" + site.id + "/releases", {
+      credentials: "same-origin", cache: "no-store", signal: readSignal(),
+    }).then(async response => {
+      if (!response.ok) throw new Error("Version history is unavailable.")
+      return parseFleetReleases(await response.json())
+    }).then(parsed => {
+      if (current() && opened.current) setVersions(parsed)
+    }).catch(cause => {
+      if (current() && opened.current) {
         opened.current = false
+        setVersions(null)
         setError(cause instanceof Error ? cause.message : "Version inventory unavailable.")
       }
-    }).finally(() => { if (revision === epoch.current) setVersionsLoading(false) })
+    }).finally(() => {
+      if (current()) setVersionsLoading(false)
+    })
   }
+
   React.useEffect(() => {
+    // A new verified inventory revision supersedes all prior version GETs.
+    requestSequence.current += 1
     setVersions(null)
     setVersionsLoading(false)
     if (opened.current) load()
   }, [site])
+
+  React.useEffect(() => () => { requestSequence.current += 1 }, [])
+
   const toggleVersions = () => {
-    if (opened.current) { opened.current = false; setVersions(null); return }
+    if (opened.current) {
+      // Closing must release the loading state without waiting for a hung GET.
+      // A later reopen must not accept the previously opened request's reply.
+      opened.current = false
+      requestSequence.current += 1
+      setVersions(null)
+      setVersionsLoading(false)
+      return
+    }
     if (versionsLoading || busy) return
     opened.current = true
     setError(null)
     load()
   }
+
   return { versions, versionsLoading, toggleVersions }
 }
