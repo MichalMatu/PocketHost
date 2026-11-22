@@ -9,6 +9,8 @@ vi.mock("@/components/layouts/base-layout", () => ({
 }))
 
 import SitesPage from "@/app/sites/page"
+import { SiteCreationForm } from "@/app/sites/site-creation-form"
+import { useOwnedSiteCreation } from "@/app/sites/use-owned-site-creation"
 
 const ID = "site-" + "a".repeat(32)
 const FIRST = "r-" + "b".repeat(32)
@@ -151,6 +153,23 @@ describe("Static create/import form separation", () => {
     expect(fetcher).toHaveBeenCalledTimes(1)
     expect(fetcher.mock.calls.every(([url]) => String(url) === "/api/v1/sites")).toBe(true)
   })
+})
+
+it("keeps the extracted create form disabled at the eight-site limit", async () => {
+  const fetcher = vi.fn()
+  vi.stubGlobal("fetch", fetcher)
+  function CapacityProbe() {
+    const creation = useOwnedSiteCreation({
+      sitesCount: 8, loading: false, error: null,
+      setSites: vi.fn(), setError: vi.fn(),
+    })
+    return <SiteCreationForm creation={creation} sitesCount={8} loading={false} error={null} />
+  }
+  const user = userEvent.setup()
+  render(<CapacityProbe />)
+  await user.type(screen.getByLabelText("Site name"), "Ninth static site")
+  expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(fetcher).not.toHaveBeenCalled()
 })
 
 describe("active HTML read cancel and retry", () => {
