@@ -17,11 +17,15 @@ import { endpoint, maxZip, maxStarterHtml, readSignal, starterHtml, readSites, m
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
   const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
-  // Only a fresh owned inventory may clear uncertain writes and stale views.
+  const readEpoch = React.useRef(0)
+  // Fresh inventory invalidates pending reads and cached views.
   React.useEffect(() => {
+    readEpoch.current++
     setOutcomeUnknown(false)
     setAssets(null)
     setVersions(null)
+    setAssetsLoading(false)
+    setVersionsLoading(false)
   }, [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
@@ -43,37 +47,44 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
-
   const readVersions = async () => {
+    const epoch = readEpoch.current
     const response = await fetch(endpoint + "/" + site.id + "/releases", {
       credentials: "same-origin", cache: "no-store", signal: readSignal(),
     })
     if (!response.ok) throw new Error("Version history is unavailable.")
-    setVersions(parseFleetReleases(await response.json()))
+    const parsed = parseFleetReleases(await response.json())
+    if (epoch === readEpoch.current) setVersions(parsed)
   }
   const toggleVersions = () => {
     if (versions !== null) { setVersions(null); return }
     if (versionsLoading || busy) return
+    const epoch = readEpoch.current
     setVersionsLoading(true)
     setError(null)
     void readVersions()
-      .catch(cause => setError(cause instanceof Error ? cause.message : "Version inventory unavailable."))
-      .finally(() => setVersionsLoading(false))
+      .catch(cause => {
+        if (epoch === readEpoch.current) setError(cause instanceof Error ? cause.message : "Version inventory unavailable.")
+      })
+      .finally(() => { if (epoch === readEpoch.current) setVersionsLoading(false) })
   }
   const toggleAssets = () => {
     if (assets !== null) { setAssets(null); return }
     if (busy || assetsLoading || site.state === "unknown" || !site.activeRelease) return
+    const epoch = readEpoch.current
     setAssetsLoading(true)
     setError(null)
     void fetch(endpoint + "/" + site.id + "/files", {
       method: "GET", credentials: "same-origin", cache: "no-store", signal: readSignal(),
     }).then(async response => {
       if (!response.ok) throw new Error("Active site files are unavailable.")
-      setAssets(parseH3Files(await response.json()))
+      const parsed = parseH3Files(await response.json())
+      if (epoch === readEpoch.current) setAssets(parsed)
     }).catch(cause => {
+      if (epoch !== readEpoch.current) return
       setAssets(null)
       setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
-    }).finally(() => setAssetsLoading(false))
+    }).finally(() => { if (epoch === readEpoch.current) setAssetsLoading(false) })
   }
   const toggleHtmlEditor = () => {
     if (editorVisible) {
@@ -109,7 +120,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       setError(cause instanceof Error ? cause.message : "Could not load the published HTML.")
     }).finally(() => setHtmlLoading(false))
   }
-
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
     if (site.state === "unknown" || busy || outcomeUnknown) return
     const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
@@ -148,8 +158,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       }
       if (mutation) {
         try {
-          // The POST/PUT acknowledgement is not enough. Read back the exact
-          // owned site independently, without reissuing the mutation.
+          // Read back exact owned state independently; never retry a write.
           const response = await fetch(endpoint + "/" + site.id, {
             credentials: "same-origin", cache: "no-store", signal: readSignal(),
           })
@@ -163,8 +172,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               ack.history.length !== observed.history.length ||
               (expected && !expected(observed)))
             throw new Error("site-state-drift")
-          // A release change must invalidate the open editor. Otherwise a
-          // rollback can resurrect stale HTML under an earlier release ID.
           if (observed.activeRelease !== site.activeRelease) {
             setShowHtmlEditor(false)
             setEditorRelease(undefined)
@@ -179,8 +186,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         try {
           await onChange()
         } catch {
-          // Exact site readback succeeded but the owned inventory did not:
-          // never keep using an old site card for another write.
           setOutcomeUnknown(true)
           setError("Site action confirmed, but the owned inventory could not be refreshed. Refresh before another write.")
           return
@@ -190,7 +195,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           try {
             await readVersions()
           } catch {
-            // This is an optional read. The owned-site inventory was refreshed.
             setVersions(null)
             setError("Site action confirmed, but saved versions are unavailable. Reopen versions to refresh.")
             return
@@ -278,7 +282,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       setLogs(parseFleetLogs(await response.json()))
     }, "Owned logs refreshed.")
   }
-
   return (
     <Card>
       <CardHeader>
@@ -505,7 +508,6 @@ export default function SitesPage() {
       }
       let created: FleetSite
       try {
-        // Encode first-release files before the single POST.
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
         const starterPayload = starter ? JSON.stringify({ files: [{
           name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
@@ -546,8 +548,6 @@ export default function SitesPage() {
             created.releases !== current.releases)
           throw new Error("create-readback-mismatch")
         if (hasFirstFiles) {
-          // A single POST acknowledgment is insufficient. Confirm the exact
-          // owned site independently before exposing controls for its release.
           const response = await fetch(endpoint + "/" + created.id, {
             credentials: "same-origin", cache: "no-store", signal: readSignal(),
           })
@@ -587,8 +587,6 @@ export default function SitesPage() {
           : "Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
-  }
-
   return (
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
