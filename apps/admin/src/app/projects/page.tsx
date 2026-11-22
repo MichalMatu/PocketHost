@@ -42,6 +42,9 @@ export default function ProjectsPage() {
   React.useEffect(() => () => { catalogRequest.current += 1 }, [])
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
+  // A stable refresh callback needs the actual selection, not the mount-time value.
+  const selectedIdRef = React.useRef(selectedId)
+  selectedIdRef.current = selectedId
   const [name, setName] = React.useState("")
   const [createPhase, setCreatePhase] = React.useState<"idle" | "pending" | "confirmed" | "rejected" | "unknown">("idle")
   const creatingRef = React.useRef(false)
@@ -125,6 +128,24 @@ export default function ProjectsPage() {
       // Stale responses do not change the catalog or its dependent selection.
       if (request !== catalogRequest.current) return verifiedCatalog.current
       const catalog = parseProjectCatalog(data.projects)
+      const selectedBefore = verifiedCatalog.current.find(project => project.id === selectedIdRef.current)
+      const selectedAfter = catalog.find(project => project.id === selectedIdRef.current)
+      // Reuse a selected project only while its verified release revision is unchanged.
+      // Source staging in this panel re-reads runtime after this invalidation.
+      if (selectedBefore && selectedAfter && (
+        selectedBefore.candidateRelease !== selectedAfter.candidateRelease ||
+        selectedBefore.previousCandidate !== selectedAfter.previousCandidate ||
+        selectedBefore.deploymentCount !== selectedAfter.deploymentCount ||
+        selectedBefore.state !== selectedAfter.state
+      )) {
+        invalidateRead()
+        beginInspection()
+        resetLogs()
+        setApproved(false)
+        setPreview(null)
+        setBuildCheck(null)
+        setGithubReview(null)
+      }
       verifiedCatalog.current = catalog
       setProjects(catalog)
       setCatalogState("ready")

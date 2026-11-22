@@ -133,3 +133,58 @@ it("invalidates the removed Node selection and refuses late runtime after a vali
   expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 
+
+it("invalidates a selected Node runtime when its verified candidate changes", async () => {
+  const firstRelease = "r-" + "b".repeat(32)
+  const nextRelease = "r-" + "c".repeat(32)
+  const selected = {
+    ...project("a", "Candidate changed remotely"),
+    state: "source-staged", candidateRelease: firstRelease, deploymentCount: 1,
+  }
+  let catalog = [selected]
+  let runtimeReads = 0
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects") return response(catalog)
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime")) {
+      runtimeReads++
+      return { ok: true, json: async () => ({ runtime: {
+        state: "running", desired: "running", port: 19232,
+        activeRelease: firstRelease, lastGoodRelease: firstRelease,
+        previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: firstRelease, allowed: false, reason: "not-approved",
+        missingTools: [], conflicts: [], dependencyCount: 0,
+      }, executionEnabled: false }) }
+    if (url.endsWith("/health"))
+      return { ok: true, json: async () => ({ health: {
+        state: "running", release: firstRelease, ready: true,
+      } }) }
+    throw new Error("Unexpected Node request " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole("button", { name: "Candidate changed remotely" }))
+  await waitFor(() => expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("running"))
+  fireEvent.click(screen.getByRole("button", { name: "Check live readiness" }))
+  await waitFor(() => expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("HTTP readiness: ready"))
+  expect(runtimeReads).toBe(1)
+
+  catalog = [{ ...selected, candidateRelease: nextRelease, deploymentCount: 2 }]
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+  await waitFor(() => expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("unverified"))
+  expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("HTTP readiness: not checked")
+  expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain(nextRelease.slice(0, 12))
+  expect(runtimeReads).toBe(1)
+  expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
