@@ -191,6 +191,39 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(fetchMock.mock.calls.some(call => call[1]?.method === "PUT")).toBe(false)
   })
 
+  it("shows pending create readback and blocks duplicate submission", async () => {
+    const user = userEvent.setup()
+    const createdSite = project()
+    let releasePost: (() => void) | null = null
+    let posted = false
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: posted ? [createdSite] : [] }) }
+      if (url === "/api/v1/sites/" && options?.method === "POST") {
+        await new Promise<void>((resolve) => { releasePost = resolve })
+        posted = true
+        return { ok: true, json: async () => ({ site: createdSite }) }
+      }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.click(screen.getByRole("button", { name: "Create site" }))
+    expect(screen.getByRole("status").textContent).toContain("Creating site and verifying readback")
+    const submit = screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement
+    expect(submit.disabled).toBe(true)
+    expect(submit.closest("form")?.getAttribute("aria-busy")).toBe("true")
+    await user.click(submit)
+    expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+    if (!releasePost) throw new Error("Create request did not reach the pending readback")
+    releasePost()
+    await screen.findByText(/Site "My own site" created\. Edit HTML/)
+    expect(screen.queryByText("Creating site and verifying readback…")).toBeNull()
+  })
+
   it.each(["post-unconfirmed", "readback-unconfirmed"] as const)(
     "removes stale site actions after %s during creation", async (scenario) => {
       const user = userEvent.setup()

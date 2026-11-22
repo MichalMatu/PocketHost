@@ -7,6 +7,7 @@ import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from ".
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
 import { useSiteVersions } from "./use-site-versions"
 import { useSiteHtmlEditor } from "./use-site-html-editor"
+import { verifyCreatedSiteReadback } from "./verify-created-site"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection, inspectInitialStaticZip } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, starterHtml, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection, inspectInitialStaticZip } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -434,42 +435,7 @@ export default function SitesPage() {
         return
       }
       try {
-        const observed = await readSites()
-        const matching = observed.filter(site => site.id === created.id)
-        const current = matching[0]
-        if (matching.length !== 1 || !current ||
-            current.name !== name.trim() ||
-            current.kind !== "static-site" ||
-            current.state !== "stopped" || current.pid !== null ||
-            current.startTicks !== null ||
-            current.previousRelease !== null || current.canRollback ||
-            created.id !== current.id || created.name !== current.name ||
-            created.port !== current.port || created.state !== current.state ||
-            created.activeRelease !== current.activeRelease ||
-            created.fileCount !== current.fileCount ||
-            created.bytes !== current.bytes ||
-            created.releases !== current.releases)
-          throw new Error("create-readback-mismatch")
-        if (hasFirstFiles) {
-          const response = await fetch(endpoint + "/" + created.id, {
-            credentials: "same-origin", cache: "no-store", signal: readSignal(),
-          })
-          if (!response.ok) throw new Error("first-release-readback-unavailable")
-          const exact = parseFleetSite(await response.json())
-          if (created.activeRelease === null || created.releases !== 1 ||
-              created.fileCount < 1 || created.bytes < 1 ||
-              exact.id !== created.id || exact.name !== created.name ||
-              exact.port !== created.port || exact.state !== "stopped" ||
-              exact.pid !== null || exact.previousRelease !== null ||
-              exact.activeRelease !== created.activeRelease ||
-              exact.fileCount !== created.fileCount || exact.bytes !== created.bytes ||
-              exact.releases !== created.releases ||
-              exact.history.length !== created.history.length)
-            throw new Error("first-release-readback-mismatch")
-        } else if (created.activeRelease !== null || created.releases !== 0 ||
-                   created.fileCount !== 0 || created.bytes !== 0) {
-          throw new Error("unexpected initial site release")
-        }
+        const observed = await verifyCreatedSiteReadback(created, name.trim(), hasFirstFiles)
         setSites(observed)
         setName("")
         setInitialZip(null)
@@ -506,7 +472,7 @@ export default function SitesPage() {
             <CardDescription>HTML, CSS and JavaScript. Import a ZIP or folder; up to eight sites.</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={createSite} className="space-y-3">
+            <form onSubmit={createSite} aria-busy={creating} className="space-y-3">
               <div className="flex flex-col gap-3 sm:flex-row">
                 <label htmlFor="new-owned-site" className="sr-only">Site name</label>
                 <Input id="new-owned-site" value={name}
@@ -523,6 +489,9 @@ export default function SitesPage() {
                     publishStarter ? "Create with starter HTML" : "Create site"}
                 </Button>
               </div>
+              {creating && <p role="status" className="text-sm text-muted-foreground">
+                Creating site and verifying readback…
+              </p>}
               <div className="space-y-1">
                 <label htmlFor="initial-owned-site-zip" className="text-sm font-medium">
                   Initial ZIP (optional)
