@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Static Hosting mutation/catalog race
+
+- **Code commit:** `c3677caa8355dc61ff4140ba31f7f23957bb062b` changes `apps/admin/src/app/sites/use-owned-site-inventory.ts`: the setter used for authoritative parent-page mutation/readback state now invalidates any older in-flight catalog GET before applying the updated inventory. Hook's own GET uses the internal state setter and retains the established newest-request-wins ordering. The external setter also clears obsolete loading state when a verified mutation/readback supersedes a pending GET. The existing public hook contract and API requests stay the same.
+- **Regression source, not run:** `apps/admin/tests/site-inventory-mutation-race.interaction.test.tsx` covers late GET success/error after an authoritative site mutation and prevention of restoring stale site lists after an unconfirmed mutation. Run these together with `site-inventory-race.interaction.test.tsx`, `site-inventory-loading-race.interaction.test.tsx` once exact current `main` A8 QA is unblocked.
+- **A8 HOLD:** `MichalMatu/local-agent:agent-control` still exposes unmatched N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1`, 650 tasks / 649 results, daemon host claims `unverified` (`host_task_record_unsafe_or_unbounded`). No overlapping or requeue while exact terminal result unknown. After reconciliation, bounded A8 `format,admin-types,ui` and appropriate Node/Visual QA; only after PASS consider guarded DEV with live ownership/PID/start ticks/health/protected service readback.
+- No A8 project tests/build, Mac screenshots, DEV deploy, scheduler, unrelated service operation, or off-device transfer in this turn. Last A8 DEV N11 `c4dedfd` remains historical evidence.
+
 ## 22 November continuation — Static Hosting loading race
 
 - **Code change:** `442e08fe710aba7d0dfca1cead253d63f54ae3df` fixes `apps/admin/src/app/sites/use-owned-site-inventory.ts` so only the newest active read, including a site-action inventory readback which supersedes a manual Refresh, may clear the inventory loading indicator. Previously the older initial/manual read `finally` could hide loading before a newer read settled, allowing premature UI actions. Existing newest-wins site/error handling, GET-only API and mutation semantics are otherwise preserved.
