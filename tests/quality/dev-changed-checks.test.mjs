@@ -200,6 +200,22 @@ test('deleted route module still requires targeted navigation regression', () =>
   assert.deepEqual(plan.review, []);
 });
 
+test('modified UI stylesheet cannot be certified by formatting alone', () => {
+  for (const file of [
+    'apps/admin/src/App.css',
+    'apps/admin/src/index.css',
+    'apps/admin/src/components/theme-customizer/circular-transition.css',
+  ]) {
+    const plan = planChangedChecks([file], deps);
+    assert.ok(
+      plan.review.some((reason) => reason.includes('browser layout impact review')),
+    );
+    assert.ok(command(plan, 'changed-file format').argv.includes(file));
+    assert.equal(command(plan, 'ui tests'), undefined);
+    assert.equal(command(plan, 'admin incremental typecheck'), undefined);
+  }
+});
+
 test('deleted styles fail closed without assuming TypeScript checks CSS imports', () => {
   const file = 'apps/admin/src/app/examples/page.css';
   const plan = planChangedChecks([file], {}, { deletedPaths: [file] });

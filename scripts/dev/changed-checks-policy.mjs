@@ -89,6 +89,11 @@ export function planChangedChecks(
     } else if (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file)) {
       adminTypes = true;
       adminLint.push(file.slice('apps/admin/'.length));
+    } else if (file.startsWith('apps/admin/src/') && /\.(?:css|scss)$/.test(file)) {
+      // A formatter alone cannot establish that an edited stylesheet still
+      // renders correctly. The static import graph does not validate CSS rules,
+      // selectors, or responsive geometry; require an explicit visual scope.
+      review.push('Stylesheet change needs browser layout impact review: ' + file);
     } else if (file === 'apps/admin/vite.config.ts') {
       // This is the exact DEV API registration boundary. Changes require
       // typechecking, route-preservation and targeted service UI regression.
