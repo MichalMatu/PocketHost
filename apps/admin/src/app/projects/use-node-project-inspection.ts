@@ -86,8 +86,23 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
     }
     if (!current()) return null
     if (!status.runtime || typeof status.runtime !== "object" ||
-        Array.isArray(status.runtime) || !preview.plan)
+        Array.isArray(status.runtime) || !preview.plan ||
+        typeof preview.plan !== "object" || Array.isArray(preview.plan))
       throw new Error("Invalid Node runtime report")
+    const reviewedPlan = preview.plan as Record<string, unknown>
+    // Browser permissions must be literal booleans, not truthy strings or objects.
+    // Older read-only reports may omit "allowed"; those are never actionable.
+    if ((reviewedPlan.allowed !== undefined && typeof reviewedPlan.allowed !== "boolean") ||
+        (reviewedPlan.release !== undefined && reviewedPlan.release !== null &&
+         (typeof reviewedPlan.release !== "string" ||
+          !/^r-[a-f0-9]{32}$/.test(reviewedPlan.release))) ||
+        (reviewedPlan.missingTools !== undefined &&
+         (!Array.isArray(reviewedPlan.missingTools) ||
+          !reviewedPlan.missingTools.every(item => typeof item === "string"))) ||
+        (reviewedPlan.conflicts !== undefined &&
+         (!Array.isArray(reviewedPlan.conflicts) ||
+          !reviewedPlan.conflicts.every(item => typeof item === "string"))))
+      throw new Error("Invalid Node runtime plan")
     const observed = status.runtime as RuntimeState
     if (!["not-provisioned", "stopped", "running", "unknown"].includes(observed.state) ||
         !["stopped", "running"].includes(observed.desired) ||
@@ -96,7 +111,7 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
           !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
       throw new Error("Invalid Node runtime state")
     setRuntime(observed)
-    setPlan(preview.plan as RuntimePlan)
+    setPlan({ ...reviewedPlan, allowed: reviewedPlan.allowed === true } as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
   }, [getJson, resetRuntimeReviews])

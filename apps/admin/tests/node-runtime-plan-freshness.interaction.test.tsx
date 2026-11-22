@@ -87,3 +87,34 @@ it("does not let a superseded response restore an older plan", async () => {
   expect(hook.result.current.plan?.allowed).toBe(false)
   expect(hook.result.current.executionEnabled).toBe(false)
 })
+
+it.each([
+  [{ ...plan, allowed: "true" }, "Invalid Node runtime plan"],
+  [{ ...plan, release: { id: release } }, "Invalid Node runtime plan"],
+  [{ ...plan, missingTools: "node" }, "Invalid Node runtime plan"],
+  [[{ ...plan }], "Invalid Node runtime report"],
+] as const)("rejects malformed plan claims instead of exposing them as approvals", async (badPlan, reason) => {
+  const getJson = reader()
+  const hook = renderHook(() => useNodeProjectInspection(getJson, vi.fn()))
+  await act(async () => { await hook.result.current.loadRuntime(ID) })
+  expect(hook.result.current.plan?.allowed).toBe(true)
+  getJson.mockImplementation(async url =>
+    url.endsWith("/runtime") ? status : { plan: badPlan, executionEnabled: true })
+  await act(async () => {
+    await expect(hook.result.current.loadRuntime(ID)).rejects.toThrow(reason)
+  })
+  expect(hook.result.current.plan).toBeNull()
+  expect(hook.result.current.runtime).toBeNull()
+  expect(hook.result.current.executionEnabled).toBe(false)
+})
+
+it("treats legacy plan reports without an allowed flag as non-actionable", async () => {
+  const getJson = reader()
+  getJson.mockImplementation(async url =>
+    url.endsWith("/runtime") ? status :
+      { plan: { release, reason: "legacy read only" }, executionEnabled: true })
+  const hook = renderHook(() => useNodeProjectInspection(getJson, vi.fn()))
+  await act(async () => { await hook.result.current.loadRuntime(ID) })
+  expect(hook.result.current.plan?.allowed).toBe(false)
+  expect(hook.result.current.plan?.reason).toBe("legacy read only")
+})
