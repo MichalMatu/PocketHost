@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -462,6 +462,86 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText("Start completed.")
     expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
     expect(screen.getByRole("button", { name: /Stop/ })).toBeTruthy()
+  })
+
+
+  it("locks writes after uncertain mutation, keeps logs available, unlocks on explicit refresh", async () => {
+    const user = userEvent.setup()
+    let inventories = 0
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method) {
+        inventories += 1
+        return { ok: true, json: async () => ({ sites: [project("running", true)] }) }
+      }
+      if (url === "/api/v1/sites/" + ID + "/stop" && options?.method === "POST")
+        return { ok: false, status: 503 }
+      if (url === "/api/v1/sites/" + ID + "/logs" && !options?.method)
+        return { ok: true, json: async () => ({ logs: ["read-only audit trail"] }) }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    vi.stubGlobal("confirm", vi.fn(() => true))
+    renderSites()
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /^Stop$/ }))
+    await screen.findByText(/Write actions are paused for this site/)
+    expect((screen.getByRole("button", { name: /^Stop$/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: /^Restart$/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(true)
+    await user.click(screen.getByRole("button", { name: /Read logs/ }))
+    await screen.findByText("read-only audit trail")
+    expect((screen.getByRole("button", { name: /^Stop$/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect(inventories).toBe(1)
+    await user.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(
+      (screen.getByRole("button", { name: /^Stop$/ }) as HTMLButtonElement).disabled,
+    ).toBe(false))
+    expect(screen.queryByText(/Write actions are paused for this site/)).toBeNull()
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+  })
+
+  it("pauses site writes when acknowledged mutation lacks exact-site readback", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+      if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST")
+        return { ok: true, json: async () => ({ site: project("running", true) }) }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: false, status: 503 }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /^Start$/ }))
+    await screen.findByText(/Write actions are paused for this site/)
+    expect((screen.getByRole("button", { name: /^Start$/ }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(true)
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+  })
+
+  it("keeps the ZIP picker available after definite invalid-input rejection", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [project("stopped", false)] }) }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT")
+        return { ok: false, status: 400 }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.upload(screen.getByLabelText("Upload static ZIP"),
+      new File(["bad ZIP"], "bad.zip", { type: "application/zip" }))
+    await screen.findByText(/The site files were rejected/)
+    expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(false)
+    expect(screen.queryByText(/Write actions are paused for this site/)).toBeNull()
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(1)
   })
 
   it("keeps successful site start distinct from a failed post-action refresh", async () => {

@@ -15,6 +15,10 @@ import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, r
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
+  const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
+  // Only a fresh owned-site inventory can unlock actions after a
+  // potentially committed mutation. Read-only requests cannot.
+  React.useEffect(() => setOutcomeUnknown(false), [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const [health, setHealth] = React.useState<boolean | null>(null)
@@ -103,7 +107,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   }
 
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
-    if (site.state === "unknown" || busy) return
+    if (site.state === "unknown" || busy || outcomeUnknown) return
     const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
     if (!window.confirm(verb + " (" + release.id + ") of " + site.name + "?")) return
     void execute(
@@ -119,7 +123,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     job: () => Promise<unknown>, success: string, mutation = false,
     expected?: (observed: FleetSite) => boolean,
   ) => {
-    if (busy) return
+    if (busy || (mutation && outcomeUnknown)) return
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -129,6 +133,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       try {
         receipt = await job()
       } catch (cause) {
+        if (mutation && !(cause instanceof StaticSiteInputRejected))
+          setOutcomeUnknown(true)
         setError(mutation
           ? (cause instanceof StaticSiteInputRejected
             ? cause.message
@@ -160,14 +166,17 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             setEditorRelease(undefined)
           }
         } catch {
+          setOutcomeUnknown(true)
           setError("Site action result unconfirmed. Refresh the exact site state before retrying.")
           return
         }
       }
       try {
-        await onChange()
-        setAssets(null)
-        if (versions !== null) await readVersions()
+        if (mutation) {
+          await onChange()
+          setAssets(null)
+          if (versions !== null) await readVersions()
+        }
         setMessage(success)
       } catch {
         setError("Site state was confirmed, but list refresh failed. Refresh to inspect the latest state.")
@@ -177,7 +186,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     }
   }
   const action = (name: "start" | "stop" | "restart" | "rollback") => {
-    if (site.state === "unknown") return
+    if (site.state === "unknown" || outcomeUnknown) return
     if ((name === "stop" || name === "restart" || name === "rollback") &&
         !window.confirm("Apply " + name + " only to " + site.name + "?")) return
     void execute(() => mutate(endpoint + "/" + site.id + "/" + name, "POST"),
@@ -189,7 +198,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
     event.currentTarget.value = ""
-    if (!file || busy || site.state === "unknown") return
+    if (!file || busy || outcomeUnknown || site.state === "unknown") return
     const invalid = validateStaticZipSelection(file)
     if (invalid) {
       setError(invalid)
@@ -205,7 +214,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const folder = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
     event.currentTarget.value = ""
-    if (!files.length) return
+    if (!files.length || busy || outcomeUnknown || site.state === "unknown") return
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(async () => {
       if (files.length > 100 || files.some(file => file.size > 2 * 1024 * 1024) ||
@@ -221,7 +230,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
   const publishHtml = () => {
-    if (busy || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
+    if (busy || outcomeUnknown || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
     const bytes = new TextEncoder().encode(html)
     if (bytes.length > maxStarterHtml) {
       setError("HTML is larger than 32 KiB. Use Upload folder or ZIP instead.")
@@ -294,7 +303,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               </p>
             </div>
             <Button size="sm" variant="outline"
-              disabled={busy || htmlLoading || site.state === "unknown" || site.fileCount > 1}
+              disabled={busy || outcomeUnknown || htmlLoading || site.state === "unknown" || site.fileCount > 1}
               onClick={toggleHtmlEditor}>
               {editorVisible ? "Hide HTML editor" :
                 site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
@@ -313,14 +322,14 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             </p>
             <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
               value={html} onChange={event => setHtml(event.target.value)}
-              disabled={busy || site.state === "unknown"}
+              disabled={busy || outcomeUnknown || site.state === "unknown"}
               className="w-full rounded-md border bg-background p-3 font-mono text-xs"
             />
             <p className="text-xs text-muted-foreground">
               One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
               Each publish creates a new version you can roll back.
             </p>
-            <Button size="sm" disabled={busy || !editorReady || site.state === "unknown" || !html.trim() ||
+            <Button size="sm" disabled={busy || outcomeUnknown || !editorReady || site.state === "unknown" || !html.trim() ||
               new TextEncoder().encode(html).length > maxStarterHtml}
               onClick={publishHtml}>
               Publish HTML
@@ -333,7 +342,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               <FileArchive className="size-4" /> Upload static ZIP
             </label>
             <Input id={site.id + "-zip"} type="file" accept=".zip,application/zip"
-              disabled={busy || site.state === "unknown"} onChange={zip} />
+              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={zip} />
             <p className="text-xs text-muted-foreground">
               Max 9 MiB compressed, root index.html required. Upload publishes a new immutable release.
             </p>
@@ -343,16 +352,16 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               <Upload className="size-4" /> Upload folder
             </label>
             <Input ref={folderInput} id={site.id + "-folder"} type="file" multiple
-              disabled={busy || site.state === "unknown"} onChange={folder} />
+              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={folder} />
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {site.state === "running" ? <>
-            <Button variant="outline" disabled={busy} onClick={() => action("restart")}><RotateCcw /> Restart</Button>
-            <Button variant="outline" disabled={busy} onClick={() => action("stop")}><Square /> Stop</Button>
-          </> : <Button disabled={busy || site.state === "unknown" || !site.activeRelease}
+            <Button variant="outline" disabled={busy || outcomeUnknown} onClick={() => action("restart")}><RotateCcw /> Restart</Button>
+            <Button variant="outline" disabled={busy || outcomeUnknown} onClick={() => action("stop")}><Square /> Stop</Button>
+          </> : <Button disabled={busy || outcomeUnknown || site.state === "unknown" || !site.activeRelease}
             onClick={() => action("start")}><Play /> Start</Button>}
-          <Button variant="outline" disabled={busy || site.state === "unknown" || !site.canRollback}
+          <Button variant="outline" disabled={busy || outcomeUnknown || site.state === "unknown" || !site.canRollback}
             onClick={() => action("rollback")}><History /> Rollback</Button>
           <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
           <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
@@ -380,9 +389,13 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             {assets.length === 0 && <p className="text-muted-foreground text-xs">No active files.</p>}
           </div>
         </section>}
-        <SiteVersionHistory site={site} versions={versions} busy={busy}
+        <SiteVersionHistory site={site} versions={versions} busy={busy || outcomeUnknown}
           previewBase={siteAddress(site)} onVersionAction={versionAction} />
         {busy && <p role="status" className="text-sm">Working with this owned site…</p>}
+        {outcomeUnknown && <p role="alert" className="text-destructive text-sm">
+          Write actions are paused for this site until the owned inventory is refreshed.
+          Read-only logs and HTTP checks remain available.
+        </p>
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
         <SiteDeploymentHistory site={site} />
