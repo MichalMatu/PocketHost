@@ -188,8 +188,10 @@ export class NodeProjectDataSnapshots {
       const after = fstatSync(fd);
       const pathname = lstatSync(filename);
       if (
-        after.ino !== before.ino || after.size !== before.size ||
-        after.mtimeMs !== before.mtimeMs || pathname.ino !== before.ino ||
+        after.ino !== before.ino ||
+        after.size !== before.size ||
+        after.mtimeMs !== before.mtimeMs ||
+        pathname.ino !== before.ino ||
         bytes.length !== before.size
       ) {
         throw new Error('Node app data file changed during snapshot');
@@ -401,10 +403,10 @@ export class NodeProjectDataSnapshots {
         staging,
       );
       if (
-      JSON.stringify(copied.files) !== JSON.stringify(manifest.files) ||
-      (manifest.schema === 2 &&
-        JSON.stringify(copied.directories) !== JSON.stringify(manifest.directories))
-    ) {
+        JSON.stringify(copied.files) !== JSON.stringify(manifest.files) ||
+        (manifest.schema === 2 &&
+          JSON.stringify(copied.directories) !== JSON.stringify(manifest.directories))
+      ) {
         throw new Error('Staged Node data does not match verified snapshot');
       }
       this.ownedData(staging, projectId);

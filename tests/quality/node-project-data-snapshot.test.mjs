@@ -82,19 +82,13 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
   );
   assert.equal(readdirSync(archive).filter((name) => name.startsWith('snapshot-')).length, 1);
   assert.deepEqual(readdirSync(path.join(restored.restoredTo, project.id, 'state')), []);
-  assert.deepEqual(
-    readdirSync(path.join(restored.restoredTo, project.id, 'uploads', 'empty')),
-    [],
-  );
+  assert.deepEqual(readdirSync(path.join(restored.restoredTo, project.id, 'uploads', 'empty')), []);
 });
 
 test('Node app-data backup rejects source links and interrupted offline proof', (t) => {
   const { home, project, host, folder, archive } = fixture(t);
   let calls = 0;
-  assert.throws(
-    () => host.create(project.id, true, () => ++calls === 1),
-    /became active/,
-  );
+  assert.throws(() => host.create(project.id, true, () => ++calls === 1), /became active/);
   assert.equal(readdirSync(archive).filter((name) => name.startsWith('snapshot-')).length, 0);
   symlinkSync(path.join(home, 'outside'), path.join(folder, 'uploads', 'foreign'));
   assert.throws(() => host.create(project.id, true, () => true), /Unverified|Untrusted/);
