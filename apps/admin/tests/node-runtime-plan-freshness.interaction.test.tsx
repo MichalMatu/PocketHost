@@ -153,6 +153,11 @@ it.each([
   { history: [{ at: "broken", action: "start", release }] },
   { history: [{ at: "2026-11-22T16:00:00.000Z", action: { name: "start" }, release }] },
   { port: "19300" },
+  // String(...) may stringify an object to a valid status; reject non-primitives.
+  { state: Object("stopped") },
+  { state: { toString: () => "running" } },
+  { desired: Object("stopped") },
+  { desired: { toString: () => "running" } },
   { lastGoodRelease: { id: release } },
   { previousGoodRelease: "not-a-release" },
   { healthDecision: { action: "none", reason: { broken: true }, nextEligibleAtMs: null } },

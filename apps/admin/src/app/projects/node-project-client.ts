@@ -78,8 +78,10 @@ export function parseRuntimeState(value: unknown): RuntimeState {
   const release = (input: unknown) =>
     input === null || (typeof input === "string" && /^r-[a-f0-9]{32}$/.test(input))
   const history = runtime.history === undefined ? [] : runtime.history
-  if (!["not-provisioned", "stopped", "running", "unknown"].includes(String(runtime.state)) ||
-      !["stopped", "running"].includes(String(runtime.desired)) ||
+  if (typeof runtime.state !== "string" ||
+      !["not-provisioned", "stopped", "running", "unknown"].includes(runtime.state) ||
+      typeof runtime.desired !== "string" ||
+      !["stopped", "running"].includes(runtime.desired) ||
       !release(runtime.activeRelease) ||
       (runtime.lastGoodRelease !== undefined && !release(runtime.lastGoodRelease)) ||
       (runtime.previousGoodRelease !== undefined && !release(runtime.previousGoodRelease)) ||
