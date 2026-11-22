@@ -24,7 +24,8 @@ it("rejects an oversized update folder before any release mutation", () => {
   const setError = vi.fn()
   const setMessage = vi.fn()
   const hook = renderHook(() => useSiteReleaseImport({
-    site, busy: false, outcomeUnknown: false, execute, setError, setMessage,
+    site, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true, execute, setError, setMessage,
   }))
   const event = selected([new File([new Uint8Array(2 * 1024 * 1024 + 1)], "large.html")])
   act(() => { hook.result.current.folder(event) })
@@ -38,7 +39,8 @@ it("cancels a replacement ZIP before any write and clears the file picker", () =
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
   const execute = vi.fn(async () => {})
   const hook = renderHook(() => useSiteReleaseImport({
-    site, busy: false, outcomeUnknown: false, execute,
+    site, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true, execute,
     setError: vi.fn(), setMessage: vi.fn(),
   }))
   const event = selected([new File(["zip data"], "updated.zip", { type: "application/zip" })])
@@ -56,7 +58,8 @@ it.each(["ZIP", "folder"] as const)(
     const setError = vi.fn()
     const setMessage = vi.fn()
     const hook = renderHook(() => useSiteReleaseImport({
-      site, busy: false, outcomeUnknown: false, execute, setError, setMessage,
+      site, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true, execute, setError, setMessage,
     }))
     act(() => {
       if (kind === "ZIP") {
@@ -84,6 +87,7 @@ it("preserves first ZIP update readback requirements without starting any host a
   ) => {})
   const hook = renderHook(() => useSiteReleaseImport({
     site: { ...site, activeRelease: null }, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true,
     execute, setError: vi.fn(), setMessage: vi.fn(),
   }))
   act(() => {
@@ -100,10 +104,71 @@ it("preserves first ZIP update readback requirements without starting any host a
     .toBe(false)
 })
 
+it("rejects oversized multibyte HTML without scheduling a release", () => {
+  const execute = vi.fn(async () => {})
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, fileCount: 1 }, busy: false, outcomeUnknown: false,
+    html: "🦊".repeat(9000), editorReady: true, execute,
+    setError, setMessage: vi.fn(),
+  }))
+  act(() => { hook.result.current.publishHtml() })
+  expect(setError).toHaveBeenCalledWith(
+    "HTML is larger than 32 KiB. Use Upload folder or ZIP instead.",
+  )
+  expect(execute).not.toHaveBeenCalled()
+})
+
+it("keeps HTML publication canceled while clearing obsolete feedback", () => {
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+  const execute = vi.fn(async () => {})
+  const setError = vi.fn()
+  const setMessage = vi.fn()
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, fileCount: 1 }, busy: false, outcomeUnknown: false,
+    html: "<h1>Updated</h1>", editorReady: true, execute,
+    setError, setMessage,
+  }))
+  act(() => { hook.result.current.publishHtml() })
+  expect(setError).toHaveBeenCalledWith(null)
+  expect(setMessage).toHaveBeenCalledWith(null)
+  expect(confirm).toHaveBeenCalledWith(
+    "Publish new index.html release of Test static site?",
+  )
+  expect(execute).not.toHaveBeenCalled()
+})
+
+it("keeps HTML first-release readback conditions without starting a service", () => {
+  const execute = vi.fn(async (
+    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
+    _expected?: (observed: FleetSite) => boolean,
+  ) => {})
+  const initial = { ...site, activeRelease: null, fileCount: 0 }
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: initial, busy: false, outcomeUnknown: false,
+    html: "<h1>Initial page</h1>", editorReady: true,
+    execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  act(() => { hook.result.current.publishHtml() })
+  expect(execute).toHaveBeenCalledTimes(1)
+  const [, message, mutation, expected] = execute.mock.calls[0]
+  expect(message).toBe(
+    "HTML was published as a new immutable release. Press Start if the site is stopped.",
+  )
+  expect(mutation).toBe(true)
+  const matches = expected as (observed: FleetSite) => boolean
+  expect(matches({ ...initial, activeRelease: "r-" + "c".repeat(32), fileCount: 1 }))
+    .toBe(true)
+  expect(matches({ ...initial, activeRelease: null, fileCount: 0 })).toBe(false)
+  expect(matches({ ...initial, activeRelease: "r-" + "c".repeat(32), fileCount: 2 }))
+    .toBe(false)
+})
+
 it("does not import from a site with unverified process identity", () => {
   const execute = vi.fn(async () => {})
   const hook = renderHook(() => useSiteReleaseImport({
     site: { ...site, state: "unknown" }, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true,
     execute, setError: vi.fn(), setMessage: vi.fn(),
   }))
   act(() => {

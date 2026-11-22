@@ -17,7 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
-import { endpoint, maxStarterHtml, readSignal, mutate, siteAddress, encodeBase64, StaticSiteInputRejected } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, mutate, siteAddress, StaticSiteInputRejected } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -136,28 +136,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         name === "rollback" ? observed.activeRelease === site.previousRelease :
         observed.state === "running")
   }
-  const { zip, folder } = useSiteReleaseImport({
-    site, busy, outcomeUnknown, execute, setError, setMessage,
+  const { zip, folder, publishHtml } = useSiteReleaseImport({
+    site, busy, outcomeUnknown, html, editorReady, execute, setError, setMessage,
   })
-  const publishHtml = () => {
-    if (busy || outcomeUnknown || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
-    const bytes = new TextEncoder().encode(html)
-    if (bytes.length > maxStarterHtml) {
-      setError("HTML is larger than 32 KiB. Use Upload folder or ZIP instead.")
-      return
-    }
-    if (site.activeRelease && !window.confirm(
-      "Publish new index.html release of " + site.name + "?")) return
-    void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
-      JSON.stringify({
-        files: [{ name: "index.html", base64: encodeBase64(bytes) }],
-      }), "application/json"),
-    "HTML was published as a new immutable release. Press Start if the site is stopped.",
-    true, observed =>
-      observed.activeRelease !== null &&
-      observed.activeRelease !== site.activeRelease &&
-      observed.fileCount === 1)
-  }
   const verify = () => {
     const revision = readEpoch.current
     void execute(async () => {

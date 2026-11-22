@@ -1,7 +1,7 @@
 import type * as React from "react"
 import type { FleetSite } from "@/lib/site-fleet-schema"
 import {
-  endpoint, mutate, encodeStaticFolder,
+  endpoint, mutate, encodeStaticFolder, encodeBase64, maxStarterHtml,
   validateStaticZipSelection, validateStaticFolderSelection,
 } from "./site-client"
 
@@ -16,6 +16,8 @@ type Options = {
   site: FleetSite
   busy: boolean
   outcomeUnknown: boolean
+  html: string
+  editorReady: boolean
   execute: ExecuteImport
   setError: React.Dispatch<React.SetStateAction<string | null>>
   setMessage: React.Dispatch<React.SetStateAction<string | null>>
@@ -23,7 +25,7 @@ type Options = {
 
 /** Existing-site ZIP/folder release controller; site readback stays in the owner gate. */
 export function useSiteReleaseImport({
-  site, busy, outcomeUnknown, execute, setError, setMessage,
+  site, busy, outcomeUnknown, html, editorReady, execute, setError, setMessage,
 }: Options) {
   const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
@@ -60,5 +62,29 @@ export function useSiteReleaseImport({
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
 
-  return { zip, folder }
+  const publishHtml = () => {
+    if (busy || outcomeUnknown || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
+    const bytes = new TextEncoder().encode(html)
+    if (bytes.length > maxStarterHtml) {
+      setError("HTML is larger than 32 KiB. Use Upload folder or ZIP instead.")
+      return
+    }
+    // A valid HTML draft supersedes old import feedback, even when
+    // the owner cancels the replacement-release confirmation.
+    setError(null)
+    setMessage(null)
+    if (site.activeRelease && !window.confirm(
+      "Publish new index.html release of " + site.name + "?")) return
+    void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
+      JSON.stringify({
+        files: [{ name: "index.html", base64: encodeBase64(bytes) }],
+      }), "application/json"),
+    "HTML was published as a new immutable release. Press Start if the site is stopped.",
+    true, observed =>
+      observed.activeRelease !== null &&
+      observed.activeRelease !== site.activeRelease &&
+      observed.fileCount === 1)
+  }
+
+  return { zip, folder, publishHtml }
 }
