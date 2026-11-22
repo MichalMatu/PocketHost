@@ -534,6 +534,24 @@ export default function SitesPage() {
                   No automatic retry or start.
                 </p>
               </div>
+              {(initialZip !== null || initialFolder.length > 0) && (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p role="status" className="text-xs text-muted-foreground">
+                    {initialZip ? "Selected ZIP: " + initialZip.name :
+                      initialFolder.length === 1 ? "Selected folder: 1 file" :
+                        "Selected folder: " + initialFolder.length + " files"}
+                  </p>
+                  <Button type="button" variant="outline" size="sm" disabled={creating || loading}
+                    onClick={() => {
+                      setInitialZip(null)
+                      setInitialFolder([])
+                      if (initialZipInput.current) initialZipInput.current.value = ""
+                      if (initialFolderInput.current) initialFolderInput.current.value = ""
+                      setInputError(null)
+                      setNotice(null)
+                    }}>Clear selected import</Button>
+                </div>
+              )}
               <div className="space-y-1">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <input type="checkbox" className="size-4"

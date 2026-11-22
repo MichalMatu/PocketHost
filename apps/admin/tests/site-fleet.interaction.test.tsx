@@ -519,6 +519,34 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
   })
 
+  it("clears a pending ZIP or folder without POST and restores source choices", async () => {
+    const user = userEvent.setup()
+    const requests = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    const zip = screen.getByLabelText("Initial ZIP (optional)") as HTMLInputElement
+    const folder = screen.getByLabelText("Initial folder (optional)") as HTMLInputElement
+    const starter = screen.getByRole("checkbox", {
+      name: /Publish starter HTML on creation/,
+    }) as HTMLInputElement
+    await user.upload(zip, makeStaticZip())
+    expect(zip.files?.length).toBe(1)
+    expect(starter.disabled).toBe(true)
+    expect(screen.getByText(/Selected ZIP: first.zip/)).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Clear selected import" }))
+    expect(zip.files?.length).toBe(0)
+    expect(folder.files?.length).toBe(0)
+    expect(starter.disabled).toBe(false)
+    expect(screen.getByRole("button", { name: "Create site" })).toBeTruthy()
+    await user.upload(folder, new File(["<h1>Hello</h1>"], "index.html"))
+    expect(screen.getByText("Selected folder: 1 file")).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Clear selected import" }))
+    expect(folder.files?.length).toBe(0)
+    expect(starter.disabled).toBe(false)
+    expect(screen.queryByRole("button", { name: "Clear selected import" })).toBeNull()
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("uses the most recently selected import source, never both ZIP and folder", async () => {
     const user = userEvent.setup()
     const requests = withSites()
