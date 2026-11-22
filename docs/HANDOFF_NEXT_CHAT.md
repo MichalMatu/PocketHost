@@ -17,6 +17,14 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 - Source `main` has advanced beyond the immutable pending N12 task's pinned target `dde5a04`. That task explicitly checks fetched `main == target`, so if it executes later it can terminally **HOLD `remote-main-moved`**. Let it finish; do **not** edit or duplicate an unknown Agent task, and do not deploy N12 or newer code based on a historical receipt.
 - **Next action:** first receive the terminal N12 task result, verify no other A8 conflicts and fresh live ownership. Only then select an exact current `main` SHA and the applicable targeted QA categories (admin UI/TypeScript, test-lab Node/syntax/format); fix any named failure before guarded DEV. The Test Lab tooling-only changes themselves do not justify a panel restart. Continue small *independent* source slices only while the A8 task remains unknown. No schedulers, real project creation, public tunnel, external data or protected-service operations.
 
+## Latest Visual QA source-only work — continue from current main
+
+- Latest source `main` before this documentation update: `92b2851cd7eed9a5e9f8102f089294b2ffb4ed07`.
+- `a41a04fabc0cc5e16f32d2d76cb8320ab17de7a8`: exact numeric viewport scroll targets, top reset, verified actual middle/bottom scroll displacement before saving local PNGs; new `tests/quality/test-lab-scroll-capture.test.mjs`. **A8 QA not run**.
+- `92b2851cd7eed9a5e9f8102f089294b2ffb4ed07`: extracted browser-evaluable `inspectPageGeometry`, bounded structural overflow samples (no user text/URLs/values), and new `tests/quality/test-lab-layout-geometry.test.mjs`. **A8 QA not run**.
+- Latest queue read showed exactly one unmatched A8 task: `pockethost-a8-night-n12-dde5a04-qa-20261122-v1`; it is pinned to old main `dde5a04` and may fail with `remote-main-moved` when executed. Do not replay or overlap it. No additional A8 QA, guarded DEV, physical browser capture, screenshots transmission or panel restart occurred in this continuation. Last attested DEV remains N11 `c4dedfd`.
+- On next externally triggered turn, obtain that task's terminal receipt first; then select the fresh exact source SHA for scoped A8 `format,admin-types,ui,node` or policy-recommended minimal check mapping, resolve failures, and only after PASS consider guarded DEV for panel code. Visual QA tooling-only changes do not require panel deployment. Do not create a new scheduler.
+
 ## Verified N1–N8 evidence
 
 - Source `main` immediately before this docs-only commit: `c4dedfd23b597a95a96f00379786fe36f6cf27e2`. Always read fresh `main` before another code change.
