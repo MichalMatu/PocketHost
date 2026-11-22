@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64 } from "./site-client"
+import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, StaticSiteInputRejected, validateStaticZipSelection } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -130,7 +130,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         receipt = await job()
       } catch (cause) {
         setError(mutation
-          ? "Result unconfirmed. Refresh the site state before retrying; no automatic retry."
+          ? (cause instanceof StaticSiteInputRejected
+            ? cause.message
+            : "Result unconfirmed. Refresh the site state before retrying; no automatic retry.")
           : cause instanceof Error ? cause.message : "Read failed.")
         return
       }
@@ -187,13 +189,18 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0]
     event.currentTarget.value = ""
-    if (!file) return
+    if (!file || busy || site.state === "unknown") return
+    const invalid = validateStaticZipSelection(file)
+    if (invalid) {
+      setError(invalid)
+      setMessage(null)
+      return
+    }
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
-    void execute(async () => {
-      if (file.size > maxZip) throw new RangeError("ZIP is larger than 9 MiB.")
-      return await mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip")
-    }, "ZIP was published as a new immutable release.", true,
-    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
+    void execute(() => mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip"),
+      "ZIP was published as a new immutable release.", true,
+      observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease &&
+        observed.fileCount > 0 && observed.bytes > 0)
   }
   const folder = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -327,6 +334,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             </label>
             <Input id={site.id + "-zip"} type="file" accept=".zip,application/zip"
               disabled={busy || site.state === "unknown"} onChange={zip} />
+            <p className="text-xs text-muted-foreground">
+              Max 9 MiB compressed, root index.html required. Upload publishes a new immutable release.
+            </p>
           </div>
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-folder"}>

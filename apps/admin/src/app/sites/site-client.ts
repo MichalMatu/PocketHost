@@ -6,6 +6,20 @@ export const maxZip = 9 * 1024 * 1024
 export const maxFolder = 8 * 1024 * 1024
 export const maxStarterHtml = 32 * 1024
 
+export class StaticSiteInputRejected extends Error {
+  constructor() {
+    super("The site files were rejected. Include a root index.html and use a valid ZIP within the upload limits.")
+    this.name = "StaticSiteInputRejected"
+  }
+}
+
+export function validateStaticZipSelection(file: Pick<File, "name" | "size">): string | null {
+  if (!/\.zip$/i.test(file.name)) return "Choose a .zip archive for static hosting."
+  if (file.size === 0) return "The selected ZIP is empty."
+  if (file.size > maxZip) return "ZIP is larger than 9 MiB."
+  return null
+}
+
 /** Read-only site queries must settle; mutation requests retain their own lifecycle. */
 export function readSignal(signal?: AbortSignal): AbortSignal {
   const timeout = AbortSignal.timeout(10_000)
@@ -46,9 +60,10 @@ export async function mutate(url: string, method: "POST" | "PUT" | "DELETE", bod
     headers: { "X-PocketHost-Intent": intent, ...(type ? { "Content-Type": type } : {}) },
     body,
   })
-  if (!response.ok) throw new Error(response.status === 400
-    ? "Unsupported files, unsafe path or upload budget exceeded."
-    : "Operation was safely refused. Check the process identity, site port and release.")
+  if (!response.ok) {
+    if (response.status === 400) throw new StaticSiteInputRejected()
+    throw new Error("Operation was safely refused. Check the process identity, site port and release.")
+  }
   return parseFleetSite(await response.json())
 }
 export function siteAddress(site: FleetSite): string {

@@ -229,6 +229,77 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(calls.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(1)
   })
 
+
+  it("publishes selected ZIP bytes and confirms the new immutable release by readback", async () => {
+    const user = userEvent.setup()
+    const previous = project("stopped", false)
+    const published = {
+      ...project("stopped", true),
+      activeRelease: RELEASE,
+      fileCount: 1,
+      bytes: 19,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    let current = previous
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [current] }) }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: current }) }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
+        expect((options.headers as Record<string, string>)["Content-Type"]).toBe("application/zip")
+        const body = options.body as File
+        expect(body.name).toBe("site.zip")
+        expect(await body.text()).toBe("ZIP-FIXTURE-CONTENTS")
+        current = published
+        return { ok: true, json: async () => ({ site: published }) }
+      }
+      throw new Error("Unexpected static site request " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText("My own site")
+    const zip = new File(["ZIP-FIXTURE-CONTENTS"], "site.zip", { type: "application/zip" })
+    await user.upload(screen.getByLabelText("Upload static ZIP"), zip)
+    await screen.findByText("ZIP was published as a new immutable release.")
+    expect(requests.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(1)
+    expect(requests.mock.calls.some(([url, options]) =>
+      String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
+    expect(screen.getByText(/1 files/)).toBeTruthy()
+  })
+
+  it("refuses empty ZIP files before sending a mutation", async () => {
+    const user = userEvent.setup()
+    const requests = withSites([project("stopped", false)])
+    await screen.findByText("My own site")
+    await user.upload(screen.getByLabelText("Upload static ZIP"),
+      new File([], "empty.zip", { type: "application/zip" }))
+    await screen.findByText("The selected ZIP is empty.")
+    expect(requests.mock.calls.every(([, options]) => options?.method !== "PUT")).toBe(true)
+  })
+
+  it("shows a definite ZIP format rejection distinctly from uncertain deployment", async () => {
+    const user = userEvent.setup()
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [project("stopped", false)] }) }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT")
+        return { ok: false, status: 400 }
+      throw new Error("Unexpected request " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.upload(screen.getByLabelText("Upload static ZIP"),
+      new File(["bad archive"], "bad.zip", { type: "application/zip" }))
+    await screen.findByText(/The site files were rejected/)
+    expect(screen.queryByText(/Result unconfirmed/)).toBeNull()
+    expect(requests.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(1)
+  })
+
   it("with uncertain process identity blocks all writes while retaining read-only logs", async () => {
     const user = userEvent.setup()
     const fetchMock = withSites([project("unknown", true)])
