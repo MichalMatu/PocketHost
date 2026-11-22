@@ -34,8 +34,6 @@ export function planChangedChecks(
       continue;
     }
     if (deleted.has(file)) {
-      // A removed page is covered by management route/404 contracts and a full
-      // TypeScript closure check. Other source deletion requires explicit review.
       const browserSource =
         file.startsWith('apps/admin/src/app/') || file.startsWith('apps/admin/src/components/');
       const browserAsset =
@@ -43,10 +41,22 @@ export function planChangedChecks(
       if (!browserSource && !browserAsset) {
         review.push('Deletion needs explicit impact review: ' + file);
       } else if (browserSource) {
-        // Includes deleted UI data fixtures, JSON and styles, not only TSX.
-        adminTypes = true;
-        node.add('tests/quality/admin-preservation.test.mjs');
-        ui.add('tests/management-navigation.interaction.test.tsx');
+        // Route removal needs navigation regression. Shared component and JSON
+        // fixture removal needs type closure and the cheap route-preservation
+        // contract, but must not trigger a broad navigation UI test by default.
+        if (/\.(?:tsx?|jsx?|json)$/.test(file)) {
+          adminTypes = true;
+          node.add('tests/quality/admin-preservation.test.mjs');
+          if (
+            file.startsWith('apps/admin/src/app/') &&
+            /\/(?:page|layout|route|index)\.(?:tsx?|jsx?)$/.test(file)
+          ) {
+            ui.add('tests/management-navigation.interaction.test.tsx');
+          }
+        } else if (/\.(?:css|scss)$/.test(file)) {
+          // TypeScript does not prove stylesheet imports still resolve.
+          review.push('Deleted UI stylesheet needs bundle impact review: ' + file);
+        }
       }
       continue;
     }

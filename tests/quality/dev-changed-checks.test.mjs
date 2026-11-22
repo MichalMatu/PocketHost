@@ -174,6 +174,35 @@ test('deleted UI examples do not send nonexistent paths to format or lint', () =
   );
 });
 
+test('deleted shared UI component and JSON fixture skip unrelated navigation UI', () => {
+  for (const file of [
+    'apps/admin/src/components/example-card.tsx',
+    'apps/admin/src/app/examples/data.json',
+  ]) {
+    const plan = planChangedChecks([file], {}, { deletedPaths: [file] });
+    assert.deepEqual(plan.review, []);
+    assert.ok(command(plan, 'admin incremental typecheck'));
+    assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));
+    assert.equal(command(plan, 'ui tests'), undefined);
+    assert.equal(command(plan, 'changed-file format'), undefined);
+  }
+});
+
+test('deleted route module still requires targeted navigation regression', () => {
+  const file = 'apps/admin/src/app/examples/page.tsx';
+  const plan = planChangedChecks([file], {}, { deletedPaths: [file] });
+  assert.ok(command(plan, 'admin incremental typecheck'));
+  assert.ok(command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'));
+  assert.deepEqual(plan.review, []);
+});
+
+test('deleted styles fail closed without assuming TypeScript checks CSS imports', () => {
+  const file = 'apps/admin/src/app/examples/page.css';
+  const plan = planChangedChecks([file], {}, { deletedPaths: [file] });
+  assert.ok(plan.review.some((reason) => reason.includes('bundle impact review')));
+  assert.equal(command(plan, 'ui tests'), undefined);
+});
+
 test('deleted privileged source remains blocked for explicit review', () => {
   const deletedPaths = ['src/modules/host/termux-service-admin.ts'];
   const plan = planChangedChecks(deletedPaths, {}, { deletedPaths });
