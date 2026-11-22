@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseCandidates } from "@/app/projects/node-project-client"
+import { parseCandidates, validProject } from "@/app/projects/node-project-client"
 
 const valid = {
   id: "r-" + "a".repeat(32),
@@ -44,4 +44,24 @@ describe("owned Node release inventory", () => {
     expect(parseCandidates([{ ...valid, sourceIntegrity: "legacy-needs-restaging" }])[0]
       .sourceIntegrity).toBe("legacy-needs-restaging")
   })
+})
+
+describe("owned Node project catalog revisions", () => {
+  const created = {
+    id: "node-" + "a".repeat(32), name: "Revision fixture",
+    kind: "node", state: "created", runtime: "not-provisioned",
+    activeRelease: null, candidateRelease: null, previousCandidate: null,
+    deploymentCount: 0, createdAt: "2026-11-22T10:00:00Z",
+  }
+
+  it("accepts verified zero and positive source revisions", () => {
+    expect(validProject(created)).toBe(true)
+    expect(validProject({ ...created, deploymentCount: 7 })).toBe(true)
+  })
+
+  it.each([undefined, null, -1, 0.5, Number.NaN, Infinity, "0", Number.MAX_SAFE_INTEGER + 1])(
+    "rejects an unusable expected source revision %s", revision => {
+      expect(validProject({ ...created, deploymentCount: revision })).toBe(false)
+    },
+  )
 })

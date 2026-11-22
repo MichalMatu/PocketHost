@@ -239,7 +239,9 @@ export function validProject(value: unknown): value is Project {
     ["created", "source-staged"].includes(item.state ?? "") &&
     item.runtime === "not-provisioned" && item.activeRelease === null &&
     (item.candidateRelease === null || (typeof item.candidateRelease === "string" && /^r-[a-f0-9]{32}$/.test(item.candidateRelease))) &&
-    (item.previousCandidate === null || (typeof item.previousCandidate === "string" && /^r-[a-f0-9]{32}$/.test(item.previousCandidate)))
+    (item.previousCandidate === null || (typeof item.previousCandidate === "string" && /^r-[a-f0-9]{32}$/.test(item.previousCandidate))) &&
+    // The UI submits this value as expectedRevision on source writes.
+    Number.isSafeInteger(item.deploymentCount) && (item.deploymentCount as number) >= 0
 }
 export async function requestJson(url: string, method?: "POST", body?: unknown, ownerToken = ""): Promise<Record<string, unknown>> {
   const ownerHeader: Record<string, string> = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
