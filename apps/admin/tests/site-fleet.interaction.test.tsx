@@ -337,6 +337,59 @@ describe("H2 browser site-manager lifecycle", () => {
   })
 
 
+
+  it("refuses initial ZIP without index.html before creating a site", async () => {
+    const user = userEvent.setup()
+    const calls = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      makeStaticZip("readme.txt"))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText(/ZIP needs a nonempty index.html/)
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+    expect(screen.queryByText(ID)).toBeNull()
+  })
+
+  it("permits one containing folder when ZIP index.html is inside it", async () => {
+    const user = userEvent.setup()
+    let sites: ReturnType<typeof project>[] = []
+    const released = {
+      ...project("stopped", true),
+      fileCount: 1,
+      bytes: 23,
+      releases: 1,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites }) }
+      if (url === "/api/v1/sites/" && options?.method === "POST") {
+        sites = [project()]
+        return { ok: true, json: async () => ({ site: sites[0] }) }
+      }
+      if (url === "/api/v1/sites/" + ID + "/deploy" && options?.method === "PUT") {
+        sites = [released]
+        return { ok: true, json: async () => ({ site: released }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: sites[0] }) }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      makeStaticZip("dist/index.html"))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText(/created and ZIP published as its first immutable release/)
+    expect(calls.mock.calls.filter(([, options]) => options?.method).map(([, options]) => options?.method))
+      .toEqual(["POST", "PUT"])
+    expect(screen.queryByText(/ZIP needs a nonempty index.html/)).toBeNull()
+  })
+
   it("rejects a renamed non-ZIP before creating an empty site", async () => {
     const user = userEvent.setup()
     const calls = withSites()
@@ -370,7 +423,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
-      makeStaticZip("missing-index.html"))
+      makeStaticZip())
     await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
     await screen.findByText(/was created without a release. ZIP rejected/)
     expect(screen.getByText(ID)).toBeTruthy()

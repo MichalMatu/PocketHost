@@ -20,16 +20,18 @@ export function validateStaticZipSelection(file: Pick<File, "name" | "size">): s
   return null
 }
 
-/** Small browser preflight before creating a site. Full ZIP validation stays server-side. */
+/** Browser preflight for first release; the backend still validates CRC and assets. */
 export async function inspectInitialStaticZip(file: File): Promise<string | null> {
   const selected = validateStaticZipSelection(file)
   if (selected) return selected
   const invalid = "ZIP structure is invalid. Select a standard ZIP archive with index.html."
+  const missing = "ZIP needs a nonempty index.html at the root or inside one top-level folder."
   try {
     const bytes = new Uint8Array(await file.arrayBuffer())
     if (bytes.byteLength < 98) return invalid
     const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
-    // Match the classic ZIP central-directory envelope accepted by the backend.
+    const decoder = new TextDecoder("utf-8", { fatal: true })
+    // The server imports classic ZIP central-directory entries, not shell paths.
     for (let end = bytes.length - 22; end >= Math.max(0, bytes.length - 65557); end--) {
       if (view.getUint32(end, true) !== 0x06054b50 ||
           end + 22 + view.getUint16(end + 20, true) !== bytes.length ||
@@ -39,13 +41,60 @@ export async function inspectInitialStaticZip(file: File): Promise<string | null
       const size = view.getUint32(end + 12, true)
       const offset = view.getUint32(end + 16, true)
       if (!count || count > 130 || count !== view.getUint16(end + 8, true) ||
-          size < 46 || offset > end || size > end - offset ||
-          offset + 46 > bytes.length ||
-          view.getUint32(offset, true) !== 0x02014b50) continue
-      const localOffset = view.getUint32(offset + 42, true)
-      if (localOffset >= offset || localOffset + 30 > bytes.length ||
-          view.getUint32(localOffset, true) !== 0x04034b50) continue
-      return null
+          size < 46 || offset > end || size > end - offset) continue
+      let cursor = offset
+      const boundary = offset + size
+      const entries: { name: string; length: number }[] = []
+      let valid = true
+      for (let i = 0; i < count; i++) {
+        if (cursor + 46 > boundary || view.getUint32(cursor, true) !== 0x02014b50) {
+          valid = false
+          break
+        }
+        const nameLen = view.getUint16(cursor + 28, true)
+        const extraLen = view.getUint16(cursor + 30, true)
+        const commentLen = view.getUint16(cursor + 32, true)
+        const next = cursor + 46 + nameLen + extraLen + commentLen
+        const localOffset = view.getUint32(cursor + 42, true)
+        const flags = view.getUint16(cursor + 8, true)
+        const method = view.getUint16(cursor + 10, true)
+        const compressed = view.getUint32(cursor + 20, true)
+        const expanded = view.getUint32(cursor + 24, true)
+        if (next > boundary || !nameLen || localOffset >= offset ||
+            localOffset + 30 > offset || view.getUint32(localOffset, true) !== 0x04034b50 ||
+            (flags & 0x41) !== 0 || (method !== 0 && method !== 8) ||
+            compressed === 0xffffffff || expanded === 0xffffffff) {
+          valid = false
+          break
+        }
+        const localNameLen = view.getUint16(localOffset + 26, true)
+        const localExtraLen = view.getUint16(localOffset + 28, true)
+        const localEnd = localOffset + 30 + localNameLen + localExtraLen + compressed
+        if (localEnd > offset || localNameLen !== nameLen ||
+            view.getUint16(localOffset + 8, true) !== method) {
+          valid = false
+          break
+        }
+        const name = decoder.decode(bytes.subarray(cursor + 46, cursor + 46 + nameLen))
+        const localName = decoder.decode(bytes.subarray(localOffset + 30,
+          localOffset + 30 + localNameLen))
+        if (name !== localName) {
+          valid = false
+          break
+        }
+        if (!name.endsWith("/")) entries.push({ name, length: expanded })
+        cursor = next
+      }
+      if (!valid || cursor !== boundary || entries.length === 0 || entries.length > 100)
+        return invalid
+      if (entries.some(entry => entry.name === "index.html" && entry.length > 0))
+        return null
+      // Mirror the importer's one-common-folder normalization.
+      const root = entries[0].name.split("/")[0]
+      if (root && entries.every(entry => entry.name.startsWith(root + "/")) &&
+          entries.some(entry => entry.name === root + "/index.html" && entry.length > 0))
+        return null
+      return missing
     }
     return invalid
   } catch {

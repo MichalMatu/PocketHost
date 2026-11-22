@@ -24,3 +24,8 @@ A definite HTTP 400 for an invalid new site name is reported next to the creatio
 ## Initial ZIP structural preflight (2026-11-22)
 
 Before POST creating a new Static site with a first ZIP, the browser performs a bounded classic ZIP envelope check (EOCD, central-directory and local-file headers) on the selected file. Obvious renamed text/invalid archives never create an empty site. This is intentionally not a full extraction or CRC validation: the server remains authoritative, and a structurally plausible ZIP missing root index.html can still be definitely rejected after creation. The existing direct ZIP upload flow does not perform this initial-site preflight. New interaction regression uses a valid one-file ZIP fixture plus malformed-file and server-400 scenarios; QA has not been executed.
+
+## Initial ZIP index inventory preflight (2026-11-22)
+
+Before creating an owned static site, the browser now walks the bounded classic ZIP central directory and verifies that a nonempty `index.html` exists either at the archive root or under one common top-level folder (as the server's decoder supports). Malformed entry structures and archives without a usable homepage are rejected before creating a site; the server remains authoritative for decompression, path safety, CRC and final asset validation. Existing-site uploads are not changed. Browser interaction fixtures for missing homepage and wrapped homepage are committed but not run; real browser acceptance remains OPEN.
+
