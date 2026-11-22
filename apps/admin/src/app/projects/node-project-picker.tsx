@@ -20,6 +20,7 @@ export function NodeProjectPicker({ projects, selectedId, busy, onSelect }: Prop
         ? <p className="text-muted-foreground text-sm">No Node projects yet.</p>
         : <div className="flex flex-wrap gap-2">{projects.map(project =>
           <Button key={project.id} variant={selectedId === project.id ? "default" : "outline"}
+            aria-pressed={selectedId === project.id}
             disabled={busy} onClick={() => onSelect(project)}>{project.name}</Button>)}</div>}
     </CardContent>
   </Card>

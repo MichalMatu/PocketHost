@@ -24,10 +24,26 @@ it("shows project names and delegates only the chosen item to the parent", async
   expect(screen.getByText("Owned projects")).toBeTruthy()
   const buttons = screen.getAllByRole("button")
   expect(buttons.map(button => button.textContent)).toEqual(["First Node", "Second Node"])
+  expect(buttons.map(button => button.getAttribute("aria-pressed"))).toEqual(["true", "false"])
   const user = userEvent.setup()
   await user.click(screen.getByRole("button", { name: "Second Node" }))
   expect(onSelect).toHaveBeenCalledTimes(1)
   expect(onSelect).toHaveBeenCalledWith(projects[1])
+})
+
+it("updates the accessible selected project state after a catalog selection changes", () => {
+  const onSelect = vi.fn()
+  const { rerender } = render(<NodeProjectPicker projects={projects} selectedId="node-one"
+    busy={false} onSelect={onSelect} />)
+  expect(screen.getByRole("button", { name: "First Node" }).getAttribute("aria-pressed"))
+    .toBe("true")
+  rerender(<NodeProjectPicker projects={projects} selectedId="node-two"
+    busy={false} onSelect={onSelect} />)
+  expect(screen.getByRole("button", { name: "First Node" }).getAttribute("aria-pressed"))
+    .toBe("false")
+  expect(screen.getByRole("button", { name: "Second Node" }).getAttribute("aria-pressed"))
+    .toBe("true")
+  expect(onSelect).not.toHaveBeenCalled()
 })
 
 it("prevents selection while an action is busy", async () => {
