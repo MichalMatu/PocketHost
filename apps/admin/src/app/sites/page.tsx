@@ -587,6 +587,8 @@ export default function SitesPage() {
           : "Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
+  }
+
   return (
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
