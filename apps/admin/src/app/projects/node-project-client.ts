@@ -142,7 +142,9 @@ export function parseCandidates(value: unknown): Candidate[] {
         ids.has(release.id) || release.active !== false ||
         typeof release.candidate !== "boolean" ||
         typeof release.previousCandidate !== "boolean" ||
-        !["verified", "legacy-needs-restaging"].includes(String(release.sourceIntegrity)) ||
+        (release.candidate === true && release.previousCandidate === true) ||
+        typeof release.sourceIntegrity !== "string" ||
+        !["verified", "legacy-needs-restaging"].includes(release.sourceIntegrity) ||
         plan.status !== "review-required" ||
         typeof plan.packageName !== "string" || !plan.packageName ||
         plan.packageName.length > 256 ||

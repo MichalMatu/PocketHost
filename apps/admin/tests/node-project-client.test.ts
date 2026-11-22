@@ -22,6 +22,24 @@ describe("owned Node release inventory", () => {
     expect(() => parseCandidates([{ ...valid, dependencyPlan: { ...valid.dependencyPlan, dependencyCount: -1 } }])).toThrow(/inventory/)
     expect(() => parseCandidates([{ ...valid, sourceIntegrity: "unknown" }])).toThrow(/inventory/)
   })
+  it("rejects one release claiming both current and previous candidate roles", () => {
+    expect(() => parseCandidates([{ ...valid, previousCandidate: true }]))
+      .toThrow(/inventory/)
+    // Distinct current and previous source versions remain valid.
+    const previous = {
+      ...valid, id: "r-" + "b".repeat(32), candidate: false, previousCandidate: true,
+    }
+    expect(parseCandidates([valid, previous])).toEqual([valid, previous])
+  })
+
+  it("requires a primitive source-integrity value, not a stringified object", () => {
+    expect(() => parseCandidates([{ ...valid, sourceIntegrity: Object("verified") }]))
+      .toThrow(/inventory/)
+    expect(() => parseCandidates([{
+      ...valid, sourceIntegrity: { toString: () => "verified" },
+    }])).toThrow(/inventory/)
+  })
+
   it("retains legacy source integrity warnings", () => {
     expect(parseCandidates([{ ...valid, sourceIntegrity: "legacy-needs-restaging" }])[0]
       .sourceIntegrity).toBe("legacy-needs-restaging")
