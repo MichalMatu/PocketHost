@@ -1,6 +1,12 @@
+import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+// This page is tested in isolation; App provides the layout contexts in production.
+vi.mock('@/components/layouts/base-layout', () => ({
+  BaseLayout: ({ children }: { children: ReactNode }) => <main>{children}</main>,
+}))
+
 import PlatformPage from '@/app/settings/platform/page'
 
 afterEach(() => vi.unstubAllGlobals())
