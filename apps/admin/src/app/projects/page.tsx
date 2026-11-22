@@ -436,9 +436,10 @@ export default function ProjectsPage() {
                   if (!response) return
                   const observed = parseNodeHealth(response.health)
                   // A host may have switched releases since the last runtime read.
-                  // Do not display "ready" for another release or keep stale approvals.
-                  if (observed.ready === true &&
-                      (runtime?.state !== "running" || observed.release !== runtime?.activeRelease)) {
+                  // Even a non-ready response for another release invalidates
+                  // the old runtime review and its one-shot approvals.
+                  if ((runtime && observed.release !== runtime.activeRelease) ||
+                      (observed.ready === true && runtime?.state !== "running")) {
                     invalidateRead()
                     beginInspection()
                     resetLogs()

@@ -11,7 +11,9 @@ vi.mock("@/components/layouts/base-layout", () => ({
 
 afterEach(() => vi.unstubAllGlobals())
 
-it("clears an earlier ready state while a second probe is pending and after it fails", async () => {
+it.each([true, false])(
+  "clears pending readiness and invalidates a changed release (ready=%s)",
+  async foreignReady => {
   const id = "node-" + "a".repeat(32)
   const release = "r-" + "b".repeat(32)
   const project = {
@@ -46,7 +48,7 @@ it("clears an earlier ready state while a second probe is pending and after it f
       if (healthReads === 2) return second
       return { ok: true, json: async () => ({ health: {
         state: "running", release: healthReads === 3 ? "r-" + "c".repeat(32) : release,
-        ready: true,
+        ready: healthReads === 3 ? foreignReady : true,
       } }) }
     }
     throw new Error("Unexpected request: " + url + " " + String(options?.method))
@@ -70,8 +72,8 @@ it("clears an earlier ready state while a second probe is pending and after it f
   expect(await screen.findByText("Could not load Node projects. Try Refresh.")).toBeTruthy()
   expect(screen.getByLabelText("Node runtime summary").textContent)
     .toContain("HTTP readiness: not checked")
-  // A later health GET from a different running release must invalidate
-  // the old runtime review instead of restoring the green readiness label.
+  // A later health GET for another release must discard the old runtime
+  // review even when that release reports not-ready.
   await waitFor(() => expect((screen.getByRole("button", { name: "Check live readiness" }) as HTMLButtonElement)
     .disabled).toBe(false))
   await user.click(screen.getByRole("button", { name: "Check live readiness" }))
@@ -82,7 +84,8 @@ it("clears an earlier ready state while a second probe is pending and after it f
     .toContain("HTTP readiness: not checked")
   expect(healthReads).toBe(3)
   expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
-})
+  },
+)
 
 it("invalidates a prior local Node preview and rejects a different running release", async () => {
   const id = "node-" + "a".repeat(32)
