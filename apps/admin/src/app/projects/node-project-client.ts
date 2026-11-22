@@ -245,6 +245,21 @@ export function validProject(value: unknown): value is Project {
     // The UI submits this value as expectedRevision on source writes.
     Number.isSafeInteger(item.deploymentCount) && (item.deploymentCount as number) >= 0
 }
+/** Reject ambiguous or oversized catalogs before enabling project selection. */
+export function parseProjectCatalog(value: unknown): Project[] {
+  if (!Array.isArray(value) || value.length > 8)
+    throw new Error("Invalid Node project registry response")
+  const ids = new Set<string>()
+  const catalog: Project[] = []
+  for (const project of value) {
+    if (!validProject(project) || ids.has(project.id))
+      throw new Error("Invalid Node project registry response")
+    ids.add(project.id)
+    catalog.push(project)
+  }
+  return catalog
+}
+
 export async function requestJson(url: string, method?: "POST", body?: unknown, ownerToken = ""): Promise<Record<string, unknown>> {
   const ownerHeader: Record<string, string> = ownerToken ? { "X-PocketHost-Node-Owner": ownerToken } : {}
   const response = await fetch(url, { credentials: "same-origin", cache: "no-store",

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseCandidates, validProject } from "@/app/projects/node-project-client"
+import { parseCandidates, parseProjectCatalog, validProject } from "@/app/projects/node-project-client"
 
 const valid = {
   id: "r-" + "a".repeat(32),
@@ -64,4 +64,31 @@ describe("owned Node project catalog revisions", () => {
       expect(validProject({ ...created, deploymentCount: revision })).toBe(false)
     },
   )
+})
+
+describe("owned Node project catalog integrity", () => {
+  const item = {
+    id: "node-" + "a".repeat(32), name: "Owned fixture",
+    kind: "node", state: "created", runtime: "not-provisioned",
+    activeRelease: null, candidateRelease: null, previousCandidate: null,
+    deploymentCount: 0, createdAt: "2026-11-22T10:00:00Z",
+  }
+
+  it("accepts an empty and a unique owned catalog", () => {
+    expect(parseProjectCatalog([])).toEqual([])
+    expect(parseProjectCatalog([item])).toEqual([item])
+  })
+
+  it("rejects duplicate identities rather than presenting ambiguous project choices", () => {
+    expect(() => parseProjectCatalog([item, { ...item, name: "Conflicting label" }]))
+      .toThrow("Invalid Node project registry response")
+  })
+
+  it("refuses more than the host's eight-project catalog limit", () => {
+    const oversized = Array.from({ length: 9 }, (_, index) => ({
+      ...item, id: "node-" + index.toString(16).padStart(32, "0"),
+    }))
+    expect(() => parseProjectCatalog(oversized))
+      .toThrow("Invalid Node project registry response")
+  })
 })

@@ -67,3 +67,15 @@ it("ignores an earlier failing catalog read after a newer valid Refresh", async 
   expect(screen.getByRole("button", { name: "Verified project" })).toBeTruthy()
   expect(screen.queryByRole("alert")).toBeNull()
 })
+
+it("rejects duplicate Node catalog ids before rendering ambiguous project buttons", async () => {
+  const duplicate = project("a", "Same identity")
+  const requests = vi.fn(async () => response([duplicate, { ...duplicate, name: "Conflicting identity" }]))
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  expect(await screen.findByRole("alert")).toHaveTextContent("Invalid Node project registry response")
+  expect(screen.queryByRole("button", { name: "Same identity" })).toBeNull()
+  expect(screen.queryByRole("button", { name: "Conflicting identity" })).toBeNull()
+  expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
+  expect(requests).toHaveBeenCalledTimes(1)
+})

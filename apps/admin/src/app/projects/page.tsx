@@ -18,7 +18,7 @@ import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, validProject, requestJson, NodeProjectValidationError,
+  validatedExtras, validatedAssets, parseProjectCatalog, requestJson, NodeProjectValidationError,
   type Project, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
@@ -123,9 +123,7 @@ export default function ProjectsPage() {
       const data = await getJson(api)
       // Stale responses do not change the catalog or its dependent selection.
       if (request !== catalogRequest.current) return verifiedCatalog.current
-      if (!Array.isArray(data.projects) || !data.projects.every(validProject))
-        throw new Error("Invalid Node project registry response")
-      const catalog = data.projects as Project[]
+      const catalog = parseProjectCatalog(data.projects)
       verifiedCatalog.current = catalog
       setProjects(catalog)
       setCatalogState("ready")
