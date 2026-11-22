@@ -141,7 +141,10 @@ export function parseNodeHealth(value: unknown): NodeHealth {
       !["not-provisioned", "stopped", "running", "unknown"].includes(report.state) ||
       (report.ready !== null && typeof report.ready !== "boolean") ||
       (report.release !== null && (typeof report.release !== "string" ||
-        !/^r-[a-f0-9]{32}$/.test(report.release))))
+        !/^r-[a-f0-9]{32}$/.test(report.release))) ||
+      // Only a running release can be HTTP-ready. A contradictory response
+      // must not make a stopped or unknown process look healthy.
+      (report.ready === true && (report.state !== "running" || report.release === null)))
     throw new Error("Invalid owned Node health response")
   return { state: report.state as NodeHealth["state"],
     release: report.release as string | null, ready: report.ready as boolean | null }

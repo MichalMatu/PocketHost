@@ -32,8 +32,8 @@ it("clears an earlier ready state while a second probe is pending and after it f
       return { ok: true, json: async () => ({ releases: [] }) }
     if (url.endsWith("/runtime"))
       return { ok: true, json: async () => ({ runtime: {
-        state: "not-provisioned", desired: "stopped", port: null,
-        activeRelease: null, lastGoodRelease: null,
+        state: "running", desired: "running", port: 19232,
+        activeRelease: release, lastGoodRelease: release,
         previousGoodRelease: null, history: [],
       }, executionEnabled: false }) }
     if (url.endsWith("/plan"))
