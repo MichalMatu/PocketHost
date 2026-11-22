@@ -63,7 +63,7 @@ export default function ProjectsPage() {
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const {
-    nodeTools, registries, toolchainStatus, registryStatus,
+    nodeTools, registries, toolchainStatus, registryStatus, toolchainError, registryError,
     checkTools, inspectRegistries, resetDiagnostics,
   } = useNodeHostDiagnostics(getJson)
   const { invalidateRead, readScoped } = useNodeProjectScopedRead(getJson)
@@ -302,7 +302,7 @@ export default function ProjectsPage() {
         Checking Node tools…
       </p>}
       {toolchainStatus === "error" && <p role="alert" className="text-destructive text-sm">
-        Node toolchain read failed. Use Check Node tools to retry.
+        {toolchainError}
       </p>}
       {nodeTools && <p role="status" className="text-muted-foreground text-sm">
         Installed tools: Node {nodeTools.nodeVersion ?? "not detected"} · npm {nodeTools.npmVersion ?? "not detected"}
@@ -313,7 +313,7 @@ export default function ProjectsPage() {
         Inspecting hosting registries…
       </p>}
       {registryStatus === "error" && <p role="alert" className="text-destructive text-sm">
-        Hosting registries read failed. Use Inspect hosting registries to retry.
+        {registryError}
       </p>}
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.

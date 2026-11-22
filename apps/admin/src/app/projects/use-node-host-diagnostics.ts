@@ -12,6 +12,8 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
   const [registries, setRegistries] = React.useState<RegistryCounts | null>(null)
   const [toolchainStatus, setToolchainStatus] = React.useState<ReadStatus>("idle")
   const [registryStatus, setRegistryStatus] = React.useState<ReadStatus>("idle")
+  const [toolchainError, setToolchainError] = React.useState<string | null>(null)
+  const [registryError, setRegistryError] = React.useState<string | null>(null)
   const generation = React.useRef(0)
   const toolRequest = React.useRef(0)
   const registryRequest = React.useRef(0)
@@ -24,6 +26,8 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
     setRegistries(null)
     setToolchainStatus("idle")
     setRegistryStatus("idle")
+    setToolchainError(null)
+    setRegistryError(null)
   }, [])
 
   React.useEffect(() => () => { generation.current += 1 }, [])
@@ -35,6 +39,7 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
       selectedGeneration === generation.current && request === toolRequest.current
     setNodeTools(null)
     setToolchainStatus("loading")
+    setToolchainError(null)
     try {
       const result = await getJson(api + "/toolchain")
       if (!current()) return false
@@ -46,9 +51,12 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
       setNodeTools(tools as ToolVersions)
       setToolchainStatus("ready")
       return true
-    } catch {
+    } catch (cause) {
       if (!current()) return false
       setToolchainStatus("error")
+      setToolchainError(cause instanceof Error && cause.message === "Invalid Node toolchain report"
+        ? "Invalid Node toolchain report"
+        : "Node toolchain read failed. Use Check Node tools to retry.")
       return false
     }
   }, [getJson])
@@ -60,6 +68,7 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
       selectedGeneration === generation.current && request === registryRequest.current
     setRegistries(null)
     setRegistryStatus("loading")
+    setRegistryError(null)
     try {
       const response = await getJson(api + "/registry")
       if (!current()) return false
@@ -75,15 +84,18 @@ export function useNodeHostDiagnostics(getJson: ReadJson) {
       })
       setRegistryStatus("ready")
       return true
-    } catch {
+    } catch (cause) {
       if (!current()) return false
       setRegistryStatus("error")
+      setRegistryError(cause instanceof Error && cause.message === "Invalid Hosting registry projection"
+        ? "Invalid Hosting registry projection"
+        : "Hosting registries read failed. Use Inspect hosting registries to retry.")
       return false
     }
   }, [getJson])
 
   return {
     nodeTools, registries, toolchainStatus, registryStatus,
-    checkTools, inspectRegistries, resetDiagnostics,
+    toolchainError, registryError, checkTools, inspectRegistries, resetDiagnostics,
   }
 }
