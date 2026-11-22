@@ -86,3 +86,30 @@ it("a fresh site revision supersedes an older version GET", async () => {
   await act(async () => { old.resolve(makeResponse(first)); await old.promise })
   expect(hook.result.current.versions?.[0].id).toBe(second)
 })
+
+it("rejects duplicate release identities and allows a clean retry", async () => {
+  const release = {
+    id: first, createdAt: "2026-11-22T16:00:00.000Z",
+    fileCount: 1, bytes: 100, active: false, rollbackTarget: false,
+  }
+  const get = vi.fn()
+    .mockImplementationOnce(async () => ({
+      ok: true, json: async () => ({ releases: [release, { ...release }] }),
+    }))
+    .mockImplementationOnce(async () => makeResponse(second))
+  vi.stubGlobal("fetch", get)
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteVersions(site, { current: 0 }, setError, false))
+  act(() => { hook.result.current.toggleVersions() })
+  await waitFor(() => expect(setError).toHaveBeenCalledWith(
+    "Inconsistent version inventory",
+  ))
+  expect(hook.result.current.versions).toBeNull()
+  expect(hook.result.current.versionsLoading).toBe(false)
+
+  act(() => { hook.result.current.toggleVersions() })
+  await waitFor(() => expect(hook.result.current.versions?.[0].id).toBe(second))
+  expect(hook.result.current.versions).toHaveLength(1)
+  expect(get).toHaveBeenCalledTimes(2)
+})
+

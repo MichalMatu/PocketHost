@@ -79,7 +79,10 @@ export type FleetRelease = z.infer<typeof fleetReleaseSchema>
 
 export function parseFleetReleases(value: unknown): FleetRelease[] {
   const releases = z.object({ releases: z.array(fleetReleaseSchema).max(16) }).strict().parse(value).releases
-  if (releases.filter(release => release.active).length > 1 ||
+  // Duplicate release IDs would create ambiguous restore/prune controls.
+  // Reject the whole read rather than rendering multiple actions for one release.
+  if (new Set(releases.map(release => release.id)).size !== releases.length ||
+      releases.filter(release => release.active).length > 1 ||
       releases.filter(release => release.rollbackTarget).length > 1)
     throw new RangeError("Inconsistent version inventory")
   return releases
