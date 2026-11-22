@@ -100,7 +100,7 @@ describe("Local Agent read-only overview", () => {
   it("retains exact raw lines on failed refresh and replaces them once retry succeeds", async () => {
     const newer = "2026-11-20_15:00:01.000000 second original line\n"
     let rawCalls = 0
-    const fetcher = vi.fn(async (url: string) => {
+    const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
       if (url.includes("mode=local-agent-raw-log")) {
         rawCalls++
         if (rawCalls === 2) return { ok: false }
@@ -127,7 +127,7 @@ describe("Local Agent read-only overview", () => {
     const raw = await screen.findByLabelText("Raw Agent console")
     await waitFor(() => expect(raw.textContent).toBe(rawEntry))
     fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
-    expect(await screen.findByRole("alert")).toHaveTextContent("Last read is still shown.")
+    expect((await screen.findByRole("alert")).textContent).toContain("Last read is still shown.")
     expect(raw.textContent).toBe(rawEntry)
     fireEvent.click(screen.getByRole("button", { name: "Retry raw log" }))
     await waitFor(() => expect(raw.textContent).toBe(rawEntry + newer))
