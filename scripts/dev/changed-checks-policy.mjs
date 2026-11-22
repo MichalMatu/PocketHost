@@ -56,7 +56,13 @@ export function planChangedChecks(
         } else if (/\.(?:css|scss)$/.test(file)) {
           // TypeScript does not prove stylesheet imports still resolve.
           review.push('Deleted UI stylesheet needs bundle impact review: ' + file);
+        } else {
+          // A deleted non-code route asset can be referenced from JSX/CSS
+          // without a TypeScript import. Do not silently certify its removal.
+          review.push('Deleted UI asset needs browser usage review: ' + file);
         }
+      } else if (browserAsset) {
+        review.push('Deleted UI asset needs browser usage review: ' + file);
       }
       continue;
     }
@@ -113,10 +119,13 @@ export function planChangedChecks(
       rootLint.push(file);
       structure = true;
     } else if (
-      !markdown &&
-      !file.startsWith('apps/admin/src/') &&
-      !file.startsWith('apps/admin/public/')
+      file.startsWith('apps/admin/src/') ||
+      file.startsWith('apps/admin/public/')
     ) {
+      // Media and non-code content can change UI behavior with no import or
+      // typecheck evidence. Demand a browser usage review, not a false PASS.
+      review.push('UI asset/content change needs browser impact review: ' + file);
+    } else if (!markdown) {
       review.push('Explicit impact review required: ' + file);
     }
 

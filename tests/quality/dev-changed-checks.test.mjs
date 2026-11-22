@@ -164,7 +164,9 @@ test('deleted UI examples do not send nonexistent paths to format or lint', () =
     'apps/admin/public/feature-1-light.png',
   ];
   const plan = planChangedChecks(deletedPaths, {}, { deletedPaths, includeAdminLint: true });
-  assert.deepEqual(plan.review, []);
+  assert.deepEqual(plan.review, [
+    'Deleted UI asset needs browser usage review: apps/admin/public/feature-1-light.png',
+  ]);
   assert.equal(command(plan, 'changed-file format'), undefined);
   assert.equal(command(plan, 'admin changed-file lint'), undefined);
   assert.ok(command(plan, 'admin incremental typecheck'));
@@ -213,6 +215,22 @@ test('modified UI stylesheet cannot be certified by formatting alone', () => {
     assert.ok(command(plan, 'changed-file format').argv.includes(file));
     assert.equal(command(plan, 'ui tests'), undefined);
     assert.equal(command(plan, 'admin incremental typecheck'), undefined);
+  }
+});
+
+test('updated or removed admin media cannot silently pass as formatting-only', () => {
+  for (const file of [
+    'apps/admin/public/site-logo.svg',
+    'apps/admin/src/assets/hero.webp',
+    'apps/admin/src/app/projects/help.png',
+  ]) {
+    const changed = planChangedChecks([file]);
+    assert.ok(changed.review.some((reason) => reason.includes('browser impact review')));
+    assert.equal(command(changed, 'admin incremental typecheck'), undefined);
+    assert.equal(command(changed, 'ui tests'), undefined);
+    const removed = planChangedChecks([file], {}, { deletedPaths: [file] });
+    assert.ok(removed.review.some((reason) => reason.includes('browser usage review')));
+    assert.equal(command(removed, 'changed-file format'), undefined);
   }
 });
 
