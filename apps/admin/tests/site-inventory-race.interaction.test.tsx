@@ -60,3 +60,46 @@ describe("Owned hosting inventory freshness", () => {
     expect(requests.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1)
   })
 })
+
+describe("Quick HTML editor read freshness", () => {
+  it.each(["older success", "older error"])("does not restore %s after refreshing the active release", async outcome => {
+    const user = userEvent.setup()
+    const newer = { ...stopped, activeRelease: "r-" + "c".repeat(32) }
+    let current = stopped
+    let loadCount = 0
+    let finishOld: ((value: unknown) => void) | undefined
+    const pendingOld = new Promise<unknown>(resolve => { finishOld = resolve })
+    const requests = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !init?.method)
+        return { ok: true, json: async () => ({ sites: [current] }) }
+      if (url === "/api/v1/sites/" + ID + "/html" && !init?.method) {
+        loadCount++
+        if (loadCount === 1) return await pendingOld
+        return { ok: true, json: async () => ({ release: newer.activeRelease, html: "<h1>latest</h1>" }) }
+      }
+      throw new Error("Unexpected request: " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    render(<MemoryRouter initialEntries={["/sites"]}><SitesPage /></MemoryRouter>)
+    await screen.findByText("Race fixture")
+    await user.click(screen.getByRole("button", { name: "Edit current HTML" }))
+    await screen.findByText("Loading active index.html…")
+    current = newer
+    await user.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(screen.queryByText("Loading active index.html…")).toBeNull())
+    await user.click(screen.getByRole("button", { name: "Edit current HTML" }))
+    await screen.findByDisplayValue("<h1>latest</h1>")
+    await act(async () => {
+      finishOld?.(outcome === "older success"
+        ? { ok: true, json: async () => ({ release: RELEASE, html: "<h1>stale</h1>" }) }
+        : { ok: false, status: 503 })
+    })
+    expect((screen.getByLabelText("index.html source") as HTMLTextAreaElement).value)
+      .toBe("<h1>latest</h1>")
+    expect(screen.queryByDisplayValue("<h1>stale</h1>")).toBeNull()
+    expect(screen.queryByText("Could not load the published HTML for editing.")).toBeNull()
+    expect(requests.mock.calls.some(([, init]) => Boolean(init?.method))).toBe(false)
+    expect(loadCount).toBe(2)
+  })
+})
