@@ -347,7 +347,7 @@ export class NodeProjectDataSnapshots {
     for (const name of names) {
       this.privateEntry(path.join(this.snapshotRoot, name), true);
       if (name === 'restores' || name.startsWith('.pending-snapshot-')) {
-        if (name !== 'restores' && !/^\\.pending-snapshot-[a-f0-9]{32}$/.test(name)) {
+        if (name !== 'restores' && !/^\.pending-snapshot-[a-f0-9]{32}$/.test(name)) {
           throw new Error('Unexpected Node snapshot pending entry');
         }
         continue;
