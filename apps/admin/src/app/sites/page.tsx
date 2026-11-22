@@ -27,6 +27,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     setOutcomeUnknown(false)
     setAssets(null)
     setAssetsLoading(false)
+    // A confirmed inventory refresh invalidates prior runtime observations.
+    setHealth(null)
+    setLogs(null)
   }, [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
@@ -78,6 +81,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     expected?: (observed: FleetSite) => boolean,
   ) => {
     if (busy || (mutation && outcomeUnknown)) return
+    const readRevision = readEpoch.current
+    const currentRead = () => mutation || readRevision === readEpoch.current
     setBusy(true)
     setError(null)
     setMessage(null)
@@ -89,11 +94,13 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       } catch (cause) {
         if (mutation && !(cause instanceof StaticSiteInputRejected))
           setOutcomeUnknown(true)
-        setError(mutation
-          ? (cause instanceof StaticSiteInputRejected
-            ? cause.message
-            : "Result unconfirmed. Refresh the site state before retrying; no automatic retry.")
-          : cause instanceof Error ? cause.message : "Read failed.")
+        if (currentRead()) {
+          setError(mutation
+            ? (cause instanceof StaticSiteInputRejected
+              ? cause.message
+              : "Result unconfirmed. Refresh the site state before retrying; no automatic retry.")
+            : cause instanceof Error ? cause.message : "Read failed.")
+        }
         return
       }
       if (mutation) {
@@ -128,7 +135,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         }
         setAssets(null)
       }
-      setMessage(success)
+      if (currentRead()) setMessage(success)
     } finally {
       setBusy(false)
     }
@@ -191,22 +198,25 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       observed.fileCount === 1)
   }
   const verify = () => {
+    const revision = readEpoch.current
     void execute(async () => {
       const response = await fetch(endpoint + "/" + site.id + "/health", {
         credentials: "same-origin", cache: "no-store", signal: readSignal(),
       })
       if (!response.ok) throw new Error("HTTP verification is unavailable.")
       const ready = parseFleetHealth(await response.json())
-      setHealth(ready)
+      if (revision === readEpoch.current) setHealth(ready)
     }, "HTTP check completed.")
   }
   const loadLogs = () => {
+    const revision = readEpoch.current
     void execute(async () => {
       const response = await fetch(endpoint + "/" + site.id + "/logs", {
         credentials: "same-origin", cache: "no-store", signal: readSignal(),
       })
       if (!response.ok) throw new Error("Owned logs are not available.")
-      setLogs(parseFleetLogs(await response.json()))
+      const lines = parseFleetLogs(await response.json())
+      if (revision === readEpoch.current) setLogs(lines)
     }, "Owned logs refreshed.")
   }
   return (

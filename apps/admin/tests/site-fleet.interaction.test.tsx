@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -993,6 +993,63 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
     await user.click(screen.getByRole("button", { name: "Hide assets" }))
     expect(screen.queryByText("css/main.css")).toBeNull()
+  })
+
+  it("ignores a late HTTP status after the owned inventory has refreshed", async () => {
+    const user = userEvent.setup()
+    let resolveHealth!: (result: unknown) => void
+    const oldHealth = new Promise(resolve => { resolveHealth = resolve })
+    const calls = vi.fn(async (input: RequestInfo | URL, _options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites")
+        return { ok: true, json: async () => ({ sites: [project("running", true)] }) }
+      if (url.endsWith("/health")) return oldHealth
+      return { ok: false, status: 404 }
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /Verify HTTP/ }))
+    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await waitFor(() => expect(calls.mock.calls.filter(([url]) =>
+      String(url) === "/api/v1/sites")).toHaveLength(2))
+    await act(async () => {
+      resolveHealth({ ok: true, json: async () => ({ healthy: true }) })
+      await oldHealth
+    })
+    await waitFor(() => expect((screen.getByRole("button", { name: /Verify HTTP/ }) as HTMLButtonElement).disabled).toBe(false))
+    expect(screen.queryByText("HTTP: healthy")).toBeNull()
+    expect(screen.queryByText("HTTP check completed.")).toBeNull()
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
+  it("discards old runtime log lines and a late read failure after a site refresh", async () => {
+    const user = userEvent.setup()
+    let rejectLogs!: (error: Error) => void
+    const oldLogs = new Promise((_resolve, reject) => { rejectLogs = reject })
+    const calls = vi.fn(async (input: RequestInfo | URL, _options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites")
+        return { ok: true, json: async () => ({ sites: [project("running", true)] }) }
+      if (url.endsWith("/logs")) return oldLogs
+      return { ok: false, status: 404 }
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /Read logs/ }))
+    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await waitFor(() => expect(calls.mock.calls.filter(([url]) =>
+      String(url) === "/api/v1/sites")).toHaveLength(2))
+    await act(async () => {
+      rejectLogs(new Error("stale log request failed"))
+      await oldLogs.catch(() => {})
+    })
+    await waitFor(() => expect((screen.getByRole("button", { name: /Read logs/ }) as HTMLButtonElement).disabled).toBe(false))
+    expect(screen.queryByText("stale log request failed")).toBeNull()
+    expect(screen.queryByText("Owned logs refreshed.")).toBeNull()
+    expect(screen.queryByRole("heading", { name: "Owned runtime logs" })).toBeNull()
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
   })
 
   it("renders real owned PID and asynchronous HTTP verification result", async () => {
