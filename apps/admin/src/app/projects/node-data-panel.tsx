@@ -21,6 +21,12 @@ type RecoveryReview = {
   status: "data-not-configured" | "ownership-unverified" | "project-not-stopped" | "manual-review-required"
   runtimeState: "not-provisioned" | "stopped" | "running" | "unknown"
   snapshotEnabled: false
+  requirements: {
+    dataOwned: boolean
+    runtimeStopped: boolean
+    databaseConsistent: false
+    snapshotApproved: false
+  }
 }
 type Readout = { data: DataScope; recovery: RecoveryReview }
 type Props = {
@@ -80,12 +86,29 @@ function parseRecovery(value: unknown): RecoveryReview {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("Invalid Node recovery prerequisites")
   const result = value as Record<string, unknown>
-  if (Object.keys(result).sort().join(",") !== "runtimeState,snapshotEnabled,status" ||
+  if (Object.keys(result).sort().join(",") !== "requirements,runtimeState,snapshotEnabled,status" ||
       !["data-not-configured", "ownership-unverified", "project-not-stopped",
         "manual-review-required"].includes(String(result.status)) ||
       !["not-provisioned", "stopped", "running", "unknown"].includes(String(result.runtimeState)) ||
       result.snapshotEnabled !== false)
     throw new Error("Invalid Node recovery prerequisites")
+  const requirements = result.requirements
+  if (!requirements || typeof requirements !== "object" || Array.isArray(requirements))
+    throw new Error("Invalid Node recovery checklist")
+  const checks = requirements as Record<string, unknown>
+  if (Object.keys(checks).sort().join(",") !==
+      "dataOwned,databaseConsistent,runtimeStopped,snapshotApproved" ||
+      typeof checks.dataOwned !== "boolean" ||
+      typeof checks.runtimeStopped !== "boolean" ||
+      checks.databaseConsistent !== false ||
+      checks.snapshotApproved !== false)
+    throw new Error("Invalid Node recovery checklist")
+  if (checks.runtimeStopped !== (result.runtimeState === "stopped" &&
+      result.status !== "project-not-stopped") ||
+      (result.status === "data-not-configured" && checks.dataOwned !== false) ||
+      (result.status === "manual-review-required" &&
+       (checks.dataOwned !== true || checks.runtimeStopped !== true)))
+    throw new Error("Inconsistent Node recovery checklist")
   return result as RecoveryReview
 }
 
@@ -141,6 +164,13 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
           })}
         </div>
         <p>Runtime observation: {report.recovery.runtimeState}.</p>
+        <div className="space-y-1 rounded-md border p-3 text-xs" aria-label="Recovery prerequisites">
+          <p className="font-medium">Recovery checklist (read-only)</p>
+          <p>Private data directory: {report.recovery.requirements.dataOwned ? "verified" : "missing"}</p>
+          <p>Owned runtime stopped: {report.recovery.requirements.runtimeStopped ? "observed" : "not verified"}</p>
+          <p>Database consistency: manual verification required</p>
+          <p>Snapshot authorization: separate explicit approval required</p>
+        </div>
         <p className="text-xs text-muted-foreground">
           {report.recovery.status === "data-not-configured"
             ? "Recovery blocked: persistent application data is not configured."

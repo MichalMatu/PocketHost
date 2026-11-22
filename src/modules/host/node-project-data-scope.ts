@@ -42,7 +42,15 @@ export function reviewNodeDataOfflinePrerequisites(
   status: 'data-not-configured' | 'ownership-unverified' | 'project-not-stopped' | 'manual-review-required';
   runtimeState: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
   snapshotEnabled: false;
+  requirements: {
+    dataOwned: boolean;
+    runtimeStopped: boolean;
+    databaseConsistent: false;
+    snapshotApproved: false;
+  };
 } {
+  const dataOwned = data.state === 'owned-private';
+  const runtimeStopped = runtime.state === 'stopped' && runtime.desired === 'stopped';
   const status = data.state !== 'owned-private'
     ? 'data-not-configured'
     : runtime.state === 'unknown' || runtime.state === 'not-provisioned'
@@ -50,7 +58,17 @@ export function reviewNodeDataOfflinePrerequisites(
       : runtime.state !== 'stopped' || runtime.desired !== 'stopped'
         ? 'project-not-stopped'
         : 'manual-review-required';
-  return { status, runtimeState: runtime.state, snapshotEnabled: false };
+  return {
+    status,
+    runtimeState: runtime.state,
+    snapshotEnabled: false,
+    requirements: {
+      dataOwned,
+      runtimeStopped,
+      databaseConsistent: false,
+      snapshotApproved: false,
+    },
+  };
 }
 
 /** Read-only inspection: data is separate from immutable Node releases and source Restic. */

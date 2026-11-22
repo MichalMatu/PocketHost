@@ -112,7 +112,17 @@ test('Node data recovery review fails closed for running, unknown and absent run
   const missing = inspector.inspect(project.id);
   assert.deepEqual(reviewNodeDataOfflinePrerequisites(missing, {
     state: 'stopped', desired: 'stopped',
-  }), { status: 'data-not-configured', runtimeState: 'stopped', snapshotEnabled: false });
+  }), {
+    status: 'data-not-configured',
+    runtimeState: 'stopped',
+    snapshotEnabled: false,
+    requirements: {
+      dataOwned: false,
+      runtimeStopped: true,
+      databaseConsistent: false,
+      snapshotApproved: false,
+    },
+  });
   createScope(dataRoot, ownedData);
   const present = inspector.inspect(project.id);
   for (const [state, desired, status] of [
@@ -123,7 +133,15 @@ test('Node data recovery review fails closed for running, unknown and absent run
     ['stopped', 'stopped', 'manual-review-required'],
   ]) {
     assert.deepEqual(reviewNodeDataOfflinePrerequisites(present, { state, desired }), {
-      status, runtimeState: state, snapshotEnabled: false,
+      status,
+      runtimeState: state,
+      snapshotEnabled: false,
+      requirements: {
+        dataOwned: true,
+        runtimeStopped: state === 'stopped' && desired === 'stopped',
+        databaseConsistent: false,
+        snapshotApproved: false,
+      },
     });
   }
 });
