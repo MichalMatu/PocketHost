@@ -14,6 +14,7 @@ import {
   runChangedVerification,
   selectApprovedVerification,
   compactCheckFailure,
+  isExactCleanCheckout,
 } from './verify-changed-policy.mjs';
 import { resolveTermuxCheckCommand } from './termux-check-command.mjs';
 
@@ -168,12 +169,7 @@ if (!optionsValid) {
     } else {
       const before = command('git', ['rev-parse', 'HEAD'], root, 10000);
       const clean = command('git', ['status', '--porcelain'], root, 10000);
-      if (
-        before.status !== 0 ||
-        before.stdout.trim() !== plan.head ||
-        clean.status !== 0 ||
-        clean.stdout.trim()
-      ) {
+      if (!isExactCleanCheckout(before, clean, plan.head)) {
         throw new Error('Checkout changed after the plan; verification refused');
       }
       const result = runChangedVerification(selectedChecks, (check) => {
@@ -196,10 +192,24 @@ if (!optionsValid) {
               }),
         };
       });
-      emit(
-        { ...common, ...result, durationMs: Date.now() - started },
-        result.status === 'PASS' ? 0 : 1,
-      );
+      // A formatter or test could have modified tracked code mid-run. Do not
+      // certify the planned SHA without a second independent Git readback.
+      const after = command('git', ['rev-parse', 'HEAD'], root, 10000);
+      const finalClean = command('git', ['status', '--porcelain'], root, 10000);
+      if (!isExactCleanCheckout(after, finalClean, plan.head)) {
+        emit({
+          ...common,
+          status: 'HOLD',
+          reason: 'Checkout changed during QA; exact-source verification is invalid.',
+          checks: result.checks,
+          durationMs: Date.now() - started,
+        }, 2);
+      } else {
+        emit(
+          { ...common, ...result, durationMs: Date.now() - started },
+          result.status === 'PASS' ? 0 : 1,
+        );
+      }
     }
   } catch (error) {
     emit({ status: 'HOLD', base, reason: String(error?.message ?? error).slice(0, 2200) }, 2);

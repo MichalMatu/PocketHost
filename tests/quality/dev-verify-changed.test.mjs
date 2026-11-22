@@ -7,6 +7,7 @@ import {
   runChangedVerification,
   selectApprovedVerification,
   compactCheckFailure,
+  isExactCleanCheckout,
 } from '../../scripts/dev/verify-changed-policy.mjs';
 
 const deps = {
@@ -108,6 +109,18 @@ test('successful focused checks produce one readable PASS receipt', () => {
   assert.equal(result.status, 'PASS');
   assert.equal(result.checks.length, 2);
   assert.ok(result.checks.every((x) => x.status === 'PASS'));
+});
+
+test('exact-source QA requires the same clean Git HEAD before and after checks', () => {
+  const sha = 'a'.repeat(40);
+  const head = { status: 0, stdout: sha + '\\n' };
+  const clean = { status: 0, stdout: '' };
+  assert.equal(isExactCleanCheckout(head, clean, sha), true);
+  assert.equal(isExactCleanCheckout({ ...head, stdout: 'b'.repeat(40) }, clean, sha), false);
+  assert.equal(isExactCleanCheckout(head, { status: 0, stdout: ' M src/file.ts\\n' }, sha), false);
+  assert.equal(isExactCleanCheckout({ status: 1, stdout: sha }, clean, sha), false);
+  assert.equal(isExactCleanCheckout(head, { status: 1, stdout: '' }, sha), false);
+  assert.equal(isExactCleanCheckout(head, clean, 'not-a-full-sha'), false);
 });
 
 test('empty diff never introduces a full-suite fallback', () => {

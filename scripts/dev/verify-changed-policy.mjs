@@ -112,6 +112,15 @@ export function selectApprovedVerification(checks, scope) {
   return selected;
 }
 
+/** A terminal PASS is meaningful only for the same clean checkout throughout QA. */
+export function isExactCleanCheckout(head, status, expectedSha) {
+  return /^[0-9a-f]{40}$/.test(expectedSha ?? '') &&
+    head?.status === 0 && typeof head.stdout === 'string' &&
+    head.stdout.trim() === expectedSha &&
+    status?.status === 0 && typeof status.stdout === 'string' &&
+    status.stdout.trim() === '';
+}
+
 export function runChangedVerification(checks, execute) {
   const results = [];
   const failedChecks = [];
