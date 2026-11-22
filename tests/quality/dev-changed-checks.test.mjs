@@ -182,7 +182,9 @@ test('deleted shared UI component and JSON fixture skip unrelated navigation UI'
     const plan = planChangedChecks([file], {}, { deletedPaths: [file] });
     assert.deepEqual(plan.review, []);
     assert.ok(command(plan, 'admin incremental typecheck'));
-    assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));
+    assert.ok(
+      command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'),
+    );
     assert.equal(command(plan, 'ui tests'), undefined);
     assert.equal(command(plan, 'changed-file format'), undefined);
   }
@@ -192,7 +194,9 @@ test('deleted route module still requires targeted navigation regression', () =>
   const file = 'apps/admin/src/app/examples/page.tsx';
   const plan = planChangedChecks([file], {}, { deletedPaths: [file] });
   assert.ok(command(plan, 'admin incremental typecheck'));
-  assert.ok(command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'));
+  assert.ok(
+    command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'),
+  );
   assert.deepEqual(plan.review, []);
 });
 
