@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node project picker separation
+
+- **Source-only refactor:** `9e3f80d089a2298b9872b09e94575d426f4917ff` extracts the presentational **Owned projects** card and its empty/list/loading-disabled UI into `apps/admin/src/app/projects/node-project-picker.tsx`, reducing `page.tsx`. Project selection callback, URL cleanup, scoped read invalidation, editing resets, releases/runtime retrieval and all API/owner behavior remain in the parent unchanged. No visual redesign.
+- **Regression tests added:** `apps/admin/tests/node-project-picker.interaction.test.tsx` for empty catalog, selected project callback, and disabled/busy state. Existing broad `node-projects.interaction.test.tsx` and disclosure tests should provide additional regression checks when A8 QA is unblocked. **QA not run**, no build, Mac capture or DEV deployment was performed.
+- **A8 transport HOLD:** `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` has no terminal result; host claims in checked `agent-control` daemon status remain unverified. Do not retry, replace, or overlap the unknown A8 task. Once resolved, pin an exact fresh `main` and run bounded A8 `format,admin-types,ui` plus dependency-mapped Node tests; only after functional QA PASS consider guarded DEV under live process/rollback/protected-service gates. Last attested DEV is N11 `c4dedfd`, not a live readback.
+- **No scheduler**, unrelated service changes, public operations or off-device transfer.
+
 ## 22 November continuation — basename-safe error recovery
 
 - **App fix on main:** `db1ec8f073babd57d3f0ea6fe7081ead29af2b6e` changes the route-load error screen's Dashboard recovery from hardcoded `<a href="/dashboard">` to React Router `<Link to="/dashboard">`, preserving the configured `createBrowserRouter` basename in subpath deployments. The ordinary Dashboard and 404 routes already use router links; no backend logic was touched.
