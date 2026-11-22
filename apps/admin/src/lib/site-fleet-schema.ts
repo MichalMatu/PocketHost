@@ -45,7 +45,11 @@ export const fleetSiteSchema = z.object({
 export type FleetSite = z.infer<typeof fleetSiteSchema>
 
 export function parseFleetSites(value: unknown): FleetSite[] {
-  return z.object({ sites: z.array(fleetSiteSchema).max(8) }).strict().parse(value).sites
+  const sites = z.object({ sites: z.array(fleetSiteSchema).max(8) }).strict().parse(value).sites
+  // Duplicate IDs could render two independent site cards controlling the same host.
+  if (new Set(sites.map(site => site.id)).size !== sites.length)
+    throw new RangeError("Duplicate static site identity")
+  return sites
 }
 
 export function parseFleetSite(value: unknown): FleetSite {

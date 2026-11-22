@@ -152,6 +152,24 @@ describe("Static Hosting catalog states", () => {
     expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
   })
 
+  it("rejects duplicate site identities before showing ambiguous site controls", async () => {
+    const calls = vi.fn(async () => ({
+      ok: true, status: 200,
+      json: async () => ({ sites: [
+        project("stopped", true),
+        { ...project("stopped", true), name: "Conflicting site name" },
+      ] }),
+    }))
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("Invalid static site inventory. No changes were made.")
+    expect(screen.queryByText("My own site")).toBeNull()
+    expect(screen.queryByText("Conflicting site name")).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
+    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(calls.mock.calls).toHaveLength(1)
+  })
+
   it("refuses an invalid inventory instead of claiming it is empty", async () => {
     const calls = vi.fn(async () => ({
       ok: true, status: 200, json: async () => ({ sites: [{ id: "not-owned" }] }),
