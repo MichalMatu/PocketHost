@@ -405,7 +405,10 @@ async function main() {
                 throw Error('Node create panel did not expand');
               const createFile = screenshotName(route, vp.name, 'create-panel');
               const createPath = join(folder, createFile);
-              await panel.screenshot({ path: createPath, animations: 'disabled', timeout: 12000 });
+              // Keep the additional capture bounded to the viewport, not the
+              // potentially unbounded height of the details element itself.
+              await panel.scrollIntoViewIfNeeded({ timeout: 5000 });
+              await page.screenshot({ path: createPath, animations: 'disabled', timeout: 12000 });
               await chmod(createPath, 0o600);
               cap.createPanelFile = createFile;
             } catch {
