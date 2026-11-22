@@ -102,12 +102,19 @@ export async function inspectInitialStaticZip(file: File): Promise<string | null
   }
 }
 
+/** Validate locally before asking to publish or sending a server write. */
+export function validateStaticFolderSelection(files: readonly Pick<File, "size">[]): string | null {
+  return !files.length || files.length > 100 ||
+    files.some(file => file.size > 2 * 1024 * 1024) ||
+    files.reduce((total, file) => total + file.size, 0) > maxFolder
+    ? "Folder exceeds 100 files, 2 MiB per file or 8 MiB total."
+    : null
+}
+
 /** Prepare either an initial folder release or an update, before any server write. */
 export async function encodeStaticFolder(files: readonly File[]): Promise<string> {
-  if (!files.length || files.length > 100 ||
-      files.some(file => file.size > 2 * 1024 * 1024) ||
-      files.reduce((total, file) => total + file.size, 0) > maxFolder)
-    throw new StaticSiteInputRejected("Folder exceeds 100 files, 2 MiB per file or 8 MiB total.")
+  const invalid = validateStaticFolderSelection(files)
+  if (invalid) throw new StaticSiteInputRejected(invalid)
   const entries = await Promise.all(files.map(async file => ({
     name: file.webkitRelativePath || file.name,
     base64: encodeBase64(new Uint8Array(await file.arrayBuffer())),
