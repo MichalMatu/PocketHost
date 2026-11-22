@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen, waitFor } from "@testing-library/react"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -276,6 +276,74 @@ describe("H2 browser site-manager lifecycle", () => {
   })
 
 
+
+
+  it("publishes edited starter HTML as the first immutable release without extra writes", async () => {
+    const user = userEvent.setup()
+    let sites: ReturnType<typeof project>[] = []
+    const published = {
+      ...project("stopped", true),
+      fileCount: 1,
+      bytes: 48,
+      releases: 1,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    const custom = "<!doctype html><html><body><h1>My own page</h1></body></html>"
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites }) }
+      if (url === "/api/v1/sites/import?name=My%20own%20site" && options?.method === "POST") {
+        const payload = JSON.parse(String(options.body))
+        expect(payload.files).toHaveLength(1)
+        expect(payload.files[0].name).toBe("index.html")
+        expect(atob(payload.files[0].base64)).toBe(custom)
+        sites = [published]
+        return { ok: true, json: async () => ({ site: published }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: sites[0] }) }
+      throw new Error("Unexpected site request " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    await user.clear(screen.getByLabelText("Initial HTML"))
+    await user.type(screen.getByLabelText("Initial HTML"), custom)
+    await user.click(screen.getByRole("button", { name: "Create with starter HTML" }))
+    await screen.findByText(/created and starter HTML published as its first immutable release/)
+    expect(calls.mock.calls.filter(([, options]) => options?.method).map(([, options]) => options?.method))
+      .toEqual(["POST"])
+    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    expect((screen.getByLabelText("Initial HTML") as HTMLTextAreaElement).value)
+      .toContain("<h1>My first PocketHost site</h1>")
+  })
+
+  it("prevents creating a site from empty starter HTML before any request", async () => {
+    const user = userEvent.setup()
+    const calls = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    await user.clear(screen.getByLabelText("Initial HTML"))
+    await user.click(screen.getByRole("button", { name: "Create with starter HTML" }))
+    await screen.findByText("Initial index.html cannot be empty.")
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
+  it("prevents oversized multibyte initial HTML without posting an import", async () => {
+    const user = userEvent.setup()
+    const calls = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    fireEvent.change(screen.getByLabelText("Initial HTML"), { target: { value: "🦊".repeat(9000) } })
+    await user.click(screen.getByRole("button", { name: "Create with starter HTML" }))
+    await screen.findByText(/Initial HTML is larger than 32 KiB/)
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
 
   it("creates a stopped website with first starter HTML release in one POST", async () => {
     const user = userEvent.setup()

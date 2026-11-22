@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
@@ -425,6 +426,7 @@ export default function SitesPage() {
   const [initialZip, setInitialZip] = React.useState<File | null>(null)
   const [initialFolder, setInitialFolder] = React.useState<File[]>([])
   const [publishStarter, setPublishStarter] = React.useState(false)
+  const [initialHtml, setInitialHtml] = React.useState(starterHtml)
   const initialZipInput = React.useRef<HTMLInputElement>(null)
   const initialFolderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
@@ -466,6 +468,19 @@ export default function SitesPage() {
     const firstFolder = initialFolder
     const starter = publishStarter && firstRelease === null && firstFolder.length === 0
     const hasFirstFiles = firstRelease !== null || firstFolder.length > 0 || starter
+    if (starter) {
+      const htmlBytes = new TextEncoder().encode(initialHtml)
+      if (!initialHtml.trim()) {
+        setInputError("Initial index.html cannot be empty.")
+        setNotice(null)
+        return
+      }
+      if (htmlBytes.length > maxStarterHtml) {
+        setInputError("Initial HTML is larger than 32 KiB. Use ZIP or folder import instead.")
+        setNotice(null)
+        return
+      }
+    }
     if (firstRelease) {
       const invalid = validateStaticZipSelection(firstRelease)
       if (invalid) {
@@ -491,7 +506,7 @@ export default function SitesPage() {
         // create-and-publish endpoint. Prepare folder data before any POST.
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
         const starterPayload = starter ? JSON.stringify({ files: [{
-          name: "index.html", base64: encodeBase64(new TextEncoder().encode(starterHtml)),
+          name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
         }] }) : null
         const importEndpoint = endpoint + "/import?name=" + encodeURIComponent(name.trim())
         created = firstRelease
@@ -555,6 +570,7 @@ export default function SitesPage() {
         setInitialZip(null)
         setInitialFolder([])
         setPublishStarter(false)
+        setInitialHtml(starterHtml)
         if (initialZipInput.current) initialZipInput.current.value = ""
         if (initialFolderInput.current) initialFolderInput.current.value = ""
         setNotice(hasFirstFiles
@@ -656,9 +672,35 @@ export default function SitesPage() {
                   Publish starter HTML on creation
                 </label>
                 <p className="text-xs text-muted-foreground">
-                  Instead of uploading files, publish a sample index.html as the first stopped release.
-                  You can edit it after creation. No automatic start.
+                  Publish an editable index.html as the first stopped release, with no automatic start.
                 </p>
+                {publishStarter && <div className="space-y-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label htmlFor="initial-owned-site-html" className="text-xs font-medium">
+                      Initial HTML
+                    </label>
+                    <Button type="button" variant="outline" size="sm"
+                      disabled={creating || loading}
+                      onClick={() => {
+                        setInitialHtml(starterHtml)
+                        setInputError(null)
+                      }}>
+                      Reset sample HTML
+                    </Button>
+                  </div>
+                  <Textarea id="initial-owned-site-html" rows={9}
+                    className="font-mono text-xs"
+                    spellCheck={false}
+                    disabled={creating || loading}
+                    value={initialHtml}
+                    onChange={event => {
+                      setInitialHtml(event.currentTarget.value)
+                      setInputError(null)
+                    }} />
+                  <p className="text-xs text-muted-foreground">
+                    UTF-8 HTML, maximum 32 KiB. Your changes are included in the first immutable release.
+                  </p>
+                </div>}
                 {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
               </div>
             </form>
