@@ -20,6 +20,39 @@ export function validateStaticZipSelection(file: Pick<File, "name" | "size">): s
   return null
 }
 
+/** Small browser preflight before creating a site. Full ZIP validation stays server-side. */
+export async function inspectInitialStaticZip(file: File): Promise<string | null> {
+  const selected = validateStaticZipSelection(file)
+  if (selected) return selected
+  const invalid = "ZIP structure is invalid. Select a standard ZIP archive with index.html."
+  try {
+    const bytes = new Uint8Array(await file.arrayBuffer())
+    if (bytes.byteLength < 98) return invalid
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+    // Match the classic ZIP central-directory envelope accepted by the backend.
+    for (let end = bytes.length - 22; end >= Math.max(0, bytes.length - 65557); end--) {
+      if (view.getUint32(end, true) !== 0x06054b50 ||
+          end + 22 + view.getUint16(end + 20, true) !== bytes.length ||
+          view.getUint16(end + 4, true) !== 0 ||
+          view.getUint16(end + 6, true) !== 0) continue
+      const count = view.getUint16(end + 10, true)
+      const size = view.getUint32(end + 12, true)
+      const offset = view.getUint32(end + 16, true)
+      if (!count || count > 130 || count !== view.getUint16(end + 8, true) ||
+          size < 46 || offset > end || size > end - offset ||
+          offset + 46 > bytes.length ||
+          view.getUint32(offset, true) !== 0x02014b50) continue
+      const localOffset = view.getUint32(offset + 42, true)
+      if (localOffset >= offset || localOffset + 30 > bytes.length ||
+          view.getUint32(localOffset, true) !== 0x04034b50) continue
+      return null
+    }
+    return invalid
+  } catch {
+    return "Could not inspect the selected ZIP. Select the file again."
+  }
+}
+
 /** Read-only site queries must settle; mutation requests retain their own lifecycle. */
 export function readSignal(signal?: AbortSignal): AbortSignal {
   const timeout = AbortSignal.timeout(10_000)

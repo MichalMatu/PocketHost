@@ -20,3 +20,7 @@ The /sites creation form optionally accepts a first ZIP. The browser validates i
 ## Static form error boundaries (2026-11-22)
 
 A definite HTTP 400 for an invalid new site name is reported next to the creation form, without hiding the previously verified owned-site inventory. Correcting the name allows another deliberate submit. ZIP file selection or site-name edits clear only transient form validation; they never clear a failed/unverified owned catalog or re-enable creation without a successful inventory reload. Ambiguous POST/PUT/readback failures still clear action cards and require an explicit refresh. Targeted interaction regressions committed; test execution separately authorized by exact SHA and categories.
+
+## Initial ZIP structural preflight (2026-11-22)
+
+Before POST creating a new Static site with a first ZIP, the browser performs a bounded classic ZIP envelope check (EOCD, central-directory and local-file headers) on the selected file. Obvious renamed text/invalid archives never create an empty site. This is intentionally not a full extraction or CRC validation: the server remains authoritative, and a structurally plausible ZIP missing root index.html can still be definitely rejected after creation. The existing direct ZIP upload flow does not perform this initial-site preflight. New interaction regression uses a valid one-file ZIP fixture plus malformed-file and server-400 scenarios; QA has not been executed.

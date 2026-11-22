@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, StaticSiteInputRejected, validateStaticZipSelection } from "./site-client"
+import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -448,6 +448,13 @@ export default function SitesPage() {
     setInputError(null)
     setNotice(null)
     try {
+      if (firstRelease) {
+        const structuralError = await inspectInitialStaticZip(firstRelease)
+        if (structuralError) {
+          setInputError(structuralError)
+          return
+        }
+      }
       let created: FleetSite
       try {
         created = await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
@@ -581,8 +588,9 @@ export default function SitesPage() {
                     setInputError(null)
                   }} />
                 <p className="text-xs text-muted-foreground">
-                  Optional first release, max 9 MiB compressed. Creates a stopped site, then imports ZIP
-                  only after confirming the new site's identity. No automatic retry or start.
+                  Optional first release, max 9 MiB compressed. Checks the ZIP structure before
+                  creating a stopped site; the server validates its contents before publishing.
+                  No automatic retry or start.
                 </p>
                 {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
               </div>

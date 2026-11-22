@@ -13,6 +13,52 @@ import SitesPage from "@/app/sites/page"
 const ID = "site-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 
+function makeStaticZip(name = "index.html"): File {
+  const encoder = new TextEncoder()
+  const filename = encoder.encode(name)
+  const payload = encoder.encode("<!doctype html><title>ZIP fixture</title>")
+  let checksum = 0xffffffff
+  for (const byte of payload) {
+    checksum ^= byte
+    for (let bit = 0; bit < 8; bit++)
+      checksum = (checksum >>> 1) ^ ((checksum & 1) ? 0xedb88320 : 0)
+  }
+  checksum = (checksum ^ 0xffffffff) >>> 0
+  const centralOffset = 30 + filename.length + payload.length
+  const centralLength = 46 + filename.length
+  const bytes = new Uint8Array(centralOffset + centralLength + 22)
+  const view = new DataView(bytes.buffer)
+  const write16 = (offset: number, value: number) => view.setUint16(offset, value, true)
+  const write32 = (offset: number, value: number) => view.setUint32(offset, value, true)
+  write32(0, 0x04034b50)
+  write16(4, 20)
+  write16(6, 0x0800)
+  write32(14, checksum)
+  write32(18, payload.length)
+  write32(22, payload.length)
+  write16(26, filename.length)
+  bytes.set(filename, 30)
+  bytes.set(payload, 30 + filename.length)
+  write32(centralOffset, 0x02014b50)
+  write16(centralOffset + 4, 20)
+  write16(centralOffset + 6, 20)
+  write16(centralOffset + 8, 0x0800)
+  write32(centralOffset + 16, checksum)
+  write32(centralOffset + 20, payload.length)
+  write32(centralOffset + 24, payload.length)
+  write16(centralOffset + 28, filename.length)
+  write32(centralOffset + 42, 0)
+  bytes.set(filename, centralOffset + 46)
+  const end = centralOffset + centralLength
+  write32(end, 0x06054b50)
+  write16(end + 8, 1)
+  write16(end + 10, 1)
+  write32(end + 12, centralLength)
+  write32(end + 16, centralOffset)
+  return new File([bytes], "first.zip", { type: "application/zip" })
+}
+
+
 function renderSites(route = "/sites") {
   return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
 }
@@ -264,7 +310,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
-      new File(["first fixture archive"], "first.zip", { type: "application/zip" }))
+      makeStaticZip())
     await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
     await screen.findByText(/created and ZIP published as its first immutable release/)
     const operations = calls.mock.calls
@@ -290,6 +336,20 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
   })
 
+
+  it("rejects a renamed non-ZIP before creating an empty site", async () => {
+    const user = userEvent.setup()
+    const calls = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      new File(["This is plain text"], "renamed.zip", { type: "application/zip" }))
+    await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
+    await screen.findByText(/ZIP structure is invalid/)
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+    expect(screen.queryByText(ID)).toBeNull()
+  })
+
   it("keeps a confirmed new site when its initial ZIP is definitively rejected", async () => {
     const user = userEvent.setup()
     let created = false
@@ -310,7 +370,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
-      new File(["invalid archive"], "bad.zip", { type: "application/zip" }))
+      makeStaticZip("missing-index.html"))
     await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
     await screen.findByText(/was created without a release. ZIP rejected/)
     expect(screen.getByText(ID)).toBeTruthy()
