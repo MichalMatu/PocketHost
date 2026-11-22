@@ -9,6 +9,7 @@ import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
+import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
 import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
@@ -30,10 +31,6 @@ export default function ProjectsPage() {
   const requestedProject = searchParams.get("project")
   const appliedDeepLink = React.useRef<string | null>(null)
   const [projects, setProjects] = React.useState<Project[]>([])
-  const [nodeTools, setNodeTools] = React.useState<{
-    nodeVersion: string | null
-    npmVersion: string | null
-  } | null>(null)
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
@@ -62,12 +59,13 @@ export default function ProjectsPage() {
   const [buildCheck, setBuildCheck] = React.useState<{
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
-  const [registries, setRegistries] = React.useState<{
-    modules: number; services: number; projects: number
-  } | null>(null)
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
+  const {
+    nodeTools, registries, toolchainStatus, registryStatus,
+    checkTools, inspectRegistries, resetDiagnostics,
+  } = useNodeHostDiagnostics(getJson)
   const { invalidateRead, readScoped } = useNodeProjectScopedRead(getJson)
   const { logLines, logsLoading, logsError, resetLogs, loadLogs } = useNodeProjectLogs(getJson)
   const resetRuntimeReviews = React.useCallback(() => {
@@ -119,6 +117,7 @@ export default function ProjectsPage() {
       invalidateRead()
       beginInspection()
       resetLogs()
+      resetDiagnostics()
       setProjects([]); setSelectedId(""); setApproved(false)
       setPlan(null); setExecutionEnabled(false)
       if (cause instanceof Error && cause.message === disabledMessage) {
@@ -129,7 +128,7 @@ export default function ProjectsPage() {
       setCatalogState("error")
       throw cause
     }
-  }, [getJson, beginInspection, resetLogs, invalidateRead])
+  }, [getJson, beginInspection, resetLogs, invalidateRead, resetDiagnostics])
   React.useEffect(() => {
     let live = true
     void Promise.resolve().then(refresh).catch(cause => {
@@ -299,11 +298,23 @@ export default function ProjectsPage() {
         </CardContent>
       </Card>
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
+      {toolchainStatus === "loading" && <p role="status" className="text-muted-foreground text-sm">
+        Checking Node tools…
+      </p>}
+      {toolchainStatus === "error" && <p role="alert" className="text-destructive text-sm">
+        Node toolchain read failed. Use Check Node tools to retry.
+      </p>}
       {nodeTools && <p role="status" className="text-muted-foreground text-sm">
         Installed tools: Node {nodeTools.nodeVersion ?? "not detected"} · npm {nodeTools.npmVersion ?? "not detected"}
       </p>}
       {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
       {message && <p role="status" className="text-sm">{message}</p>}
+      {registryStatus === "loading" && <p role="status" className="text-muted-foreground text-sm">
+        Inspecting hosting registries…
+      </p>}
+      {registryStatus === "error" && <p role="alert" className="text-destructive text-sm">
+        Hosting registries read failed. Use Inspect hosting registries to retry.
+      </p>}
       {registries && <p className="text-muted-foreground text-sm" aria-label="Hosting registries">
         Modules: {registries.modules} · Services: {registries.services} · Projects: {registries.projects}.
         Declarations do not grant process ownership or lifecycle permission.
@@ -1017,28 +1028,11 @@ export default function ProjectsPage() {
           })}>Create project</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"}
             onClick={() => action(async () => {
-              const result = await getJson(api + "/toolchain")
-              const tools = result.toolchain as Record<string, unknown> | undefined
-              const version = (value: unknown) => value === null ||
-                (typeof value === "string" && /^v?\d+\.\d+\.\d+$/.test(value))
-              if (!tools || !version(tools.nodeVersion) || !version(tools.npmVersion))
-                throw new Error("Invalid Node toolchain report")
-              setNodeTools(tools as { nodeVersion: string | null; npmVersion: string | null })
+              if (await checkTools()) setMessage("Node toolchain version read confirmed.")
             })}>Check Node tools</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
-            const response = await getJson(api + "/registry")
-            const value = response.registries as Record<string, unknown> | undefined
-            if (!value || !Array.isArray(value.modules) || value.modules.length > 32 ||
-              !Array.isArray(value.services) || value.services.length > 64 ||
-              !Array.isArray(value.projects) || value.projects.length > 64) {
-              throw new Error("Invalid Hosting registry projection")
-            }
-            setRegistries({
-              modules: value.modules.length,
-              services: value.services.length,
-              projects: value.projects.length,
-            })
-            setMessage("Read-only module, service and project declarations verified.")
+            if (await inspectRegistries())
+              setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
           </div>
         </div>

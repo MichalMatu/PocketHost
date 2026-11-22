@@ -364,6 +364,46 @@ it("fails closed on a lost owned registry after selecting a Node project", async
   expect(requests.mock.calls.every(([, opts]) => opts?.method !== "POST")).toBe(true)
 })
 
+it("shows independent Node host diagnostic states and GET-only retry after a failed read", async () => {
+  let registryReads = 0
+  let finishToolRead: ((response: unknown) => void) | undefined
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [] }) }
+    if (url === "/api/v1/node-projects/toolchain")
+      return new Promise(resolve => { finishToolRead = resolve })
+    if (url === "/api/v1/node-projects/registry") {
+      registryReads++
+      if (registryReads === 1) return { ok: false, status: 503 }
+      return { ok: true, json: async () => ({ registries: {
+        modules: [{}, {}], services: [{}], projects: [],
+      } }) }
+    }
+    throw new Error("Unexpected endpoint " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await screen.findByText("No Node projects yet.")
+  fireEvent.click(screen.getByText(/Create Node.js project/))
+  fireEvent.click(screen.getByRole("button", { name: "Check Node tools" }))
+  expect(await screen.findByText("Checking Node tools…")).toBeTruthy()
+  await waitFor(() => expect(finishToolRead).toBeTypeOf("function"))
+  finishToolRead?.({ ok: true, json: async () => ({ toolchain: {
+    nodeVersion: "v22.0.0", npmVersion: "10.0.0",
+  } }) })
+  expect(await screen.findByText(/Installed tools: Node v22.0.0/)).toBeTruthy()
+  fireEvent.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
+  expect(await screen.findByText(/Hosting registries read failed/)).toBeTruthy()
+  expect(screen.queryByLabelText("Hosting registries")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Inspect hosting registries" }))
+  const registry = await screen.findByLabelText("Hosting registries")
+  expect(registry.textContent).toContain("Modules: 2")
+  expect(registry.textContent).toContain("Services: 1")
+  expect(screen.queryByText(/Hosting registries read failed/)).toBeNull()
+  expect(registryReads).toBe(2)
+  expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
 it("invalidates inspected Node backup permissions when the catalog becomes unavailable", async () => {
   const getJson = vi.fn(async () => ({
     backup: { initialized: true, repositoryPresent: true, keyPresent: true },
