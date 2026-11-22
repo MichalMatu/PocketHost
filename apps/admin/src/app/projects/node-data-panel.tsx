@@ -103,11 +103,12 @@ function parseRecovery(value: unknown): RecoveryReview {
       checks.databaseConsistent !== false ||
       checks.snapshotApproved !== false)
     throw new Error("Invalid Node recovery checklist")
-  if (checks.runtimeStopped !== (result.runtimeState === "stopped" &&
-      result.status !== "project-not-stopped") ||
-      (result.status === "data-not-configured" && checks.dataOwned !== false) ||
-      (result.status === "manual-review-required" &&
-       (checks.dataOwned !== true || checks.runtimeStopped !== true)))
+  if ((result.status === "data-not-configured" && checks.dataOwned !== false) ||
+      (result.status !== "data-not-configured" && checks.dataOwned !== true) ||
+      (result.status === "manual-review-required" && checks.runtimeStopped !== true) ||
+      (["project-not-stopped", "ownership-unverified"].includes(String(result.status)) &&
+       checks.runtimeStopped !== false) ||
+      (checks.runtimeStopped && result.runtimeState !== "stopped"))
     throw new Error("Inconsistent Node recovery checklist")
   return result as RecoveryReview
 }

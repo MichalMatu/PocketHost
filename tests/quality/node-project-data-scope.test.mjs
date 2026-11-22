@@ -123,6 +123,14 @@ test('Node data recovery review fails closed for running, unknown and absent run
       snapshotApproved: false,
     },
   });
+  assert.deepEqual(reviewNodeDataOfflinePrerequisites(missing, {
+    state: 'stopped', desired: 'running',
+  }).requirements, {
+    dataOwned: false,
+    runtimeStopped: false,
+    databaseConsistent: false,
+    snapshotApproved: false,
+  });
   createScope(dataRoot, ownedData);
   const present = inspector.inspect(project.id);
   for (const [state, desired, status] of [
