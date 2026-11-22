@@ -267,6 +267,66 @@ it("refreshes a previously empty Node release list with GET only", async () => {
   expect(fetcher.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 
+it("ignores a late Node readiness result after switching the selected project", async () => {
+  const first = "node-" + "a".repeat(32)
+  const second = "node-" + "c".repeat(32)
+  const release = "r-" + "b".repeat(32)
+  const projects = [first, second].map((id, index) => ({
+    id, name: index ? "Second probe app" : "First probe app",
+    kind: "node", state: "created", runtime: "not-provisioned",
+    activeRelease: null, candidateRelease: null, previousCandidate: null,
+    deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+  }))
+  let finishFirst: ((response: unknown) => void) | undefined
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        reason: url.includes(second) ? "second-current" : "first-current",
+        dependencyCount: 0, missingTools: [], conflicts: [],
+      }, executionEnabled: false }) }
+    if (url === "/api/v1/node-projects/" + first + "/health")
+      return new Promise(resolve => { finishFirst = resolve })
+    if (url === "/api/v1/node-projects/" + second + "/health")
+      return { ok: true, json: async () => ({ health: {
+        state: "not-provisioned", release: null, ready: null,
+      } }) }
+    throw new Error("Unexpected endpoint " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", requests)
+  const Jump = () => {
+    const navigate = useNavigate()
+    return <button onClick={() => navigate("/projects?project=" + second)}>Choose second probe</button>
+  }
+  render(<MemoryRouter initialEntries={["/projects?project=" + first]}>
+    <Jump /><ProjectsPage />
+  </MemoryRouter>)
+  await screen.findByRole("button", { name: "Check live readiness" })
+  fireEvent.click(screen.getByRole("button", { name: "Check live readiness" }))
+  await waitFor(() => expect(finishFirst).toBeTypeOf("function"))
+  fireEvent.click(screen.getByRole("button", { name: "Choose second probe" }))
+  fireEvent.click(screen.getByText("Technical details"))
+  expect(await screen.findByText(/Staged candidate plan: second-current/)).toBeTruthy()
+  finishFirst?.({ ok: true, json: async () => ({ health: {
+    state: "running", release, ready: true,
+  } }) })
+  await waitFor(() => expect((screen.getByRole("button", { name: "Check live readiness" }) as HTMLButtonElement)
+    .disabled).toBe(false))
+  expect(screen.getByLabelText("Node runtime summary").textContent).toContain("not checked")
+  fireEvent.click(screen.getByRole("button", { name: "Check live readiness" }))
+  await waitFor(() => expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("not probed"))
+  expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
 it("fails closed on a lost owned registry after selecting a Node project", async () => {
   const id = "node-" + "a".repeat(32)
   let catalogUnavailable = false
