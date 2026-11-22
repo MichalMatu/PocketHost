@@ -123,9 +123,9 @@ export default function LocalAgentPage() {
       pending = true
       setRawLoading(true)
       try {
-        // Stage all chunks of this read together. A failed second chunk must
-        // not replace previously confirmed source lines or advance the cursor.
-        // The existing TextDecoder also stays untouched until all GETs succeed.
+        // Stage up to eight 256-KiB chunks (2 MiB) before committing.
+        // A failed chunk must never consume the cursor or decoder state
+        // for its unfinished batch. Earlier complete batches remain visible.
         let nextCursor = rawCursor.current
         let replace = nextCursor === null
         let chunks: Uint8Array[] = []
@@ -159,9 +159,10 @@ export default function LocalAgentPage() {
           }
           chunks.push(bytes)
           nextCursor = cursor
-          // Commit a complete read or a bounded 256-chunk catch-up. A failed
-          // or cancelled read leaves both displayed text and cursor unchanged.
-          if (!more || part === 255) {
+          // Never hold 256 complete responses in memory on the phone. Keep
+          // decoding across committed batches so UTF-8 split at a boundary is
+          // reproduced exactly when the next chunk arrives.
+          if (!more || chunks.length === 8 || part === 255) {
             const decoder = replace ? new TextDecoder() : rawDecoder.current
             let text = ""
             for (const chunk of chunks) text += decoder.decode(chunk, { stream: true })
@@ -170,7 +171,9 @@ export default function LocalAgentPage() {
             if (replace) setRawText(text)
             else if (text) setRawText(previousText => previousText + text)
             setRawError(false)
-            break
+            chunks = []
+            replace = false
+            if (!more || part === 255) break
           }
         }
       } catch {

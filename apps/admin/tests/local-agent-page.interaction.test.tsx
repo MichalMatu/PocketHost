@@ -174,6 +174,52 @@ describe("Local Agent read-only overview", () => {
     },
   )
 
+  it("commits bounded raw-log batches without losing cursor or source bytes", async () => {
+    const lines = Array.from({ length: 9 }, (_, index) =>
+      "2026-11-20_15:00:01.000000 entry=" + (index + 1) + "\n")
+    let calls = 0
+    const requests = vi.fn(async (url: string, options?: RequestInit) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        calls++
+        if (calls === 10) return { ok: false, status: 503 }
+        const initial = calls === 1
+        const index = calls - 2
+        return {
+          ok: true,
+          headers: new Headers({
+            "X-Agent-Log-Cursor": initial ? "12:345:79" :
+              "12:345:" + (100 + Math.min(index, 8)),
+            "X-Agent-Log-Reset": "0",
+            "X-Agent-Log-More": !initial && calls < 11 ? "1" : "0",
+          }),
+          arrayBuffer: async () => new TextEncoder()
+            .encode(initial ? rawEntry : lines[Math.min(index, 8)]).buffer,
+        }
+      }
+      return { ok: true, json: async () =>
+        url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+    })
+    vi.stubGlobal("fetch", requests)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(screen.getByText(/Raw log read failed/)).toBeTruthy())
+    expect(raw.textContent).toBe(lines.slice(0, 8).join(""))
+    expect(raw.textContent).not.toContain(lines[8])
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry raw log" }))
+    await waitFor(() => expect(raw.textContent).toBe(lines.join("")))
+    const reads = requests.mock.calls.filter(([url]) =>
+      url.includes("mode=local-agent-raw-log"))
+    expect(reads).toHaveLength(11)
+    expect(reads[9][0]).toContain("&cursor=12%3A345%3A107")
+    expect(reads[10][0]).toContain("&cursor=12%3A345%3A107")
+    expect(requests.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true)
+  })
+
   it("preserves the complete old log when a multi-chunk refresh fails and retries from zero", async () => {
     const newer = "2026-11-20_15:00:01.000000 verified replacement\n"
     let rawCalls = 0
