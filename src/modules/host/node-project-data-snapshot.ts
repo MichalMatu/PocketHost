@@ -368,6 +368,33 @@ export class NodeProjectDataSnapshots {
     return snapshots.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
+  /**
+   * Read-only on-demand archive verification. Matches stored file bytes and
+   * directory inventory to the manifest; does NOT prove database consistency
+   * at the time of the original capture or authorize a restore.
+   */
+  verifySnapshot(
+    projectId: string,
+    snapshot: string,
+  ): {
+    snapshot: string;
+    integrity: 'verified';
+    files: number;
+    bytes: number;
+    directories: number | null;
+  } {
+    this.scope.inspect(projectId);
+    this.ownedStorage(false);
+    const manifest = this.validatedSnapshot(snapshot, projectId);
+    return {
+      snapshot,
+      integrity: 'verified',
+      files: manifest.files.length,
+      bytes: manifest.files.reduce((total, entry) => total + entry.bytes, 0),
+      directories: manifest.schema === 2 ? manifest.directories!.length : null,
+    };
+  }
+
   private validatedSnapshot(snapshot: string, projectId: string): SnapshotManifest {
     const manifest = this.manifest(snapshot, projectId);
     const actual = this.collect(path.join(this.snapshotRoot, snapshot, 'data'), projectId);

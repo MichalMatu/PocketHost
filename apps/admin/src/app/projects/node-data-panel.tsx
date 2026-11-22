@@ -38,6 +38,7 @@ type SnapshotIndexEntry = {
   integrity: "not-checked"
 }
 type Readout = { data: DataScope; recovery: RecoveryReview; snapshots: SnapshotIndexEntry[] }
+type IntegrityState = "checking" | "verified" | "unavailable"
 type Props = {
   projectId: string | null
   ownerAuthorized: boolean
@@ -157,13 +158,39 @@ function parseSnapshotIndex(input: unknown): SnapshotIndexEntry[] {
   })
 }
 
+function parseVerification(input: unknown, snapshot: string): boolean {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Invalid Node snapshot verification")
+  const response = input as Record<string, unknown>
+  if (Object.keys(response).join(",") !== "verification")
+    throw new Error("Invalid Node snapshot verification")
+  const value = response.verification
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid Node snapshot verification")
+  const check = value as Record<string, unknown>
+  if (Object.keys(check).sort().join(",") !==
+      "bytes,directories,files,integrity,snapshot" ||
+      check.snapshot !== snapshot || check.integrity !== "verified" ||
+      !Number.isSafeInteger(check.files) || (check.files as number) < 0 ||
+      (check.files as number) > 200 ||
+      !Number.isSafeInteger(check.bytes) || (check.bytes as number) < 0 ||
+      (check.bytes as number) > 32 * 1024 * 1024 ||
+      (check.directories !== null &&
+        (!Number.isSafeInteger(check.directories) || (check.directories as number) < 0 ||
+         (check.directories as number) > 200)))
+    throw new Error("Invalid Node snapshot verification")
+  return true
+}
+
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
 export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
   const [report, setReport] = React.useState<Readout | null>(null)
+  const [integrity, setIntegrity] = React.useState<Record<string, IntegrityState>>({})
   const requestVersion = React.useRef(0)
   React.useEffect(() => {
     requestVersion.current += 1
     setReport(null)
+    setIntegrity({})
   }, [projectId, ownerAuthorized])
 
   if (!projectId) return null
@@ -172,6 +199,7 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     const requestedId = projectId
     const version = requestVersion.current
     setReport(null)
+    setIntegrity({})
     const [response, index] = await Promise.all([
       getJson(api + "/" + requestedId + "/data-scope"),
       getJson(api + "/" + requestedId + "/data-snapshots"),
@@ -183,6 +211,24 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
       recovery: parseRecovery(response.recovery),
       snapshots: parseSnapshotIndex(index),
     })
+  }
+
+  const verify = async (snapshot: string) => {
+    const selectedId = projectId
+    const version = requestVersion.current
+    setIntegrity((previous) => ({ ...previous, [snapshot]: "checking" }))
+    try {
+      const response = await getJson(api + "/" + selectedId + "/data-snapshots/" +
+        snapshot + "/verify")
+      if (version !== requestVersion.current)
+        throw new Error("Project or owner session changed during verification")
+      parseVerification(response, snapshot)
+      setIntegrity((previous) => ({ ...previous, [snapshot]: "verified" }))
+    } catch (error) {
+      if (version === requestVersion.current)
+        setIntegrity((previous) => ({ ...previous, [snapshot]: "unavailable" }))
+      throw error
+    }
   }
 
   return <details data-testid="node-data-panel" className="rounded-xl border bg-card text-card-foreground">
@@ -239,9 +285,18 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
               <p>{snapshot.createdAt} · {snapshot.files} files · {snapshot.bytes.toLocaleString()} bytes
                 {snapshot.directories === null ? " · directories not recorded" :
                   " · " + snapshot.directories + " directories"}</p>
+              <Button variant="outline" size="sm" disabled={!ownerAuthorized || busy}
+                onClick={() => action(() => verify(snapshot.snapshot))}>Verify stored bytes</Button>
+              {integrity[snapshot.snapshot] === "checking" &&
+                <p>Checking stored bytes and directory layout…</p>}
+              {integrity[snapshot.snapshot] === "verified" &&
+                <p>Archive matches its manifest. Database consistency not proven.</p>}
+              {integrity[snapshot.snapshot] === "unavailable" &&
+                <p>Integrity could not be confirmed. Do not use for recovery.</p>}
             </div>)}
           <p className="text-muted-foreground">
-            Metadata only. Snapshot integrity and database consistency have not been verified.
+            Metadata is not proof of a valid backup. Verification is read-only and
+            checks stored files against the manifest, not database consistency.
           </p>
         </div>
         <p className="text-xs text-muted-foreground">Snapshot creation and restore remain disabled.</p>

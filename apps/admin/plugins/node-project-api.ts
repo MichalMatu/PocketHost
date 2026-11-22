@@ -149,11 +149,13 @@ export function nodeProjectApi(): Plugin {
         // mandatory for writes regardless of whether the caller was proxied.
         const route = request.url?.split("?")[0] ?? ""
         const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots))?$/.exec(route)
-        const id = match?.[1]
-        const op = match?.[2]
+        const snapshotVerify = /^\/(node-[a-f0-9]{32})\/data-snapshots\/(snapshot-[a-f0-9]{32})\/verify$/.exec(route)
+        const id = match?.[1] ?? snapshotVerify?.[1]
+        const op = match?.[2] ?? (snapshotVerify ? "verify-snapshot" : undefined)
         if (request.method === "GET" &&
             (route === "/backup/snapshots" || op === "data-scope" ||
-              op === "data-snapshots" || op === "preview" || op === "source" ||
+              op === "data-snapshots" || op === "verify-snapshot" ||
+              op === "preview" || op === "source" ||
               op === "dependency-review" ||
              op === "build-review" || op === "rollback-preview") &&
             !ownerAuthorized(request)) {
@@ -179,6 +181,9 @@ export function nodeProjectApi(): Plugin {
                 snapshots: dataSnapshots!.listSnapshots(id),
                 verification: "metadata-only",
                 snapshotCreationEnabled: false,
+              } :
+              id && op === "verify-snapshot" && snapshotVerify ? {
+                verification: dataSnapshots!.verifySnapshot(id, snapshotVerify[2]!),
               } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :

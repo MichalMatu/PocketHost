@@ -59,6 +59,13 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
   assert.equal(snapshot.bytes, db.length + png.length);
   const listing = host.listSnapshots(project.id);
   assert.equal(listing.length, 1);
+  assert.deepEqual(host.verifySnapshot(project.id, snapshot.snapshot), {
+    snapshot: snapshot.snapshot,
+    integrity: 'verified',
+    files: 2,
+    bytes: db.length + png.length,
+    directories: 5,
+  });
   assert.deepEqual(listing[0], {
     snapshot: snapshot.snapshot,
     createdAt: listing[0].createdAt,
@@ -127,6 +134,10 @@ test('Node app-data archives only the requested project in a multi-project root'
   );
   assert.deepEqual(host.listSnapshots(second.id), []);
   assert.equal(host.listSnapshots(project.id).length, 1);
+  assert.throws(
+    () => host.verifySnapshot(second.id, snapshot.snapshot),
+    /manifest/,
+  );
 });
 
 test('Node app-data rejects changed empty-directory layout in a snapshot', (t) => {
@@ -134,6 +145,7 @@ test('Node app-data rejects changed empty-directory layout in a snapshot', (t) =
   const snapshot = host.create(project.id, true, () => true);
   const changed = path.join(archive, snapshot.snapshot, 'data', project.id, 'uploads', 'empty');
   rmSync(changed, { recursive: true });
+  assert.throws(() => host.verifySnapshot(project.id, snapshot.snapshot), /integrity mismatch/);
   assert.throws(
     () => host.restoreToStaging(project.id, snapshot.snapshot, true),
     /integrity mismatch/,
@@ -155,6 +167,7 @@ test('Node app-data staged restore fails on changed snapshot without modifying s
   const original = path.join(folder, 'db', 'app.sqlite');
   const stored = path.join(archive, snapshot.snapshot, 'data', project.id, 'db', 'app.sqlite');
   writeFileSync(stored, 'tampered-but-owned-by-test');
+  assert.throws(() => host.verifySnapshot(project.id, snapshot.snapshot), /integrity mismatch/);
   assert.throws(
     () => host.restoreToStaging(project.id, snapshot.snapshot, true),
     /integrity mismatch/,
