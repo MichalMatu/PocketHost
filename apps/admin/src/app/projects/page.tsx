@@ -9,11 +9,12 @@ import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
 import { NodeProjectPicker } from "./node-project-picker"
 import { NodeRuntimeDetails } from "./node-runtime-details"
+import { NodeReleaseInventory } from "./node-release-inventory"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
 import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
 import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
-import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
+import { shortRelease, localEventTime } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
   validatedExtras, validatedAssets, validProject, requestJson, NodeProjectValidationError,
@@ -936,44 +937,10 @@ export default function ProjectsPage() {
           </div>
             </div>
           </details>
-          <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="text-sm font-semibold">Releases</h3>
-              <Button size="sm" variant="outline" disabled={busy || releasesLoading}
-                onClick={() => action(() => loadReleases(selected.id))}>Refresh releases</Button>
-            </div>
-            {releasesLoading && <p role="status" className="text-xs text-muted-foreground">
-              Reading releases for selected Node project…
-            </p>}
-            {releasesError && <div className="flex flex-wrap items-center gap-3">
-              <p role="alert" className="text-xs text-destructive">
-                Could not read source releases for this project.
-              </p>
-              <Button variant="outline" size="sm" disabled={busy}
-                onClick={() => action(() => loadReleases(selected.id))}>Retry releases</Button>
-            </div>}
-            {!releasesLoading && !releasesError && releasesChecked && releases.length === 0 &&
-              <p role="status" className="text-xs text-muted-foreground">
-                No source releases yet. Stage project source to prepare the first version.
-              </p>}
-            {!releasesLoading && !releasesError && !releasesChecked &&
-              <p className="text-xs text-muted-foreground">Releases not checked yet.</p>}
-            <div className="space-y-2 text-sm">
-              {releases.map(release => <div key={release.id} className="rounded-md border px-3 py-2">
-                <details>
-                  <summary className="cursor-pointer">
-                    <span className="font-medium">{releaseRole(release, runtime?.activeRelease, runtime?.state === "running")}</span>
-                    <span className="ml-2 text-xs text-muted-foreground" title={release.id}>{shortRelease(release.id)}</span>
-                  </summary>
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {release.dependencyPlan.packageName}@{release.dependencyPlan.packageVersion} · {release.dependencyPlan.dependencyCount} dependencies
-                  </p>
-                </details>
-                {release.sourceIntegrity === "legacy-needs-restaging" &&
-                  <p className="mt-1 text-xs text-destructive">Restaging required before use.</p>}
-              </div>)}
-            </div>
-          </section>
+          <NodeReleaseInventory releases={releases} loading={releasesLoading}
+            error={releasesError} checked={releasesChecked} busy={busy}
+            activeRelease={runtime?.activeRelease} running={runtime?.state === "running"}
+            onRefresh={() => action(() => loadReleases(selected.id))} />
         </CardContent>
       </Card>}
       <div className="space-y-3">
