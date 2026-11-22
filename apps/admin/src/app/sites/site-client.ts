@@ -7,7 +7,7 @@ export const maxFolder = 8 * 1024 * 1024
 export const maxStarterHtml = 32 * 1024
 
 export class StaticSiteInputRejected extends Error {
-  constructor(message = "The site files were rejected. Include a root index.html and use a valid ZIP within the upload limits.") {
+  constructor(message = "The site files were rejected. Include a root index.html and use a valid ZIP or folder within upload limits.") {
     super(message)
     this.name = "StaticSiteInputRejected"
   }

@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
+import { endpoint, maxZip, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
