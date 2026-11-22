@@ -235,8 +235,9 @@ export default function LocalAgentPage() {
   const intake = agent?.intake === "stop-present" ? "STOP marker present"
     : agent?.intake === "stop-absent" ? "STOP marker absent" : "Unverified"
   const currentClaim = agent?.unspooledClaims
-  const logState = rawError ? "Read failed" : !live ? "Paused" :
-    rawLoading ? "Reading" : "Raw log"
+  // Manual Refresh/Retry still reads while periodic polling is paused.
+  const logState = rawError ? "Read failed" : rawLoading ? "Reading" :
+    !live ? "Paused" : "Raw log"
 
   return <BaseLayout title="Local Agent" description="Samsung A8 · private Termux diagnostics">
     <div className="space-y-4 px-4 pb-8 lg:px-6">

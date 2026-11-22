@@ -330,6 +330,51 @@ describe("Local Agent read-only overview", () => {
     expect(rawCalls).toBe(paused + 1)
   })
 
+  it("shows Reading for a pending manual fetch, then Paused without restarting polling", async () => {
+    vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
+    let rawReads = 0
+    let complete!: (result: {
+      ok: boolean; headers: Headers; arrayBuffer: () => Promise<ArrayBuffer>
+    }) => void
+    const pending = new Promise<{
+      ok: boolean; headers: Headers; arrayBuffer: () => Promise<ArrayBuffer>
+    }>(resolve => { complete = resolve })
+    const rawResponse = (value: string) => ({
+      ok: true,
+      headers: new Headers({
+        "X-Agent-Log-Cursor": "12:345:79",
+        "X-Agent-Log-Reset": "0",
+        "X-Agent-Log-More": "0",
+      }),
+      arrayBuffer: async () => new TextEncoder().encode(value).buffer,
+    })
+    const fetcher = vi.fn(async (url: string) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        rawReads++
+        return rawReads === 1 ? rawResponse(rawEntry) : pending
+      }
+      return { ok: true, json: async () =>
+        url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const consoleView = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(consoleView.textContent).toBe(rawEntry))
+    fireEvent.click(screen.getByRole("button", { name: "Pause log updates" }))
+    expect(screen.getByText("Paused")).toBeTruthy()
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(rawReads).toBe(2))
+    expect(screen.getByText("Reading")).toBeTruthy()
+    expect(consoleView.textContent).toBe(rawEntry)
+    await act(async () => { complete(rawResponse(rawEntry)); await pending })
+    await waitFor(() => expect(screen.getByText("Paused")).toBeTruthy())
+    expect(screen.queryByText("Reading")).toBeNull()
+    expect(rawReads).toBe(2)
+    await act(async () => { await vi.advanceTimersByTimeAsync(10000) })
+    expect(rawReads).toBe(2)
+  })
+
   it("can retry a failed manual raw read while remaining paused", async () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     let rawCalls = 0
