@@ -65,6 +65,12 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
     const request = ++runtimeSequence.current
     const current = () =>
       generation.current === selectedGeneration && runtimeSequence.current === request
+    // A fresh review invalidates the previous runtime/plan immediately.
+    // Failed or invalid readback must never leave a stale publish gate enabled.
+    setRuntime(null)
+    setPlan(null)
+    setExecutionEnabled(false)
+    resetRuntimeReviews()
     let status: Record<string, unknown>
     let preview: Record<string, unknown>
     try {
@@ -90,7 +96,6 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
           !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
       throw new Error("Invalid Node runtime state")
     setRuntime(observed)
-    resetRuntimeReviews()
     setPlan(preview.plan as RuntimePlan)
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
