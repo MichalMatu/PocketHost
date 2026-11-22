@@ -2,6 +2,8 @@ import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
 import { act, cleanup, renderHook } from "@testing-library/react"
 import { useNodeProjectInspection } from "@/app/projects/use-node-project-inspection"
+import { NodeRuntimeDetails } from "@/app/projects/node-runtime-details"
+import { renderToStaticMarkup } from "react-dom/server"
 
 afterEach(() => cleanup())
 
@@ -117,4 +119,31 @@ it("treats legacy plan reports without an allowed flag as non-actionable", async
   await act(async () => { await hook.result.current.loadRuntime(ID) })
   expect(hook.result.current.plan?.allowed).toBe(false)
   expect(hook.result.current.plan?.reason).toBe("legacy read only")
+  expect(hook.result.current.plan?.missingTools).toEqual([])
+  expect(hook.result.current.plan?.conflicts).toEqual([])
+  expect(hook.result.current.plan?.dependencyIssues).toEqual([])
+  expect(renderToStaticMarkup(
+    <NodeRuntimeDetails runtime={hook.result.current.runtime}
+      plan={hook.result.current.plan} buildReview={null} dependencyReview={null} />,
+  )).toContain("legacy read only")
+})
+
+it.each([
+  { dependencyIssues: { bad: true } },
+  { reason: { bad: true } },
+  { dependencyCount: { bad: true } },
+  { nodeVersion: { bad: true } },
+  { port: "19090" },
+  { allowed: true, missingTools: undefined },
+] as const)("rejects invalid display fields without breaking the project screen", async invalid => {
+  const getJson = reader()
+  const hook = renderHook(() => useNodeProjectInspection(getJson, vi.fn()))
+  getJson.mockImplementation(async url =>
+    url.endsWith("/runtime") ? status :
+      { plan: { ...plan, ...invalid }, executionEnabled: true })
+  await act(async () => {
+    await expect(hook.result.current.loadRuntime(ID)).rejects.toThrow("Invalid Node runtime plan")
+  })
+  expect(hook.result.current.plan).toBeNull()
+  expect(hook.result.current.executionEnabled).toBe(false)
 })

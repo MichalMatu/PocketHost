@@ -101,7 +101,27 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
           !reviewedPlan.missingTools.every(item => typeof item === "string"))) ||
         (reviewedPlan.conflicts !== undefined &&
          (!Array.isArray(reviewedPlan.conflicts) ||
-          !reviewedPlan.conflicts.every(item => typeof item === "string"))))
+          !reviewedPlan.conflicts.every(item => typeof item === "string"))) ||
+        (reviewedPlan.dependencyIssues !== undefined &&
+         (!Array.isArray(reviewedPlan.dependencyIssues) ||
+          !reviewedPlan.dependencyIssues.every(item => typeof item === "string"))) ||
+        (reviewedPlan.reason !== undefined && typeof reviewedPlan.reason !== "string") ||
+        (reviewedPlan.dependencyCount !== undefined && reviewedPlan.dependencyCount !== null &&
+         (!Number.isSafeInteger(reviewedPlan.dependencyCount) ||
+          (reviewedPlan.dependencyCount as number) < 0)) ||
+        (reviewedPlan.nodeVersion !== undefined && reviewedPlan.nodeVersion !== null &&
+         typeof reviewedPlan.nodeVersion !== "string") ||
+        (reviewedPlan.npmVersion !== undefined && reviewedPlan.npmVersion !== null &&
+         typeof reviewedPlan.npmVersion !== "string") ||
+        (reviewedPlan.port !== undefined && reviewedPlan.port !== null &&
+         (!Number.isSafeInteger(reviewedPlan.port) ||
+          (reviewedPlan.port as number) < 1024 ||
+          (reviewedPlan.port as number) > 65535)) ||
+        (reviewedPlan.allowed === true &&
+         (typeof reviewedPlan.release !== "string" ||
+          !Array.isArray(reviewedPlan.missingTools) ||
+          !Array.isArray(reviewedPlan.conflicts) ||
+          typeof reviewedPlan.reason !== "string")))
       throw new Error("Invalid Node runtime plan")
     const observed = status.runtime as RuntimeState
     if (!["not-provisioned", "stopped", "running", "unknown"].includes(observed.state) ||
@@ -111,7 +131,20 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
           !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
       throw new Error("Invalid Node runtime state")
     setRuntime(observed)
-    setPlan({ ...reviewedPlan, allowed: reviewedPlan.allowed === true } as RuntimePlan)
+    // Read-only legacy responses can omit lists; always give the renderer
+    // complete, typed values so it never tries .length or spread on undefined.
+    setPlan({
+      release: (reviewedPlan.release as string | null | undefined) ?? null,
+      port: (reviewedPlan.port as number | null | undefined) ?? null,
+      missingTools: (reviewedPlan.missingTools as string[] | undefined) ?? [],
+      nodeVersion: (reviewedPlan.nodeVersion as string | null | undefined) ?? null,
+      npmVersion: (reviewedPlan.npmVersion as string | null | undefined) ?? null,
+      conflicts: (reviewedPlan.conflicts as string[] | undefined) ?? [],
+      dependencyIssues: (reviewedPlan.dependencyIssues as string[] | undefined) ?? [],
+      dependencyCount: (reviewedPlan.dependencyCount as number | null | undefined) ?? null,
+      allowed: reviewedPlan.allowed === true,
+      reason: (reviewedPlan.reason as string | undefined) ?? "Plan not reviewed",
+    })
     setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
     return observed
   }, [getJson, resetRuntimeReviews])
