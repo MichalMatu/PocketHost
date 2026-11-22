@@ -7,10 +7,11 @@ purpose: Git-backed historical evidence locations
 
 # Historical checkpoint index
 
-**Current delivery/source checkpoint:** [22 Nov 2026 module separation and documentation audit](2026-11-22-source-modules-documentation-checkpoint.md). Previous A8 device evidence: [21 Nov broad MVP](2026-11-21-pocket-host-mvp-handoff.md). Earlier evidence: [18 Nov A8 Hosting/P1](2026-11-18-a8-p1-hardening-checkpoint.md), [17 Nov page-by-page](2026-11-17-mvp-page-by-page-checkpoint.md) and [Static Hosting A8 acceptance](2026-11-17-a8-static-mvp-local-agent-handoff.md). Use [current handoff](../HANDOFF_NEXT_CHAT.md); do not preload the historical archive.
+**Current delivery checkpoint:** [22 Nov post-demo cleanup and overnight handoff](2026-11-22-demo-cleanup-overnight-handoff.md). Earlier source/modules audit: [22 Nov module checkpoint](2026-11-22-source-modules-documentation-checkpoint.md). Previous A8 device evidence: [21 Nov broad MVP](2026-11-21-pocket-host-mvp-handoff.md). Earlier evidence: [18 Nov A8 Hosting/P1](2026-11-18-a8-p1-hardening-checkpoint.md), [17 Nov page-by-page](2026-11-17-mvp-page-by-page-checkpoint.md) and [Static Hosting A8 acceptance](2026-11-17-a8-static-mvp-local-agent-handoff.md). Use [current handoff](../HANDOFF_NEXT_CHAT.md); do not preload the historical archive.
 
 Original older contents are in Git at commit `d801da7`; historical stub files are deliberately kept for stable links. Do not preload all checkpoint files.
 
+- [2026-11-22-demo-cleanup-overnight-handoff](2026-11-22-demo-cleanup-overnight-handoff.md)
 - [2026-11-22-source-modules-documentation-checkpoint](2026-11-22-source-modules-documentation-checkpoint.md)
 - [2026-11-21-pocket-host-mvp-handoff](2026-11-21-pocket-host-mvp-handoff.md)
 - [2026-11-18-a8-p1-hardening-checkpoint](2026-11-18-a8-p1-hardening-checkpoint.md)

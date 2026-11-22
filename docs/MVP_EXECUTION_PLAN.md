@@ -11,17 +11,16 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified A8 DEV:** `bb27312e74beba55ff6c9bf84dbd0e9b16dabeae` guarded **DEPLOY PASS**, receipt `pockethost-a8-html-editor-read-bb27312-deploy-20261122-v1` (PID **24123**, ticks **72952098**, loopback HTTP **200**, protected services unchanged). Static ZIP/folder/starter HTML, version history and HTML editor stale-read safeguards are deployed; real browser signoff remains OPEN.
-- **Newest independently executed QA:** `bb27312e74beba55ff6c9bf84dbd0e9b16dabeae` **PASS** for `format,admin-types,ui` (receipt `pockethost-a8-html-editor-read-bb27312-qa-20261122-v1`). The prior `522ef0582c79b13d00163c4cb4e0978e481e2f01` separately passed these gates, resolving three hosting regressions. Seven-category Node/root QA last passed at historical `9b910d8dc353c512333b290a6749c60ad3df530f`. Real browser acceptance, full G2 and physical G3 remain separate.
-- **Static ZIP test-only addition:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. That test-only commit did not restart the panel. A **later** guarded Node backup code deployment moved the last attested live SHA to `96c2879`.
-- **Live ZIP exercise:** API active ZIP export → strict archive decode → independent temporary Static project import/HTTP byte verification **PASS** (1 file, 432 bytes; 550-byte ZIP), original untouched, fixture removed. Receipt `pockethost-a8-live-static-export-isolated-import-6585afe-20261121-v1`. Browser ZIP-upload path and independently durable Static backup remain OPEN.
-- The [21 November checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) is a historical MVP baseline; the [22 November checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md) adds source-only separation findings, not a new device acceptance. `PocketHost` branch inventory only `main`, last checked open PRs **0**; Local Agent `agent-control` is active transport, not cleanup debris. **`photomap.pl` remains unmigrated.**
+- **Last verified A8 DEV:** `d0468ab0e4e7b2830c998aab6f406b2f15ad5a0b`, guarded **DEPLOY PASS** `pockethost-a8-demo-removal-d0468ab-deploy-20261122-v1`: PID **12014**, ticks **73133851**, HTTP **200**, protected services unchanged. Source cleanup removed 158 tracked demo files (6,083,773 Git blob bytes); preserved PocketHost management and Appearance.
+- **A8 QA:** `8f68257` core scope **PASS** (syntax, format, structure, root lint, admin TypeScript, Node); `d0468ab` affected platform UI + format **PASS**. Earlier full UI run hit its time limit and is not G2 evidence. More details: [latest checkpoint](checkpoints/2026-11-22-demo-cleanup-overnight-handoff.md).
+- **Static ZIP evidence:** API active-ZIP export → strict decode → isolated reimport/HTTP equality **PASS** historically; real browser upload/import is **OPEN**. Mutable Node data consistency and recovery remain **OPEN**. `photomap.pl` is not migrated.
+- **Night code queue:** [N1–N5 autonomous plan](NIGHT_AUTONOMOUS_SPRINT.md), with fast change-dependent QA and no full-suite default. Physical/browser acceptance and public operations remain separately scoped.
 
 ## Module acceptance matrix
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                      |
 | ----------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| A8 DEV / Local Agent          | DEPLOY + scoped UI QA PASS; physical OPEN | Live bb27312 PID 24123, HTTP 200, protected services unchanged; scoped UI/TS/format QA PASS          |
+| A8 DEV / Local Agent          | DEPLOY + scoped UI QA PASS; physical OPEN | Live d0468ab PID 12014, HTTP 200, protected services unchanged; scoped Node/TS/UI QA PASS          |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6` |
 | Static Hosting                | API ZIP + UI regressions PASS; browser OPEN | ZIP/folder/custom HTML and stale-read UI regression QA PASS; real browser acceptance OPEN         |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                |
@@ -47,6 +46,6 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Execution and definition of done
 
-- **CODE:** committed to `main`; **DEPLOY PASS:** one terminal A8 Local Agent exact-SHA/owned-PID/HTTP/protected-services receipt; **SCOPED QA PASS:** separate, expressly approved SHA + selected categories receipt; **OWNER ACCEPTED:** physical/browser behavior and owner decision. Never collapse these statuses.
-- Only paired A8 Termux Local Agent performs device commands/builds/deploys/tests, aside from the narrow separately approved Mac Test Lab read-only exception. **No automatic tests**, scheduled checks or retry on unknown task state. Docs-only changes: Git update, **no deployment, build, QA or restart**.
+- **CODE:** committed to `main`; **DEPLOY PASS:** one terminal A8 Local Agent exact-SHA/owned-PID/HTTP/protected-services receipt; **SCOPED QA PASS:** separate exact-SHA + selected categories terminal receipt (standing owner QA consent); **OWNER ACCEPTED:** physical/browser behavior and owner decision. Never collapse these statuses.
+- Only paired A8 Termux Local Agent performs device commands/builds/deploys/tests, aside from the narrow separately approved Mac Test Lab read-only exception. **Only one-shot relevant QA on A8 under standing consent**; no recurring scheduled checks or retries of unknown tasks. Docs-only changes: Git update, **no deployment, build, QA or restart**.
 - Keep private DEV panel LAN-only. Preserve protected Local Agent, external services, Pi's live tunnel, user files and credentials. No public exposure, full reboot, off-device transfer or destructive restore without separate scoped permission.
