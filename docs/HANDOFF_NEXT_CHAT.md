@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — capture failure reporting
+
+- **Source-only Visual QA fix:** `8a35bebafec0ce83a8393be3d147ec2db98576ea` adds `scripts/test-lab/capture-warnings.mjs`, local gallery warnings for failed top/middle/bottom/Node create-panel snapshots, additive `captureSummary` counters in `report.json` and summary output, plus `tests/quality/test-lab-capture-warnings.test.mjs`. The previous `failures` count retains its original primary-capture meaning. No screenshot was captured or transmitted.
+- **QA remains OPEN:** new tests are committed but have not run on A8. No builds, Mac Test Lab browser run or DEV deploy were executed. Source-only Test Lab tooling does **not** warrant a panel restart.
+- **A8 queue rechecked:** `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains present as an immutable task but has no terminal `task-results` file in `MichalMatu/local-agent:agent-control`. Do not duplicate it or queue overlapping A8 tasks. On a later externally triggered continuation, reconcile the exact terminal result and verify fresh live ownership before planning targeted current-`main` QA. Last confirmed A8 DEV PASS remains N11 `c4dedfd`.
+- **Next after unblocking:** choose an exact fresh `main` SHA and minimal A8 categories for both pending Node UI and Test Lab changes, repair named failures, then guarded DEV only for qualified runtime changes. Test Lab-only changes do not need runtime deployment.
+
 ## Latest N12–N13 continuation (22 November 2026)
 
 - Fresh source `main` before this docs-only commit: `7c3728f9a047cb2d750de1101038ec792a7e7f5a`. **DEV remains N11 `c4dedfd23b597a95a96f00379786fe36f6cf27e2` only**, as last attested by the terminal guarded deployment receipt. Do not treat this as a new live inspection.
