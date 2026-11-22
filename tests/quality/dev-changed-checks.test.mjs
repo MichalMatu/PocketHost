@@ -169,7 +169,9 @@ test('deleted UI examples do not send nonexistent paths to format or lint', () =
   assert.equal(command(plan, 'admin changed-file lint'), undefined);
   assert.ok(command(plan, 'admin incremental typecheck'));
   assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));
-  assert.ok(command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'));
+  assert.ok(
+    command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'),
+  );
 });
 
 test('deleted privileged source remains blocked for explicit review', () => {

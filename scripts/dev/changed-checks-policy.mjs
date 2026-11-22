@@ -37,8 +37,7 @@ export function planChangedChecks(
       // A removed page is covered by management route/404 contracts and a full
       // TypeScript closure check. Other source deletion requires explicit review.
       const browserSource =
-        file.startsWith('apps/admin/src/app/') ||
-        file.startsWith('apps/admin/src/components/');
+        file.startsWith('apps/admin/src/app/') || file.startsWith('apps/admin/src/components/');
       const browserAsset =
         file.startsWith('apps/admin/public/') || file.startsWith('apps/admin/src/assets/');
       if (!browserSource && !browserAsset) {
