@@ -72,6 +72,16 @@ test('unknown package/config changes fail closed, before running commands', () =
   assert.deepEqual(prepared.checks, []);
 });
 
+test('admin asset review blocks execution even alongside a mapped UI test', () => {
+  const plan = makePlan([
+    'apps/admin/public/site-logo.svg',
+    'apps/admin/tests/screen.interaction.test.tsx',
+  ]);
+  const prepared = prepareChangedVerification(plan);
+  assert.ok(prepared.review.some((reason) => reason.includes('browser impact review')));
+  assert.deepEqual(prepared.checks, []);
+});
+
 test('invalid or unrecognized check specifications cannot execute', () => {
   const plan = makePlan([]);
   plan.commands = [{ label: 'deploy', cwd: '.', argv: ['node', '-e', 'foo'] }];
