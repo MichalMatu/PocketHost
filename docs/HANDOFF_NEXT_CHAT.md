@@ -1,13 +1,19 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-23
 purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code slice
 ---
 
 # PocketHost — current handoff
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
+
+## Current continuation — Static folder release verification (23 November)
+
+- **Source:** `69bbdd80b56d67d1352ee07f2cd939ca0290ca08`; regression `f2d24e373573d0385201a6ac305d2c072be8538b`. In `apps/admin/src/app/sites/use-site-release-import.ts`, folder publication readback now requires a changed non-null immutable release ID **and** positive file and byte counts, matching the existing ZIP confirmation policy. No API, host mutation, input limits or UI layout changed.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-release-import.interaction.test.tsx` accepts a verified nonempty new folder release and rejects empty files, zero bytes or unchanged release identity. Its `execute` callback is mocked; it performs no host request.
+- **A8 QA/DEV HOLD:** immutable N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` has `unknown` / `interrupted_or_uncertain_execution_no_replay` in the private task result. GitHub artifact inspection is not independent device ownership/process reconciliation. Do not requeue N12, overlap any A8 job or call this source change tested/deployed. On independently cleared A8, select fresh full `main` SHA and run separately guarded, scoped `format,admin-types,ui` checks (plus dependency-mapped checks for pending backlog) before any guarded DEV deployment and owner/PID/ticks/HTTP/protected-service readback.
 
 ## Current continuation — Node runtime health review freshness
 
