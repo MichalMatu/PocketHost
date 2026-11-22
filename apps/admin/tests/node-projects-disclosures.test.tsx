@@ -224,6 +224,49 @@ it("distinguishes an empty Node release list from a failed read and retries safe
   expect(fetcher.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 
+it("refreshes a previously empty Node release list with GET only", async () => {
+  const id = "node-" + "a".repeat(32)
+  const release = "r-" + "b".repeat(32)
+  let reads = 0
+  const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [{
+        id, name: "Refreshed app", kind: "node", state: "source-staged",
+        runtime: "not-provisioned", activeRelease: null, candidateRelease: release,
+        previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+      }] }) }
+    if (url.endsWith("/releases")) {
+      reads++
+      return { ok: true, json: async () => ({ releases: reads === 1 ? [] : [{
+        id: release, active: false, candidate: true, previousCandidate: false,
+        sourceIntegrity: "verified", dependencyPlan: {
+          packageName: "refreshed-node", packageVersion: "1.0.0",
+          dependencyCount: 0, status: "review-required",
+        },
+      }] }) }
+    }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        reason: "not-staged", dependencyCount: 0, missingTools: [], conflicts: [],
+      }, executionEnabled: false }) }
+    throw new Error("Unexpected endpoint " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", fetcher)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  fireEvent.click(await screen.findByRole("button", { name: "Refreshed app" }))
+  expect(await screen.findByText(/No source releases yet/)).toBeTruthy()
+  fireEvent.click(screen.getByRole("button", { name: "Refresh releases" }))
+  expect(await screen.findByText("Prepared update — not running")).toBeTruthy()
+  expect(screen.queryByText(/No source releases yet/)).toBeNull()
+  expect(reads).toBe(2)
+  expect(fetcher.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
 it("fails closed on a lost owned registry after selecting a Node project", async () => {
   const id = "node-" + "a".repeat(32)
   let catalogUnavailable = false

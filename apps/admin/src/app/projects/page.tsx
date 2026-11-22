@@ -948,7 +948,11 @@ export default function ProjectsPage() {
             </div>
           </details>
           <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
-            <h3 className="text-sm font-semibold">Releases</h3>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm font-semibold">Releases</h3>
+              <Button size="sm" variant="outline" disabled={busy || releasesLoading}
+                onClick={() => action(() => loadReleases(selected.id))}>Refresh releases</Button>
+            </div>
             {releasesLoading && <p role="status" className="text-xs text-muted-foreground">
               Reading releases for selected Node project…
             </p>}
