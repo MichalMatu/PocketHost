@@ -7,12 +7,13 @@ import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
+import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, validProject, parseCandidates, requestJson,
-  type Project, type RuntimeState, type RuntimePlan, type NodeHealth,
-  type DependencyReview, type BuildReview, type RollbackPreflight, type Candidate,
+  validatedExtras, validatedAssets, validProject, requestJson,
+  type Project, type RuntimeState, type NodeHealth,
+  type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
 
 export default function ProjectsPage() {
@@ -46,10 +47,6 @@ export default function ProjectsPage() {
     dependencies: number; buildRequired: boolean; extraCount: number; assetCount: number
   } | null>(null)
   const [editorDirty, setEditorDirty] = React.useState(false)
-  const [releases, setReleases] = React.useState<Candidate[]>([])
-  const [runtime, setRuntime] = React.useState<RuntimeState | null>(null)
-  const [plan, setPlan] = React.useState<RuntimePlan | null>(null)
-  const [executionEnabled, setExecutionEnabled] = React.useState(false)
   const [approved, setApproved] = React.useState(false)
   const [logLines, setLogLines] = React.useState<string[]>([])
   const [preview, setPreview] = React.useState<{ release: string; body: string } | null>(null)
@@ -70,6 +67,20 @@ export default function ProjectsPage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
+  const resetRuntimeReviews = React.useCallback(() => {
+    setHealth(null)
+    setDependencyReview(null)
+    setDependencyApproved(false)
+    setDependencyInstallEnabled(false)
+    setBuildReview(null)
+    setBuildApproved(false)
+    setBuildEnabled(false)
+    setRollbackPreflight(null)
+  }, [])
+  const {
+    releases, releasesLoading, runtime, setRuntime, plan, setPlan,
+    executionEnabled, setExecutionEnabled, loadReleases, loadRuntime, beginInspection,
+  } = useNodeProjectInspection(getJson, resetRuntimeReviews)
   // Discard one-shot approvals whenever the owner identity changes or locks.
   // A subsequent unlock must review the current release and plan again.
   const revokeOwnerAccess = () => {
@@ -101,6 +112,7 @@ export default function ProjectsPage() {
       setCatalogState("ready")
       setError(null)
     } catch (cause) {
+      beginInspection()
       setProjects([]); setSelectedId(""); setApproved(false)
       setPlan(null); setExecutionEnabled(false)
       if (cause instanceof Error && cause.message === disabledMessage) {
@@ -111,39 +123,7 @@ export default function ProjectsPage() {
       setCatalogState("error")
       throw cause
     }
-  }, [getJson])
-  const loadReleases = React.useCallback(async (id: string) => {
-    setReleases([])
-    const data = await getJson(api + "/" + id + "/releases")
-    setReleases(parseCandidates(data.releases))
-  }, [getJson])
-  const loadRuntime = React.useCallback(async (id: string): Promise<RuntimeState> => {
-    const [status, preview] = await Promise.all([
-      getJson(api + "/" + id + "/runtime"), getJson(api + "/" + id + "/plan"),
-    ])
-    if (!status.runtime || typeof status.runtime !== "object" ||
-        Array.isArray(status.runtime) || !preview.plan)
-      throw new Error("Invalid Node runtime report")
-    const observed = status.runtime as RuntimeState
-    if (!["not-provisioned", "stopped", "running", "unknown"].includes(observed.state) ||
-        !["stopped", "running"].includes(observed.desired) ||
-        (observed.activeRelease !== null &&
-         (typeof observed.activeRelease !== "string" ||
-          !/^r-[a-f0-9]{32}$/.test(observed.activeRelease))))
-      throw new Error("Invalid Node runtime state")
-    setRuntime(observed)
-    setHealth(null)
-    setDependencyReview(null)
-    setDependencyApproved(false)
-    setDependencyInstallEnabled(false)
-    setBuildReview(null)
-    setBuildApproved(false)
-    setBuildEnabled(false)
-    setRollbackPreflight(null)
-    setPlan(preview.plan as RuntimePlan)
-    setExecutionEnabled(status.executionEnabled === true && preview.executionEnabled === true)
-    return observed
-  }, [getJson])
+  }, [getJson, beginInspection])
   React.useEffect(() => {
     let live = true
     void Promise.resolve().then(refresh).catch(cause => {
@@ -166,14 +146,15 @@ export default function ProjectsPage() {
         !projects.some(project => project.id === requestedProject) ||
         appliedDeepLink.current === requestedProject) return
     appliedDeepLink.current = requestedProject
+    beginInspection()
     setSelectedId(requestedProject); setApproved(false)
-    setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+    setLogLines([]); setPreview(null)
     setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
     setExtraFiles({}); setAssetFiles({}); setBuildCheck(null); setEditorDirty(false)
     setGithubReview(null); setDependencyReview(null); setGithubRepository("")
     void Promise.all([loadReleases(requestedProject), loadRuntime(requestedProject)])
       .catch(() => setError("Owning Node project unavailable. Refresh before any action."))
-  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime])
+  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime, beginInspection])
 
   const runRuntimeAction = async (
     id: string,
@@ -203,6 +184,7 @@ export default function ProjectsPage() {
     }
     try {
       const observed = await loadRuntime(id)
+      if (!observed) return
       if (observed.state !== expectedState ||
           observed.desired !== expectedState ||
           (expectedRelease && observed.activeRelease !== expectedRelease)) {
@@ -250,8 +232,9 @@ export default function ProjectsPage() {
                   next.delete("project")
                   return next
                 }, { replace: true })
+                beginInspection()
                 setSelectedId(project.id); setApproved(false)
-                setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
+                setLogLines([]); setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
                 setExtraFiles({}); setAssetFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
@@ -958,6 +941,9 @@ export default function ProjectsPage() {
           </details>
           <section id="node-candidates" aria-label="Source candidates" className="space-y-2">
             <h3 className="text-sm font-semibold">Releases</h3>
+            {releasesLoading && <p role="status" className="text-xs text-muted-foreground">
+              Reading releases for selected Node project…
+            </p>}
             <div className="space-y-2 text-sm">
               {releases.map(release => <div key={release.id} className="rounded-md border px-3 py-2">
                 <details>
@@ -989,9 +975,10 @@ export default function ProjectsPage() {
           <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
+            beginInspection()
             setSelectedId(data.project.id); setName(""); setApproved(false)
-            setRuntime(null); setPlan(null); setLogLines([]); setPreview(null)
-            await refresh(); setReleases([]); await loadRuntime(data.project.id)
+            setLogLines([]); setPreview(null)
+            await refresh(); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"}

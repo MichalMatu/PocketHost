@@ -1,7 +1,7 @@
 import * as React from "react"
 import { expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
-import { MemoryRouter } from "react-router-dom"
+import { fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { MemoryRouter, useNavigate } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
@@ -51,6 +51,78 @@ it("keeps advanced Node actions and all source editors closed by default", async
   }
   fireEvent.click(source!.querySelector("summary")!)
   expect(source?.open).toBe(true)
+})
+
+it("ignores stale Node releases and runtime after switching deep-linked projects", async () => {
+  const first = "node-" + "a".repeat(32)
+  const second = "node-" + "c".repeat(32)
+  const firstRelease = "r-" + "b".repeat(32)
+  const secondRelease = "r-" + "d".repeat(32)
+  const projects = [first, second].map((id, index) => ({
+    id, name: index === 0 ? "First app" : "Second app",
+    kind: "node", state: "source-staged", runtime: "not-provisioned",
+    activeRelease: null, candidateRelease: index === 0 ? firstRelease : secondRelease,
+    previousCandidate: null, deploymentCount: 1, createdAt: "2026-11-09T12:00:00Z",
+  }))
+  let finishFirstReleases: ((response: unknown) => void) | undefined
+  let finishFirstRuntime: ((response: unknown) => void) | undefined
+  const requests = vi.fn(async (url: string) => {
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects }) }
+    if (url === "/api/v1/node-projects/" + first + "/releases")
+      return new Promise(resolve => { finishFirstReleases = resolve })
+    if (url === "/api/v1/node-projects/" + first + "/runtime")
+      return new Promise(resolve => { finishFirstRuntime = resolve })
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [{
+        id: secondRelease, active: false, candidate: true, previousCandidate: false,
+        sourceIntegrity: "verified",
+        dependencyPlan: { packageName: "second", packageVersion: "1.0.0",
+          dependencyCount: 0, status: "review-required" },
+      }] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "stopped", desired: "stopped", port: null, activeRelease: secondRelease,
+        lastGoodRelease: secondRelease, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: secondRelease, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: false, reason: "second-current",
+      }, executionEnabled: false }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", requests)
+  const NavigateToSecond = () => {
+    const navigate = useNavigate()
+    return <button onClick={() => navigate("/projects?project=" + second)}>Choose second link</button>
+  }
+  render(<MemoryRouter initialEntries={["/projects?project=" + first]}>
+    <NavigateToSecond /><ProjectsPage />
+  </MemoryRouter>)
+  expect(await screen.findByText("First app")).toBeTruthy()
+  await waitFor(() => expect(finishFirstReleases).toBeTypeOf("function"))
+  await waitFor(() => expect(finishFirstRuntime).toBeTypeOf("function"))
+  fireEvent.click(screen.getByRole("button", { name: "Choose second link" }))
+  expect(await screen.findByText(/Staged candidate plan: second-current/)).toBeTruthy()
+  const outdatedRelease = {
+    id: firstRelease, active: false, candidate: true, previousCandidate: false,
+    sourceIntegrity: "verified", dependencyPlan: {
+      packageName: "first", packageVersion: "1.0.0",
+      dependencyCount: 0, status: "review-required",
+    },
+  }
+  finishFirstReleases?.({ ok: true, json: async () => ({ releases: [outdatedRelease] }) })
+  finishFirstRuntime?.({ ok: true, json: async () => ({ runtime: {
+    state: "running", desired: "running", port: 19777, activeRelease: firstRelease,
+    lastGoodRelease: firstRelease, previousGoodRelease: null, history: [],
+  }, executionEnabled: false }) })
+  await waitFor(() => expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("stopped"))
+  expect(screen.getByLabelText("Node runtime summary").textContent).not.toContain("running")
+  expect(screen.queryByText("first@1.0.0")).toBeNull()
+  expect(screen.getByText(/second@1.0.0/)).toBeTruthy()
+  expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 
 it("fails closed on a lost owned registry after selecting a Node project", async () => {
