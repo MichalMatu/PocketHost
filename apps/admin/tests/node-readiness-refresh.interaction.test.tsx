@@ -11,7 +11,12 @@ vi.mock("@/components/layouts/base-layout", () => ({
 
 afterEach(() => vi.unstubAllGlobals())
 
-it.each([true, false])("rechecks changed Node release (ready=%s)", async foreignReady => {
+it.each([
+  { caseName: "new release ready", state: "running", ready: true, foreignRelease: true },
+  { caseName: "new release not ready", state: "running", ready: false, foreignRelease: true },
+  { caseName: "same release stopped", state: "stopped", ready: null, foreignRelease: false },
+  { caseName: "same release unknown", state: "unknown", ready: null, foreignRelease: false },
+] as const)("rechecks changed Node runtime ($caseName)", async scenario => {
   const id = "node-" + "a".repeat(32)
   const release = "r-" + "b".repeat(32)
   const project = {
@@ -45,8 +50,9 @@ it.each([true, false])("rechecks changed Node release (ready=%s)", async foreign
       healthReads++
       if (healthReads === 2) return second
       return { ok: true, json: async () => ({ health: {
-        state: "running", release: healthReads === 3 ? "r-" + "c".repeat(32) : release,
-        ready: healthReads === 3 ? foreignReady : true,
+        state: healthReads === 3 ? scenario.state : "running",
+        release: healthReads === 3 && scenario.foreignRelease ? "r-" + "c".repeat(32) : release,
+        ready: healthReads === 3 ? scenario.ready : true,
       } }) }
     }
     throw new Error("Unexpected request: " + url + " " + String(options?.method))
@@ -70,8 +76,8 @@ it.each([true, false])("rechecks changed Node release (ready=%s)", async foreign
   expect(await screen.findByText("Could not load Node projects. Try Refresh.")).toBeTruthy()
   expect(screen.getByLabelText("Node runtime summary").textContent)
     .toContain("HTTP readiness: not checked")
-  // A later health GET for another release must discard the old runtime
-  // review even when that release reports not-ready.
+  // A later health GET must discard the old runtime review when the release
+  // changes or the same release stops/loses a known process identity.
   await waitFor(() => expect((screen.getByRole("button", { name: "Check live readiness" }) as HTMLButtonElement)
     .disabled).toBe(false))
   await user.click(screen.getByRole("button", { name: "Check live readiness" }))

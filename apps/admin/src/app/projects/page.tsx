@@ -435,10 +435,11 @@ export default function ProjectsPage() {
                   const response = await readScoped(selected.id, "health")
                   if (!response) return
                   const observed = parseNodeHealth(response.health)
-                  // A host may have switched releases since the last runtime read.
-                  // Even a non-ready response for another release invalidates
-                  // the old runtime review and its one-shot approvals.
-                  if ((runtime && observed.release !== runtime.activeRelease) ||
+                  // A host may have switched releases or stopped since the last
+                  // runtime read. Any changed state or release invalidates the
+                  // old plan, even when readiness was not probed.
+                  if ((runtime && (observed.release !== runtime.activeRelease ||
+                                   observed.state !== runtime.state)) ||
                       (observed.ready === true && runtime?.state !== "running")) {
                     invalidateRead()
                     beginInspection()
