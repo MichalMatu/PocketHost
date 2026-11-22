@@ -8,6 +8,7 @@ export function useNodeProjectLogs(getJson: ReadJson) {
   const [logLines, setLogLines] = React.useState<string[]>([])
   const [logsLoading, setLogsLoading] = React.useState(false)
   const [logsError, setLogsError] = React.useState<string | null>(null)
+  const [logsChecked, setLogsChecked] = React.useState(false)
   const generation = React.useRef(0)
 
   const resetLogs = React.useCallback(() => {
@@ -15,6 +16,7 @@ export function useNodeProjectLogs(getJson: ReadJson) {
     setLogLines([])
     setLogsLoading(false)
     setLogsError(null)
+    setLogsChecked(false)
   }, [])
 
   React.useEffect(() => () => { generation.current += 1 }, [])
@@ -25,6 +27,7 @@ export function useNodeProjectLogs(getJson: ReadJson) {
     setLogLines([])
     setLogsLoading(true)
     setLogsError(null)
+    setLogsChecked(false)
     try {
       const response = await getJson(api + "/" + id + "/logs")
       if (request !== generation.current) return false
@@ -32,6 +35,7 @@ export function useNodeProjectLogs(getJson: ReadJson) {
       if (!Array.isArray(logs?.lines) || !logs.lines.every(x => typeof x === "string"))
         throw new Error("Invalid bounded service logs")
       setLogLines(logs.lines as string[])
+      setLogsChecked(true)
       return true
     } catch (error) {
       if (request !== generation.current) return false
@@ -43,5 +47,5 @@ export function useNodeProjectLogs(getJson: ReadJson) {
     }
   }, [getJson])
 
-  return { logLines, logsLoading, logsError, resetLogs, loadLogs }
+  return { logLines, logsLoading, logsError, logsChecked, resetLogs, loadLogs }
 }

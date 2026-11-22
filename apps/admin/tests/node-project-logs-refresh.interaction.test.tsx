@@ -22,11 +22,13 @@ it("clears prior Node lines immediately on refresh and retains verbatim new line
   const hook = renderHook(() => useNodeProjectLogs(read))
   await act(async () => { expect(await hook.result.current.loadLogs(id)).toBe(true) })
   expect(hook.result.current.logLines).toEqual([first])
+  expect(hook.result.current.logsChecked).toBe(true)
 
   read.mockImplementationOnce(async () => next.promise)
   let pending!: Promise<boolean>
   act(() => { pending = hook.result.current.loadLogs(id) })
   expect(hook.result.current.logsLoading).toBe(true)
+  expect(hook.result.current.logsChecked).toBe(false)
   expect(hook.result.current.logLines).toEqual([])
   await act(async () => {
     next.resolve({ logs: { lines: [first, second] } })
@@ -34,6 +36,7 @@ it("clears prior Node lines immediately on refresh and retains verbatim new line
   })
   expect(hook.result.current.logsLoading).toBe(false)
   expect(hook.result.current.logLines).toEqual([first, second])
+  expect(hook.result.current.logsChecked).toBe(true)
   expect(read).toHaveBeenCalledWith("/api/v1/node-projects/" + id + "/logs")
 })
 

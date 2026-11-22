@@ -12,6 +12,7 @@ import { NodeRuntimeDetails } from "./node-runtime-details"
 import { NodeReleaseInventory } from "./node-release-inventory"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
+import { NodeProjectLogFeedback } from "./node-project-log-feedback"
 import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
 import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime } from "./node-project-display"
@@ -76,7 +77,7 @@ export default function ProjectsPage() {
     checkTools, inspectRegistries, resetDiagnostics,
   } = useNodeHostDiagnostics(getJson)
   const { invalidateRead, readScoped } = useNodeProjectScopedRead(getJson)
-  const { logLines, logsLoading, logsError, resetLogs, loadLogs } = useNodeProjectLogs(getJson)
+  const { logLines, logsLoading, logsError, logsChecked, resetLogs, loadLogs } = useNodeProjectLogs(getJson)
   const resetRuntimeReviews = React.useCallback(() => {
     setHealth(null)
     setDependencyReview(null)
@@ -676,15 +677,9 @@ export default function ProjectsPage() {
               {preview && <pre aria-label="Local Node response" className="max-h-48 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
                 {preview.body}
               </pre>}
-              {logsLoading && <p role="status" className="text-xs text-muted-foreground">
-                Reading Node logs for selected project…
-              </p>}
-              {logsError && <p role="alert" className="text-xs text-muted-foreground">
-                {logsError}
-              </p>}
-              {logLines.length > 0 && <pre aria-label="Node runit logs" className="max-h-52 overflow-auto whitespace-pre-wrap rounded-md border p-3 text-xs">
-                {logLines.join("\n")}
-              </pre>}
+              <NodeProjectLogFeedback
+                lines={logLines} loading={logsLoading} error={logsError} checked={logsChecked}
+              />
             </CardContent>
           </Card>
           <details id="node-source" data-testid="node-source-panel" aria-label="Node source editor"
