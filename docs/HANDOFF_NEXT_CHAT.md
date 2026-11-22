@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node release inventory extraction
+
+- **Code commit:** `8cad2dd2f2a84fde3ed15906c960975f0eb92ca5`. Extracted the existing read-only releases card into `apps/admin/src/app/projects/node-release-inventory.tsx`, shrinking the parent `page.tsx` by about 2.1 KB. Same load/unchecked/empty/error states, same release-role and restaging labels, same details disclosure, same disabled states. Both Refresh and Retry still delegate through the parent `action(() => loadReleases(selected.id))`, with no change to endpoint calls or owner-token logic.
+- **New test:** `apps/admin/tests/node-release-inventory.interaction.test.tsx` covers unchanged state copy, buttons/disabled, error retry and populated release roles/details. **Not run**: no A8 QA, format, TS, browser capture or DEV deployment in this turn.
+- **A8 QA HOLD:** Private `MichalMatu/local-agent:agent-control` still shows 650 tasks / 649 results. Immutable `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` has no terminal result, and daemon claims remain `unverified`. Do not duplicate or overlap the unknown task. Later: reconcile the exact result, then fresh main SHA targeted `format,admin-types,ui`, including Node Projects and new release inventory tests; guarded DEV only after genuine PASS and live ownership/protected-service readback.
+- No scheduler, service restart or public operation. Last A8 guarded DEV PASS N11 `c4dedfd` remains historical and is not a fresh live observation.
+
 ## 22 November continuation — Node runtime technical details extraction
 
 - **Source-only refactor:** `e1dda55df137d9885e6da2f4679dfc5236ac6a77` extracts the existing read-only **Technical details** disclosure from `apps/admin/src/app/projects/page.tsx` into `node-runtime-details.tsx` (about 2.8 KB removed from page), retaining the same data bindings, warnings, layout, copy, default collapsed state and existing owner/API logic. Presentation-only indentation cleanup `e8ac85c79ffccff0fc66fa7bcff4b64da7af33a0` follows. No network or runtime behavior changed intentionally.
