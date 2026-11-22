@@ -175,14 +175,14 @@ describe("Local Agent read-only overview", () => {
   )
 
   it("preserves the complete old log when a multi-chunk refresh fails and retries from zero", async () => {
-    const newer = "2026-11-20_15:00:01.000000 verified replacement\\n"
+    const newer = "2026-11-20_15:00:01.000000 verified replacement\n"
     let rawCalls = 0
-    const requests = vi.fn(async (url: string) => {
+    const requests = vi.fn(async (url: string, options?: RequestInit) => {
       if (url.includes("mode=local-agent-raw-log")) {
         rawCalls++
         if (rawCalls === 3) return { ok: false, status: 503 }
         const chunk = rawCalls === 1 ? rawEntry :
-          rawCalls === 2 ? "2026-11-20_15:00:01.000000 incomplete\\n" : newer
+          rawCalls === 2 ? "2026-11-20_15:00:01.000000 incomplete\n" : newer
         return {
           ok: true,
           headers: new Headers({
