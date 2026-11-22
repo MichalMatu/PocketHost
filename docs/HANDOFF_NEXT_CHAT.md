@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node runtime plan freshness
+
+- **Code commit:** `4e3ba5b35afda0a391b6bb98b1bfce591f7b7ae1` updates `apps/admin/src/app/projects/use-node-project-inspection.ts`. On each new scoped runtime/plan read, existing runtime, plan, executionEnabled and dependent runtime/health/dependency/build reviews are immediately invalidated. A pending, rejected or malformed new read no longer leaves stale `plan.allowed` and `executionEnabled` values usable by the UI's publish guard. Existing success response validation and stale-generation checks remain; review invalidation occurs once at request start rather than again after success.
+- **New three-case regression, not executed:** `apps/admin/tests/node-runtime-plan-freshness.interaction.test.tsx` checks previous plans disappear while a second read is pending/failed, a malformed new report cannot preserve old execution state, and older superseded reports cannot restore a newer plan. Source-only changes committed; no QA, format, TS, build, browser capture or deploy occurred.
+- **A8 HOLD:** exact N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` result is still missing (650 queued tasks / 649 results); daemon claims remain `unverified` with `host_task_record_unsafe_or_unbounded`. Do not queue/overlap/replay unknown A8 job, touch protected services or claim live status. Once reconciled, pin latest current main and target `format,admin-types,ui` plus dependency-mapped Node, Static Hosting and Local Agent regressions. Only consider guarded DEV after PASS and fresh ownership/PID/HTTP/protected-service readback.
+- No scheduler, Local Agent updates, other services or public operations. N11 `c4dedfd` is historical DEV proof only.
+
 ## 22 November continuation — Local Agent raw console resilience
 
 - **Code:** `447b3c0fa50d6ae0301a73d1fdf03f630515ffb3` updates `apps/admin/src/app/local-agent/page.tsx`: the GET-only `local-agent-raw-log` browser reader now treats a `More=1` empty chunk or a repeated non-reset cursor carrying duplicate bytes as a stalled response. It stops the immediate catch-up loop, displays the existing read-failure/retry feedback, and **retains original confirmed log text, timestamps and order**. No semantic filtering, server log changes, new poller, Agent operations or device changes.
