@@ -21,6 +21,8 @@ export function useNodeProjectLogs(getJson: ReadJson) {
 
   const loadLogs = React.useCallback(async (id: string): Promise<boolean> => {
     const request = ++generation.current
+    // Do not present logs from an earlier read as the current project snapshot.
+    setLogLines([])
     setLogsLoading(true)
     setLogsError(null)
     try {
