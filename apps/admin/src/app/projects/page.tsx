@@ -438,8 +438,11 @@ export default function ProjectsPage() {
                   // A host may have switched releases or stopped since the last
                   // runtime read. Any changed state or release invalidates the
                   // old plan, even when readiness was not probed.
-                  if ((runtime && (observed.release !== runtime.activeRelease ||
-                                   observed.state !== runtime.state)) ||
+                  const runtimeChanged = runtime !== null && (
+                    observed.release !== runtime.activeRelease ||
+                    observed.state !== runtime.state
+                  )
+                  if (runtimeChanged ||
                       (observed.ready === true && runtime?.state !== "running")) {
                     invalidateRead()
                     beginInspection()
