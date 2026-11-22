@@ -5,13 +5,14 @@ import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Uplo
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
+import { useSiteVersions } from "./use-site-versions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
-import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
+import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 import { endpoint, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection, inspectInitialStaticZip } from "./site-client"
 
@@ -23,16 +24,13 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     readEpoch.current++
     setOutcomeUnknown(false)
     setAssets(null)
-    setVersions(null)
     setAssetsLoading(false)
-    setVersionsLoading(false)
   }, [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const [health, setHealth] = React.useState<boolean | null>(null)
   const [logs, setLogs] = React.useState<string[] | null>(null)
-  const [versions, setVersions] = React.useState<FleetRelease[] | null>(null)
-  const [versionsLoading, setVersionsLoading] = React.useState(false)
+  const { versions, versionsLoading, toggleVersions } = useSiteVersions(site, readEpoch, setError, busy)
   const [assets, setAssets] = React.useState<H3Files | null>(null)
   const [assetsLoading, setAssetsLoading] = React.useState(false)
   const [html, setHtml] = React.useState(starterHtml)
@@ -47,27 +45,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
-  const readVersions = async () => {
-    const epoch = readEpoch.current
-    const response = await fetch(endpoint + "/" + site.id + "/releases", {
-      credentials: "same-origin", cache: "no-store", signal: readSignal(),
-    })
-    if (!response.ok) throw new Error("Version history is unavailable.")
-    const parsed = parseFleetReleases(await response.json())
-    if (epoch === readEpoch.current) setVersions(parsed)
-  }
-  const toggleVersions = () => {
-    if (versions !== null) { setVersions(null); return }
-    if (versionsLoading || busy) return
-    const epoch = readEpoch.current
-    setVersionsLoading(true)
-    setError(null)
-    void readVersions()
-      .catch(cause => {
-        if (epoch === readEpoch.current) setError(cause instanceof Error ? cause.message : "Version inventory unavailable.")
-      })
-      .finally(() => { if (epoch === readEpoch.current) setVersionsLoading(false) })
-  }
   const toggleAssets = () => {
     if (assets !== null) { setAssets(null); return }
     if (busy || assetsLoading || site.state === "unknown" || !site.activeRelease) return
@@ -190,15 +167,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           return
         }
         setAssets(null)
-        if (versions !== null) {
-          try {
-            await readVersions()
-          } catch {
-            setVersions(null)
-            setError("Site action confirmed, but versions are unavailable. Reopen versions to refresh.")
-            return
-          }
-        }
       }
       setMessage(success)
     } finally {
