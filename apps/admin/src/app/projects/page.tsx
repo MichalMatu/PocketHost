@@ -151,13 +151,13 @@ export default function ProjectsPage() {
     beginInspection()
     resetLogs()
     setSelectedId(requestedProject); setApproved(false)
-    resetLogs(); setPreview(null)
+    setPreview(null
     setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
     setExtraFiles({}); setAssetFiles({}); setBuildCheck(null); setEditorDirty(false)
     setGithubReview(null); setDependencyReview(null); setGithubRepository("")
     void Promise.all([loadReleases(requestedProject), loadRuntime(requestedProject)])
       .catch(() => setError("Owning Node project unavailable. Refresh before any action."))
-  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime, beginInspection, resetLogs]
+  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime, beginInspection, resetLogs])
 
   const runRuntimeAction = async (
     id: string,
@@ -238,7 +238,7 @@ export default function ProjectsPage() {
                 beginInspection()
                 resetLogs()
                 setSelectedId(project.id); setApproved(false)
-                resetLogs(); setPreview(null)
+                setPreview(null
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
                 setExtraFiles({}); setAssetFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
@@ -985,7 +985,7 @@ export default function ProjectsPage() {
             beginInspection()
             resetLogs()
             setSelectedId(data.project.id); setName(""); setApproved(false)
-            resetLogs(); setPreview(null)
+            setPreview(null
             await refresh(); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
