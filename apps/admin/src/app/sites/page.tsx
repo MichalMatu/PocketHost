@@ -13,13 +13,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection, inspectInitialStaticZip } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
   const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
   const readEpoch = React.useRef(0)
-  // Fresh inventory invalidates pending reads and cached views.
   React.useEffect(() => {
     readEpoch.current++
     setOutcomeUnknown(false)
@@ -159,7 +158,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       }
       if (mutation) {
         try {
-          // Read back exact owned state independently; never retry a write.
           const response = await fetch(endpoint + "/" + site.id, {
             credentials: "same-origin", cache: "no-store", signal: readSignal(),
           })
@@ -188,7 +186,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           await onChange()
         } catch {
           setOutcomeUnknown(true)
-          setError("Site action confirmed, but the owned inventory could not be refreshed. Refresh before another write.")
+          setError("Site action confirmed, but inventory refresh failed. Refresh before another write.")
           return
         }
         setAssets(null)
@@ -197,7 +195,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             await readVersions()
           } catch {
             setVersions(null)
-            setError("Site action confirmed, but saved versions are unavailable. Reopen versions to refresh.")
+            setError("Site action confirmed, but versions are unavailable. Reopen versions to refresh.")
             return
           }
         }
@@ -237,12 +235,12 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     const files = Array.from(event.currentTarget.files ?? [])
     event.currentTarget.value = ""
     if (!files.length || busy || outcomeUnknown || site.state === "unknown") return
+    const invalid = validateStaticFolderSelection(files)
+    if (invalid) { setError(invalid); setMessage(null); return }
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
-    void execute(async () => {
-      const payload = await encodeStaticFolder(files)
-      return await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
-        payload, "application/json")
-    }, "Folder was published as a new immutable release.", true,
+    void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
+      await encodeStaticFolder(files), "application/json"),
+      "Folder was published as a new immutable release.", true,
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
   const publishHtml = () => {
@@ -502,8 +500,9 @@ export default function SitesPage() {
         } else {
           setSites([])
           setError(hasFirstFiles
-            ? "Create and import result unconfirmed. Refresh the site list before retrying; no automatic retry."
-            : "Create result unconfirmed. Refresh the site list before retrying.")
+            ? "Create and " + (firstRelease ? "ZIP " : firstFolder.length ? "folder " : "HTML ") +
+              "import result unconfirmed. Refresh before retrying; no automatic retry."
+            : "Create result unconfirmed. Refresh before retrying.")
         }
         return
       }
