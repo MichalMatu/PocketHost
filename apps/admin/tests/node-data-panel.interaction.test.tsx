@@ -73,6 +73,28 @@ it("retains detached snapshots when damaged live data inspection fails", async (
   expect(requests.mock.calls.some(([url]) => url.endsWith("/" + SNAPSHOT + "/verify"))).toBe(true)
 })
 
+it.each([
+  ["wrong byte count", { bytes: 7 }],
+  ["wrong file count", { files: 2 }],
+  ["wrong directory count", { directories: 2 }],
+  ["different snapshot identity", { snapshot: "snapshot-" + "d".repeat(32) }],
+])("does not claim verified integrity on %s", async (_reason, mismatch) => {
+  const requests = vi.fn(async (url: string) => {
+    if (url.endsWith("/data-scope")) throw new Error("source unavailable")
+    if (url.endsWith("/data-snapshots")) return index
+    if (url.endsWith("/verify")) return { verification: {
+      snapshot: SNAPSHOT, integrity: "verified", files: 1, bytes: 8, directories: 1,
+      ...mismatch,
+    } }
+    throw new Error("Unexpected request " + url)
+  })
+  display(requests)
+  await screen.findByText("Detached local snapshots (1)")
+  fireEvent.click(screen.getByRole("button", { name: "Verify stored bytes" }))
+  await screen.findByText(/Integrity could not be confirmed/)
+  expect(screen.queryByText(/Archive matches its manifest/)).toBeNull()
+})
+
 it("retains current-data information when detached snapshot listing fails", async () => {
   const requests = vi.fn(async (url: string) => {
     if (url.endsWith("/data-scope")) return scope

@@ -158,7 +158,7 @@ function parseSnapshotIndex(input: unknown): SnapshotIndexEntry[] {
   })
 }
 
-function parseVerification(input: unknown, snapshot: string): boolean {
+function parseVerification(input: unknown, expected: SnapshotIndexEntry): void {
   if (!input || typeof input !== "object" || Array.isArray(input))
     throw new Error("Invalid Node snapshot verification")
   const response = input as Record<string, unknown>
@@ -170,16 +170,18 @@ function parseVerification(input: unknown, snapshot: string): boolean {
   const check = value as Record<string, unknown>
   if (Object.keys(check).sort().join(",") !==
       "bytes,directories,files,integrity,snapshot" ||
-      check.snapshot !== snapshot || check.integrity !== "verified" ||
+      check.snapshot !== expected.snapshot || check.integrity !== "verified" ||
       !Number.isSafeInteger(check.files) || (check.files as number) < 0 ||
       (check.files as number) > 200 ||
       !Number.isSafeInteger(check.bytes) || (check.bytes as number) < 0 ||
       (check.bytes as number) > 32 * 1024 * 1024 ||
       (check.directories !== null &&
         (!Number.isSafeInteger(check.directories) || (check.directories as number) < 0 ||
-         (check.directories as number) > 200)))
+         (check.directories as number) > 200)) ||
+      check.files !== expected.files ||
+      check.bytes !== expected.bytes ||
+      check.directories !== expected.directories)
     throw new Error("Invalid Node snapshot verification")
-  return true
 }
 
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
@@ -225,20 +227,20 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     else setIndexUnavailable(true)
   }
 
-  const verify = async (snapshot: string) => {
+  const verify = async (snapshot: SnapshotIndexEntry) => {
     const selectedId = projectId
     const version = requestVersion.current
-    setIntegrity((previous) => ({ ...previous, [snapshot]: "checking" }))
+    setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "checking" }))
     try {
       const response = await getJson(api + "/" + selectedId + "/data-snapshots/" +
-        snapshot + "/verify")
+        snapshot.snapshot + "/verify")
       if (version !== requestVersion.current)
         throw new Error("Project or owner session changed during verification")
       parseVerification(response, snapshot)
-      setIntegrity((previous) => ({ ...previous, [snapshot]: "verified" }))
+      setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "verified" }))
     } catch (error) {
       if (version === requestVersion.current)
-        setIntegrity((previous) => ({ ...previous, [snapshot]: "unavailable" }))
+        setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "unavailable" }))
       throw error
     }
   }
@@ -306,8 +308,9 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
               <p>{snapshot.createdAt} · {snapshot.files} files · {snapshot.bytes.toLocaleString()} bytes
                 {snapshot.directories === null ? " · directories not recorded" :
                   " · " + snapshot.directories + " directories"}</p>
-              <Button variant="outline" size="sm" disabled={!ownerAuthorized || busy}
-                onClick={() => action(() => verify(snapshot.snapshot))}>Verify stored bytes</Button>
+              <Button variant="outline" size="sm"
+                disabled={!ownerAuthorized || busy || integrity[snapshot.snapshot] === "checking"}
+                onClick={() => action(() => verify(snapshot))}>Verify stored bytes</Button>
               {integrity[snapshot.snapshot] === "checking" &&
                 <p>Checking stored bytes and directory layout…</p>}
               {integrity[snapshot.snapshot] === "verified" &&
