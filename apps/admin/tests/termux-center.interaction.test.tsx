@@ -100,7 +100,7 @@ describe("H3 strict read-only contracts", () => {
     expect(() => parseH3Files({ files: Array(101).fill({ name: "index.html", bytes: 1 }) })).toThrow()
     expect(parseH3Files({ files: [{ name: "index.html", bytes: 1 }] })).toHaveLength(1)
   })
-  it("promotes six real Termux routes and preserves upstream examples", () => {
+  it("keeps actual Termux routes and removes upstream examples", () => {
     const mainItems = navGroups.flatMap(group => group.items)
     for (const path of ["/packages", "/files", "/services", "/local-agent", "/backups", "/terminal", "/agents"]) {
       expect(mainItems.some(item => item.url === path)).toBe(true)
@@ -111,8 +111,11 @@ describe("H3 strict read-only contracts", () => {
     expect(mainItems.some(item => item.url === "/system")).toBe(false)
     expect(mainItems.filter(item => item.url === "/dashboard")).toHaveLength(1)
     expect(mainItems.some(item => item.title === "Termux Control Center")).toBe(false)
-    for (const path of ["/termux", "/dashboard", "/mail", "/auth/sign-in", "/errors/forbidden"]) {
+    for (const path of ["/termux", "/dashboard"]) {
       expect(routes.some(route => route.path === path)).toBe(true)
+    }
+    for (const retired of ["/mail", "/auth/sign-in", "/errors/forbidden"]) {
+      expect(routes.some(route => route.path === retired)).toBe(false)
     }
   })
 
