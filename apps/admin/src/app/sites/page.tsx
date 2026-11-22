@@ -6,6 +6,7 @@ import { BaseLayout } from "@/components/layouts/base-layout"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
 import { useSiteVersions } from "./use-site-versions"
+import { useSiteHtmlEditor } from "./use-site-html-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -33,13 +34,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const { versions, versionsLoading, toggleVersions } = useSiteVersions(site, readEpoch, setError, busy)
   const [assets, setAssets] = React.useState<H3Files | null>(null)
   const [assetsLoading, setAssetsLoading] = React.useState(false)
-  const [html, setHtml] = React.useState(starterHtml)
-  const [showHtmlEditor, setShowHtmlEditor] = React.useState(false)
-  const [htmlLoading, setHtmlLoading] = React.useState(false)
-  const [editorRelease, setEditorRelease] = React.useState<string | null | undefined>(undefined)
-  const editorVisible = showHtmlEditor &&
-    (editorRelease === undefined || editorRelease === site.activeRelease)
-  const editorReady = editorVisible && editorRelease !== undefined
+  const { html, setHtml, htmlLoading, editorRelease, editorVisible, editorReady,
+    toggleHtmlEditor, closeHtmlEditor } = useSiteHtmlEditor(site, readEpoch, busy, setError)
   const folderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
     folderInput.current?.setAttribute("webkitdirectory", "")
@@ -62,40 +58,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       setAssets(null)
       setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
     }).finally(() => { if (epoch === readEpoch.current) setAssetsLoading(false) })
-  }
-  const toggleHtmlEditor = () => {
-    if (editorVisible) {
-      setShowHtmlEditor(false)
-      setEditorRelease(undefined)
-      return
-    }
-    if (busy || htmlLoading || site.state === "unknown" || site.fileCount > 1) return
-    setShowHtmlEditor(true)
-    setEditorRelease(undefined)
-    setError(null)
-    if (!site.activeRelease) {
-      setHtml(starterHtml)
-      setEditorRelease(null)
-      return
-    }
-    setHtmlLoading(true)
-    void fetch(endpoint + "/" + site.id + "/html", {
-      credentials: "same-origin", cache: "no-store", signal: readSignal(),
-    }).then(async response => {
-      if (!response.ok) throw new Error("Could not load the published HTML for editing.")
-      const result: unknown = await response.json()
-      if (!result || typeof result !== "object" || Array.isArray(result))
-        throw new Error("Invalid HTML source response.")
-      const source = result as { release?: unknown; html?: unknown }
-      if (source.release !== site.activeRelease || typeof source.html !== "string")
-        throw new Error("Active release changed. Refresh before editing.")
-      if (new TextEncoder().encode(source.html).length > maxStarterHtml)
-        throw new Error("Current HTML is larger than the 32 KiB editor limit.")
-      setHtml(source.html)
-      setEditorRelease(site.activeRelease)
-    }).catch(cause => {
-      setError(cause instanceof Error ? cause.message : "Could not load the published HTML.")
-    }).finally(() => setHtmlLoading(false))
   }
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
     if (site.state === "unknown" || busy || outcomeUnknown) return
@@ -148,10 +110,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               ack.history.length !== observed.history.length ||
               (expected && !expected(observed)))
             throw new Error("site-state-drift")
-          if (observed.activeRelease !== site.activeRelease) {
-            setShowHtmlEditor(false)
-            setEditorRelease(undefined)
-          }
+          if (observed.activeRelease !== site.activeRelease) closeHtmlEditor()
         } catch {
           setOutcomeUnknown(true)
           setError("Site action result unconfirmed. Refresh the exact site state before retrying.")
