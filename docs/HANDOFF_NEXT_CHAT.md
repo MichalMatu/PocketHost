@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Node runtime technical details extraction
+
+- **Source-only refactor:** `e1dda55df137d9885e6da2f4679dfc5236ac6a77` extracts the existing read-only **Technical details** disclosure from `apps/admin/src/app/projects/page.tsx` into `node-runtime-details.tsx` (about 2.8 KB removed from page), retaining the same data bindings, warnings, layout, copy, default collapsed state and existing owner/API logic. Presentation-only indentation cleanup `e8ac85c79ffccff0fc66fa7bcff4b64da7af33a0` follows. No network or runtime behavior changed intentionally.
+- **Regression added, not executed:** `apps/admin/tests/node-runtime-details.interaction.test.tsx` checks empty/default collapsed output and filled runtime/dependency/build readbacks; existing Node Projects interaction tests remain. No A8 QA, build, Mac screenshot or DEV deployment; formatting/type and UI tests still require exact-current-main A8 execution.
+- **A8 transport unresolved:** immutable `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` continues to have no terminal result. Avoid any overlapping task in A8's checkout, requeue or deployment while this is unknown. On a later externally triggered continuation, reconcile that exact result, live ownership and protected services, then perform targeted A8 `format,admin-types,ui` and changed Node/Visual QA cases. Last attested DEV PASS is N11 `c4dedfd` only; not a fresh live measurement. No scheduler, foreign-service changes or off-device transfer.
+
 ## 22 November continuation — Node project picker separation
 
 - **Source-only refactor:** `9e3f80d089a2298b9872b09e94575d426f4917ff` extracts the presentational **Owned projects** card and its empty/list/loading-disabled UI into `apps/admin/src/app/projects/node-project-picker.tsx`, reducing `page.tsx`. Project selection callback, URL cleanup, scoped read invalidation, editing resets, releases/runtime retrieval and all API/owner behavior remain in the parent unchanged. No visual redesign.
