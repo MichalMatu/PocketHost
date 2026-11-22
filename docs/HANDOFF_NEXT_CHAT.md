@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static release history identity reconciliation (23 November)
+
+- **Source:** `ff2d75e809ccd234f1d28ebc02e46e10db126616`, narrowed comparison `3032a20b78f95b9a4b1315066c294d8cb6807d8e`; regression `2f51068d76396cfc9fcd22e4609472abae422cca`. The saved-release readback now rejects histories whose active or quick-rollback flags disagree with the latest rendered site inventory. It closes the view with explicit Refresh/retry feedback instead of showing restore/delete controls grounded in inconsistent release identity. No API write, host lifecycle, UI redesign or deployment.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-version-refresh-race.interaction.test.tsx` covers a stale active release and missing quick rollback, followed by a successful clean GET retry without any mutation.
+- **A8 gate remains HOLD:** N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` reported `unknown` / `interrupted_or_uncertain_execution_no_replay`; source/transport review does not independently prove live process ownership or cleared in-flight execution. Do not replay/overlap; once reconciled, pin exact fresh `main`, run bounded A8 `format,admin-types,ui` plus dependency-mapped backlog checks, then consider guarded DEV only on terminal QA PASS and fresh owner SHA/PID/ticks/HTTP/protected-services verification.
+
 ## Current continuation — Static folder release verification (23 November)
 
 - **Source:** `69bbdd80b56d67d1352ee07f2cd939ca0290ca08`; regression `f2d24e373573d0385201a6ac305d2c072be8538b`. In `apps/admin/src/app/sites/use-site-release-import.ts`, folder publication readback now requires a changed non-null immutable release ID **and** positive file and byte counts, matching the existing ZIP confirmation policy. No API, host mutation, input limits or UI layout changed.
