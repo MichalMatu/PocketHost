@@ -1,0 +1,59 @@
+import * as React from "react"
+import type { FleetSite } from "@/lib/site-fleet-schema"
+import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
+import { endpoint, readSignal } from "./site-client"
+
+/** Read-only active-release assets with cancel/reopen and revision scoping. */
+export function useSiteAssets(
+  site: FleetSite,
+  setError: React.Dispatch<React.SetStateAction<string | null>>,
+  busy: boolean,
+) {
+  const [assets, setAssets] = React.useState<H3Files | null>(null)
+  const [assetsLoading, setAssetsLoading] = React.useState(false)
+  const opened = React.useRef(false)
+  const sequence = React.useRef(0)
+
+  const resetAssets = () => {
+    sequence.current++
+    opened.current = false
+    setAssets(null)
+    setAssetsLoading(false)
+  }
+
+  React.useEffect(() => {
+    resetAssets()
+    return () => { sequence.current++ }
+  }, [site])
+
+  const toggleAssets = () => {
+    if (opened.current) {
+      // Hiding while a GET is pending does not wait for a possibly stalled host.
+      resetAssets()
+      return
+    }
+    if (busy || site.state === "unknown" || !site.activeRelease) return
+    opened.current = true
+    const request = ++sequence.current
+    const current = () => request === sequence.current && opened.current
+    setAssets(null)
+    setAssetsLoading(true)
+    setError(null)
+    void fetch(endpoint + "/" + site.id + "/files", {
+      method: "GET", credentials: "same-origin", cache: "no-store", signal: readSignal(),
+    }).then(async response => {
+      if (!response.ok) throw new Error("Active site files are unavailable.")
+      return parseH3Files(await response.json())
+    }).then(parsed => {
+      if (current()) setAssets(parsed)
+    }).catch(cause => {
+      if (!current()) return
+      setAssets(null)
+      setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
+    }).finally(() => {
+      if (request === sequence.current) setAssetsLoading(false)
+    })
+  }
+
+  return { assets, assetsLoading, toggleAssets, resetAssets }
+}

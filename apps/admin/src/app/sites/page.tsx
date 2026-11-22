@@ -7,6 +7,7 @@ import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from ".
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
 import { useOwnedSiteCreation } from "./use-owned-site-creation"
 import { useSiteVersions } from "./use-site-versions"
+import { useSiteAssets } from "./use-site-assets"
 import { useSiteHtmlEditor } from "./use-site-html-editor"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -15,7 +16,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
-import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
 import { endpoint, maxStarterHtml, readSignal, starterHtml, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
@@ -25,8 +25,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   React.useEffect(() => {
     readEpoch.current++
     setOutcomeUnknown(false)
-    setAssets(null)
-    setAssetsLoading(false)
     // A confirmed inventory refresh invalidates prior runtime observations.
     setHealth(null)
     setLogs(null)
@@ -36,8 +34,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const [health, setHealth] = React.useState<boolean | null>(null)
   const [logs, setLogs] = React.useState<string[] | null>(null)
   const { versions, versionsLoading, toggleVersions } = useSiteVersions(site, readEpoch, setError, busy)
-  const [assets, setAssets] = React.useState<H3Files | null>(null)
-  const [assetsLoading, setAssetsLoading] = React.useState(false)
+  const { assets, assetsLoading, toggleAssets, resetAssets } =
+    useSiteAssets(site, setError, busy)
   const { html, setHtml, htmlLoading, editorRelease, editorVisible, editorReady,
     toggleHtmlEditor, closeHtmlEditor } = useSiteHtmlEditor(site, readEpoch, busy, setError)
   const folderInput = React.useRef<HTMLInputElement>(null)
@@ -45,24 +43,6 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     folderInput.current?.setAttribute("webkitdirectory", "")
     folderInput.current?.setAttribute("directory", "")
   }, [])
-  const toggleAssets = () => {
-    if (assets !== null) { setAssets(null); return }
-    if (busy || assetsLoading || site.state === "unknown" || !site.activeRelease) return
-    const epoch = readEpoch.current
-    setAssetsLoading(true)
-    setError(null)
-    void fetch(endpoint + "/" + site.id + "/files", {
-      method: "GET", credentials: "same-origin", cache: "no-store", signal: readSignal(),
-    }).then(async response => {
-      if (!response.ok) throw new Error("Active site files are unavailable.")
-      const parsed = parseH3Files(await response.json())
-      if (epoch === readEpoch.current) setAssets(parsed)
-    }).catch(cause => {
-      if (epoch !== readEpoch.current) return
-      setAssets(null)
-      setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
-    }).finally(() => { if (epoch === readEpoch.current) setAssetsLoading(false) })
-  }
   const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
     if (site.state === "unknown" || busy || outcomeUnknown) return
     const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
@@ -133,7 +113,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           setError("Site action confirmed, but inventory refresh failed. Refresh before another write.")
           return
         }
-        setAssets(null)
+        resetAssets()
       }
       if (currentRead()) setMessage(success)
     } finally {
@@ -322,14 +302,17 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             download={site.id + "-" + site.activeRelease + ".zip"}>
             <FileArchive className="mr-2 size-4" /> Download active ZIP
           </a>}
-          <Button variant="outline" disabled={busy || assetsLoading || site.state === "unknown" || !site.activeRelease}
+          <Button variant="outline" disabled={busy || site.state === "unknown" || !site.activeRelease}
             onClick={toggleAssets}>
-            <FolderOpen /> {assets !== null ? "Hide assets" : assetsLoading ? "Reading assets…" : "Inspect assets"}
+            <FolderOpen /> {assetsLoading ? "Cancel asset read" : assets !== null ? "Hide assets" : "Inspect assets"}
           </Button>
           <Button variant="outline" disabled={busy || versionsLoading} onClick={toggleVersions}>
             <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Reading versions…" : "Manage versions"}
           </Button>
         </div>
+        {assetsLoading && <p role="status" className="text-xs text-muted-foreground">
+          Reading active release assets…
+        </p>}
         {assets !== null && <section className="space-y-2 rounded-lg border p-4" aria-label={"Active assets of " + site.name}>
           <h3 className="text-sm font-semibold">Active release assets ({assets.length})</h3>
           <div className="max-h-72 overflow-auto">
