@@ -43,6 +43,8 @@ test('Node app-data snapshot is explicitly authorized and rejects online state',
   assert.throws(() => host.create(project.id, false, () => true), /approval/);
   assert.throws(() => host.create(project.id, true, () => false), /offline/);
   assert.equal(existsSync(archive), false);
+  assert.deepEqual(host.listSnapshots(project.id), []);
+  assert.equal(existsSync(archive), false);
 });
 
 test('Node app-data offline bytes survive detached snapshot and staging-only restore', (t) => {
@@ -55,6 +57,17 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
   assert.ok(checked >= 2);
   assert.equal(snapshot.files, 2);
   assert.equal(snapshot.bytes, db.length + png.length);
+  const listing = host.listSnapshots(project.id);
+  assert.equal(listing.length, 1);
+  assert.deepEqual(listing[0], {
+    snapshot: snapshot.snapshot,
+    createdAt: listing[0].createdAt,
+    schema: 2,
+    files: 2,
+    bytes: db.length + png.length,
+    directories: 5,
+    integrity: 'not-checked',
+  });
   assert.ok(snapshot.snapshot.startsWith('snapshot-'));
   const manifest = JSON.parse(
     readFileSync(path.join(archive, snapshot.snapshot, 'manifest.json'), 'utf8'),
@@ -112,6 +125,8 @@ test('Node app-data archives only the requested project in a multi-project root'
     readFileSync(path.join(unrelated, 'db', 'other.sqlite'), 'utf8'),
     'independent bytes',
   );
+  assert.deepEqual(host.listSnapshots(second.id), []);
+  assert.equal(host.listSnapshots(project.id).length, 1);
 });
 
 test('Node app-data rejects changed empty-directory layout in a snapshot', (t) => {
@@ -124,6 +139,14 @@ test('Node app-data rejects changed empty-directory layout in a snapshot', (t) =
     /integrity mismatch/,
   );
   assert.deepEqual(readFileSync(path.join(folder, 'db', 'app.sqlite')), db);
+});
+
+test('Node app-data snapshot index rejects malformed metadata without copying it', (t) => {
+  const { project, host, archive } = fixture(t);
+  const snapshot = host.create(project.id, true, () => true);
+  const manifest = path.join(archive, snapshot.snapshot, 'manifest.json');
+  writeFileSync(manifest, '{}', { mode: 0o600 });
+  assert.throws(() => host.listSnapshots(project.id), /manifest/);
 });
 
 test('Node app-data staged restore fails on changed snapshot without modifying source', (t) => {

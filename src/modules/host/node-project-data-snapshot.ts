@@ -22,6 +22,7 @@ const SNAPSHOT_ID = /^snapshot-[a-f0-9]{32}$/;
 const MAX_MANIFEST_BYTES = 64 * 1024;
 const MAX_FILES = 200;
 const MAX_DIRECTORIES = 200;
+const MAX_SNAPSHOT_ENTRIES = 64;
 const DATA_CATEGORIES = new Set(['uploads', 'db', 'state']);
 const CHILD_NAME = /^[\p{L}\p{N}][\p{L}\p{N}._-]*$/u;
 const MAX_BYTES = 32 * 1024 * 1024;
@@ -48,6 +49,16 @@ function validDataPath(relative: string, directory: boolean): boolean {
     parts.slice(1).every((name) => name.length <= 120 && CHILD_NAME.test(name))
   );
 }
+export interface NodeDataSnapshotIndexEntry {
+  snapshot: string;
+  createdAt: string;
+  schema: 1 | 2;
+  files: number;
+  bytes: number;
+  directories: number | null;
+  integrity: 'not-checked';
+}
+
 export interface NodeDataSnapshotResult {
   snapshot: string;
   projectId: string;
@@ -237,7 +248,7 @@ export class NodeProjectDataSnapshots {
     return { directories: inventory.directories, files };
   }
 
-  private manifest(snapshot: string, projectId: string): SnapshotManifest {
+  private manifest(snapshot: string, projectId?: string): SnapshotManifest {
     if (!SNAPSHOT_ID.test(snapshot)) throw new RangeError('Invalid Node data snapshot ID');
     const folder = path.join(this.snapshotRoot, snapshot);
     this.privateEntry(folder, true);
@@ -259,7 +270,9 @@ export class NodeProjectDataSnapshots {
     const isV2 = item.schema === 2 && keys === 'createdAt,directories,files,projectId,schema';
     if (
       (!isV1 && !isV2) ||
-      item.projectId !== projectId ||
+      typeof item.projectId !== 'string' ||
+      !/^node-[a-f0-9]{32}$/.test(item.projectId) ||
+      (projectId !== undefined && item.projectId !== projectId) ||
       typeof item.createdAt !== 'string' ||
       !Number.isFinite(Date.parse(item.createdAt)) ||
       !Array.isArray(item.files) ||
@@ -316,6 +329,43 @@ export class NodeProjectDataSnapshots {
       if (bytes > MAX_BYTES) throw new RangeError('Snapshot content exceeds limit');
     }
     return item as SnapshotManifest;
+  }
+
+  /**
+   * Owner-scoped snapshot metadata only. No integrity verification or restore
+   * capability is inferred from a manifest entry.
+   */
+  listSnapshots(projectId: string): NodeDataSnapshotIndexEntry[] {
+    this.scope.inspect(projectId);
+    if (!existsSync(this.snapshotRoot)) return [];
+    this.ownedStorage(false);
+    const names = readdirSync(this.snapshotRoot);
+    if (names.length > MAX_SNAPSHOT_ENTRIES) {
+      throw new RangeError('Node snapshot index size exceeded');
+    }
+    const snapshots: NodeDataSnapshotIndexEntry[] = [];
+    for (const name of names) {
+      this.privateEntry(path.join(this.snapshotRoot, name), true);
+      if (name === 'restores' || name.startsWith('.pending-snapshot-')) {
+        if (name !== 'restores' && !/^\\.pending-snapshot-[a-f0-9]{32}$/.test(name)) {
+          throw new Error('Unexpected Node snapshot pending entry');
+        }
+        continue;
+      }
+      if (!SNAPSHOT_ID.test(name)) throw new Error('Unexpected Node snapshot storage entry');
+      const manifest = this.manifest(name);
+      if (manifest.projectId !== projectId) continue;
+      snapshots.push({
+        snapshot: name,
+        createdAt: manifest.createdAt,
+        schema: manifest.schema,
+        files: manifest.files.length,
+        bytes: manifest.files.reduce((sum, file) => sum + file.bytes, 0),
+        directories: manifest.schema === 2 ? manifest.directories!.length : null,
+        integrity: 'not-checked',
+      });
+    }
+    return snapshots.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
   }
 
   private validatedSnapshot(snapshot: string, projectId: string): SnapshotManifest {

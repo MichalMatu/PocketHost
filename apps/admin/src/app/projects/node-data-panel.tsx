@@ -28,7 +28,16 @@ type RecoveryReview = {
     snapshotApproved: false
   }
 }
-type Readout = { data: DataScope; recovery: RecoveryReview }
+type SnapshotIndexEntry = {
+  snapshot: string
+  createdAt: string
+  schema: 1 | 2
+  files: number
+  bytes: number
+  directories: number | null
+  integrity: "not-checked"
+}
+type Readout = { data: DataScope; recovery: RecoveryReview; snapshots: SnapshotIndexEntry[] }
 type Props = {
   projectId: string | null
   ownerAuthorized: boolean
@@ -113,6 +122,41 @@ function parseRecovery(value: unknown): RecoveryReview {
   return result as RecoveryReview
 }
 
+function parseSnapshotIndex(input: unknown): SnapshotIndexEntry[] {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Invalid Node snapshot index")
+  const index = input as Record<string, unknown>
+  if (Object.keys(index).sort().join(",") !==
+      "snapshotCreationEnabled,snapshots,verification" ||
+      index.snapshotCreationEnabled !== false ||
+      index.verification !== "metadata-only" ||
+      !Array.isArray(index.snapshots) || index.snapshots.length > 64)
+    throw new Error("Invalid Node snapshot index")
+  const found = new Set<string>()
+  return index.snapshots.map((entry: unknown) => {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry))
+      throw new Error("Invalid Node snapshot metadata")
+    const value = entry as Record<string, unknown>
+    if (Object.keys(value).sort().join(",") !==
+        "bytes,createdAt,directories,files,integrity,schema,snapshot" ||
+        typeof value.snapshot !== "string" || !/^snapshot-[a-f0-9]{32}$/.test(value.snapshot) ||
+        found.has(value.snapshot) ||
+        typeof value.createdAt !== "string" || !Number.isFinite(Date.parse(value.createdAt)) ||
+        (value.schema !== 1 && value.schema !== 2) ||
+        !Number.isSafeInteger(value.files) || (value.files as number) < 0 ||
+        (value.files as number) > 200 ||
+        !Number.isSafeInteger(value.bytes) || (value.bytes as number) < 0 ||
+        (value.bytes as number) > 32 * 1024 * 1024 ||
+        (value.schema === 1 ? value.directories !== null :
+          !Number.isSafeInteger(value.directories) || (value.directories as number) < 0 ||
+          (value.directories as number) > 200) ||
+        value.integrity !== "not-checked")
+      throw new Error("Invalid Node snapshot metadata")
+    found.add(value.snapshot)
+    return value as SnapshotIndexEntry
+  })
+}
+
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
 export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
   const [report, setReport] = React.useState<Readout | null>(null)
@@ -128,11 +172,17 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     const requestedId = projectId
     const version = requestVersion.current
     setReport(null)
-    const response = await getJson(api + "/" + requestedId + "/data-scope")
+    const [response, index] = await Promise.all([
+      getJson(api + "/" + requestedId + "/data-scope"),
+      getJson(api + "/" + requestedId + "/data-snapshots"),
+    ])
     if (version !== requestVersion.current)
       throw new Error("Node project or owner session changed. Inspect again.")
-    setReport({ data: parseScope(response.data, requestedId),
-      recovery: parseRecovery(response.recovery) })
+    setReport({
+      data: parseScope(response.data, requestedId),
+      recovery: parseRecovery(response.recovery),
+      snapshots: parseSnapshotIndex(index),
+    })
   }
 
   return <details data-testid="node-data-panel" className="rounded-xl border bg-card text-card-foreground">
@@ -181,6 +231,19 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
                 ? "Recovery blocked: stop the owned project and verify its stopped state."
                 : "Stopped state observed. Offline database consistency still requires separate review."}
         </p>
+        <div className="space-y-2 rounded-md border p-3 text-xs" aria-label="Detached local snapshots">
+          <p className="font-medium">Detached local snapshots ({report.snapshots.length})</p>
+          {report.snapshots.length === 0 ? <p>No snapshots recorded for this project.</p> :
+            report.snapshots.map((snapshot) => <div key={snapshot.snapshot} className="space-y-1 border-t pt-2">
+              <code className="break-all">{snapshot.snapshot}</code>
+              <p>{snapshot.createdAt} · {snapshot.files} files · {snapshot.bytes.toLocaleString()} bytes
+                {snapshot.directories === null ? " · directories not recorded" :
+                  " · " + snapshot.directories + " directories"}</p>
+            </div>)}
+          <p className="text-muted-foreground">
+            Metadata only. Snapshot integrity and database consistency have not been verified.
+          </p>
+        </div>
         <p className="text-xs text-muted-foreground">Snapshot creation and restore remain disabled.</p>
       </div>}
       <p className="text-xs text-muted-foreground">

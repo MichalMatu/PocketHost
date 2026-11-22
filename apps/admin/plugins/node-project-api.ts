@@ -6,6 +6,7 @@ import { NodeDependencyPreparer } from "../../../src/modules/host/node-dependenc
 import { NodeBuildPreparer } from "../../../src/modules/host/node-build-preparer.ts"
 import { NodeProjectBackupHost } from "../../../src/modules/host/node-project-backup-host.ts"
 import { NodeProjectDataScope, reviewNodeDataOfflinePrerequisites } from "../../../src/modules/host/node-project-data-scope.ts"
+import { NodeProjectDataSnapshots } from "../../../src/modules/host/node-project-data-snapshot.ts"
 import { reportDashboardOwnedEvent } from "../../../src/modules/host/dashboard-telemetry-history.ts"
 import path from "path"
 import os from "node:os"
@@ -48,6 +49,7 @@ export function nodeProjectApi(): Plugin {
       const runtime = enabled ? new NodeRunitHost() : null
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const nodeData = enabled ? new NodeProjectDataScope() : null
+      const dataSnapshots = enabled ? new NodeProjectDataSnapshots() : null
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
       const dependencyInstallEnabled = process.env.POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV === "1"
       const buildEnabled = process.env.POCKETHOST_ENABLE_NODE_BUILD_DEV === "1"
@@ -146,11 +148,12 @@ export function nodeProjectApi(): Plugin {
         // The LAN proxy rewrites Host/Origin, but owner authentication remains
         // mandatory for writes regardless of whether the caller was proxied.
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots))?$/.exec(route)
         const id = match?.[1]
         const op = match?.[2]
         if (request.method === "GET" &&
-            (route === "/backup/snapshots" || op === "data-scope" || op === "preview" || op === "source" ||
+            (route === "/backup/snapshots" || op === "data-scope" ||
+              op === "data-snapshots" || op === "preview" || op === "source" ||
               op === "dependency-review" ||
              op === "build-review" || op === "rollback-preview") &&
             !ownerAuthorized(request)) {
@@ -172,6 +175,11 @@ export function nodeProjectApi(): Plugin {
               id && !op ? { project: host.inspect(id) } :
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "data-scope" ? reviewData(id) :
+              id && op === "data-snapshots" ? {
+                snapshots: dataSnapshots!.listSnapshots(id),
+                verification: "metadata-only",
+                snapshotCreationEnabled: false,
+              } :
               id && op === "runtime" ? { runtime: runtime!.status(id), executionEnabled } :
               id && op === "plan" ? { plan: runtime!.preview(id), executionEnabled } :
               id && op === "dependency-review" ? {
