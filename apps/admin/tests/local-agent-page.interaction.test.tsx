@@ -174,6 +174,51 @@ describe("Local Agent read-only overview", () => {
     },
   )
 
+  it("preserves the complete old log when a multi-chunk refresh fails and retries from zero", async () => {
+    const newer = "2026-11-20_15:00:01.000000 verified replacement\\n"
+    let rawCalls = 0
+    const requests = vi.fn(async (url: string) => {
+      if (url.includes("mode=local-agent-raw-log")) {
+        rawCalls++
+        if (rawCalls === 3) return { ok: false, status: 503 }
+        const chunk = rawCalls === 1 ? rawEntry :
+          rawCalls === 2 ? "2026-11-20_15:00:01.000000 incomplete\\n" : newer
+        return {
+          ok: true,
+          headers: new Headers({
+            "X-Agent-Log-Cursor": rawCalls === 1 ? "12:345:79" :
+              rawCalls === 2 ? "12:345:90" : "12:345:120",
+            "X-Agent-Log-Reset": "0",
+            "X-Agent-Log-More": rawCalls === 2 ? "1" : "0",
+          }),
+          arrayBuffer: async () => new TextEncoder().encode(chunk).buffer,
+        }
+      }
+      return { ok: true, json: async () =>
+        url.includes("mode=control-plane-diagnostics") ? controlPlane : logs }
+    })
+    vi.stubGlobal("fetch", requests)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
+    fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
+    const raw = await screen.findByLabelText("Raw Agent console")
+    await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+
+    fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+    await waitFor(() => expect(screen.getByText(/Raw log read failed/)).toBeTruthy())
+    expect(raw.textContent).toBe(rawEntry)
+    expect(raw.textContent).not.toContain("incomplete")
+
+    fireEvent.click(screen.getByRole("button", { name: "Retry raw log" }))
+    await waitFor(() => expect(raw.textContent).toBe(newer))
+    const reads = requests.mock.calls.filter(([url]) =>
+      url.includes("mode=local-agent-raw-log"))
+    expect(reads).toHaveLength(4)
+    expect(reads[1][0]).not.toContain("&cursor=")
+    expect(reads[2][0]).toContain("&cursor=12%3A345%3A90")
+    expect(reads[3][0]).not.toContain("&cursor=")
+    expect(requests.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true)
+  })
+
   it("always removes the temporary raw-log clipboard field when copy is refused", async () => {
     const clipboard = Object.getOwnPropertyDescriptor(navigator, "clipboard")
     const command = Object.getOwnPropertyDescriptor(document, "execCommand")

@@ -123,11 +123,17 @@ export default function LocalAgentPage() {
       pending = true
       setRawLoading(true)
       try {
+        // Stage all chunks of this read together. A failed second chunk must
+        // not replace previously confirmed source lines or advance the cursor.
+        // The existing TextDecoder also stays untouched until all GETs succeed.
+        let nextCursor = rawCursor.current
+        let replace = nextCursor === null
+        let chunks: Uint8Array[] = []
         // Catch up immediately in 256 KiB chunks, then follow appended bytes.
         for (let part = 0; part < 256 && !disposed; part++) {
           const controller = new AbortController()
           request = controller
-          const previous = rawCursor.current
+          const previous = nextCursor
           const query = "/api/v1/termux-admin?mode=local-agent-raw-log" +
             (previous === null ? "" : "&cursor=" + encodeURIComponent(previous))
           const response = await fetch(query, {
@@ -146,16 +152,26 @@ export default function LocalAgentPage() {
           if ((more && bytes.length === 0) ||
               (!reset && previous !== null && cursor === previous && bytes.length > 0))
             throw Error("raw-log-cursor-stalled")
-          // A cursorless refresh starts a new authoritative snapshot, even if
-          // the server does not explicitly mark the response as a rotation.
-          const replace = reset || previous === null
-          if (replace) rawDecoder.current = new TextDecoder()
-          const text = rawDecoder.current.decode(bytes, { stream: true })
-          rawCursor.current = cursor
-          if (replace) setRawText(text)
-          else if (text) setRawText(previousText => previousText + text)
-          setRawError(false)
-          if (!more) break
+          // A rotation invalidates earlier staged bytes in this same read.
+          if (reset) {
+            replace = true
+            chunks = []
+          }
+          chunks.push(bytes)
+          nextCursor = cursor
+          // Commit a complete read or a bounded 256-chunk catch-up. A failed
+          // or cancelled read leaves both displayed text and cursor unchanged.
+          if (!more || part === 255) {
+            const decoder = replace ? new TextDecoder() : rawDecoder.current
+            let text = ""
+            for (const chunk of chunks) text += decoder.decode(chunk, { stream: true })
+            rawDecoder.current = decoder
+            rawCursor.current = nextCursor
+            if (replace) setRawText(text)
+            else if (text) setRawText(previousText => previousText + text)
+            setRawError(false)
+            break
+          }
         }
       } catch {
         if (!disposed) setRawError(true)
