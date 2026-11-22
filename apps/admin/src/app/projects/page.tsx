@@ -151,7 +151,7 @@ export default function ProjectsPage() {
     beginInspection()
     resetLogs()
     setSelectedId(requestedProject); setApproved(false)
-    setPreview(null
+    setPreview(null)
     setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
     setExtraFiles({}); setAssetFiles({}); setBuildCheck(null); setEditorDirty(false)
     setGithubReview(null); setDependencyReview(null); setGithubRepository("")
@@ -238,7 +238,7 @@ export default function ProjectsPage() {
                 beginInspection()
                 resetLogs()
                 setSelectedId(project.id); setApproved(false)
-                setPreview(null
+                setPreview(null)
                 setManifest(examplePackage); setLockfile(exampleLock); setSource(exampleSource); setSourceOrigin("example")
                 setExtraFiles({}); setAssetFiles({})
                 setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
@@ -985,7 +985,7 @@ export default function ProjectsPage() {
             beginInspection()
             resetLogs()
             setSelectedId(data.project.id); setName(""); setApproved(false)
-            setPreview(null
+            setPreview(null)
             await refresh(); await loadRuntime(data.project.id)
             setMessage("Private Node project created.")
           })}>Create project</Button>
