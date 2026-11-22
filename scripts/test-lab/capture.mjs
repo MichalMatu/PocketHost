@@ -4,6 +4,7 @@ import { mkdir, writeFile, chmod } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { screenshotName } from './artifact-names.mjs';
+import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = {
@@ -367,7 +368,10 @@ async function main() {
           await page.setViewportSize({ width: vp.width, height: vp.height });
           await page.waitForTimeout(450);
           cap.rendered = await page.evaluate(routeReady, titles[route] ?? null);
+          // Always start each viewport at the top, including after SPA navigation.
+          await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }));
           if (cap.rendered) cap.geometry = await geometry(page);
+          const scrollTargets = scrollCaptureTargets(cap.geometry?.documentHeight, vp.height);
           cap.stage = 'screenshot';
           const filename = screenshotName(route, vp.name);
           const absolute = join(folder, filename);
@@ -376,14 +380,15 @@ async function main() {
           cap.file = filename;
           // Cap tall pages to three local viewport screenshots; never full-page
           // capture. This adds a mid-page observation without clicking or writes.
-          if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height * 2 + 120) {
+          if (cap.rendered && scrollTargets.middle !== null) {
             try {
-              const at = await page.evaluate((height) => {
-                globalThis.window.scrollTo(0, Math.round(height / 2));
-                return globalThis.window.scrollY;
-              }, cap.geometry.documentHeight - vp.height);
-              if (at <= 0) throw Error('Middle scroll did not advance');
+              await page.evaluate((top) =>
+                globalThis.window.scrollTo({ top, behavior: 'instant' }), scrollTargets.middle);
               await page.waitForTimeout(250);
+              const at = await page.evaluate(() => globalThis.window.scrollY);
+              if (at < Math.max(1, scrollTargets.middle * 0.7))
+                throw Error('Middle scroll did not advance');
+              cap.middleScrollY = Math.round(at);
               const middle = screenshotName(route, vp.name, 'middle');
               const middlePath = join(folder, middle);
               await page.screenshot({ path: middlePath, animations: 'disabled', timeout: 12000 });
@@ -392,17 +397,20 @@ async function main() {
             } catch {
               cap.middleError = 'Middle viewport screenshot unavailable';
             } finally {
-              await page.evaluate(() => globalThis.window.scrollTo(0, 0)).catch(() => {});
+              await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
             }
           }
           // A second viewport covers content below the fold without changing
           // the read-only route scope or capturing an unbounded full-page image.
-          if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height + 120) {
+          if (cap.rendered && scrollTargets.bottom !== null) {
             try {
-              await page.evaluate(() =>
-                globalThis.window.scrollTo(0, globalThis.document.documentElement.scrollHeight),
-              );
+              await page.evaluate((top) =>
+                globalThis.window.scrollTo({ top, behavior: 'instant' }), scrollTargets.bottom);
               await page.waitForTimeout(250);
+              const at = await page.evaluate(() => globalThis.window.scrollY);
+              if (at < Math.max(1, scrollTargets.bottom * 0.7))
+                throw Error('Bottom scroll did not advance');
+              cap.bottomScrollY = Math.round(at);
               const bottom = screenshotName(route, vp.name, 'bottom');
               const bottomPath = join(folder, bottom);
               await page.screenshot({ path: bottomPath, animations: 'disabled', timeout: 12000 });
@@ -411,7 +419,7 @@ async function main() {
             } catch {
               cap.bottomError = 'Bottom viewport screenshot unavailable';
             } finally {
-              await page.evaluate(() => globalThis.window.scrollTo(0, 0)).catch(() => {});
+              await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
             }
           }
           cap.stage = 'complete';
