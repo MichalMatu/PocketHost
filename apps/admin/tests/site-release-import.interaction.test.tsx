@@ -48,6 +48,35 @@ it("cancels a replacement ZIP before any write and clears the file picker", () =
   expect(event.currentTarget.value).toBe("")
 })
 
+it.each(["ZIP", "folder"] as const)(
+  "clears stale feedback after selecting a valid %s then canceling publication",
+  kind => {
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
+    const execute = vi.fn(async () => {})
+    const setError = vi.fn()
+    const setMessage = vi.fn()
+    const hook = renderHook(() => useSiteReleaseImport({
+      site, busy: false, outcomeUnknown: false, execute, setError, setMessage,
+    }))
+    act(() => {
+      if (kind === "ZIP") {
+        hook.result.current.zip(selected([new File(["invalid"], "wrong.txt")]))
+        hook.result.current.zip(selected([new File(["zip bytes"], "updated.zip")]))
+      } else {
+        hook.result.current.folder(selected([
+          new File([new Uint8Array(2 * 1024 * 1024 + 1)], "too-large.html"),
+        ]))
+        hook.result.current.folder(selected([new File(["hello"], "index.html")]))
+      }
+    })
+    expect(setError.mock.calls.some(([value]) => typeof value === "string")).toBe(true)
+    expect(setError).toHaveBeenLastCalledWith(null)
+    expect(setMessage).toHaveBeenLastCalledWith(null)
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(execute).not.toHaveBeenCalled()
+  },
+)
+
 it("preserves first ZIP update readback requirements without starting any host action", () => {
   const execute = vi.fn(async (
     _job: () => Promise<unknown>, _success: string, _mutation?: boolean,

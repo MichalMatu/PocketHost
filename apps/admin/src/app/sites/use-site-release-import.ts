@@ -35,6 +35,9 @@ export function useSiteReleaseImport({
       setMessage(null)
       return
     }
+    // Valid new selection clears stale feedback even if confirmation is canceled.
+    setError(null)
+    setMessage(null)
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(() => mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip"),
       "ZIP was published as a new immutable release.", true,
@@ -47,6 +50,9 @@ export function useSiteReleaseImport({
     if (!files.length || busy || outcomeUnknown || site.state === "unknown") return
     const invalid = validateStaticFolderSelection(files)
     if (invalid) { setError(invalid); setMessage(null); return }
+    // Valid new selection clears stale feedback even if confirmation is canceled.
+    setError(null)
+    setMessage(null)
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
       await encodeStaticFolder(files), "application/json"),
