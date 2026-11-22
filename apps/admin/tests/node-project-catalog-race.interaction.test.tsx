@@ -83,7 +83,7 @@ it("rejects duplicate Node catalog ids before rendering ambiguous project button
 it("invalidates the removed Node selection and refuses late runtime after a valid refresh", async () => {
   const deleted = project("a", "Project removed remotely")
   let catalog = [deleted]
-  const staleRuntime = deferred<ReturnType<typeof response>>()
+  const staleRuntime = deferred<{ ok: boolean; json: () => Promise<unknown> }>()
   let runtimeCalls = 0
   const requests = vi.fn(async (url: string, options?: RequestInit) => {
     if (url === "/api/v1/node-projects") return response(catalog)
