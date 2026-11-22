@@ -12,7 +12,16 @@ import {
   chmodSync,
 } from 'node:fs';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeProjectDataScope, reviewNodeDataOfflinePrerequisites } from '../../src/modules/host/node-project-data-scope.ts';
+import {
+  NodeProjectDataScope,
+  reviewNodeDataOfflinePrerequisites,
+} from '../../src/modules/host/node-project-data-scope.ts';
+
+const emptyCategories = () => ({
+  uploads: { fileCount: 0, totalBytes: 0, directoryCount: 0 },
+  db: { fileCount: 0, totalBytes: 0, directoryCount: 0 },
+  state: { fileCount: 0, totalBytes: 0, directoryCount: 0 },
+});
 
 function fixture(t) {
   const temp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-node-data-scope-'));
@@ -37,6 +46,7 @@ test('mutable Node data remains independent and unconfigured until explicitly pr
     state: 'not-configured',
     fileCount: 0,
     totalBytes: 0,
+    categories: emptyCategories(),
     backupReady: false,
     consistency: 'offline-required',
   });
@@ -57,6 +67,11 @@ test('mutable Node data inventory counts only private uploads and databases with
   assert.equal(inventory.state, 'owned-private');
   assert.equal(inventory.fileCount, 2);
   assert.equal(inventory.totalBytes, sample.length + Buffer.byteLength('fixture db bytes'));
+  assert.deepEqual(inventory.categories, {
+    uploads: { fileCount: 1, totalBytes: sample.length, directoryCount: 2 },
+    db: { fileCount: 1, totalBytes: Buffer.byteLength('fixture db bytes'), directoryCount: 1 },
+    state: { fileCount: 0, totalBytes: 0, directoryCount: 0 },
+  });
   assert.equal(inventory.backupReady, false);
   assert.equal(inventory.consistency, 'offline-required');
 });
@@ -76,10 +91,20 @@ test('mutable Node data inventory is isolated between two owned projects', (t) =
     state: 'owned-private',
     fileCount: 0,
     totalBytes: 0,
+    categories: {
+      ...emptyCategories(),
+      uploads: { fileCount: 0, totalBytes: 0, directoryCount: 1 },
+      db: { fileCount: 0, totalBytes: 0, directoryCount: 1 },
+    },
     backupReady: false,
     consistency: 'offline-required',
   });
-  assert.equal(inspector.inspect(neighbor.id).fileCount, 1);
+  const neighborReport = inspector.inspect(neighbor.id);
+  assert.equal(neighborReport.fileCount, 1);
+  assert.deepEqual(neighborReport.categories, {
+    ...emptyCategories(),
+    uploads: { fileCount: 1, totalBytes: Buffer.byteLength('neighbor'), directoryCount: 1 },
+  });
 });
 
 test('Node data recovery review fails closed for running, unknown and absent runtime', (t) => {
