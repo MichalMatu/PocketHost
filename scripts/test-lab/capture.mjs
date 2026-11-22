@@ -3,23 +3,13 @@
 import { mkdir, writeFile, chmod } from 'node:fs/promises';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { screenshotName } from './artifact-names.mjs';
+import { screenshotName, routePaths } from './artifact-names.mjs';
 import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 import { inspectPageGeometry } from './layout-geometry.mjs';
 import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const routes = {
-  dashboard: '/dashboard',
-  hosting: '/hosting',
-  sites: '/sites',
-  projects: '/projects',
-  deployments: '/deployments',
-  logs: '/runtime-logs',
-  services: '/services',
-  agent: '/local-agent',
-  network: '/settings/network',
-};
+const routes = routePaths;
 const apis = {
   host: '/api/v1/host/snapshot',
   network: '/api/v1/network-access',

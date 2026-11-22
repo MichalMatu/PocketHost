@@ -1,18 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { screenshotName, isAllowedScreenshotName } from '../../scripts/test-lab/artifact-names.mjs';
+import { routePaths, screenshotName, isAllowedScreenshotName } from '../../scripts/test-lab/artifact-names.mjs';
 
 test('Test Lab permits exact top/middle/bottom viewport screenshots for known routes only', () => {
   for (const route of [
     'dashboard',
+    'monitoring',
+    'host',
     'hosting',
     'sites',
     'projects',
     'deployments',
     'logs',
     'services',
+    'runit',
+    'autostart',
+    'workloads',
+    'health',
+    'cloudflare',
+    'ssh',
+    'mqtt',
     'agent',
+    'shizuku',
+    'phone',
+    'packages',
+    'files',
+    'terminal',
+    'backups',
+    'agents',
+    'platform',
     'network',
+    'appearance',
   ]) {
     for (const viewport of ['mobile', 'tablet', 'desktop']) {
       const top = screenshotName(route, viewport);
@@ -59,4 +77,44 @@ test('Test Lab never accepts path escape or arbitrary screenshot selection', () 
   assert.throws(() => screenshotName('dashboard', 'mobile', 'full'));
   assert.throws(() => screenshotName('dashboard', 'mobile', 'center'));
   assert.throws(() => screenshotName('dashboard', 'mobile', 'create-panel'));
+});
+
+test('Test Lab route registry covers navigation without dynamic or unscoped URLs', () => {
+  assert.deepEqual(Object.keys(routePaths), [
+    'dashboard',
+    'monitoring',
+    'host',
+    'hosting',
+    'sites',
+    'projects',
+    'deployments',
+    'logs',
+    'services',
+    'runit',
+    'autostart',
+    'workloads',
+    'health',
+    'cloudflare',
+    'ssh',
+    'mqtt',
+    'agent',
+    'shizuku',
+    'phone',
+    'packages',
+    'files',
+    'terminal',
+    'backups',
+    'agents',
+    'platform',
+    'network',
+    'appearance',
+  ]);
+  assert.equal(routePaths.monitoring, '/observability');
+  assert.equal(routePaths.workloads, '/services/hosting');
+  assert.equal(routePaths.phone, '/phone-settings');
+  assert.equal(routePaths.appearance, '/settings/appearance');
+  assert.equal(new Set(Object.values(routePaths)).size, Object.keys(routePaths).length);
+  for (const path of Object.values(routePaths)) {
+    assert.match(path, new RegExp('^/[a-z][a-z/-]*$'));
+  }
 });
