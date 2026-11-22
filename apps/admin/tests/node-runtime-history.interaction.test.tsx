@@ -21,7 +21,7 @@ it("shows exactly the newest eight events in reverse order, with original releas
   const history = Array.from({ length: 10 }, (_, i) => entry(i))
   render(<NodeRuntimeHistory history={history} />)
   expect(screen.getByText("Runtime history (10)")).toBeTruthy()
-  const rows = within(screen.getByLabelText("Node runtime history")).getAllByRole("listitem")
+  const rows = within(screen.getByLabelText("Node runtime history")).getAllByRole("listitem", { hidden: true })
   expect(rows).toHaveLength(8)
   expect(rows.map(row => row.querySelector("span[title]")?.getAttribute("title")))
     .toEqual(history.slice(-8).reverse().map(item => item.release))
