@@ -37,7 +37,7 @@ const retiredPaths = [
 ];
 
 test('PocketHost routes remain complete after removing upstream examples', () => {
-  const allPaths = [...routes.matchAll(/\\bpath:\\s*"([^"]+)"/g)].map((m) => m[1]);
+  const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(allPaths).size, allPaths.length);
   for (const required of productPaths) {
     assert.ok(allPaths.includes(required), 'missing PocketHost path: ' + required);
@@ -45,7 +45,7 @@ test('PocketHost routes remain complete after removing upstream examples', () =>
   for (const retired of retiredPaths) {
     assert.ok(!allPaths.includes(retired), 'upstream example still registered: ' + retired);
   }
-  const chunks = [...routes.matchAll(/import\\("@\\/app\\/([^"]+)"\\)/g)].map((m) => m[1]);
+  const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -54,7 +54,6 @@ test('PocketHost routes remain complete after removing upstream examples', () =>
   }
   assert.ok(existsSync(path.join(root, 'apps/admin/LICENSE.upstream.md')));
 });
-
 
 test('desktop-first index preserves native pinch zoom on Android Chrome', () => {
   const match = html.match(/<meta\s+name="viewport"\s+content="([^"]+)"/);
@@ -99,15 +98,15 @@ test('Services menu uses one generic registry without duplicated hosted-app navi
 });
 
 test('PocketHost dashboard is home without any sample dashboard route', () => {
-  assert.match(routes, /path: "\\/", element: <Navigate to="\\/dashboard" replace \\/>/);
-  assert.match(routes, /path: "\\/system", element: <Navigate to="\\/dashboard" replace \\/>/);
+  assert.match(routes, /path: "\/", element: <Navigate to="\/dashboard" replace \/>/);
+  assert.match(routes, /path: "\/system", element: <Navigate to="\/dashboard" replace \/>/);
   assert.match(
     routes,
-    /path: "\\/dashboard", lazy: page\\(\\(\\) => import\\("@\\/app\\/termux\\/system-page"\\)\\)/,
+    /path: "\/dashboard", lazy: page\(\(\) => import\("@\/app\/termux\/system-page"\)\)/,
   );
-  assert.match(navigation, /title: "Dashboard", url: "\\/dashboard"/);
-  assert.doesNotMatch(routes, /examples\\/dashboard/);
-  assert.doesNotMatch(navigation, /Framework \\/ CMS examples/);
+  assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
+  assert.doesNotMatch(routes, /examples\/dashboard/);
+  assert.doesNotMatch(navigation, /Framework \/ CMS examples/);
 });
 
 test('terminal React route does not get shadowed by ttyd reverse proxy', () => {

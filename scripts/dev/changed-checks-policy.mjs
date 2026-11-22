@@ -39,7 +39,7 @@ export function planChangedChecks(
       const browserCode =
         (file.startsWith('apps/admin/src/app/') ||
           file.startsWith('apps/admin/src/components/')) &&
-        /\\.(?:ts|tsx|js|jsx|md)$/.test(file);
+        /\.(?:ts|tsx|js|jsx|md)$/.test(file);
       const browserAsset =
         file.startsWith('apps/admin/public/') || file.startsWith('apps/admin/src/assets/');
       if (!browserCode && !browserAsset) {
