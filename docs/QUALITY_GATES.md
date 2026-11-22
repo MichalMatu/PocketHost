@@ -9,7 +9,7 @@ purpose: Separate guarded deployment from independently approved QA
 
 A **deployment PASS** requires terminal A8 Local Agent receipt at exact SHA, verified owned panel, PID/start ticks, HTTP and unchanged protected services. A code commit or queued task is not a deploy.
 
-A **QA PASS** requires fresh owner approval naming the exact 40-character SHA and check categories, plus a terminal A8 result. A test committed to Git, source inspection or deployment safety PASS is **not** QA PASS.
+A **QA PASS** requires a terminal A8 result with the executed exact 40-character SHA and selected categories. The owner's standing consent for necessary non-destructive QA applies to **all future PocketHost sprints until revoked**; no repeated approval request per check or SHA. A test committed to Git, source inspection or deployment safety PASS is **not** QA PASS.
 
 - G0 — structure, docs, boundaries, code-budget gate, Node foundation.
 - G1 — format, Markdown, lint and TypeScript.
@@ -18,9 +18,9 @@ A **QA PASS** requires fresh owner approval naming the exact 40-character SHA an
 
 ## Size and modularity budget
 
-`npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` after separate owner approval, never from deployment.
+`npm run check:code-budgets`: **24 KiB / 700 lines** maximum for new production TS/TSX/MJS files; **32 KiB / 1200 lines** for test files. Pinned oversized legacy source cannot grow, only shrink or disappear. Browser UI `apps/admin/src` may not import Termux host/Node-only modules; server-only Vite API plugins live in `apps/admin/plugins`. Existing `check:boundaries` enforces shared/host/module isolation. The budget runs in `check:foundation` when chosen for a separate A8 QA task under standing consent, never from deployment.
 
-Latest guarded A8 DEV `d2d5564ecc363b3542b3cd398e7104cf3ccc8d9d` **DEPLOY PASS**, receipt `pockethost-a8-custom-initial-html-d2d5564-deploy-20261122-v1` (owned PID 6977, ticks 72514111, HTTP 200, protected services unchanged). Starter mode supports editing `index.html` before creation, with empty/32-KiB UTF-8 preflight, one server-validated POST and no auto-start. Three new browser interaction cases committed **but not executed**. Last seven-category scoped QA PASS at older `9b910d8dc353c512333b290a6749c60ad3df530f`; real browser ZIP/folder/custom HTML acceptance, Node QA and G2/G3 OPEN. Exact-SHA/category approval required for tests.
+Latest guarded A8 DEV `d2d5564ecc363b3542b3cd398e7104cf3ccc8d9d` **DEPLOY PASS**, receipt `pockethost-a8-custom-initial-html-d2d5564-deploy-20261122-v1` (owned PID 6977, ticks 72514111, HTTP 200, protected services unchanged). Starter mode supports editing `index.html` before creation, with empty/32-KiB UTF-8 preflight, one server-validated POST and no auto-start. Three new browser interaction cases committed **but not executed**. Last seven-category scoped QA PASS at older `9b910d8dc353c512333b290a6749c60ad3df530f`; real browser ZIP/folder/custom HTML acceptance, Node QA and G2/G3 OPEN. Exact-SHA/category execution pinning is required; owner consent is standing, not renewed per run.
 
 ## Source-audit coverage limitation
 
