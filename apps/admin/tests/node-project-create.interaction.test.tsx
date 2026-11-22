@@ -20,6 +20,9 @@ afterEach(() => vi.unstubAllGlobals())
 async function unlock() {
   const user = userEvent.setup()
   await screen.findByText("No Node projects yet.")
+  const createPanel = document.querySelector<HTMLDetailsElement>('details[data-testid="node-create-panel"]')
+  if (!createPanel) throw new Error("Missing Node project creation panel")
+  createPanel.open = true
   await user.type(screen.getByLabelText("Node owner token"), ownerToken)
   await user.click(screen.getByRole("button", { name: "Unlock management" }))
   await screen.findByText("Owner authenticated for Node management.")
