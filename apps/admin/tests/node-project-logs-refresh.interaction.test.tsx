@@ -45,8 +45,8 @@ it.each([
   { name: "oversized line", lines: ["X".repeat(241)] },
   { name: "invalid entry", lines: [first, 123] },
 ])("rejects $name without displaying partial or previous Node logs", async scenario => {
-  const read = vi.fn(async () => ({ logs: { lines: [first] } })) as
-    ReturnType<typeof vi.fn<(url: string) => Promise<Record<string, unknown>>>>
+  const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> =>
+    ({ logs: { lines: [first] } }))
   const hook = renderHook(() => useNodeProjectLogs(read))
   await act(async () => { await hook.result.current.loadLogs(id) })
   expect(hook.result.current.logLines).toEqual([first])
