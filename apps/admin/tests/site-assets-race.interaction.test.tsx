@@ -61,6 +61,25 @@ it("does not surface a canceled read failure on a reopened asset list", async ()
   expect(hook.result.current.assetsLoading).toBe(false)
 })
 
+it("retries an active asset GET on the first click after a failed read", async () => {
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce({ ok: false })
+    .mockResolvedValueOnce(files("index.html"))
+  vi.stubGlobal("fetch", fetcher)
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteAssets(site, setError, false))
+
+  act(() => { hook.result.current.toggleAssets() })
+  await waitFor(() => expect(hook.result.current.assetsLoading).toBe(false))
+  expect(hook.result.current.assets).toBeNull()
+  expect(setError).toHaveBeenCalledWith("Active site files are unavailable.")
+
+  act(() => { hook.result.current.toggleAssets() })
+  await waitFor(() => expect(hook.result.current.assets?.[0].name).toBe("index.html"))
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  expect(setError).toHaveBeenLastCalledWith(null)
+})
+
 it("invalidates the old asset request when the site inventory revision changes", async () => {
   const old = deferred<ReturnType<typeof files>>()
   const fetcher = vi.fn().mockImplementationOnce(() => old.promise)

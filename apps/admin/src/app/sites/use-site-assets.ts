@@ -48,6 +48,8 @@ export function useSiteAssets(
       if (current()) setAssets(parsed)
     }).catch(cause => {
       if (!current()) return
+      // A failed read closes the inventory; the next Inspect click must retry.
+      opened.current = false
       setAssets(null)
       setError(cause instanceof Error ? cause.message : "Asset inventory unavailable.")
     }).finally(() => {
