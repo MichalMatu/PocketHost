@@ -105,6 +105,45 @@ test('Node app-data offline bytes survive detached snapshot and staging-only res
   assert.deepEqual(readdirSync(path.join(restored.restoredTo, project.id, 'uploads', 'empty')), []);
 });
 
+test('Node detached snapshot survives missing live mutable data without restoring it', (t) => {
+  const { project, host, folder, archive, db, png } = fixture(t);
+  const snapshot = host.create(project.id, true, () => true);
+  rmSync(folder, { recursive: true });
+
+  const listing = host.listSnapshots(project.id);
+  assert.equal(listing.length, 1);
+  assert.equal(listing[0].snapshot, snapshot.snapshot);
+  assert.deepEqual(host.verifySnapshot(project.id, snapshot.snapshot), {
+    snapshot: snapshot.snapshot,
+    integrity: 'verified',
+    files: 2,
+    bytes: db.length + png.length,
+    directories: 5,
+  });
+  assert.equal(existsSync(folder), false);
+  assert.throws(() => host.create(project.id, true, () => true), /not provisioned/);
+
+  const restored = host.restoreToStaging(project.id, snapshot.snapshot, true);
+  assert.deepEqual(readFileSync(path.join(restored.restoredTo, project.id, 'db', 'app.sqlite')), db);
+  assert.deepEqual(
+    readFileSync(path.join(restored.restoredTo, project.id, 'uploads', 'images', 'icon.png')),
+    png,
+  );
+  assert.equal(existsSync(folder), false);
+  assert.equal(readdirSync(archive).filter((name) => name.startsWith('snapshot-')).length, 1);
+});
+
+test('Node detached snapshots refuse unknown project catalog identities', (t) => {
+  const { project, host } = fixture(t);
+  const snapshot = host.create(project.id, true, () => true);
+  const unknownId = 'node-' + 'f'.repeat(32);
+  assert.throws(() => host.listSnapshots(unknownId), /Node|project|ENOENT/i);
+  assert.throws(
+    () => host.verifySnapshot(unknownId, snapshot.snapshot),
+    /Node|project|ENOENT/i,
+  );
+});
+
 test('Node app-data backup rejects source links and interrupted offline proof', (t) => {
   const { home, project, host, folder, archive } = fixture(t);
   let calls = 0;

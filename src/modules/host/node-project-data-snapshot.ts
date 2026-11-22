@@ -17,6 +17,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectDataScope } from './node-project-data-scope.ts';
+import { NodeProjectHost } from './node-project-host.ts';
 
 const SNAPSHOT_ID = /^snapshot-[a-f0-9]{32}$/;
 const MAX_MANIFEST_BYTES = 64 * 1024;
@@ -75,6 +76,7 @@ export class NodeProjectDataSnapshots {
   private readonly sourceRoot: string;
   private readonly snapshotRoot: string;
   private readonly scope: NodeProjectDataScope;
+  private readonly catalog: NodeProjectHost;
 
   constructor(
     projectRoot = path.join(os.homedir(), 'PocketHost-NodeProjects'),
@@ -108,6 +110,7 @@ export class NodeProjectDataSnapshots {
     this.sourceRoot = sourceRoot;
     this.snapshotRoot = snapshotRoot;
     this.scope = new NodeProjectDataScope(projectRoot, sourceRoot);
+    this.catalog = new NodeProjectHost(projectRoot);
   }
 
   private privateEntry(filename: string, isDirectory: boolean): void {
@@ -336,7 +339,9 @@ export class NodeProjectDataSnapshots {
    * capability is inferred from a manifest entry.
    */
   listSnapshots(projectId: string): NodeDataSnapshotIndexEntry[] {
-    this.scope.inspect(projectId);
+    // A missing or damaged live data directory must never hide a detached
+    // backup. Only the separately verified owned project catalog is required.
+    this.catalog.inspect(projectId);
     if (!existsSync(this.snapshotRoot)) return [];
     this.ownedStorage(false);
     const names = readdirSync(this.snapshotRoot);
@@ -383,7 +388,9 @@ export class NodeProjectDataSnapshots {
     bytes: number;
     directories: number | null;
   } {
-    this.scope.inspect(projectId);
+    // Verify an already detached archive even after loss of source data,
+    // without bypassing owned project identity or restoring anything.
+    this.catalog.inspect(projectId);
     this.ownedStorage(false);
     const manifest = this.validatedSnapshot(snapshot, projectId);
     return {
