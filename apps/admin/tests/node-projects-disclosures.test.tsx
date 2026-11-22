@@ -126,6 +126,66 @@ it("ignores stale Node releases and runtime after switching deep-linked projects
   expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
 })
 
+it("does not display stale Node log lines after a deep-link project switch", async () => {
+  const first = "node-" + "a".repeat(32)
+  const second = "node-" + "c".repeat(32)
+  const projects = [first, second].map((id, index) => ({
+    id, name: index === 0 ? "First logs app" : "Second logs app",
+    kind: "node", state: "created", runtime: "not-provisioned",
+    activeRelease: null, candidateRelease: null, previousCandidate: null,
+    deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+  }))
+  let finishFirst: ((response: unknown) => void) | undefined
+  const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        reason: url.includes(second) ? "second-current" : "first-current",
+        dependencyCount: 0, missingTools: [], conflicts: [],
+      }, executionEnabled: false }) }
+    if (url === "/api/v1/node-projects/" + first + "/logs")
+      return new Promise(resolve => { finishFirst = resolve })
+    if (url === "/api/v1/node-projects/" + second + "/logs")
+      return { ok: true, json: async () => ({ logs: {
+        lines: ["2026-11-22_05:01:00.000000 original second log"],
+      } }) }
+    throw new Error("Unexpected endpoint " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", fetcher)
+  const Jump = () => {
+    const navigate = useNavigate()
+    return <button onClick={() => navigate("/projects?project=" + second)}>Choose second logs app</button>
+  }
+  render(<MemoryRouter initialEntries={["/projects?project=" + first]}>
+    <Jump /><ProjectsPage />
+  </MemoryRouter>)
+  await screen.findByRole("button", { name: "View logs" })
+  fireEvent.click(screen.getByRole("button", { name: "View logs" }))
+  await waitFor(() => expect(finishFirst).toBeTypeOf("function"))
+  expect(screen.getByText("Reading Node logs for selected project…")).toBeTruthy()
+  fireEvent.click(screen.getByRole("button", { name: "Choose second logs app" }))
+  fireEvent.click(screen.getByText("Technical details"))
+  expect(await screen.findByText(/Staged candidate plan: second-current/)).toBeTruthy()
+  finishFirst?.({ ok: true, json: async () => ({ logs: {
+    lines: ["2026-11-22_05:00:00.000000 original first log"],
+  } }) })
+  await waitFor(() => expect((screen.getByRole("button", { name: "View logs" }) as HTMLButtonElement)
+    .disabled).toBe(false))
+  expect(screen.queryByLabelText("Node runit logs")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "View logs" }))
+  expect(await screen.findByText(/original second log/)).toBeTruthy()
+  expect(screen.queryByText(/original first log/)).toBeNull()
+  expect(fetcher.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
 it("fails closed on a lost owned registry after selecting a Node project", async () => {
   const id = "node-" + "a".repeat(32)
   let catalogUnavailable = false
