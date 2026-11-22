@@ -35,6 +35,43 @@ it("rejects an oversized update folder before any release mutation", () => {
   expect(event.currentTarget.value).toBe("")
 })
 
+it.each([
+  { label: "missing index.html", files: [new File(["assets"], "main.css")] },
+  { label: "empty index.html", files: [new File([], "index.html")] },
+])("rejects $label before confirming or publishing folder changes", ({ files }) => {
+  const execute = vi.fn(async () => {})
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteReleaseImport({
+    site, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true,
+    execute, setError, setMessage: vi.fn(),
+  }))
+  const event = selected(files)
+  act(() => { hook.result.current.folder(event) })
+  expect(setError).toHaveBeenCalledWith(
+    "Folder needs a nonempty index.html at the root or inside one top-level folder.",
+  )
+  expect(confirm).not.toHaveBeenCalled()
+  expect(execute).not.toHaveBeenCalled()
+  expect(event.currentTarget.value).toBe("")
+})
+
+it("accepts a directory picker selection with one shared parent folder", () => {
+  const html = new File(["<h1>Page</h1>"], "index.html")
+  const css = new File(["body {}"], "main.css")
+  Object.defineProperty(html, "webkitRelativePath", { value: "homepage/index.html" })
+  Object.defineProperty(css, "webkitRelativePath", { value: "homepage/main.css" })
+  const execute = vi.fn(async () => {})
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, activeRelease: null }, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true,
+    execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  act(() => { hook.result.current.folder(selected([html, css])) })
+  expect(execute).toHaveBeenCalledTimes(1)
+})
+
 it("cancels a replacement ZIP before any write and clears the file picker", () => {
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
   const execute = vi.fn(async () => {})

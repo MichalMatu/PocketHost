@@ -38,6 +38,28 @@ it("sends at most one create POST if submit fires twice before the React busy re
   expect(setError).toHaveBeenCalledWith("Create result unconfirmed. Refresh before retrying.")
 })
 
+it("rejects a folder without a nonempty index.html before creating a site", async () => {
+  const fetcher = vi.fn()
+  vi.stubGlobal("fetch", fetcher)
+  const hook = renderHook(() => useOwnedSiteCreation({
+    sitesCount: 0, loading: false, error: null,
+    setSites: vi.fn(), setError: vi.fn(),
+  }))
+  act(() => {
+    hook.result.current.setName("My static site")
+    hook.result.current.setInitialFolder([new File(["body {}"], "main.css")])
+  })
+  await act(async () => {
+    await hook.result.current.createSite({
+      preventDefault: vi.fn(),
+    } as unknown as React.FormEvent<HTMLFormElement>)
+  })
+  expect(hook.result.current.inputError).toBe(
+    "Folder needs a nonempty index.html at the root or inside one top-level folder.",
+  )
+  expect(fetcher).not.toHaveBeenCalled()
+})
+
 it("rejects empty starter HTML locally before a create request", async () => {
   const fetcher = vi.fn()
   vi.stubGlobal("fetch", fetcher)

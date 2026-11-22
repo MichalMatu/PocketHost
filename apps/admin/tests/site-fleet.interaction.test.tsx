@@ -530,7 +530,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/No static sites yet/)
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.upload(screen.getByLabelText("Initial folder (optional)"),
-      new File(["Invalid starter"], "readme.txt"))
+      new File(["<h1>Rejected by host</h1>"], "index.html"))
     await user.click(screen.getByRole("button", { name: "Create and import folder" }))
     await screen.findByText(/The site files were rejected/)
     expect(screen.getByText(/No static sites yet/)).toBeTruthy()

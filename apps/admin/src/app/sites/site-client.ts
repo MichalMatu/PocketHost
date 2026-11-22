@@ -102,13 +102,28 @@ export async function inspectInitialStaticZip(file: File): Promise<string | null
   }
 }
 
-/** Validate locally before asking to publish or sending a server write. */
-export function validateStaticFolderSelection(files: readonly Pick<File, "size">[]): string | null {
-  return !files.length || files.length > 100 ||
-    files.some(file => file.size > 2 * 1024 * 1024) ||
-    files.reduce((total, file) => total + file.size, 0) > maxFolder
-    ? "Folder exceeds 100 files, 2 MiB per file or 8 MiB total."
-    : null
+/** Validate a complete immutable site release before asking to publish or write. */
+export function validateStaticFolderSelection(
+  files: readonly Pick<File, "name" | "size" | "webkitRelativePath">[],
+): string | null {
+  if (!files.length || files.length > 100 ||
+      files.some(file => file.size > 2 * 1024 * 1024) ||
+      files.reduce((total, file) => total + file.size, 0) > maxFolder)
+    return "Folder exceeds 100 files, 2 MiB per file or 8 MiB total."
+
+  // A directory picker prefixes files with one selected folder name, while
+  // single-file and test inputs use the filename itself. Match the importer's
+  // one-common-folder normalization without reading or changing file bytes.
+  const names = files.map(file => file.webkitRelativePath || file.name)
+  const firstFolder = names[0].split("/")[0]
+  const wrapped = firstFolder.length > 0 &&
+    names.every(name => name.startsWith(firstFolder + "/"))
+  const homepage = files.some((file, index) => file.size > 0 && (
+    names[index] === "index.html" ||
+    (wrapped && names[index] === firstFolder + "/index.html")
+  ))
+  return homepage ? null :
+    "Folder needs a nonempty index.html at the root or inside one top-level folder."
 }
 
 /** Prepare either an initial folder release or an update, before any server write. */
