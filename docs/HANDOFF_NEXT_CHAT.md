@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Static Hosting loading race
+
+- **Code change:** `442e08fe710aba7d0dfca1cead253d63f54ae3df` fixes `apps/admin/src/app/sites/use-owned-site-inventory.ts` so only the newest active read, including a site-action inventory readback which supersedes a manual Refresh, may clear the inventory loading indicator. Previously the older initial/manual read `finally` could hide loading before a newer read settled, allowing premature UI actions. Existing newest-wins site/error handling, GET-only API and mutation semantics are otherwise preserved.
+- **Regression tests added, not run:** `apps/admin/tests/site-inventory-loading-race.interaction.test.tsx` uses deferred read responses to verify stale initial errors do not replace newer inventory and superseded manual refresh does not hide loading while the latest site readback remains pending. Existing `site-inventory-race.interaction.test.tsx` remains applicable. No QA PASS claimed.
+- **A8 gate remains HOLD:** private `MichalMatu/local-agent:agent-control` still has 650 tasks / 649 terminal-result files; immutable N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` has no result and daemon host claims remain unverified. Never overlap, retry or replace an unknown A8 task. Once reconciled, use exact current main SHA for bounded A8 checks `format,admin-types,ui` including Static Sites and Node Projects regression tests, then guarded DEV only with verified live owner/PID/start/health/protected services.
+- No A8 tests, build, Mac screenshots, guarded DEV deployment, scheduler, external service modification or off-device transfer in this turn. Last guarded DEV N11 `c4dedfd` is historical, not fresh inspection.
+
 ## 22 November continuation — stale Node catalog refresh protection
 
 - **Source change:** `09b038d66434d53eb15b408a7918ec39f01e4013` guards `apps/admin/src/app/projects/page.tsx` catalog reads with a request-generation ref and a last-verified snapshot. Older GET successes/failures or responses completing after unmount no longer overwrite a newer verified catalog, clear the selected project, reset inspection or surface obsolete errors. Existing validation and real errors from the current request remain unchanged; stale callers receive the last verified snapshot (empty until verified) and never trigger an extra request.
