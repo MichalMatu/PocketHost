@@ -70,6 +70,8 @@ export default function ProjectsPage() {
     release: string; status: "syntax-valid" | "syntax-invalid"; executed: false
   } | null>(null)
   const [busy, setBusy] = React.useState(false)
+  // This gate closes the pre-render window before React disables action buttons.
+  const actionInFlight = React.useRef(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const {
@@ -156,9 +158,14 @@ export default function ProjectsPage() {
     return () => { live = false }
   }, [refresh])
   const action = (fn: () => Promise<void>) => {
+    if (actionInFlight.current) return
+    actionInFlight.current = true
     setBusy(true); setError(null); setMessage(null)
     void fn().catch(cause => setError(cause instanceof Error ? cause.message : "Operation rejected"))
-      .finally(() => setBusy(false))
+      .finally(() => {
+        actionInFlight.current = false
+        setBusy(false)
+      })
   }
   React.useEffect(() => {
     if (requestedProject === null) {
@@ -963,7 +970,7 @@ export default function ProjectsPage() {
           <Button disabled={busy || createPhase === "unknown" || createPhase === "pending" ||
             !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2}
             onClick={() => {
-              if (creatingRef.current || createPhase === "unknown") return
+              if (creatingRef.current || actionInFlight.current || createPhase === "unknown") return
               creatingRef.current = true
               action(async () => {
                 setCreatePhase("pending")

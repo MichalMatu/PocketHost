@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -29,6 +29,54 @@ async function unlock() {
   await user.type(screen.getByLabelText("Project name"), "New Node")
   return user
 }
+it("serializes Node actions before a rerender and releases the gate for later creation", async () => {
+  let releaseTools: ((reply: {
+    ok: boolean; json: () => Promise<{ toolchain: { nodeVersion: string; npmVersion: string } }>
+  }) => void) | undefined
+  let isCreated = false
+  const requests = vi.fn((url: RequestInfo | URL, options?: RequestInit) => {
+    if (String(url) === "/api/v1/node-projects" && !options?.method)
+      return Promise.resolve({ ok: true, json: async () => ({ projects: isCreated ? [created] : [] }) })
+    if (String(url) === "/api/v1/node-projects/owner-session")
+      return Promise.resolve({ ok: true, json: async () => ({ configured: true, authorized: true }) })
+    if (String(url) === "/api/v1/node-projects/toolchain")
+      return new Promise<{
+        ok: boolean; json: () => Promise<{ toolchain: { nodeVersion: string; npmVersion: string } }>
+      }>(resolve => { releaseTools = resolve })
+    if (String(url) === "/api/v1/node-projects/" && options?.method === "POST") {
+      isCreated = true
+      return Promise.resolve({ ok: true, json: async () => ({ project: created }) })
+    }
+    throw new Error("Unexpected endpoint " + String(url))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  const user = await unlock()
+  const checkTools = screen.getByRole("button", { name: "Check Node tools" })
+  const create = screen.getByRole("button", { name: "Create project" })
+
+  act(() => {
+    fireEvent.click(checkTools)
+    fireEvent.click(checkTools)
+    fireEvent.click(create)
+  })
+  expect(requests.mock.calls.filter(([url]) => String(url).endsWith("/toolchain"))).toHaveLength(1)
+  expect(requests.mock.calls.filter(([url, options]) =>
+    String(url).endsWith("/node-projects/") && options?.method === "POST")).toHaveLength(0)
+
+  await act(async () => {
+    releaseTools?.({ ok: true, json: async () => ({ toolchain: {
+      nodeVersion: "v26.13.0", npmVersion: "11.6.2",
+    } }) })
+  })
+  await screen.findByText("Node toolchain version read confirmed.")
+  expect((create as HTMLButtonElement).disabled).toBe(false)
+  await user.click(create)
+  await screen.findByText("Private Node project created.")
+  expect(requests.mock.calls.filter(([url, options]) =>
+    String(url).endsWith("/node-projects/") && options?.method === "POST")).toHaveLength(1)
+})
+
 it("locks a lost create reply until explicit catalog Refresh and prevents double POST", async () => {
   let rejectPost: ((reason: Error) => void) | undefined
   let reads = 0
