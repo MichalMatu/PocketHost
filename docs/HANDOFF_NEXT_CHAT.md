@@ -9,6 +9,11 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — unlabeled control diagnostics
+
+- **Source-only Visual QA:** `815a9babcc5f39dd6f639a46ccff0f265891aefe` adds bounded, metadata-only unlabeled button/link detection to `scripts/test-lab/layout-geometry.mjs`, local gallery counts and one command-summary count in `capture.mjs`. The heuristic checks visible interactive elements without text, ARIA labels/references, title or labeled descendants; its 16 structural samples include no label values. It is a triage hint, **not** a full accessible-name audit. Added `tests/quality/test-lab-unlabeled-controls.test.mjs` with two test cases; not yet executed on A8.
+- **A8 hold:** immutable N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still has no terminal result. Do not requeue/overlap, execute source QA elsewhere, or deploy pending source; last attested DEV PASS remains N11 `c4dedfd`. After N12 resolves, require fresh exact-`main` A8 targeted QA (including Visual QA Node tests and Node UI/types) then guarded DEV only if warranted and verified. No Mac screenshots, build, deployment, public data transfer, service changes or scheduler in this continuation.
+
 ## 22 November continuation — SPA capture correctness
 
 - **Source-only fix:** `4e76d743d8e68b7136ffbbb5a36b349fe4017ec3` adds standalone browser-evaluable `scripts/test-lab/route-readiness.mjs`, requiring the selected route pathname (basename suffix allowed), absence of the React Router lazy-loading progress bar, rendered root/sidebar, and the existing expected heading for named routes before taking screenshots. This prevents a stale previous SPA page from being labeled as the next screen. `tests/quality/test-lab-route-readiness.test.mjs` covers stale URL, loading state, wrong heading, absent shell, and basename.
