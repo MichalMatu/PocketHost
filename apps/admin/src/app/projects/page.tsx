@@ -34,6 +34,10 @@ export default function ProjectsPage() {
   const requestedProject = searchParams.get("project")
   const appliedDeepLink = React.useRef<string | null>(null)
   const [projects, setProjects] = React.useState<Project[]>([])
+  // Out-of-order catalog reads must not replace a newer verified inventory.
+  const catalogRequest = React.useRef(0)
+  const verifiedCatalog = React.useRef<Project[]>([])
+  React.useEffect(() => () => { catalogRequest.current += 1 }, [])
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
@@ -111,15 +115,23 @@ export default function ProjectsPage() {
     runtime?.activeRelease !== selected.candidateRelease
   )
   const refresh = React.useCallback(async () => {
+    const request = ++catalogRequest.current
     try {
       const data = await getJson(api)
+      // Stale responses do not change the catalog or its dependent selection.
+      if (request !== catalogRequest.current) return verifiedCatalog.current
       if (!Array.isArray(data.projects) || !data.projects.every(validProject))
         throw new Error("Invalid Node project registry response")
-      setProjects(data.projects)
+      const catalog = data.projects as Project[]
+      verifiedCatalog.current = catalog
+      setProjects(catalog)
       setCatalogState("ready")
       setError(null)
-      return data.projects as Project[]
+      return catalog
     } catch (cause) {
+      // Ignore late failures after a more recent refresh (or unmount).
+      if (request !== catalogRequest.current) return verifiedCatalog.current
+      verifiedCatalog.current = []
       invalidateRead()
       beginInspection()
       resetLogs()
