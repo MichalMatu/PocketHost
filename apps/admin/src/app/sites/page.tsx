@@ -311,8 +311,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
             onClick={toggleAssets}>
             <FolderOpen /> {assetsLoading ? "Cancel asset read" : assets !== null ? "Hide assets" : "Inspect assets"}
           </Button>
-          <Button variant="outline" disabled={busy || versionsLoading} onClick={toggleVersions}>
-            <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Reading versions…" : "Manage versions"}
+          <Button variant="outline" disabled={busy} onClick={toggleVersions}>
+            <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Cancel version read" : "Manage versions"}
           </Button>
         </div>
         {assetsLoading && <p role="status" className="text-xs text-muted-foreground">

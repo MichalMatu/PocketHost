@@ -1151,6 +1151,41 @@ describe("H2.1 version-management UI", () => {
     return calls
   }
 
+  it("allows canceling a pending version read from the actual button and reopening immediately", async () => {
+    const user = userEvent.setup()
+    const normalFetch = withVersionedSite()
+    await screen.findByText("My own site")
+    let releaseOld!: (value: { ok: boolean; json: () => Promise<{ releases: never[] }> }) => void
+    const pendingOld = new Promise<{ ok: boolean; json: () => Promise<{ releases: never[] }> }>(
+      resolve => { releaseOld = resolve },
+    )
+    let heldFirst = false
+    const requests = vi.fn((input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input) === "/api/v1/sites/" + ID + "/releases" && !init?.method && !heldFirst) {
+        heldFirst = true
+        return pendingOld
+      }
+      return normalFetch(input, init)
+    })
+    vi.stubGlobal("fetch", requests)
+
+    await user.click(screen.getByRole("button", { name: "Manage versions" }))
+    const cancel = screen.getByRole("button", { name: "Cancel version read" }) as HTMLButtonElement
+    expect(cancel.disabled).toBe(false)
+    await user.click(cancel)
+    expect(screen.getByRole("button", { name: "Manage versions" })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Manage versions" }))
+    await screen.findByRole("heading", { name: "Saved releases" })
+    expect(screen.getAllByRole("link", { name: "Preview" })).toHaveLength(3)
+
+    await act(async () => {
+      releaseOld({ ok: true, json: async () => ({ releases: [] }) })
+      await pendingOld
+    })
+    expect(screen.getAllByRole("link", { name: "Preview" })).toHaveLength(3)
+    expect(requests).toHaveBeenCalledTimes(2)
+  })
+
   it("shows actual immutable release dates, preview URLs and protected archived versions", async () => {
     const user = userEvent.setup()
     const mock = withVersionedSite()
