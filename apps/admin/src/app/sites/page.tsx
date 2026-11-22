@@ -502,8 +502,7 @@ export default function SitesPage() {
       }
       let created: FleetSite
       try {
-        // Both initial import formats use the same single server-validated
-        // create-and-publish endpoint. Prepare folder data before any POST.
+        // Validate and encode first-release files before one create-and-publish POST.
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
         const starterPayload = starter ? JSON.stringify({ files: [{
           name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
@@ -514,7 +513,7 @@ export default function SitesPage() {
           : folderPayload !== null || starterPayload !== null
             ? await mutate(importEndpoint, "POST", folderPayload ?? starterPayload!, "application/json")
             : await mutate(endpoint + "/", "POST",
-              JSON.stringify({ name }), "application/json")
+              JSON.stringify({ name: name.trim() }), "application/json")
       } catch (cause) {
         if (cause instanceof StaticSiteInputRejected) {
           setInputError(cause.message)
@@ -591,7 +590,7 @@ export default function SitesPage() {
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex min-h-10 items-center justify-end">
-          <Button type="button" variant="outline" disabled={loading} onClick={() => void refresh()}>
+          <Button type="button" variant="outline" disabled={loading || creating} onClick={() => void refresh()}>
             <RefreshCw className="size-4" /> Refresh
           </Button>
         </div>
