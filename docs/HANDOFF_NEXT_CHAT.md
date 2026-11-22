@@ -11,8 +11,8 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 ## Verified N1–N8 evidence
 
-- Source `main` immediately before this docs-only commit: `9f92d6dc74fdfd2df4dd1f71044c08df4a4801ae`. Always read fresh `main` before another code change.
-- **Latest guarded Samsung A8 DEV PASS:** `9f92d6dc74fdfd2df4dd1f71044c08df4a4801ae`, task `pockethost-a8-night-n9-9f92d6d-deploy-20261122-v1`: owned PID `1590`, start ticks `73643081`, loopback HTTP `200`, guarded owner/live SHA and protected services unchanged. These are recorded terminal receipt values, not a current live poll.
+- Source `main` immediately before this docs-only commit: `c4dedfd23b597a95a96f00379786fe36f6cf27e2`. Always read fresh `main` before another code change.
+- **Latest guarded Samsung A8 DEV PASS:** `c4dedfd23b597a95a96f00379786fe36f6cf27e2`, task `pockethost-a8-night-n11-c4dedfd-deploy-20261122-v1`: owned PID `13596`, start ticks `73746912`, loopback HTTP `200`, sourcePinned/liveSha agree and protected services verified unchanged. Deployment tests=`not-run`; separate A8 QA receipt below. These are terminal receipt values, not continuously observed live state.
 - **N1** — `b161a5a`, fix `83063b7`: faster safe deleted-UI QA impact mapping. Scoped A8 syntax/format/Node plus applicable root checks PASS; guarded DEV PASS, superseded.
 - **N2** — `1c114cf`: separated Static Hosting create/import readback verification, pending/duplicate-submit feedback and fixture. Scoped A8 format/admin-types/UI PASS; guarded DEV PASS, superseded.
 - **N3** — `3d79d2c` / `2739e4c` / `803cf75`: Node Projects selection-scoped release/runtime reads and stale-result fixture. Scoped A8 format/admin-types/UI PASS; guarded DEV PASS, superseded.
@@ -24,12 +24,18 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 - **N9** — `a557f58d7cd1a92b0550362f883146cc66cebb43` / `9f92d6dc74fdfd2df4dd1f71044c08df4a4801ae`: read-only Node health and preview calls discard stale responses after project switch; fixture asserts no stale readiness and GET-only reads. A8 `format,admin-types,ui` PASS task `pockethost-a8-night-n9-9f92d6d-qa-20261122-v1`; guarded DEV PASS above.
 - At checkpoint, A8 transport task/result directories were paired, with **no pending task**. Do not assume continued idle without rechecking.
 
+- **N10** — `f8e4dda087f961e025ef7dcc651a8f5961f988ba` + final `199e8b1e6aad2c5a42355df3d40623dc152a471a`: extracted read-only Node toolchain/registry diagnostics with explicit loading/error/retry feedback, fixture-only GETs. First QA `format,admin-types,ui` failed one preexisting malformed-report message assertion; compatible message restored. Final A8 QA `pockethost-a8-night-n10-199e8b1-qa-20261122-v1` **PASS** (`format,admin-types,ui`); guarded DEV PASS, superseded by N11.
+- **N11** — `c4dedfd23b597a95a96f00379786fe36f6cf27e2`: Static Hosting ZIP/folder first-import selection now shows selected source and a clear-selection control that resets native inputs without any API write. Fixture verifies both ZIP/folder, restored starter choice, no POST. A8 QA `pockethost-a8-night-n11-c4dedfd-qa-20261122-v1` **PASS** (`format,admin-types,ui`); guarded DEV PASS at latest above.
+- At this checkpoint, N11 result is terminal and matched target. Re-read task/result directory before next Agent operation; no implicit retry of uncertain tasks.
+
 ## Still OPEN
 
 Real browser Static ZIP/folder/custom HTML import, served-byte comparison and cleanup; independently created Node project acceptance; mutable-data restore; comprehensive G2 qualification; physical G3 reboot; public cutover; actual Mac Test Lab browser capture. Targeted QA and HTTP readback do **not** prove these.
 
-## Next sprint N10
+## Next sprint N12
 
-On freshly verified `main`, extract a bounded **Node Projects read-only diagnostics controller** from `apps/admin/src/app/projects/page.tsx` (toolchain or hosting-registry inspection), with explicit loading and error feedback and one fixture-only UI regression. Keep owner-token/API and service activation contracts unchanged. After code, run scoped A8 `format,admin-types,ui` and guarded DEV only if the exact SHA receives QA PASS; no duplicate pending task. Alternatively, progress an independent Static Hosting create/import UI slice if Node scope is blocked. Prioritize real user flow over audits and avoid unrelated full test suites.
+From freshly verified `main`, improve the **Node Projects creation confirmation flow** in `apps/admin/src/app/projects/page.tsx`: distinguish pending POST, verified identity/readback, definite validation failure and uncertain acknowledgement. A lost/unknown POST must not encourage duplicate project creation until an explicit catalog Refresh. Keep the owner token, host API and lifecycle approval gates unchanged. Test with fixture-only simulated GET/POST; **do not create a real project**. If the change is too broad, narrow it to pending/error feedback without weakening existing guards.
 
-No new scheduler, GitHub Actions, Codex/Work, unrelated services, public DNS/tunnels, real data writes or device reboot. Mac may run only the previously scoped private read-only Test Lab with verified origin/SHA; no screenshot export. Docs-only checkpoint does not require tests or panel restart. Night continuation still requires external Chat Bridge invocation; this chat does not run in the background after it ends.
+Then one exact-SHA A8 `format,admin-types,ui` task and guarded DEV only on QA PASS. Do not overlap unknown A8 tasks, rerun full suites, touch protected services, add a scheduler, public routing or real hosted data. macOS private read-only Test Lab screenshot acceptance remains independent and OPEN; no off-device screenshots.
+
+Continuation requires the existing external Chat Bridge trigger. No work continues in the background after the chat turn ends.
