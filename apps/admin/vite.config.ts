@@ -369,9 +369,15 @@ function ownedSiteFleetApi(): Plugin {
               if (query.size !== 1 || !query.has("name"))
                 throw new RangeError("Invalid new site import parameters")
               const siteName = query.get("name")
-              if (!siteName || request.headers["content-type"]?.split(";")[0]?.trim() !== "application/zip")
-                throw new RangeError("Initial import needs a site name and static ZIP")
-              const files = decodeSiteZip(await body(request, MAX_UPLOAD_BYTES))
+              if (!siteName) throw new RangeError("Initial import needs a site name")
+              const contentType = request.headers["content-type"]?.split(";")[0]?.trim()
+              let files
+              if (contentType === "application/zip") {
+                files = decodeSiteZip(await body(request, MAX_UPLOAD_BYTES))
+              } else if (contentType === "application/json") {
+                const data = await body(request, 12 * 1024 * 1024)
+                files = decodeSiteFolder(JSON.parse(data.toString("utf8")) as unknown)
+              } else throw new RangeError("Initial import requires a static ZIP or folder payload")
               const created = await fleet.create(siteName)
               // Unexpected post-create failures remain explicit 409/refresh,
               // never an automatic retry or blind directory removal.

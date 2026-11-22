@@ -275,6 +275,99 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
   })
 
+
+  it("creates and publishes an initial folder in one POST with exact-site readback", async () => {
+    const user = userEvent.setup()
+    let current: ReturnType<typeof project>[] = []
+    const published = {
+      ...project("stopped", true),
+      fileCount: 1,
+      bytes: 15,
+      releases: 1,
+      history: [{ at: "2026-11-22T00:00:00.000Z", action: "publish", from: null, to: RELEASE }],
+    }
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: current }) }
+      if (url === "/api/v1/sites/import?name=My%20own%20site" && options?.method === "POST") {
+        expect((options.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
+        expect((options.headers as Record<string, string>)["Content-Type"]).toBe("application/json")
+        const payload = JSON.parse(String(options.body))
+        expect(payload.files).toHaveLength(1)
+        expect(payload.files[0].name).toBe("index.html")
+        expect(atob(payload.files[0].base64)).toBe("<h1>Folder</h1>")
+        current = [published]
+        return { ok: true, json: async () => ({ site: published }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: current[0] }) }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial folder (optional)"),
+      new File(["<h1>Folder</h1>"], "index.html", { type: "text/html" }))
+    await user.click(screen.getByRole("button", { name: "Create and import folder" }))
+    await screen.findByText(/created and folder published as its first immutable release/)
+    expect(requests.mock.calls.filter(([, options]) => options?.method).map(([, options]) => options?.method))
+      .toEqual(["POST"])
+    expect(requests.mock.calls.some(([url, options]) =>
+      String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
+    expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
+  })
+
+  it("rejects an oversized initial folder before sending a create request", async () => {
+    const user = userEvent.setup()
+    const requests = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial folder (optional)"),
+      new File([new Uint8Array(2 * 1024 * 1024 + 1)], "index.html"))
+    await user.click(screen.getByRole("button", { name: "Create and import folder" }))
+    await screen.findByText(/Folder exceeds 100 files/)
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
+  it("definitively rejects an initial folder 400 without hiding verified inventory", async () => {
+    const user = userEvent.setup()
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [] }) }
+      if (url === "/api/v1/sites/import?name=My%20own%20site" && options?.method === "POST")
+        return { ok: false, status: 400 }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial folder (optional)"),
+      new File(["Invalid starter"], "readme.txt"))
+    await user.click(screen.getByRole("button", { name: "Create and import folder" }))
+    await screen.findByText(/The site files were rejected/)
+    expect(screen.getByText(/No static sites yet/)).toBeTruthy()
+    expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+  })
+
+  it("uses the most recently selected import source, never both ZIP and folder", async () => {
+    const user = userEvent.setup()
+    const requests = withSites()
+    await screen.findByText(/No static sites yet/)
+    await user.type(screen.getByLabelText("Site name"), "My own site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"), makeStaticZip())
+    expect(screen.getByRole("button", { name: "Create and import ZIP" })).toBeTruthy()
+    await user.upload(screen.getByLabelText("Initial folder (optional)"),
+      new File(["<h1>First</h1>"], "index.html"))
+    expect(screen.getByRole("button", { name: "Create and import folder" })).toBeTruthy()
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"), makeStaticZip())
+    expect(screen.getByRole("button", { name: "Create and import ZIP" })).toBeTruthy()
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("imports first ZIP with one POST and confirms new site identity and release", async () => {
     const user = userEvent.setup()
     let current: ReturnType<typeof project>[] = []

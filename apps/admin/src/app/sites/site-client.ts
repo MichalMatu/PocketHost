@@ -102,6 +102,21 @@ export async function inspectInitialStaticZip(file: File): Promise<string | null
   }
 }
 
+/** Prepare either an initial folder release or an update, before any server write. */
+export async function encodeStaticFolder(files: readonly File[]): Promise<string> {
+  if (!files.length || files.length > 100 ||
+      files.some(file => file.size > 2 * 1024 * 1024) ||
+      files.reduce((total, file) => total + file.size, 0) > maxFolder)
+    throw new StaticSiteInputRejected("Folder exceeds 100 files, 2 MiB per file or 8 MiB total.")
+  const entries = await Promise.all(files.map(async file => ({
+    name: file.webkitRelativePath || file.name,
+    base64: encodeBase64(new Uint8Array(await file.arrayBuffer())),
+  }))).catch(() => {
+    throw new StaticSiteInputRejected("Could not read the selected folder. Select it again.")
+  })
+  return JSON.stringify({ files: entries })
+}
+
 /** Read-only site queries must settle; mutation requests retain their own lifecycle. */
 export function readSignal(signal?: AbortSignal): AbortSignal {
   const timeout = AbortSignal.timeout(10_000)

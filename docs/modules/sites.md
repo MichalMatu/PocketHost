@@ -41,3 +41,7 @@ A static-site card locks **writes only for that site** after an ambiguous POST/P
 ## Confirmed actions and local folder input (2026-11-22)
 
 After independent exact-site readback succeeds, a failed owned-inventory refresh blocks any subsequent write on stale site state until explicit Refresh. Failures in the optional saved-version panel are reported separately, since the owned inventory may already be current. Local oversized-folder and local file-read failures are definitive input errors before any PUT and must not trigger an uncertain-write lock. Regression cases were added but not run; exact SHA and check categories are required for A8 QA.
+
+## Create from folder in one import request (2026-11-22)
+
+New Static site creation accepts either an optional ZIP or optional folder, never both; selecting the latter clears the first selection. Initial folder files are checked against the existing 100-file / 2 MiB-per-file / 8 MiB-total frontend limits and encoded using the same existing-site folder helper before any write. The existing `POST /api/v1/sites/import?name=<encoded>` also accepts `application/json` folder payloads and runs the existing strict `decodeSiteFolder` **before** creating the site. The UI independently compares the created stopped site, immutable release and exact-site/owner inventory readbacks. Initial folder selection remains a deliberate user action, without automatic start, deletion or retries. Four browser interaction regressions are committed but unrun, pending exact-SHA QA.

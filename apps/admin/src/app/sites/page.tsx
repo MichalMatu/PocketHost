@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetReleases, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
+import { endpoint, maxZip, maxFolder, maxStarterHtml, readSignal, starterHtml, readSites, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -230,17 +230,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     if (!files.length || busy || outcomeUnknown || site.state === "unknown") return
     if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
     void execute(async () => {
-      if (files.length > 100 || files.some(file => file.size > 2 * 1024 * 1024) ||
-          files.reduce((sum, file) => sum + file.size, 0) > maxFolder)
-        throw new StaticSiteInputRejected("Folder exceeds 100 files, 2 MiB per file or 8 MiB total.")
-      const entries = await Promise.all(files.map(async file => ({
-        name: file.webkitRelativePath || file.name,
-        base64: encodeBase64(new Uint8Array(await file.arrayBuffer())),
-      }))).catch(() => {
-        throw new StaticSiteInputRejected("Could not read the selected folder. Select it again.")
-      })
+      const payload = await encodeStaticFolder(files)
       return await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
-        JSON.stringify({ files: entries }), "application/json")
+        payload, "application/json")
     }, "Folder was published as a new immutable release.", true,
     observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
   }
@@ -431,7 +423,13 @@ export default function SitesPage() {
   const [sites, setSites] = React.useState<FleetSite[]>([])
   const [name, setName] = React.useState("")
   const [initialZip, setInitialZip] = React.useState<File | null>(null)
+  const [initialFolder, setInitialFolder] = React.useState<File[]>([])
   const initialZipInput = React.useRef<HTMLInputElement>(null)
+  const initialFolderInput = React.useRef<HTMLInputElement>(null)
+  React.useEffect(() => {
+    initialFolderInput.current?.setAttribute("webkitdirectory", "")
+    initialFolderInput.current?.setAttribute("directory", "")
+  }, [])
   const [loading, setLoading] = React.useState(true)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
@@ -464,6 +462,8 @@ export default function SitesPage() {
     event.preventDefault()
     if (creating || loading || error !== null || sites.length >= 8) return
     const firstRelease = initialZip
+    const firstFolder = initialFolder
+    const hasFirstFiles = firstRelease !== null || firstFolder.length > 0
     if (firstRelease) {
       const invalid = validateStaticZipSelection(firstRelease)
       if (invalid) {
@@ -485,20 +485,23 @@ export default function SitesPage() {
       }
       let created: FleetSite
       try {
-        // The initial-ZIP API validates archive bytes *before* creating an
-        // owned project. Plain empty-site creation retains its original API.
+        // Both initial import formats use the same single server-validated
+        // create-and-publish endpoint. Prepare folder data before any POST.
+        const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
+        const importEndpoint = endpoint + "/import?name=" + encodeURIComponent(name.trim())
         created = firstRelease
-          ? await mutate(endpoint + "/import?name=" + encodeURIComponent(name.trim()),
-            "POST", firstRelease, "application/zip")
-          : await mutate(endpoint + "/", "POST",
-            JSON.stringify({ name }), "application/json")
+          ? await mutate(importEndpoint, "POST", firstRelease, "application/zip")
+          : folderPayload !== null
+            ? await mutate(importEndpoint, "POST", folderPayload, "application/json")
+            : await mutate(endpoint + "/", "POST",
+              JSON.stringify({ name }), "application/json")
       } catch (cause) {
         if (cause instanceof StaticSiteInputRejected) {
           setInputError(cause.message)
         } else {
           setSites([])
-          setError(firstRelease
-            ? "Create and ZIP import result unconfirmed. Refresh the site list before retrying; no automatic retry."
+          setError(hasFirstFiles
+            ? "Create and import result unconfirmed. Refresh the site list before retrying; no automatic retry."
             : "Create result unconfirmed. Refresh the site list before retrying.")
         }
         return
@@ -520,7 +523,7 @@ export default function SitesPage() {
             created.bytes !== current.bytes ||
             created.releases !== current.releases)
           throw new Error("create-readback-mismatch")
-        if (firstRelease) {
+        if (hasFirstFiles) {
           // A single POST acknowledgment is insufficient. Confirm the exact
           // owned site independently before exposing controls for its release.
           const response = await fetch(endpoint + "/" + created.id, {
@@ -545,15 +548,18 @@ export default function SitesPage() {
         setSites(observed)
         setName("")
         setInitialZip(null)
+        setInitialFolder([])
         if (initialZipInput.current) initialZipInput.current.value = ""
-        setNotice(firstRelease
-          ? 'Site "' + created.name +
-            '" created and ZIP published as its first immutable release. Press Start when ready.'
+        if (initialFolderInput.current) initialFolderInput.current.value = ""
+        setNotice(hasFirstFiles
+          ? 'Site "' + created.name + '" created and ' +
+            (firstRelease ? "ZIP" : "folder") +
+            ' published as its first immutable release. Press Start when ready.'
           : 'Site "' + created.name + '" created. Edit HTML to publish the first release.')
       } catch {
         setSites([])
-        setError(firstRelease
-          ? 'Initial ZIP import was acknowledged, but its site/release could not be confirmed. Refresh before retrying; no automatic retry.'
+        setError(hasFirstFiles
+          ? 'Initial import was acknowledged, but its site/release could not be confirmed. Refresh before retrying; no automatic retry.'
           : "Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
@@ -585,7 +591,8 @@ export default function SitesPage() {
                   placeholder="My first site" minLength={2} maxLength={60} required />
                 <Button type="submit"
                   disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
-                  <FolderOpen /> {initialZip ? "Create and import ZIP" : "Create site"}
+                  <FolderOpen /> {initialZip ? "Create and import ZIP" :
+                    initialFolder.length ? "Create and import folder" : "Create site"}
                 </Button>
               </div>
               <div className="space-y-1">
@@ -595,12 +602,36 @@ export default function SitesPage() {
                 <Input id="initial-owned-site-zip" type="file" ref={initialZipInput}
                   accept=".zip,application/zip" disabled={creating || loading}
                   onChange={event => {
-                    setInitialZip(event.currentTarget.files?.[0] ?? null)
+                    const picked = event.currentTarget.files?.[0] ?? null
+                    setInitialZip(picked)
+                    if (picked) {
+                      setInitialFolder([])
+                      if (initialFolderInput.current) initialFolderInput.current.value = ""
+                    }
                     setInputError(null)
                   }} />
                 <p className="text-xs text-muted-foreground">
-                  Optional first release, max 9 MiB compressed. The server validates ZIP contents
-                  before creating a stopped site and publishes its first release in one request.
+                  ZIP up to 9 MiB compressed, or choose a folder below. Only one source is imported.
+                </p>
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="initial-owned-site-folder" className="text-sm font-medium">
+                  Initial folder (optional)
+                </label>
+                <Input id="initial-owned-site-folder" type="file" multiple ref={initialFolderInput}
+                  disabled={creating || loading}
+                  onChange={event => {
+                    const selected = Array.from(event.currentTarget.files ?? [])
+                    setInitialFolder(selected)
+                    if (selected.length) {
+                      setInitialZip(null)
+                      if (initialZipInput.current) initialZipInput.current.value = ""
+                    }
+                    setInputError(null)
+                  }} />
+                <p className="text-xs text-muted-foreground">
+                  Up to 100 files, 2 MiB each, 8 MiB total. Include index.html.
+                  The server validates all files before creating the stopped site.
                   No automatic retry or start.
                 </p>
                 {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
