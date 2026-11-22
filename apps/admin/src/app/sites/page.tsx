@@ -403,7 +403,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         {outcomeUnknown && <p role="alert" className="text-destructive text-sm">
           Write actions are paused for this site until the owned inventory is refreshed.
           Read-only logs and HTTP checks remain available.
-        </p>
+        </p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
         <SiteDeploymentHistory site={site} />
@@ -502,7 +502,7 @@ export default function SitesPage() {
       }
       let created: FleetSite
       try {
-        // Validate and encode first-release files before one create-and-publish POST.
+        // Encode first-release files before the single POST.
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
         const starterPayload = starter ? JSON.stringify({ files: [{
           name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
