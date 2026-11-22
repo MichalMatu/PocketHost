@@ -113,3 +113,37 @@ it("rejects duplicate release identities and allows a clean retry", async () => 
   expect(get).toHaveBeenCalledTimes(2)
 })
 
+it.each([
+  { label: "an old active release", active: second, rollback: first },
+  { label: "a missing quick rollback", active: first, rollback: null },
+])("rejects $label when history disagrees with the site and permits retry", async ({
+  active, rollback,
+}) => {
+  const verified = { ...site, activeRelease: first, previousRelease: second } as FleetSite
+  const response = (current: string | null, previous: string | null) => ({
+    ok: true,
+    json: async () => ({ releases: [first, second].map(release => ({
+      id: release, createdAt: "2026-11-22T16:00:00.000Z",
+      fileCount: 1, bytes: 100,
+      active: current === release, rollbackTarget: previous === release,
+    })) }),
+  })
+  const get = vi.fn()
+    .mockImplementationOnce(async () => response(active, rollback))
+    .mockImplementationOnce(async () => response(first, second))
+  vi.stubGlobal("fetch", get)
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteVersions(verified, { current: 0 }, setError, false))
+  act(() => { hook.result.current.toggleVersions() })
+  await waitFor(() => expect(setError).toHaveBeenCalledWith(
+    "Version history does not match the current site. Refresh and retry.",
+  ))
+  expect(hook.result.current.versions).toBeNull()
+  expect(hook.result.current.versionsLoading).toBe(false)
+  act(() => { hook.result.current.toggleVersions() })
+  await waitFor(() => expect(hook.result.current.versions).toHaveLength(2))
+  expect(hook.result.current.versions?.find(release => release.active)?.id).toBe(first)
+  expect(hook.result.current.versions?.find(release => release.rollbackTarget)?.id).toBe(second)
+  expect(get).toHaveBeenCalledTimes(2)
+  expect(get.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+})
