@@ -5,6 +5,7 @@ import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { screenshotName } from './artifact-names.mjs';
 import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
+import { inspectPageGeometry } from './layout-geometry.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = {
@@ -91,47 +92,7 @@ const escapeHtml = (text) =>
   );
 
 async function geometry(page) {
-  return page.evaluate(() => {
-    const w = globalThis.window.innerWidth;
-    let outside = 0,
-      smallControls = 0;
-    const smallSamples = [];
-    for (const node of Array.from(globalThis.document.querySelectorAll('body *')).slice(0, 5000)) {
-      const r = node.getBoundingClientRect();
-      if (r.height <= 0 || r.width <= 0) continue;
-      if (r.left < -2 || r.right > w + 2) outside++;
-      if (
-        node.matches("a,button,input,select,textarea,[role='button']") &&
-        (r.width < 32 || r.height < 32)
-      ) {
-        smallControls++;
-        if (smallSamples.length < 24) {
-          // Metadata only: never publish user text, URLs or form values.
-          smallSamples.push({
-            tag: node.tagName.toLowerCase(),
-            slot: node.getAttribute('data-slot')?.slice(0, 40) ?? null,
-            parentSlot: node.parentElement?.getAttribute('data-slot')?.slice(0, 40) ?? null,
-            icon: Boolean(node.querySelector('svg')),
-            textLength: Math.min(node.textContent?.trim().length ?? 0, 100),
-            x: Math.round(r.left),
-            y: Math.round(r.top),
-            width: Math.round(r.width),
-            height: Math.round(r.height),
-          });
-        }
-      }
-    }
-    return {
-      horizontalOverflow: Math.max(0, globalThis.document.documentElement.scrollWidth - w),
-      documentHeight: Math.max(
-        globalThis.document.documentElement.scrollHeight,
-        globalThis.document.body?.scrollHeight ?? 0,
-      ),
-      outOfBoundsElements: outside,
-      smallControls,
-      smallSamples,
-    };
-  });
+  return page.evaluate(inspectPageGeometry);
 }
 
 async function probe(request, origin, name) {
