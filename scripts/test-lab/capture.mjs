@@ -7,6 +7,7 @@ import { screenshotName, routePaths } from './artifact-names.mjs';
 import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 import { inspectPageGeometry } from './layout-geometry.mjs';
 import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
+import { isRouteReady } from './route-readiness.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = routePaths;
@@ -261,15 +262,11 @@ async function main() {
       } else failedRequests++;
     });
     const titles = { dashboard: 'Dashboard', hosting: 'Hosting', projects: 'Projects' };
-    const routeReady = (expected) =>
-      Boolean(
-        globalThis.document.querySelector('[data-slot="sidebar-wrapper"]') &&
-        (globalThis.document.querySelector('#root')?.textContent?.trim().length ?? 0) > 20 &&
-        (!expected || globalThis.document.querySelector('h1')?.textContent?.trim() === expected),
-      );
+
     let first = true;
     for (const route of config.pages) {
       const destination = config.origin + routes[route];
+      const expectedRoute = { path: routes[route], title: titles[route] ?? null };
       await page.setViewportSize({ width: 1440, height: 900 });
       let status = null,
         navigationError = null;
@@ -303,7 +300,7 @@ async function main() {
           }
         }
         try {
-          await page.waitForFunction(routeReady, titles[route] ?? null, { timeout: 15000 });
+          await page.waitForFunction(isRouteReady, expectedRoute, { timeout: 15000 });
           await page.waitForTimeout(1200);
         } catch {
           navigationError = 'React route not confirmed';
@@ -330,7 +327,7 @@ async function main() {
         try {
           await page.setViewportSize({ width: vp.width, height: vp.height });
           await page.waitForTimeout(450);
-          cap.rendered = await page.evaluate(routeReady, titles[route] ?? null);
+          cap.rendered = await page.evaluate(isRouteReady, expectedRoute);
           // Always start each viewport at the top, including after SPA navigation.
           await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }));
           if (cap.rendered) cap.geometry = await geometry(page);
