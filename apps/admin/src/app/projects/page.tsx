@@ -437,13 +437,18 @@ export default function ProjectsPage() {
                   setHealth(parseNodeHealth(response.health))
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
+                <Button variant="outline" disabled={busy || !ownerAuthorized ||
+                  runtime?.state !== "running" || !runtime.activeRelease}
                   onClick={() => action(async () => {
+                    // Do not retain a previous page body while a new inspection is pending or fails.
+                    setPreview(null)
+                    const expectedRelease = runtime.activeRelease
                     const response = await readScoped(selected.id, "preview")
                     if (!response) return
                     const value = response.preview as Record<string, unknown> | undefined
                     if (!value || typeof value.release !== "string" ||
                       !/^r-[a-f0-9]{32}$/.test(value.release) ||
+                      value.release !== expectedRelease ||
                       typeof value.body !== "string" || value.body.length > 8192)
                       throw new Error("Invalid private Node preview response")
                     setPreview({ release: value.release, body: value.body })
