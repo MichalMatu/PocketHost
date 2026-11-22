@@ -1,4 +1,4 @@
-import { Outlet, useNavigation, useRouteError } from "react-router-dom"
+import { Link, Outlet, useNavigation, useRouteError } from "react-router-dom"
 
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
@@ -71,7 +71,7 @@ export function RouteLoadError() {
         <div className="flex flex-wrap gap-3">
           <button type="button" className="rounded-md border px-4 py-2 text-sm"
             onClick={() => window.location.reload()}>Retry page</button>
-          <a href="/dashboard" className="rounded-md border px-4 py-2 text-sm">Dashboard</a>
+          <Link to="/dashboard" className="rounded-md border px-4 py-2 text-sm">Dashboard</Link>
         </div>
       </div>
     </main>
