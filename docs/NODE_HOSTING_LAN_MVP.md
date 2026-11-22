@@ -87,7 +87,7 @@ WAN or laptop-browser URL.
 
 ### Offline snapshots (deployed source, API disabled)
 
-`NodeProjectDataSnapshots` provides detached local snapshot and restore-to-staging for privately scoped `uploads/`, `db/` and `state/`, with offline callback and checksum manifest. Schema-v2 records/validates empty directories; schema-v1 file-only manifests remain readable. Latest formatting-only code `6d38d32bd25d28b32aacbacd5250c1d7af07454a` guarded-deployed on A8, **not QA-tested**. Its prior source SHA `590c576` failed format QA on two files; syntax, structure, boundaries and lint passed before the gate stopped. No database consistency proof, API/UI mutation endpoints, scheduler, off-device transfer or live app-data operation has been enabled. Restore remains isolated staging only; real recovery unverified.
+`NodeProjectDataSnapshots` provides detached local offline-only snapshots and restore-to-staging for private `uploads/`, `db/` and `state/` data, with SHA-256 manifests. Schema v2 retains/checks empty directories, and schema-v1 file-only manifests remain readable. Latest A8 deployed code `9b910d8dc353c512333b290a6749c60ad3df530f` has `format,structure,boundaries,root-lint,root-types,node,syntax` scoped QA PASS including Node fixture tests; receipt `pockethost-a8-node-data-qa-9b910d8-20261122-v1`. This is **fixture-level assurance only**, not an authoritative offline database consistency proof. No live data backup/restore, API/UI mutation endpoints, scheduled jobs or off-device data transfer was performed. Staged recovery never overwrites live files.
 
 ### Read-only runtime eligibility and project data inventory
 
