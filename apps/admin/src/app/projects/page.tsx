@@ -9,6 +9,7 @@ import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
 import { useNodeProjectLogs } from "./use-node-project-logs"
+import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
@@ -67,6 +68,7 @@ export default function ProjectsPage() {
   const [busy, setBusy] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
+  const { invalidateRead, readScoped } = useNodeProjectScopedRead(getJson)
   const { logLines, logsLoading, logsError, resetLogs, loadLogs } = useNodeProjectLogs(getJson)
   const resetRuntimeReviews = React.useCallback(() => {
     setHealth(null)
@@ -114,6 +116,7 @@ export default function ProjectsPage() {
       setCatalogState("ready")
       setError(null)
     } catch (cause) {
+      invalidateRead()
       beginInspection()
       resetLogs()
       setProjects([]); setSelectedId(""); setApproved(false)
@@ -126,7 +129,7 @@ export default function ProjectsPage() {
       setCatalogState("error")
       throw cause
     }
-  }, [getJson, beginInspection, resetLogs])
+  }, [getJson, beginInspection, resetLogs, invalidateRead])
   React.useEffect(() => {
     let live = true
     void Promise.resolve().then(refresh).catch(cause => {
@@ -149,6 +152,7 @@ export default function ProjectsPage() {
         !projects.some(project => project.id === requestedProject) ||
         appliedDeepLink.current === requestedProject) return
     appliedDeepLink.current = requestedProject
+    invalidateRead()
     beginInspection()
     resetLogs()
     setSelectedId(requestedProject); setApproved(false)
@@ -158,7 +162,7 @@ export default function ProjectsPage() {
     setGithubReview(null); setDependencyReview(null); setGithubRepository("")
     void Promise.all([loadReleases(requestedProject), loadRuntime(requestedProject)])
       .catch(() => setError("Owning Node project unavailable. Refresh before any action."))
-  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime, beginInspection, resetLogs])
+  }, [requestedProject, catalogState, projects, loadReleases, loadRuntime, beginInspection, resetLogs, invalidateRead])
 
   const runRuntimeAction = async (
     id: string,
@@ -236,6 +240,7 @@ export default function ProjectsPage() {
                   next.delete("project")
                   return next
                 }, { replace: true })
+                invalidateRead()
                 beginInspection()
                 resetLogs()
                 setSelectedId(project.id); setApproved(false)
@@ -384,7 +389,8 @@ export default function ProjectsPage() {
                       "Owned Node release started and readiness verified by host.")
                   })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
-                  const response = await getJson(api + "/" + selected.id + "/health")
+                  const response = await readScoped(selected.id, "health")
+                  if (!response) return
                   const value = response.health as Record<string, unknown> | undefined
                   if (!value || !["not-provisioned", "stopped", "running", "unknown"].includes(String(value.state)) ||
                     (value.ready !== null && typeof value.ready !== "boolean") ||
@@ -396,7 +402,8 @@ export default function ProjectsPage() {
                 })}>Check live readiness</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}
                   onClick={() => action(async () => {
-                    const response = await getJson(api + "/" + selected.id + "/preview")
+                    const response = await readScoped(selected.id, "preview")
+                    if (!response) return
                     const value = response.preview as Record<string, unknown> | undefined
                     if (!value || typeof value.release !== "string" ||
                       !/^r-[a-f0-9]{32}$/.test(value.release) ||
@@ -1000,6 +1007,7 @@ export default function ProjectsPage() {
           <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
             const data = await getJson(api + "/", "POST", { name: name.trim() })
             if (!validProject(data.project)) throw new Error("Invalid create response")
+            invalidateRead()
             beginInspection()
             resetLogs()
             setSelectedId(data.project.id); setName(""); setApproved(false)
