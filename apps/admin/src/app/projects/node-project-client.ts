@@ -160,6 +160,7 @@ export function parseCandidates(value: unknown): Candidate[] {
   return value as Candidate[]
 }
 export const api = "/api/v1/node-projects"
+export class NodeProjectValidationError extends Error {}
 export const disabledMessage = "Node Hosting is not enabled on this panel."
 export const intent = "owned-node-project"
 export const examplePackage = JSON.stringify({
@@ -206,6 +207,8 @@ export async function requestJson(url: string, method?: "POST", body?: unknown, 
         ...(body === undefined ? {} : { "Content-Type": "application/json" }) },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     } : {}) })
+  if (!response.ok && method === "POST" && url === api + "/" && response.status === 400)
+    throw new NodeProjectValidationError("Project name rejected by the host. Review the name and try again.")
   if (!response.ok) throw new Error(response.status === 404 && url === api ? disabledMessage :
     response.status === 404 ? "Node project resource not found." :
     response.status === 403 ? "Owner authentication required or Node access denied." :

@@ -14,7 +14,7 @@ import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime, releaseRole } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, validProject, requestJson,
+  validatedExtras, validatedAssets, validProject, requestJson, NodeProjectValidationError,
   type Project, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
@@ -34,6 +34,8 @@ export default function ProjectsPage() {
   const [catalogState, setCatalogState] = React.useState<"loading" | "ready" | "disabled" | "error">("loading")
   const [selectedId, setSelectedId] = React.useState("")
   const [name, setName] = React.useState("")
+  const [createPhase, setCreatePhase] = React.useState<"idle" | "pending" | "confirmed" | "rejected" | "unknown">("idle")
+  const creatingRef = React.useRef(false)
   const [manifest, setManifest] = React.useState(examplePackage)
   const [lockfile, setLockfile] = React.useState(exampleLock)
   const [source, setSource] = React.useState(exampleSource)
@@ -113,6 +115,7 @@ export default function ProjectsPage() {
       setProjects(data.projects)
       setCatalogState("ready")
       setError(null)
+      return data.projects as Project[]
     } catch (cause) {
       invalidateRead()
       beginInspection()
@@ -123,7 +126,7 @@ export default function ProjectsPage() {
       if (cause instanceof Error && cause.message === disabledMessage) {
         setCatalogState("disabled")
         setError(null)
-        return
+        return [] as Project[]
       }
       setCatalogState("error")
       throw cause
@@ -225,7 +228,13 @@ export default function ProjectsPage() {
   return <BaseLayout title="Projects" description="Node.js projects.">
     <div className="space-y-5 px-4 pb-8 lg:px-6">
       <div className="flex min-h-10 items-center justify-end">
-        <Button variant="outline" disabled={busy} onClick={() => action(refresh)}>Refresh</Button>
+        <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+          await refresh()
+          if (createPhase === "unknown") {
+            setCreatePhase("idle")
+            setMessage("Catalog refreshed. Check existing projects before creating another.")
+          }
+        })}>Refresh</Button>
       </div>
       {catalogState === "ready" && <Card><CardHeader><CardTitle>Owned projects</CardTitle>
         </CardHeader>
@@ -1015,17 +1024,44 @@ export default function ProjectsPage() {
           <label className="grid min-w-52 gap-1 text-sm">Project name
             <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
           </label>
-          <Button disabled={busy || !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2} onClick={() => action(async () => {
-            const data = await getJson(api + "/", "POST", { name: name.trim() })
-            if (!validProject(data.project)) throw new Error("Invalid create response")
-            invalidateRead()
-            beginInspection()
-            resetLogs()
-            setSelectedId(data.project.id); setName(""); setApproved(false)
-            setPreview(null)
-            await refresh(); await loadRuntime(data.project.id)
-            setMessage("Private Node project created.")
-          })}>Create project</Button>
+          <Button disabled={busy || createPhase === "unknown" || createPhase === "pending" ||
+            !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2}
+            onClick={() => {
+              if (creatingRef.current || createPhase === "unknown") return
+              creatingRef.current = true
+              action(async () => {
+                setCreatePhase("pending")
+                const submittedName = name.trim()
+                try {
+                  const data = await getJson(api + "/", "POST", { name: submittedName })
+                  if (!validProject(data.project) || data.project.name !== submittedName)
+                    throw new Error("Unverified create acknowledgement")
+                  const catalog = await refresh()
+                  if (!catalog.some(project => project.id === data.project.id && project.name === submittedName))
+                    throw new Error("Created project not found in verified catalog")
+                  invalidateRead()
+                  beginInspection()
+                  resetLogs()
+                  setSelectedId(data.project.id); setName(""); setApproved(false)
+                  setPreview(null)
+                  setCreatePhase("confirmed")
+                  setMessage("Private Node project created.")
+                  void loadRuntime(data.project.id).catch(() => {
+                    setError("Project confirmed in catalog, but runtime readback failed. Refresh runtime status.")
+                  })
+                } catch (cause) {
+                  if (cause instanceof NodeProjectValidationError) {
+                    setCreatePhase("rejected")
+                    throw cause
+                  }
+                  // Missing or invalid acknowledgement does not prove that the POST failed.
+                  setCreatePhase("unknown")
+                  throw new Error("Project creation unconfirmed. Refresh the catalog before another create.")
+                } finally {
+                  creatingRef.current = false
+                }
+              })
+            }}>Create project</Button>
           <Button variant="outline" disabled={busy || catalogState !== "ready"}
             onClick={() => action(async () => {
               if (await checkTools()) setMessage("Node toolchain version read confirmed.")
@@ -1035,6 +1071,18 @@ export default function ProjectsPage() {
               setMessage("Read-only module, service and project declarations verified.")
           })}>Inspect hosting registries</Button>
           </div>
+          {createPhase === "pending" && <p role="status" className="text-sm text-muted-foreground">
+            Creating project… Do not submit again while the host processes this request.
+          </p>}
+          {createPhase === "confirmed" && <p role="status" className="text-sm text-muted-foreground">
+            Project identity verified in the refreshed catalog.
+          </p>}
+          {createPhase === "rejected" && <p role="status" className="text-sm text-destructive">
+            Project name was rejected. Correct the name before trying again.
+          </p>}
+          {createPhase === "unknown" && <p role="alert" className="text-sm text-destructive">
+            The host may have created this project. Use Refresh above to inspect the catalog; do not resubmit yet.
+          </p>}
         </div>
       </details>
       <NodeDataPanel projectId={selected?.id ?? null} ownerAuthorized={ownerAuthorized}
