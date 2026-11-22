@@ -9,6 +9,14 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Latest N12–N13 continuation (22 November 2026)
+
+- Fresh source `main` before this docs-only commit: `7c3728f9a047cb2d750de1101038ec792a7e7f5a`. **DEV remains N11 `c4dedfd23b597a95a96f00379786fe36f6cf27e2` only**, as last attested by the terminal guarded deployment receipt. Do not treat this as a new live inspection.
+- **N12 Node create flow**: `a3ba281aea304f15114a1aadd1e95d55eb2b3f73` implemented pending/confirmed/rejected/unknown POST feedback, catalog identity readback and no duplicate submission on lost acknowledgement. A8 task `pockethost-a8-night-n12-a3ba281-qa-20261122-v1` was **QA FAIL** due to TS18046 in `page.tsx`; format passed, UI skipped. Type fix `dde5a044b5ef7adefd95dc0fbe219d39021c0179`. A8 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` **has no terminal result in the checked private transport**. Do not retry, replace, or infer PASS.
+- **Independent source-only Visual QA slice** `4afcf1c66eb4904dd708b4ad985f944f30675a74`: bounded middle-viewport screenshot for very tall document pages; matching local gallery/preview filename allowlist and regression. No screenshot uploaded, no Mac capture run, no panel code deployment or QA claimed. **N12 fixture repair** `7c3728f9a047cb2d750de1101038ec792a7e7f5a` opens the collapsed create panel during the interaction test. This fixture fix is also **not QA-verified**.
+- Source `main` has advanced beyond the immutable pending N12 task's pinned target `dde5a04`. That task explicitly checks fetched `main == target`, so if it executes later it can terminally **HOLD `remote-main-moved`**. Let it finish; do **not** edit or duplicate an unknown Agent task, and do not deploy N12 or newer code based on a historical receipt.
+- **Next action:** first receive the terminal N12 task result, verify no other A8 conflicts and fresh live ownership. Only then select an exact current `main` SHA and the applicable targeted QA categories (admin UI/TypeScript, test-lab Node/syntax/format); fix any named failure before guarded DEV. The Test Lab tooling-only changes themselves do not justify a panel restart. Continue small *independent* source slices only while the A8 task remains unknown. No schedulers, real project creation, public tunnel, external data or protected-service operations.
+
 ## Verified N1–N8 evidence
 
 - Source `main` immediately before this docs-only commit: `c4dedfd23b597a95a96f00379786fe36f6cf27e2`. Always read fresh `main` before another code change.
