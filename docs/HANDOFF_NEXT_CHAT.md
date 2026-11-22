@@ -9,6 +9,11 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — SPA capture correctness
+
+- **Source-only fix:** `4e76d743d8e68b7136ffbbb5a36b349fe4017ec3` adds standalone browser-evaluable `scripts/test-lab/route-readiness.mjs`, requiring the selected route pathname (basename suffix allowed), absence of the React Router lazy-loading progress bar, rendered root/sidebar, and the existing expected heading for named routes before taking screenshots. This prevents a stale previous SPA page from being labeled as the next screen. `tests/quality/test-lab-route-readiness.test.mjs` covers stale URL, loading state, wrong heading, absent shell, and basename.
+- **Status:** A8 QA not run; no physical Mac capture, build, guarded DEV or upload. Existing N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains without terminal result in the last read. Do not overlap/requeue; after terminal result verify current exact `main` and current A8 ownership before minimal scoped QA. Test Lab-only source changes do not require a panel restart.
+
 ## 22 November continuation — broader opt-in Visual QA coverage
 
 - **Source-only change:** `17bafef529b68c7d01822c5a2788ee31d35877ad` centralizes the read-only navigation route registry in `scripts/test-lab/artifact-names.mjs` and expands the opt-in allowlist to **27 real static screens** verified against `apps/admin/src/config/routes.tsx` and `config/navigation.ts`. `capture.mjs` and the local preview naming gate share the registry, with expanded `test-lab-artifact-names.test.mjs` contract coverage. The default capture remains `dashboard,hosting,projects`, the 12-route-per-run upper bound remains, and browser mutations are still blocked.
