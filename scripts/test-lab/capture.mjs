@@ -3,6 +3,7 @@
 import { mkdir, writeFile, chmod } from "node:fs/promises"
 import { join, resolve, dirname } from "node:path"
 import { fileURLToPath } from "node:url"
+import { screenshotName } from "./artifact-names.mjs"
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
 const routes = {
@@ -80,6 +81,7 @@ async function geometry(page) {
       }
     }
     return { horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - w),
+      documentHeight: Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0),
       outOfBoundsElements: outside, smallControls, smallSamples }
   })
 }
@@ -118,7 +120,10 @@ function gallery(report) {
       (c.geometry?.horizontalOverflow ?? "?") + "px, JS errors " + c.jsErrors
     return "<article><h2>" + escapeHtml(label) + "</h2><p>" + escapeHtml(stats) +
       "</p>" + (c.file ? '<a href="' + escapeHtml(c.file) +
-        '"><img src="' + escapeHtml(c.file) + '" loading="lazy"/></a>' : "") + "</article>"
+        '"><img src="' + escapeHtml(c.file) + '" loading="lazy"/></a>' : "") +
+      (c.bottomFile ? '<p>Bottom viewport · same route</p><a href="' + escapeHtml(c.bottomFile) +
+        '"><img src="' + escapeHtml(c.bottomFile) + '" loading="lazy"/></a>' : "") +
+      "</article>"
   }).join("\n")
   return '<!doctype html><html lang="en"><meta charset="utf-8"><title>PocketHost Test Lab</title>' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
@@ -225,11 +230,28 @@ async function main() {
           cap.rendered = await page.evaluate(routeReady, titles[route] ?? null)
           if (cap.rendered) cap.geometry = await geometry(page)
           cap.stage = "screenshot"
-          const filename = route + "-" + vp.name + ".png"
+          const filename = screenshotName(route, vp.name)
           const absolute = join(folder, filename)
           await page.screenshot({ path: absolute, animations: "disabled", timeout: 12000 })
           await chmod(absolute, 0o600)
           cap.file = filename
+          // A second viewport covers content below the fold without changing
+          // the read-only route scope or capturing an unbounded full-page image.
+          if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height + 120) {
+            try {
+              await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+              await page.waitForTimeout(250)
+              const bottom = screenshotName(route, vp.name, "bottom")
+              const bottomPath = join(folder, bottom)
+              await page.screenshot({ path: bottomPath, animations: "disabled", timeout: 12000 })
+              await chmod(bottomPath, 0o600)
+              cap.bottomFile = bottom
+            } catch {
+              cap.bottomError = "Bottom viewport screenshot unavailable"
+            } finally {
+              await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {})
+            }
+          }
           cap.stage = "complete"
           if (!cap.rendered) cap.error = navigationError ?? "React content not confirmed"
         } catch {
@@ -262,7 +284,9 @@ async function main() {
   await chmod(reportName, 0o600)
   await chmod(galleryName, 0o600)
   process.stdout.write(JSON.stringify({ kind: report.kind, status: "OBSERVED",
-    sourceSha: config.sha, readOnly: true, screenshots: captures.length,
+    sourceSha: config.sha, readOnly: true,
+    screenshots: captures.reduce((sum, c) => sum + Number(Boolean(c.file)) + Number(Boolean(c.bottomFile)), 0),
+    bottomScreenshots: captures.filter(c => c.bottomFile).length,
     failures: captures.filter(c => c.error).length,
     notRendered: captures.filter(c => !c.rendered).length,
     overflowing: captures.filter(c => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0).length,

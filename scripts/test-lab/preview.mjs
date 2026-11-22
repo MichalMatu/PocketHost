@@ -6,10 +6,10 @@ import { join, resolve, dirname, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 import { execFile } from "node:child_process"
 import { promisify } from "node:util"
+import { isAllowedScreenshotName } from "./artifact-names.mjs"
 
 const exec = promisify(execFile)
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..", ".test-lab")
-const SHOTS = /^(dashboard|hosting|sites|projects|deployments|logs|services|agent|network)-(mobile|tablet|desktop)\.png$/
 function args(argv) {
   if (argv.length !== 2) throw Error("Need exactly --run and --shot")
   const map = Object.create(null)
@@ -18,7 +18,7 @@ function args(argv) {
     if (!hit || Object.hasOwn(map, hit[1])) throw Error("Invalid option")
     map[hit[1]] = hit[2]
   }
-  if (!/^\d{13}-[a-f0-9]{8}$/.test(map.run || "") || !SHOTS.test(map.shot || ""))
+  if (!/^\d{13}-[a-f0-9]{8}$/.test(map.run || "") || !isAllowedScreenshotName(map.shot))
     throw Error("Preview selection not allowlisted")
   return map
 }
