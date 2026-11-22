@@ -239,9 +239,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
               </p>
             </div>
             <Button size="sm" variant="outline"
-              disabled={busy || outcomeUnknown || htmlLoading || site.state === "unknown" || site.fileCount > 1}
+              disabled={busy || outcomeUnknown || site.state === "unknown" || site.fileCount > 1}
               onClick={toggleHtmlEditor}>
-              {editorVisible ? "Hide HTML editor" :
+              {htmlLoading ? "Cancel HTML read" : editorVisible ? "Hide HTML editor" :
                 site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
             </Button>
           </div>

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { render, screen } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -124,5 +124,71 @@ describe("one-file static site MVP", () => {
     expect((await screen.findByLabelText("index.html source") as HTMLTextAreaElement).value).toBe("<h1>v1</h1>")
     expect(site.activeRelease).toBe(FIRST)
     expect(mock.mock.calls.filter(call => call[1]?.method === "PUT")).toHaveLength(2)
+  })
+})
+
+describe("active HTML read cancel and retry", () => {
+  const active = { ...base, activeRelease: FIRST, fileCount: 1, bytes: 18, releases: 1 }
+
+  it("lets the owner cancel a pending read and ignores its stale successful reply", async () => {
+    const user = userEvent.setup()
+    let resolveOld!: (value: { ok: boolean; json: () => Promise<{ release: string; html: string }> }) => void
+    const old = new Promise<{
+      ok: boolean; json: () => Promise<{ release: string; html: string }>
+    }>(resolve => { resolveOld = resolve })
+    let htmlReads = 0
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === "/api/v1/sites")
+        return { ok: true, json: async () => ({ sites: [active] }) }
+      if (url === "/api/v1/sites/" + ID + "/html") {
+        htmlReads++
+        if (htmlReads === 1) return old
+        return { ok: true, json: async () => ({ release: FIRST, html: "<h1>new</h1>" }) }
+      }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter initialEntries={["/sites"]}><SitesPage /></MemoryRouter>)
+    await user.click(await screen.findByRole("button", { name: "Edit current HTML" }))
+    const cancel = screen.getByRole("button", { name: "Cancel HTML read" }) as HTMLButtonElement
+    expect(cancel.disabled).toBe(false)
+    await user.click(cancel)
+    expect(screen.getByRole("button", { name: "Edit current HTML" })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Edit current HTML" }))
+    expect((await screen.findByLabelText("index.html source") as HTMLTextAreaElement).value)
+      .toBe("<h1>new</h1>")
+    await act(async () => {
+      resolveOld({ ok: true, json: async () => ({ release: FIRST, html: "<h1>stale</h1>" }) })
+      await old
+    })
+    expect((screen.getByLabelText("index.html source") as HTMLTextAreaElement).value)
+      .toBe("<h1>new</h1>")
+    expect(htmlReads).toBe(2)
+  })
+
+  it("reopens the HTML source on the first click after a failed GET", async () => {
+    const user = userEvent.setup()
+    let htmlReads = 0
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input)
+      if (url === "/api/v1/sites")
+        return { ok: true, json: async () => ({ sites: [active] }) }
+      if (url === "/api/v1/sites/" + ID + "/html") {
+        htmlReads++
+        if (htmlReads === 1) return { ok: false }
+        return { ok: true, json: async () => ({ release: FIRST, html: "<h1>retry</h1>" }) }
+      }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter initialEntries={["/sites"]}><SitesPage /></MemoryRouter>)
+    await user.click(await screen.findByRole("button", { name: "Edit current HTML" }))
+    await screen.findByText("Could not load the published HTML for editing.")
+    expect(screen.getByRole("button", { name: "Edit current HTML" })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Edit current HTML" }))
+    expect((await screen.findByLabelText("index.html source") as HTMLTextAreaElement).value)
+      .toBe("<h1>retry</h1>")
+    expect(htmlReads).toBe(2)
   })
 })

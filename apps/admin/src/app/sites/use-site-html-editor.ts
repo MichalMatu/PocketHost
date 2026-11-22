@@ -31,7 +31,7 @@ export function useSiteHtmlEditor(
   }, [site])
 
   const toggleHtmlEditor = () => {
-    if (editorVisible) { closeHtmlEditor(); return }
+    if (editorVisible || pending.current) { closeHtmlEditor(); return }
     if (busy || htmlLoading || site.state === "unknown" || site.fileCount > 1) return
     setVisible(true)
     setEditorRelease(undefined)
@@ -61,8 +61,11 @@ export function useSiteHtmlEditor(
       setHtml(source.html)
       setEditorRelease(site.activeRelease)
     }).catch(cause => {
-      if (revision === epoch.current && request === generation.current && pending.current)
+      if (revision === epoch.current && request === generation.current && pending.current) {
+        // An unsuccessful read must leave the editor retryable on the first click.
+        closeHtmlEditor()
         setError(cause instanceof Error ? cause.message : "Could not load the published HTML.")
+      }
     }).finally(() => {
       if (revision !== epoch.current || request !== generation.current) return
       pending.current = false
