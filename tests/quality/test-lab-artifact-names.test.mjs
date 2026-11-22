@@ -118,3 +118,17 @@ test('Test Lab route registry covers navigation without dynamic or unscoped URLs
     assert.match(path, new RegExp('^/[a-z][a-z/-]*$'));
   }
 });
+
+test('mobile menu screenshot is allowed for known routes at mobile size only', () => {
+  for (const route of Object.keys(routePaths)) {
+    const name = screenshotName(route, 'mobile', 'menu');
+    assert.equal(name, route + '-mobile-menu.png');
+    assert.equal(isAllowedScreenshotName(name), true);
+    for (const size of ['tablet', 'desktop']) {
+      assert.throws(() => screenshotName(route, size, 'menu'));
+      assert.equal(isAllowedScreenshotName(route + '-' + size + '-menu.png'), false);
+    }
+  }
+  assert.equal(isAllowedScreenshotName('other-mobile-menu.png'), false);
+  assert.equal(isAllowedScreenshotName('projects-mobile-menu-menu.png'), false);
+});

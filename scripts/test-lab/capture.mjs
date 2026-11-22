@@ -8,6 +8,7 @@ import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 import { inspectPageGeometry } from './layout-geometry.mjs';
 import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
 import { isRouteReady } from './route-readiness.mjs';
+import { captureMobileNavigation } from './mobile-navigation-capture.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = routePaths;
@@ -26,11 +27,13 @@ const screens = [
 function options(argv) {
   const args = Object.create(null);
   for (const input of argv) {
-    const match = /^--(base|sha|routes|api)=(.+)$/.exec(input);
+    const match = /^--(base|sha|routes|api|mobile-menu)=(.+)$/.exec(input);
     if (!match || Object.hasOwn(args, match[1])) throw Error('Invalid argument');
     args[match[1]] = match[2];
   }
   if (!/^[0-9a-f]{40}$/.test(args.sha || '')) throw Error('Exact approved SHA required');
+  if (args['mobile-menu'] && args['mobile-menu'] !== 'true')
+    throw Error('Mobile menu option must be true');
   let base;
   try {
     base = new URL(args.base);
@@ -74,6 +77,7 @@ function options(argv) {
     sha: args.sha,
     pages: select(args.routes || 'dashboard,hosting,projects', routes),
     probes: args.api ? select(args.api, apis) : [],
+    mobileMenu: args['mobile-menu'] === 'true',
   };
 }
 
@@ -172,6 +176,13 @@ function gallery(report) {
             escapeHtml(c.bottomFile) +
             '"><img src="' +
             escapeHtml(c.bottomFile) +
+            '" loading="lazy"/></a>'
+          : '') +
+        (c.mobileMenuFile
+          ? '<p>Mobile navigation · UI only</p><a href="' +
+            escapeHtml(c.mobileMenuFile) +
+            '"><img src="' +
+            escapeHtml(c.mobileMenuFile) +
             '" loading="lazy"/></a>'
           : '') +
         (c.createPanelFile
@@ -384,6 +395,21 @@ async function main() {
               await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
             }
           }
+          // Opt-in: capture the mobile drawer; no POST, screenshot stays local.
+          if (config.mobileMenu && vp.name === 'mobile' && cap.rendered) {
+            try {
+              const menuFile = screenshotName(route, vp.name, 'menu');
+              const menuPath = join(folder, menuFile);
+              await captureMobileNavigation(page, menuPath);
+              await chmod(menuPath, 0o600);
+              cap.mobileMenuFile = menuFile;
+            } catch {
+              cap.mobileMenuError = 'Mobile navigation screenshot unavailable';
+            } finally {
+              await page.evaluate(() =>
+                globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+            }
+          }
           // Whitelisted click-only UI inspection: expand one local details
           // element and screenshot that element. Network mutations remain blocked.
           if (route === 'projects' && cap.rendered) {
@@ -468,12 +494,14 @@ async function main() {
       screenshots: captures.reduce(
         (sum, c) =>
           sum + Number(Boolean(c.file)) + Number(Boolean(c.middleFile)) +
-          Number(Boolean(c.bottomFile)) + Number(Boolean(c.createPanelFile)),
+          Number(Boolean(c.bottomFile)) + Number(Boolean(c.createPanelFile)) +
+          Number(Boolean(c.mobileMenuFile)),
         0,
       ),
       middleScreenshots: captures.filter((c) => c.middleFile).length,
       bottomScreenshots: captures.filter((c) => c.bottomFile).length,
       createPanelScreenshots: captures.filter((c) => c.createPanelFile).length,
+      mobileMenuScreenshots: captures.filter((c) => c.mobileMenuFile).length,
       failures: captures.filter((c) => c.error).length,
       ...captureSummary,
       notRendered: captures.filter((c) => !c.rendered).length,
