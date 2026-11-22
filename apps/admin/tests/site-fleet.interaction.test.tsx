@@ -179,6 +179,56 @@ describe("H2 browser site-manager lifecycle", () => {
   )
 
 
+
+  it("keeps existing owned sites visible after a definite create-name 400 and accepts correction", async () => {
+    const user = userEvent.setup()
+    const existing = project("stopped", true)
+    const accepted = { ...project("stopped", false), id: "site-" + "e".repeat(32), name: "Corrected site" }
+    let sites = [existing]
+    const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites }) }
+      if (url === "/api/v1/sites/" && options?.method === "POST") {
+        const submitted = JSON.parse(String(options.body)).name
+        if (submitted === "Rejected site") return { ok: false, status: 400 }
+        expect(submitted).toBe("Corrected site")
+        sites = [existing, accepted]
+        return { ok: true, json: async () => ({ site: accepted }) }
+      }
+      throw new Error("Unexpected site request " + url)
+    })
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.type(screen.getByLabelText("Site name"), "Rejected site")
+    await user.click(screen.getByRole("button", { name: "Create site" }))
+    await screen.findByText(/The site name was rejected/)
+    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(screen.queryByText(/Create result unconfirmed/)).toBeNull()
+    await user.clear(screen.getByLabelText("Site name"))
+    await user.type(screen.getByLabelText("Site name"), "Corrected site")
+    await user.click(screen.getByRole("button", { name: "Create site" }))
+    await screen.findByText(/created. Edit HTML to publish the first release/)
+    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(screen.getByText(accepted.id)).toBeTruthy()
+    expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(2)
+  })
+
+  it("cannot clear failed owned inventory by changing the optional ZIP or site name", async () => {
+    const user = userEvent.setup()
+    const requests = vi.fn(async () => ({ ok: false, status: 503 }))
+    vi.stubGlobal("fetch", requests)
+    renderSites()
+    await screen.findByText("Could not load static sites. Try Refresh.")
+    await user.type(screen.getByLabelText("Site name"), "Test site")
+    await user.upload(screen.getByLabelText("Initial ZIP (optional)"),
+      new File(["fixture"], "site.zip", { type: "application/zip" }))
+    expect((screen.getByRole("button", { name: "Create and import ZIP" }) as HTMLButtonElement).disabled).toBe(true)
+    expect(screen.getByText("Could not load static sites. Try Refresh.")).toBeTruthy()
+    expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("creates and imports a first ZIP release only after independent site creation readback", async () => {
     const user = userEvent.setup()
     let current: ReturnType<typeof project>[] = []

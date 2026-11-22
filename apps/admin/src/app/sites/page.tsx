@@ -407,6 +407,7 @@ export default function SitesPage() {
   const [loading, setLoading] = React.useState(true)
   const [creating, setCreating] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
+  const [inputError, setInputError] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
 
   const reload = React.useCallback(async (signal?: AbortSignal) => {
@@ -438,21 +439,27 @@ export default function SitesPage() {
     if (firstRelease) {
       const invalid = validateStaticZipSelection(firstRelease)
       if (invalid) {
-        setError(invalid)
+        setInputError(invalid)
         setNotice(null)
         return
       }
     }
     setCreating(true)
-    setError(null)
+    setInputError(null)
     setNotice(null)
     try {
       let created: FleetSite
       try {
         created = await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
-      } catch {
-        setSites([])
-        setError("Create result unconfirmed. Refresh the site list before retrying.")
+      } catch (cause) {
+        if (cause instanceof StaticSiteInputRejected) {
+          // HTTP 400 is a definite input rejection, not an uncertain create.
+          // Preserve independently verified inventory and allow a corrected name.
+          setInputError(cause.message)
+        } else {
+          setSites([])
+          setError("Create result unconfirmed. Refresh the site list before retrying.")
+        }
         return
       }
       try {
@@ -553,7 +560,10 @@ export default function SitesPage() {
                 <label htmlFor="new-owned-site" className="sr-only">Site name</label>
                 <Input id="new-owned-site" value={name}
                   disabled={creating || loading}
-                  onChange={event => setName(event.target.value)}
+                  onChange={event => {
+                    setName(event.target.value)
+                    setInputError(null)
+                  }}
                   placeholder="My first site" minLength={2} maxLength={60} required />
                 <Button type="submit"
                   disabled={creating || loading || error !== null || sites.length >= 8 || name.trim().length < 2}>
@@ -568,12 +578,13 @@ export default function SitesPage() {
                   accept=".zip,application/zip" disabled={creating || loading}
                   onChange={event => {
                     setInitialZip(event.currentTarget.files?.[0] ?? null)
-                    setError(null)
+                    setInputError(null)
                   }} />
                 <p className="text-xs text-muted-foreground">
                   Optional first release, max 9 MiB compressed. Creates a stopped site, then imports ZIP
                   only after confirming the new site's identity. No automatic retry or start.
                 </p>
+                {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
               </div>
             </form>
           </CardContent>

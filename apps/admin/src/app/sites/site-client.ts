@@ -7,8 +7,8 @@ export const maxFolder = 8 * 1024 * 1024
 export const maxStarterHtml = 32 * 1024
 
 export class StaticSiteInputRejected extends Error {
-  constructor() {
-    super("The site files were rejected. Include a root index.html and use a valid ZIP within the upload limits.")
+  constructor(message = "The site files were rejected. Include a root index.html and use a valid ZIP within the upload limits.") {
+    super(message)
     this.name = "StaticSiteInputRejected"
   }
 }
@@ -61,7 +61,11 @@ export async function mutate(url: string, method: "POST" | "PUT" | "DELETE", bod
     body,
   })
   if (!response.ok) {
-    if (response.status === 400) throw new StaticSiteInputRejected()
+    if (response.status === 400) {
+      if (method === "POST" && url === endpoint + "/")
+        throw new StaticSiteInputRejected("The site name was rejected. Choose a valid name of 2–60 characters.")
+      throw new StaticSiteInputRejected()
+    }
     throw new Error("Operation was safely refused. Check the process identity, site port and release.")
   }
   return parseFleetSite(await response.json())
