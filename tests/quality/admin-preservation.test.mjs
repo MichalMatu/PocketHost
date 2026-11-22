@@ -14,74 +14,38 @@ const terminalPanel = readFileSync(
   'utf8',
 );
 
-const originalPaths = [
-  '/',
-  '/landing',
-  '/dashboard',
-  '/dashboard-2',
-  '/mail',
-  '/tasks',
-  '/chat',
-  '/calendar',
-  '/users',
-  '/faqs',
-  '/pricing',
-  '/auth/sign-in',
-  '/auth/sign-in-2',
-  '/auth/sign-in-3',
-  '/auth/sign-up',
-  '/auth/sign-up-2',
-  '/auth/sign-up-3',
-  '/auth/forgot-password',
-  '/auth/forgot-password-2',
-  '/auth/forgot-password-3',
-  '/errors/unauthorized',
-  '/errors/forbidden',
-  '/errors/not-found',
-  '/errors/internal-server-error',
-  '/errors/under-maintenance',
-  '/settings/user',
-  '/settings/account',
-  '/settings/billing',
-  '/settings/appearance',
-  '/settings/notifications',
-  '/settings/connections',
-  '*',
+const productPaths = [
+  '/', '/dashboard', '/host', '/observability', '/shizuku', '/phone-settings',
+  '/termux', '/system', '/packages', '/files', '/services', '/services/runit',
+  '/services/autostart', '/services/hosting', '/services/health',
+  '/services/cloudflare', '/services/ssh', '/services/mqtt', '/services/:serviceId',
+  '/local-agent', '/backups', '/terminal', '/agents', '/owned-site',
+  '/hosting', '/sites', '/deployments', '/projects', '/runtime-logs',
+  '/settings/network', '/settings/platform', '/settings/appearance', '*',
 ];
 
-test('all upstream routes remain available alongside unique PocketHost routes', () => {
-  const allPaths = [...routes.matchAll(/\bpath:\s*"([^"]+)"/g)].map((m) => m[1]);
-  assert.ok(allPaths.length >= originalPaths.length + 27);
+const retiredPaths = [
+  '/landing', '/examples/dashboard', '/dashboard-2', '/mail', '/tasks',
+  '/chat', '/calendar', '/users', '/faqs', '/pricing',
+  '/auth/sign-in', '/auth/sign-in-2', '/auth/sign-in-3',
+  '/auth/sign-up', '/auth/sign-up-2', '/auth/sign-up-3',
+  '/auth/forgot-password', '/auth/forgot-password-2', '/auth/forgot-password-3',
+  '/errors/unauthorized', '/errors/forbidden', '/errors/not-found',
+  '/errors/internal-server-error', '/errors/under-maintenance',
+  '/settings/user', '/settings/account', '/settings/billing',
+  '/settings/notifications', '/settings/connections',
+];
+
+test('PocketHost routes remain complete after removing upstream examples', () => {
+  const allPaths = [...routes.matchAll(/\\bpath:\\s*"([^"]+)"/g)].map((m) => m[1]);
   assert.equal(new Set(allPaths).size, allPaths.length);
-  for (const original of originalPaths) {
-    assert.ok(allPaths.includes(original), 'missing upstream path: ' + original);
+  for (const required of productPaths) {
+    assert.ok(allPaths.includes(required), 'missing PocketHost path: ' + required);
   }
-  assert.ok(allPaths.includes('/examples/dashboard'));
-  assert.ok(allPaths.includes('/host'));
-  assert.ok(allPaths.includes('/observability'));
-  assert.ok(allPaths.includes('/shizuku'));
-  assert.ok(allPaths.includes('/termux'));
-  for (const route of [
-    '/system',
-    '/packages',
-    '/files',
-    '/services',
-    '/backups',
-    '/terminal',
-    '/agents',
-  ]) {
-    assert.ok(allPaths.includes(route), 'missing first-class Termux module: ' + route);
+  for (const retired of retiredPaths) {
+    assert.ok(!allPaths.includes(retired), 'upstream example still registered: ' + retired);
   }
-  assert.ok(allPaths.includes('/settings/network'));
-  assert.ok(allPaths.includes('/owned-site'));
-  assert.ok(allPaths.includes('/sites'));
-  assert.ok(allPaths.includes('/projects'));
-  assert.ok(allPaths.includes('/services/runit'));
-  assert.ok(allPaths.includes('/services/autostart'));
-  assert.ok(allPaths.includes('/deployments'));
-  assert.ok(allPaths.includes('/runtime-logs'));
-  const chunks = [...routes.matchAll(/import\("@\/app\/([^"]+)"\)/g)].map((m) => m[1]);
-  assert.ok(chunks.length >= originalPaths.length + 19);
+  const chunks = [...routes.matchAll(/import\\("@\\/app\\/([^"]+)"\\)/g)].map((m) => m[1]);
   for (const page of chunks) {
     assert.ok(
       existsSync(path.join(root, 'apps/admin/src/app', page + '.tsx')),
@@ -90,6 +54,7 @@ test('all upstream routes remain available alongside unique PocketHost routes', 
   }
   assert.ok(existsSync(path.join(root, 'apps/admin/LICENSE.upstream.md')));
 });
+
 
 test('desktop-first index preserves native pinch zoom on Android Chrome', () => {
   const match = html.match(/<meta\s+name="viewport"\s+content="([^"]+)"/);
@@ -101,15 +66,10 @@ test('desktop-first index preserves native pinch zoom on Android Chrome', () => 
 
 test('Services menu uses one generic registry without duplicated hosted-app navigation', () => {
   const labels = [...navigation.matchAll(/label: "([^"]+)"/g)].map((match) => match[1]);
-  assert.deepEqual(labels.slice(0, 6), [
-    'Overview',
-    'Hosting',
-    'Services',
-    'System & Tools',
-    'Automation',
-    'Settings',
+  assert.deepEqual(labels, [
+    'Overview', 'Hosting', 'Services', 'Local Agent',
+    'System & Tools', 'Automation', 'Settings',
   ]);
-  assert.equal(labels.at(-1), 'Framework / CMS examples');
   assert.equal(labels.filter((name) => name === 'Services').length, 1);
   const services =
     navigation.split('label: "Services",')[1]?.split('label: "System & Tools",')[0] ?? '';
@@ -123,7 +83,7 @@ test('Services menu uses one generic registry without duplicated hosted-app navi
     assert.equal(services.split('url: "' + dest + '"').length - 1, 1, dest);
     assert.ok(routes.includes('path: "' + dest + '"'), 'missing route: ' + dest);
   }
-  assert.match(services, /serviceWorkspaces\.map/);
+  assert.match(services, /serviceWorkspaces\.filter/);
   const catalog = readFileSync(
     path.join(root, 'apps/admin/src/config/service-workspaces.ts'),
     'utf8',
@@ -138,21 +98,16 @@ test('Services menu uses one generic registry without duplicated hosted-app navi
   assert.match(navigation, /url: "\/settings\/network"/);
 });
 
-test('PocketHost dashboard is home and upstream charts stay available under examples', () => {
-  assert.match(routes, /path: "\/", element: <Navigate to="\/dashboard" replace \/>/);
-  assert.match(routes, /path: "\/system", element: <Navigate to="\/dashboard" replace \/>/);
+test('PocketHost dashboard is home without any sample dashboard route', () => {
+  assert.match(routes, /path: "\\/", element: <Navigate to="\\/dashboard" replace \\/>/);
+  assert.match(routes, /path: "\\/system", element: <Navigate to="\\/dashboard" replace \\/>/);
   assert.match(
     routes,
-    /path: "\/dashboard", lazy: page\(\(\) => import\("@\/app\/termux\/system-page"\)\)/,
+    /path: "\\/dashboard", lazy: page\\(\\(\\) => import\\("@\\/app\\/termux\\/system-page"\\)\\)/,
   );
-  assert.match(
-    routes,
-    /path: "\/examples\/dashboard", lazy: page\(\(\) => import\("@\/app\/dashboard\/page"\)\)/,
-  );
-  assert.match(navigation, /title: "Dashboard", url: "\/dashboard"/);
-  // Template routes remain directly accessible but are not product navigation.
-  assert.doesNotMatch(navigation, /label: "Examples"/);
-  assert.doesNotMatch(navigation, /title: "Framework dashboard"/);
+  assert.match(navigation, /title: "Dashboard", url: "\\/dashboard"/);
+  assert.doesNotMatch(routes, /examples\\/dashboard/);
+  assert.doesNotMatch(navigation, /Framework \\/ CMS examples/);
 });
 
 test('terminal React route does not get shadowed by ttyd reverse proxy', () => {

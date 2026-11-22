@@ -146,8 +146,14 @@ function main() {
     console.log(JSON.stringify({ base, head, changed: [], state: 'NO_CHANGES' }));
     return;
   }
+  // Keep deletions in the exact-SHA change report, but never ask formatters
+  // or linters to open paths that no longer exist.
+  const deletedPaths = git('diff', '--name-only', '--no-renames', '--diff-filter=D', '-z', base, head)
+    .split('\\0')
+    .filter(Boolean);
   const plan = planChangedChecks(paths, buildTestDependencies(head), {
     includeAdminLint,
+    deletedPaths,
   });
   console.log(
     JSON.stringify(
@@ -155,6 +161,7 @@ function main() {
         base,
         head,
         ...plan,
+        deletedPaths,
         mode: 'plan',
         adminLint: includeAdminLint ? 'requested' : 'deferred',
       },

@@ -155,3 +155,24 @@ test('exact Vite DEV API config change requires targeted contract and UI checks'
   const unsafe = planChangedChecks(['apps/admin/unknown.config.ts'], deps);
   assert.ok(unsafe.review.some((text) => text.includes('Explicit impact review')));
 });
+
+test('deleted UI examples do not send nonexistent paths to format or lint', () => {
+  const deletedPaths = [
+    'apps/admin/src/app/mail/page.tsx',
+    'apps/admin/src/components/pricing-plans.tsx',
+    'apps/admin/public/feature-1-light.png',
+  ];
+  const plan = planChangedChecks(deletedPaths, {}, { deletedPaths, includeAdminLint: true });
+  assert.deepEqual(plan.review, []);
+  assert.equal(command(plan, 'changed-file format'), undefined);
+  assert.equal(command(plan, 'admin changed-file lint'), undefined);
+  assert.ok(command(plan, 'admin incremental typecheck'));
+  assert.ok(command(plan, 'node tests').argv.includes('tests/quality/admin-preservation.test.mjs'));
+  assert.ok(command(plan, 'ui tests').argv.includes('tests/management-navigation.interaction.test.tsx'));
+});
+
+test('deleted privileged source remains blocked for explicit review', () => {
+  const deletedPaths = ['src/modules/host/termux-service-admin.ts'];
+  const plan = planChangedChecks(deletedPaths, {}, { deletedPaths });
+  assert.ok(plan.review.some((reason) => reason.includes('Deletion needs explicit impact review')));
+});

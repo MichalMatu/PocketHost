@@ -2,7 +2,12 @@
  * Dependency-aware, intentionally conservative PocketHost DEV gate planner.
  * Pure logic: no Git, filesystem or host operations.
  */
-export function planChangedChecks(paths, dependencies = {}, { includeAdminLint = false } = {}) {
+export function planChangedChecks(
+  paths,
+  dependencies = {},
+  { includeAdminLint = false, deletedPaths = [] } = {},
+) {
+  const deleted = new Set(deletedPaths);
   const changes = [...new Set(paths)].sort();
   const node = new Set();
   const ui = new Set();
@@ -26,6 +31,24 @@ export function planChangedChecks(paths, dependencies = {}, { includeAdminLint =
       file.split('/').some((part) => !part || part === '.' || part === '..')
     ) {
       review.push('Invalid change path: ' + String(file));
+      continue;
+    }
+    if (deleted.has(file)) {
+      // A removed page is covered by management route/404 contracts and a full
+      // TypeScript closure check. Other source deletion requires explicit review.
+      const browserCode =
+        (file.startsWith('apps/admin/src/app/') ||
+          file.startsWith('apps/admin/src/components/')) &&
+        /\\.(?:ts|tsx|js|jsx|md)$/.test(file);
+      const browserAsset =
+        file.startsWith('apps/admin/public/') || file.startsWith('apps/admin/src/assets/');
+      if (!browserCode && !browserAsset) {
+        review.push('Deletion needs explicit impact review: ' + file);
+      } else if (browserCode) {
+        adminTypes = true;
+        node.add('tests/quality/admin-preservation.test.mjs');
+        ui.add('tests/management-navigation.interaction.test.tsx');
+      }
       continue;
     }
     const markdown = file.endsWith('.md');
