@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { MemoryRouter } from "react-router-dom"
 import userEvent from "@testing-library/user-event"
 import LocalAgentPage from "@/app/local-agent/page"
 import { formatAgentDuration } from "@/lib/local-agent-time"
@@ -70,12 +71,12 @@ describe("Local Agent read-only overview", () => {
   it("summarizes actual local data without pretending Git publication is verified", async () => {
     const fetcher = mockFetch()
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     expect((await screen.findAllByText("Runit running")).length).toBeGreaterThan(0)
     expect(screen.getByText("383")).toBeTruthy()
     expect(screen.getByText(/Uptime 6 d 19 h 50 min 15 s/)).toBeTruthy()
     expect(screen.getByText("agent-control")).toBeTruthy()
-    expect(screen.getByText(/Not checked by panel/)).toBeTruthy()
+    expect(screen.getAllByText(/Not checked by panel/).length).toBeGreaterThan(0)
     expect(screen.getByText(/Current task:/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /Stop agent|Start agent|Restart agent/i })).toBeNull()
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
@@ -86,7 +87,7 @@ describe("Local Agent read-only overview", () => {
   it("shows the unmodified A8 log, without classifier, time conversion or masking", async () => {
     const fetcher = mockFetch()
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
     const raw = await screen.findByLabelText("Raw Agent console")
     await waitFor(() => expect(raw.textContent).toContain("TOKEN=exact-secret"))
@@ -122,7 +123,7 @@ describe("Local Agent read-only overview", () => {
       }
     })
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
     const raw = await screen.findByLabelText("Raw Agent console")
     await waitFor(() => expect(raw.textContent).toBe(rawEntry))
@@ -140,7 +141,7 @@ describe("Local Agent read-only overview", () => {
     vi.useFakeTimers({ toFake: ["setInterval", "clearInterval"] })
     const fetcher = mockFetch()
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
     await act(async () => { await vi.advanceTimersByTimeAsync(5000) })
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(3))
@@ -161,7 +162,7 @@ describe("Local Agent read-only overview", () => {
   it("refreshes both read-only sources and hides advanced details until requested", async () => {
     const fetcher = mockFetch()
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     await waitFor(() => expect(fetcher).toHaveBeenCalledTimes(2))
     const user = userEvent.setup()
     await user.click(screen.getByRole("button", { name: "Refresh" }))
@@ -175,7 +176,7 @@ describe("Local Agent read-only overview", () => {
 
   it("does not infer healthy execution from missing timing history", async () => {
     vi.stubGlobal("fetch", mockFetch())
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     fireEvent.click(screen.getByRole("tab", { name: "Tasks & activity" }))
     expect(await screen.findByText(/Timing history is not available/)).toBeTruthy()
     expect(screen.queryByText(/No active duration alerts/)).toBeNull()
@@ -197,7 +198,7 @@ describe("Local Agent read-only overview", () => {
         ? controlPlane : withLatency,
     }))
     vi.stubGlobal("fetch", fetcher)
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     fireEvent.click(screen.getByRole("tab", { name: "Tasks & activity" }))
     expect(await screen.findByText(/Performance attention required/)).toBeTruthy()
     expect(screen.getAllByText("7 min").length).toBeGreaterThan(1)
@@ -208,10 +209,10 @@ describe("Local Agent read-only overview", () => {
 
   it("handles errors with explicit unknown status and never suggests successful publication", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => ({ ok: false })))
-    render(<LocalAgentPage />)
+    render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
     expect((await screen.findAllByRole("alert")).length).toBeGreaterThan(0)
     expect(screen.getAllByText("Not verified").length).toBeGreaterThan(0)
-    expect(screen.getByText("Not checked by panel")).toBeTruthy()
+    expect(screen.getAllByText("Not checked by panel").length).toBeGreaterThan(0)
   })
 })
 
