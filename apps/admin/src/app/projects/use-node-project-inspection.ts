@@ -57,10 +57,12 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
     let status: Record<string, unknown>
     let preview: Record<string, unknown>
     try {
-      ;[status, preview] = await Promise.all([
+      const data = await Promise.all([
         getJson(api + "/" + id + "/runtime"),
         getJson(api + "/" + id + "/plan"),
       ])
+      status = data[0]
+      preview = data[1]
     } catch (cause) {
       if (current()) throw cause
       return null

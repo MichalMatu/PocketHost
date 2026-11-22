@@ -66,7 +66,7 @@ it("ignores stale Node releases and runtime after switching deep-linked projects
   }))
   let finishFirstReleases: ((response: unknown) => void) | undefined
   let finishFirstRuntime: ((response: unknown) => void) | undefined
-  const requests = vi.fn(async (url: string) => {
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
     if (url === "/api/v1/node-projects")
       return { ok: true, json: async () => ({ projects }) }
     if (url === "/api/v1/node-projects/" + first + "/releases")
@@ -100,10 +100,11 @@ it("ignores stale Node releases and runtime after switching deep-linked projects
   render(<MemoryRouter initialEntries={["/projects?project=" + first]}>
     <NavigateToSecond /><ProjectsPage />
   </MemoryRouter>)
-  expect(await screen.findByText("First app")).toBeTruthy()
+  expect(await screen.findByRole("button", { name: "First app" })).toBeTruthy()
   await waitFor(() => expect(finishFirstReleases).toBeTypeOf("function"))
   await waitFor(() => expect(finishFirstRuntime).toBeTypeOf("function"))
   fireEvent.click(screen.getByRole("button", { name: "Choose second link" }))
+  fireEvent.click(screen.getByText("Technical details"))
   expect(await screen.findByText(/Staged candidate plan: second-current/)).toBeTruthy()
   const outdatedRelease = {
     id: firstRelease, active: false, candidate: true, previousCandidate: false,
