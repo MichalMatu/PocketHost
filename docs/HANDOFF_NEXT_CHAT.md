@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — basename-safe error recovery
+
+- **App fix on main:** `db1ec8f073babd57d3f0ea6fe7081ead29af2b6e` changes the route-load error screen's Dashboard recovery from hardcoded `<a href="/dashboard">` to React Router `<Link to="/dashboard">`, preserving the configured `createBrowserRouter` basename in subpath deployments. The ordinary Dashboard and 404 routes already use router links; no backend logic was touched.
+- **Regressions added:** `tests/quality/root-error-basename.test.mjs` checks the recovery link contract and routing configuration. QA, format/typecheck and builds **not executed**: the private A8 agent-control transport still has an immutable, unmatched N12 QA task with unknown terminal state, and its queue-state provenance cannot be trusted. Do not overlap or retry the unknown N12 task. Once resolved, perform exact-current-main A8 scoped QA including `admin-types,ui` and focused Node/quality tests, then consider guarded DEV only with fresh PID/ownership/protected-services readback.
+- **No live operations:** no A8 QA, Mac capture, deployment, scheduler, screenshot transfer or protected-service changes; last historical DEV PASS N11 `c4dedfd` remains historical evidence, not fresh runtime inspection.
+
 ## 22 November continuation — mobile navigation Visual QA (opt-in)
 
 - **Code commit:** `1e960ecf09e22a8224339863ff004a00f403924f` implements `--mobile-menu=true` in `scripts/test-lab/capture.mjs` to capture a local, viewport-bounded screenshot of the opened mobile sidebar for explicitly allowlisted routes, without enabling it for the default run. `mobile-navigation-capture.mjs` uses the existing sidebar trigger and restores the original drawer state on success or failure. `artifact-names.mjs` permits `<route>-mobile-menu.png` only for the mobile viewport. Local gallery, report summary and optional warning counts include the extra shot. Existing GET-only interception and no-transmission rules remain unchanged.
