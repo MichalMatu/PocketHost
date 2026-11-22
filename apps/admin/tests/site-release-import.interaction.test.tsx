@@ -59,7 +59,7 @@ it.each(["ZIP", "folder"] as const)(
     const setMessage = vi.fn()
     const hook = renderHook(() => useSiteReleaseImport({
       site, busy: false, outcomeUnknown: false,
-    html: "<h1>Hello</h1>", editorReady: true, execute, setError, setMessage,
+      html: "<h1>Hello</h1>", editorReady: true, execute, setError, setMessage,
     }))
     act(() => {
       if (kind === "ZIP") {
@@ -102,6 +102,22 @@ it("preserves first ZIP update readback requirements without starting any host a
     .toBe(true)
   expect(expected({ ...site, activeRelease: null, fileCount: 0, bytes: 0 }))
     .toBe(false)
+})
+
+it.each([
+  { name: "unverified editor", editorReady: false, busy: false, outcomeUnknown: false },
+  { name: "busy operation", editorReady: true, busy: true, outcomeUnknown: false },
+  { name: "unconfirmed prior write", editorReady: true, busy: false, outcomeUnknown: true },
+])("does not publish HTML when $name blocks the action", scenario => {
+  const execute = vi.fn(async () => {})
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, fileCount: 1 }, html: "<h1>Updated</h1>",
+    ...scenario, execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  act(() => { hook.result.current.publishHtml() })
+  expect(execute).not.toHaveBeenCalled()
+  expect(confirm).not.toHaveBeenCalled()
 })
 
 it("rejects oversized multibyte HTML without scheduling a release", () => {

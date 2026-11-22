@@ -23,7 +23,7 @@ type Options = {
   setMessage: React.Dispatch<React.SetStateAction<string | null>>
 }
 
-/** Existing-site ZIP/folder release controller; site readback stays in the owner gate. */
+/** Existing-site ZIP, folder and HTML release controller; owner readback remains upstream. */
 export function useSiteReleaseImport({
   site, busy, outcomeUnknown, html, editorReady, execute, setError, setMessage,
 }: Options) {
