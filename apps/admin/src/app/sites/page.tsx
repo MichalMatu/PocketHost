@@ -10,13 +10,14 @@ import { SiteCreationForm } from "./site-creation-form"
 import { useSiteVersions } from "./use-site-versions"
 import { useSiteAssets } from "./use-site-assets"
 import { useSiteHtmlEditor } from "./use-site-html-editor"
+import { useSiteReleaseImport } from "./use-site-release-import"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
-import { endpoint, maxStarterHtml, readSignal, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, mutate, siteAddress, encodeBase64, StaticSiteInputRejected } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -135,34 +136,9 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         name === "rollback" ? observed.activeRelease === site.previousRelease :
         observed.state === "running")
   }
-  const zip = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.currentTarget.files?.[0]
-    event.currentTarget.value = ""
-    if (!file || busy || outcomeUnknown || site.state === "unknown") return
-    const invalid = validateStaticZipSelection(file)
-    if (invalid) {
-      setError(invalid)
-      setMessage(null)
-      return
-    }
-    if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
-    void execute(() => mutate(endpoint + "/" + site.id + "/deploy", "PUT", file, "application/zip"),
-      "ZIP was published as a new immutable release.", true,
-      observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease &&
-        observed.fileCount > 0 && observed.bytes > 0)
-  }
-  const folder = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.currentTarget.files ?? [])
-    event.currentTarget.value = ""
-    if (!files.length || busy || outcomeUnknown || site.state === "unknown") return
-    const invalid = validateStaticFolderSelection(files)
-    if (invalid) { setError(invalid); setMessage(null); return }
-    if (site.activeRelease && !window.confirm("Publish a new release of " + site.name + "?")) return
-    void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
-      await encodeStaticFolder(files), "application/json"),
-      "Folder was published as a new immutable release.", true,
-    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
-  }
+  const { zip, folder } = useSiteReleaseImport({
+    site, busy, outcomeUnknown, execute, setError, setMessage,
+  })
   const publishHtml = () => {
     if (busy || outcomeUnknown || !editorReady || site.state === "unknown" || site.fileCount > 1 || !html.trim()) return
     const bytes = new TextEncoder().encode(html)
