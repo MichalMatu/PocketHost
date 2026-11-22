@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseCandidates, parseProjectCatalog, validProject } from "@/app/projects/node-project-client"
+import { parseCandidates, parseNodeHealth, parseProjectCatalog, validProject } from "@/app/projects/node-project-client"
 
 const valid = {
   id: "r-" + "a".repeat(32),
@@ -90,5 +90,31 @@ describe("owned Node project catalog integrity", () => {
     }))
     expect(() => parseProjectCatalog(oversized))
       .toThrow("Invalid Node project registry response")
+  })
+})
+
+describe("owned Node readiness response", () => {
+  const release = "r-" + "b".repeat(32)
+  it("preserves verified health values without coercion", () => {
+    expect(parseNodeHealth({ state: "running", release, ready: true }))
+      .toEqual({ state: "running", release, ready: true })
+    expect(parseNodeHealth({ state: "stopped", release, ready: null }))
+      .toEqual({ state: "stopped", release, ready: null })
+    expect(parseNodeHealth({ state: "not-provisioned", release: null, ready: null }))
+      .toEqual({ state: "not-provisioned", release: null, ready: null })
+  })
+
+  it.each([
+    { state: Object("running"), release, ready: true },
+    { state: { toString: () => "running" }, release, ready: true },
+    { state: 123, release, ready: true },
+    { state: "running", release, ready: "true" },
+    { state: "running", release, ready: undefined },
+    { state: "running", release: undefined, ready: true },
+    { state: "running", release: "foreign", ready: true },
+    null,
+    [],
+  ])("refuses malformed health replies rather than reporting readiness: %s", invalid => {
+    expect(() => parseNodeHealth(invalid)).toThrow("Invalid owned Node health response")
   })
 })

@@ -18,7 +18,7 @@ import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease, localEventTime } from "./node-project-display"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, parseProjectCatalog, requestJson, NodeProjectValidationError,
+  validatedExtras, validatedAssets, parseProjectCatalog, parseNodeHealth, requestJson, NodeProjectValidationError,
   type Project, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
@@ -392,13 +392,7 @@ export default function ProjectsPage() {
                 <Button variant="outline" disabled={busy} onClick={() => action(async () => {
                   const response = await readScoped(selected.id, "health")
                   if (!response) return
-                  const value = response.health as Record<string, unknown> | undefined
-                  if (!value || !["not-provisioned", "stopped", "running", "unknown"].includes(String(value.state)) ||
-                    (value.ready !== null && typeof value.ready !== "boolean") ||
-                    (value.release !== null && (typeof value.release !== "string" ||
-                      !/^r-[a-f0-9]{32}$/.test(value.release))))
-                    throw new Error("Invalid owned Node health response")
-                  setHealth(value as NodeHealth)
+                  setHealth(parseNodeHealth(response.health))
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized || runtime?.state !== "running"}

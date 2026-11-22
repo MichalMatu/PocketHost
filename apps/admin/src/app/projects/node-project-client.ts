@@ -132,6 +132,20 @@ export type NodeHealth = {
   release: string | null
   ready: boolean | null
 }
+/** Accept literal host health fields only, never stringified status objects. */
+export function parseNodeHealth(value: unknown): NodeHealth {
+  if (!value || typeof value !== "object" || Array.isArray(value))
+    throw new Error("Invalid owned Node health response")
+  const report = value as Record<string, unknown>
+  if (typeof report.state !== "string" ||
+      !["not-provisioned", "stopped", "running", "unknown"].includes(report.state) ||
+      (report.ready !== null && typeof report.ready !== "boolean") ||
+      (report.release !== null && (typeof report.release !== "string" ||
+        !/^r-[a-f0-9]{32}$/.test(report.release))))
+    throw new Error("Invalid owned Node health response")
+  return { state: report.state as NodeHealth["state"],
+    release: report.release as string | null, ready: report.ready as boolean | null }
+}
 export type DependencyReview = {
   release: string
   status: "not-required" | "review-required" | "prepared" | "blocked"
