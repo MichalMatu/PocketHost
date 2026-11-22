@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — Static Hosting version read cancel button
+
+- **Code commit:** `94c9738326d00481c06ac160f44c7446f4c3749d`. The pending release-history request could already be invalidated by `useSiteVersions`, but the actual `SiteCard` button was disabled while `versionsLoading` was true, making that cancellation unreachable. The button now remains enabled unless an independent site operation is busy and reads **Cancel version read** while pending. Closing invalidates the previous request and permits immediate reopen; no host API or mutation changed.
+- **Interaction regression authored, NOT RUN:** `apps/admin/tests/site-fleet.interaction.test.tsx` verifies that the pending version button can be clicked, reopened history loads, and an old late empty reply does not replace its 3 rendered releases. No A8 QA, browser validation, TypeScript, format, build or DEV deployment was run.
+- **A8 HOLD:** independent read of the exact N12 private result at `MichalMatu/local-agent:agent-control` still shows `unknown` / `interrupted_or_uncertain_execution_no_replay`. Previous host claims were `unverified` with `host_task_record_unsafe_or_unbounded`; this turn did not obtain trusted on-device reconciliation. Do **not** replay N12 or publish conflicting QA/DEV. When locally reconciled, pin the exact latest main SHA and run bounded A8 `format,admin-types,ui`, including this new version-button regression and pending Static/Node/Local Agent tests. Guarded DEV needs separate confirmed QA PASS, ownership, PID/start ticks, HTTP and unchanged protected services. Standing owner QA permission remains in force. No scheduler, Agent restart/upgrade, customer data or public service modifications.
+
 ## 22 November continuation — Static Hosting duplicate-operation latch
 
 - **Code commit:** `d16bd9adc329ea2dc65c9729d04de2653e8a1eae`. `SiteCard.execute` in `apps/admin/src/app/sites/page.tsx` now acquires an immediate ref-based in-flight gate before setting React `busy`, releasing the ref in `finally`. A second Start/Stop/deploy/read event delivered before the React render is not allowed to issue a duplicate HTTP operation; existing exact-site acknowledgment/readback, uncertain outcome handling and UI are unchanged.
