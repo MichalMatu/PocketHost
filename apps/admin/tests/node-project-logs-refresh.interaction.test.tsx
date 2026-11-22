@@ -40,6 +40,27 @@ it("clears prior Node lines immediately on refresh and retains verbatim new line
   expect(read).toHaveBeenCalledWith("/api/v1/node-projects/" + id + "/logs")
 })
 
+it.each([
+  { name: "too many lines", lines: Array.from({ length: 101 }, () => first) },
+  { name: "oversized line", lines: ["X".repeat(241)] },
+  { name: "invalid entry", lines: [first, 123] },
+])("rejects $name without displaying partial or previous Node logs", async scenario => {
+  const read = vi.fn(async () => ({ logs: { lines: [first] } })) as
+    ReturnType<typeof vi.fn<(url: string) => Promise<Record<string, unknown>>>>
+  const hook = renderHook(() => useNodeProjectLogs(read))
+  await act(async () => { await hook.result.current.loadLogs(id) })
+  expect(hook.result.current.logLines).toEqual([first])
+
+  read.mockImplementationOnce(async () => ({ logs: { lines: scenario.lines } }))
+  await act(async () => {
+    await expect(hook.result.current.loadLogs(id)).rejects.toThrow("Invalid bounded service logs")
+  })
+  expect(hook.result.current.logLines).toEqual([])
+  expect(hook.result.current.logsLoading).toBe(false)
+  expect(hook.result.current.logsChecked).toBe(false)
+  expect(hook.result.current.logsError).toMatch(/logs unavailable/)
+})
+
 it("does not keep old lines when the fresh read fails", async () => {
   const next = deferred<Record<string, unknown>>()
   const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> =>

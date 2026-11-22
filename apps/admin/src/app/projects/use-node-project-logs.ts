@@ -32,7 +32,11 @@ export function useNodeProjectLogs(getJson: ReadJson) {
       const response = await getJson(api + "/" + id + "/logs")
       if (request !== generation.current) return false
       const logs = response.logs as { lines?: unknown } | undefined
-      if (!Array.isArray(logs?.lines) || !logs.lines.every(x => typeof x === "string"))
+      // The owned runit reader returns at most 100 original lines, each
+      // capped at 240 characters. Reject inconsistent responses rather than
+      // silently trimming or rendering an unbounded log snapshot.
+      if (!Array.isArray(logs?.lines) || logs.lines.length > 100 ||
+          !logs.lines.every(x => typeof x === "string" && x.length <= 240))
         throw new Error("Invalid bounded service logs")
       setLogLines(logs.lines as string[])
       setLogsChecked(true)
