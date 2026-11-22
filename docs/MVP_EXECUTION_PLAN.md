@@ -11,7 +11,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Version boundary
 
-- **Last verified A8 DEV panel:** `2fffd41e9e1681d154a921465040d0c0a007ab1e` guarded DEPLOY PASS (PID 15121, ticks 71697467, HTTP 200). Newer source `b062c35eb081e378155e087e44282da3b91dc8a3` adds an advisory offline-runtime review, **not deployed**: GitHub task-publication error; task/result absent, **HOLD**. No QA or mutable-data operations ran.
+- **Last verified A8 DEV panel:** `6e7601fbd774364c7c3fa9362d7c90a9549b416d`, guarded receipt `pockethost-a8-node-offline-review-6e7601f-reconciled-deploy-20261122-v1` **DEPLOY PASS**, PID **19436**, start ticks **71738996**, HTTP **200**, protected services unchanged. Includes data storage inventory and advisory offline runtime assessment in Projects. **No QA or mutable-data backup/restore was run**.
 - **Last independently approved scoped QA:** `73b2da8` PASS (`format,structure,boundaries,root-lint,root-types,node,syntax`); earlier UI 65/65 PASS at `6585afe`. New `f9e52c83d7884d6db84e3946de9c4e017d930059` snapshot/fixture code is **not QA-certified**; full G2 and G3 separate.
 - **Static ZIP test-only addition:** `ed1337e9eab4f70f2d393f0339468756b85bf042` added an independent reimport/HTTP regression; A8 `node,syntax` **PASS**, receipt `pockethost-a8-static-zip-reimport-node-qa-ed1337e-20261121-v1`. That test-only commit did not restart the panel. A **later** guarded Node backup code deployment moved the last attested live SHA to `96c2879`.
 - **Live ZIP exercise:** API active ZIP export → strict archive decode → independent temporary Static project import/HTTP byte verification **PASS** (1 file, 432 bytes; 550-byte ZIP), original untouched, fixture removed. Receipt `pockethost-a8-live-static-export-isolated-import-6585afe-20261121-v1`. Browser ZIP-upload path and independently durable Static backup remain OPEN.
@@ -21,7 +21,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 | Moduł                         | Stan                                     | Granica odbioru                                                                                        |
 | ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | DEPLOY PASS; new UI not QA certified     | Live 2fffd41; PID 15121/ticks/HTTP/protected services PASS; scoped QA older at 73b2da8               |
+| A8 DEV / Local Agent          | DEPLOY PASS; new UI not QA certified     | Live 6e7601f; PID 19436/ticks/HTTP/protected services PASS; scoped QA older at 73b2da8              |
 | SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
 | Static Hosting                | Core + isolated ZIP PASS; browser OPEN   | Real A8 ZIP export and isolated import/HTTP equality PASS; browser ZIP upload still open               |
 | Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
@@ -40,7 +40,7 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 ## Immediate priority — broad functionality before deep refinement
 
 1. **Static ZIP scoped PASS; browser OPEN:** actual A8 export → strict decode → isolated reimport/HTTP byte equality PASS, original unchanged and temporary fixture removed. Next browser upload to a separately created disposable owned site requires safe verified cleanup; do not confuse the isolated host path with browser flow.
-2. **Project recovery (next):** project-owned mutable storage can be inventoried with owner authorization; new UI/API awaiting exact-SHA QA. Detached offline snapshot/staging code is still **disabled as an operation**. Next fixture-only end-to-end proof, then authoritative stopped-state binding; no live data backup or off-device transfer.
+2. **Project recovery (next):** read-only project data storage and owned-runtime offline prerequisites are deployed; stopped-state indication does **not** certify database consistency. Exact-SHA Node/API/UI QA and disposable fixture-only backup→staging restore remain OPEN. Snapshot operations still not exposed to API/UI; no off-device transfer.
 3. **One new project end to end:** reuse existing Static ZIP/folder and Node local/GitHub intake; demonstrate deployment, update, logs, health, rollback and retained data. Only after all base features work is `photomap.pl` the proposed real migration.
 4. **Cloudflare using Pi only:** inventory current Pi public hostname/DNS, choose a safe owned app on A8, prepare validated ingress candidate with preserved old Pi origin and same named tunnel. Do not route unauthenticated PocketHost admin, SSH or MQTT publicly. No change to DNS/connector yet. [Design](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
 5. **Separate physical acceptance:** Android Termux:Boot restore following an explicitly approved reboot; then pending Services S1–S4 worker controls/current-browser selection, scoped negative tests and **only when separately approved** full QA.
