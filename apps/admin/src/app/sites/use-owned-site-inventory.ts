@@ -23,6 +23,10 @@ export function useOwnedSiteInventory() {
         setError(cause instanceof Error ? cause.message : "Could not load static sites.")
       }
       throw cause
+    } finally {
+      // Only the newest active read may finish the inventory loading state.
+      // A site-card readback can supersede a manual Refresh.
+      if (!signal?.aborted && current === sequence.current) setLoading(false)
     }
   }, [])
 
@@ -30,14 +34,12 @@ export function useOwnedSiteInventory() {
     const controller = new AbortController()
     void Promise.resolve().then(() => reload(controller.signal))
       .catch(() => {})
-      .finally(() => { if (!controller.signal.aborted) setLoading(false) })
     return () => controller.abort()
   }, [reload])
 
   const refresh = async () => {
     setLoading(true)
     await reload().catch(() => undefined)
-    setLoading(false)
   }
 
   return { sites, setSites, loading, error, setError, reload, refresh }
