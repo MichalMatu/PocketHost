@@ -15,12 +15,21 @@ it("keeps product search and sidebar synchronized with every active management r
   expect(active.length).toBeGreaterThanOrEqual(18)
   expect(active.filter(item => item.url === "/local-agent")).toHaveLength(1)
   expect(active.filter(item => item.url === "/services")).toHaveLength(1)
-  expect(navGroups.some(group => group.label === "Examples")).toBe(false)
+  expect(navGroups.some(group => /examples|framework/i.test(group.label))).toBe(false)
   for (const path of paths) {
     expect(path.startsWith("/")).toBe(true)
     expect(routes.some(route => route.path === path), path).toBe(true)
   }
-  expect(routes.some(route => route.path === "/examples/dashboard")).toBe(true)
+  for (const retired of [
+    "/examples/dashboard", "/dashboard-2", "/landing", "/mail", "/tasks", "/chat",
+    "/calendar", "/users", "/faqs", "/pricing", "/auth/sign-in", "/auth/sign-up",
+    "/settings/user", "/settings/account", "/settings/billing",
+    "/settings/notifications", "/settings/connections", "/errors/unauthorized",
+    "/errors/forbidden", "/errors/under-maintenance",
+  ]) {
+    expect(routes.some(route => route.path === retired), retired).toBe(false)
+  }
+  expect(routes.some(route => route.path === "*")).toBe(true)
   const onOpenChange = vi.fn()
   render(<MemoryRouter><CommandSearch open onOpenChange={onOpenChange} /></MemoryRouter>)
   expect(await screen.findByText("File Manager")).toBeTruthy()

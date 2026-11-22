@@ -112,15 +112,11 @@ describe("PocketHost global heading density", () => {
     expect(rendered.container.querySelector(".text-2xl")).toBeNull()
   })
 
-  it("preserves visible upstream demo headings and their normal spacing", () => {
-    const rendered = show("/examples/dashboard", "Dashboard example")
-    const h1 = rendered.container.querySelector("h1")
-    expect(h1?.textContent).toBe("Dashboard example")
-    expect(h1?.classList.contains("text-2xl")).toBe(true)
-    expect(rendered.getByText("Footer")).toBeTruthy()
-    expect(h1?.parentElement?.parentElement?.textContent).toContain("Descriptive subtitle")
-    expect(Array.from(rendered.container.querySelectorAll("div")).some(element =>
-      element.classList.contains("py-4") && element.classList.contains("md:py-6"),
-    )).toBe(true)
+  it("does not restore legacy layout styling for retired demo URLs", () => {
+    const rendered = show("/examples/dashboard", "Retired example")
+    expect(rendered.container.querySelector("h1")?.parentElement?.classList.contains("sr-only")).toBe(true)
+    expect(rendered.container.querySelector(".text-2xl")).toBeNull()
+    expect(rendered.queryByText("Footer")).toBeNull()
+    rendered.unmount()
   })
 })
