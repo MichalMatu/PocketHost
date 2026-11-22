@@ -19,21 +19,21 @@ purpose: Compact current PocketHost MVP acceptance tracker; evidence lives in ca
 
 ## Module acceptance matrix
 
-| Moduł                         | Stan                                     | Granica odbioru                                                                                        |
-| ----------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| A8 DEV / Local Agent          | DEPLOY PASS; latest UI QA OPEN       | Live d2d5564 PID 6977, ticks/HTTP/protected services PASS; older QA at 9b910d8                |
-| SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6`   |
-| Static Hosting                | API ZIP reimport PASS; browser OPEN  | ZIP/folder/custom HTML one-step creation deployed; real browser acceptance still OPEN            |
-| Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                  |
-| Hosting / Deployments / Logs  | Basic routes PASS; browser sign-off OPEN | One Static + one Node catalog, pages HTTP 200; current-browser selection not signed off                |
-| Backups & Recovery            | Source Restic PASS; mutable data PARTIAL | Detached snapshot UI rejects older async reads and verification receipts; real recovery OPEN      |
-| Services S1–S4                | READY_FOR_ACCEPTANCE                     | Owned fixed-template worker exercised; general custom worker/negative cases open                       |
-| Mosquitto MQTT                | Loopback MVP PASS                        | Runit + publish/subscribe + CONNACK at `127.0.0.1:1883`; LAN closed                                    |
-| Health checks                 | A8 API PASS; browser OPEN                | On-demand Agent/SSH/MQTT/Cloudflare checks; manual button and fault path acceptance open               |
-| Autostart / Termux:Boot       | Current-session visibility PASS          | 3/3 executable hooks; physical reboot/startup persistence unverified                                   |
-| Cloudflare shared tunnel      | Pi connector observed; new ingress OPEN  | One named tunnel on Pi to Pi `127.0.0.1:8000`; A8 optional connector stopped; no public route added    |
-| Android / Companion / Shizuku | PARTIAL / deferred                       | Basic UI and host diagnostics; physical optional bridge and public production mode not qualified       |
-| Full repo G2 / physical G3    | NOT CERTIFIED                            | Broad changed-scope QA PASS at 6585afe; coverage/admin build/reboot not certified                      |
+| Moduł                         | Stan                                     | Granica odbioru                                                                                      |
+| ----------------------------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A8 DEV / Local Agent          | DEPLOY PASS; latest UI QA OPEN           | Live d2d5564 PID 6977, ticks/HTTP/protected services PASS; older QA at 9b910d8                       |
+| SSH / Terminal                | Scoped functional PASS                   | Mac interactive terminal + disconnect; A8 profile CRUD and dedicated SSH lifecycle PASS on `8e200b6` |
+| Static Hosting                | API ZIP reimport PASS; browser OPEN      | ZIP/folder/custom HTML one-step creation deployed; real browser acceptance still OPEN                |
+| Trusted Node Hosting          | Core lifecycle PASS                      | Deploy/HTTP/logs/update/stop/start/rollback; untrusted code isolation not implemented                |
+| Hosting / Deployments / Logs  | Basic routes PASS; browser sign-off OPEN | One Static + one Node catalog, pages HTTP 200; current-browser selection not signed off              |
+| Backups & Recovery            | Source Restic PASS; mutable data PARTIAL | Detached snapshot UI rejects older async reads and verification receipts; real recovery OPEN         |
+| Services S1–S4                | READY_FOR_ACCEPTANCE                     | Owned fixed-template worker exercised; general custom worker/negative cases open                     |
+| Mosquitto MQTT                | Loopback MVP PASS                        | Runit + publish/subscribe + CONNACK at `127.0.0.1:1883`; LAN closed                                  |
+| Health checks                 | A8 API PASS; browser OPEN                | On-demand Agent/SSH/MQTT/Cloudflare checks; manual button and fault path acceptance open             |
+| Autostart / Termux:Boot       | Current-session visibility PASS          | 3/3 executable hooks; physical reboot/startup persistence unverified                                 |
+| Cloudflare shared tunnel      | Pi connector observed; new ingress OPEN  | One named tunnel on Pi to Pi `127.0.0.1:8000`; A8 optional connector stopped; no public route added  |
+| Android / Companion / Shizuku | PARTIAL / deferred                       | Basic UI and host diagnostics; physical optional bridge and public production mode not qualified     |
+| Full repo G2 / physical G3    | NOT CERTIFIED                            | Broad changed-scope QA PASS at 6585afe; coverage/admin build/reboot not certified                    |
 
 **Meaning:** DEPLOY PASS proves applied source, owner/PID/ticks, core HTTP and protected-service isolation. It **does not** prove fresh UI/test acceptance. Old scoped PASS applies only to the task, SHA and exact feature checked.
 
