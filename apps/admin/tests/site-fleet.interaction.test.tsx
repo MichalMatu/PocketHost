@@ -726,6 +726,35 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(requests.mock.calls.filter(([, opts]) => opts?.method === "POST")).toHaveLength(1)
   })
 
+  it("sends exactly one Start POST when two clicks arrive before React rerenders", async () => {
+    let completeStart!: (response: unknown) => void
+    const firstPost = new Promise<unknown>(resolve => { completeStart = resolve })
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+      if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST")
+        return firstPost
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    const start = screen.getByRole("button", { name: /^Start$/ })
+    act(() => {
+      fireEvent.click(start)
+      fireEvent.click(start)
+    })
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+    await act(async () => {
+      completeStart({ ok: false, status: 503 })
+      await firstPost
+    })
+    expect(await screen.findByText(/Write actions are paused for this site/)).toBeTruthy()
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+    expect((screen.getByRole("button", { name: /^Start$/ }) as HTMLButtonElement).disabled).toBe(true)
+  })
+
   it("starts only the selected PocketHost-owned site through Hosting with explicit intent", async () => {
     const user = userEvent.setup()
     let current = project("stopped", true)

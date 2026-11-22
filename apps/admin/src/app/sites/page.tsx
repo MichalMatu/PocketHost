@@ -20,6 +20,9 @@ import { endpoint, maxStarterHtml, readSignal, starterHtml, mutate, siteAddress,
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
+  // React state is applied after this event turn; the ref prevents a second
+  // mutation/read from entering the same site while the first is in flight.
+  const operationInFlight = React.useRef(false)
   const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
   const readEpoch = React.useRef(0)
   React.useEffect(() => {
@@ -60,7 +63,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     job: () => Promise<unknown>, success: string, mutation = false,
     expected?: (observed: FleetSite) => boolean,
   ) => {
-    if (busy || (mutation && outcomeUnknown)) return
+    if (operationInFlight.current || busy || (mutation && outcomeUnknown)) return
+    operationInFlight.current = true
     const readRevision = readEpoch.current
     const currentRead = () => mutation || readRevision === readEpoch.current
     setBusy(true)
@@ -117,6 +121,7 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
       }
       if (currentRead()) setMessage(success)
     } finally {
+      operationInFlight.current = false
       setBusy(false)
     }
   }
