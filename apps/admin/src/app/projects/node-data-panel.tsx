@@ -205,7 +205,9 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
 
   const inspect = async () => {
     const requestedId = projectId
-    const version = requestVersion.current
+    // A new inspection supersedes earlier inspections and byte-verification
+    // replies, even when the selected project and owner session are unchanged.
+    const version = ++requestVersion.current
     setReport(null)
     setSnapshots(null)
     setScopeUnavailable(false)
@@ -219,8 +221,7 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
       })),
       getJson(api + "/" + requestedId + "/data-snapshots").then(parseSnapshotIndex),
     ])
-    if (version !== requestVersion.current)
-      throw new Error("Node project or owner session changed. Inspect again.")
+    if (version !== requestVersion.current) return
     if (scopeResult.status === "fulfilled") setReport(scopeResult.value)
     else setScopeUnavailable(true)
     if (indexResult.status === "fulfilled") setSnapshots(indexResult.value)
@@ -234,13 +235,12 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     try {
       const response = await getJson(api + "/" + selectedId + "/data-snapshots/" +
         snapshot.snapshot + "/verify")
-      if (version !== requestVersion.current)
-        throw new Error("Project or owner session changed during verification")
+      if (version !== requestVersion.current) return
       parseVerification(response, snapshot)
       setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "verified" }))
     } catch (error) {
-      if (version === requestVersion.current)
-        setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "unavailable" }))
+      if (version !== requestVersion.current) return
+      setIntegrity((previous) => ({ ...previous, [snapshot.snapshot]: "unavailable" }))
       throw error
     }
   }

@@ -1,6 +1,6 @@
 import * as React from "react"
 import { expect, it, vi } from "vitest"
-import { fireEvent, render, screen } from "@testing-library/react"
+import { act, fireEvent, render, screen } from "@testing-library/react"
 import { NodeDataPanel } from "@/app/projects/node-data-panel"
 
 const PROJECT = "node-" + "a".repeat(32)
@@ -118,4 +118,59 @@ it("discards snapshot metadata when owner session or selected project changes", 
   expect(screen.queryByText(SNAPSHOT)).toBeNull()
   expect((screen.getByRole("button", { name: "Inspect data storage" }) as HTMLButtonElement).disabled)
     .toBe(true)
+})
+
+
+it("does not let an older inspection overwrite newer detached snapshot results", async () => {
+  let completeFirstIndex: ((value: Record<string, unknown>) => void) | undefined
+  let indexRequests = 0
+  const requests = vi.fn(async (url: string) => {
+    if (url.endsWith("/data-scope")) return scope
+    if (url.endsWith("/data-snapshots")) {
+      indexRequests += 1
+      if (indexRequests === 1) {
+        return new Promise<Record<string, unknown>>((resolve) => {
+          completeFirstIndex = resolve
+        })
+      }
+      return { ...index, snapshots: [] }
+    }
+    throw new Error("Unexpected request " + url)
+  })
+  display(requests)
+  fireEvent.click(screen.getByRole("button", { name: "Inspect data storage" }))
+  await screen.findByText("Detached local snapshots (0)")
+  await act(async () => {
+    completeFirstIndex!(index)
+  })
+  expect(screen.queryByText("Detached local snapshots (1)")).toBeNull()
+  expect(screen.queryByText(SNAPSHOT)).toBeNull()
+  expect(screen.getByText(/No snapshots recorded for this project/)).toBeTruthy()
+})
+
+it("does not reuse an in-flight verification after a new inspection", async () => {
+  let completeVerification: ((value: Record<string, unknown>) => void) | undefined
+  const requests = vi.fn(async (url: string) => {
+    if (url.endsWith("/data-scope")) return scope
+    if (url.endsWith("/data-snapshots")) return index
+    if (url.endsWith("/verify")) {
+      return new Promise<Record<string, unknown>>((resolve) => {
+        completeVerification = resolve
+      })
+    }
+    throw new Error("Unexpected request " + url)
+  })
+  display(requests)
+  await screen.findByText("Detached local snapshots (1)")
+  fireEvent.click(screen.getByRole("button", { name: "Verify stored bytes" }))
+  await screen.findByText(/Checking stored bytes/)
+  fireEvent.click(screen.getByRole("button", { name: "Inspect data storage" }))
+  await screen.findByText("Detached local snapshots (1)")
+  await act(async () => {
+    completeVerification!({ verification: {
+      snapshot: SNAPSHOT, integrity: "verified", files: 1, bytes: 8, directories: 1,
+    } })
+  })
+  expect(screen.queryByText(/Archive matches its manifest/)).toBeNull()
+  expect(screen.queryByText(/Checking stored bytes/)).toBeNull()
 })
