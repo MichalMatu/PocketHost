@@ -438,11 +438,12 @@ export default function ProjectsPage() {
                   setMessage("Current Node readiness checked against verified local ownership.")
                 })}>Check live readiness</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized ||
-                  runtime?.state !== "running" || !runtime.activeRelease}
+                  runtime?.state !== "running" || !runtime?.activeRelease}
                   onClick={() => action(async () => {
                     // Do not retain a previous page body while a new inspection is pending or fails.
                     setPreview(null)
-                    const expectedRelease = runtime.activeRelease
+                    const expectedRelease = runtime?.activeRelease
+                    if (!expectedRelease) throw new Error("Review current Node runtime before preview.")
                     const response = await readScoped(selected.id, "preview")
                     if (!response) return
                     const value = response.preview as Record<string, unknown> | undefined
