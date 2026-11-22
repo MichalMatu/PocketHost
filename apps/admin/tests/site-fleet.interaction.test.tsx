@@ -523,6 +523,21 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
   })
 
+
+  it("does not lock writes when an oversized folder is rejected locally before upload", async () => {
+    const user = userEvent.setup()
+    const calls = withSites([project("stopped", true)])
+    await screen.findByText("My own site")
+    const tooLarge = new File([new Uint8Array(2 * 1024 * 1024 + 1)], "oversized.html", {
+      type: "text/html",
+    })
+    await user.upload(screen.getByLabelText("Upload folder"), tooLarge)
+    await screen.findByText(/Folder exceeds 100 files, 2 MiB per file or 8 MiB total/)
+    expect(screen.queryByText(/Write actions are paused for this site/)).toBeNull()
+    expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(false)
+    expect(calls.mock.calls.every(([, options]) => !options?.method)).toBe(true)
+  })
+
   it("keeps the ZIP picker available after definite invalid-input rejection", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
@@ -542,6 +557,34 @@ describe("H2 browser site-manager lifecycle", () => {
     expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(false)
     expect(screen.queryByText(/Write actions are paused for this site/)).toBeNull()
     expect(calls.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(1)
+  })
+
+
+  it("keeps writes unavailable when exact-site readback succeeded but owned inventory reload failed", async () => {
+    const user = userEvent.setup()
+    let mutated = false
+    const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const url = String(input)
+      if (url === "/api/v1/sites" && !options?.method)
+        return mutated
+          ? { ok: false, status: 503 }
+          : { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+      if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST") {
+        mutated = true
+        return { ok: true, json: async () => ({ site: project("running", true) }) }
+      }
+      if (url === "/api/v1/sites/" + ID && !options?.method)
+        return { ok: true, json: async () => ({ site: project("running", true) }) }
+      throw new Error("Unexpected endpoint " + url)
+    })
+    vi.stubGlobal("fetch", calls)
+    renderSites()
+    await screen.findByText("My own site")
+    await user.click(screen.getByRole("button", { name: /^Start$/ }))
+    await screen.findByText("Could not load static sites. Try Refresh.")
+    expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
+    expect(screen.queryByRole("button", { name: /^Stop$/ })).toBeNull()
+    expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
   })
 
   it("keeps successful site start distinct from a failed post-action refresh", async () => {

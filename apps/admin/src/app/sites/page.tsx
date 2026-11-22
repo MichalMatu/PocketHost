@@ -171,16 +171,29 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           return
         }
       }
-      try {
-        if (mutation) {
+      if (mutation) {
+        try {
           await onChange()
-          setAssets(null)
-          if (versions !== null) await readVersions()
+        } catch {
+          // Exact site readback succeeded but the owned inventory did not:
+          // never keep using an old site card for another write.
+          setOutcomeUnknown(true)
+          setError("Site action confirmed, but the owned inventory could not be refreshed. Refresh before another write.")
+          return
         }
-        setMessage(success)
-      } catch {
-        setError("Site state was confirmed, but list refresh failed. Refresh to inspect the latest state.")
+        setAssets(null)
+        if (versions !== null) {
+          try {
+            await readVersions()
+          } catch {
+            // This is an optional read. The owned-site inventory was refreshed.
+            setVersions(null)
+            setError("Site action confirmed, but saved versions are unavailable. Reopen versions to refresh.")
+            return
+          }
+        }
       }
+      setMessage(success)
     } finally {
       setBusy(false)
     }
@@ -219,11 +232,13 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
     void execute(async () => {
       if (files.length > 100 || files.some(file => file.size > 2 * 1024 * 1024) ||
           files.reduce((sum, file) => sum + file.size, 0) > maxFolder)
-        throw new RangeError("Folder exceeds the safe limit of 100 files, 2 MiB per file, 8 MiB total.")
+        throw new StaticSiteInputRejected("Folder exceeds 100 files, 2 MiB per file or 8 MiB total.")
       const entries = await Promise.all(files.map(async file => ({
         name: file.webkitRelativePath || file.name,
         base64: encodeBase64(new Uint8Array(await file.arrayBuffer())),
-      })))
+      }))).catch(() => {
+        throw new StaticSiteInputRejected("Could not read the selected folder. Select it again.")
+      })
       return await mutate(endpoint + "/" + site.id + "/deploy", "PUT",
         JSON.stringify({ files: entries }), "application/json")
     }, "Folder was published as a new immutable release.", true,

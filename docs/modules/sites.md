@@ -37,3 +37,7 @@ The frontend now uses **one owner-intent POST** to `/api/v1/sites/import?name=<e
 ## Uncertain site action write lock (2026-11-22)
 
 A static-site card locks **writes only for that site** after an ambiguous POST/PUT/DELETE outcome or unsuccessful exact-site confirmation. Upload ZIP/folder, HTML publish, Start/Stop/Restart/Rollback and historical restore/prune remain blocked until a fresh owned-inventory Refresh supplies a new site record. Read-only logs, HTTP checks, asset and version inspection remain available and cannot silently clear the lock. Definitive invalid-input HTTP 400 leaves writes available for user correction. Three UI regressions cover ambiguous 503, failed exact-site readback and definitive 400; these are committed but need separately approved exact-SHA QA.
+
+## Confirmed actions and local folder input (2026-11-22)
+
+After independent exact-site readback succeeds, a failed owned-inventory refresh blocks any subsequent write on stale site state until explicit Refresh. Failures in the optional saved-version panel are reported separately, since the owned inventory may already be current. Local oversized-folder and local file-read failures are definitive input errors before any PUT and must not trigger an uncertain-write lock. Regression cases were added but not run; exact SHA and check categories are required for A8 QA.
