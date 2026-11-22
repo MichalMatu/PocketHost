@@ -144,7 +144,8 @@ it("invalidates a selected Node runtime when its verified candidate changes", as
   let catalog = [selected]
   let runtimeReads = 0
   const requests = vi.fn(async (url: string, options?: RequestInit) => {
-    if (url === "/api/v1/node-projects") return response(catalog)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, status: 200, json: async () => ({ projects: catalog }) }
     if (url.endsWith("/releases"))
       return { ok: true, json: async () => ({ releases: [] }) }
     if (url.endsWith("/runtime")) {
