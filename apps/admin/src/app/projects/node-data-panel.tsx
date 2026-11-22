@@ -37,7 +37,7 @@ type SnapshotIndexEntry = {
   directories: number | null
   integrity: "not-checked"
 }
-type Readout = { data: DataScope; recovery: RecoveryReview; snapshots: SnapshotIndexEntry[] }
+type Readout = { data: DataScope; recovery: RecoveryReview }
 type IntegrityState = "checking" | "verified" | "unavailable"
 type Props = {
   projectId: string | null
@@ -185,11 +185,17 @@ function parseVerification(input: unknown, snapshot: string): boolean {
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
 export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
   const [report, setReport] = React.useState<Readout | null>(null)
+  const [snapshots, setSnapshots] = React.useState<SnapshotIndexEntry[] | null>(null)
+  const [scopeUnavailable, setScopeUnavailable] = React.useState(false)
+  const [indexUnavailable, setIndexUnavailable] = React.useState(false)
   const [integrity, setIntegrity] = React.useState<Record<string, IntegrityState>>({})
   const requestVersion = React.useRef(0)
   React.useEffect(() => {
     requestVersion.current += 1
     setReport(null)
+    setSnapshots(null)
+    setScopeUnavailable(false)
+    setIndexUnavailable(false)
     setIntegrity({})
   }, [projectId, ownerAuthorized])
 
@@ -199,18 +205,24 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
     const requestedId = projectId
     const version = requestVersion.current
     setReport(null)
+    setSnapshots(null)
+    setScopeUnavailable(false)
+    setIndexUnavailable(false)
     setIntegrity({})
-    const [response, index] = await Promise.all([
-      getJson(api + "/" + requestedId + "/data-scope"),
-      getJson(api + "/" + requestedId + "/data-snapshots"),
+    // The damaged live data folder must not hide independently stored backups.
+    const [scopeResult, indexResult] = await Promise.allSettled([
+      getJson(api + "/" + requestedId + "/data-scope").then((response) => ({
+        data: parseScope(response.data, requestedId),
+        recovery: parseRecovery(response.recovery),
+      })),
+      getJson(api + "/" + requestedId + "/data-snapshots").then(parseSnapshotIndex),
     ])
     if (version !== requestVersion.current)
       throw new Error("Node project or owner session changed. Inspect again.")
-    setReport({
-      data: parseScope(response.data, requestedId),
-      recovery: parseRecovery(response.recovery),
-      snapshots: parseSnapshotIndex(index),
-    })
+    if (scopeResult.status === "fulfilled") setReport(scopeResult.value)
+    else setScopeUnavailable(true)
+    if (indexResult.status === "fulfilled") setSnapshots(indexResult.value)
+    else setIndexUnavailable(true)
   }
 
   const verify = async (snapshot: string) => {
@@ -245,7 +257,12 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
       {!ownerAuthorized && <p className="text-xs text-muted-foreground">
         Unlock the Node owner session to inspect private application data.
       </p>}
-      {report && <div role="status" aria-label="Node application data status" className="space-y-1 text-sm">
+      {(report || snapshots || scopeUnavailable || indexUnavailable) &&
+        <div role="status" aria-label="Node application data status" className="space-y-1 text-sm">
+        {scopeUnavailable && <p className="text-xs text-muted-foreground">
+          Current application data could not be inspected. Detached snapshots can still be checked separately.
+        </p>}
+        {report && <>
         <p>Storage: {report.data.state === "not-configured" ? "not configured" : "owned private directory verified"}.</p>
         <p>Files: {report.data.fileCount} · Size: {report.data.totalBytes.toLocaleString()} bytes.</p>
         <div className="grid gap-2 sm:grid-cols-3" aria-label="Application data by category">
@@ -277,10 +294,14 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
                 ? "Recovery blocked: stop the owned project and verify its stopped state."
                 : "Stopped state observed. Offline database consistency still requires separate review."}
         </p>
-        <div className="space-y-2 rounded-md border p-3 text-xs" aria-label="Detached local snapshots">
-          <p className="font-medium">Detached local snapshots ({report.snapshots.length})</p>
-          {report.snapshots.length === 0 ? <p>No snapshots recorded for this project.</p> :
-            report.snapshots.map((snapshot) => <div key={snapshot.snapshot} className="space-y-1 border-t pt-2">
+        </>}
+        {indexUnavailable && <p className="text-xs text-muted-foreground">
+          Detached snapshots could not be listed. No recovery copy has been confirmed.
+        </p>}
+        {snapshots && <div className="space-y-2 rounded-md border p-3 text-xs" aria-label="Detached local snapshots">
+          <p className="font-medium">Detached local snapshots ({snapshots.length})</p>
+          {snapshots.length === 0 ? <p>No snapshots recorded for this project.</p> :
+            snapshots.map((snapshot) => <div key={snapshot.snapshot} className="space-y-1 border-t pt-2">
               <code className="break-all">{snapshot.snapshot}</code>
               <p>{snapshot.createdAt} · {snapshot.files} files · {snapshot.bytes.toLocaleString()} bytes
                 {snapshot.directories === null ? " · directories not recorded" :
@@ -298,7 +319,7 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
             Metadata is not proof of a valid backup. Verification is read-only and
             checks stored files against the manifest, not database consistency.
           </p>
-        </div>
+        </div>}
         <p className="text-xs text-muted-foreground">Snapshot creation and restore remain disabled.</p>
       </div>}
       <p className="text-xs text-muted-foreground">
