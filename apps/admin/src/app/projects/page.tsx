@@ -156,6 +156,22 @@ export default function ProjectsPage() {
     })
     return () => { live = false }
   }, [refresh])
+  // A valid refreshed catalog may no longer contain the selected project.
+  // Invalidate all project-scoped replies before an old runtime can reappear.
+  React.useEffect(() => {
+    if (catalogState !== "ready" || !selectedId ||
+        projects.some(project => project.id === selectedId)) return
+    invalidateRead()
+    beginInspection()
+    resetLogs()
+    setSelectedId("")
+    setApproved(false)
+    setPreview(null)
+    setBuildCheck(null)
+    setGithubReview(null)
+    setEditorDirty(false)
+  }, [catalogState, projects, selectedId, invalidateRead, beginInspection, resetLogs])
+
   const action = (fn: () => Promise<void>) => {
     if (actionInFlight.current) return
     actionInFlight.current = true

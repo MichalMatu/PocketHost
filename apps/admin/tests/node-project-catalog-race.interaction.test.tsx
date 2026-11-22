@@ -79,3 +79,57 @@ it("rejects duplicate Node catalog ids before rendering ambiguous project button
   expect((screen.getByRole("button", { name: "Create project" }) as HTMLButtonElement).disabled).toBe(true)
   expect(requests).toHaveBeenCalledTimes(1)
 })
+
+it("invalidates the removed Node selection and refuses late runtime after a valid refresh", async () => {
+  const deleted = project("a", "Project removed remotely")
+  let catalog = [deleted]
+  const staleRuntime = deferred<ReturnType<typeof response>>()
+  let runtimeCalls = 0
+  const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === "/api/v1/node-projects") return response(catalog)
+    if (url.endsWith("/releases")) return {
+      ok: true, json: async () => ({ releases: [] }),
+    }
+    if (url.endsWith("/runtime")) {
+      runtimeCalls++
+      return staleRuntime.promise
+    }
+    if (url.endsWith("/plan")) return {
+      ok: true, json: async () => ({ plan: {
+        reason: "waiting", dependencyCount: 0, missingTools: [], conflicts: [],
+      }, executionEnabled: false }),
+    }
+    throw new Error("Unexpected Node request " + url + " " + String(options?.method))
+  })
+  vi.stubGlobal("fetch", requests)
+  render(<MemoryRouter initialEntries={["/projects?project=" + deleted.id]}>
+    <ProjectsPage />
+  </MemoryRouter>)
+  await screen.findByRole("button", { name: "Project removed remotely" })
+  await waitFor(() => expect(runtimeCalls).toBe(1))
+  expect(screen.getByLabelText("Node runtime summary")).toBeTruthy()
+
+  catalog = []
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+  expect(await screen.findByText("No Node projects yet.")).toBeTruthy()
+  expect(screen.queryByLabelText("Node runtime summary")).toBeNull()
+
+  await act(async () => {
+    staleRuntime.resolve({
+      ok: true, status: 200, json: async () => ({ runtime: {
+        state: "running", desired: "running", port: 19099,
+        activeRelease: "r-" + "b".repeat(32),
+        lastGoodRelease: "r-" + "b".repeat(32),
+        previousGoodRelease: null, history: [],
+      }, executionEnabled: true }),
+    })
+  })
+  expect(screen.queryByLabelText("Node runtime summary")).toBeNull()
+
+  catalog = [deleted]
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+  expect(await screen.findByText(/Select a project above to inspect its runtime/)).toBeTruthy()
+  expect(screen.queryByLabelText("Node runtime summary")).toBeNull()
+  expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
+})
+
