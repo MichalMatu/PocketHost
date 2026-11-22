@@ -48,6 +48,29 @@ it("cancels a replacement ZIP before any write and clears the file picker", () =
   expect(event.currentTarget.value).toBe("")
 })
 
+it("preserves first ZIP update readback requirements without starting any host action", () => {
+  const execute = vi.fn(async (
+    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
+    _expected?: (observed: FleetSite) => boolean,
+  ) => {})
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, activeRelease: null }, busy: false, outcomeUnknown: false,
+    execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  act(() => {
+    hook.result.current.zip(selected([new File(["zip payload"], "first.zip")]))
+  })
+  expect(execute).toHaveBeenCalledTimes(1)
+  const [, success, mutation, matches] = execute.mock.calls[0]
+  expect(success).toBe("ZIP was published as a new immutable release.")
+  expect(mutation).toBe(true)
+  const expected = matches as (observed: FleetSite) => boolean
+  expect(expected({ ...site, activeRelease: "r-" + "c".repeat(32), fileCount: 1, bytes: 11 }))
+    .toBe(true)
+  expect(expected({ ...site, activeRelease: null, fileCount: 0, bytes: 0 }))
+    .toBe(false)
+})
+
 it("does not import from a site with unverified process identity", () => {
   const execute = vi.fn(async () => {})
   const hook = renderHook(() => useSiteReleaseImport({
