@@ -326,6 +326,7 @@ function ownedSiteFleetApi(): Plugin {
           return
         }
         const create = request.method === "POST" && route === "/"
+        const importInitial = request.method === "POST" && route === "/import"
         const command = request.method === "POST" && !!id &&
           ["start", "stop", "restart", "rollback"].includes(action ?? "")
         const upload = request.method === "PUT" && !!id && action === "deploy"
@@ -333,7 +334,7 @@ function ownedSiteFleetApi(): Plugin {
           (request.method === "POST" && releaseRoute[3] === "restore") ||
           (request.method === "DELETE" && releaseRoute[3] === "prune")
         )
-        if (!create && !command && !upload && !versionCommand) {
+        if (!create && !importInitial && !command && !upload && !versionCommand) {
           response.statusCode = 404
           response.end("{}")
           return
@@ -361,6 +362,21 @@ function ownedSiteFleetApi(): Plugin {
                 throw new RangeError("Invalid site name")
               return fleet.create((parsed as { name: string }).name)
             }
+            if (importInitial) {
+              // A single owner-approved request: reject invalid archive bytes
+              // before allocating a site ID or writing a site directory.
+              const query = new URLSearchParams(request.url?.split("?")[1] ?? "")
+              if (query.size !== 1 || !query.has("name"))
+                throw new RangeError("Invalid new site import parameters")
+              const siteName = query.get("name")
+              if (!siteName || request.headers["content-type"]?.split(";")[0]?.trim() !== "application/zip")
+                throw new RangeError("Initial import needs a site name and static ZIP")
+              const files = decodeSiteZip(await body(request, MAX_UPLOAD_BYTES))
+              const created = await fleet.create(siteName)
+              // Unexpected post-create failures remain explicit 409/refresh,
+              // never an automatic retry or blind directory removal.
+              return fleet.deploy(created.id, files)
+            }
             if (upload) {
               const contentType = request.headers["content-type"]?.split(";")[0]?.trim()
               let files
@@ -385,11 +401,11 @@ function ownedSiteFleetApi(): Plugin {
             return fleet.rollback(id!)
           })
           // These events reflect only successful, explicitly owned site actions.
-          if (upload) reportDashboardOwnedEvent("owned-release-published")
+          if (upload || importInitial) reportDashboardOwnedEvent("owned-release-published")
           if (action === "rollback" || (versionCommand && releaseRoute?.[3] === "restore"))
             reportDashboardOwnedEvent("owned-release-rolled-back")
           if (action === "restart") reportDashboardOwnedEvent("owned-service-restarted")
-          response.statusCode = create ? 201 : 200
+          response.statusCode = create || importInitial ? 201 : 200
           response.end(JSON.stringify({ site: result }))
         } catch (error) {
           response.statusCode = error instanceof RangeError || error instanceof SyntaxError ? 400 : 409

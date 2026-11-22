@@ -457,93 +457,76 @@ export default function SitesPage() {
       }
       let created: FleetSite
       try {
-        created = await mutate(endpoint + "/", "POST", JSON.stringify({ name }), "application/json")
+        // The initial-ZIP API validates archive bytes *before* creating an
+        // owned project. Plain empty-site creation retains its original API.
+        created = firstRelease
+          ? await mutate(endpoint + "/import?name=" + encodeURIComponent(name.trim()),
+            "POST", firstRelease, "application/zip")
+          : await mutate(endpoint + "/", "POST",
+            JSON.stringify({ name }), "application/json")
       } catch (cause) {
         if (cause instanceof StaticSiteInputRejected) {
-          // HTTP 400 is a definite input rejection, not an uncertain create.
-          // Preserve independently verified inventory and allow a corrected name.
           setInputError(cause.message)
         } else {
           setSites([])
-          setError("Create result unconfirmed. Refresh the site list before retrying.")
+          setError(firstRelease
+            ? "Create and ZIP import result unconfirmed. Refresh the site list before retrying; no automatic retry."
+            : "Create result unconfirmed. Refresh the site list before retrying.")
         }
         return
       }
       try {
-        // Attest creation by independent exact-inventory readback.
         const observed = await readSites()
         const matching = observed.filter(site => site.id === created.id)
-        if (matching.length !== 1 || matching[0]?.name !== name.trim() ||
-            matching[0].kind !== "static-site" ||
-            matching[0].state !== "stopped" ||
-            matching[0].activeRelease !== null ||
-            matching[0].previousRelease !== null ||
-            matching[0].pid !== null ||
-            matching[0].canRollback ||
-            created.id !== matching[0].id ||
-            created.name !== matching[0].name ||
-            created.port !== matching[0].port ||
-            created.state !== matching[0].state)
+        const current = matching[0]
+        if (matching.length !== 1 || !current ||
+            current.name !== name.trim() ||
+            current.kind !== "static-site" ||
+            current.state !== "stopped" || current.pid !== null ||
+            current.startTicks !== null ||
+            current.previousRelease !== null || current.canRollback ||
+            created.id !== current.id || created.name !== current.name ||
+            created.port !== current.port || created.state !== current.state ||
+            created.activeRelease !== current.activeRelease ||
+            created.fileCount !== current.fileCount ||
+            created.bytes !== current.bytes ||
+            created.releases !== current.releases)
           throw new Error("create-readback-mismatch")
+        if (firstRelease) {
+          // A single POST acknowledgment is insufficient. Confirm the exact
+          // owned site independently before exposing controls for its release.
+          const response = await fetch(endpoint + "/" + created.id, {
+            credentials: "same-origin", cache: "no-store", signal: readSignal(),
+          })
+          if (!response.ok) throw new Error("first-release-readback-unavailable")
+          const exact = parseFleetSite(await response.json())
+          if (created.activeRelease === null || created.releases !== 1 ||
+              created.fileCount < 1 || created.bytes < 1 ||
+              exact.id !== created.id || exact.name !== created.name ||
+              exact.port !== created.port || exact.state !== "stopped" ||
+              exact.pid !== null || exact.previousRelease !== null ||
+              exact.activeRelease !== created.activeRelease ||
+              exact.fileCount !== created.fileCount || exact.bytes !== created.bytes ||
+              exact.releases !== created.releases ||
+              exact.history.length !== created.history.length)
+            throw new Error("first-release-readback-mismatch")
+        } else if (created.activeRelease !== null || created.releases !== 0 ||
+                   created.fileCount !== 0 || created.bytes !== 0) {
+          throw new Error("unexpected initial site release")
+        }
         setSites(observed)
         setName("")
         setInitialZip(null)
         if (initialZipInput.current) initialZipInput.current.value = ""
+        setNotice(firstRelease
+          ? 'Site "' + created.name +
+            '" created and ZIP published as its first immutable release. Press Start when ready.'
+          : 'Site "' + created.name + '" created. Edit HTML to publish the first release.')
       } catch {
         setSites([])
-        setError("Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
-        return
-      }
-      if (!firstRelease) {
-        setNotice('Site "' + created.name + '" created. Edit HTML to publish the first release.')
-        return
-      }
-      // A first ZIP release is a second explicit mutation. Never issue it
-      // unless creation was independently confirmed in the owned inventory.
-      let imported: FleetSite
-      try {
-        imported = await mutate(endpoint + "/" + created.id + "/deploy",
-          "PUT", firstRelease, "application/zip")
-      } catch (cause) {
-        if (cause instanceof StaticSiteInputRejected) {
-          setNotice('Site "' + created.name +
-            '" was created without a release. ZIP rejected; select a valid ZIP in its site card.')
-        } else {
-          setSites([])
-          setError('Site "' + created.name +
-            '" was created, but ZIP import result is unconfirmed. Refresh before retrying; no automatic retry.')
-        }
-        return
-      }
-      try {
-        const response = await fetch(endpoint + "/" + created.id, {
-          credentials: "same-origin", cache: "no-store", signal: readSignal(),
-        })
-        if (!response.ok) throw new Error("readback-unavailable")
-        const current = parseFleetSite(await response.json())
-        const inventory = await readSites()
-        const matches = inventory.filter(site => site.id === created.id)
-        if (matches.length !== 1 ||
-            imported.id !== created.id || current.id !== created.id ||
-            current.name !== created.name || current.port !== created.port ||
-            imported.activeRelease === null ||
-            current.activeRelease !== imported.activeRelease ||
-            current.previousRelease !== null || current.canRollback ||
-            current.state !== "stopped" || current.pid !== null ||
-            current.fileCount < 1 || current.bytes < 1 ||
-            imported.fileCount !== current.fileCount || imported.bytes !== current.bytes ||
-            imported.releases !== current.releases ||
-            matches[0]?.activeRelease !== current.activeRelease ||
-            matches[0]?.fileCount !== current.fileCount ||
-            matches[0]?.bytes !== current.bytes)
-          throw new Error("first-release-readback-mismatch")
-        setSites(inventory)
-        setNotice('Site "' + created.name +
-          '" created and ZIP published as its first immutable release. Press Start when ready.')
-      } catch {
-        setSites([])
-        setError('Site "' + created.name +
-          '" was created and ZIP upload acknowledged, but its release could not be confirmed. Refresh before retrying; no automatic retry.')
+        setError(firstRelease
+          ? 'Initial ZIP import was acknowledged, but its site/release could not be confirmed. Refresh before retrying; no automatic retry.'
+          : "Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
       }
     } finally { setCreating(false) }
   }
@@ -588,8 +571,8 @@ export default function SitesPage() {
                     setInputError(null)
                   }} />
                 <p className="text-xs text-muted-foreground">
-                  Optional first release, max 9 MiB compressed. Checks the ZIP structure before
-                  creating a stopped site; the server validates its contents before publishing.
+                  Optional first release, max 9 MiB compressed. The server validates ZIP contents
+                  before creating a stopped site and publishes its first release in one request.
                   No automatic retry or start.
                 </p>
                 {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
