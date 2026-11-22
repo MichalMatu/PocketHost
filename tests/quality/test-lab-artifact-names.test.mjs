@@ -1,34 +1,46 @@
-import test from "node:test"
-import assert from "node:assert/strict"
-import { screenshotName, isAllowedScreenshotName } from "../../scripts/test-lab/artifact-names.mjs"
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { screenshotName, isAllowedScreenshotName } from '../../scripts/test-lab/artifact-names.mjs';
 
-test("Test Lab permits exact top/bottom viewport screenshots for known routes only", () => {
+test('Test Lab permits exact top/bottom viewport screenshots for known routes only', () => {
   for (const route of [
-    "dashboard", "hosting", "sites", "projects", "deployments",
-    "logs", "services", "agent", "network",
+    'dashboard',
+    'hosting',
+    'sites',
+    'projects',
+    'deployments',
+    'logs',
+    'services',
+    'agent',
+    'network',
   ]) {
-    for (const viewport of ["mobile", "tablet", "desktop"]) {
-      const top = screenshotName(route, viewport)
-      const bottom = screenshotName(route, viewport, "bottom")
-      assert.equal(top, route + "-" + viewport + ".png")
-      assert.equal(bottom, route + "-" + viewport + "-bottom.png")
-      assert.equal(isAllowedScreenshotName(top), true)
-      assert.equal(isAllowedScreenshotName(bottom), true)
+    for (const viewport of ['mobile', 'tablet', 'desktop']) {
+      const top = screenshotName(route, viewport);
+      const bottom = screenshotName(route, viewport, 'bottom');
+      assert.equal(top, route + '-' + viewport + '.png');
+      assert.equal(bottom, route + '-' + viewport + '-bottom.png');
+      assert.equal(isAllowedScreenshotName(top), true);
+      assert.equal(isAllowedScreenshotName(bottom), true);
     }
   }
-})
+});
 
-test("Test Lab never accepts path escape or arbitrary screenshot selection", () => {
+test('Test Lab never accepts path escape or arbitrary screenshot selection', () => {
   for (const value of [
-    "../network-mobile.png", "network-mobile.png/../../x",
-    "network-mobile-bottom.jpg", "network-mobile-bottom-bottom.png",
-    "unknown-mobile.png", "dashboard-wide.png", "/dashboard-mobile.png",
-    "dashboard-mobile.png?token=secret", "",
+    '../network-mobile.png',
+    'network-mobile.png/../../x',
+    'network-mobile-bottom.jpg',
+    'network-mobile-bottom-bottom.png',
+    'unknown-mobile.png',
+    'dashboard-wide.png',
+    '/dashboard-mobile.png',
+    'dashboard-mobile.png?token=secret',
+    '',
   ]) {
-    assert.equal(isAllowedScreenshotName(value), false, value)
+    assert.equal(isAllowedScreenshotName(value), false, value);
   }
-  assert.equal(isAllowedScreenshotName(null), false)
-  assert.throws(() => screenshotName("../dashboard", "mobile"))
-  assert.throws(() => screenshotName("dashboard", "wide"))
-  assert.throws(() => screenshotName("dashboard", "mobile", "full"))
-})
+  assert.equal(isAllowedScreenshotName(null), false);
+  assert.throws(() => screenshotName('../dashboard', 'mobile'));
+  assert.throws(() => screenshotName('dashboard', 'wide'));
+  assert.throws(() => screenshotName('dashboard', 'mobile', 'full'));
+});

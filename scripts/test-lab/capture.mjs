@@ -1,304 +1,461 @@
 #!/usr/bin/env node
 // Read-only PocketHost Test Lab: private Chrome captures and allowlisted GET status probes.
-import { mkdir, writeFile, chmod } from "node:fs/promises"
-import { join, resolve, dirname } from "node:path"
-import { fileURLToPath } from "node:url"
-import { screenshotName } from "./artifact-names.mjs"
+import { mkdir, writeFile, chmod } from 'node:fs/promises';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { screenshotName } from './artifact-names.mjs';
 
-const repo = resolve(dirname(fileURLToPath(import.meta.url)), "../..")
+const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = {
-  dashboard: "/dashboard", hosting: "/hosting", sites: "/sites",
-  projects: "/projects", deployments: "/deployments", logs: "/runtime-logs",
-  services: "/services", agent: "/local-agent", network: "/settings/network",
-}
+  dashboard: '/dashboard',
+  hosting: '/hosting',
+  sites: '/sites',
+  projects: '/projects',
+  deployments: '/deployments',
+  logs: '/runtime-logs',
+  services: '/services',
+  agent: '/local-agent',
+  network: '/settings/network',
+};
 const apis = {
-  host: "/api/v1/host/snapshot", network: "/api/v1/network-access",
-  sites: "/api/v1/sites", projects: "/api/v1/node-projects",
-}
+  host: '/api/v1/host/snapshot',
+  network: '/api/v1/network-access',
+  sites: '/api/v1/sites',
+  projects: '/api/v1/node-projects',
+};
 const screens = [
-  { name: "mobile", width: 390, height: 844 },
-  { name: "tablet", width: 768, height: 1024 },
-  { name: "desktop", width: 1440, height: 900 },
-]
+  { name: 'mobile', width: 390, height: 844 },
+  { name: 'tablet', width: 768, height: 1024 },
+  { name: 'desktop', width: 1440, height: 900 },
+];
 
 function options(argv) {
-  const args = Object.create(null)
+  const args = Object.create(null);
   for (const input of argv) {
-    const match = /^--(base|sha|routes|api)=(.+)$/.exec(input)
-    if (!match || Object.hasOwn(args, match[1])) throw Error("Invalid argument")
-    args[match[1]] = match[2]
+    const match = /^--(base|sha|routes|api)=(.+)$/.exec(input);
+    if (!match || Object.hasOwn(args, match[1])) throw Error('Invalid argument');
+    args[match[1]] = match[2];
   }
-  if (!/^[0-9a-f]{40}$/.test(args.sha || "")) throw Error("Exact approved SHA required")
-  let base
-  try { base = new URL(args.base) } catch { throw Error("Invalid base URL") }
-  if (base.protocol !== "http:" || base.username || base.password ||
-      base.pathname !== "/" || base.hash || base.search) throw Error("Only bare HTTP LAN origin allowed")
-  const host = base.hostname, numbers = host.split(".")
-  const ipv4 = numbers.length === 4 && numbers.every(n => /^\d{1,3}$/.test(n) && Number(n) <= 255)
-  const n = numbers.map(Number)
-  const privateHost = host === "localhost" || (ipv4 &&
-    (n[0] === 127 || n[0] === 10 || (n[0] === 192 && n[1] === 168) ||
-      (n[0] === 172 && n[1] >= 16 && n[1] <= 31)))
-  if (!privateHost) throw Error("Public origin denied")
+  if (!/^[0-9a-f]{40}$/.test(args.sha || '')) throw Error('Exact approved SHA required');
+  let base;
+  try {
+    base = new URL(args.base);
+  } catch {
+    throw Error('Invalid base URL');
+  }
+  if (
+    base.protocol !== 'http:' ||
+    base.username ||
+    base.password ||
+    base.pathname !== '/' ||
+    base.hash ||
+    base.search
+  )
+    throw Error('Only bare HTTP LAN origin allowed');
+  const host = base.hostname,
+    numbers = host.split('.');
+  const ipv4 =
+    numbers.length === 4 && numbers.every((n) => /^\d{1,3}$/.test(n) && Number(n) <= 255);
+  const n = numbers.map(Number);
+  const privateHost =
+    host === 'localhost' ||
+    (ipv4 &&
+      (n[0] === 127 ||
+        n[0] === 10 ||
+        (n[0] === 192 && n[1] === 168) ||
+        (n[0] === 172 && n[1] >= 16 && n[1] <= 31)));
+  if (!privateHost) throw Error('Public origin denied');
   const select = (raw, allowed) => {
-    const list = raw.split(",")
-    if (list.length > 12 || new Set(list).size !== list.length ||
-        list.some(name => !Object.hasOwn(allowed, name))) throw Error("Selection not allowlisted")
-    return list
-  }
-  return { origin: base.origin, sha: args.sha,
-    pages: select(args.routes || "dashboard,hosting,projects", routes),
-    probes: args.api ? select(args.api, apis) : [] }
+    const list = raw.split(',');
+    if (
+      list.length > 12 ||
+      new Set(list).size !== list.length ||
+      list.some((name) => !Object.hasOwn(allowed, name))
+    )
+      throw Error('Selection not allowlisted');
+    return list;
+  };
+  return {
+    origin: base.origin,
+    sha: args.sha,
+    pages: select(args.routes || 'dashboard,hosting,projects', routes),
+    probes: args.api ? select(args.api, apis) : [],
+  };
 }
 
-const escapeHtml = text => String(text).replace(/[&<>"']/g,
-  ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch])
+const escapeHtml = (text) =>
+  String(text).replace(
+    /[&<>"']/g,
+    (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch],
+  );
 
 async function geometry(page) {
   return page.evaluate(() => {
-    const w = window.innerWidth
-    let outside = 0, smallControls = 0
-    const smallSamples = []
-    for (const node of Array.from(document.querySelectorAll("body *")).slice(0, 5000)) {
-      const r = node.getBoundingClientRect()
-      if (r.height <= 0 || r.width <= 0) continue
-      if (r.left < -2 || r.right > w + 2) outside++
-      if (node.matches("a,button,input,select,textarea,[role='button']") &&
-          (r.width < 32 || r.height < 32)) {
-        smallControls++
+    const w = globalThis.window.innerWidth;
+    let outside = 0,
+      smallControls = 0;
+    const smallSamples = [];
+    for (const node of Array.from(globalThis.document.querySelectorAll('body *')).slice(0, 5000)) {
+      const r = node.getBoundingClientRect();
+      if (r.height <= 0 || r.width <= 0) continue;
+      if (r.left < -2 || r.right > w + 2) outside++;
+      if (
+        node.matches("a,button,input,select,textarea,[role='button']") &&
+        (r.width < 32 || r.height < 32)
+      ) {
+        smallControls++;
         if (smallSamples.length < 24) {
           // Metadata only: never publish user text, URLs or form values.
           smallSamples.push({
             tag: node.tagName.toLowerCase(),
-            slot: node.getAttribute("data-slot")?.slice(0, 40) ?? null,
-            parentSlot: node.parentElement?.getAttribute("data-slot")?.slice(0, 40) ?? null,
-            icon: Boolean(node.querySelector("svg")),
+            slot: node.getAttribute('data-slot')?.slice(0, 40) ?? null,
+            parentSlot: node.parentElement?.getAttribute('data-slot')?.slice(0, 40) ?? null,
+            icon: Boolean(node.querySelector('svg')),
             textLength: Math.min(node.textContent?.trim().length ?? 0, 100),
-            x: Math.round(r.left), y: Math.round(r.top),
-            width: Math.round(r.width), height: Math.round(r.height),
-          })
+            x: Math.round(r.left),
+            y: Math.round(r.top),
+            width: Math.round(r.width),
+            height: Math.round(r.height),
+          });
         }
       }
     }
-    return { horizontalOverflow: Math.max(0, document.documentElement.scrollWidth - w),
-      documentHeight: Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0),
-      outOfBoundsElements: outside, smallControls, smallSamples }
-  })
+    return {
+      horizontalOverflow: Math.max(0, globalThis.document.documentElement.scrollWidth - w),
+      documentHeight: Math.max(
+        globalThis.document.documentElement.scrollHeight,
+        globalThis.document.body?.scrollHeight ?? 0,
+      ),
+      outOfBoundsElements: outside,
+      smallControls,
+      smallSamples,
+    };
+  });
 }
 
 async function probe(request, origin, name) {
-  const start = Date.now()
+  const start = Date.now();
   try {
-    const response = await request.get(origin + apis[name],
-      { timeout: 8000, maxRedirects: 0, headers: { Accept: "application/json" } })
-    const mime = String(response.headers()["content-type"] ?? "").split(";")[0].slice(0, 60)
-    let jsonValid = false, shapeOK = false
+    const response = await request.get(origin + apis[name], {
+      timeout: 8000,
+      maxRedirects: 0,
+      headers: { Accept: 'application/json' },
+    });
+    const mime = String(response.headers()['content-type'] ?? '')
+      .split(';')[0]
+      .slice(0, 60);
+    let jsonValid = false,
+      shapeOK = false;
     try {
-      const bytes = await response.body()
-      if (bytes.length <= 128 * 1024 && mime === "application/json") {
-        const data = JSON.parse(bytes.toString("utf8"))
-        jsonValid = data !== null && typeof data === "object" && !Array.isArray(data)
+      const bytes = await response.body();
+      if (bytes.length <= 128 * 1024 && mime === 'application/json') {
+        const data = JSON.parse(bytes.toString('utf8'));
+        jsonValid = data !== null && typeof data === 'object' && !Array.isArray(data);
         if (jsonValid) {
-          if (name === "host") shapeOK = data.version === 1 &&
-            data.mode === "read-only" && data.platform === "termux" &&
-            !!data.runtime && typeof data.runtime === "object" && Array.isArray(data.services)
-          else if (name === "network") shapeOK = data.version === 1 &&
-            typeof data.enabled === "boolean" && Array.isArray(data.interfaces)
-          else shapeOK = true
+          if (name === 'host')
+            shapeOK =
+              data.version === 1 &&
+              data.mode === 'read-only' &&
+              data.platform === 'termux' &&
+              !!data.runtime &&
+              typeof data.runtime === 'object' &&
+              Array.isArray(data.services);
+          else if (name === 'network')
+            shapeOK =
+              data.version === 1 &&
+              typeof data.enabled === 'boolean' &&
+              Array.isArray(data.interfaces);
+          else shapeOK = true;
         }
       }
-    } catch { /* Invalid JSON never leaks body text or raw parse errors. */ }
-    return { name, status: response.status(), ms: Date.now() - start,
-      mime, jsonValid, shapeOK }
-  } catch { return { name, status: null, ms: Date.now() - start, error: "GET unavailable" } }
+    } catch {
+      /* Invalid JSON never leaks body text or raw parse errors. */
+    }
+    return { name, status: response.status(), ms: Date.now() - start, mime, jsonValid, shapeOK };
+  } catch {
+    return { name, status: null, ms: Date.now() - start, error: 'GET unavailable' };
+  }
 }
 
 function gallery(report) {
-  const cards = report.captures.map(c => {
-    const label = c.route + " · " + c.viewport
-    const stats = (c.navigationMode === "spa" ? "SPA route" : "HTTP " + c.status) + ", overflow " +
-      (c.geometry?.horizontalOverflow ?? "?") + "px, JS errors " + c.jsErrors
-    return "<article><h2>" + escapeHtml(label) + "</h2><p>" + escapeHtml(stats) +
-      "</p>" + (c.file ? '<a href="' + escapeHtml(c.file) +
-        '"><img src="' + escapeHtml(c.file) + '" loading="lazy"/></a>' : "") +
-      (c.bottomFile ? '<p>Bottom viewport · same route</p><a href="' + escapeHtml(c.bottomFile) +
-        '"><img src="' + escapeHtml(c.bottomFile) + '" loading="lazy"/></a>' : "") +
-      "</article>"
-  }).join("\n")
-  return '<!doctype html><html lang="en"><meta charset="utf-8"><title>PocketHost Test Lab</title>' +
+  const cards = report.captures
+    .map((c) => {
+      const label = c.route + ' · ' + c.viewport;
+      const stats =
+        (c.navigationMode === 'spa' ? 'SPA route' : 'HTTP ' + c.status) +
+        ', overflow ' +
+        (c.geometry?.horizontalOverflow ?? '?') +
+        'px, JS errors ' +
+        c.jsErrors;
+      return (
+        '<article><h2>' +
+        escapeHtml(label) +
+        '</h2><p>' +
+        escapeHtml(stats) +
+        '</p>' +
+        (c.file
+          ? '<a href="' +
+            escapeHtml(c.file) +
+            '"><img src="' +
+            escapeHtml(c.file) +
+            '" loading="lazy"/></a>'
+          : '') +
+        (c.bottomFile
+          ? '<p>Bottom viewport · same route</p><a href="' +
+            escapeHtml(c.bottomFile) +
+            '"><img src="' +
+            escapeHtml(c.bottomFile) +
+            '" loading="lazy"/></a>'
+          : '') +
+        '</article>'
+      );
+    })
+    .join('\n');
+  return (
+    '<!doctype html><html lang="en"><meta charset="utf-8"><title>PocketHost Test Lab</title>' +
     '<meta name="viewport" content="width=device-width,initial-scale=1">' +
     '<style>body{font:15px system-ui;background:#101827;color:#f1f5f9;margin:24px}' +
     'main{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px}' +
     'article{padding:16px;background:#263344;border-radius:12px;min-width:0}' +
     'img{max-width:100%;border:1px solid #789}p{color:#cbd5e1}</style>' +
-    '<h1>PocketHost Test Lab — local only</h1><main>' + cards + '</main></html>'
+    '<h1>PocketHost Test Lab — local only</h1><main>' +
+    cards +
+    '</main></html>'
+  );
 }
 
 async function main() {
-  const config = options(process.argv.slice(2))
-  let chromium
-  try { ({ chromium } = await import("playwright-core")) }
-  catch { throw Error("Browser dependency not installed") }
-  const chrome = process.env.POCKETHOST_LAB_CHROME ||
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-  const folder = join(repo, ".test-lab", Date.now().toString() + "-" + config.sha.slice(0, 8))
-  await mkdir(folder, { recursive: true, mode: 0o700 })
-  await chmod(folder, 0o700)
-  const browser = await chromium.launch({ executablePath: chrome, headless: true })
-  const captures = [], api = []
+  const config = options(process.argv.slice(2));
+  let chromium;
+  try {
+    ({ chromium } = await import('playwright-core'));
+  } catch {
+    throw Error('Browser dependency not installed');
+  }
+  const chrome =
+    process.env.POCKETHOST_LAB_CHROME ||
+    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  const folder = join(repo, '.test-lab', Date.now().toString() + '-' + config.sha.slice(0, 8));
+  await mkdir(folder, { recursive: true, mode: 0o700 });
+  await chmod(folder, 0o700);
+  const browser = await chromium.launch({ executablePath: chrome, headless: true });
+  const captures = [],
+    api = [];
   try {
     // Keep one isolated browser context and load each page once. Vite's DEV
     // module graph is expensive on an A8; repeated reloads can overwhelm it.
     const ctx = await browser.newContext({
       viewport: { width: screens[0].width, height: screens[0].height },
-      deviceScaleFactor: 1, serviceWorkers: "block", acceptDownloads: false,
-    })
-    await ctx.route("**/*", route => {
-      const request = route.request()
+      deviceScaleFactor: 1,
+      serviceWorkers: 'block',
+      acceptDownloads: false,
+    });
+    await ctx.route('**/*', (route) => {
+      const request = route.request();
       // Abort all browser-originated mutations, including initialization.
-      if (!["GET", "HEAD"].includes(request.method())) return route.abort()
-      const address = request.url()
-      if (address.startsWith("data:") || address.startsWith("blob:")) return route.continue()
-      let target
-      try { target = new URL(address) } catch { return route.abort() }
-      return target.origin === config.origin ? route.continue() : route.abort()
-    })
-    const page = await ctx.newPage()
-    let jsErrors = 0, consoleErrors = 0, failedRequests = 0, blockedRequests = 0
-    let canceledRequests = 0
-    page.on("pageerror", () => { jsErrors++ })
-    page.on("console", e => { if (e.type() === "error") consoleErrors++ })
-    page.on("requestfailed", request => {
+      if (!['GET', 'HEAD'].includes(request.method())) return route.abort();
+      const address = request.url();
+      if (address.startsWith('data:') || address.startsWith('blob:')) return route.continue();
+      let target;
+      try {
+        target = new URL(address);
+      } catch {
+        return route.abort();
+      }
+      return target.origin === config.origin ? route.continue() : route.abort();
+    });
+    const page = await ctx.newPage();
+    let jsErrors = 0,
+      consoleErrors = 0,
+      failedRequests = 0,
+      blockedRequests = 0;
+    let canceledRequests = 0;
+    page.on('pageerror', () => {
+      jsErrors++;
+    });
+    page.on('console', (e) => {
+      if (e.type() === 'error') consoleErrors++;
+    });
+    page.on('requestfailed', (request) => {
       // Cross-origin and mutating traffic is intentionally denied by this Lab.
-      let external = true
-      try { external = new URL(request.url()).origin !== config.origin } catch { /* unknown URI */ }
-      if (external || !["GET", "HEAD"].includes(request.method())) blockedRequests++
-      else if (/ABORTED|CANCELLED|CANCELED/i.test(String(request.failure()?.errorText ?? ""))) {
-        canceledRequests++
-      } else failedRequests++
-    })
-    const titles = { dashboard: "Dashboard", hosting: "Hosting", projects: "Projects" }
-    const routeReady = expected => Boolean(
-      document.querySelector('[data-slot="sidebar-wrapper"]') &&
-      (document.querySelector("#root")?.textContent?.trim().length ?? 0) > 20 &&
-      (!expected || document.querySelector("h1")?.textContent?.trim() === expected),
-    )
-    let first = true
+      let external = true;
+      try {
+        external = new URL(request.url()).origin !== config.origin;
+      } catch {
+        /* unknown URI */
+      }
+      if (external || !['GET', 'HEAD'].includes(request.method())) blockedRequests++;
+      else if (/ABORTED|CANCELLED|CANCELED/i.test(String(request.failure()?.errorText ?? ''))) {
+        canceledRequests++;
+      } else failedRequests++;
+    });
+    const titles = { dashboard: 'Dashboard', hosting: 'Hosting', projects: 'Projects' };
+    const routeReady = (expected) =>
+      Boolean(
+        globalThis.document.querySelector('[data-slot="sidebar-wrapper"]') &&
+        (globalThis.document.querySelector('#root')?.textContent?.trim().length ?? 0) > 20 &&
+        (!expected || globalThis.document.querySelector('h1')?.textContent?.trim() === expected),
+      );
+    let first = true;
     for (const route of config.pages) {
-      const destination = config.origin + routes[route]
-      await page.setViewportSize({ width: 1440, height: 900 })
-      let status = null, navigationError = null
-      let navigationMode = first ? "document" : "spa"
-      let previousJs = jsErrors, previousConsole = consoleErrors
-      let previousFailed = failedRequests, previousBlocked = blockedRequests
-      let previousCanceled = canceledRequests
+      const destination = config.origin + routes[route];
+      await page.setViewportSize({ width: 1440, height: 900 });
+      let status = null,
+        navigationError = null;
+      let navigationMode = first ? 'document' : 'spa';
+      let previousJs = jsErrors,
+        previousConsole = consoleErrors;
+      let previousFailed = failedRequests,
+        previousBlocked = blockedRequests;
+      let previousCanceled = canceledRequests;
       try {
         if (first) {
           const response = await page.goto(destination, {
-            waitUntil: "commit", timeout: 18000,
-          })
-          status = response?.status() ?? null
+            waitUntil: 'commit',
+            timeout: 18000,
+          });
+          status = response?.status() ?? null;
         } else {
           try {
-            await page.locator('a[href="' + routes[route] + '"]').first().click({ timeout: 5000 })
-            await page.waitForURL(destination, { timeout: 12000 })
+            await page
+              .locator('a[href="' + routes[route] + '"]')
+              .first()
+              .click({ timeout: 5000 });
+            await page.waitForURL(destination, { timeout: 12000 });
           } catch {
-            navigationMode = "document-fallback"
+            navigationMode = 'document-fallback';
             const response = await page.goto(destination, {
-              waitUntil: "commit", timeout: 18000,
-            })
-            status = response?.status() ?? null
+              waitUntil: 'commit',
+              timeout: 18000,
+            });
+            status = response?.status() ?? null;
           }
         }
         try {
-          await page.waitForFunction(routeReady, titles[route] ?? null, { timeout: 15000 })
-          await page.waitForTimeout(1200)
+          await page.waitForFunction(routeReady, titles[route] ?? null, { timeout: 15000 });
+          await page.waitForTimeout(1200);
         } catch {
-          navigationError = "React route not confirmed"
+          navigationError = 'React route not confirmed';
         }
       } catch {
-        navigationError = "Navigation unavailable"
+        navigationError = 'Navigation unavailable';
       }
       for (const vp of screens) {
-        const cap = { route, viewport: vp.name, status, navigationMode, geometry: null,
-          jsErrors: 0, consoleErrors: 0, failedRequests: 0,
-          blockedRequests: 0, canceledRequests: 0, file: null,
-          rendered: false, stage: "viewport" }
+        const cap = {
+          route,
+          viewport: vp.name,
+          status,
+          navigationMode,
+          geometry: null,
+          jsErrors: 0,
+          consoleErrors: 0,
+          failedRequests: 0,
+          blockedRequests: 0,
+          canceledRequests: 0,
+          file: null,
+          rendered: false,
+          stage: 'viewport',
+        };
         try {
-          await page.setViewportSize({ width: vp.width, height: vp.height })
-          await page.waitForTimeout(450)
-          cap.rendered = await page.evaluate(routeReady, titles[route] ?? null)
-          if (cap.rendered) cap.geometry = await geometry(page)
-          cap.stage = "screenshot"
-          const filename = screenshotName(route, vp.name)
-          const absolute = join(folder, filename)
-          await page.screenshot({ path: absolute, animations: "disabled", timeout: 12000 })
-          await chmod(absolute, 0o600)
-          cap.file = filename
+          await page.setViewportSize({ width: vp.width, height: vp.height });
+          await page.waitForTimeout(450);
+          cap.rendered = await page.evaluate(routeReady, titles[route] ?? null);
+          if (cap.rendered) cap.geometry = await geometry(page);
+          cap.stage = 'screenshot';
+          const filename = screenshotName(route, vp.name);
+          const absolute = join(folder, filename);
+          await page.screenshot({ path: absolute, animations: 'disabled', timeout: 12000 });
+          await chmod(absolute, 0o600);
+          cap.file = filename;
           // A second viewport covers content below the fold without changing
           // the read-only route scope or capturing an unbounded full-page image.
           if (cap.rendered && (cap.geometry?.documentHeight ?? 0) > vp.height + 120) {
             try {
-              await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
-              await page.waitForTimeout(250)
-              const bottom = screenshotName(route, vp.name, "bottom")
-              const bottomPath = join(folder, bottom)
-              await page.screenshot({ path: bottomPath, animations: "disabled", timeout: 12000 })
-              await chmod(bottomPath, 0o600)
-              cap.bottomFile = bottom
+              await page.evaluate(() =>
+                globalThis.window.scrollTo(0, globalThis.document.documentElement.scrollHeight),
+              );
+              await page.waitForTimeout(250);
+              const bottom = screenshotName(route, vp.name, 'bottom');
+              const bottomPath = join(folder, bottom);
+              await page.screenshot({ path: bottomPath, animations: 'disabled', timeout: 12000 });
+              await chmod(bottomPath, 0o600);
+              cap.bottomFile = bottom;
             } catch {
-              cap.bottomError = "Bottom viewport screenshot unavailable"
+              cap.bottomError = 'Bottom viewport screenshot unavailable';
             } finally {
-              await page.evaluate(() => window.scrollTo(0, 0)).catch(() => {})
+              await page.evaluate(() => globalThis.window.scrollTo(0, 0)).catch(() => {});
             }
           }
-          cap.stage = "complete"
-          if (!cap.rendered) cap.error = navigationError ?? "React content not confirmed"
+          cap.stage = 'complete';
+          if (!cap.rendered) cap.error = navigationError ?? 'React content not confirmed';
         } catch {
-          cap.error = cap.stage === "viewport"
-            ? "Viewport or layout inspection unavailable" : "Screenshot unavailable"
+          cap.error =
+            cap.stage === 'viewport'
+              ? 'Viewport or layout inspection unavailable'
+              : 'Screenshot unavailable';
         }
-        cap.jsErrors = jsErrors - previousJs
-        cap.consoleErrors = consoleErrors - previousConsole
-        cap.failedRequests = failedRequests - previousFailed
-        cap.blockedRequests = blockedRequests - previousBlocked
-        cap.canceledRequests = canceledRequests - previousCanceled
-        previousJs = jsErrors
-        previousConsole = consoleErrors
-        previousFailed = failedRequests
-        previousBlocked = blockedRequests
-        previousCanceled = canceledRequests
-        captures.push(cap)
+        cap.jsErrors = jsErrors - previousJs;
+        cap.consoleErrors = consoleErrors - previousConsole;
+        cap.failedRequests = failedRequests - previousFailed;
+        cap.blockedRequests = blockedRequests - previousBlocked;
+        cap.canceledRequests = canceledRequests - previousCanceled;
+        previousJs = jsErrors;
+        previousConsole = consoleErrors;
+        previousFailed = failedRequests;
+        previousBlocked = blockedRequests;
+        previousCanceled = canceledRequests;
+        captures.push(cap);
       }
-      first = false
+      first = false;
     }
-    await page.close()
-    for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name))
-    await ctx.close()
-  } finally { await browser.close() }
-  const report = { kind: "PocketHostTestLab", sourceSha: config.sha,
-    origin: config.origin, mode: "read-only", at: new Date().toISOString(), captures, api }
-  const reportName = join(folder, "report.json"), galleryName = join(folder, "index.html")
-  await writeFile(reportName, JSON.stringify(report, null, 2), { mode: 0o600 })
-  await writeFile(galleryName, gallery(report), { mode: 0o600 })
-  await chmod(reportName, 0o600)
-  await chmod(galleryName, 0o600)
-  process.stdout.write(JSON.stringify({ kind: report.kind, status: "OBSERVED",
-    sourceSha: config.sha, readOnly: true,
-    screenshots: captures.reduce((sum, c) => sum + Number(Boolean(c.file)) + Number(Boolean(c.bottomFile)), 0),
-    bottomScreenshots: captures.filter(c => c.bottomFile).length,
-    failures: captures.filter(c => c.error).length,
-    notRendered: captures.filter(c => !c.rendered).length,
-    overflowing: captures.filter(c => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0).length,
-    overflowCases: captures.filter(c => (c.geometry?.horizontalOverflow || 0) > 0).length,
-    jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
-    failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
-    blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),
-    canceledRequests: captures.reduce((sum, c) => sum + c.canceledRequests, 0),
-    api, localFolder: folder }) + "\n")
+    await page.close();
+    for (const name of config.probes) api.push(await probe(ctx.request, config.origin, name));
+    await ctx.close();
+  } finally {
+    await browser.close();
+  }
+  const report = {
+    kind: 'PocketHostTestLab',
+    sourceSha: config.sha,
+    origin: config.origin,
+    mode: 'read-only',
+    at: new Date().toISOString(),
+    captures,
+    api,
+  };
+  const reportName = join(folder, 'report.json'),
+    galleryName = join(folder, 'index.html');
+  await writeFile(reportName, JSON.stringify(report, null, 2), { mode: 0o600 });
+  await writeFile(galleryName, gallery(report), { mode: 0o600 });
+  await chmod(reportName, 0o600);
+  await chmod(galleryName, 0o600);
+  process.stdout.write(
+    JSON.stringify({
+      kind: report.kind,
+      status: 'OBSERVED',
+      sourceSha: config.sha,
+      readOnly: true,
+      screenshots: captures.reduce(
+        (sum, c) => sum + Number(Boolean(c.file)) + Number(Boolean(c.bottomFile)),
+        0,
+      ),
+      bottomScreenshots: captures.filter((c) => c.bottomFile).length,
+      failures: captures.filter((c) => c.error).length,
+      notRendered: captures.filter((c) => !c.rendered).length,
+      overflowing: captures.filter((c) => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0)
+        .length,
+      overflowCases: captures.filter((c) => (c.geometry?.horizontalOverflow || 0) > 0).length,
+      jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
+      failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
+      blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),
+      canceledRequests: captures.reduce((sum, c) => sum + c.canceledRequests, 0),
+      api,
+      localFolder: folder,
+    }) + '\n',
+  );
 }
 main().catch(() => {
   // Never publish browser console, response body, credentials or raw error stack to Git.
-  process.stderr.write("PocketHost Test Lab: configuration, Chrome or filesystem unavailable\n")
-  process.exitCode = 1
-})
+  process.stderr.write('PocketHost Test Lab: configuration, Chrome or filesystem unavailable\n');
+  process.exitCode = 1;
+});
