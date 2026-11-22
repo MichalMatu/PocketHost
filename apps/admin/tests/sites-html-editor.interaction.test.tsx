@@ -127,6 +127,32 @@ describe("one-file static site MVP", () => {
   })
 })
 
+describe("Static create/import form separation", () => {
+  it("preserves the starter HTML controls and reset behavior without requesting a write", async () => {
+    const user = userEvent.setup()
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input) === "/api/v1/sites")
+        return { ok: true, json: async () => ({ sites: [] }) }
+      throw new Error("Unexpected create/import request")
+    })
+    vi.stubGlobal("fetch", fetcher)
+    render(<MemoryRouter initialEntries={["/sites"]}><SitesPage /></MemoryRouter>)
+    const button = await screen.findByRole("button", { name: "Create site" })
+    expect((button as HTMLButtonElement).disabled).toBe(true)
+    await user.type(screen.getByLabelText("Site name"), "Starter fixture")
+    await user.click(screen.getByRole("checkbox", { name: "Publish starter HTML on creation" }))
+    expect(screen.getByRole("button", { name: "Create with starter HTML" })).toBeTruthy()
+    const editor = screen.getByLabelText("Initial HTML") as HTMLTextAreaElement
+    const sample = editor.value
+    await user.clear(editor)
+    await user.type(editor, "<h1>changed</h1>")
+    await user.click(screen.getByRole("button", { name: "Reset sample HTML" }))
+    expect(editor.value).toBe(sample)
+    expect(fetcher).toHaveBeenCalledTimes(1)
+    expect(fetcher.mock.calls.every(([url]) => String(url) === "/api/v1/sites")).toBe(true)
+  })
+})
+
 describe("active HTML read cancel and retry", () => {
   const active = { ...base, activeRelease: FIRST, fileCount: 1, bytes: 18, releases: 1 }
 
