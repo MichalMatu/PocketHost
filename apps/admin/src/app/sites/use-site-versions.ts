@@ -25,9 +25,8 @@ export function useSiteVersions(
       const releases = parseFleetReleases(await response.json())
       // The history response may be older than the verified site inventory.
       // Never offer restore/prune controls for a mismatched active/rollback release.
-      if (site.activeRelease !== undefined &&
-          ((releases.find(release => release.active)?.id ?? null) !== site.activeRelease ||
-           (releases.find(release => release.rollbackTarget)?.id ?? null) !== site.previousRelease))
+      if ((releases.find(release => release.active)?.id ?? null) !== (site.activeRelease ?? null) ||
+          (releases.find(release => release.rollbackTarget)?.id ?? null) !== (site.previousRelease ?? null))
         throw new Error("Version history does not match the current site. Refresh and retry.")
       return releases
     }).then(parsed => {
