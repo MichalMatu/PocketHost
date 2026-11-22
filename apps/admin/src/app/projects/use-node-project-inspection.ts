@@ -10,6 +10,8 @@ type ReadJson = (url: string) => Promise<Record<string, unknown>>
 export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews: () => void) {
   const [releases, setReleases] = React.useState<Candidate[]>([])
   const [releasesLoading, setReleasesLoading] = React.useState(false)
+  const [releasesChecked, setReleasesChecked] = React.useState(false)
+  const [releasesError, setReleasesError] = React.useState(false)
   const [runtime, setRuntime] = React.useState<RuntimeState | null>(null)
   const [plan, setPlan] = React.useState<RuntimePlan | null>(null)
   const [executionEnabled, setExecutionEnabled] = React.useState(false)
@@ -23,6 +25,8 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
     runtimeSequence.current += 1
     setReleases([])
     setReleasesLoading(false)
+    setReleasesChecked(false)
+    setReleasesError(false)
     setRuntime(null)
     setPlan(null)
     setExecutionEnabled(false)
@@ -38,12 +42,19 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
       generation.current === selectedGeneration && releaseSequence.current === request
     setReleases([])
     setReleasesLoading(true)
+    setReleasesChecked(false)
+    setReleasesError(false)
     try {
       const data = await getJson(api + "/" + id + "/releases")
       if (!current()) return
-      setReleases(parseCandidates(data.releases))
+      const received = parseCandidates(data.releases)
+      setReleases(received)
+      setReleasesChecked(true)
     } catch (cause) {
-      if (current()) throw cause
+      if (current()) {
+        setReleasesError(true)
+        throw cause
+      }
     } finally {
       if (current()) setReleasesLoading(false)
     }
@@ -86,7 +97,8 @@ export function useNodeProjectInspection(getJson: ReadJson, resetRuntimeReviews:
   }, [getJson, resetRuntimeReviews])
 
   return {
-    releases, releasesLoading, runtime, setRuntime, plan, setPlan,
+    releases, releasesLoading, releasesChecked, releasesError,
+    runtime, setRuntime, plan, setPlan,
     executionEnabled, setExecutionEnabled, beginInspection, loadReleases, loadRuntime,
   }
 }

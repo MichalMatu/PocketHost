@@ -79,7 +79,8 @@ export default function ProjectsPage() {
     setRollbackPreflight(null)
   }, [])
   const {
-    releases, releasesLoading, runtime, setRuntime, plan, setPlan,
+    releases, releasesLoading, releasesChecked, releasesError,
+    runtime, setRuntime, plan, setPlan,
     executionEnabled, setExecutionEnabled, loadReleases, loadRuntime, beginInspection,
   } = useNodeProjectInspection(getJson, resetRuntimeReviews)
   // Discard one-shot approvals whenever the owner identity changes or locks.
@@ -951,6 +952,19 @@ export default function ProjectsPage() {
             {releasesLoading && <p role="status" className="text-xs text-muted-foreground">
               Reading releases for selected Node project…
             </p>}
+            {releasesError && <div className="flex flex-wrap items-center gap-3">
+              <p role="alert" className="text-xs text-destructive">
+                Could not read source releases for this project.
+              </p>
+              <Button variant="outline" size="sm" disabled={busy}
+                onClick={() => action(() => loadReleases(selected.id))}>Retry releases</Button>
+            </div>}
+            {!releasesLoading && !releasesError && releasesChecked && releases.length === 0 &&
+              <p role="status" className="text-xs text-muted-foreground">
+                No source releases yet. Stage project source to prepare the first version.
+              </p>}
+            {!releasesLoading && !releasesError && !releasesChecked &&
+              <p className="text-xs text-muted-foreground">Releases not checked yet.</p>}
             <div className="space-y-2 text-sm">
               {releases.map(release => <div key={release.id} className="rounded-md border px-3 py-2">
                 <details>
