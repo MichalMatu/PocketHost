@@ -4,10 +4,18 @@ import { readSites } from "./site-client"
 
 /** The newest owned inventory wins; earlier GETs must never restore stale controls. */
 export function useOwnedSiteInventory() {
-  const [sites, setSites] = React.useState<FleetSite[]>([])
+  const [sites, updateSites] = React.useState<FleetSite[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const sequence = React.useRef(0)
+
+  // A verified mutation/readback from the parent is newer than any GET in flight.
+  // Preserve the existing setter contract while preventing stale catalog replies.
+  const setSites = React.useCallback<React.Dispatch<React.SetStateAction<FleetSite[]>>>(next => {
+    sequence.current += 1
+    updateSites(next)
+    setLoading(false)
+  }, [])
 
   const reload = React.useCallback(async (signal?: AbortSignal) => {
     const current = ++sequence.current
@@ -15,11 +23,11 @@ export function useOwnedSiteInventory() {
       const observed = await readSites(signal)
       if (signal?.aborted || current !== sequence.current)
         throw new Error("Owned inventory refresh was superseded.")
-      setSites(observed)
+      updateSites(observed)
       setError(null)
     } catch (cause) {
       if (!signal?.aborted && current === sequence.current) {
-        setSites([])
+        updateSites([])
         setError(cause instanceof Error ? cause.message : "Could not load static sites.")
       }
       throw cause
