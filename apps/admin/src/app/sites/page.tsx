@@ -5,9 +5,9 @@ import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Uplo
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
+import { useOwnedSiteCreation } from "./use-owned-site-creation"
 import { useSiteVersions } from "./use-site-versions"
 import { useSiteHtmlEditor } from "./use-site-html-editor"
-import { verifyCreatedSiteReadback } from "./verify-created-site"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
 import { parseH3Files, type H3Files } from "@/lib/termux-center-schema"
-import { endpoint, maxStarterHtml, readSignal, starterHtml, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection, inspectInitialStaticZip } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, starterHtml, mutate, siteAddress, encodeBase64, encodeStaticFolder, StaticSiteInputRejected, validateStaticZipSelection, validateStaticFolderSelection } from "./site-client"
 
 function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
   const [busy, setBusy] = React.useState(false)
@@ -355,108 +355,14 @@ export default function SitesPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const selectedSiteId = searchParams.get("site")
   const { sites, setSites, loading, error, setError, reload, refresh } = useOwnedSiteInventory()
-  const [name, setName] = React.useState("")
-  const [initialZip, setInitialZip] = React.useState<File | null>(null)
-  const [initialFolder, setInitialFolder] = React.useState<File[]>([])
-  const [publishStarter, setPublishStarter] = React.useState(false)
-  const [initialHtml, setInitialHtml] = React.useState(starterHtml)
-  const initialZipInput = React.useRef<HTMLInputElement>(null)
-  const initialFolderInput = React.useRef<HTMLInputElement>(null)
-  React.useEffect(() => {
-    initialFolderInput.current?.setAttribute("webkitdirectory", "")
-    initialFolderInput.current?.setAttribute("directory", "")
-  }, [])
-  const [creating, setCreating] = React.useState(false)
-  const [inputError, setInputError] = React.useState<string | null>(null)
-  const [notice, setNotice] = React.useState<string | null>(null)
-
-  const createSite = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    if (creating || loading || error !== null || sites.length >= 8) return
-    const firstRelease = initialZip
-    const firstFolder = initialFolder
-    const starter = publishStarter && firstRelease === null && firstFolder.length === 0
-    const hasFirstFiles = firstRelease !== null || firstFolder.length > 0 || starter
-    if (starter) {
-      const htmlBytes = new TextEncoder().encode(initialHtml)
-      if (!initialHtml.trim()) {
-        setInputError("Initial index.html cannot be empty.")
-        setNotice(null)
-        return
-      }
-      if (htmlBytes.length > maxStarterHtml) {
-        setInputError("Initial HTML is larger than 32 KiB. Use ZIP or folder import instead.")
-        setNotice(null)
-        return
-      }
-    }
-    if (firstRelease) {
-      const invalid = validateStaticZipSelection(firstRelease)
-      if (invalid) {
-        setInputError(invalid)
-        setNotice(null)
-        return
-      }
-    }
-    setCreating(true)
-    setInputError(null)
-    setNotice(null)
-    try {
-      if (firstRelease) {
-        const structuralError = await inspectInitialStaticZip(firstRelease)
-        if (structuralError) {
-          setInputError(structuralError)
-          return
-        }
-      }
-      let created: FleetSite
-      try {
-        const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
-        const starterPayload = starter ? JSON.stringify({ files: [{
-          name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
-        }] }) : null
-        const importEndpoint = endpoint + "/import?name=" + encodeURIComponent(name.trim())
-        created = firstRelease
-          ? await mutate(importEndpoint, "POST", firstRelease, "application/zip")
-          : folderPayload !== null || starterPayload !== null
-            ? await mutate(importEndpoint, "POST", folderPayload ?? starterPayload!, "application/json")
-            : await mutate(endpoint + "/", "POST",
-              JSON.stringify({ name: name.trim() }), "application/json")
-      } catch (cause) {
-        if (cause instanceof StaticSiteInputRejected) {
-          setInputError(cause.message)
-        } else {
-          setSites([])
-          setError(hasFirstFiles
-            ? "Create and " + (firstRelease ? "ZIP " : firstFolder.length ? "folder " : "HTML ") +
-              "import result unconfirmed. Refresh before retrying; no automatic retry."
-            : "Create result unconfirmed. Refresh before retrying.")
-        }
-        return
-      }
-      try {
-        const observed = await verifyCreatedSiteReadback(created, name.trim(), hasFirstFiles)
-        setSites(observed)
-        setName("")
-        setInitialZip(null)
-        setInitialFolder([])
-        setPublishStarter(false)
-        setInitialHtml(starterHtml)
-        if (initialZipInput.current) initialZipInput.current.value = ""
-        if (initialFolderInput.current) initialFolderInput.current.value = ""
-        setNotice(hasFirstFiles
-          ? 'Site "' + created.name + '" created and ' +
-            (firstRelease ? "ZIP" : firstFolder.length ? "folder" : "starter HTML") +
-            ' published as its first immutable release. Press Start when ready.'
-          : 'Site "' + created.name + '" created. Edit HTML to publish the first release.')
-      } catch {
-        setSites([])
-        setError(hasFirstFiles
-          ? 'Initial import was acknowledged, but its site/release could not be confirmed. Refresh before retrying; no automatic retry.'
-          : "Creation was acknowledged, but the new site's identity and stopped state could not be confirmed. Refresh before retrying; no automatic retry.")
-      }
-    } finally { setCreating(false) }
-  }
+  const {
+    name, setName, initialZip, setInitialZip, initialFolder, setInitialFolder,
+    publishStarter, setPublishStarter, initialHtml, setInitialHtml,
+    initialZipInput, initialFolderInput, creating, inputError, setInputError,
+    notice, setNotice, createSite,
+  } = useOwnedSiteCreation({
+    sitesCount: sites.length, loading, error, setSites, setError,
+  })
 
   return (
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
