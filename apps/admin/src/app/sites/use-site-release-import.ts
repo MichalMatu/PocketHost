@@ -59,7 +59,8 @@ export function useSiteReleaseImport({
     void execute(async () => mutate(endpoint + "/" + site.id + "/deploy", "PUT",
       await encodeStaticFolder(files), "application/json"),
       "Folder was published as a new immutable release.", true,
-    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease)
+    observed => observed.activeRelease !== null && observed.activeRelease !== site.activeRelease &&
+      observed.fileCount > 0 && observed.bytes > 0)
   }
 
   const publishHtml = () => {
