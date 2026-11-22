@@ -59,7 +59,6 @@ device/agent receipts before any new task. The [22 November source checkpoint](c
 records the latest docs-only audit; it is **not** a fresh A8 device probe. Old Services S4 QA
 and earlier DEV versions are historical evidence, not the current state.
 
-
 The installed A8 **Local Agent** bundle, confirmed independently by private task `pockethost-a8-agent-bundle-identity-20261114-v1`, is **`c39cd958c76cca0aaf2d30a654bdc4305c0a3228`**; runit was running. The newer Termux Git-poll historical-result lookup optimization at source `4d58ae544a1d7d73a6235e6b067152a605bb9635` is **not present in this installed release**. Do not mistake source availability or successful Git intake for a deployed Agent upgrade. An Agent update must use a separately approved, external operator with rollback and exact source acceptance; never self-update/restart it using its own immutable task.
 
 At the earlier A8 installation observation, the standard Termux runit supervisor and PocketHost-owned panel/watch were running; the independently managed system `sshd` and `ssh-agent` were disabled/external and never adopted. A separately owned dedicated PocketHost SSH listener was later functionally exercised; verify actual current process state before new operations. A separate boot hook was configured for runit, but boot recovery has not been physically verified. No new periodic scheduler was added.
