@@ -12,7 +12,7 @@ import { shortRelease, localEventTime, releaseRole } from "./node-project-displa
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
   validatedExtras, validatedAssets, validProject, requestJson,
-  type Project, type RuntimeState, type NodeHealth,
+  type Project, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
 
