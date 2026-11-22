@@ -11,9 +11,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
 
 afterEach(() => vi.unstubAllGlobals())
 
-it.each([true, false])(
-  "clears pending readiness and invalidates a changed release (ready=%s)",
-  async foreignReady => {
+it.each([true, false])("rechecks changed Node release (ready=%s)", async foreignReady => {
   const id = "node-" + "a".repeat(32)
   const release = "r-" + "b".repeat(32)
   const project = {
@@ -84,8 +82,7 @@ it.each([true, false])(
     .toContain("HTTP readiness: not checked")
   expect(healthReads).toBe(3)
   expect(requests.mock.calls.every(([, options]) => options?.method !== "POST")).toBe(true)
-  },
-)
+})
 
 it("invalidates a prior local Node preview and rejects a different running release", async () => {
   const id = "node-" + "a".repeat(32)
