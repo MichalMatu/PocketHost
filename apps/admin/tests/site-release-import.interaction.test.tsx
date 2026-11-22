@@ -72,6 +72,36 @@ it("accepts a directory picker selection with one shared parent folder", () => {
   expect(execute).toHaveBeenCalledTimes(1)
 })
 
+it("requires nonempty host readback for a published folder release", () => {
+  const execute = vi.fn(async (
+    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
+    _expected?: (observed: FleetSite) => boolean,
+  ) => {})
+  const hook = renderHook(() => useSiteReleaseImport({
+    site, busy: false, outcomeUnknown: false,
+    html: "<h1>Hello</h1>", editorReady: true,
+    execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  const file = new File(["<h1>Page</h1>"], "index.html")
+  const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+  act(() => { hook.result.current.folder(selected([file])) })
+  expect(confirm).toHaveBeenCalledTimes(1)
+  expect(execute).toHaveBeenCalledTimes(1)
+  const [, message, mutation, expected] = execute.mock.calls[0]
+  expect(message).toBe("Folder was published as a new immutable release.")
+  expect(mutation).toBe(true)
+  const matches = expected as (observed: FleetSite) => boolean
+  const next = "r-" + "c".repeat(32)
+  expect(matches({ ...site, activeRelease: next, fileCount: 1, bytes: file.size }))
+    .toBe(true)
+  expect(matches({ ...site, activeRelease: next, fileCount: 0, bytes: 0 }))
+    .toBe(false)
+  expect(matches({ ...site, activeRelease: next, fileCount: 1, bytes: 0 }))
+    .toBe(false)
+  expect(matches({ ...site, activeRelease: site.activeRelease, fileCount: 1, bytes: file.size }))
+    .toBe(false)
+})
+
 it("cancels a replacement ZIP before any write and clears the file picker", () => {
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false)
   const execute = vi.fn(async () => {})
