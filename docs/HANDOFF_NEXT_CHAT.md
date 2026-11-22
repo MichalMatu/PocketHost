@@ -9,6 +9,13 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## 22 November continuation — stale Node catalog refresh protection
+
+- **Source change:** `09b038d66434d53eb15b408a7918ec39f01e4013` guards `apps/admin/src/app/projects/page.tsx` catalog reads with a request-generation ref and a last-verified snapshot. Older GET successes/failures or responses completing after unmount no longer overwrite a newer verified catalog, clear the selected project, reset inspection or surface obsolete errors. Existing validation and real errors from the current request remain unchanged; stale callers receive the last verified snapshot (empty until verified) and never trigger an extra request.
+- **Two focused UI regressions added, not executed:** `apps/admin/tests/node-project-catalog-race.interaction.test.tsx` simulates out-of-order successful and failed responses. Scope for eventual A8 test: exact current `main`, format + admin-types + selected Node Projects UI tests. No test PASS, build, Mac Test Lab or DEV deployment claimed.
+- **Agent gate:** A8 N12 immutable task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still lacks terminal result; `agent-control` 650 tasks / 649 result files and host claims remain unverified in latest observation. Do not retry/requeue or overlap on the A8 checkout. First reconcile that N12 result/claims; then new exact-SHA A8 QA and only qualified guarded DEV deployment after live owner/PID/start/health/protected service checks. Last known DEV PASS N11 `c4dedfd` is historical only.
+- No scheduler, restart, external service modification or off-device transfer.
+
 ## 22 November continuation — Node release inventory extraction
 
 - **Code commit:** `8cad2dd2f2a84fde3ed15906c960975f0eb92ca5`. Extracted the existing read-only releases card into `apps/admin/src/app/projects/node-release-inventory.tsx`, shrinking the parent `page.tsx` by about 2.1 KB. Same load/unchecked/empty/error states, same release-role and restaging labels, same details disclosure, same disabled states. Both Refresh and Retry still delegate through the parent `action(() => loadReleases(selected.id))`, with no change to endpoint calls or owner-token logic.
