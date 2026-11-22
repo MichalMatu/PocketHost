@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { screenshotName } from './artifact-names.mjs';
 import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 import { inspectPageGeometry } from './layout-geometry.mjs';
+import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = {
@@ -143,6 +144,7 @@ function gallery(report) {
   const cards = report.captures
     .map((c) => {
       const label = c.route + ' · ' + c.viewport;
+      const warnings = captureWarnings(c);
       const stats =
         (c.navigationMode === 'spa' ? 'SPA route' : 'HTTP ' + c.status) +
         ', overflow ' +
@@ -155,6 +157,9 @@ function gallery(report) {
         '</h2><p>' +
         escapeHtml(stats) +
         '</p>' +
+        (warnings.length
+          ? '<p>Capture incomplete: ' + escapeHtml(warnings.join('; ')) + '</p>'
+          : '') +
         (c.file
           ? '<a href="' +
             escapeHtml(c.file) +
@@ -448,6 +453,7 @@ async function main() {
   } finally {
     await browser.close();
   }
+  const captureSummary = summarizeCaptureWarnings(captures);
   const report = {
     kind: 'PocketHostTestLab',
     sourceSha: config.sha,
@@ -455,6 +461,7 @@ async function main() {
     mode: 'read-only',
     at: new Date().toISOString(),
     captures,
+    captureSummary,
     api,
   };
   const reportName = join(folder, 'report.json'),
@@ -479,6 +486,7 @@ async function main() {
       bottomScreenshots: captures.filter((c) => c.bottomFile).length,
       createPanelScreenshots: captures.filter((c) => c.createPanelFile).length,
       failures: captures.filter((c) => c.error).length,
+      ...captureSummary,
       notRendered: captures.filter((c) => !c.rendered).length,
       overflowing: captures.filter((c) => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0)
         .length,
