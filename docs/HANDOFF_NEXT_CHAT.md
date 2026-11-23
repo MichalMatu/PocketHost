@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Nonempty HTML release confirmation (23 November)
+
+- **Source:** `ba4348e5c3c9053630bd721ed4bd1b5c6365bb6b`; regression `4b85d0bd2e7c42bec06ee3a503c10dcc59d9b8f6`. The existing-site one-file HTML release confirmation in `apps/admin/src/app/sites/use-site-release-import.ts` now requires `observed.bytes > 0`, alongside a changed non-null release ID and exactly one file, matching ZIP/folder nonempty readback policy. No API or publication behavior change; no device action.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-release-import.interaction.test.tsx` checks a changed nonempty HTML release is accepted and a zero-byte readback rejected, retaining earlier no-release and wrong-file-count conditions. Fixture-only mocked `execute`; no host calls.
+- **A8 QA/DEV HOLD:** N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains `unknown` / `interrupted_or_uncertain_execution_no_replay` in the immutable A8 task result. Do not replay/overlap N12, restart the Agent or claim testing/deployment. After independent A8 ownership/process/claim reconciliation, pin fresh exact `main`, run separate scoped `format,admin-types,ui` including pending Static, Node and console regressions (plus changed-scope dependent checks), and only then consider guarded DEV with live SHA, PID/start ticks, LAN HTTP and protected-services readback.
+
 ## Current continuation — Static release history identity reconciliation (23 November)
 
 - **Source:** `ff2d75e809ccd234f1d28ebc02e46e10db126616`, narrowed comparison `3032a20b78f95b9a4b1315066c294d8cb6807d8e`; regression `2f51068d76396cfc9fcd22e4609472abae422cca`. The saved-release readback now rejects histories whose active or quick-rollback flags disagree with the latest rendered site inventory. It closes the view with explicit Refresh/retry feedback instead of showing restore/delete controls grounded in inconsistent release identity. No API write, host lifecycle, UI redesign or deployment.
