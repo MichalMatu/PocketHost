@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static process ownership readback parity (23 November)
+
+- **Source:** `193f93737b756aea8b173737cf5b8e92ad82db12`; regression `d774b49694b00824a259898520b764a9a4546e1e`. In `apps/admin/src/app/sites/page.tsx`, site-card mutation acknowledgement is now reconciled with the exact subsequent site GET for process `pid`, `startTicks` and owned `port`, in addition to state, release and file-summary fields. A mismatch fails closed, shows `Site action result unconfirmed`, blocks further site writes until refresh, and does not claim Start success. No extra HTTP calls, host process signals or endpoint changes.
+- **Regressions authored, NOT RUN:** `apps/admin/tests/site-fleet.interaction.test.tsx` adds 3 fixture cases (PID, process start ticks, port) with one mocked Start POST, one exact-site readback GET and no retry. Existing Start-success and uncertain-ack tests remain intact; Git patch/ancestry reviewed, not compiled.
+- **QA/DEV HOLD:** immutable A8 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still `unknown` / `interrupted_or_uncertain_execution_no_replay`. Do not overlap task, replay, restart Agent, or run off-device QA. After independent A8 task/claim/process reconciliation, pin current `main`, execute bounded `format,admin-types,ui` and any changed-scope dependency-mapped checks, evaluate exact-SHA receipt; guarded DEV only after terminal QA PASS and protected service, live SHA/PID/start-ticks/HTTP readback.
+
 ## Current continuation — A8 QA evidence and Node compile fix (23 November)
 
 - **Earlier real A8 QA receipt (not current main):** `pockethost-a8-night-n12-a3ba281-qa-20261122-v1`, targeted `a3ba281aea304f15114a1aadd1e95d55eb2b3f73`, base `b6c859815fd2d3a19057fc05f467bb0350cf0a60`, scope `format,admin-types,ui`. Result `FAILED`: changed-file format **PASS** (989 ms), incremental admin typecheck **FAIL** (exit 2, 57,786 ms), UI **SKIPPED**. The report gave `src/app/projects/page.tsx(1040,63): TS18046: data.project is of type unknown`. This is historical diagnostic evidence only, NOT a current-SHA result.
