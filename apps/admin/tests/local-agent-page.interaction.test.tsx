@@ -170,9 +170,12 @@ describe("Local Agent read-only overview", () => {
       await waitFor(() =>
         expect(screen.getByText(/Raw log read failed/)).toBeTruthy())
       expect(raw.textContent).toBe(rawEntry)
-      expect(rawCalls).toBe(2)
+      // A manual refresh resets its cursor. A duplicate is recognizable
+      // only on the next continuation; an empty chunk fails immediately.
+      const expectedReads = failure === "duplicate continuation" ? 3 : 2
+      expect(rawCalls).toBe(expectedReads)
       expect(fetcher.mock.calls.filter(([url]) =>
-        url.includes("mode=local-agent-raw-log"))).toHaveLength(2)
+        url.includes("mode=local-agent-raw-log"))).toHaveLength(expectedReads)
     },
   )
 
