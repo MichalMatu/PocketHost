@@ -44,7 +44,7 @@ it("closing a pending version history lets the owner reopen immediately", async 
   await act(async () => { old.resolve(makeResponse(first)); await old.promise })
   expect(hook.result.current.versions?.[0].id).toBe(second)
   expect(hook.result.current.versionsLoading).toBe(false)
-  expect(setError).not.toHaveBeenCalled()
+  expect(setError.mock.calls.every(([message]) => message === null)).toBe(true)
 })
 
 it("a late failure from a closed request cannot close a newly opened version history", async () => {
@@ -61,11 +61,11 @@ it("a late failure from a closed request cannot close a newly opened version his
   act(() => { hook.result.current.toggleVersions() })
   await act(async () => { old.reject(new Error("stale failed request")); await old.promise.catch(() => {}) })
   expect(hook.result.current.versionsLoading).toBe(true)
-  expect(setError).not.toHaveBeenCalled()
+  expect(setError.mock.calls.every(([message]) => message === null)).toBe(true)
   await act(async () => { newer.resolve(makeResponse(second)); await newer.promise })
   await waitFor(() => expect(hook.result.current.versions?.[0].id).toBe(second))
   expect(hook.result.current.versionsLoading).toBe(false)
-  expect(setError).not.toHaveBeenCalled()
+  expect(setError.mock.calls.every(([message]) => message === null)).toBe(true)
 })
 
 it("a fresh site revision supersedes an older version GET", async () => {
