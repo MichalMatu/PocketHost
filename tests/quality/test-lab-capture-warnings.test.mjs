@@ -53,6 +53,9 @@ test('missing mobile navigation screenshot is counted but not a primary failure'
   const capture = { mobileMenuError: 'Mobile navigation screenshot unavailable' };
   assert.deepEqual(captureWarnings(capture), [capture.mobileMenuError]);
   assert.deepEqual(summarizeCaptureWarnings([capture]), {
-    incompleteCaptures: 1, captureErrors: 1, optionalCaptureErrors: 1, createPanelErrors: 0,
+    incompleteCaptures: 1,
+    captureErrors: 1,
+    optionalCaptureErrors: 1,
+    createPanelErrors: 0,
   });
 });

@@ -7,17 +7,16 @@ export function isRouteReady(expected, context = {}) {
 
   // Vite can be served under a basename: accept a complete path-segment suffix.
   const pathname = win.location?.pathname;
-  if (typeof pathname !== 'string' ||
-      (pathname !== expected.path && !pathname.endsWith(expected.path)))
+  if (
+    typeof pathname !== 'string' ||
+    (pathname !== expected.path && !pathname.endsWith(expected.path))
+  )
     return false;
 
   // React Router keeps the previous page visible during lazy loading.
-  if (doc.querySelector('[role="progressbar"][aria-label="Loading page"]'))
-    return false;
-  if (!doc.querySelector('[data-slot="sidebar-wrapper"]'))
-    return false;
-  if ((doc.querySelector('#root')?.textContent?.trim().length ?? 0) <= 20)
-    return false;
+  if (doc.querySelector('[role="progressbar"][aria-label="Loading page"]')) return false;
+  if (!doc.querySelector('[data-slot="sidebar-wrapper"]')) return false;
+  if ((doc.querySelector('#root')?.textContent?.trim().length ?? 0) <= 20) return false;
   if (expected.title && doc.querySelector('h1')?.textContent?.trim() !== expected.title)
     return false;
   return true;

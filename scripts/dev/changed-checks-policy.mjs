@@ -131,10 +131,7 @@ export function planChangedChecks(
       node.add('tests/quality/dev-fast-flow.test.mjs');
       rootLint.push(file);
       structure = true;
-    } else if (
-      file.startsWith('apps/admin/src/') ||
-      file.startsWith('apps/admin/public/')
-    ) {
+    } else if (file.startsWith('apps/admin/src/') || file.startsWith('apps/admin/public/')) {
       // Media and non-code content can change UI behavior with no import or
       // typecheck evidence. Demand a browser usage review, not a false PASS.
       review.push('UI asset/content change needs browser impact review: ' + file);

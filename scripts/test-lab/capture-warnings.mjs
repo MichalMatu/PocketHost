@@ -3,9 +3,9 @@ const ERROR_FIELDS = ['error', 'middleError', 'bottomError', 'createPanelError',
 const OPTIONAL_ERROR_FIELDS = ['middleError', 'bottomError', 'createPanelError', 'mobileMenuError'];
 
 export function captureWarnings(capture) {
-  return ERROR_FIELDS.filter(
-    (field) => typeof capture?.[field] === 'string' && capture[field],
-  ).map((field) => capture[field]);
+  return ERROR_FIELDS.filter((field) => typeof capture?.[field] === 'string' && capture[field]).map(
+    (field) => capture[field],
+  );
 }
 
 export function summarizeCaptureWarnings(captures) {

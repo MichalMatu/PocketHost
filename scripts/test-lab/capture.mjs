@@ -355,8 +355,10 @@ async function main() {
           // capture. This adds a mid-page observation without clicking or writes.
           if (cap.rendered && scrollTargets.middle !== null) {
             try {
-              await page.evaluate((top) =>
-                globalThis.window.scrollTo({ top, behavior: 'instant' }), scrollTargets.middle);
+              await page.evaluate(
+                (top) => globalThis.window.scrollTo({ top, behavior: 'instant' }),
+                scrollTargets.middle,
+              );
               await page.waitForTimeout(250);
               const at = await page.evaluate(() => globalThis.window.scrollY);
               if (at < Math.max(1, scrollTargets.middle * 0.7))
@@ -370,15 +372,19 @@ async function main() {
             } catch {
               cap.middleError = 'Middle viewport screenshot unavailable';
             } finally {
-              await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+              await page
+                .evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }))
+                .catch(() => {});
             }
           }
           // A second viewport covers content below the fold without changing
           // the read-only route scope or capturing an unbounded full-page image.
           if (cap.rendered && scrollTargets.bottom !== null) {
             try {
-              await page.evaluate((top) =>
-                globalThis.window.scrollTo({ top, behavior: 'instant' }), scrollTargets.bottom);
+              await page.evaluate(
+                (top) => globalThis.window.scrollTo({ top, behavior: 'instant' }),
+                scrollTargets.bottom,
+              );
               await page.waitForTimeout(250);
               const at = await page.evaluate(() => globalThis.window.scrollY);
               if (at < Math.max(1, scrollTargets.bottom * 0.7))
@@ -392,7 +398,9 @@ async function main() {
             } catch {
               cap.bottomError = 'Bottom viewport screenshot unavailable';
             } finally {
-              await page.evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+              await page
+                .evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }))
+                .catch(() => {});
             }
           }
           // Opt-in: capture the mobile drawer; no POST, screenshot stays local.
@@ -406,8 +414,9 @@ async function main() {
             } catch {
               cap.mobileMenuError = 'Mobile navigation screenshot unavailable';
             } finally {
-              await page.evaluate(() =>
-                globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+              await page
+                .evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }))
+                .catch(() => {});
             }
           }
           // Whitelisted click-only UI inspection: expand one local details
@@ -417,7 +426,7 @@ async function main() {
             let originallyOpen = false;
             let panelFound = false;
             try {
-              if (await panel.count() !== 1) throw Error('Missing Node create panel');
+              if ((await panel.count()) !== 1) throw Error('Missing Node create panel');
               panelFound = true;
               originallyOpen = await panel.evaluate((element) => element.open);
               if (!originallyOpen) await panel.locator('summary').click({ timeout: 5000 });
@@ -435,9 +444,14 @@ async function main() {
               cap.createPanelError = 'Node create panel capture unavailable';
             } finally {
               if (panelFound && !originallyOpen)
-                await panel.evaluate((element) => { element.open = false; }).catch(() => {});
-              await page.evaluate(() =>
-                globalThis.window.scrollTo({ top: 0, behavior: 'instant' })).catch(() => {});
+                await panel
+                  .evaluate((element) => {
+                    element.open = false;
+                  })
+                  .catch(() => {});
+              await page
+                .evaluate(() => globalThis.window.scrollTo({ top: 0, behavior: 'instant' }))
+                .catch(() => {});
             }
           }
           cap.stage = 'complete';
@@ -493,8 +507,11 @@ async function main() {
       readOnly: true,
       screenshots: captures.reduce(
         (sum, c) =>
-          sum + Number(Boolean(c.file)) + Number(Boolean(c.middleFile)) +
-          Number(Boolean(c.bottomFile)) + Number(Boolean(c.createPanelFile)) +
+          sum +
+          Number(Boolean(c.file)) +
+          Number(Boolean(c.middleFile)) +
+          Number(Boolean(c.bottomFile)) +
+          Number(Boolean(c.createPanelFile)) +
           Number(Boolean(c.mobileMenuFile)),
         0,
       ),
@@ -508,7 +525,8 @@ async function main() {
       overflowing: captures.filter((c) => c.rendered && (c.geometry?.horizontalOverflow || 0) > 0)
         .length,
       overflowCases: captures.filter((c) => (c.geometry?.horizontalOverflow || 0) > 0).length,
-      unlabeledCases: captures.filter((c) => c.rendered && (c.geometry?.unlabeledControls || 0) > 0).length,
+      unlabeledCases: captures.filter((c) => c.rendered && (c.geometry?.unlabeledControls || 0) > 0)
+        .length,
       jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
       failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
       blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),

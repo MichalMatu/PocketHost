@@ -31,12 +31,8 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
     if (
       node.matches("button,a[href],[role='button']") &&
       !node.textContent?.trim() &&
-      !['aria-label', 'aria-labelledby', 'title'].some((name) =>
-        node.getAttribute(name)?.trim(),
-      ) &&
-      !node.querySelector(
-        '[aria-label],[aria-labelledby],svg title,img[alt]:not([alt=""])',
-      )
+      !['aria-label', 'aria-labelledby', 'title'].some((name) => node.getAttribute(name)?.trim()) &&
+      !node.querySelector('[aria-label],[aria-labelledby],svg title,img[alt]:not([alt=""])')
     ) {
       unlabeledControls++;
       if (unlabeledSamples.length < 16) {

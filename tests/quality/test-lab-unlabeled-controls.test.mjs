@@ -2,7 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { inspectPageGeometry } from '../../scripts/test-lab/layout-geometry.mjs';
 
-function control({ tag = 'BUTTON', text = '', attrs = {}, descendantLabel = false, svg = true } = {}) {
+function control({
+  tag = 'BUTTON',
+  text = '',
+  attrs = {},
+  descendantLabel = false,
+  svg = true,
+} = {}) {
   return {
     tagName: tag,
     textContent: text,

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { needsChangedTestDependencies, planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
+import {
+  needsChangedTestDependencies,
+  planChangedChecks,
+} from '../../scripts/dev/changed-checks-policy.mjs';
 
 test('dependency graph scanning is skipped for docs, tests and scripts-only changes', () => {
   for (const changed of [
@@ -28,7 +31,10 @@ test('dependency graph scanning remains required for changed active source modul
 test('deleted source does not scan removed imports; another changed source still does', () => {
   const deleted = ['apps/admin/src/app/old/page.tsx'];
   assert.equal(
-    needsChangedTestDependencies([...deleted, 'tests/quality/admin-preservation.test.mjs'], deleted),
+    needsChangedTestDependencies(
+      [...deleted, 'tests/quality/admin-preservation.test.mjs'],
+      deleted,
+    ),
     false,
   );
   assert.equal(
@@ -249,9 +255,7 @@ test('modified UI stylesheet cannot be certified by formatting alone', () => {
     'apps/admin/src/components/theme-customizer/circular-transition.css',
   ]) {
     const plan = planChangedChecks([file], deps);
-    assert.ok(
-      plan.review.some((reason) => reason.includes('browser layout impact review')),
-    );
+    assert.ok(plan.review.some((reason) => reason.includes('browser layout impact review')));
     assert.ok(command(plan, 'changed-file format').argv.includes(file));
     assert.equal(command(plan, 'ui tests'), undefined);
     assert.equal(command(plan, 'admin incremental typecheck'), undefined);

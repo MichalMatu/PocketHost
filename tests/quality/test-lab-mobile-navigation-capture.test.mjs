@@ -16,9 +16,14 @@ function fakePage(initial = false, fail = false) {
     locator: (selector) => {
       if (selector === '[data-slot="sidebar"][data-mobile="true"]') return panel;
       assert.equal(selector, '[data-slot="sidebar-trigger"]');
-      return { first: () => ({
-        click: async () => { events.push('open'); open = true; },
-      }) };
+      return {
+        first: () => ({
+          click: async () => {
+            events.push('open');
+            open = true;
+          },
+        }),
+      };
     },
     screenshot: async ({ path, animations }) => {
       assert.equal(path, 'menu.png');
@@ -27,11 +32,13 @@ function fakePage(initial = false, fail = false) {
       events.push('shot');
       if (fail) throw Error('fake capture failed');
     },
-    keyboard: { press: async (key) => {
-      assert.equal(key, 'Escape');
-      events.push('close');
-      open = false;
-    } },
+    keyboard: {
+      press: async (key) => {
+        assert.equal(key, 'Escape');
+        events.push('close');
+        open = false;
+      },
+    },
   };
   return { page, events, isOpen: () => open };
 }

@@ -12,8 +12,16 @@ test('long documents plan at most one middle and one bottom viewport', () => {
 });
 
 test('missing, non-finite and invalid sizes never schedule scroll captures', () => {
-  for (const [height, viewport] of [[null, 900], [NaN, 900], [Infinity, 900],
-    [1000, 0], [0, 900], [-1, 900], [1000, NaN], [1000, -2]]) {
+  for (const [height, viewport] of [
+    [null, 900],
+    [NaN, 900],
+    [Infinity, 900],
+    [1000, 0],
+    [0, 900],
+    [-1, 900],
+    [1000, NaN],
+    [1000, -2],
+  ]) {
     assert.deepEqual(scrollCaptureTargets(height, viewport), { middle: null, bottom: null });
   }
 });

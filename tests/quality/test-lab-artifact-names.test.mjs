@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { routePaths, screenshotName, isAllowedScreenshotName } from '../../scripts/test-lab/artifact-names.mjs';
+import {
+  routePaths,
+  screenshotName,
+  isAllowedScreenshotName,
+} from '../../scripts/test-lab/artifact-names.mjs';
 
 test('Test Lab permits exact top/middle/bottom viewport screenshots for known routes only', () => {
   for (const route of [

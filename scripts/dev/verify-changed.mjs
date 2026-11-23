@@ -197,13 +197,16 @@ if (!optionsValid) {
       const after = command('git', ['rev-parse', 'HEAD'], root, 10000);
       const finalClean = command('git', ['status', '--porcelain'], root, 10000);
       if (!isExactCleanCheckout(after, finalClean, plan.head)) {
-        emit({
-          ...common,
-          status: 'HOLD',
-          reason: 'Checkout changed during QA; exact-source verification is invalid.',
-          checks: result.checks,
-          durationMs: Date.now() - started,
-        }, 2);
+        emit(
+          {
+            ...common,
+            status: 'HOLD',
+            reason: 'Checkout changed during QA; exact-source verification is invalid.',
+            checks: result.checks,
+            durationMs: Date.now() - started,
+          },
+          2,
+        );
       } else {
         emit(
           { ...common, ...result, durationMs: Date.now() - started },
