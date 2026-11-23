@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static mutation receipt file-summary parity (23 November)
+
+- **Source:** `89086b35d396a732b6c1ddef6b3716d91e51ce5f`; regression `f1380b1d6c36bdc956c36060c3f1961da4a8c22d`. The Static Hosting site-card mutation handler now compares the mutation acknowledgement's `fileCount` and `bytes` against the subsequent exact-site GET, alongside existing release, state and history fields. A mismatch fails closed: no success notification, no inventory mutation readback or further site writes until refresh. No new endpoint, host operation or changed UI layout.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-fleet.interaction.test.tsx` adds parameterized `fileCount` and `bytes` mismatches for a mocked owned-site Start POST and exact-site GET; asserts writes paused and exactly one POST, no false success. Existing successful Start and incomplete-readback fixtures retained.
+- **A8 QA/DEV HOLD:** N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains `unknown` / `interrupted_or_uncertain_execution_no_replay` in immutable task results, with no independent on-device task/claim/process reconciliation. Do not requeue/overlap, restart Agent, execute QA off the paired A8 or claim deployment. After independently resolving ownership, run SHA-pinned separate targeted `format,admin-types,ui` plus dependency-mapped backlog Node/QA planner checks; guarded DEV only after terminal scoped QA PASS and verified live owner/SHA/PID/ticks/LAN-HTTP/protected-service invariants.
+
 ## Current continuation — Static active asset readback reconciliation (23 November)
 
 - **Source:** `f694f23c32ca467d2c0e3078e476a62fbb488f85`; regression `3bac4160627214635ce6b8119ae3031aea74d328`. In `apps/admin/src/app/sites/use-site-assets.ts`, the read-only Inspect assets view now rejects a separate asset inventory when its number of files or summed byte count differs from the latest rendered site summary. On disagreement it closes the stale list and gives an explicit Refresh/retry error; no write, host lifecycle, source-log transformation or UI redesign.
