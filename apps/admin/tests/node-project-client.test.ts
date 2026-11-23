@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseCandidates, parseNodeHealth, parseProjectCatalog, validProject } from "@/app/projects/node-project-client"
+import { nodeSourceWriteMatchesReadback, parseCandidates, parseNodeHealth, parseProjectCatalog, validProject } from "@/app/projects/node-project-client"
 
 const valid = {
   id: "r-" + "a".repeat(32),
@@ -64,6 +64,45 @@ describe("owned Node project catalog revisions", () => {
       expect(validProject({ ...created, deploymentCount: revision })).toBe(false)
     },
   )
+})
+
+describe("Node source write acknowledgement readback", () => {
+  const original = {
+    id: "node-" + "a".repeat(32), name: "Readback fixture",
+    kind: "node" as const, state: "source-staged" as const,
+    runtime: "not-provisioned" as const, activeRelease: null,
+    candidateRelease: "r-" + "b".repeat(32),
+    previousCandidate: "r-" + "c".repeat(32),
+    deploymentCount: 3, createdAt: "2026-11-22T10:00:00Z",
+  }
+
+  it("accepts exact Stage or Restore candidate revision parity", () => {
+    expect(nodeSourceWriteMatchesReadback(original.id, original, [original])).toBe(true)
+    const restored = {
+      ...original, candidateRelease: original.previousCandidate,
+      previousCandidate: original.candidateRelease, deploymentCount: 4,
+    }
+    expect(nodeSourceWriteMatchesReadback(original.id, restored, [restored])).toBe(true)
+  })
+
+  it.each([
+    { label: "candidate", field: "candidateRelease", value: "r-" + "d".repeat(32) },
+    { label: "rollback candidate", field: "previousCandidate", value: null },
+    { label: "source revision", field: "deploymentCount", value: 2 },
+    { label: "project name", field: "name", value: "Different site" },
+    { label: "source stage", field: "state", value: "created" },
+  ])("refuses a $label mismatch after acknowledged source write", ({ field, value }) => {
+    expect(nodeSourceWriteMatchesReadback(
+      original.id, original, [{ ...original, [field]: value }],
+    )).toBe(false)
+  })
+
+  it("refuses missing, foreign or malformed acknowledgement identities", () => {
+    expect(nodeSourceWriteMatchesReadback(original.id, original, [])).toBe(false)
+    expect(nodeSourceWriteMatchesReadback("node-" + "d".repeat(32), original, [original])).toBe(false)
+    expect(nodeSourceWriteMatchesReadback(original.id, { ...original, deploymentCount: -1 }, [original]))
+      .toBe(false)
+  })
 })
 
 describe("owned Node project catalog integrity", () => {
