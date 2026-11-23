@@ -60,6 +60,38 @@ it("rejects a folder without a nonempty index.html before creating a site", asyn
   expect(fetcher).not.toHaveBeenCalled()
 })
 
+it.each(["root", "wrapped"] as const)(
+  "rejects a new site folder with case-insensitive duplicate %s paths before POST",
+  async scope => {
+    const first = new File(["<h1>Page</h1>"], "index.html")
+    const duplicate = new File(["other"], "INDEX.HTML")
+    if (scope === "wrapped") {
+      Object.defineProperty(first, "webkitRelativePath", { value: "homepage/index.html" })
+      Object.defineProperty(duplicate, "webkitRelativePath", { value: "homepage/INDEX.HTML" })
+    }
+    const fetcher = vi.fn()
+    vi.stubGlobal("fetch", fetcher)
+    const hook = renderHook(() => useOwnedSiteCreation({
+      sitesCount: 0, loading: false, error: null,
+      setSites: vi.fn(), setError: vi.fn(),
+    }))
+    act(() => {
+      hook.result.current.setName("New static site")
+      hook.result.current.setInitialFolder([first, duplicate])
+    })
+    await act(async () => {
+      await hook.result.current.createSite({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent<HTMLFormElement>)
+    })
+    expect(hook.result.current.inputError).toBe(
+      "Folder contains duplicate file paths. Rename files that differ only by case.",
+    )
+    expect(hook.result.current.creating).toBe(false)
+    expect(fetcher).not.toHaveBeenCalled()
+  },
+)
+
 it("rejects empty starter HTML locally before a create request", async () => {
   const fetcher = vi.fn()
   vi.stubGlobal("fetch", fetcher)
