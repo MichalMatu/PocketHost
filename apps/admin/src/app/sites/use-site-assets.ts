@@ -43,7 +43,13 @@ export function useSiteAssets(
       method: "GET", credentials: "same-origin", cache: "no-store", signal: readSignal(),
     }).then(async response => {
       if (!response.ok) throw new Error("Active site files are unavailable.")
-      return parseH3Files(await response.json())
+      const files = parseH3Files(await response.json())
+      // The asset list and summary are separate reads. Reject a stale or
+      // incomplete list instead of presenting it as the current release.
+      if (files.length !== site.fileCount ||
+          files.reduce((total, file) => total + file.bytes, 0) !== site.bytes)
+        throw new Error("Asset inventory does not match the current site. Refresh and retry.")
+      return files
     }).then(parsed => {
       if (current()) setAssets(parsed)
     }).catch(cause => {
