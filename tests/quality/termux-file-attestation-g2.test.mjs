@@ -4,12 +4,24 @@ import { createHash } from 'node:crypto';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  chmodSync, closeSync, existsSync, mkdtempSync, mkdirSync, openSync,
-  rmSync, symlinkSync, unlinkSync, writeFileSync,
+  chmodSync,
+  closeSync,
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  openSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
 } from 'node:fs';
 import {
-  acquireStandaloneLifecycleLock, pythonWorkerSourceHash, runSha256,
-  safeFile, stagedWorkerSourceHash, releaseRecoveryLock,
+  acquireStandaloneLifecycleLock,
+  pythonWorkerSourceHash,
+  runSha256,
+  safeFile,
+  stagedWorkerSourceHash,
+  releaseRecoveryLock,
 } from '../../src/modules/host/termux-file-attestation.ts';
 
 function fixture(t) {
@@ -85,5 +97,8 @@ test('recovery locks and lifecycle leases only release their own inode', (t) => 
   writeFileSync(path.join(folder, '.h3-standalone-lifecycle.lock'), 'foreign');
   assert.throws(releaseTwo, /lock changed/);
   chmodSync(folder, 0o755);
-  assert.throws(() => acquireStandaloneLifecycleLock(register), /Unsafe standalone worker lock directory/);
+  assert.throws(
+    () => acquireStandaloneLifecycleLock(register),
+    /Unsafe standalone worker lock directory/,
+  );
 });

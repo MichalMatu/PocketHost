@@ -94,7 +94,11 @@ export default function RuntimeLogsPage() {
     let active = true
     const target = targets.find(entry => entry.key === selectedKey &&
       (requestedProject === null || entry.key === requestedProject))
-    if (target && !catalogLoading) void loadLogs(target)
+    if (target && !catalogLoading) {
+      void Promise.resolve().then(() => {
+        if (active) void loadLogs(target)
+      })
+    }
     else {
       version.current += 1
       void Promise.resolve().then(() => {
