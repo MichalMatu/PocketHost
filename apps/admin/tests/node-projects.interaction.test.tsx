@@ -875,6 +875,53 @@ it("rejects malformed GitHub preview without changing the Node source editor", a
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(0)
 })
 
+it("does not claim a staged Node release when exact catalog readback stays stale", async () => {
+  const user = userEvent.setup()
+  const original = {
+    id: ID, name: "Stage readback Node", kind: "node" as const, state: "created" as const,
+    runtime: "not-provisioned" as const, activeRelease: null,
+    candidateRelease: null, previousCandidate: null, deploymentCount: 0,
+    createdAt: "2026-11-22T10:00:00Z",
+  }
+  const acknowledged = {
+    ...original, state: "source-staged", candidateRelease: RELEASE, deploymentCount: 1,
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects" && !options?.method)
+      return { ok: true, json: async () => ({ projects: [original] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null, activeRelease: null,
+        lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: null, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: false, reason: "no-source",
+      }, executionEnabled: false }) }
+    if (url.endsWith("/stage") && options?.method === "POST")
+      return { ok: true, json: async () => ({ project: acknowledged }) }
+    throw new Error("Unexpected endpoint " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
+  await screen.findByRole("button", { name: "Stage readback Node" })
+  await user.click(screen.getByRole("button", { name: "Stage readback Node" }))
+  await screen.findByText(/not-provisioned · Live:/)
+  await user.click(screen.getByRole("button", { name: "Validate and stage source" }))
+  await screen.findByText(
+    "Node source result unconfirmed. Refresh project and review the candidate before retrying.",
+  )
+  expect(screen.queryByText("Source candidate staged. Review the execution plan before deploying."))
+    .toBeNull()
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/stage"))).toHaveLength(1)
+  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
+})
+
 it("rejects a stale Node editor save and never retries the conflicting stage request", async () => {
   const user = userEvent.setup()
   const project = {
