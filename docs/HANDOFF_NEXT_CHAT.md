@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — QA dependency graph fast path (23 November)
+
+- **Source:** `871ed508f3a04fe7e8557464c75eba4e9323bb0f` + regex correction `76e655e2e600c3a86b666db857cc76618884d1a0`; planner integration `8094a86df061f15f0ab8a68b36025a0f2a7c6c90`; targeted regression `210319cb8940b69580b39bd7c2f9c22632a8ad45`. `scripts/dev/changed-checks.mjs` skips scanning/parsing the whole source import dependency graph for changes limited to documentation, tests, scripts, and review-only assets; it still uses `planChangedChecks` to select the exact conservative checks. Any existing active root TS/MJS or admin TS/TSX/JS/JSX source change still builds the full dependency graph. Source deletions retain original deletion impact review and checks.
+- **Regressions authored, NOT RUN:** `tests/quality/dev-changed-checks.test.mjs` asserts the skip/required branches and deletion behavior. Source and Git patches reviewed; no measured timing, syntax, format or test PASS claimed. A8 queued QA still needed for current exact SHA, including `syntax,node,format` and `admin-types,ui` for preceding application changes.
+- **A8 QA/DEV HOLD:** old N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still `unknown` / `interrupted_or_uncertain_execution_no_replay`. Global agent daemon appears idle but host claims are unverified; separate device ownership/claim/process reconciliation is required before any new task or deployment. Do not replay, overlap, restart local agent, bypass gates or run project QA on an off-device executor.
+
 ## Current continuation — Exact HTML publication readback (23 November)
 
 - **Source:** `336b4cef32f064f5780ed846c244ef97be05eb8a`; regression `71e339a54a2eba322e2ac2b0644595bfa5aed818`; test callback type correction `bc268f6d4dab2db26946df16c0eb04acb3dfe43c`. Existing-site `publishHtml` now verifies the new release's reported byte count exactly equals the submitted `TextEncoder` UTF-8 byte length, rather than merely checking it is nonzero. This prevents a false publication success for truncated or unexpected HTML content sizes; no API write behavior or host changes. The prior required new release identity and one-file count remain.
