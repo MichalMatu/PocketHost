@@ -1,3 +1,10 @@
+---
+status: deferred
+owner: core
+last_reviewed: 2026-11-23
+purpose: Deferred selective upstream TermuxPanel reuse inventory
+---
+
 # Backlog: selective reuse from TermuxPanel (after Hosting MVP)
 
 Source: https://github.com/himalayladha/termux-hosting-panel

@@ -154,7 +154,7 @@ test('Node data recovery review fails closed for running, unknown and absent run
   }
 });
 
-test('mutable Node data refuses symlinks, foreign categories, permissive and linked files', (t) => {
+test('mutable Node data refuses symlinks, foreign categories and permissive files', (t) => {
   const { temp, project, inspector, dataRoot, ownedData } = fixture(t);
   createScope(dataRoot, ownedData);
   const outside = path.join(temp, 'unowned.txt');
@@ -172,6 +172,21 @@ test('mutable Node data refuses symlinks, foreign categories, permissive and lin
   chmodSync(file, 0o644);
   assert.throws(() => inspector.inspect(project.id), /Unverified/);
   chmodSync(file, 0o600);
-  linkSync(file, path.join(ownedData, 'uploads', 'hardlink.sqlite'));
+});
+
+test('mutable Node data refuses hardlinked files when the filesystem supports hardlinks', (t) => {
+  const { project, inspector, dataRoot, ownedData } = fixture(t);
+  createScope(dataRoot, ownedData);
+  const file = path.join(ownedData, 'db', 'records.sqlite');
+  writeFileSync(file, 'owned bytes', { mode: 0o600 });
+  try {
+    linkSync(file, path.join(ownedData, 'uploads', 'hardlink.sqlite'));
+  } catch (error) {
+    if (['EACCES', 'EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'EROFS'].includes(error?.code)) {
+      t.skip('Filesystem blocks hardlink creation; linked-file rejection cannot be exercised');
+      return;
+    }
+    throw error;
+  }
   assert.throws(() => inspector.inspect(project.id), /Unverified/);
 });

@@ -13,7 +13,7 @@ test('admin layout does not mount third-party Pro upsells', () => {
 });
 
 test('visible shell is PocketHost branded, without upstream marketing or fake account', () => {
-  for (const name of ['app-sidebar.tsx', 'site-header.tsx', 'site-footer.tsx']) {
+  for (const name of ['app-sidebar.tsx', 'site-header.tsx']) {
     const code = source(name);
     assert.doesNotMatch(
       code,

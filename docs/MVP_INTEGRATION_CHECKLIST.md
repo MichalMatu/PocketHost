@@ -1,3 +1,10 @@
+---
+status: historical
+owner: core
+last_reviewed: 2026-11-23
+purpose: Historical Hosting MVP integration and owner acceptance evidence
+---
+
 # PocketHost Hosting MVP — integration and owner acceptance
 
 Status: **HOSTING P0 NODE/STATIC PASS; NODE RESTIC BACKUP→ISOLATED RESTORE PASS; BROWSER OWNER SIGN-OFF AND REBOOT/AUTOSTART PENDING**.
