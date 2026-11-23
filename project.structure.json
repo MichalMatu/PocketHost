@@ -11,7 +11,15 @@
     "ai",
     "shizuku"
   ],
-  "rootDirectories": ["apps", "docs", "src", "scripts", "tests", "native", "ops"],
+  "rootDirectories": [
+    "apps",
+    "docs",
+    "src",
+    "scripts",
+    "tests",
+    "native",
+    "ops"
+  ],
   "requiredFiles": [
     "README.md",
     "AGENTS.md",
@@ -29,13 +37,9 @@
     ".lychee.toml",
     "docs/README.md",
     "docs/AGENTS.md",
-    "docs/PRODUCT.md",
     "docs/ARCHITECTURE.md",
     "docs/MODULES.md",
-    "docs/TERMUX_INTEGRATION.md",
     "docs/QUALITY_GATES.md",
-    "docs/SECURITY_MODEL.md",
-    "docs/DEVELOPMENT_PLAN.md",
     "src/AGENTS.md",
     "src/ui/AGENTS.md",
     "src/shared/AGENTS.md",
@@ -43,9 +47,22 @@
     "tests/AGENTS.md",
     "apps/AGENTS.md",
     "scripts/import-shadcnstore.mjs",
-    "docs/ADMIN_MVP.md"
+    "install.sh",
+    "docs/INSTALLATION.md"
   ],
-  "documentationDirectories": ["docs", "docs/adr", "docs/checkpoints", "docs/modules"],
+  "documentationDirectories": [
+    "docs",
+    "docs/adr",
+    "docs/checkpoints",
+    "docs/modules"
+  ],
   "moduleRoot": "src/modules",
-  "excludedDirectories": [".git", "node_modules", "dist", "build", "coverage", ".tmp"]
+  "excludedDirectories": [
+    ".git",
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+    ".tmp"
+  ]
 }

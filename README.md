@@ -2,6 +2,18 @@
 
 **PocketHost** is a self-hosted management and application-hosting panel for **Android running official Termux**. It provides one place to inspect the host, manage owned services, and publish static websites or trusted Node.js applications. The current product is an owner-operated **private-LAN MVP**, not a public multi-tenant hosting service.
 
+## Install on a fresh Termux device
+
+Run this **single command** inside the official Termux app (not Android's system shell):
+
+```sh
+pkg install -y curl && bash -o pipefail -c 'curl -fsSL https://raw.githubusercontent.com/MichalMatu/PocketHost/main/install.sh | sh'
+```
+
+The installer downloads PocketHost, installs the required Termux packages (`nodejs`, `git`, `curl`, `python`, `termux-services`) and both lockfile-pinned npm dependency sets, then registers and starts **only** PocketHost's own runit panel services. It prints the local panel URL `http://127.0.0.1:8787/`. The network settings can enable a private-LAN address after installation. Internet access is needed to download packages and source.
+
+**Fresh-install only:** it refuses to overwrite an existing PocketHost checkout, service or owner record; do not run it on an already configured A8 or as an upgrade. For a specific published release, prefix the command with `POCKETHOST_REF=v1.0.1` after that tag exists. This does **not** install Termux:Boot, guarantee Android reboot persistence, or publish the unauthenticated admin interface to the Internet. See [installation details](docs/INSTALLATION.md).
+
 ## Features
 
 - **Host and services:** dashboard, health/diagnostics, runit service inventory, manual recovery controls, Termux packages, SSH and terminal.

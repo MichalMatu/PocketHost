@@ -4,6 +4,8 @@ The current tree holds **maintained reference documents** only. Long-running spr
 
 ## Start and operate
 
+- [Clean installation on Termux](INSTALLATION.md).
+
 - [Start here](START_HERE.md), [current handoff](HANDOFF_NEXT_CHAT.md), [MVP acceptance](MVP_EXECUTION_PLAN.md), [quality gates](QUALITY_GATES.md).
 - [Architecture](ARCHITECTURE.md), [code map](CODE_MAP.md), [module separation](MODULES.md).
 - [A8 Local Agent](LOCAL_AGENT_TERMUX.md), [guarded development](DEV_ITERATION.md), [documentation rules](AGENTS.md).

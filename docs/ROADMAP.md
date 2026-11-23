@@ -7,7 +7,7 @@ purpose: V1 freeze and concise restart plan for optional future releases
 
 # PocketHost — post-v1 roadmap
 
-**Current decision:** `v1.0.0` closes the accepted owner-operated private-LAN MVP. Preserve complete Git history. The release is a **source baseline**; it does not claim a later A8 device deployment or additional QA. No further work, tests, builds, redesign or deployment should start until the owner returns.
+**Maintenance release:** add an opt-in, guarded one-command clean Termux installer for new devices. This does not modify the accepted v1.0.0 tag or the running A8 panel.\n\n**Current decision:** `v1.0.0` closes the accepted owner-operated private-LAN MVP. Preserve complete Git history. The release is a **source baseline**; it does not claim a later A8 device deployment or additional QA. No further work, tests, builds, redesign or deployment should start until the owner returns.
 
 ## When work resumes: v1.1
 
