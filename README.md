@@ -37,13 +37,13 @@ The last separately attested **deployed DEV** revision was `349087d2981c7fc3d8b9
 
 ## Repository layout
 
-| Location | Purpose |
-| --- | --- |
-| `apps/admin` | Browser panel and Node-side Vite API integration |
-| `src/shared`, `src/modules` | Portable contracts and Termux host adapters |
-| `ops/termux` | Guarded A8 host and deployment operations |
-| `scripts`, `tests` | Quality gates, targeted QA and tooling |
-| `docs` | Current architecture, maintenance and acceptance evidence |
+| Location                    | Purpose                                                   |
+| --------------------------- | --------------------------------------------------------- |
+| `apps/admin`                | Browser panel and Node-side Vite API integration          |
+| `src/shared`, `src/modules` | Portable contracts and Termux host adapters               |
+| `ops/termux`                | Guarded A8 host and deployment operations                 |
+| `scripts`, `tests`          | Quality gates, targeted QA and tooling                    |
+| `docs`                      | Current architecture, maintenance and acceptance evidence |
 
 The workspace specifies **Node.js 22+**. Development dependencies are declared in the root and `apps/admin/package.json`. For an A8 deployment or tests, use the existing paired Termux Local Agent and its SHA-pinned guarded workflow—not a generic local run or an unguarded service restart.
 

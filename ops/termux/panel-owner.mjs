@@ -105,7 +105,10 @@ function main() {
   // The only first-start exception is an explicit A8 cold-stage pair made by
   // cold-bootstrap-a8.mjs. Null identities cannot authorize a restart.
   const cold =
-    marker.bootstrap === (root === home + '/Projects/PocketHost-Standalone' ? 'standalone-cold-staged' : 'a8-cold-staged') &&
+    marker.bootstrap ===
+      (root === home + '/Projects/PocketHost-Standalone'
+        ? 'standalone-cold-staged'
+        : 'a8-cold-staged') &&
     gateway.bootstrap === marker.bootstrap &&
     marker.pid === null &&
     gateway.pid === null &&

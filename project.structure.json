@@ -11,15 +11,7 @@
     "ai",
     "shizuku"
   ],
-  "rootDirectories": [
-    "apps",
-    "docs",
-    "src",
-    "scripts",
-    "tests",
-    "native",
-    "ops"
-  ],
+  "rootDirectories": ["apps","docs","src","scripts","tests","native","ops"],
   "requiredFiles": [
     "README.md",
     "AGENTS.md",
@@ -50,19 +42,7 @@
     "install.sh",
     "docs/INSTALLATION.md"
   ],
-  "documentationDirectories": [
-    "docs",
-    "docs/adr",
-    "docs/checkpoints",
-    "docs/modules"
-  ],
+  "documentationDirectories": ["docs","docs/adr","docs/checkpoints","docs/modules"],
   "moduleRoot": "src/modules",
-  "excludedDirectories": [
-    ".git",
-    "node_modules",
-    "dist",
-    "build",
-    "coverage",
-    ".tmp"
-  ]
+  "excludedDirectories": [".git","node_modules","dist","build","coverage",".tmp"]
 }

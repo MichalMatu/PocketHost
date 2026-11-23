@@ -3,7 +3,10 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const installer = readFileSync(new URL('../../install.sh', import.meta.url), 'utf8');
-const bootstrap = readFileSync(new URL('../../ops/termux/cold-bootstrap-standalone.mjs', import.meta.url), 'utf8');
+const bootstrap = readFileSync(
+  new URL('../../ops/termux/cold-bootstrap-standalone.mjs', import.meta.url),
+  'utf8',
+);
 const owner = readFileSync(new URL('../../ops/termux/panel-owner.mjs', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../../README.md', import.meta.url), 'utf8');
 
@@ -11,8 +14,15 @@ test('clean install checks Termux identity and existing ownership before modifyi
   assert.match(installer, /EXPECTED_PREFIX='\/data\/data\/com\.termux\/files\/usr'/);
   assert.match(installer, /EXPECTED_HOME='\/data\/data\/com\.termux\/files\/home'/);
   assert.match(installer, /do not install as root/);
-  for (const item of ['pockethost-panel', 'pockethost-panel-watch', 'panel-owner.json', 'lan-gateway.json']) {
-    assert.ok(installer.indexOf(item) > 0 && installer.indexOf(item) < installer.indexOf('pkg install -y'));
+  for (const item of [
+    'pockethost-panel',
+    'pockethost-panel-watch',
+    'panel-owner.json',
+    'lan-gateway.json',
+  ]) {
+    assert.ok(
+      installer.indexOf(item) > 0 && installer.indexOf(item) < installer.indexOf('pkg install -y'),
+    );
   }
   assert.match(installer, /checkout exists; refusing to overwrite or upgrade/);
   assert.doesNotMatch(installer, /rm -rf|killall|pkill|sudo |0\.0\.0\.0:/);
