@@ -8,6 +8,7 @@ afterEach(() => { cleanup(); vi.unstubAllGlobals() })
 const site = {
   id: "site-" + "a".repeat(32), state: "stopped",
   activeRelease: "r-" + "b".repeat(32),
+  fileCount: 1, bytes: 101,
 } as FleetSite
 const files = (name: string) => ({
   ok: true,
@@ -78,6 +79,30 @@ it("retries an active asset GET on the first click after a failed read", async (
   await waitFor(() => expect(hook.result.current.assets?.[0].name).toBe("index.html"))
   expect(fetcher).toHaveBeenCalledTimes(2)
   expect(setError).toHaveBeenLastCalledWith(null)
+})
+
+it.each([
+  { reason: "file count", inventory: [{ name: "index.html", bytes: 101 }, { name: "extra.css", bytes: 1 }] },
+  { reason: "total bytes", inventory: [{ name: "index.html", bytes: 100 }] },
+])("rejects a stale $reason asset inventory and permits a clean retry", async ({ inventory }) => {
+  const fetcher = vi.fn()
+    .mockResolvedValueOnce({ ok: true, json: async () => ({ files: inventory }) })
+    .mockResolvedValueOnce(files("index.html"))
+  vi.stubGlobal("fetch", fetcher)
+  const setError = vi.fn()
+  const hook = renderHook(() => useSiteAssets(site, setError, false))
+  act(() => { hook.result.current.toggleAssets() })
+  await waitFor(() => expect(setError).toHaveBeenCalledWith(
+    "Asset inventory does not match the current site. Refresh and retry.",
+  ))
+  expect(hook.result.current.assets).toBeNull()
+  expect(hook.result.current.assetsLoading).toBe(false)
+  act(() => { hook.result.current.toggleAssets() })
+  await waitFor(() => expect(hook.result.current.assets?.[0].name).toBe("index.html"))
+  expect(hook.result.current.assets).toHaveLength(1)
+  expect(setError).toHaveBeenLastCalledWith(null)
+  expect(fetcher).toHaveBeenCalledTimes(2)
+  expect(fetcher.mock.calls.every(([, options]) => options?.method === "GET")).toBe(true)
 })
 
 it("invalidates the old asset request when the site inventory revision changes", async () => {
