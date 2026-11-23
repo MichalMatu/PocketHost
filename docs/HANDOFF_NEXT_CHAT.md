@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Exact HTML publication readback (23 November)
+
+- **Source:** `336b4cef32f064f5780ed846c244ef97be05eb8a`; regression `71e339a54a2eba322e2ac2b0644595bfa5aed818`; test callback type correction `bc268f6d4dab2db26946df16c0eb04acb3dfe43c`. Existing-site `publishHtml` now verifies the new release's reported byte count exactly equals the submitted `TextEncoder` UTF-8 byte length, rather than merely checking it is nonzero. This prevents a false publication success for truncated or unexpected HTML content sizes; no API write behavior or host changes. The prior required new release identity and one-file count remain.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-release-import.interaction.test.tsx` updates the initial HTML readback fixture to use actual UTF-8 size, rejects off-by-one counts in both directions, and adds a multibyte HTML case that distinguishes string length from UTF-8 byte count. Git diff reviewed only, not a test PASS.
+- **Execution status:** paired A8 N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains `UNKNOWN` / `interrupted_or_uncertain_execution_no_replay`. Agent-control global daemon last reports `idle`, but host claims are `unverified`, active leases not verified, so new A8 QA/deploy is **HOLD**. No replay/overlap or off-device project QA. First reconcile A8 claims and process ownership independently; then SHA-pinned separate `format,admin-types,ui` plus mapped `syntax,node`, followed by guarded DEV only if QA and operational invariants PASS.
+
 ## Current continuation — Static version archive parity (23 November)
 
 - **Source:** `a514eb1f94fb2dd1991c2e44e5483e2545e5aac9`; regression `22c330d35a843d72490c4a711fa2bb92344b60b0`. `useSiteVersions` now reconciles saved-release list length with the latest verified site `releases` summary and requires the active archived release's `fileCount` and `bytes` to agree with that site's `fileCount` and `bytes`. Previously it checked only active and quick-rollback IDs. Mismatches close the archive list, expose Refresh/retry feedback, and do not offer Restore/Prune actions.
