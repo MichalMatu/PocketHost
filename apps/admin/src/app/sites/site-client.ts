@@ -118,6 +118,12 @@ export function validateStaticFolderSelection(
   const firstFolder = names[0].split("/")[0]
   const wrapped = firstFolder.length > 0 &&
     names.every(name => name.startsWith(firstFolder + "/"))
+  // Match the host's case-insensitive duplicate check after it removes
+  // a shared directory-picker prefix. Do not start a doomed create/publish.
+  const normalized = wrapped ? names.map(name => name.slice(firstFolder.length + 1)) : names
+  const folded = normalized.map(name => name.toLowerCase())
+  if (new Set(folded).size !== folded.length)
+    return "Folder contains duplicate file paths. Rename files that differ only by case."
   const homepage = files.some((file, index) => file.size > 0 && (
     names[index] === "index.html" ||
     (wrapped && names[index] === firstFolder + "/index.html")
