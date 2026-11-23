@@ -26,18 +26,27 @@ function fixture(overrides = {}) {
       'package-lock.json': lockfile,
       'server.mjs': entry,
     };
-    let response = url === 'https://api.github.com/repos/example/safe-node'
-      ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
-      : url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } }
-      : url.includes('/git/trees/' + treeSha) ? { truncated: false, tree: [] }
-      : name ? {
-          type: 'file', name, path: name, encoding: 'base64',
-          content: Buffer.from(
-            typeof entries[name] === 'string' ? entries[name] : JSON.stringify(entries[name] ?? ''),
-          ).toString('base64'),
-        } : {};
-    if (typeof overrides.change === 'function')
-      response = overrides.change(url, response);
+    let response =
+      url === 'https://api.github.com/repos/example/safe-node'
+        ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
+        : url.endsWith('/commits/main')
+          ? { sha, commit: { tree: { sha: treeSha } } }
+          : url.includes('/git/trees/' + treeSha)
+            ? { truncated: false, tree: [] }
+            : name
+              ? {
+                  type: 'file',
+                  name,
+                  path: name,
+                  encoding: 'base64',
+                  content: Buffer.from(
+                    typeof entries[name] === 'string'
+                      ? entries[name]
+                      : JSON.stringify(entries[name] ?? ''),
+                  ).toString('base64'),
+                }
+              : {};
+    if (typeof overrides.change === 'function') response = overrides.change(url, response);
     const status = overrides.status ?? 200;
     return new Response(JSON.stringify(response), { status });
   };
@@ -56,8 +65,7 @@ test('GitHub preview pins 3 exact root files to one immutable public commit', as
   assert.equal(seen.length, 6);
   assert.equal(
     seen[5].url,
-    'https://api.github.com/repos/example/safe-node/git/trees/' +
-      treeSha + '?recursive=1',
+    'https://api.github.com/repos/example/safe-node/git/trees/' + treeSha + '?recursive=1',
   );
   assert.deepEqual(
     seen.slice(2, 5).map((request) => request.url),
@@ -78,20 +86,31 @@ test('GitHub non-build preview preserves pinned runtime modules', async () => {
   const serverSource = "import './src/handler.js'\n";
   const { seen, get } = fixture({
     change: (url, data) => {
-      if (url.includes('/git/trees/' + treeSha)) return {
-        truncated: false,
-        tree: [{
-          path: 'src/handler.js', type: 'blob', mode: '100644',
-          size: Buffer.byteLength(moduleSource),
-        }],
-      };
-      if (url.includes('/contents/src/handler.js?')) return {
-        type: 'file', name: 'handler.js', path: 'src/handler.js', encoding: 'base64',
-        content: Buffer.from(moduleSource).toString('base64'),
-      };
-      if (url.includes('/contents/server.mjs?')) return {
-        ...data, content: Buffer.from(serverSource).toString('base64'),
-      };
+      if (url.includes('/git/trees/' + treeSha))
+        return {
+          truncated: false,
+          tree: [
+            {
+              path: 'src/handler.js',
+              type: 'blob',
+              mode: '100644',
+              size: Buffer.byteLength(moduleSource),
+            },
+          ],
+        };
+      if (url.includes('/contents/src/handler.js?'))
+        return {
+          type: 'file',
+          name: 'handler.js',
+          path: 'src/handler.js',
+          encoding: 'base64',
+          content: Buffer.from(moduleSource).toString('base64'),
+        };
+      if (url.includes('/contents/server.mjs?'))
+        return {
+          ...data,
+          content: Buffer.from(serverSource).toString('base64'),
+        };
       return data;
     },
   });
@@ -104,10 +123,13 @@ test('GitHub non-build preview preserves pinned runtime modules', async () => {
 
 test('GitHub non-build preview refuses unsafe runtime module symlinks', async () => {
   const { get } = fixture({
-    change: (url, data) => url.includes('/git/trees/' + treeSha) ? {
-      truncated: false,
-      tree: [{ path: 'src/handler.js', type: 'blob', mode: '120000', size: 20 }],
-    } : data,
+    change: (url, data) =>
+      url.includes('/git/trees/' + treeSha)
+        ? {
+            truncated: false,
+            tree: [{ path: 'src/handler.js', type: 'blob', mode: '120000', size: 20 }],
+          }
+        : data,
   });
   await assert.rejects(
     previewPublicGitHubNodeSource('example/safe-node', get),
@@ -115,11 +137,11 @@ test('GitHub non-build preview refuses unsafe runtime module symlinks', async ()
   );
 });
 
-
 test('GitHub build preview imports bounded frontend text files at one pinned SHA', async () => {
   const requests = [];
   const buildManifest = {
-    ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' },
+    ...manifest,
+    scripts: { start: 'node server.mjs', build: 'vite build' },
   };
   const extras = {
     'index.html': '<main id="app"></main>',
@@ -130,52 +152,104 @@ test('GitHub build preview imports bounded frontend text files at one pinned SHA
   const get = async (url) => {
     requests.push(url);
     const part = url.split('/contents/')[1]?.split('?')[0];
-    const obj = url.endsWith('/safe-node') ?
-      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
-      url.includes('/git/trees/' + treeSha) ? {
-        truncated: false, tree: Object.entries(extras).map(([path, value]) => ({
-          path, type: 'blob', mode: '100644', size: Buffer.byteLength(value),
-        })),
-      } :
-      part ? {
-        type: 'file', name: part.split('/').at(-1), path: part, encoding: 'base64',
-        content: Buffer.from(
-          typeof ({ 'package.json': buildManifest, 'package-lock.json': lockfile,
-            'server.mjs': entry, ...extras })[part] === 'string' ?
-          ({ 'package.json': buildManifest, 'package-lock.json': lockfile,
-            'server.mjs': entry, ...extras })[part] :
-          JSON.stringify(({ 'package.json': buildManifest, 'package-lock.json': lockfile,
-            'server.mjs': entry, ...extras })[part]),
-        ).toString('base64'),
-      } : {};
+    const obj = url.endsWith('/safe-node')
+      ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
+      : url.endsWith('/commits/main')
+        ? { sha, commit: { tree: { sha: treeSha } } }
+        : url.includes('/git/trees/' + treeSha)
+          ? {
+              truncated: false,
+              tree: Object.entries(extras).map(([path, value]) => ({
+                path,
+                type: 'blob',
+                mode: '100644',
+                size: Buffer.byteLength(value),
+              })),
+            }
+          : part
+            ? {
+                type: 'file',
+                name: part.split('/').at(-1),
+                path: part,
+                encoding: 'base64',
+                content: Buffer.from(
+                  typeof {
+                    'package.json': buildManifest,
+                    'package-lock.json': lockfile,
+                    'server.mjs': entry,
+                    ...extras,
+                  }[part] === 'string'
+                    ? {
+                        'package.json': buildManifest,
+                        'package-lock.json': lockfile,
+                        'server.mjs': entry,
+                        ...extras,
+                      }[part]
+                    : JSON.stringify(
+                        {
+                          'package.json': buildManifest,
+                          'package-lock.json': lockfile,
+                          'server.mjs': entry,
+                          ...extras,
+                        }[part],
+                      ),
+                ).toString('base64'),
+              }
+            : {};
     return new Response(JSON.stringify(obj), { status: 200 });
   };
   const result = await previewPublicGitHubNodeSource('example/safe-node', get);
   assert.equal(result.commit, sha);
   assert.deepEqual(result.source.extraFiles, extras);
   assert.equal(requests.length, 10);
-  assert.ok(requests.slice(3).every(url => url.endsWith('?ref=' + sha) ||
-    url.endsWith('/git/trees/' + treeSha + '?recursive=1')));
+  assert.ok(
+    requests
+      .slice(3)
+      .every(
+        (url) =>
+          url.endsWith('?ref=' + sha) || url.endsWith('/git/trees/' + treeSha + '?recursive=1'),
+      ),
+  );
 });
 
 test('GitHub build preview refuses symlinks, unsafe paths and mislabeled binary source', async () => {
   for (const path of ['public/logo.png', 'src/secrets/.env', 'src/config.ts']) {
-    const get = async url => {
+    const get = async (url) => {
       const file = url.split('/contents/')[1]?.split('?')[0];
-      const response = url.endsWith('/safe-node') ?
-        { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-        url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
-        url.includes('/git/trees/') ? {
-          truncated: false, tree: [{ path, type: 'blob',
-            mode: path === 'src/config.ts' ? '120000' : '100644', size: 20 }],
-        } :
-        file ? {
-          type: 'file', name: file.split('/').at(-1), path: file, encoding: 'base64',
-          content: Buffer.from(file === 'package.json' ?
-            JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
-            file === 'package-lock.json' ? JSON.stringify(lockfile) : entry).toString('base64'),
-        } : {};
+      const response = url.endsWith('/safe-node')
+        ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
+        : url.endsWith('/commits/main')
+          ? { sha, commit: { tree: { sha: treeSha } } }
+          : url.includes('/git/trees/')
+            ? {
+                truncated: false,
+                tree: [
+                  {
+                    path,
+                    type: 'blob',
+                    mode: path === 'src/config.ts' ? '120000' : '100644',
+                    size: 20,
+                  },
+                ],
+              }
+            : file
+              ? {
+                  type: 'file',
+                  name: file.split('/').at(-1),
+                  path: file,
+                  encoding: 'base64',
+                  content: Buffer.from(
+                    file === 'package.json'
+                      ? JSON.stringify({
+                          ...manifest,
+                          scripts: { start: 'node server.mjs', build: 'vite build' },
+                        })
+                      : file === 'package-lock.json'
+                        ? JSON.stringify(lockfile)
+                        : entry,
+                  ).toString('base64'),
+                }
+              : {};
       return new Response(JSON.stringify(response), { status: 200 });
     };
     await assert.rejects(
@@ -190,51 +264,91 @@ test('GitHub pinned frontend tree loads media asset base64 without lossy UTF8 co
   const get = async (url) => {
     calls.push(url);
     const name = url.split('/contents/')[1]?.split('?')[0];
-    const content = name === 'package.json' ?
-      JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
-      name === 'package-lock.json' ? JSON.stringify(lockfile) :
-      name === 'server.mjs' ? entry : '';
-    const result = url.endsWith('/safe-node') ?
-      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
-      url.includes('/git/trees/') ? { truncated: false, tree: [
-        { path: 'index.html', type: 'blob', mode: '100644', size: 24 },
-        { path: 'public/logo.png', type: 'blob', mode: '100644', size: 68 },
-      ] } :
-      name ? { type: 'file', name: name.split('/').at(-1), path: name, encoding: 'base64',
-        content: name === 'public/logo.png' ? 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' : Buffer.from(
-          name === 'index.html' ? '<img src="/logo.png">' : content,
-        ).toString('base64'),
-      } : {};
+    const content =
+      name === 'package.json'
+        ? JSON.stringify({
+            ...manifest,
+            scripts: { start: 'node server.mjs', build: 'vite build' },
+          })
+        : name === 'package-lock.json'
+          ? JSON.stringify(lockfile)
+          : name === 'server.mjs'
+            ? entry
+            : '';
+    const result = url.endsWith('/safe-node')
+      ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
+      : url.endsWith('/commits/main')
+        ? { sha, commit: { tree: { sha: treeSha } } }
+        : url.includes('/git/trees/')
+          ? {
+              truncated: false,
+              tree: [
+                { path: 'index.html', type: 'blob', mode: '100644', size: 24 },
+                { path: 'public/logo.png', type: 'blob', mode: '100644', size: 68 },
+              ],
+            }
+          : name
+            ? {
+                type: 'file',
+                name: name.split('/').at(-1),
+                path: name,
+                encoding: 'base64',
+                content:
+                  name === 'public/logo.png'
+                    ? 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII='
+                    : Buffer.from(
+                        name === 'index.html' ? '<img src="/logo.png">' : content,
+                      ).toString('base64'),
+              }
+            : {};
     return new Response(JSON.stringify(result), { status: 200 });
   };
   const preview = await previewPublicGitHubNodeSource('example/safe-node', get);
-  assert.equal(preview.source.assetFiles['public/logo.png'], 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
+  assert.equal(
+    preview.source.assetFiles['public/logo.png'],
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+  );
   assert.equal(preview.source.extraFiles['index.html'], '<img src="/logo.png">');
-  assert.ok(calls.every(url => url.startsWith('https://api.github.com/repos/')));
-  assert.ok(calls.filter(url => url.includes('/contents/')).every(url => url.endsWith('?ref=' + sha)));
+  assert.ok(calls.every((url) => url.startsWith('https://api.github.com/repos/')));
+  assert.ok(
+    calls.filter((url) => url.includes('/contents/')).every((url) => url.endsWith('?ref=' + sha)),
+  );
 });
 test('GitHub pinned frontend tree rejects fake png content', async () => {
   const get = async (url) => {
     const file = url.split('/contents/')[1]?.split('?')[0];
-    const result = url.endsWith('/safe-node') ?
-      { private: false, full_name: 'example/safe-node', default_branch: 'main' } :
-      url.endsWith('/commits/main') ? { sha, commit: { tree: { sha: treeSha } } } :
-      url.includes('/git/trees/') ? { truncated: false, tree: [
-        { path: 'public/logo.png', type: 'blob', mode: '100644', size: 20 },
-      ] } :
-      file ? { type: 'file', name: file.split('/').at(-1), path: file, encoding: 'base64',
-        content: Buffer.from(file === 'package.json' ?
-          JSON.stringify({ ...manifest, scripts: { start: 'node server.mjs', build: 'vite build' } }) :
-          file === 'package-lock.json' ? JSON.stringify(lockfile) :
-          file === 'server.mjs' ? entry : 'not a valid png').toString('base64'),
-      } : {};
+    const result = url.endsWith('/safe-node')
+      ? { private: false, full_name: 'example/safe-node', default_branch: 'main' }
+      : url.endsWith('/commits/main')
+        ? { sha, commit: { tree: { sha: treeSha } } }
+        : url.includes('/git/trees/')
+          ? {
+              truncated: false,
+              tree: [{ path: 'public/logo.png', type: 'blob', mode: '100644', size: 20 }],
+            }
+          : file
+            ? {
+                type: 'file',
+                name: file.split('/').at(-1),
+                path: file,
+                encoding: 'base64',
+                content: Buffer.from(
+                  file === 'package.json'
+                    ? JSON.stringify({
+                        ...manifest,
+                        scripts: { start: 'node server.mjs', build: 'vite build' },
+                      })
+                    : file === 'package-lock.json'
+                      ? JSON.stringify(lockfile)
+                      : file === 'server.mjs'
+                        ? entry
+                        : 'not a valid png',
+                ).toString('base64'),
+              }
+            : {};
     return new Response(JSON.stringify(result), { status: 200 });
   };
-  await assert.rejects(
-    previewPublicGitHubNodeSource('example/safe-node', get),
-    /format mismatch/,
-  );
+  await assert.rejects(previewPublicGitHubNodeSource('example/safe-node', get), /format mismatch/);
 });
 
 test('GitHub preview rejects URLs, nested paths and hostile repo names without requesting network', async () => {
@@ -260,12 +374,15 @@ test('GitHub preview rejects URLs, nested paths and hostile repo names without r
 
 test('GitHub preview rejects private or redirected repository metadata', async () => {
   const secret = fixture({
-    change: (url, data) => url.endsWith('/safe-node') ? { ...data, private: true } : data,
+    change: (url, data) => (url.endsWith('/safe-node') ? { ...data, private: true } : data),
   });
   await assert.rejects(previewPublicGitHubNodeSource('example/safe-node', secret.get), /public/);
   assert.equal(secret.seen.length, 1);
   const redirected = fixture({ status: 302 });
-  await assert.rejects(previewPublicGitHubNodeSource('example/safe-node', redirected.get), /request failed/);
+  await assert.rejects(
+    previewPublicGitHubNodeSource('example/safe-node', redirected.get),
+    /request failed/,
+  );
   assert.equal(redirected.seen.length, 1);
 });
 
@@ -277,9 +394,13 @@ test('GitHub preview rejects a symlink or mismatched source identity', async () 
     { content: '$not-base64$' },
   ]) {
     const { get } = fixture({
-      change: (url, data) => url.includes('/contents/server.mjs?') ? { ...data, ...alteration } : data,
+      change: (url, data) =>
+        url.includes('/contents/server.mjs?') ? { ...data, ...alteration } : data,
     });
-    await assert.rejects(previewPublicGitHubNodeSource('example/safe-node', get), /root file|encoding/);
+    await assert.rejects(
+      previewPublicGitHubNodeSource('example/safe-node', get),
+      /root file|encoding/,
+    );
   }
 });
 
@@ -298,10 +419,15 @@ test('GitHub preview enforces declared response budgets before consuming data', 
 
 test('GitHub preview rejects mismatched manifest and lock without staging anything', async () => {
   const { get } = fixture({
-    change: (url, data) => url.includes('/contents/package-lock.json?') ? {
-      ...data,
-      content: Buffer.from(JSON.stringify({ ...lockfile, version: '9.9.9' })).toString('base64'),
-    } : data,
+    change: (url, data) =>
+      url.includes('/contents/package-lock.json?')
+        ? {
+            ...data,
+            content: Buffer.from(JSON.stringify({ ...lockfile, version: '9.9.9' })).toString(
+              'base64',
+            ),
+          }
+        : data,
   });
   await assert.rejects(previewPublicGitHubNodeSource('example/safe-node', get), /identity differs/);
 });

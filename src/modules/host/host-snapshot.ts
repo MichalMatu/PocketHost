@@ -53,21 +53,24 @@ export function probeServiceState(
   id: string,
   readStatus: (serviceName: string) => string | null = (name) => {
     try {
-      const result = spawnSync(path.join(TERMUX_PREFIX, 'bin', 'sv'), [
-        'status', path.join(TERMUX_PREFIX, 'var', 'service', name),
-      ], {
-        encoding: 'utf8', shell: false, timeout: 1200,
-        maxBuffer: MAX_STATUS_OUTPUT, stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      return typeof result.stdout === 'string'
-        ? result.stdout.slice(0, MAX_STATUS_OUTPUT) : null;
+      const result = spawnSync(
+        path.join(TERMUX_PREFIX, 'bin', 'sv'),
+        ['status', path.join(TERMUX_PREFIX, 'var', 'service', name)],
+        {
+          encoding: 'utf8',
+          shell: false,
+          timeout: 1200,
+          maxBuffer: MAX_STATUS_OUTPUT,
+          stdio: ['ignore', 'pipe', 'ignore'],
+        },
+      );
+      return typeof result.stdout === 'string' ? result.stdout.slice(0, MAX_STATUS_OUTPUT) : null;
     } catch {
       return null;
     }
   },
 ): ServiceState {
-  if (!/^[a-z][a-z0-9-]{1,63}$/.test(id))
-    throw new RangeError('Invalid service identifier');
+  if (!/^[a-z][a-z0-9-]{1,63}$/.test(id)) throw new RangeError('Invalid service identifier');
   return parseRunitStatus(readStatus(id));
 }
 

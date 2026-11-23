@@ -15,7 +15,8 @@ function fixture() {
 test('returns byte-for-byte raw lines, including commands, tokens and original svlogd timestamps', () => {
   const f = fixture();
   try {
-    const content = '2026-11-20_15:00:00.123456 [termux-agent] TASK id=all-details\n' +
+    const content =
+      '2026-11-20_15:00:00.123456 [termux-agent] TASK id=all-details\n' +
       '2026-11-20_15:00:01.123456 [CMD] TOKEN=raw-value; command=echo cześć\n';
     writeFileSync(f.current, content);
     const host = new LocalAgentRawLogHost(f.home);
@@ -31,7 +32,9 @@ test('returns byte-for-byte raw lines, including commands, tokens and original s
     assert.equal(third.state, 'ok');
     assert.equal(third.bytes.toString(), '2026-11-20_15:00:02.123456 [CMD] another\n');
     assert.equal(third.reset, false);
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 
 test('tracks rotation with a new inode and preserves all original lines without classification', () => {
@@ -46,7 +49,9 @@ test('tracks rotation with a new inode and preserves all original lines without 
     assert.equal(next.state, 'ok');
     assert.equal(next.reset, true);
     assert.equal(next.bytes.toString(), 'new original log\n');
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 
 test('streams arbitrarily long log data in unchanged successive byte ranges', () => {
@@ -60,7 +65,9 @@ test('streams arbitrarily long log data in unchanged successive byte ranges', ()
     const next = host.read(first.cursor);
     assert.equal(next.more, false);
     assert.deepEqual(Buffer.concat([first.bytes, next.bytes]), Buffer.from(content));
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });
 
 test('refuses redirected private log files and never reads other host content', () => {
@@ -70,5 +77,7 @@ test('refuses redirected private log files and never reads other host content', 
     const result = new LocalAgentRawLogHost(f.home).read();
     assert.equal(result.state, 'unavailable');
     assert.equal(result.bytes.length, 0);
-  } finally { rmSync(f.home, { recursive: true, force: true }); }
+  } finally {
+    rmSync(f.home, { recursive: true, force: true });
+  }
 });

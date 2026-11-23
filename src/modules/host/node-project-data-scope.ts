@@ -39,7 +39,11 @@ export function reviewNodeDataOfflinePrerequisites(
     desired: 'stopped' | 'running';
   },
 ): {
-  status: 'data-not-configured' | 'ownership-unverified' | 'project-not-stopped' | 'manual-review-required';
+  status:
+    | 'data-not-configured'
+    | 'ownership-unverified'
+    | 'project-not-stopped'
+    | 'manual-review-required';
   runtimeState: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
   snapshotEnabled: false;
   requirements: {
@@ -51,13 +55,14 @@ export function reviewNodeDataOfflinePrerequisites(
 } {
   const dataOwned = data.state === 'owned-private';
   const runtimeStopped = runtime.state === 'stopped' && runtime.desired === 'stopped';
-  const status = data.state !== 'owned-private'
-    ? 'data-not-configured'
-    : runtime.state === 'unknown' || runtime.state === 'not-provisioned'
-      ? 'ownership-unverified'
-      : runtime.state !== 'stopped' || runtime.desired !== 'stopped'
-        ? 'project-not-stopped'
-        : 'manual-review-required';
+  const status =
+    data.state !== 'owned-private'
+      ? 'data-not-configured'
+      : runtime.state === 'unknown' || runtime.state === 'not-provisioned'
+        ? 'ownership-unverified'
+        : runtime.state !== 'stopped' || runtime.desired !== 'stopped'
+          ? 'project-not-stopped'
+          : 'manual-review-required';
   return {
     status,
     runtimeState: runtime.state,

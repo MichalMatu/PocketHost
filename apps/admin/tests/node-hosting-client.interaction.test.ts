@@ -59,11 +59,14 @@ it("malformed identities, deployment records and logs are rejected", async () =>
 })
 
 it("readiness is fetched only on explicit request and validates owned release identity", async () => {
-  const calls = vi.fn(async (url: string) => ({
-    ok: true, status: 200, json: async () => ({ health: {
-      state: "running", ready: true, release,
-    } }),
-  }))
+  const calls = vi.fn(async (url: string) => {
+    expect(url).toBe("/api/v1/node-projects/" + id + "/health")
+    return {
+      ok: true, status: 200, json: async () => ({ health: {
+        state: "running", ready: true, release,
+      } }),
+    }
+  })
   vi.stubGlobal("fetch", calls)
   expect(await readNodeHealth(id)).toEqual({ state: "running", ready: true, release })
   expect(calls).toHaveBeenCalledTimes(1)

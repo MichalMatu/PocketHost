@@ -124,7 +124,10 @@ test('Node detached snapshot survives missing live mutable data without restorin
   assert.throws(() => host.create(project.id, true, () => true), /not provisioned/);
 
   const restored = host.restoreToStaging(project.id, snapshot.snapshot, true);
-  assert.deepEqual(readFileSync(path.join(restored.restoredTo, project.id, 'db', 'app.sqlite')), db);
+  assert.deepEqual(
+    readFileSync(path.join(restored.restoredTo, project.id, 'db', 'app.sqlite')),
+    db,
+  );
   assert.deepEqual(
     readFileSync(path.join(restored.restoredTo, project.id, 'uploads', 'images', 'icon.png')),
     png,
@@ -138,10 +141,7 @@ test('Node detached snapshots refuse unknown project catalog identities', (t) =>
   const snapshot = host.create(project.id, true, () => true);
   const unknownId = 'node-' + 'f'.repeat(32);
   assert.throws(() => host.listSnapshots(unknownId), /Node|project|ENOENT/i);
-  assert.throws(
-    () => host.verifySnapshot(unknownId, snapshot.snapshot),
-    /Node|project|ENOENT/i,
-  );
+  assert.throws(() => host.verifySnapshot(unknownId, snapshot.snapshot), /Node|project|ENOENT/i);
 });
 
 test('Node app-data backup rejects source links and interrupted offline proof', (t) => {
@@ -173,10 +173,7 @@ test('Node app-data archives only the requested project in a multi-project root'
   );
   assert.deepEqual(host.listSnapshots(second.id), []);
   assert.equal(host.listSnapshots(project.id).length, 1);
-  assert.throws(
-    () => host.verifySnapshot(second.id, snapshot.snapshot),
-    /manifest/,
-  );
+  assert.throws(() => host.verifySnapshot(second.id, snapshot.snapshot), /manifest/);
 });
 
 test('Node app-data rejects changed empty-directory layout in a snapshot', (t) => {

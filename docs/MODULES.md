@@ -11,15 +11,15 @@ purpose: Actual module ownership, implementation coverage and separation limitat
 
 The `project.structure.json` registry includes **10 modules**; this is not a list of 10 fully delivered subsystems. Source/declaration inventory through the new read-only mutable-data scope:
 
-| Module | Source/declaration files | Implemented responsibility |
-| --- | ---: | --- |
-| `host` | 64 | Privileged adapters, guarded Static/Node lifecycle, services, diagnostics and persistence |
-| `runtime` | 3 | Verified owned-instance state machines and registration |
-| `sites` | 2 | Static bundle validation, ZIP/folder parsing and demo specification |
-| `config` | 1 | Typed hosting-registry facade backed by `shared` |
-| `observability` | 1 | Read-only host snapshot projection |
-| `packages` | 1 | Portable Node dependency-planning facade |
-| `ai`, `diagnostics`, `inventory`, `shizuku` | 0 each | Registered scope placeholders; no independent implementation files |
+| Module                                      | Source/declaration files | Implemented responsibility                                                                |
+| ------------------------------------------- | -----------------------: | ----------------------------------------------------------------------------------------- |
+| `host`                                      |                       64 | Privileged adapters, guarded Static/Node lifecycle, services, diagnostics and persistence |
+| `runtime`                                   |                        3 | Verified owned-instance state machines and registration                                   |
+| `sites`                                     |                        2 | Static bundle validation, ZIP/folder parsing and demo specification                       |
+| `config`                                    |                        1 | Typed hosting-registry facade backed by `shared`                                          |
+| `observability`                             |                        1 | Read-only host snapshot projection                                                        |
+| `packages`                                  |                        1 | Portable Node dependency-planning facade                                                  |
+| `ai`, `diagnostics`, `inventory`, `shizuku` |                   0 each | Registered scope placeholders; no independent implementation files                        |
 
 A package facade may be a single re-export, not a separate executable. Native Shizuku/Companion bridges and host diagnostics do not mean the empty `src/modules/shizuku` or `src/modules/diagnostics` directories implement those systems.
 

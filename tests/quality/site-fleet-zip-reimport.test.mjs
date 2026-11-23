@@ -39,7 +39,10 @@ test('H2 active ZIP export reimports into another isolated owned site, preservin
     created.push(original.id);
     const files = [
       { name: 'index.html', bytes: Buffer.from('<!doctype html><h1>Unchanged source</h1>') },
-      { name: 'assets/icon.svg', bytes: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>') },
+      {
+        name: 'assets/icon.svg',
+        bytes: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"></svg>'),
+      },
       { name: 'assets/pixel.png', bytes: Buffer.from([137, 80, 78, 71, 0, 255, 1, 2]) },
       { name: 'css/app.css', bytes: Buffer.from('body{color:navy}') },
     ];
@@ -49,7 +52,10 @@ test('H2 active ZIP export reimports into another isolated owned site, preservin
     const exported = fleet.exportActiveZip(original.id);
     assert.equal(exported.release, published.activeRelease);
     const importedFiles = decodeSiteZip(exported.archive);
-    assert.deepEqual(importedFiles.map(({ name }) => name).sort(), files.map(({ name }) => name).sort());
+    assert.deepEqual(
+      importedFiles.map(({ name }) => name).sort(),
+      files.map(({ name }) => name).sort(),
+    );
 
     const imported = await fleet.create('ZIP imported fixture');
     created.push(imported.id);

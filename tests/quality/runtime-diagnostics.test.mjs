@@ -50,4 +50,3 @@ test('dry-run recovery never authorizes foreign state or uncertain PRoot descend
   assert.equal(planRuntimeRecovery({ ...base, ownership: 'external' }), 'manual-evidence-review');
   assert.equal(planRuntimeRecovery({ ...base, markerPresent: false }), 'no-action');
 });
-

@@ -57,6 +57,8 @@ export async function readProjectLogCatalog(signal?: AbortSignal): Promise<Proje
  * whose values are not covered by the older host-side key=value sanitizer.
  * Unknown secrets cannot be identified reliably: avoid logging secrets at source. */
 export function redactProjectLog(line: string): string {
+  // Explicitly strip control bytes before parsing line contents.
+  // eslint-disable-next-line no-control-regex
   const clean = line.replace(/[\x00-\x1f\x7f]/g, "")
   if (/(?:^|[^a-z0-9])(?:password|passwd|secret|token|authorization|api[_-]?key|access[_-]?key|cookie|set-cookie|private[_ -]?key|bearer)(?=$|[^a-z0-9])|[a-z](?:Secret|Token|Password|Passwd|ApiKey|AccessKey)(?=$|[^A-Za-z0-9])/i.test(clean) ||
       /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(clean) ||

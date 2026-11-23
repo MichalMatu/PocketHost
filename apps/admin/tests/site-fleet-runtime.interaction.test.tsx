@@ -391,6 +391,7 @@ describe("H2 browser site-manager lifecycle", () => {
     let resolveHealth!: (result: unknown) => void
     const oldHealth = new Promise(resolve => { resolveHealth = resolve })
     const calls = vi.fn(async (input: RequestInfo | URL, _options?: RequestInit) => {
+      void _options
       const url = String(input)
       if (url === "/api/v1/sites")
         return { ok: true, json: async () => ({ sites: [project("running", true)] }) }
@@ -419,6 +420,7 @@ describe("H2 browser site-manager lifecycle", () => {
     let rejectLogs!: (error: Error) => void
     const oldLogs = new Promise((_resolve, reject) => { rejectLogs = reject })
     const calls = vi.fn(async (input: RequestInfo | URL, _options?: RequestInit) => {
+      void _options
       const url = String(input)
       if (url === "/api/v1/sites")
         return { ok: true, json: async () => ({ sites: [project("running", true)] }) }

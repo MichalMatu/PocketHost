@@ -102,6 +102,7 @@ describe("Local Agent read-only overview", () => {
     const newer = "2026-11-20_15:00:01.000000 second original line\n"
     let rawCalls = 0
     const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+      void options
       if (url.includes("mode=local-agent-raw-log")) {
         rawCalls++
         if (rawCalls === 2) return { ok: false }
@@ -184,6 +185,7 @@ describe("Local Agent read-only overview", () => {
       "2026-11-20_15:00:01.000000 entry=" + (index + 1) + "\n")
     let calls = 0
     const requests = vi.fn(async (url: string, options?: RequestInit) => {
+      void options
       if (url.includes("mode=local-agent-raw-log")) {
         calls++
         if (calls === 10) return { ok: false, status: 503 }
@@ -229,6 +231,7 @@ describe("Local Agent read-only overview", () => {
     const newer = "2026-11-20_15:00:01.000000 verified replacement\n"
     let rawCalls = 0
     const requests = vi.fn(async (url: string, options?: RequestInit) => {
+      void options
       if (url.includes("mode=local-agent-raw-log")) {
         rawCalls++
         if (rawCalls === 3) return { ok: false, status: 503 }

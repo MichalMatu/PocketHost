@@ -61,9 +61,15 @@ test('M3 preserves attested multi-file Node source and rejects tampered extras',
   const release = host.release(project.id, staged.project.candidateRelease);
   assert.deepEqual(release.source.extraFiles, input.extraFiles);
   assert.deepEqual(host.candidateSource(project.id).extraFiles, input.extraFiles);
-  assert.equal(readFileSync(path.join(folder, 'src', 'main.tsx'), 'utf8'), input.extraFiles['src/main.tsx']);
+  assert.equal(
+    readFileSync(path.join(folder, 'src', 'main.tsx'), 'utf8'),
+    input.extraFiles['src/main.tsx'],
+  );
   assert.equal(host.stage(project.id, input).unchanged, true);
-  const updated = { ...input, extraFiles: { ...input.extraFiles, 'src/style.css': 'body { color: red }' } };
+  const updated = {
+    ...input,
+    extraFiles: { ...input.extraFiles, 'src/style.css': 'body { color: red }' },
+  };
   assert.equal(host.stage(project.id, updated).unchanged, false);
   writeFileSync(path.join(folder, 'src', 'main.tsx'), 'tampered');
   assert.throws(() => host.release(project.id, staged.project.candidateRelease), /digest mismatch/);
@@ -73,22 +79,43 @@ test('M3 extra source allowlist blocks traversal, dotfiles, binaries and unsafe 
   const { host } = setup(t);
   const project = host.create('Extra source validation');
   for (const name of [
-    '../escape.js', '/tmp/out.js', 'src/../escape.js', 'src/.env', 'public/logo.png',
-    'src//main.tsx', 'node_modules/pkg/index.js', '.github/workflows/build.yml',
+    '../escape.js',
+    '/tmp/out.js',
+    'src/../escape.js',
+    'src/.env',
+    'public/logo.png',
+    'src//main.tsx',
+    'node_modules/pkg/index.js',
+    '.github/workflows/build.yml',
     'src/deep/a/b/c/d/e/f/g/h.js',
   ]) {
-    assert.throws(() => host.stage(project.id, {
-      ...source(), extraFiles: { [name]: 'data' },
-    }), /Unsafe extra Node source/);
+    assert.throws(
+      () =>
+        host.stage(project.id, {
+          ...source(),
+          extraFiles: { [name]: 'data' },
+        }),
+      /Unsafe extra Node source/,
+    );
   }
-  assert.throws(() => host.stage(project.id, {
-    ...source(), extraFiles: { 'src/empty.ts': '' },
-  }), /Unsafe extra Node source/);
-  assert.throws(() => host.stage(project.id, {
-    ...source(), extraFiles: Object.fromEntries(
-      Array.from({ length: 33 }, (_, i) => ['src/' + i + '.js', 'ok']),
-    ),
-  }), /file count/);
+  assert.throws(
+    () =>
+      host.stage(project.id, {
+        ...source(),
+        extraFiles: { 'src/empty.ts': '' },
+      }),
+    /Unsafe extra Node source/,
+  );
+  assert.throws(
+    () =>
+      host.stage(project.id, {
+        ...source(),
+        extraFiles: Object.fromEntries(
+          Array.from({ length: 33 }, (_, i) => ['src/' + i + '.js', 'ok']),
+        ),
+      }),
+    /file count/,
+  );
   assert.equal(host.inspect(project.id).candidateRelease, null);
 });
 
@@ -101,53 +128,84 @@ test('M3 refuses untracked source injections in both legacy and multi-file relea
   assert.throws(() => host.release(project.id, legacy), /Unexpected file/);
   rmSync(path.join(legacyFolder, 'unexpected.mjs'));
   const multi = host.stage(project.id, {
-    ...source('1.0.1'), extraFiles: { 'src/main.ts': 'export const ok = true' },
+    ...source('1.0.1'),
+    extraFiles: { 'src/main.ts': 'export const ok = true' },
   }).project.candidateRelease;
   const multiFolder = path.join(root, project.id, 'releases', multi);
   writeFileSync(path.join(multiFolder, 'src', 'injected.js'), 'export const bad = true');
   assert.throws(() => host.release(project.id, multi), /Unexpected file/);
   rmSync(path.join(multiFolder, 'src', 'injected.js'));
-  assert.deepEqual(host.release(project.id, multi).source.extraFiles,
-    { 'src/main.ts': 'export const ok = true' });
+  assert.deepEqual(host.release(project.id, multi).source.extraFiles, {
+    'src/main.ts': 'export const ok = true',
+  });
 });
-
 
 test('M3 new binary manifest is immutable and backward compatible with old releases', (t) => {
   const { host, root } = setup(t);
   const project = host.create('Binary frontend');
   const previous = host.stage(project.id, source()).project.candidateRelease;
-  const image = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
+  const image =
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=';
   const assets = { 'public/logo.png': image };
   const current = host.stage(project.id, {
-    ...source('1.0.1'), extraFiles: { 'index.html': '<img src="/logo.png">' },
+    ...source('1.0.1'),
+    extraFiles: { 'index.html': '<img src="/logo.png">' },
     assetFiles: assets,
   }).project.candidateRelease;
   assert.deepEqual(host.release(project.id, current).source.assetFiles, assets);
   assert.deepEqual(host.candidateSource(project.id).assetFiles, assets);
   assert.equal(host.release(project.id, previous).source.assetFiles, undefined);
-  assert.equal(host.stage(project.id, {
-    ...source('1.0.1'), extraFiles: { 'index.html': '<img src="/logo.png">' },
-    assetFiles: assets,
-  }).unchanged, true);
+  assert.equal(
+    host.stage(project.id, {
+      ...source('1.0.1'),
+      extraFiles: { 'index.html': '<img src="/logo.png">' },
+      assetFiles: assets,
+    }).unchanged,
+    true,
+  );
   writeFileSync(path.join(root, project.id, 'releases', current, 'public', 'logo.png'), 'tampered');
-  assert.throws(() => host.release(project.id, current), /Unsafe private Node binary asset|digest mismatch/);
+  assert.throws(
+    () => host.release(project.id, current),
+    /Unsafe private Node binary asset|digest mismatch/,
+  );
 });
 
 test('M3 unsafe, malformed and mislabeled binary assets are never staged', (t) => {
   const { host } = setup(t);
   const project = host.create('Invalid media');
   for (const files of [
-    { 'public/../logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
-    { 'public/.env.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
-    { 'src/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
-    { 'public/logo.js': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
-    { 'public/logo.jpg': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    {
+      'public/../logo.png':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
+    {
+      'public/.env.png':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
+    {
+      'src/logo.png':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
+    {
+      'public/logo.js':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
+    {
+      'public/logo.jpg':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
     { 'public/logo.png': 'not-base64!!' },
-    Object.fromEntries(Array.from({ length: 13 }, (_, i) =>
-      ['public/' + i + '.png', 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII='])),
+    Object.fromEntries(
+      Array.from({ length: 13 }, (_, i) => [
+        'public/' + i + '.png',
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+      ]),
+    ),
   ]) {
-    assert.throws(() => host.stage(project.id, { ...source(), assetFiles: files }),
-      /asset|format|budget|binary/i);
+    assert.throws(
+      () => host.stage(project.id, { ...source(), assetFiles: files }),
+      /asset|format|budget|binary/i,
+    );
   }
   assert.equal(host.inspect(project.id).candidateRelease, null);
 });
@@ -184,18 +242,9 @@ test('M3 concurrent Node editors cannot replace an unexpected source candidate',
   assert.equal(latest.unchanged, false);
   assert.equal(latest.project.previousCandidate, firstId);
   const latestId = latest.project.candidateRelease;
-  assert.throws(
-    () => host.stage(project.id, source('1.0.2'), firstId),
-    /candidate changed/,
-  );
-  assert.throws(
-    () => host.stage(project.id, source(), null),
-    /candidate changed/,
-  );
-  assert.throws(
-    () => host.stage(project.id, source('1.0.3'), 'bad-release'),
-    /Invalid expected/,
-  );
+  assert.throws(() => host.stage(project.id, source('1.0.2'), firstId), /candidate changed/);
+  assert.throws(() => host.stage(project.id, source(), null), /candidate changed/);
+  assert.throws(() => host.stage(project.id, source('1.0.3'), 'bad-release'), /Invalid expected/);
   assert.equal(host.inspect(project.id).candidateRelease, latestId);
   assert.equal(host.inspect(project.id).previousCandidate, firstId);
   assert.equal(host.inspect(project.id).deploymentCount, 2);
@@ -214,13 +263,21 @@ test('M3 candidate restore rejects stale revisions even after A-B-A transitions'
   assert.equal(restoredA.candidateRelease, a.candidateRelease);
   assert.equal(restoredA.previousCandidate, b.candidateRelease);
   assert.equal(restoredA.deploymentCount, 3);
-  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2), /candidate changed/);
+  assert.throws(
+    () => host.restoreCandidate(project.id, b.candidateRelease, 2),
+    /candidate changed/,
+  );
   const restoredB = host.restoreCandidate(project.id, a.candidateRelease, 3);
   assert.equal(restoredB.candidateRelease, b.candidateRelease);
   assert.equal(restoredB.deploymentCount, 4);
-  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2), /candidate changed/);
-  assert.throws(() => host.stage(project.id, source('1.0.2'), b.candidateRelease, 2),
-    /candidate changed/);
+  assert.throws(
+    () => host.restoreCandidate(project.id, b.candidateRelease, 2),
+    /candidate changed/,
+  );
+  assert.throws(
+    () => host.stage(project.id, source('1.0.2'), b.candidateRelease, 2),
+    /candidate changed/,
+  );
   assert.equal(host.inspect(project.id).deploymentCount, 4);
   assert.equal(host.candidates(project.id).length, 2);
 });
@@ -230,10 +287,11 @@ test('M3 restore refuses tampered previous source without changing candidate poi
   const project = host.create('Restore verified only');
   const a = host.stage(project.id, source()).project;
   const b = host.stage(project.id, source('1.0.1')).project;
-  writeFileSync(path.join(root, project.id, 'releases', a.candidateRelease, 'server.mjs'),
-    'console.log("tampered")');
-  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2),
-    /digest mismatch/);
+  writeFileSync(
+    path.join(root, project.id, 'releases', a.candidateRelease, 'server.mjs'),
+    'console.log("tampered")',
+  );
+  assert.throws(() => host.restoreCandidate(project.id, b.candidateRelease, 2), /digest mismatch/);
   const latest = host.inspect(project.id);
   assert.equal(latest.candidateRelease, b.candidateRelease);
   assert.equal(latest.previousCandidate, a.candidateRelease);

@@ -12,12 +12,12 @@ License: MIT, Copyright (c) 2026 Himalay Ladha. Preserve copyright and license n
 
 **Status: DEFERRED.** No installation, deployment, vendoring or import into PocketHost. Complete current Hosting MVP acceptance and basic stabilization first.
 
-| Candidate | Later action | Notes |
-| --- | --- | --- |
-| HTML / Node.js / Python / PHP starter templates | Evaluate as examples for PocketHost's own starter catalog | Prioritize HTML and Node first; Python/PHP later. Verify contracts rather than copy directly. |
-| Cloudflare Tunnel, DNS, custom domains | Compare API integration after local hosting has been accepted | Needs separate authorization for WAN / external tunnel / credential changes. |
-| File manager and browser editor | Compare navigation and UX with current PocketHost File Manager and editors | Prefer existing PocketHost APIs, components and permissions. |
-| Process manager, installer, watchdog | **Do not import** | TermuxPanel invokes `fuser -k`, `pkill`, installs cron watchdog and boot services. Incompatible with PocketHost process ownership/protected service policy and user's no-scheduler rule. |
+| Candidate                                       | Later action                                                               | Notes                                                                                                                                                                                    |
+| ----------------------------------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTML / Node.js / Python / PHP starter templates | Evaluate as examples for PocketHost's own starter catalog                  | Prioritize HTML and Node first; Python/PHP later. Verify contracts rather than copy directly.                                                                                            |
+| Cloudflare Tunnel, DNS, custom domains          | Compare API integration after local hosting has been accepted              | Needs separate authorization for WAN / external tunnel / credential changes.                                                                                                             |
+| File manager and browser editor                 | Compare navigation and UX with current PocketHost File Manager and editors | Prefer existing PocketHost APIs, components and permissions.                                                                                                                             |
+| Process manager, installer, watchdog            | **Do not import**                                                          | TermuxPanel invokes `fuser -k`, `pkill`, installs cron watchdog and boot services. Incompatible with PocketHost process ownership/protected service policy and user's no-scheduler rule. |
 
 Source reviewed: TermuxPanel README, `LICENSE`, `installer/install.sh`, `backend/services/process.service.js`, `backend/services/file.service.js`, `backend/services/cloudflare.service.js` (2026-11-17). Claims in README are project claims, not verified production reliability.
 

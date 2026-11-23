@@ -1,10 +1,21 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from '../../src/modules/host/node-project-host.ts';
-import { NodeBuildPreparer, stageNodeBuildBinaries } from '../../src/modules/host/node-build-preparer.ts';
+import {
+  NodeBuildPreparer,
+  stageNodeBuildBinaries,
+} from '../../src/modules/host/node-build-preparer.ts';
 import { NodeDependencyPreparer } from '../../src/modules/host/node-dependency-preparer.ts';
 import { NodeRunitHost } from '../../src/modules/host/node-runit-host.ts';
 
@@ -16,11 +27,14 @@ function fixture(t) {
   const project = projects.create('Owned builder');
   const source = {
     packageJson: {
-      name: 'builder', version: '1.0.0',
+      name: 'builder',
+      version: '1.0.0',
       scripts: { start: 'node server.mjs', build: 'node server.mjs --build' },
     },
     packageLock: {
-      name: 'builder', version: '1.0.0', lockfileVersion: 3,
+      name: 'builder',
+      version: '1.0.0',
+      lockfileVersion: 3,
       packages: { '': { name: 'builder', version: '1.0.0' } },
     },
     serverSource: "console.log('build example')",
@@ -39,9 +53,14 @@ test('temporary npm CLI shims work without modifying published modules', (t) => 
   const modules = path.join(home, 'node_modules');
   const pkg = path.join(modules, 'vite');
   mkdirSync(path.join(pkg, 'bin'), { recursive: true, mode: 0o700 });
-  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
-    name: 'vite', version: '7.0.0', bin: { vite: 'bin/vite.js' },
-  }));
+  writeFileSync(
+    path.join(pkg, 'package.json'),
+    JSON.stringify({
+      name: 'vite',
+      version: '7.0.0',
+      bin: { vite: 'bin/vite.js' },
+    }),
+  );
   const entry = path.join(pkg, 'bin', 'vite.js');
   writeFileSync(entry, "console.log('dev-only cli')");
   assert.equal(stageNodeBuildBinaries(home), 1);
@@ -56,14 +75,22 @@ test('unsafe npm build entrypoints fail before constructing command shims', (t) 
   t.after(() => rmSync(home, { recursive: true, force: true }));
   const pkg = path.join(home, 'node_modules', 'example');
   mkdirSync(pkg, { recursive: true, mode: 0o700 });
-  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
-    name: 'example', bin: { cmd: '../../outside.js' },
-  }));
+  writeFileSync(
+    path.join(pkg, 'package.json'),
+    JSON.stringify({
+      name: 'example',
+      bin: { cmd: '../../outside.js' },
+    }),
+  );
   assert.throws(() => stageNodeBuildBinaries(home), /Unsafe npm bin target/);
   assert.equal(existsSync(path.join(home, 'node_modules', '.bin')), false);
-  writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
-    name: 'example', bin: { cmd: 'bin/start.js' },
-  }));
+  writeFileSync(
+    path.join(pkg, 'package.json'),
+    JSON.stringify({
+      name: 'example',
+      bin: { cmd: 'bin/start.js' },
+    }),
+  );
   mkdirSync(path.join(pkg, 'bin'), { mode: 0o700 });
   symlinkSync(path.join(home, 'server.mjs'), path.join(pkg, 'bin', 'start.js'));
   assert.throws(() => stageNodeBuildBinaries(home), /Unsafe npm bin entrypoint/);
@@ -94,24 +121,41 @@ test('approved pinned npm install and build form an attestable deploy candidate 
     },
   };
   const release = projects.stage(project.id, dependencySource).project.candidateRelease;
-  const npm = new NodeDependencyPreparer(projects, root, () => false, async (workspace, args) => {
-    assert.equal(args.at(-1), '--include=dev');
-    const pkg = path.join(workspace, 'node_modules', 'cli-helper');
-    mkdirSync(path.join(pkg, 'bin'), { mode: 0o700, recursive: true });
-    writeFileSync(path.join(pkg, 'package.json'), JSON.stringify({
-      name: 'cli-helper', version: '1.0.0', bin: { helper: 'bin/cli.js' },
-    }));
-    writeFileSync(path.join(pkg, 'bin', 'cli.js'), "console.log('safe fixture')");
-  });
+  const npm = new NodeDependencyPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace, args) => {
+      assert.equal(args.at(-1), '--include=dev');
+      const pkg = path.join(workspace, 'node_modules', 'cli-helper');
+      mkdirSync(path.join(pkg, 'bin'), { mode: 0o700, recursive: true });
+      writeFileSync(
+        path.join(pkg, 'package.json'),
+        JSON.stringify({
+          name: 'cli-helper',
+          version: '1.0.0',
+          bin: { helper: 'bin/cli.js' },
+        }),
+      );
+      writeFileSync(path.join(pkg, 'bin', 'cli.js'), "console.log('safe fixture')");
+    },
+  );
   await npm.prepare(project.id, release, true);
   assert.equal(npm.verifyPrepared(project.id, release).verified, true);
-  const built = new NodeBuildPreparer(projects, root, () => false, async workspace => {
-    const shim = path.join(workspace, 'node_modules', '.bin', 'helper');
-    assert.match(readFileSync(shim, 'utf8'), /cli\.js/);
-    assert.equal(existsSync(path.join(projects.release(project.id, release).folder,
-      'node_modules', '.bin')), false);
-    artifact(workspace);
-  });
+  const built = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace) => {
+      const shim = path.join(workspace, 'node_modules', '.bin', 'helper');
+      assert.match(readFileSync(shim, 'utf8'), /cli\.js/);
+      assert.equal(
+        existsSync(path.join(projects.release(project.id, release).folder, 'node_modules', '.bin')),
+        false,
+      );
+      artifact(workspace);
+    },
+  );
   await built.prepare(project.id, release, true);
   assert.equal(built.verifyBuilt(project.id, release).verified, true);
   const services = path.join(root, 'unit-services');
@@ -123,8 +167,10 @@ test('approved pinned npm install and build form an attestable deploy candidate 
   assert.equal(runit.preview(project.id).allowed, true);
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
   assert.deepEqual((await import('node:fs')).readdirSync(services), []);
-  writeFileSync(path.join(projects.release(project.id, release).folder, 'dist',
-    'index.html'), 'corrupted');
+  writeFileSync(
+    path.join(projects.release(project.id, release).folder, 'dist', 'index.html'),
+    'corrupted',
+  );
   assert.equal(runit.preview(project.id).allowed, false);
 });
 
@@ -136,12 +182,17 @@ test('multi-file build receives attested src, config and entry HTML in isolated 
     'vite.config.ts': 'export default {}',
   };
   const release = projects.stage(project.id, { ...source, extraFiles }).project.candidateRelease;
-  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
-    for (const [name, value] of Object.entries(extraFiles)) {
-      assert.equal(readFileSync(path.join(workspace, name), 'utf8'), value);
-    }
-    artifact(workspace);
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace) => {
+      for (const [name, value] of Object.entries(extraFiles)) {
+        assert.equal(readFileSync(path.join(workspace, name), 'utf8'), value);
+      }
+      artifact(workspace);
+    },
+  );
   assert.equal((await host.prepare(project.id, release, true)).prepared, true);
   assert.deepEqual(host.inspectBuilt(project.id, release).files, ['index.html']);
   const original = projects.release(project.id, release).source.extraFiles;
@@ -151,42 +202,71 @@ test('multi-file build receives attested src, config and entry HTML in isolated 
 test('build refuses any changes to attested extra source before publishing dist', async (t) => {
   const { root, projects, project, source } = fixture(t);
   const release = projects.stage(project.id, {
-    ...source, extraFiles: { 'src/main.ts': 'const original = true' },
+    ...source,
+    extraFiles: { 'src/main.ts': 'const original = true' },
   }).project.candidateRelease;
-  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
-    writeFileSync(path.join(workspace, 'src', 'main.ts'), 'const original = false');
-    artifact(workspace);
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace) => {
+      writeFileSync(path.join(workspace, 'src', 'main.ts'), 'const original = false');
+      artifact(workspace);
+    },
+  );
   await assert.rejects(host.prepare(project.id, release, true), /modified verified extra source/);
   assert.equal(existsSync(path.join(projects.release(project.id, release).folder, 'dist')), false);
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
-
 test('binary frontend asset is copied into approved build and original remains attested', async (t) => {
   const { root, projects, project, source } = fixture(t);
   const release = projects.stage(project.id, {
-    ...source, extraFiles: { 'index.html': '<img src="/logo.png">' },
-    assetFiles: { 'public/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    ...source,
+    extraFiles: { 'index.html': '<img src="/logo.png">' },
+    assetFiles: {
+      'public/logo.png':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
   }).project.candidateRelease;
-  const host = new NodeBuildPreparer(projects, root, () => false, async (workspace) => {
-    assert.equal(readFileSync(path.join(workspace, 'public', 'logo.png')).toString('base64'), 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
-    artifact(workspace);
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace) => {
+      assert.equal(
+        readFileSync(path.join(workspace, 'public', 'logo.png')).toString('base64'),
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+      );
+      artifact(workspace);
+    },
+  );
   assert.equal((await host.prepare(project.id, release, true)).prepared, true);
   assert.equal(host.verifyBuilt(project.id, release).verified, true);
-  assert.equal(projects.release(project.id, release).source.assetFiles['public/logo.png'], 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=');
+  assert.equal(
+    projects.release(project.id, release).source.assetFiles['public/logo.png'],
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+  );
 });
 
 test('build cannot publish output after modifying source binary asset', async (t) => {
   const { root, projects, project, source } = fixture(t);
   const release = projects.stage(project.id, {
-    ...source, assetFiles: { 'public/logo.png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=' },
+    ...source,
+    assetFiles: {
+      'public/logo.png':
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j2WcAAAAASUVORK5CYII=',
+    },
   }).project.candidateRelease;
-  const host = new NodeBuildPreparer(projects, root, () => false, async workspace => {
-    writeFileSync(path.join(workspace, 'public', 'logo.png'), 'modified');
-    artifact(workspace);
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (workspace) => {
+      writeFileSync(path.join(workspace, 'public', 'logo.png'), 'modified');
+      artifact(workspace);
+    },
+  );
   await assert.rejects(host.prepare(project.id, release, true), /modified verified binary asset/);
   assert.equal(existsSync(path.join(projects.release(project.id, release).folder, 'dist')), false);
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
@@ -195,10 +275,15 @@ test('build cannot publish output after modifying source binary asset', async (t
 test('explicit build approval publishes only proven dist and not a service', async (t) => {
   const { root, projects, project, release } = fixture(t);
   const called = [];
-  const host = new NodeBuildPreparer(projects, root, () => false, async (dir) => {
-    called.push(dir);
-    artifact(dir);
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => {
+      called.push(dir);
+      artifact(dir);
+    },
+  );
   assert.equal(host.buildScript(project.id, release), 'node server.mjs --build');
   await assert.rejects(host.prepare(project.id, release, false), /approval/);
   assert.equal(called.length, 0);
@@ -207,7 +292,11 @@ test('explicit build approval publishes only proven dist and not a service', asy
   assert.equal(called.length, 1);
   assert.equal(host.verifyBuilt(project.id, release).verified, true);
   assert.deepEqual(host.inspectBuilt(project.id, release), {
-    release, entries: 1, bytes: 14, files: ['index.html'], truncated: false,
+    release,
+    entries: 1,
+    bytes: 14,
+    files: ['index.html'],
+    truncated: false,
   });
   const output = path.join(projects.release(project.id, release).folder, 'dist');
   assert.equal(readFileSync(path.join(output, 'index.html'), 'utf8'), '<h1>Built</h1>');
@@ -217,28 +306,51 @@ test('explicit build approval publishes only proven dist and not a service', asy
 
 test('tampered build output cannot be readmitted', async (t) => {
   const { root, projects, project, release } = fixture(t);
-  const host = new NodeBuildPreparer(projects, root, () => false, async (dir) => artifact(dir));
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => artifact(dir),
+  );
   await host.prepare(project.id, release, true);
-  writeFileSync(path.join(projects.release(project.id, release).folder, 'dist', 'index.html'), 'tampered');
+  writeFileSync(
+    path.join(projects.release(project.id, release).folder, 'dist', 'index.html'),
+    'tampered',
+  );
   assert.throws(() => host.verifyBuilt(project.id, release), /integrity mismatch/);
   assert.throws(() => host.inspectBuilt(project.id, release), /integrity mismatch/);
 });
 
 test('failed or unsafe build leaves no dist or global lock', async (t) => {
   const { root, projects, project, release } = fixture(t);
-  const host = new NodeBuildPreparer(projects, root, () => false, async (dir) => {
-    mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
-    symlinkSync(path.join(dir, 'server.mjs'), path.join(dir, 'dist', 'external'));
-  });
-  await assert.rejects(host.prepare(project.id, release, true), /Unsafe Node build artifact entry|no regular files/);
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => {
+      mkdirSync(path.join(dir, 'dist'), { mode: 0o700 });
+      symlinkSync(path.join(dir, 'server.mjs'), path.join(dir, 'dist', 'external'));
+    },
+  );
+  await assert.rejects(
+    host.prepare(project.id, release, true),
+    /Unsafe Node build artifact entry|no regular files/,
+  );
   assert.equal(existsSync(path.join(projects.release(project.id, release).folder, 'dist')), false);
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
 });
 
 test('post-publication proof failure removes only new dist, never source or services', async (t) => {
   const { root, projects, project, release } = fixture(t);
-  const host = new NodeBuildPreparer(projects, root, () => false, async dir => artifact(dir));
-  host.verifyBuilt = () => { throw new Error('mock published artifact mismatch'); };
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => false,
+    async (dir) => artifact(dir),
+  );
+  host.verifyBuilt = () => {
+    throw new Error('mock published artifact mismatch');
+  };
   await assert.rejects(host.prepare(project.id, release, true), /published artifact mismatch/);
   assert.equal(existsSync(path.join(root, project.id, 'releases', release, 'dist')), false);
   assert.equal(existsSync(path.join(root, '.node-ports.lock')), false);
@@ -248,9 +360,14 @@ test('post-publication proof failure removes only new dist, never source or serv
 test('stale or active candidate never executes build', async (t) => {
   const { root, projects, project, release, source } = fixture(t);
   let executed = false;
-  const host = new NodeBuildPreparer(projects, root, () => true, async () => {
-    executed = true;
-  });
+  const host = new NodeBuildPreparer(
+    projects,
+    root,
+    () => true,
+    async () => {
+      executed = true;
+    },
+  );
   await assert.rejects(host.prepare(project.id, release, true), /Active or unknown/);
   const next = projects.stage(project.id, {
     ...source,

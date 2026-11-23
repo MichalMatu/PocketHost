@@ -44,7 +44,10 @@ test('H3 generic lifecycle never adopts a discovered runit service', async () =>
       admin.apply('restart', 'site-worker', fakeRun),
       /not explicitly registered/,
     );
-    await assert.rejects(admin.apply('once', 'external-worker', fakeRun), /not explicitly registered/);
+    await assert.rejects(
+      admin.apply('once', 'external-worker', fakeRun),
+      /not explicitly registered/,
+    );
     await assert.rejects(
       admin.apply('register', 'site-worker', fakeRun),
       /attested PocketHost provisioner/,
@@ -93,7 +96,10 @@ test('H3 runit protects PocketHost units and rejects aliases, traversal and adop
       assert.throws(() => admin.isRegistered(name), /Protected service/);
     }
     await assert.rejects(admin.apply('register', '../service', fakeRun), /Invalid/);
-    await assert.rejects(admin.apply('start', 'site-worker/../external-worker', fakeRun), /Invalid/);
+    await assert.rejects(
+      admin.apply('start', 'site-worker/../external-worker', fakeRun),
+      /Invalid/,
+    );
     symlinkSync(path.join(services, 'external-worker'), path.join(services, 'alias'));
     assert.equal(admin.isRegistered('alias'), false);
     await assert.rejects(admin.apply('stop', 'alias', fakeRun), /not explicitly registered/);

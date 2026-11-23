@@ -118,7 +118,7 @@ unit is published. The shared quota of four definitions includes archived
 workers, irrespective of runtime. The exact owner marker, path and script
 are checked before either runtime can be archived.
 
-This integrates the *runtime types*, **not arbitrary user application code**.
+This integrates the _runtime types_, **not arbitrary user application code**.
 For a real program, the next permission boundary is source provenance,
 reviewed execution declarations, immutable releases and an explicit approval
 to launch. Browser-posted shell/script text or a foreign process name
@@ -332,7 +332,6 @@ and negative direct-API attempts against Node-project, SSH, Local Agent,
 panel/watch, unknown and changed units. Also verify Node Hosting can
 still perform its explicitly approved internal one-shot lifecycle
 through its own attested path. **S1/S2 are still IN_PROGRESS.**
-
 
 ## S2 lifecycle command acknowledgement and post-operation ownership
 

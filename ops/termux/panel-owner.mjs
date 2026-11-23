@@ -104,13 +104,20 @@ function main() {
   );
   // The only first-start exception is an explicit A8 cold-stage pair made by
   // cold-bootstrap-a8.mjs. Null identities cannot authorize a restart.
-  const cold = marker.bootstrap === 'a8-cold-staged' &&
+  const cold =
+    marker.bootstrap === 'a8-cold-staged' &&
     gateway.bootstrap === 'a8-cold-staged' &&
-    marker.pid === null && gateway.pid === null &&
-    marker.startTicks === null && gateway.startTicks === null &&
-    marker.sourceSha === sha && gateway.sourceSha === sha;
-  const restart = Number.isSafeInteger(marker.pid) && marker.pid > 1 &&
-    marker.bootstrap === undefined && gateway.bootstrap === undefined &&
+    marker.pid === null &&
+    gateway.pid === null &&
+    marker.startTicks === null &&
+    gateway.startTicks === null &&
+    marker.sourceSha === sha &&
+    gateway.sourceSha === sha;
+  const restart =
+    Number.isSafeInteger(marker.pid) &&
+    marker.pid > 1 &&
+    marker.bootstrap === undefined &&
+    gateway.bootstrap === undefined &&
     oldOwnerIsGone(marker.pid);
   requireCondition(cold || restart, 'previous owner live, unverified or not cold-staged');
   const ticks = statTicks(pid);

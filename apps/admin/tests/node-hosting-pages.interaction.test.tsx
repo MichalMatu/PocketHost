@@ -14,21 +14,6 @@ import RuntimeLogsPage from "@/app/runtime-logs/page"
 
 const id = "node-" + "a".repeat(32)
 const release = "r-" + "b".repeat(32)
-const demo = {
-  id: "pockethost-demo",
-  name: "PocketHost Demo",
-  description: "Private owned demo",
-  type: "static-html",
-  dataDirectory: "PocketHost-OwnedSites/pockethost-demo",
-  state: "stopped",
-  port: 18787,
-  url: "http://127.0.0.1:18787/",
-  contentVersion: 1,
-  previousVersion: null,
-  pid: null,
-  startTicks: null,
-  history: [{ at: "2026-11-09T10:00:00Z", action: "create", from: null, to: 1 }],
-}
 const staticSite = {
   id: "site-" + "c".repeat(32),
   name: "Example static",

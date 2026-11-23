@@ -17,7 +17,7 @@ function deferred<T>() {
 
 it("clears prior Node lines immediately on refresh and retains verbatim new lines", async () => {
   const next = deferred<Record<string, unknown>>()
-  const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> =>
+  const read = vi.fn(async (): Promise<Record<string, unknown>> =>
     ({ logs: { lines: [first] } }))
   const hook = renderHook(() => useNodeProjectLogs(read))
   await act(async () => { expect(await hook.result.current.loadLogs(id)).toBe(true) })
@@ -45,7 +45,7 @@ it.each([
   { name: "oversized line", lines: ["X".repeat(241)] },
   { name: "invalid entry", lines: [first, 123] },
 ])("rejects $name without displaying partial or previous Node logs", async scenario => {
-  const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> =>
+  const read = vi.fn(async (): Promise<Record<string, unknown>> =>
     ({ logs: { lines: [first] } }))
   const hook = renderHook(() => useNodeProjectLogs(read))
   await act(async () => { await hook.result.current.loadLogs(id) })
@@ -63,7 +63,7 @@ it.each([
 
 it("does not keep old lines when the fresh read fails", async () => {
   const next = deferred<Record<string, unknown>>()
-  const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> =>
+  const read = vi.fn(async (): Promise<Record<string, unknown>> =>
     ({ logs: { lines: [first] } }))
   const hook = renderHook(() => useNodeProjectLogs(read))
   await act(async () => { await hook.result.current.loadLogs(id) })
@@ -82,7 +82,7 @@ it("does not keep old lines when the fresh read fails", async () => {
 
 it("ignores an older late response after a newer successful read", async () => {
   const old = deferred<Record<string, unknown>>()
-  const read = vi.fn(async (_url: string): Promise<Record<string, unknown>> => old.promise)
+  const read = vi.fn(async (): Promise<Record<string, unknown>> => old.promise)
   const hook = renderHook(() => useNodeProjectLogs(read))
   let firstRead!: Promise<boolean>
   act(() => { firstRead = hook.result.current.loadLogs(id) })

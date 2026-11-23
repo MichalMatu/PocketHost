@@ -67,6 +67,7 @@ it("ignores stale Node releases and runtime after switching deep-linked projects
   let finishFirstReleases: ((response: unknown) => void) | undefined
   let finishFirstRuntime: ((response: unknown) => void) | undefined
   const requests = vi.fn(async (url: string, options?: RequestInit) => {
+    void options
     if (url === "/api/v1/node-projects")
       return { ok: true, json: async () => ({ projects }) }
     if (url === "/api/v1/node-projects/" + first + "/releases")

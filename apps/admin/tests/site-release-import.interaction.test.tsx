@@ -129,10 +129,7 @@ it("accepts a directory picker selection with one shared parent folder", () => {
 })
 
 it("requires nonempty host readback for a published folder release", () => {
-  const execute = vi.fn(async (
-    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
-    _expected?: (observed: FleetSite) => boolean,
-  ) => {})
+  const execute = vi.fn(async (...args: unknown[]) => { void args })
   const hook = renderHook(() => useSiteReleaseImport({
     site, busy: false, outcomeUnknown: false,
     html: "<h1>Hello</h1>", editorReady: true,
@@ -204,10 +201,7 @@ it.each(["ZIP", "folder"] as const)(
 )
 
 it("preserves first ZIP update readback requirements without starting any host action", () => {
-  const execute = vi.fn(async (
-    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
-    _expected?: (observed: FleetSite) => boolean,
-  ) => {})
+  const execute = vi.fn(async (...args: unknown[]) => { void args })
   const hook = renderHook(() => useSiteReleaseImport({
     site: { ...site, activeRelease: null }, busy: false, outcomeUnknown: false,
     html: "<h1>Hello</h1>", editorReady: true,
@@ -278,10 +272,7 @@ it("keeps HTML publication canceled while clearing obsolete feedback", () => {
 })
 
 it("keeps HTML first-release readback conditions without starting a service", () => {
-  const execute = vi.fn(async (
-    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
-    _expected?: (observed: FleetSite) => boolean,
-  ) => {})
+  const execute = vi.fn(async (...args: unknown[]) => { void args })
   const initial = { ...site, activeRelease: null, fileCount: 0 }
   const html = "<h1>Initial page</h1>"
   const byteCount = new TextEncoder().encode(html).length
@@ -313,10 +304,7 @@ it("keeps HTML first-release readback conditions without starting a service", ()
 })
 
 it("requires the exact UTF-8 byte length when publishing multibyte HTML", () => {
-  const execute = vi.fn(async (
-    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
-    _expected?: (observed: FleetSite) => boolean,
-  ) => {})
+  const execute = vi.fn(async (...args: unknown[]) => { void args })
   const html = "<h1>🦊</h1>"
   const hook = renderHook(() => useSiteReleaseImport({
     site: { ...site, activeRelease: null, fileCount: 0 },

@@ -6,7 +6,14 @@
  * Optional QA suites are separately owner-authorized, not a release prerequisite.
  */
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, readlinkSync, lstatSync, realpathSync, statSync } from 'node:fs';
+import {
+  readFileSync,
+  readdirSync,
+  readlinkSync,
+  lstatSync,
+  realpathSync,
+  statSync,
+} from 'node:fs';
 import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
@@ -119,10 +126,15 @@ export function assertPanelRunitIdentity(e) {
   const expectedArgv = [
     prefix + '/bin/node',
     root + '/apps/admin/node_modules/vite/bin/vite.js',
-    '--host', '127.0.0.1', '--port', '8787', '--strictPort',
+    '--host',
+    '127.0.0.1',
+    '--port',
+    '8787',
+    '--strictPort',
   ];
   requireCondition(
-    Array.isArray(argv) && argv.length === expectedArgv.length &&
+    Array.isArray(argv) &&
+      argv.length === expectedArgv.length &&
       argv.every((arg, index) => arg === expectedArgv[index]),
     'Not the exact runit Node/Vite command',
   );
@@ -193,11 +205,16 @@ function inspect(root, expectedHead) {
   const owner = readRecord(ownerFile);
   const gateway = readRecord(gatewayFile);
   const verifiedHead = verifiedMarkerHead(root, owner, gateway, expectedHead);
-  const privateLan = typeof gateway.bind === 'string' &&
-    (/^10\./.test(gateway.bind) || /^192\.168\./.test(gateway.bind) ||
+  const privateLan =
+    typeof gateway.bind === 'string' &&
+    (/^10\./.test(gateway.bind) ||
+      /^192\.168\./.test(gateway.bind) ||
       /^172\.(1[6-9]|2\d|3[01])\./.test(gateway.bind)) &&
-    Object.values(os.networkInterfaces()).flat().some((iface) =>
-      iface?.family === 'IPv4' && !iface.internal && iface.address === gateway.bind);
+    Object.values(os.networkInterfaces())
+      .flat()
+      .some(
+        (iface) => iface?.family === 'IPv4' && !iface.internal && iface.address === gateway.bind,
+      );
   requireCondition(gateway.bind === null || privateLan, 'Unapproved gateway interface');
   const rawArgv = readFileSync('/proc/' + pid + '/cmdline', 'utf8')
     .split('\0')
@@ -235,15 +252,20 @@ function externalStates() {
       // never bless a foreign or merely discovered link.
       if (!ownedWorkers) {
         ownedWorkers = new Set(
-          new TermuxServiceAdmin().list()
-            .filter((item) => item.registered && !item.protected &&
-              item.identity === 'verified' && item.control === 'standalone')
+          new TermuxServiceAdmin()
+            .list()
+            .filter(
+              (item) =>
+                item.registered &&
+                !item.protected &&
+                item.identity === 'verified' &&
+                item.control === 'standalone',
+            )
             .map((item) => item.name),
         );
       }
       requireCondition(
-        ownedWorkers.has(name) &&
-          readlinkSync(target) === path.join(prefix, 'var', 'sv', name),
+        ownedWorkers.has(name) && readlinkSync(target) === path.join(prefix, 'var', 'sv', name),
         'Unverified external runit entry',
       );
     } else {
@@ -254,9 +276,16 @@ function externalStates() {
     if (previousLink !== null) {
       requireCondition(
         readlinkSync(target) === previousLink &&
-          new TermuxServiceAdmin().list().some((item) =>
-            item.name === name && item.registered && !item.protected &&
-            item.identity === 'verified' && item.control === 'standalone'),
+          new TermuxServiceAdmin()
+            .list()
+            .some(
+              (item) =>
+                item.name === name &&
+                item.registered &&
+                !item.protected &&
+                item.identity === 'verified' &&
+                item.control === 'standalone',
+            ),
         'External runit ownership changed during observation',
       );
     }
@@ -308,7 +337,6 @@ async function waitForDown() {
   throw new Error('Verified panel runit shutdown not completed');
 }
 
-
 /**
  * Inspect a trusted, already-running PocketHost DEV panel without fetching,
  * switching Git revisions, writing owner markers, signaling runit or restarting.
@@ -317,9 +345,7 @@ async function waitForDown() {
 export async function preflightPanel() {
   const root = realpathSync(process.cwd());
   requireCondition(
-    process.platform === 'android' &&
-      root === a8LiveRoot &&
-      !lstatSync(root).isSymbolicLink(),
+    process.platform === 'android' && root === a8LiveRoot && !lstatSync(root).isSymbolicLink(),
     'Not a dedicated PocketHost checkout',
   );
   requireCondition(
@@ -339,19 +365,27 @@ export async function preflightPanel() {
     markerSha: owner.sourceSha,
     checkoutSha,
     panelHttpOk: await panelReady(existing.gatewayHost),
-    protectedBaselineAttested: Object.values(external).every((state) =>
-      state === 'run' || state === 'down'),
+    protectedBaselineAttested: Object.values(external).every(
+      (state) => state === 'run' || state === 'down',
+    ),
   });
 }
 
 /** No service paths, private data or arbitrary host details leave this summary. */
-export function summarizePreflight({ markerSha, checkoutSha, panelHttpOk, protectedBaselineAttested }) {
+export function summarizePreflight({
+  markerSha,
+  checkoutSha,
+  panelHttpOk,
+  protectedBaselineAttested,
+}) {
   requireCondition(
     /^[a-f0-9]{40}$/.test(markerSha) && /^[a-f0-9]{40}$/.test(checkoutSha),
     'Invalid source markers',
   );
-  requireCondition(typeof panelHttpOk === 'boolean' && typeof protectedBaselineAttested === 'boolean',
-    'Unverified readiness inputs');
+  requireCondition(
+    typeof panelHttpOk === 'boolean' && typeof protectedBaselineAttested === 'boolean',
+    'Unverified readiness inputs',
+  );
   const ready = panelHttpOk && protectedBaselineAttested;
   return {
     status: ready ? 'READ_ONLY_READY' : 'HOLD',
@@ -372,8 +406,7 @@ async function refresh(target) {
   requireCondition(/^[a-f0-9]{40}$/.test(target ?? ''), 'Provide immutable full main SHA');
   const root = realpathSync(process.cwd());
   requireCondition(
-    process.platform === 'android' &&
-      root === a8LiveRoot && !lstatSync(root).isSymbolicLink(),
+    process.platform === 'android' && root === a8LiveRoot && !lstatSync(root).isSymbolicLink(),
     'Not a dedicated PocketHost checkout',
   );
   requireCondition(

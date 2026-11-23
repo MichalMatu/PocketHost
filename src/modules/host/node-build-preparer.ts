@@ -1,9 +1,21 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  closeSync, constants, cpSync, existsSync, fstatSync, lstatSync, mkdirSync,
-  openSync, readFileSync, readSync, readdirSync, realpathSync, renameSync,
-  rmSync, writeFileSync,
+  closeSync,
+  constants,
+  cpSync,
+  existsSync,
+  fstatSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost, decodeNodeAsset } from './node-project-host.ts';
@@ -25,10 +37,14 @@ function digest(contents: string): string {
 function privateDir(folder: string): void {
   const stat = lstatSync(folder);
   if (
-    !path.isAbsolute(folder) || !stat.isDirectory() || stat.isSymbolicLink() ||
-    realpathSync(folder) !== folder || stat.uid !== process.getuid?.() ||
+    !path.isAbsolute(folder) ||
+    !stat.isDirectory() ||
+    stat.isSymbolicLink() ||
+    realpathSync(folder) !== folder ||
+    stat.uid !== process.getuid?.() ||
     (stat.mode & 0o077) !== 0
-  ) throw new Error('Untrusted private Node build workspace');
+  )
+    throw new Error('Untrusted private Node build workspace');
 }
 
 /** Native, bounded npm invocation. The explicitly approved build script may
@@ -60,8 +76,11 @@ async function runBuild(workspace: string): Promise<void> {
       exceeded = true;
       // Only the freshly spawned, separate process group may be signalled.
       if (child.pid) {
-        try { process.kill(-child.pid, 'SIGKILL'); }
-        catch { child.kill('SIGKILL'); }
+        try {
+          process.kill(-child.pid, 'SIGKILL');
+        } catch {
+          child.kill('SIGKILL');
+        }
       } else child.kill('SIGKILL');
     };
     const timeout = setTimeout(terminate, 90_000);
@@ -86,13 +105,18 @@ async function runBuild(workspace: string): Promise<void> {
 function outputProof(folder: string): { treeDigest: string; bytes: number; entries: number } {
   const root = lstatSync(folder);
   if (
-    !root.isDirectory() || root.isSymbolicLink() ||
-    realpathSync(folder) !== folder || root.uid !== process.getuid?.()
-  ) throw new Error('Unsafe Node build artifact directory');
+    !root.isDirectory() ||
+    root.isSymbolicLink() ||
+    realpathSync(folder) !== folder ||
+    root.uid !== process.getuid?.()
+  )
+    throw new Error('Unsafe Node build artifact directory');
   const hash = createHash('sha256');
   const pending = [folder];
   const chunk = Buffer.allocUnsafe(64 * 1024);
-  let bytes = 0, entries = 0, files = 0;
+  let bytes = 0,
+    entries = 0,
+    files = 0;
   while (pending.length) {
     const parent = pending.pop()!;
     for (const name of readdirSync(parent).sort()) {
@@ -102,9 +126,12 @@ function outputProof(folder: string): { treeDigest: string; bytes: number; entri
       const stat = lstatSync(file);
       entries++;
       if (
-        entries > MAX_ENTRIES || stat.uid !== process.getuid?.() ||
-        stat.isSymbolicLink() || (!stat.isDirectory() && !stat.isFile())
-      ) throw new Error('Unsafe Node build artifact entry');
+        entries > MAX_ENTRIES ||
+        stat.uid !== process.getuid?.() ||
+        stat.isSymbolicLink() ||
+        (!stat.isDirectory() && !stat.isFile())
+      )
+        throw new Error('Unsafe Node build artifact entry');
       if (stat.isDirectory()) {
         hash.update('D\0' + relative + '\0');
         pending.push(file);
@@ -119,9 +146,13 @@ function outputProof(folder: string): { treeDigest: string; bytes: number; entri
       try {
         const live = fstatSync(fd);
         if (
-          live.ino !== stat.ino || live.dev !== stat.dev ||
-          live.size !== stat.size || !live.isFile() || live.nlink !== 1
-        ) throw new Error('Node artifact changed during verification');
+          live.ino !== stat.ino ||
+          live.dev !== stat.dev ||
+          live.size !== stat.size ||
+          !live.isFile() ||
+          live.nlink !== 1
+        )
+          throw new Error('Node artifact changed during verification');
         hash.update('F\0' + relative + '\0' + stat.size + '\0');
         let left = stat.size;
         while (left > 0) {
@@ -133,13 +164,14 @@ function outputProof(folder: string): { treeDigest: string; bytes: number; entri
         const after = fstatSync(fd);
         if (after.size !== live.size || after.mtimeMs !== live.mtimeMs)
           throw new Error('Node artifact changed during verification');
-      } finally { closeSync(fd); }
+      } finally {
+        closeSync(fd);
+      }
     }
   }
   if (files === 0) throw new Error('Node build produced no regular files');
   return { treeDigest: hash.digest('hex'), bytes, entries };
 }
-
 
 function shellQuote(input: string): string {
   return "'" + input.replaceAll("'", "'\\''") + "'";
@@ -183,19 +215,27 @@ export function stageNodeBuildBinaries(workspace: string): number {
     if (!existsSync(manifest)) continue;
     const source = lstatSync(manifest);
     if (
-      !source.isFile() || source.isSymbolicLink() || source.nlink !== 1 ||
-      source.size > 64 * 1024 || source.uid !== process.getuid?.()
-    ) throw new Error('Unsafe installed npm package manifest');
+      !source.isFile() ||
+      source.isSymbolicLink() ||
+      source.nlink !== 1 ||
+      source.size > 64 * 1024 ||
+      source.uid !== process.getuid?.()
+    )
+      throw new Error('Unsafe installed npm package manifest');
     const data: unknown = JSON.parse(readFileSync(manifest, 'utf8'));
     if (!data || typeof data !== 'object' || Array.isArray(data))
       throw new Error('Invalid installed package manifest');
     const pkg = data as Record<string, unknown>;
     if (pkg.name !== item.expected) throw new Error('Installed package identity mismatch');
     if (pkg.bin === undefined) continue;
-    const declared: unknown = typeof pkg.bin === 'string'
-      ? { [item.expected.split('/').at(-1)!]: pkg.bin } : pkg.bin;
-    if (!declared || typeof declared !== 'object' || Array.isArray(declared) ||
-        Object.keys(declared).length > 16)
+    const declared: unknown =
+      typeof pkg.bin === 'string' ? { [item.expected.split('/').at(-1)!]: pkg.bin } : pkg.bin;
+    if (
+      !declared ||
+      typeof declared !== 'object' ||
+      Array.isArray(declared) ||
+      Object.keys(declared).length > 16
+    )
       throw new Error('Invalid npm package bin map');
     for (const [command, raw] of Object.entries(declared)) {
       if (!PACKAGE_BIN.test(command) || typeof raw !== 'string')
@@ -203,15 +243,22 @@ export function stageNodeBuildBinaries(workspace: string): number {
       const clean = raw.startsWith('./') ? raw.slice(2) : raw;
       const parts = clean.split('/');
       if (
-        parts.length > 8 || parts.some(part => !part || part === '.' || part === '..' ||
-          !/^[a-zA-Z0-9._-]+$/.test(part))
-      ) throw new Error('Unsafe npm bin target');
+        parts.length > 8 ||
+        parts.some(
+          (part) => !part || part === '.' || part === '..' || !/^[a-zA-Z0-9._-]+$/.test(part),
+        )
+      )
+        throw new Error('Unsafe npm bin target');
       const target = path.join(item.dir, ...parts);
       const targetStat = lstatSync(target);
       if (
-        !targetStat.isFile() || targetStat.isSymbolicLink() || targetStat.nlink !== 1 ||
-        targetStat.uid !== process.getuid?.() || realpathSync(target) !== target
-      ) throw new Error('Unsafe npm bin entrypoint');
+        !targetStat.isFile() ||
+        targetStat.isSymbolicLink() ||
+        targetStat.nlink !== 1 ||
+        targetStat.uid !== process.getuid?.() ||
+        realpathSync(target) !== target
+      )
+        throw new Error('Unsafe npm bin entrypoint');
       count++;
       if (count > MAX_BIN_TOOLS) throw new Error('npm build bin command budget exceeded');
       const fd = openSync(target, constants.O_RDONLY | constants.O_NOFOLLOW);
@@ -220,13 +267,19 @@ export function stageNodeBuildBinaries(workspace: string): number {
         const prefix = Buffer.alloc(128);
         const amount = readSync(fd, prefix, 0, 128, 0);
         if (/^#![^\n]*\bnode\b/.test(prefix.toString('utf8', 0, amount))) isNode = true;
-      } finally { closeSync(fd); }
+      } finally {
+        closeSync(fd);
+      }
       if (!isNode && (targetStat.mode & 0o111) === 0)
         throw new Error('Npm executable lacks execute permission');
       if (!existsSync(bins)) mkdirSync(bins, { mode: 0o700 });
-      const commandScript = '#!' + PREFIX + '/bin/sh\nexec ' +
+      const commandScript =
+        '#!' +
+        PREFIX +
+        '/bin/sh\nexec ' +
         (isNode ? shellQuote(PREFIX + '/bin/node') + ' ' : '') +
-        shellQuote(target) + ' "$@"\n';
+        shellQuote(target) +
+        ' "$@"\n';
       writeFileSync(path.join(bins, command), commandScript, { flag: 'wx', mode: 0o700 });
     }
   }
@@ -258,8 +311,14 @@ export class NodeBuildPreparer {
     return manifest.scripts.build;
   }
 
-  verifyBuilt(projectId: string, releaseId: string): {
-    release: string; entries: number; bytes: number; verified: true
+  verifyBuilt(
+    projectId: string,
+    releaseId: string,
+  ): {
+    release: string;
+    entries: number;
+    bytes: number;
+    verified: true;
   } {
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node build release');
     const source = this.projects.release(projectId, releaseId);
@@ -267,10 +326,14 @@ export class NodeBuildPreparer {
     const filename = path.join(source.folder, 'dist', PROOF);
     const stat = lstatSync(filename);
     if (
-      !stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-      stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 ||
+      !stat.isFile() ||
+      stat.isSymbolicLink() ||
+      stat.nlink !== 1 ||
+      stat.uid !== process.getuid?.() ||
+      (stat.mode & 0o077) !== 0 ||
       stat.size > 2048
-    ) throw new Error('Untrusted Node build proof');
+    )
+      throw new Error('Untrusted Node build proof');
     const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
     let contents: string;
     try {
@@ -278,7 +341,9 @@ export class NodeBuildPreparer {
       if (live.ino !== stat.ino || live.dev !== stat.dev || live.size !== stat.size)
         throw new Error('Node build proof changed');
       contents = readFileSync(fd, 'utf8');
-    } finally { closeSync(fd); }
+    } finally {
+      closeSync(fd);
+    }
     const proof: unknown = JSON.parse(contents);
     if (!proof || typeof proof !== 'object' || Array.isArray(proof))
       throw new Error('Invalid Node build proof');
@@ -286,22 +351,34 @@ export class NodeBuildPreparer {
     if (
       Object.keys(p).sort().join(',') !==
         'bytes,entries,lockDigest,manifestDigest,owner,release,schema,sourceDigest,treeDigest' ||
-      p.schema !== 1 || p.owner !== 'pockethost-node-build' || p.release !== releaseId ||
+      p.schema !== 1 ||
+      p.owner !== 'pockethost-node-build' ||
+      p.release !== releaseId ||
       p.lockDigest !== digest(source.source.lock) ||
       p.manifestDigest !== digest(source.source.manifest) ||
       p.sourceDigest !== digest(source.source.server)
-    ) throw new Error('Node build proof does not match release');
+    )
+      throw new Error('Node build proof does not match release');
     const output = outputProof(path.join(source.folder, 'dist'));
     if (
-      output.treeDigest !== p.treeDigest || output.bytes !== p.bytes ||
+      output.treeDigest !== p.treeDigest ||
+      output.bytes !== p.bytes ||
       output.entries !== p.entries
-    ) throw new Error('Node build artifact integrity mismatch');
+    )
+      throw new Error('Node build artifact integrity mismatch');
     return { release: releaseId, entries: output.entries, bytes: output.bytes, verified: true };
   }
 
   /** Bounded, read-only artifact inventory for review before owned deployment. */
-  inspectBuilt(projectId: string, releaseId: string): {
-    release: string; entries: number; bytes: number; files: string[]; truncated: boolean
+  inspectBuilt(
+    projectId: string,
+    releaseId: string,
+  ): {
+    release: string;
+    entries: number;
+    bytes: number;
+    files: string[];
+    truncated: boolean;
   } {
     const verified = this.verifyBuilt(projectId, releaseId);
     const dist = path.join(this.projects.release(projectId, releaseId).folder, 'dist');
@@ -325,21 +402,30 @@ export class NodeBuildPreparer {
           fileCount++;
           if (files.length < 24) files.push(relative);
         }
-        if (fileCount > MAX_ENTRIES)
-          throw new Error('Node build artifact inventory exceeds limit');
+        if (fileCount > MAX_ENTRIES) throw new Error('Node build artifact inventory exceeds limit');
       }
     }
     files.sort();
     // Defend against mutations between the initial proof and listing.
     this.verifyBuilt(projectId, releaseId);
     return {
-      release: releaseId, entries: verified.entries, bytes: verified.bytes,
-      files, truncated: fileCount > files.length,
+      release: releaseId,
+      entries: verified.entries,
+      bytes: verified.bytes,
+      files,
+      truncated: fileCount > files.length,
     };
   }
 
-  async prepare(projectId: string, releaseId: string, approved: boolean): Promise<{
-    release: string; entries: number; bytes: number; prepared: true
+  async prepare(
+    projectId: string,
+    releaseId: string,
+    approved: boolean,
+  ): Promise<{
+    release: string;
+    entries: number;
+    bytes: number;
+    prepared: true;
   }> {
     if (approved !== true) throw new Error('Explicit owned Node build approval required');
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node build release');
@@ -350,8 +436,10 @@ export class NodeBuildPreparer {
     if (this.releaseInUse(projectId, releaseId) !== false)
       throw new Error('Active or unknown Node release cannot be built');
     if (source.plan.dependencyCount > 0)
-      new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
-        .verifyPrepared(projectId, releaseId);
+      new NodeDependencyPreparer(this.projects, this.projectRoot, () => true).verifyPrepared(
+        projectId,
+        releaseId,
+      );
     privateDir(this.projectRoot);
     privateDir(source.projectFolder);
     privateDir(source.folder);
@@ -364,20 +452,24 @@ export class NodeBuildPreparer {
       if (
         this.projects.inspect(projectId).candidateRelease !== releaseId ||
         this.releaseInUse(projectId, releaseId) !== false
-      ) throw new Error('Node build candidate changed during admission');
+      )
+        throw new Error('Node build candidate changed during admission');
       const current = this.projects.release(projectId, releaseId);
       if (existsSync(path.join(current.folder, 'dist')))
         throw new Error('Existing or ambiguous Node build artifact refused');
       if (current.plan.dependencyCount > 0)
-        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
-          .verifyPrepared(projectId, releaseId);
+        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true).verifyPrepared(
+          projectId,
+          releaseId,
+        );
       workspace = path.join(current.projectFolder, '.node-build-' + randomUUID());
       mkdirSync(workspace, { mode: 0o700 });
       for (const [name, contents] of [
         ['package.json', current.source.manifest],
         ['package-lock.json', current.source.lock],
         ['server.mjs', current.source.server],
-      ] as const) writeFileSync(path.join(workspace, name), contents, { flag: 'wx', mode: 0o600 });
+      ] as const)
+        writeFileSync(path.join(workspace, name), contents, { flag: 'wx', mode: 0o600 });
       // Recreate only attested text source files in the disposable workspace.
       // The live release retains the immutable originals under its proof.
       for (const [name, contents] of Object.entries(current.source.extraFiles ?? {})) {
@@ -394,14 +486,19 @@ export class NodeBuildPreparer {
         const published = path.join(current.folder, 'node_modules');
         const copied = path.join(workspace, 'node_modules');
         cpSync(published, copied, {
-          recursive: true, force: false, errorOnExist: true, dereference: false,
+          recursive: true,
+          force: false,
+          errorOnExist: true,
+          dereference: false,
         });
         // A copy can change or gain links during filesystem traversal.
         // Fail closed before executing a build against those bytes.
         verifyCopiedNodePackages(published, copied);
         // The original release packages must remain unchanged after the copy.
-        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
-          .verifyPrepared(projectId, releaseId);
+        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true).verifyPrepared(
+          projectId,
+          releaseId,
+        );
       }
       stageNodeBuildBinaries(workspace);
       await this.execute(workspace);
@@ -409,7 +506,8 @@ export class NodeBuildPreparer {
         readFileSync(path.join(workspace, 'package.json'), 'utf8') !== current.source.manifest ||
         readFileSync(path.join(workspace, 'package-lock.json'), 'utf8') !== current.source.lock ||
         readFileSync(path.join(workspace, 'server.mjs'), 'utf8') !== current.source.server
-      ) throw new Error('Node build modified verified source input');
+      )
+        throw new Error('Node build modified verified source input');
       for (const [name, contents] of Object.entries(current.source.extraFiles ?? {})) {
         if (readFileSync(path.join(workspace, name), 'utf8') !== contents)
           throw new Error('Node build modified verified extra source');
@@ -417,8 +515,12 @@ export class NodeBuildPreparer {
       for (const [name, encoded] of Object.entries(current.source.assetFiles ?? {})) {
         const filename = path.join(workspace, name);
         const currentStat = lstatSync(filename);
-        if (!currentStat.isFile() || currentStat.isSymbolicLink() || currentStat.nlink !== 1 ||
-            !readFileSync(filename).equals(decodeNodeAsset(name, encoded)))
+        if (
+          !currentStat.isFile() ||
+          currentStat.isSymbolicLink() ||
+          currentStat.nlink !== 1 ||
+          !readFileSync(filename).equals(decodeNodeAsset(name, encoded))
+        )
           throw new Error('Node build modified verified binary asset');
       }
       const dist = path.join(workspace, 'dist');
@@ -428,22 +530,32 @@ export class NodeBuildPreparer {
       if (
         this.projects.inspect(projectId).candidateRelease !== releaseId ||
         this.releaseInUse(projectId, releaseId) !== false
-      ) throw new Error('Node candidate changed during build');
+      )
+        throw new Error('Node candidate changed during build');
       this.projects.release(projectId, releaseId);
       if (current.plan.dependencyCount > 0)
-        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
-          .verifyPrepared(projectId, releaseId);
-      writeFileSync(path.join(dist, PROOF), JSON.stringify({
-        schema: 1, owner: 'pockethost-node-build', release: releaseId,
-        lockDigest: digest(current.source.lock),
-        manifestDigest: digest(current.source.manifest),
-        sourceDigest: digest(current.source.server),
-        ...proof,
-      }) + '\n', { flag: 'wx', mode: 0o600 });
+        new NodeDependencyPreparer(this.projects, this.projectRoot, () => true).verifyPrepared(
+          projectId,
+          releaseId,
+        );
+      writeFileSync(
+        path.join(dist, PROOF),
+        JSON.stringify({
+          schema: 1,
+          owner: 'pockethost-node-build',
+          release: releaseId,
+          lockDigest: digest(current.source.lock),
+          manifestDigest: digest(current.source.manifest),
+          sourceDigest: digest(current.source.server),
+          ...proof,
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
       const published = path.join(current.folder, 'dist');
       renameSync(dist, published);
-      try { this.verifyBuilt(projectId, releaseId); }
-      catch (error) {
+      try {
+        this.verifyBuilt(projectId, releaseId);
+      } catch (error) {
         rmSync(published, { recursive: true, force: true });
         throw error;
       }

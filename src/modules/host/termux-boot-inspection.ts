@@ -24,8 +24,12 @@ export function inspectTermuxBoot(): TermuxBootObservation {
     scriptCount: number | null,
     ownerExecutableCount: number | null,
   ): TermuxBootObservation => ({
-    state, scriptCount, ownerExecutableCount, androidPermission: 'not-verified',
-    rebootReadback: 'not-verified', checkedAt,
+    state,
+    scriptCount,
+    ownerExecutableCount,
+    androidPermission: 'not-verified',
+    rebootReadback: 'not-verified',
+    checkedAt,
   });
   const home = os.homedir();
   const owner = process.getuid?.();
@@ -48,13 +52,15 @@ export function inspectTermuxBoot(): TermuxBootObservation {
       if (!trusted(config)) return observed('unverified', null, null);
     } catch (error) {
       return (error as NodeJS.ErrnoException).code === 'ENOENT'
-        ? observed('no-scripts', 0, 0) : observed('unverified', null, null);
+        ? observed('no-scripts', 0, 0)
+        : observed('unverified', null, null);
     }
     try {
       if (!trusted(boot)) return observed('unverified', null, null);
     } catch (error) {
       return (error as NodeJS.ErrnoException).code === 'ENOENT'
-        ? observed('no-scripts', 0, 0) : observed('unverified', null, null);
+        ? observed('no-scripts', 0, 0)
+        : observed('unverified', null, null);
     }
     const entries = readdirSync(boot);
     if (entries.length > 32) return observed('unverified', null, null);
@@ -62,15 +68,21 @@ export function inspectTermuxBoot(): TermuxBootObservation {
     for (const name of entries) {
       const file = lstatSync(path.join(boot, name));
       if (
-        !file.isFile() || file.isSymbolicLink() ||
-        file.nlink !== 1 || file.uid !== owner ||
+        !file.isFile() ||
+        file.isSymbolicLink() ||
+        file.nlink !== 1 ||
+        file.uid !== owner ||
         (file.mode & 0o022) !== 0
-      ) return observed('unverified', null, null);
+      )
+        return observed('unverified', null, null);
       // Mode bits only: never inspect script content, disclose names, or run it.
       if ((file.mode & 0o100) !== 0) ownerExecutableCount += 1;
     }
-    return observed(entries.length ? 'scripts-present' : 'no-scripts',
-      entries.length, ownerExecutableCount);
+    return observed(
+      entries.length ? 'scripts-present' : 'no-scripts',
+      entries.length,
+      ownerExecutableCount,
+    );
   } catch {
     return observed('unverified', null, null);
   }

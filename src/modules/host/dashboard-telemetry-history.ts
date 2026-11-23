@@ -372,7 +372,10 @@ export class DashboardHistoryStore {
     try {
       privateParent(file);
       if (privateFile(file)) {
-        const value: unknown = filterUnknownServices(JSON.parse(readFileSync(file, 'utf8')), SERVICE_IDS);
+        const value: unknown = filterUnknownServices(
+          JSON.parse(readFileSync(file, 'utf8')),
+          SERVICE_IDS,
+        );
         if (
           !value ||
           typeof value !== 'object' ||

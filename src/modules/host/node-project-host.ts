@@ -38,9 +38,14 @@ const MAX_EXTRA_FILES = 32;
 const MAX_EXTRA_TOTAL = 96 * 1024;
 /** Text-only source allowlist. No dotfiles, absolute paths or executable hooks. */
 export function validNodeExtraPath(name: string): boolean {
-  return name.length <= 160 && (
-    /^(?:src|public)\/(?:[A-Za-z0-9_-]+\/){0,6}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:js|jsx|ts|tsx|css|html|json|svg|txt|md)$/.test(name) ||
-    /^(?:index\.html|vite\.config\.(?:js|mjs|ts)|tsconfig(?:\.[a-z0-9_-]+)?\.json|postcss\.config\.(?:js|cjs)|tailwind\.config\.(?:js|ts))$/.test(name)
+  return (
+    name.length <= 160 &&
+    (/^(?:src|public)\/(?:[A-Za-z0-9_-]+\/){0,6}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:js|jsx|ts|tsx|css|html|json|svg|txt|md)$/.test(
+      name,
+    ) ||
+      /^(?:index\.html|vite\.config\.(?:js|mjs|ts)|tsconfig(?:\.[a-z0-9_-]+)?\.json|postcss\.config\.(?:js|cjs)|tailwind\.config\.(?:js|ts))$/.test(
+        name,
+      ))
   );
 }
 function cleanExtras(input: unknown): Record<string, string> {
@@ -53,9 +58,13 @@ function cleanExtras(input: unknown): Record<string, string> {
   let total = 0;
   for (const name of names) {
     const value = source[name];
-    if (!validNodeExtraPath(name) ||
-        typeof value !== 'string' || !value.trim() || value.includes('\0') ||
-        Buffer.byteLength(value) > 32 * 1024)
+    if (
+      !validNodeExtraPath(name) ||
+      typeof value !== 'string' ||
+      !value.trim() ||
+      value.includes('\0') ||
+      Buffer.byteLength(value) > 32 * 1024
+    )
       throw new RangeError('Unsafe extra Node source path or content');
     total += Buffer.byteLength(name) + Buffer.byteLength(value);
     if (total > MAX_EXTRA_TOTAL) throw new RangeError('Extra Node source exceeds 96 KB');
@@ -66,26 +75,40 @@ function cleanExtras(input: unknown): Record<string, string> {
 
 /** Strict binary-only asset allowlist; never permits nested project hooks or dotfiles. */
 export function validNodeAssetPath(name: string): boolean {
-  return name.length <= 160 &&
-    /^(?:public|src\/assets)\/(?:[A-Za-z0-9_-]+\/){0,5}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:png|jpg|jpeg|webp|gif|ico|woff2)$/.test(name);
+  return (
+    name.length <= 160 &&
+    /^(?:public|src\/assets)\/(?:[A-Za-z0-9_-]+\/){0,5}[A-Za-z0-9_-][A-Za-z0-9._-]{0,79}\.(?:png|jpg|jpeg|webp|gif|ico|woff2)$/.test(
+      name,
+    )
+  );
 }
 export function decodeNodeAsset(name: string, encoded: unknown): Buffer {
-  if (!validNodeAssetPath(name) || typeof encoded !== 'string' ||
-      encoded.length < 8 || encoded.length > Math.ceil(MAX_ASSET_BYTES / 3) * 4 + 4 ||
-      !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded))
+  if (
+    !validNodeAssetPath(name) ||
+    typeof encoded !== 'string' ||
+    encoded.length < 8 ||
+    encoded.length > Math.ceil(MAX_ASSET_BYTES / 3) * 4 + 4 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded)
+  )
     throw new RangeError('Unsafe Node binary asset path or encoding');
   const bytes = Buffer.from(encoded, 'base64');
-  if (bytes.length < 12 || bytes.length > MAX_ASSET_BYTES ||
-      bytes.toString('base64') !== encoded)
+  if (bytes.length < 12 || bytes.length > MAX_ASSET_BYTES || bytes.toString('base64') !== encoded)
     throw new RangeError('Invalid or oversized Node binary asset');
   const ext = name.split('.').at(-1);
-  const matching = ext === 'png' ? bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')) :
-    ext === 'jpg' || ext === 'jpeg' ? bytes.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex')) :
-    ext === 'webp' ? bytes.toString('ascii', 0, 4) === 'RIFF' &&
-      bytes.toString('ascii', 8, 12) === 'WEBP' :
-    ext === 'gif' ? ['GIF87a', 'GIF89a'].includes(bytes.toString('ascii', 0, 6)) :
-    ext === 'ico' ? bytes.subarray(0, 4).equals(Buffer.from('00000100', 'hex')) :
-    ext === 'woff2' ? bytes.toString('ascii', 0, 4) === 'wOF2' : false;
+  const matching =
+    ext === 'png'
+      ? bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+      : ext === 'jpg' || ext === 'jpeg'
+        ? bytes.subarray(0, 3).equals(Buffer.from('ffd8ff', 'hex'))
+        : ext === 'webp'
+          ? bytes.toString('ascii', 0, 4) === 'RIFF' && bytes.toString('ascii', 8, 12) === 'WEBP'
+          : ext === 'gif'
+            ? ['GIF87a', 'GIF89a'].includes(bytes.toString('ascii', 0, 6))
+            : ext === 'ico'
+              ? bytes.subarray(0, 4).equals(Buffer.from('00000100', 'hex'))
+              : ext === 'woff2'
+                ? bytes.toString('ascii', 0, 4) === 'wOF2'
+                : false;
   if (!matching) throw new RangeError('Node binary asset format mismatch');
   return bytes;
 }
@@ -106,21 +129,34 @@ function cleanAssets(input: unknown): Record<string, string> {
 }
 function privateBytes(filename: string): Buffer {
   const stat = lstatSync(filename);
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-      stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 ||
-      stat.size < 12 || stat.size > MAX_ASSET_BYTES)
+  if (
+    !stat.isFile() ||
+    stat.isSymbolicLink() ||
+    stat.nlink !== 1 ||
+    stat.uid !== process.getuid?.() ||
+    (stat.mode & 0o077) !== 0 ||
+    stat.size < 12 ||
+    stat.size > MAX_ASSET_BYTES
+  )
     throw new Error('Unsafe private Node binary asset file');
   const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
   try {
     const live = fstatSync(fd);
-    if (live.ino !== stat.ino || live.dev !== stat.dev || live.size !== stat.size ||
-        live.nlink !== 1 || !live.isFile())
+    if (
+      live.ino !== stat.ino ||
+      live.dev !== stat.dev ||
+      live.size !== stat.size ||
+      live.nlink !== 1 ||
+      !live.isFile()
+    )
       throw new Error('Node binary asset changed during read');
     const bytes = readFileSync(fd);
     if (bytes.length !== live.size || fstatSync(fd).mtimeMs !== live.mtimeMs)
       throw new Error('Node binary asset changed during read');
     return bytes;
-  } finally { closeSync(fd); }
+  } finally {
+    closeSync(fd);
+  }
 }
 
 function digest(contents: string): string {
@@ -243,9 +279,15 @@ function cleanSource(input: unknown): {
   if (!input || typeof input !== 'object' || Array.isArray(input))
     throw new RangeError('Invalid Node source envelope');
   const keys = Object.keys(input);
-  if (keys.length < 3 || keys.length > 5 ||
-      !['packageJson', 'packageLock', 'serverSource'].every(k => Object.hasOwn(input, k)) ||
-      keys.some(k => !['packageJson', 'packageLock', 'serverSource', 'extraFiles', 'assetFiles'].includes(k)))
+  if (
+    keys.length < 3 ||
+    keys.length > 5 ||
+    !['packageJson', 'packageLock', 'serverSource'].every((k) => Object.hasOwn(input, k)) ||
+    keys.some(
+      (k) =>
+        !['packageJson', 'packageLock', 'serverSource', 'extraFiles', 'assetFiles'].includes(k),
+    )
+  )
     throw new RangeError('Invalid Node source envelope');
   const source = input as NodeSourceInput;
   const extraFiles = source.extraFiles === undefined ? {} : cleanExtras(source.extraFiles);
@@ -263,9 +305,12 @@ function cleanSource(input: unknown): {
   if (
     typeof manifest !== 'string' ||
     typeof lock !== 'string' ||
-    Buffer.byteLength(manifest) + Buffer.byteLength(lock) + Buffer.byteLength(source.serverSource) +
+    Buffer.byteLength(manifest) +
+      Buffer.byteLength(lock) +
+      Buffer.byteLength(source.serverSource) +
       Buffer.byteLength(JSON.stringify(extraFiles)) +
-      Buffer.byteLength(JSON.stringify(assetFiles)) > MAX_INPUT
+      Buffer.byteLength(JSON.stringify(assetFiles)) >
+      MAX_INPUT
   ) {
     throw new RangeError('Node project payload exceeds limit');
   }
@@ -282,18 +327,25 @@ function cleanSource(input: unknown): {
 /** An immutable source release cannot silently gain new modules/config files.
  * Dependency packages and built dist have their own independent attestations.
  */
-function verifySourceLayout(folder: string, extras: Readonly<Record<string, string>>,
-  assets: Readonly<Record<string, string>>): void {
+function verifySourceLayout(
+  folder: string,
+  extras: Readonly<Record<string, string>>,
+  assets: Readonly<Record<string, string>>,
+): void {
   const expected = new Map<string, Set<string>>();
   const at = (location: string, entry: string) => {
     if (!expected.has(location)) expected.set(location, new Set());
     expected.get(location)!.add(entry);
   };
   for (const name of [
-    'package.json', 'package-lock.json', 'server.mjs', RELEASE_PROOF,
+    'package.json',
+    'package-lock.json',
+    'server.mjs',
+    RELEASE_PROOF,
     ...(Object.keys(extras).length || Object.keys(assets).length ? [EXTRA_MANIFEST] : []),
     ...(Object.keys(assets).length ? [ASSET_MANIFEST] : []),
-  ]) at('', name);
+  ])
+    at('', name);
   for (const name of [...Object.keys(extras), ...Object.keys(assets)]) {
     const parts = name.split('/');
     for (let i = 0; i < parts.length; i++) {
@@ -305,9 +357,8 @@ function verifySourceLayout(folder: string, extras: Readonly<Record<string, stri
     const actual = readdirSync(target);
     // npm and a verified build may publish their own reserved directories,
     // but only at the release root and never inside user source folders.
-    const allowed = relative === '' ?
-      new Set([...entries, 'node_modules', 'dist']) : entries;
-    if (actual.some(name => !allowed.has(name)))
+    const allowed = relative === '' ? new Set([...entries, 'node_modules', 'dist']) : entries;
+    if (actual.some((name) => !allowed.has(name)))
       throw new Error('Unexpected file in attested Node source release');
     if (relative === '') {
       for (const name of ['node_modules', 'dist']) {
@@ -463,19 +514,26 @@ export class NodeProjectHost {
     plan: NodeDependencyPlan;
     unchanged: boolean;
   } {
-    if (expectedCandidate !== undefined && expectedCandidate !== null &&
-        !RELEASE.test(expectedCandidate))
+    if (
+      expectedCandidate !== undefined &&
+      expectedCandidate !== null &&
+      !RELEASE.test(expectedCandidate)
+    )
       throw new RangeError('Invalid expected Node candidate');
-    if (expectedRevision !== undefined &&
-        (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30))
+    if (
+      expectedRevision !== undefined &&
+      (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30)
+    )
       throw new RangeError('Invalid expected Node revision');
     const source = cleanSource(input);
     return this.mutation(() => {
       const marker = this.record(id);
       // Check both identity and monotonic history under the exclusive lock.
       // The history revision prevents A -> B -> A from bypassing conflict checks.
-      if ((expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
-          (expectedRevision !== undefined && marker.history.length !== expectedRevision))
+      if (
+        (expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
+        (expectedRevision !== undefined && marker.history.length !== expectedRevision)
+      )
         throw new Error('Node candidate changed; reload before staging');
       const releases = path.join(this.projectPath(id), 'releases');
       if (marker.candidateRelease) {
@@ -530,13 +588,17 @@ export class NodeProjectHost {
           }
         }
         if (assetNames.length) {
-          writeFileSync(path.join(stage, ASSET_MANIFEST),
-            JSON.stringify(source.assetFiles), { flag: 'wx', mode: 0o600 });
+          writeFileSync(path.join(stage, ASSET_MANIFEST), JSON.stringify(source.assetFiles), {
+            flag: 'wx',
+            mode: 0o600,
+          });
           for (const name of assetNames) {
             const filename = path.join(stage, name);
             mkdirSync(path.dirname(filename), { recursive: true, mode: 0o700 });
-            writeFileSync(filename, decodeNodeAsset(name, source.assetFiles[name]),
-              { flag: 'wx', mode: 0o600 });
+            writeFileSync(filename, decodeNodeAsset(name, source.assetFiles[name]), {
+              flag: 'wx',
+              mode: 0o600,
+            });
           }
         }
         writeFileSync(
@@ -548,10 +610,12 @@ export class NodeProjectHost {
             manifestDigest: digest(source.manifest),
             lockDigest: digest(source.lock),
             sourceDigest: digest(source.source),
-            ...(extraNames.length || assetNames.length ?
-              { extraFilesDigest: digest(JSON.stringify(source.extraFiles)) } : {}),
-            ...(assetNames.length ?
-              { assetFilesDigest: digest(JSON.stringify(source.assetFiles)) } : {}),
+            ...(extraNames.length || assetNames.length
+              ? { extraFilesDigest: digest(JSON.stringify(source.extraFiles)) }
+              : {}),
+            ...(assetNames.length
+              ? { assetFilesDigest: digest(JSON.stringify(source.assetFiles)) }
+              : {}),
           }) + '\n',
           { flag: 'wx', mode: 0o600 },
         );
@@ -616,8 +680,13 @@ export class NodeProjectHost {
     folder: string;
     projectFolder: string;
     plan: NodeDependencyPlan;
-    source: { manifest: string; lock: string; server: string;
-      extraFiles?: Record<string, string>; assetFiles?: Record<string, string> };
+    source: {
+      manifest: string;
+      lock: string;
+      server: string;
+      extraFiles?: Record<string, string>;
+      assetFiles?: Record<string, string>;
+    };
   } {
     if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release');
     const marker = this.record(id);
@@ -635,10 +704,11 @@ export class NodeProjectHost {
     const proof = rawProof as Record<string, unknown>;
     const assetExtended = proof.schema === 3;
     const extended = proof.schema === 2 || assetExtended;
-    const expectedKeys = assetExtended ?
-      'assetFilesDigest,extraFilesDigest,id,lockDigest,manifestDigest,owner,schema,sourceDigest' :
-      extended ? 'extraFilesDigest,id,lockDigest,manifestDigest,owner,schema,sourceDigest' :
-      'id,lockDigest,manifestDigest,owner,schema,sourceDigest';
+    const expectedKeys = assetExtended
+      ? 'assetFilesDigest,extraFilesDigest,id,lockDigest,manifestDigest,owner,schema,sourceDigest'
+      : extended
+        ? 'extraFilesDigest,id,lockDigest,manifestDigest,owner,schema,sourceDigest'
+        : 'id,lockDigest,manifestDigest,owner,schema,sourceDigest';
     if (
       Object.keys(proof).sort().join(',') !== expectedKeys ||
       ![1, 2, 3].includes(proof.schema as number) ||
@@ -653,9 +723,11 @@ export class NodeProjectHost {
     if (extended) {
       const extraJson = privateFile(path.join(folder, EXTRA_MANIFEST), MAX_EXTRA_TOTAL + 4096);
       const extras = cleanExtras(JSON.parse(extraJson));
-      if ((!Object.keys(extras).length && !assetExtended) ||
-          digest(JSON.stringify(extras)) !== proof.extraFilesDigest ||
-          extraJson !== JSON.stringify(extras))
+      if (
+        (!Object.keys(extras).length && !assetExtended) ||
+        digest(JSON.stringify(extras)) !== proof.extraFilesDigest ||
+        extraJson !== JSON.stringify(extras)
+      )
         throw new Error('Node extra source manifest digest mismatch');
       for (const [name, expected] of Object.entries(extras)) {
         const parts = name.split('/');
@@ -673,8 +745,11 @@ export class NodeProjectHost {
     if (assetExtended) {
       const assetsJson = privateFile(path.join(folder, ASSET_MANIFEST), 750 * 1024);
       const assets = cleanAssets(JSON.parse(assetsJson));
-      if (!Object.keys(assets).length || assetsJson !== JSON.stringify(assets) ||
-          digest(assetsJson) !== proof.assetFilesDigest)
+      if (
+        !Object.keys(assets).length ||
+        assetsJson !== JSON.stringify(assets) ||
+        digest(assetsJson) !== proof.assetFilesDigest
+      )
         throw new Error('Node binary asset manifest digest mismatch');
       for (const [name, expected] of Object.entries(assets)) {
         let current = folder;
@@ -699,9 +774,13 @@ export class NodeProjectHost {
       folder,
       projectFolder,
       plan,
-      source: { manifest: manifestText, lock: lockText, server: sourceText,
+      source: {
+        manifest: manifestText,
+        lock: lockText,
+        server: sourceText,
         ...(extraFiles ? { extraFiles } : {}),
-        ...(assetFiles ? { assetFiles } : {}) },
+        ...(assetFiles ? { assetFiles } : {}),
+      },
     };
   }
 
@@ -734,13 +813,17 @@ export class NodeProjectHost {
   ): NodeProjectSummary {
     if (expectedCandidate !== undefined && !RELEASE.test(expectedCandidate))
       throw new RangeError('Invalid expected Node candidate');
-    if (expectedRevision !== undefined &&
-        (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30))
+    if (
+      expectedRevision !== undefined &&
+      (!Number.isSafeInteger(expectedRevision) || expectedRevision < 0 || expectedRevision > 30)
+    )
       throw new RangeError('Invalid expected Node revision');
     return this.mutation(() => {
       const marker = this.record(id);
-      if ((expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
-          (expectedRevision !== undefined && marker.history.length !== expectedRevision))
+      if (
+        (expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
+        (expectedRevision !== undefined && marker.history.length !== expectedRevision)
+      )
         throw new Error('Node candidate changed; reload before restoring');
       if (!marker.previousCandidate) throw new RangeError('No previous source candidate');
       const old = marker.candidateRelease;

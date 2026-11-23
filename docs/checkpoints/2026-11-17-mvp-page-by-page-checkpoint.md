@@ -19,18 +19,18 @@ purpose: MVP-first page-by-page completion plan, scope, evidence and delivery es
 
 Definitions: **PROVEN** = actual user/device observation; **CODE** = available UI/backend but incomplete user flow or no device acceptance; **DEFER** = does not block the first usable MVP.
 
-| Order | Page / route | Current status | Acceptance required for MVP |
-| --- | --- | --- | --- |
-| 1 | **Static websites** `/sites` | **PROVEN** for first HTML site only | Complete edit → second release → publish → HTTP check → rollback to old content; verify stop/start; clear error states; no ZIP/folder requirement for minimum MVP |
-| 2 | **Node.js applications** `/projects` | **CODE; blocked for LAN writes** | One trusted owner-reviewed Node app: create → source → prepare → deploy/start → private HTTP/readiness → stop → rollback; explicit authenticated owner authorization; never rely on `X-PocketHost-Intent` as authentication |
-| 3 | **Deployments** `/deployments` | **CODE** | Show exact current/previous release and state for both app types; navigate to owned release and rollback; no invented status |
-| 4 | **Project logs** `/runtime-logs` | **CODE** | Read bounded current logs for an owned selected app; error/empty state; no leaked secrets or external process adoption |
-| 5 | **Hosting overview** `/hosting` | **CODE** | Clear entry points and honest active/disabled statuses to the four pages above |
-| 6 | **Dashboard / Monitoring / Host inventory** | **PROVEN in part** | Keep existing read-only live information, correct unavailable states; no redesign |
-| 7 | **Services** overview/Runit/Hosting/Health | **CODE + one real fixed-worker flow** | Preserve operation as is; only fix a defect blocking MVP, defer generic user-script execution |
-| 8 | **Local Agent / protected service pages** | **PROVEN in part/read-only** | Keep status and diagnostics; no changes to foreign services |
-| 9 | **Autostart, Network, Platform, Backups** | **CODE, physical acceptance OPEN** | Nonblocking for private LAN MVP; label unverified, defer reboot, SSH, WAN and real restore |
-| 10 | **Shizuku, Phone settings, file/package/terminal, examples** | **MIXED / DEFER** | No expansion or styling sprint before Hosting core is complete |
+| Order | Page / route                                                 | Current status                        | Acceptance required for MVP                                                                                                                                                                                                 |
+| ----- | ------------------------------------------------------------ | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | **Static websites** `/sites`                                 | **PROVEN** for first HTML site only   | Complete edit → second release → publish → HTTP check → rollback to old content; verify stop/start; clear error states; no ZIP/folder requirement for minimum MVP                                                           |
+| 2     | **Node.js applications** `/projects`                         | **CODE; blocked for LAN writes**      | One trusted owner-reviewed Node app: create → source → prepare → deploy/start → private HTTP/readiness → stop → rollback; explicit authenticated owner authorization; never rely on `X-PocketHost-Intent` as authentication |
+| 3     | **Deployments** `/deployments`                               | **CODE**                              | Show exact current/previous release and state for both app types; navigate to owned release and rollback; no invented status                                                                                                |
+| 4     | **Project logs** `/runtime-logs`                             | **CODE**                              | Read bounded current logs for an owned selected app; error/empty state; no leaked secrets or external process adoption                                                                                                      |
+| 5     | **Hosting overview** `/hosting`                              | **CODE**                              | Clear entry points and honest active/disabled statuses to the four pages above                                                                                                                                              |
+| 6     | **Dashboard / Monitoring / Host inventory**                  | **PROVEN in part**                    | Keep existing read-only live information, correct unavailable states; no redesign                                                                                                                                           |
+| 7     | **Services** overview/Runit/Hosting/Health                   | **CODE + one real fixed-worker flow** | Preserve operation as is; only fix a defect blocking MVP, defer generic user-script execution                                                                                                                               |
+| 8     | **Local Agent / protected service pages**                    | **PROVEN in part/read-only**          | Keep status and diagnostics; no changes to foreign services                                                                                                                                                                 |
+| 9     | **Autostart, Network, Platform, Backups**                    | **CODE, physical acceptance OPEN**    | Nonblocking for private LAN MVP; label unverified, defer reboot, SSH, WAN and real restore                                                                                                                                  |
+| 10    | **Shizuku, Phone settings, file/package/terminal, examples** | **MIXED / DEFER**                     | No expansion or styling sprint before Hosting core is complete                                                                                                                                                              |
 
 **MVP cutline:** Private-LAN Hosting of a static HTML site **with update and rollback**, plus one **trusted, explicitly owner-authorized** Node.js backend, their release status and bounded logs. This is a device-local DEV MVP, **not** a public multi-tenant platform. If LAN owner authorization or same-UID Node execution cannot be made acceptable, ship only the working static MVP and explicitly hold Node; never silently disable a guard.
 
@@ -38,13 +38,13 @@ Definitions: **PROVEN** = actual user/device observation; **CODE** = available U
 
 Estimates are **engineering effort ranges, not deadlines**, assuming reuse of existing implementation, no new hardware failures, and one acceptance scenario per page:
 
-| Work package | Budget |
-| --- | --- |
-| Finish `/sites`: second publish, update, HTTP/content, rollback, stop/start | 4–8 h |
-| Finish `/projects`: owner authorization + one trusted Node end-to-end deploy/rollback | 12–22 h |
-| Finish `/deployments` + `/runtime-logs`: connect to verified runtime | 4–8 h |
-| Finish `/hosting` + focused acceptance on A8 + defects | 6–10 h |
-| **Total private-LAN MVP estimate** | **26–48 h** |
+| Work package                                                                          | Budget      |
+| ------------------------------------------------------------------------------------- | ----------- |
+| Finish `/sites`: second publish, update, HTTP/content, rollback, stop/start           | 4–8 h       |
+| Finish `/projects`: owner authorization + one trusted Node end-to-end deploy/rollback | 12–22 h     |
+| Finish `/deployments` + `/runtime-logs`: connect to verified runtime                  | 4–8 h       |
+| Finish `/hosting` + focused acceptance on A8 + defects                                | 6–10 h      |
+| **Total private-LAN MVP estimate**                                                    | **26–48 h** |
 
 Authentication, physical Android behavior or new Node/Termux runtime issues may increase the estimate. This does **not** include public TLS, multi-user security, secure isolation of untrusted Node code, full Backup/Restore, full device reboot acceptance, UI template cleanup or wide cross-page polish.
 

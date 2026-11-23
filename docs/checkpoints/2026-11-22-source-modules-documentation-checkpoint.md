@@ -20,15 +20,15 @@ purpose: Source-level module separation, documentation currency and delivery che
 
 The registered module set in `project.structure.json` has **10** entries. Among `src/modules/*`, **71** source or declaration `*.ts/*.mjs/*.mts` files were present at the source snapshot; distribution is intentionally uneven:
 
-| Module | Source/declaration files | Observed role / maturity |
-| --- | ---: | --- |
-| `host` | 63 | Termux OS/filesystem/process/runit adapters and hosting operations; largest implementation area |
-| `runtime` | 3 | Pure registered/owned runtime state and port contracts |
-| `sites` | 2 | Static ZIP/folder parsing and owned-demo specification |
-| `config` | 1 | Portable registry facade |
-| `observability` | 1 | Read-only projection |
-| `packages` | 1 | Dependency planning facade |
-| `ai`, `diagnostics`, `inventory`, `shizuku` | 0 each | Registered placeholders/agent contracts, **not implemented standalone module services** |
+| Module                                      | Source/declaration files | Observed role / maturity                                                                        |
+| ------------------------------------------- | -----------------------: | ----------------------------------------------------------------------------------------------- |
+| `host`                                      |                       63 | Termux OS/filesystem/process/runit adapters and hosting operations; largest implementation area |
+| `runtime`                                   |                        3 | Pure registered/owned runtime state and port contracts                                          |
+| `sites`                                     |                        2 | Static ZIP/folder parsing and owned-demo specification                                          |
+| `config`                                    |                        1 | Portable registry facade                                                                        |
+| `observability`                             |                        1 | Read-only projection                                                                            |
+| `packages`                                  |                        1 | Dependency planning facade                                                                      |
+| `ai`, `diagnostics`, `inventory`, `shizuku` |                   0 each | Registered placeholders/agent contracts, **not implemented standalone module services**         |
 
 **Separation reviewed:** `src/shared` carries portable contracts; browser UI/API clients live in `apps/admin/src`; host-side request handling is in the Node/Vite server (`apps/admin/vite.config.ts` and `apps/admin/plugins/node-project-api.ts`); privileged effects stay in host adapters. Static ZIP parsing in `sites` and owned state machines in `runtime` are distinct from host effects. External runit observation does not confer service ownership.
 

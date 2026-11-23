@@ -15,10 +15,15 @@ export function validateDocs(root = repositoryRoot, changed = null) {
   if (focused) {
     if (!Array.isArray(changed) || changed.length === 0) return ['Missing changed docs'];
     for (const rel of changed) {
-      if (typeof rel !== 'string' || !rel.endsWith('.md') ||
-          rel.startsWith('/') || rel.startsWith('apps/admin/') ||
-          rel.includes('\\') || rel.includes('\0') ||
-          rel.split('/').some(part => !part || part === '.' || part === '..')) {
+      if (
+        typeof rel !== 'string' ||
+        !rel.endsWith('.md') ||
+        rel.startsWith('/') ||
+        rel.startsWith('apps/admin/') ||
+        rel.includes('\\') ||
+        rel.includes('\0') ||
+        rel.split('/').some((part) => !part || part === '.' || part === '..')
+      ) {
         errors.push('Invalid changed docs path');
       } else {
         requested.add(rel);
@@ -134,8 +139,8 @@ export function validateDocs(root = repositoryRoot, changed = null) {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const argv = process.argv.slice(2);
-  const changed = argv.length === 0 ? null :
-    argv[0] === '--changed' && argv.length > 1 ? argv.slice(1) : [];
+  const changed =
+    argv.length === 0 ? null : argv[0] === '--changed' && argv.length > 1 ? argv.slice(1) : [];
   const errors = validateDocs(repositoryRoot, changed);
   if (errors.length) {
     console.error(errors.join('\n'));

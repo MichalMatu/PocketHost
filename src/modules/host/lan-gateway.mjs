@@ -150,7 +150,9 @@ export function upstreamTimeoutMs(requestPath, method = 'GET') {
  */
 export function gatewayCacheControl(requestPath, method, admin) {
   const route = typeof requestPath === 'string' ? requestPath.split('?')[0] : '';
-  const viteAsset = admin && (method === 'GET' || method === 'HEAD') &&
+  const viteAsset =
+    admin &&
+    (method === 'GET' || method === 'HEAD') &&
     /^(?:\/src\/|\/@vite\/|\/@id\/|\/node_modules\/\.vite\/deps\/)/.test(route);
   return viteAsset ? 'private, no-cache' : 'no-store';
 }

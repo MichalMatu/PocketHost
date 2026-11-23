@@ -64,7 +64,7 @@ readback; `runit` is the sole process supervisor, not an extra scheduler.
 
 The 14 November 2026 genericization removed named hosted-app pages,
 diagnostics and endpoints, plus the fixed external-service catalog. Live
-service observation now uses the device's runit inventory. This is *not*
+service observation now uses the device's runit inventory. This is _not_
 a claim that LAN boot acceptance, per-service health editing, SSH/GitHub
 configuration or external-service enrollment are complete.
 

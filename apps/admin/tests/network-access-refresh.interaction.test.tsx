@@ -23,8 +23,11 @@ describe("Network Access manual refresh", () => {
   it("discards a superseded LAN snapshot even if its transport ignores abort", async () => {
     type Reply = { ok: boolean; json: () => Promise<unknown> }
     const replies: Array<(response: Reply) => void> = []
-    const fetcher = vi.fn((_url: string, _options?: RequestInit) =>
-      new Promise<Reply>(resolve => { replies.push(resolve) }))
+    const fetcher = vi.fn((url: string, options?: RequestInit) => {
+      void url
+      void options
+      return new Promise<Reply>(resolve => { replies.push(resolve) })
+    })
     vi.stubGlobal("fetch", fetcher)
     render(<NetworkAccessPage />)
 

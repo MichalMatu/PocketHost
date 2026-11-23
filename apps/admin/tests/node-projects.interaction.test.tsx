@@ -82,6 +82,7 @@ it("rejects invalid Node project inventory without hiding an error as an empty c
 })
 it("keeps Node project creation locked when the owner token is rejected", async () => {
   const fetchMock = vi.fn(async (url: RequestInfo | URL, _options?: RequestInit) => {
+    void _options
     if (String(url) === "/api/v1/node-projects")
       return { ok: true, json: async () => ({ projects: [] }) }
     if (String(url) === "/api/v1/node-projects/owner-session")

@@ -9,7 +9,6 @@ purpose: Password-free Termux recovery checkpoint and safe clean bootstrap
 
 > **Superseded on 2026-11-14.** The owner cancelled the clean rebuild of S22 Termux, kept IleStoi and other services running, and selected Galaxy A8 as the fresh PocketHost host. After successful snapshots, the owner manually deleted the Android Downloads `Termux-Recovery` folders and emptied the bin; the final S22 read-only check confirmed those two recovery folders absent. The photoMap POC was removed and its useful tools/source archived to GitHub; Pi production and Pi backup remain. This document is preserved **only as historical evidence** and does not authorize rebuilding, restoring backups, changing S22 services or any standing backup task. See [current checkpoint](checkpoints/2026-11-14-s22-retired-a8-bootstrap-handoff.md) and [A8 handoff](HANDOFF_NEXT_CHAT.md).
 
-
 ## Owner's explicit direction (2026-11-14)
 
 **Zero backup passwords and zero backup encryption.** Do not use or initialize
@@ -35,7 +34,7 @@ unnecessary sharing.
   those pairs, including 1082 photo and 195 place rows. Identical content
   does not mean runtime file paths are redundant and safe to delete.
   No running PhotoMap process or canonical production DB was positively
-  established in the process scan. Newest *file mtime*:
+  established in the process scan. Newest _file mtime_:
   `~/Projects/PocketHost-Managed/instances/photomap-test/runtime/versions/debian12-photomap-20261106-v1/work/database/app.db`,
   2026-11-06 09:57:37 UTC. It is the selected snapshot source, **not**
   an attested live production database. PhotoMap managed media inventory:
@@ -194,7 +193,7 @@ unapproved erasure. All backups for this recovery must remain password-free.
   around 20.45 GiB. Receipt:
   `Download/Termux-Recovery/Project-Native-20261114-v1/legacy-backups-removed.json`.
   Old archive history is intentionally no longer available in that folder.
-- A *separate* historical passworded Restic repository existed inside
+- A _separate_ historical passworded Restic repository existed inside
   `~/WreckScanner/WreckScanner/.backups/wreckscanner-restic`, not in Android
   `BACKUPS`. After the current IleStoi ZIP passed, its dedicated runit
   `wreckscanner-backup` worker was put DOWN with a persistent `down`
@@ -221,4 +220,3 @@ unapproved erasure. All backups for this recovery must remain password-free.
 3. A clean Termux rebuild remains separate and requires owner approval.
 4. Project documentation and future backup UI must reflect the choice of
    **native plaintext backups**, not legacy passworded Restic automation.
-

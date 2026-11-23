@@ -1,5 +1,14 @@
 import { spawnSync } from 'node:child_process';
-import { closeSync, constants, fstatSync, lstatSync, openSync, readSync, realpathSync, readFileSync } from 'node:fs';
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  realpathSync,
+  readFileSync,
+} from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { parseProcessRss, parseProcessStat } from './observability-probes.ts';
@@ -8,8 +17,13 @@ const PREFIX = '/data/data/com.termux/files/usr';
 const SERVICE = 'cloudflared';
 type Availability = 'ok' | 'unavailable' | 'permission-denied';
 type RunitState = 'running' | 'stopped' | 'unknown';
-type Command = (binary: string, args: string[]) => {
-  status?: number | null; stdout?: string | Buffer; error?: Error;
+type Command = (
+  binary: string,
+  args: string[],
+) => {
+  status?: number | null;
+  stdout?: string | Buffer;
+  error?: Error;
 };
 export interface CloudflareTunnelDiagnostics {
   version: 1;
@@ -19,8 +33,12 @@ export interface CloudflareTunnelDiagnostics {
   /** Optional for backward compatibility with earlier diagnostic snapshots. */
   binary?: { state: 'available' | 'missing' | 'unverified' };
   runit: { state: RunitState; uptimeSeconds: number | null; error: string | null };
-  process: { pid: number; startTicks: string; rssMiB: number | null;
-    identity: 'runit-consistent-not-owned' } | null;
+  process: {
+    pid: number;
+    startTicks: string;
+    rssMiB: number | null;
+    identity: 'runit-consistent-not-owned';
+  } | null;
   config: {
     state: Availability;
     tunnelDeclared: boolean | null;
@@ -57,15 +75,24 @@ export function summarizeTunnelConfig(raw: string): CloudflareTunnelDiagnostics[
   let credentialsFileDeclared = false;
   for (const line of raw.split(/\r?\n/).slice(0, 512)) {
     if (/^\s*#/.test(line)) continue;
-    if (/^ingress:\s*(?:#.*)?$/.test(line)) { inIngress = true; continue; }
-    if (/^[a-z][\w-]*\s*:/.test(line)) { inIngress = false; activeRoute = null; }
+    if (/^ingress:\s*(?:#.*)?$/.test(line)) {
+      inIngress = true;
+      continue;
+    }
+    if (/^[a-z][\w-]*\s*:/.test(line)) {
+      inIngress = false;
+      activeRoute = null;
+    }
     if (/^tunnel:\s*\S+/.test(line)) tunnelDeclared = true;
     if (/^credentials-file:\s*\S+/.test(line)) credentialsFileDeclared = true;
     if (!inIngress) continue;
     const entry = /^\s*-\s*hostname:\s*(.*?)\s*(?:#.*)?$/.exec(line);
     if (entry) {
       activeRoute = null;
-      const value = (entry[1] ?? '').trim().replace(/^['"]|['"]$/g, '').toLowerCase();
+      const value = (entry[1] ?? '')
+        .trim()
+        .replace(/^['"]|['"]$/g, '')
+        .toLowerCase();
       if (/^(?:\*\.)?(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/.test(value)) {
         count++;
         if (ingress.length < 12) {
@@ -83,22 +110,33 @@ export function summarizeTunnelConfig(raw: string): CloudflareTunnelDiagnostics[
     }
   }
   return {
-    state: 'ok', tunnelDeclared, credentialsFileDeclared,
-    ingress, truncated: count > 12 || raw.split('\n').length > 512, error: null,
+    state: 'ok',
+    tunnelDeclared,
+    credentialsFileDeclared,
+    ingress,
+    truncated: count > 12 || raw.split('\n').length > 512,
+    error: null,
   };
 }
 
 /** Converts untrusted cloudflared log text exclusively to recognized event kinds. */
-export function classifyTunnelLog(line: string):
-  CloudflareTunnelDiagnostics['logs']['events'][number] | null {
-  const kind = /registered tunnel connection/i.test(line) &&
-    !/unregistered/i.test(line) ? 'registered' :
-    /unregistered tunnel connection|connection terminated|connection closed|connection dropped/i.test(line)
-      ? 'disconnected' :
-    /\b(ERR|error|failed|retrying)\b/i.test(line) ? 'failure' : null;
+export function classifyTunnelLog(
+  line: string,
+): CloudflareTunnelDiagnostics['logs']['events'][number] | null {
+  const kind =
+    /registered tunnel connection/i.test(line) && !/unregistered/i.test(line)
+      ? 'registered'
+      : /unregistered tunnel connection|connection terminated|connection closed|connection dropped/i.test(
+            line,
+          )
+        ? 'disconnected'
+        : /\b(ERR|error|failed|retrying)\b/i.test(line)
+          ? 'failure'
+          : null;
   if (!kind) return null;
   const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2}))/.exec(line);
-  const date = match && Number.isFinite(Date.parse(match[1]!)) ? new Date(match[1]!).toISOString() : null;
+  const date =
+    match && Number.isFinite(Date.parse(match[1]!)) ? new Date(match[1]!).toISOString() : null;
   return { kind, timestamp: date };
 }
 
@@ -117,10 +155,14 @@ export class CloudflareTunnelDiagnosticHost {
     svRoot = path.join(PREFIX, 'var/sv'),
     logRoot = path.join(PREFIX, 'var/log/sv'),
     configPath = path.join(os.homedir(), '.cloudflared/config.yml'),
-    command: Command = (binary, args) => spawnSync(binary, args, {
-      encoding: 'utf8', shell: false, timeout: 1200, maxBuffer: 2048,
-    }),
-    procRead: (file: string) => string = file => readFileSync(file, 'utf8'),
+    command: Command = (binary, args) =>
+      spawnSync(binary, args, {
+        encoding: 'utf8',
+        shell: false,
+        timeout: 1200,
+        maxBuffer: 2048,
+      }),
+    procRead: (file: string) => string = (file) => readFileSync(file, 'utf8'),
     now: () => string = () => new Date().toISOString(),
   ) {
     this.serviceRoot = serviceRoot;
@@ -140,27 +182,43 @@ export class CloudflareTunnelDiagnosticHost {
     if (!stat.isDirectory() && !stat.isSymbolicLink()) throw Error('unsafe-service-entry');
     const resolved = realpathSync(entry);
     let sv: string | null = null;
-    try { sv = realpathSync(this.svRoot); } catch { /* optional */ }
-    if (!lstatSync(resolved).isDirectory() || path.basename(resolved) !== SERVICE ||
-        !(inside(realpathSync(this.serviceRoot), resolved) || (sv !== null && inside(sv, resolved))))
+    try {
+      sv = realpathSync(this.svRoot);
+    } catch {
+      /* optional */
+    }
+    if (
+      !lstatSync(resolved).isDirectory() ||
+      path.basename(resolved) !== SERVICE ||
+      !(inside(realpathSync(this.serviceRoot), resolved) || (sv !== null && inside(sv, resolved)))
+    )
       throw Error('foreign-service-target');
     return { path: entry, resolved };
   }
 
   private status(service: string): {
-    state: RunitState; pid: number | null; uptimeSeconds: number | null; error: string | null;
+    state: RunitState;
+    pid: number | null;
+    uptimeSeconds: number | null;
+    error: string | null;
   } {
     const result = this.command(path.join(PREFIX, 'bin/sv'), ['status', service]);
     const base = { state: 'unknown' as const, pid: null, uptimeSeconds: null };
     if (result.error || result.status !== 0 || typeof result.stdout !== 'string')
-      return { ...base, error: (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT'
-        ? 'runit-timeout' : 'runit-unavailable' };
+      return {
+        ...base,
+        error:
+          (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT'
+            ? 'runit-timeout'
+            : 'runit-unavailable',
+      };
     const run = 'run: ' + service + ': ';
     const down = 'down: ' + service + ': ';
     const line = result.stdout.trim();
     if (line.startsWith(run)) {
       const match = /^\(pid ([1-9]\d*)\) (\d+)s(?:[;,]|$)/.exec(line.slice(run.length));
-      const pid = Number(match?.[1]), seconds = Number(match?.[2]);
+      const pid = Number(match?.[1]),
+        seconds = Number(match?.[2]);
       if (match && Number.isSafeInteger(pid) && Number.isSafeInteger(seconds))
         return { state: 'running', pid, uptimeSeconds: seconds, error: null };
     }
@@ -173,18 +231,22 @@ export class CloudflareTunnelDiagnosticHost {
   private binary(): NonNullable<CloudflareTunnelDiagnostics['binary']> {
     try {
       const info = lstatSync(path.join(PREFIX, 'bin/cloudflared'));
-      return { state: info.isFile() && (info.mode & 0o111) !== 0
-        ? 'available' : 'unverified' };
+      return { state: info.isFile() && (info.mode & 0o111) !== 0 ? 'available' : 'unverified' };
     } catch (error) {
-      return { state: (error as NodeJS.ErrnoException).code === 'ENOENT'
-        ? 'missing' : 'unverified' };
+      return {
+        state: (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'missing' : 'unverified',
+      };
     }
   }
 
   private config(): CloudflareTunnelDiagnostics['config'] {
     const missing: CloudflareTunnelDiagnostics['config'] = {
-      state: 'unavailable', tunnelDeclared: null, credentialsFileDeclared: null,
-      ingress: [], truncated: false, error: 'not-found',
+      state: 'unavailable',
+      tunnelDeclared: null,
+      credentialsFileDeclared: null,
+      ingress: [],
+      truncated: false,
+      error: 'not-found',
     };
     let fd: number | null = null;
     try {
@@ -200,20 +262,29 @@ export class CloudflareTunnelDiagnosticHost {
       const bytes = readSync(fd, buffer, 0, info.size, 0);
       return summarizeTunnelConfig(buffer.subarray(0, bytes).toString('utf8'));
     } catch (error) {
-      return { ...missing, state: unavailable(error),
-        error: (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not-found' : 'read-unavailable' };
-    } finally { if (fd !== null) closeSync(fd); }
+      return {
+        ...missing,
+        state: unavailable(error),
+        error:
+          (error as NodeJS.ErrnoException).code === 'ENOENT' ? 'not-found' : 'read-unavailable',
+      };
+    } finally {
+      if (fd !== null) closeSync(fd);
+    }
   }
 
   private logs(resolved: string): CloudflareTunnelDiagnostics['logs'] {
-    const candidates = [path.join(resolved, 'log/main/current'),
-      path.join(this.logRoot, SERVICE, 'current')];
+    const candidates = [
+      path.join(resolved, 'log/main/current'),
+      path.join(this.logRoot, SERVICE, 'current'),
+    ];
     for (const [index, file] of candidates.entries()) {
       let fd: number | null = null;
       try {
-        const parents = index === 0
-          ? [path.join(resolved, 'log'), path.join(resolved, 'log/main')]
-          : [this.logRoot, path.join(this.logRoot, SERVICE)];
+        const parents =
+          index === 0
+            ? [path.join(resolved, 'log'), path.join(resolved, 'log/main')]
+            : [this.logRoot, path.join(this.logRoot, SERVICE)];
         for (const folder of parents) {
           const info = lstatSync(folder);
           if (!info.isDirectory() || info.isSymbolicLink())
@@ -231,35 +302,56 @@ export class CloudflareTunnelDiagnosticHost {
         const count = readSync(fd, buffer, 0, len, info.size - len);
         return {
           state: 'ok',
-          events: buffer.subarray(0, count).toString('utf8').split(/\r?\n/)
-            .slice(-64).map(classifyTunnelLog)
-            .filter((event): event is NonNullable<typeof event> => event !== null).slice(-16),
+          events: buffer
+            .subarray(0, count)
+            .toString('utf8')
+            .split(/\r?\n/)
+            .slice(-64)
+            .map(classifyTunnelLog)
+            .filter((event): event is NonNullable<typeof event> => event !== null)
+            .slice(-16),
           error: null,
         };
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code === 'ENOENT') continue;
         return { state: unavailable(error), events: [], error: 'read-unavailable' };
-      } finally { if (fd !== null) closeSync(fd); }
+      } finally {
+        if (fd !== null) closeSync(fd);
+      }
     }
     return { state: 'unavailable', events: [], error: 'not-found' };
   }
 
   inspect(): CloudflareTunnelDiagnostics {
     const result: CloudflareTunnelDiagnostics = {
-      version: 1, mode: 'read-only', service: SERVICE, observedAt: this.now(),
+      version: 1,
+      mode: 'read-only',
+      service: SERVICE,
+      observedAt: this.now(),
       binary: this.binary(),
       runit: { state: 'unknown', uptimeSeconds: null, error: 'service-unavailable' },
       process: null,
       config: this.config(),
-      connections: { state: 'unverified',
-        reason: 'runit-is-not-tunnel-connection-proof', lastEvent: 'none' },
+      connections: {
+        state: 'unverified',
+        reason: 'runit-is-not-tunnel-connection-proof',
+        lastEvent: 'none',
+      },
       logs: { state: 'unavailable', events: [], error: 'not-found' },
       notice: 'external-protected-no-lifecycle-control',
     };
     let service: ReturnType<CloudflareTunnelDiagnosticHost['service']>;
-    try { service = this.service(); } catch { return result; }
+    try {
+      service = this.service();
+    } catch {
+      return result;
+    }
     const status = this.status(service.path);
-    result.runit = { state: status.state, uptimeSeconds: status.uptimeSeconds, error: status.error };
+    result.runit = {
+      state: status.state,
+      uptimeSeconds: status.uptimeSeconds,
+      error: status.error,
+    };
     result.logs = this.logs(service.resolved);
     const lastEvent = result.logs.events.at(-1)?.kind;
     result.connections.lastEvent = lastEvent ?? 'none';
@@ -269,16 +361,27 @@ export class CloudflareTunnelDiagnosticHost {
       const rss = parseProcessRss(this.procRead('/proc/' + status.pid + '/status'));
       const after = parseProcessStat(this.procRead('/proc/' + status.pid + '/stat'), status.pid);
       const latest = this.status(service.path);
-      if (!before || !after || before.startTicks !== after.startTicks ||
-          latest.state !== 'running' || latest.pid !== status.pid) {
+      if (
+        !before ||
+        !after ||
+        before.startTicks !== after.startTicks ||
+        latest.state !== 'running' ||
+        latest.pid !== status.pid
+      ) {
         result.runit = { state: 'unknown', uptimeSeconds: null, error: 'process-identity-changed' };
         return result;
       }
-      result.process = { pid: status.pid, startTicks: before.startTicks, rssMiB: rss,
-        identity: 'runit-consistent-not-owned' };
+      result.process = {
+        pid: status.pid,
+        startTicks: before.startTicks,
+        rssMiB: rss,
+        identity: 'runit-consistent-not-owned',
+      };
     } catch (error) {
-      result.runit.error = unavailable(error) === 'permission-denied'
-        ? 'process-permission-denied' : 'process-unavailable';
+      result.runit.error =
+        unavailable(error) === 'permission-denied'
+          ? 'process-permission-denied'
+          : 'process-unavailable';
     }
     return result;
   }

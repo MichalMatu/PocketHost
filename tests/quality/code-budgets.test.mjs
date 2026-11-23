@@ -12,27 +12,34 @@ function withTree(fn) {
     mkdirSync(path.dirname(absolute), { recursive: true });
     writeFileSync(absolute, contents);
   };
-  try { return fn(put, folder); }
-  finally { rmSync(folder, { recursive: true, force: true }); }
+  try {
+    return fn(put, folder);
+  } finally {
+    rmSync(folder, { recursive: true, force: true });
+  }
 }
 
-test('short isolated modules pass', () => withTree((put, root) => {
-  put('src/modules/host/ok.ts', 'export const safe = true;\n');
-  put('apps/admin/src/app/ok.ts', 'export const ui = true;\n');
-  assert.deepEqual(validateCodeBudgets(root), []);
-}));
+test('short isolated modules pass', () =>
+  withTree((put, root) => {
+    put('src/modules/host/ok.ts', 'export const safe = true;\n');
+    put('apps/admin/src/app/ok.ts', 'export const ui = true;\n');
+    assert.deepEqual(validateCodeBudgets(root), []);
+  }));
 
-test('oversized new source fails closed', () => withTree((put, root) => {
-  put('src/modules/host/too-big.ts', 'x'.repeat(24577));
-  assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
-}));
+test('oversized new source fails closed', () =>
+  withTree((put, root) => {
+    put('src/modules/host/too-big.ts', 'x'.repeat(24577));
+    assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
+  }));
 
-test('browser code cannot import host-only Node APIs', () => withTree((put, root) => {
-  put('apps/admin/src/app/unsafe.ts', "import { readFileSync } from 'node:fs';\n");
-  assert.match(validateCodeBudgets(root).join('\n'), /Host-only import/);
-}));
+test('browser code cannot import host-only Node APIs', () =>
+  withTree((put, root) => {
+    put('apps/admin/src/app/unsafe.ts', "import { readFileSync } from 'node:fs';\n");
+    assert.match(validateCodeBudgets(root).join('\n'), /Host-only import/);
+  }));
 
-test('an oversized legacy file may not grow', () => withTree((put, root) => {
-  put('apps/admin/vite.config.ts', 'x'.repeat(92034));
-  assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
-}));
+test('an oversized legacy file may not grow', () =>
+  withTree((put, root) => {
+    put('apps/admin/vite.config.ts', 'x'.repeat(92034));
+    assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
+  }));

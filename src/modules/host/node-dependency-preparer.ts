@@ -1,12 +1,27 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import {
-  closeSync, constants, existsSync, fstatSync, lstatSync, mkdirSync, openSync,
-  readFileSync, readSync, readdirSync, realpathSync, renameSync, rmSync, writeFileSync,
+  closeSync,
+  constants,
+  existsSync,
+  fstatSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  readdirSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  writeFileSync,
 } from 'node:fs';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
-import { SAFE_NPM_CI_COMMAND, SAFE_NPM_BUILD_CI_COMMAND } from '../../shared/node-dependency-plan.ts';
+import {
+  SAFE_NPM_CI_COMMAND,
+  SAFE_NPM_BUILD_CI_COMMAND,
+} from '../../shared/node-dependency-plan.ts';
 
 const PREFIX = '/data/data/com.termux/files/usr';
 const RELEASE = /^r-[a-f0-9]{32}$/;
@@ -66,9 +81,14 @@ async function runNpm(directory: string, args: readonly string[]): Promise<void>
 
 function privateDirectory(folder: string): void {
   const stat = lstatSync(folder);
-  if (!path.isAbsolute(folder) || !stat.isDirectory() || stat.isSymbolicLink() ||
-      realpathSync(folder) !== folder ||
-      stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0)
+  if (
+    !path.isAbsolute(folder) ||
+    !stat.isDirectory() ||
+    stat.isSymbolicLink() ||
+    realpathSync(folder) !== folder ||
+    stat.uid !== process.getuid?.() ||
+    (stat.mode & 0o077) !== 0
+  )
     throw new Error('Untrusted private Node dependency directory');
 }
 
@@ -83,8 +103,12 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
   // npm creates node_modules with ordinary 0755 mode. Its 0700 parent
   // provides the private boundary, but ownership and symlinks still matter.
   const stat = lstatSync(root);
-  if (!stat.isDirectory() || stat.isSymbolicLink() ||
-      stat.uid !== process.getuid?.() || realpathSync(root) !== root)
+  if (
+    !stat.isDirectory() ||
+    stat.isSymbolicLink() ||
+    stat.uid !== process.getuid?.() ||
+    realpathSync(root) !== root
+  )
     throw new Error('Untrusted Node dependency directory');
   const hash = createHash('sha256');
   const pending = [root];
@@ -102,8 +126,12 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
       const relative = path.relative(root, file);
       const stat = lstatSync(file);
       entries++;
-      if (entries > MAX_PACKAGES_ENTRIES || stat.uid !== process.getuid?.() ||
-          stat.isSymbolicLink() || (!stat.isFile() && !stat.isDirectory()))
+      if (
+        entries > MAX_PACKAGES_ENTRIES ||
+        stat.uid !== process.getuid?.() ||
+        stat.isSymbolicLink() ||
+        (!stat.isFile() && !stat.isDirectory())
+      )
         throw new Error('Unsafe npm dependency tree');
       if (stat.isDirectory()) {
         hash.update('D\0' + relative + '\0');
@@ -113,13 +141,17 @@ function attestPackageTree(root: string): { treeDigest: string; entries: number;
       if (stat.nlink !== 1 || stat.size < 0 || !Number.isSafeInteger(stat.size))
         throw new Error('Unsafe npm dependency file');
       bytes += stat.size;
-      if (bytes > MAX_PACKAGES_BYTES)
-        throw new RangeError('Node dependencies exceed 96 MiB');
+      if (bytes > MAX_PACKAGES_BYTES) throw new RangeError('Node dependencies exceed 96 MiB');
       const fd = openSync(file, constants.O_RDONLY | constants.O_NOFOLLOW);
       try {
         const current = fstatSync(fd);
-        if (current.ino !== stat.ino || current.dev !== stat.dev ||
-            current.size !== stat.size || !current.isFile() || current.nlink !== 1)
+        if (
+          current.ino !== stat.ino ||
+          current.dev !== stat.dev ||
+          current.size !== stat.size ||
+          !current.isFile() ||
+          current.nlink !== 1
+        )
           throw new Error('npm dependency file changed during verification');
         hash.update('F\0' + relative + '\0' + stat.size + '\0');
         let remaining = stat.size;
@@ -151,7 +183,8 @@ export function verifyCopiedNodePackages(original: string, copy: string): void {
     staged.treeDigest !== published.treeDigest ||
     staged.entries !== published.entries ||
     staged.bytes !== published.bytes
-  ) throw new Error('Temporary Node package copy differs from verified release');
+  )
+    throw new Error('Temporary Node package copy differs from verified release');
 }
 
 /**
@@ -184,8 +217,14 @@ export class NodeDependencyPreparer {
     const verified = this.projects.release(projectId, releaseId);
     const filename = path.join(verified.folder, 'node_modules', PROOF_NAME);
     const stat = lstatSync(filename);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-        stat.uid !== process.getuid?.() || (stat.mode & 0o077) !== 0 || stat.size > 2048)
+    if (
+      !stat.isFile() ||
+      stat.isSymbolicLink() ||
+      stat.nlink !== 1 ||
+      stat.uid !== process.getuid?.() ||
+      (stat.mode & 0o077) !== 0 ||
+      stat.size > 2048
+    )
       throw new Error('Untrusted Node dependency proof');
     const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
     let contents: string;
@@ -201,17 +240,31 @@ export class NodeDependencyPreparer {
     if (!proof || typeof proof !== 'object' || Array.isArray(proof))
       throw new Error('Invalid Node dependency proof');
     const value = proof as Record<string, unknown>;
-    const expected = ['bytes', 'dependencyCount', 'entries', 'lockDigest', 'owner',
-      'release', 'schema', 'treeDigest'].join(',');
-    if (Object.keys(value).sort().join(',') !== expected ||
-        value.schema !== 1 || value.owner !== 'pockethost-node-packages' ||
-        value.release !== releaseId ||
-        value.dependencyCount !== verified.plan.dependencyCount ||
-        value.lockDigest !== checksum(verified.source.lock))
+    const expected = [
+      'bytes',
+      'dependencyCount',
+      'entries',
+      'lockDigest',
+      'owner',
+      'release',
+      'schema',
+      'treeDigest',
+    ].join(',');
+    if (
+      Object.keys(value).sort().join(',') !== expected ||
+      value.schema !== 1 ||
+      value.owner !== 'pockethost-node-packages' ||
+      value.release !== releaseId ||
+      value.dependencyCount !== verified.plan.dependencyCount ||
+      value.lockDigest !== checksum(verified.source.lock)
+    )
       throw new Error('Node dependency proof does not match release');
     const tree = attestPackageTree(path.join(verified.folder, 'node_modules'));
-    if (value.treeDigest !== tree.treeDigest ||
-        value.entries !== tree.entries || value.bytes !== tree.bytes)
+    if (
+      value.treeDigest !== tree.treeDigest ||
+      value.entries !== tree.entries ||
+      value.bytes !== tree.bytes
+    )
       throw new Error('Node installed dependency tree digest mismatch');
     return { release: releaseId, dependencyCount: verified.plan.dependencyCount, verified: true };
   }
@@ -221,8 +274,10 @@ export class NodeDependencyPreparer {
     releaseId: string,
     approved: boolean,
   ): Promise<{ release: string; dependencyCount: number; prepared: true }> {
-    if (approved !== true) throw new Error('Explicit owned dependency installation approval required');
-    if (!RELEASE.test(releaseId)) throw new RangeError('Invalid Node release for dependency preparation');
+    if (approved !== true)
+      throw new Error('Explicit owned dependency installation approval required');
+    if (!RELEASE.test(releaseId))
+      throw new RangeError('Invalid Node release for dependency preparation');
     const summary = this.projects.inspect(projectId);
     if (summary.candidateRelease !== releaseId)
       throw new Error('Node candidate changed before package preparation');
@@ -248,18 +303,24 @@ export class NodeDependencyPreparer {
     let workspace: string | null = null;
     try {
       // Reverify under the same lock as deployment/stage/backup.
-      if (this.projects.inspect(projectId).candidateRelease !== releaseId ||
-          this.releaseInUse(projectId, releaseId) !== false)
+      if (
+        this.projects.inspect(projectId).candidateRelease !== releaseId ||
+        this.releaseInUse(projectId, releaseId) !== false
+      )
         throw new Error('Node dependency candidate changed during admission');
       const current = this.projects.release(projectId, releaseId);
       if (existsSync(path.join(current.folder, 'node_modules')))
         throw new Error('Existing or ambiguous Node dependency installation refused');
       workspace = path.join(current.projectFolder, '.node-packages-' + randomUUID());
       mkdirSync(workspace, { mode: 0o700 });
-      writeFileSync(path.join(workspace, 'package.json'), current.source.manifest,
-        { flag: 'wx', mode: 0o600 });
-      writeFileSync(path.join(workspace, 'package-lock.json'), current.source.lock,
-        { flag: 'wx', mode: 0o600 });
+      writeFileSync(path.join(workspace, 'package.json'), current.source.manifest, {
+        flag: 'wx',
+        mode: 0o600,
+      });
+      writeFileSync(path.join(workspace, 'package-lock.json'), current.source.lock, {
+        flag: 'wx',
+        mode: 0o600,
+      });
 
       // Build-capable releases need devDependencies. This step still runs
       // npm ci with lifecycle scripts and binary links disabled; no build runs.
@@ -267,21 +328,33 @@ export class NodeDependencyPreparer {
       const modules = path.join(workspace, 'node_modules');
       const tree = attestPackageTree(modules);
       // No npm source or scripts may rewrite the verified input during preparation.
-      if (readFileSync(path.join(workspace, 'package.json'), 'utf8') !== current.source.manifest ||
-          readFileSync(path.join(workspace, 'package-lock.json'), 'utf8') !== current.source.lock)
+      if (
+        readFileSync(path.join(workspace, 'package.json'), 'utf8') !== current.source.manifest ||
+        readFileSync(path.join(workspace, 'package-lock.json'), 'utf8') !== current.source.lock
+      )
         throw new Error('Node package input changed during preparation');
-      if (this.projects.inspect(projectId).candidateRelease !== releaseId ||
-          this.releaseInUse(projectId, releaseId) !== false)
+      if (
+        this.projects.inspect(projectId).candidateRelease !== releaseId ||
+        this.releaseInUse(projectId, releaseId) !== false
+      )
         throw new Error('Node candidate changed during package preparation');
       this.projects.release(projectId, releaseId);
       // Write the attestation *inside* staged node_modules before a single
       // atomic directory rename. Power loss cannot publish unproven modules.
-      writeFileSync(path.join(modules, PROOF_NAME), JSON.stringify({
-        schema: 1, owner: 'pockethost-node-packages',
-        release: releaseId, lockDigest: checksum(current.source.lock),
-        dependencyCount: plan.dependencyCount,
-        treeDigest: tree.treeDigest, entries: tree.entries, bytes: tree.bytes,
-      }) + '\n', { flag: 'wx', mode: 0o600 });
+      writeFileSync(
+        path.join(modules, PROOF_NAME),
+        JSON.stringify({
+          schema: 1,
+          owner: 'pockethost-node-packages',
+          release: releaseId,
+          lockDigest: checksum(current.source.lock),
+          dependencyCount: plan.dependencyCount,
+          treeDigest: tree.treeDigest,
+          entries: tree.entries,
+          bytes: tree.bytes,
+        }) + '\n',
+        { flag: 'wx', mode: 0o600 },
+      );
       const published = path.join(current.folder, 'node_modules');
       renameSync(modules, published);
       try {

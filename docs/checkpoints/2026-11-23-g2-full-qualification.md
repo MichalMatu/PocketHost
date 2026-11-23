@@ -24,7 +24,7 @@ purpose: Terminal full G2 A8 qualification and bounded fixture repair evidence
 - `3b74c6b`: doc metadata/index, stale upsell fixture, portable hardlink negative test.
 - `ef2f6f5`: single-header count fixture and intentional SSH control-byte regex lint explanation.
 - `a67d9a4`: update seven UI mock/mount/selectors and Prettier-format the Node data test.
-- Focused A8 receipt `pockethost-a8-g2-fixture-regression-a67d9a4-20261123-v2`, terminal outer failed, inner QA_FAIL: header Node tests **5/5 PASS**; data-scope Node tests **5 PASS + 1 SKIP** (Android filesystem refused creating a hardlink, so the rejection branch is *not* certified on this host); SSH scoped ESLint **PASS**; changed Node formatting **PASS**; focused UI **19/21 PASS**, two Phone Settings assertions still FAIL. No full G2 rerun at `a67d9a4`.
+- Focused A8 receipt `pockethost-a8-g2-fixture-regression-a67d9a4-20261123-v2`, terminal outer failed, inner QA_FAIL: header Node tests **5/5 PASS**; data-scope Node tests **5 PASS + 1 SKIP** (Android filesystem refused creating a hardlink, so the rejection branch is _not_ certified on this host); SSH scoped ESLint **PASS**; changed Node formatting **PASS**; focused UI **19/21 PASS**, two Phone Settings assertions still FAIL. No full G2 rerun at `a67d9a4`.
 - The earlier task `pockethost-a8-g2-fixture-regression-a67d9a4-20261123-v1` failed before any tests due to a Python runner keyword error; it was corrected with a distinct v2 ID.
 
 ## Unresolved qualification and safe next conditions

@@ -540,8 +540,10 @@ export class NodeRunitHost {
   private packagesReady(id: string, release: string, plan: NodeDependencyPlan): boolean {
     if (plan.dependencyCount === 0) return true;
     try {
-      new NodeDependencyPreparer(this.projects, this.projectRoot, () => true)
-        .verifyPrepared(id, release);
+      new NodeDependencyPreparer(this.projects, this.projectRoot, () => true).verifyPrepared(
+        id,
+        release,
+      );
       return true;
     } catch {
       return false;
@@ -551,8 +553,7 @@ export class NodeRunitHost {
     if (!this.packagesReady(id, release, plan)) return false;
     if (plan.commands.build === null) return true;
     try {
-      new NodeBuildPreparer(this.projects, this.projectRoot, () => true)
-        .verifyBuilt(id, release);
+      new NodeBuildPreparer(this.projects, this.projectRoot, () => true).verifyBuilt(id, release);
       return true;
     } catch {
       return false;
@@ -659,15 +660,22 @@ export class NodeRunitHost {
     const prepared = installRequired && this.packagesReady(id, candidate, plan);
     return {
       release: candidate,
-      status: blockers.length ? 'blocked' :
-        prepared ? 'prepared' :
-        installRequired || buildRequired ? 'review-required' : 'not-required',
+      status: blockers.length
+        ? 'blocked'
+        : prepared
+          ? 'prepared'
+          : installRequired || buildRequired
+            ? 'review-required'
+            : 'not-required',
       dependencyCount: plan.dependencyCount,
       installRequired,
       buildRequired,
       // These are proposed argv, never evaluated as shell or executed here.
-      installCommand: installRequired ?
-        (buildRequired ? SAFE_NPM_BUILD_CI_COMMAND : SAFE_NPM_CI_COMMAND) : null,
+      installCommand: installRequired
+        ? buildRequired
+          ? SAFE_NPM_BUILD_CI_COMMAND
+          : SAFE_NPM_CI_COMMAND
+        : null,
       buildCommand: buildRequired ? ['npm', 'run', 'build'] : null,
       blockers,
       executed: false,
@@ -882,9 +890,12 @@ export class NodeRunitHost {
     // scripts and private runtime identity have been written. No HTTP call
     // may claim a discovered runit service merely by naming it.
     const unitMarker = JSON.parse(privateText(path.join(service, UNIT_MARKER))) as UnitRecord;
-    if (unitMarker.owner !== 'pockethost-node-runit' ||
-        unitMarker.unit !== unit || unitMarker.projectId !== id ||
-        !/^[a-f0-9]{64}$/.test(unitMarker.runDigest)) {
+    if (
+      unitMarker.owner !== 'pockethost-node-runit' ||
+      unitMarker.unit !== unit ||
+      unitMarker.projectId !== id ||
+      !/^[a-f0-9]{64}$/.test(unitMarker.runDigest)
+    ) {
       throw new Error('Owned Node service provenance is unavailable');
     }
     this.admin.registerProvisioned(unit, {
@@ -940,8 +951,10 @@ export class NodeRunitHost {
         throw new Error('Node release already active; use Start or Restart instead');
       if (rollback && state?.previousGoodRelease !== release)
         throw new Error('Rollback target changed during admission');
-      if (!this.dependenciesReady(id, release, source.plan) ||
-          this.toolchain(source.plan).status === 'blocked')
+      if (
+        !this.dependenciesReady(id, release, source.plan) ||
+        this.toolchain(source.plan).status === 'blocked'
+      )
         throw new Error('Release dependencies unverified: existing service retained');
       // Fail a malformed candidate *before* stopping the last working service.
       // Node --check parses source without executing it or installing packages.
@@ -1118,7 +1131,11 @@ export class NodeRunitHost {
     try {
       const candidate = this.projects.release(id, target);
       if (!this.dependenciesReady(id, target, candidate.plan)) {
-        return { release: target, allowed: false, reason: 'rollback-dependencies-or-build-unverified' };
+        return {
+          release: target,
+          allowed: false,
+          reason: 'rollback-dependencies-or-build-unverified',
+        };
       }
       if (this.toolchain(candidate.plan).status === 'blocked') {
         return { release: target, allowed: false, reason: 'rollback-toolchain-blocked' };

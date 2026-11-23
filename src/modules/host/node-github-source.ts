@@ -1,5 +1,8 @@
 import { Buffer } from 'node:buffer';
-import { planNodeDependencies, type NodeDependencyPlan } from '../../shared/node-dependency-plan.ts';
+import {
+  planNodeDependencies,
+  type NodeDependencyPlan,
+} from '../../shared/node-dependency-plan.ts';
 import { validNodeExtraPath, validNodeAssetPath, decodeNodeAsset } from './node-project-host.ts';
 
 const OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37})$/;
@@ -83,16 +86,20 @@ function record(value: unknown): Record<string, unknown> {
 
 function sourceText(value: unknown, name: string): string {
   const data = record(value);
-  if (data.type !== 'file' ||
-      data.name !== name.split('/').at(-1) || data.path !== name ||
-      data.encoding !== 'base64' || typeof data.content !== 'string')
+  if (
+    data.type !== 'file' ||
+    data.name !== name.split('/').at(-1) ||
+    data.path !== name ||
+    data.encoding !== 'base64' ||
+    typeof data.content !== 'string'
+  )
     throw new RangeError('GitHub source is not a regular root file');
   const encoded = data.content.replace(/\s+/g, '');
   if (!/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(encoded))
     throw new RangeError('Invalid GitHub file encoding');
   const dataBytes = Buffer.from(encoded, 'base64');
-  const maximum = name === 'server.mjs' ? MAX_SOURCE :
-    validNodeExtraPath(name) ? 32 * 1024 : MAX_TOTAL;
+  const maximum =
+    name === 'server.mjs' ? MAX_SOURCE : validNodeExtraPath(name) ? 32 * 1024 : MAX_TOTAL;
   if (dataBytes.length < 1 || dataBytes.length > maximum)
     throw new RangeError('GitHub file exceeds source budget');
   try {
@@ -104,9 +111,13 @@ function sourceText(value: unknown, name: string): string {
 
 function sourceAsset(value: unknown, name: string): string {
   const data = record(value);
-  if (data.type !== 'file' || data.name !== name.split('/').at(-1) ||
-      data.path !== name || data.encoding !== 'base64' ||
-      typeof data.content !== 'string')
+  if (
+    data.type !== 'file' ||
+    data.name !== name.split('/').at(-1) ||
+    data.path !== name ||
+    data.encoding !== 'base64' ||
+    typeof data.content !== 'string'
+  )
     throw new RangeError('GitHub asset is not a regular source file');
   const encoded = data.content.replace(/\s+/g, '');
   return decodeNodeAsset(name, encoded).toString('base64');
@@ -115,8 +126,13 @@ function sourceAsset(value: unknown, name: string): string {
 export interface GitHubNodeSourcePreview {
   repository: string;
   commit: string;
-  source: { packageJson: unknown; packageLock: unknown; serverSource: string;
-    extraFiles?: Record<string, string>; assetFiles?: Record<string, string> };
+  source: {
+    packageJson: unknown;
+    packageLock: unknown;
+    serverSource: string;
+    extraFiles?: Record<string, string>;
+    assetFiles?: Record<string, string>;
+  };
   plan: NodeDependencyPlan;
 }
 
@@ -124,13 +140,15 @@ export interface GitHubNodeSourcePreview {
  * fail closed so a deployment never silently omits frontend resources.
  */
 async function pinnedExtraFiles(
-  base: string, treeSha: string, commit: string, get: typeof fetch,
+  base: string,
+  treeSha: string,
+  commit: string,
+  get: typeof fetch,
 ): Promise<{ extraFiles: Record<string, string>; assetFiles: Record<string, string> }> {
-  const treeData = record(await apiJson(
-    base + '/git/trees/' + treeSha + '?recursive=1', 256 * 1024, get,
-  ));
-  if (treeData.truncated !== false || !Array.isArray(treeData.tree) ||
-      treeData.tree.length > 1200)
+  const treeData = record(
+    await apiJson(base + '/git/trees/' + treeSha + '?recursive=1', 256 * 1024, get),
+  );
+  if (treeData.truncated !== false || !Array.isArray(treeData.tree) || treeData.tree.length > 1200)
     throw new RangeError('GitHub source tree is incomplete or too large');
   const relevant: string[] = [];
   const assets: string[] = [];
@@ -139,11 +157,18 @@ async function pinnedExtraFiles(
     if (typeof entry.path !== 'string' || typeof entry.type !== 'string')
       throw new RangeError('Invalid GitHub source tree entry');
     const name = entry.path;
-    if (name.startsWith('src/') || name.startsWith('public/') ||
-        /^(?:index\.html|vite\.config\.|tsconfig|postcss\.config|tailwind\.config)/.test(name)) {
+    if (
+      name.startsWith('src/') ||
+      name.startsWith('public/') ||
+      /^(?:index\.html|vite\.config\.|tsconfig|postcss\.config|tailwind\.config)/.test(name)
+    ) {
       if (entry.type === 'tree') continue;
-      if (entry.type !== 'blob' || !['100644', '100755'].includes(String(entry.mode)) ||
-          !Number.isSafeInteger(entry.size) || (entry.size as number) < 1)
+      if (
+        entry.type !== 'blob' ||
+        !['100644', '100755'].includes(String(entry.mode)) ||
+        !Number.isSafeInteger(entry.size) ||
+        (entry.size as number) < 1
+      )
         throw new RangeError('Unsupported GitHub frontend source file or binary asset');
       if (validNodeAssetPath(name)) {
         if ((entry.size as number) > MAX_ASSET_BYTES)
@@ -167,25 +192,25 @@ async function pinnedExtraFiles(
   let bytes = 0;
   for (const name of names) {
     const body = await apiJson(
-      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') +
-      '?ref=' + commit, 64000, get,
+      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') + '?ref=' + commit,
+      64000,
+      get,
     );
     const source = sourceText(body, name);
     bytes += Buffer.byteLength(name) + Buffer.byteLength(source);
-    if (bytes > MAX_EXTRA_BYTES)
-      throw new RangeError('GitHub frontend source exceeds 96 KB');
+    if (bytes > MAX_EXTRA_BYTES) throw new RangeError('GitHub frontend source exceeds 96 KB');
     extras[name] = source;
   }
   let assetBytes = 0;
   for (const name of assetNames) {
     const body = await apiJson(
-      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') +
-      '?ref=' + commit, 280000, get,
+      base + '/contents/' + name.split('/').map(encodeURIComponent).join('/') + '?ref=' + commit,
+      280000,
+      get,
     );
     const encoded = sourceAsset(body, name);
     assetBytes += Buffer.byteLength(encoded, 'base64');
-    if (assetBytes > MAX_ASSET_TOTAL)
-      throw new RangeError('GitHub binary assets exceed 512 KB');
+    if (assetBytes > MAX_ASSET_TOTAL) throw new RangeError('GitHub binary assets exceed 512 KB');
     assetFiles[name] = encoded;
   }
   return { extraFiles: extras, assetFiles };
@@ -199,23 +224,28 @@ export async function previewPublicGitHubNodeSource(
   const { owner, name } = repositoryParts(repository);
   const base = 'https://api.github.com/repos/' + owner + '/' + name;
   const info = record(await apiJson(base, 32000, get));
-  if (info.private !== false || info.full_name !== owner + '/' + name ||
-      typeof info.default_branch !== 'string' ||
-      !REF.test(info.default_branch) || info.default_branch.includes('..') ||
-      info.default_branch.startsWith('/') || info.default_branch.endsWith('/'))
-    throw new RangeError('Only public GitHub repositories with a valid default branch are supported');
-  const commitInfo = record(await apiJson(
-    base + '/commits/' + encodeURIComponent(info.default_branch), 64000, get,
-  ));
+  if (
+    info.private !== false ||
+    info.full_name !== owner + '/' + name ||
+    typeof info.default_branch !== 'string' ||
+    !REF.test(info.default_branch) ||
+    info.default_branch.includes('..') ||
+    info.default_branch.startsWith('/') ||
+    info.default_branch.endsWith('/')
+  )
+    throw new RangeError(
+      'Only public GitHub repositories with a valid default branch are supported',
+    );
+  const commitInfo = record(
+    await apiJson(base + '/commits/' + encodeURIComponent(info.default_branch), 64000, get),
+  );
   if (typeof commitInfo.sha !== 'string' || !SHA.test(commitInfo.sha))
     throw new RangeError('GitHub commit SHA is invalid');
   const commit = commitInfo.sha;
   const texts: string[] = [];
   let total = 0;
   for (const file of FILES) {
-    const data = await apiJson(
-      base + '/contents/' + file + '?ref=' + commit, 520000, get,
-    );
+    const data = await apiJson(base + '/contents/' + file + '?ref=' + commit, 520000, get);
     const contents = sourceText(data, file);
     total += Buffer.byteLength(contents);
     if (total > MAX_TOTAL) throw new RangeError('GitHub Node source exceeds 320 KB');
@@ -244,15 +274,23 @@ export async function previewPublicGitHubNodeSource(
   if (typeof tree.sha !== 'string' || !SHA.test(tree.sha))
     throw new RangeError('GitHub source tree SHA is invalid');
   const { extraFiles, assetFiles } = await pinnedExtraFiles(base, tree.sha, commit, get);
-  if (total + Buffer.byteLength(JSON.stringify(extraFiles)) +
-      Buffer.byteLength(JSON.stringify(assetFiles)) > MAX_TOTAL)
+  if (
+    total +
+      Buffer.byteLength(JSON.stringify(extraFiles)) +
+      Buffer.byteLength(JSON.stringify(assetFiles)) >
+    MAX_TOTAL
+  )
     throw new RangeError('GitHub Node source exceeds total budget');
   return {
     repository: owner + '/' + name,
     commit,
-    source: { packageJson, packageLock, serverSource,
+    source: {
+      packageJson,
+      packageLock,
+      serverSource,
       ...(Object.keys(extraFiles).length ? { extraFiles } : {}),
-      ...(Object.keys(assetFiles).length ? { assetFiles } : {}) },
+      ...(Object.keys(assetFiles).length ? { assetFiles } : {}),
+    },
     plan,
   };
 }
