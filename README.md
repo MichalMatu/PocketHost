@@ -41,4 +41,4 @@ Start with [documentation index](docs/README.md), [architecture](docs/ARCHITECTU
 
 ## Next development stage
 
-The MVP source is frozen for cleanup. The next optional phase is a **selective review** of [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel), with independent license and behavior checks before reusing any code. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).
+**Release baseline: `v1.0.0` (source-only freeze).** No new build, device deployment or tests were performed for this documentation-only closeout. When development resumes, start with [the ordered v1.1 roadmap](docs/ROADMAP.md): traffic analytics, then read-only SQLite Studio, then optional HTML/Node starters. Use [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel) as a selectively reviewed MIT-licensed reference; do not merge its entire backend. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).
