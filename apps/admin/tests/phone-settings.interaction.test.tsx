@@ -50,7 +50,7 @@ describe("dedicated Phone Settings", () => {
     await screen.findByText("10 min")
     const slider = screen.getByRole("slider", { name: "Set screen brightness" })
     expect(slider.getAttribute("value")).toBe("154")
-    expect(screen.getByText(/Adaptive brightness can override saved levels/)).toBeTruthy()
+    expect(screen.getByText(/Adaptive brightness can override the stored level/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Save brightness" })).toBeNull()
 
     fireEvent.change(slider, { target: { value: "7" } })
@@ -121,7 +121,7 @@ describe("dedicated Phone Settings", () => {
       "settings get system screen_brightness_mode",
       "settings get system screen_brightness",
     ])
-    await screen.findByText("128 / 255")
+    await waitFor(() => expect((screen.getByRole("slider", { name: "Set screen brightness" }) as HTMLInputElement).value).toBe("128"))
     expect(fetchMock.mock.calls.filter(call => call[1]?.method === "POST")).toHaveLength(5)
   })
 

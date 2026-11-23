@@ -8,6 +8,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
 }))
 
 import SitesPage from "@/app/sites/page"
+import { starterHtml } from "@/app/sites/site-client"
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -35,7 +36,7 @@ describe("Static site HTML starter", () => {
   it("publishes the starter through the same owned site API and readback gate", async () => {
     const user = userEvent.setup()
     const next = { ...site, activeRelease: "r-" + "b".repeat(32),
-      releases: 1, fileCount: 1, bytes: 398,
+      releases: 1, fileCount: 1, bytes: new TextEncoder().encode(starterHtml).length,
       history: [{ at: new Date().toISOString(), action: "publish",
         from: null, to: "r-" + "b".repeat(32) }] }
     let current = site
