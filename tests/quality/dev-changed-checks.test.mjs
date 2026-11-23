@@ -1,6 +1,46 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
+import { needsChangedTestDependencies, planChangedChecks } from '../../scripts/dev/changed-checks-policy.mjs';
+
+test('dependency graph scanning is skipped for docs, tests and scripts-only changes', () => {
+  for (const changed of [
+    ['AGENTS.md', 'docs/HANDOFF_NEXT_CHAT.md'],
+    ['tests/quality/dev-changed-checks.test.mjs'],
+    ['apps/admin/tests/site-fleet.interaction.test.tsx'],
+    ['scripts/dev/verify-changed.mjs', 'tests/quality/dev-verify-changed.test.mjs'],
+    ['apps/admin/src/app/sites/styles.css'],
+  ]) {
+    assert.equal(needsChangedTestDependencies(changed), false);
+  }
+});
+
+test('dependency graph scanning remains required for changed active source modules', () => {
+  for (const changed of [
+    ['src/modules/host/site-fleet-host.ts'],
+    ['src/modules/host/site-fleet-server.mjs'],
+    ['apps/admin/src/app/sites/page.tsx'],
+    ['apps/admin/src/app/sites/site-client.ts', 'docs/HANDOFF_NEXT_CHAT.md'],
+  ]) {
+    assert.equal(needsChangedTestDependencies(changed), true);
+  }
+});
+
+test('deleted source does not scan removed imports; another changed source still does', () => {
+  const deleted = ['apps/admin/src/app/old/page.tsx'];
+  assert.equal(
+    needsChangedTestDependencies([...deleted, 'tests/quality/admin-preservation.test.mjs'], deleted),
+    false,
+  );
+  assert.equal(
+    needsChangedTestDependencies([...deleted, 'apps/admin/src/app/sites/page.tsx'], deleted),
+    true,
+  );
+  // The planner still requires deletion impact checks; skipping the graph
+  // must not downgrade or bypass its explicit conservative review.
+  const plan = planChangedChecks(deleted, {}, { deletedPaths: deleted });
+  assert.ok(command(plan, 'admin incremental typecheck'));
+  assert.ok(command(plan, 'ui tests'));
+});
 
 const deps = {
   'tests/quality/hosting-registry-store.test.mjs': [
