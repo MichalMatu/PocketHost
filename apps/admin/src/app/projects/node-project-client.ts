@@ -262,6 +262,22 @@ export function validProject(value: unknown): value is Project {
     // The UI submits this value as expectedRevision on source writes.
     Number.isSafeInteger(item.deploymentCount) && (item.deploymentCount as number) >= 0
 }
+/** A Node source POST is confirmed only when the catalog agrees on its exact revision. */
+export function nodeSourceWriteMatchesReadback(
+  expectedId: string, receipt: unknown, catalog: readonly Project[],
+): boolean {
+  if (!validProject(receipt) || receipt.id !== expectedId) return false
+  const observed = catalog.find(project => project.id === expectedId)
+  return Boolean(observed &&
+    observed.id === receipt.id && observed.name === receipt.name &&
+    observed.kind === receipt.kind && observed.state === receipt.state &&
+    observed.runtime === receipt.runtime && observed.activeRelease === receipt.activeRelease &&
+    observed.candidateRelease === receipt.candidateRelease &&
+    observed.previousCandidate === receipt.previousCandidate &&
+    observed.deploymentCount === receipt.deploymentCount &&
+    observed.createdAt === receipt.createdAt)
+}
+
 /** Reject ambiguous or oversized catalogs before enabling project selection. */
 export function parseProjectCatalog(value: unknown): Project[] {
   if (!Array.isArray(value) || value.length > 8)
