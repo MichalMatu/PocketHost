@@ -1,43 +1,21 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-22
-purpose: Standing owner QA permission with separate guarded code/deploy/test execution
+last_reviewed: 2026-11-23
+purpose: Minimal guarded A8 code, QA and deployment discipline
 ---
 
-# FAST FLOW: code → deploy → verify
+# Guarded iteration
 
-**Standing owner QA consent (2026-11-22, valid for every subsequent PocketHost sprint until revoked):** the owner explicitly approves necessary non-destructive tests, QA, lint, formatting, typechecks and build checks while developing autonomously, including when the owner is asleep or unavailable. **Do not request renewed consent for each test, category, commit SHA, iteration or sprint.** Select relevant checks intelligently, execute only on the paired Samsung A8, and report their exact scope and results. No scheduler, unattended recurring run, GitHub Actions, CI, Codex/Work or automatic retry of an uncertain device task. Owner approval for routine QA never implies approval for destructive operations, external services, real customer data or public network changes.
+The owner granted standing approval for necessary **non-destructive** PocketHost tests, lint, formatting, typechecks, builds and guarded DEV deployments. This does not authorize customer-data operations, unrelated services, Local Agent upgrades, physical reboot, public/WAN changes, off-device transfers or destructive restore.
 
-## Guarded deployment — QA remains a separate step
+The private `MichalMatu/local-agent:agent-control` transport is described in [Local Agent Termux](LOCAL_AGENT_TERMUX.md). All project code execution and source/UI QA run **only on the paired Samsung A8**, except the documented narrow, read-only Mac `scripts/test-lab` browser/GET scope. No Codex, Work, GitHub Actions or scheduled tasks.
 
-1. Commit one coherent code change to fresh GitHub `main`, then read actual A8 DEV live SHA and verified owner identity. Reuse the existing clean isolated A8 QA checkout and cached dependencies; never reinstall packages on each iteration.
-2. Publish **one** bounded A8 Local Agent task with exact base and target. Execute `node ops/termux/fast-flow.mjs --base=<live-sha> --target=<target-sha> --apply`. **There is no `--tests` option.**
-3. The deployment script checks only Git SHA ancestry, clean checkout, panel ownership, protected-service isolation and rollback eligibility. It performs the guarded PocketHost DEV-only refresh and reads back live SHA/owner/basic HTTP. These are **safety and release verification, not functional tests**.
-4. Report exactly one terminal deployment receipt (PASS/HOLD, target SHA, owner/health, protected services, `tests=not-run`). If the agent is unavailable, state is uncertain or a gate fails, **HOLD and no automatic retries**. After a verified deployment, select only useful targeted checks and run them **separately** under standing QA consent; a successful deployment is never QA PASS.
+## When runtime code changes again
 
-**Docs-only commit:** GitHub update only; do not restart or redeploy the panel. QA of document changes is optional under standing consent, and must not trigger a panel update.
+1. Fetch fresh `main`, ensure a clean isolated A8 QA checkout, confirm the actual deployed SHA, panel ownership, PID/start ticks, LAN HTTP, protected-service state and rollback eligibility. Never trust a historic live SHA.
+2. Run relevant **separate** SHA-pinned A8 QA using `scripts/dev/verify-changed.mjs` and a verified ancestor, `--execute`, exact 40-hex `--approved-head` and selected `--approved-checks`. Available categories: `format,structure,boundaries,docs,markdown,root-lint,admin-lint,root-types,admin-types,node,ui,syntax`. Retain terminal receipts; use the smallest useful scope.
+3. For an accepted code candidate, publish **one** guarded A8 deploy task using `ops/termux/fast-flow.mjs --base=<verified-live-sha> --target=<exact-target-sha> --apply`. This command does **not** execute tests. Require terminal exact-SHA live owner/PID/ticks/HTTP and protected-service readback.
+4. If a task is absent, UNKNOWN, interrupted or guard-failed, mark **HOLD**; never automatically replay or skip an unverified result. Do not overlap tasks on the same A8 resource.
 
-## Standing authorized, separate targeted QA
-
-The deployment command can **never** start tests, even with an accidental `--tests` flag. `changed-checks.mjs` and `verify-changed.mjs` remain **read-only planners** unless the runner receives explicit execution arguments. Standing owner consent permits the active assistant to derive the exact SHA and chosen categories for a relevant one-shot QA task, without further questions. The execution flags protect against checkout drift or unintended categories; they are **not** a requirement for new human approval. Run on verified A8 only:
-
-```sh
-node scripts/dev/verify-changed.mjs --base=<verified-prechange-sha> --execute --approved-head=<exact-40-hex-target-sha> --approved-checks=docs,node
-```
-
-For **post-deployment QA** where the target SHA is already live, `--base` must be a verified pre-change ancestor of that target, **not** the current live SHA itself. Otherwise the planner reports `NO_CHANGES` and that result is not functional QA. Always pin the clean A8 QA checkout at the separately approved target SHA; `main` may contain later documentation-only commits.
-
-Replace `docs,node` with the **agent-selected and recorded** applicable check categories: `format,structure,boundaries,docs,markdown,root-lint,admin-lint,root-types,admin-types,node,ui,syntax`. Inspect the planned files, avoid unnecessary broad suites and use the exact SHA for **each run**. Missing, duplicate or drifted categories/SHA are refused by the runner. Do not reuse execution flags for an unknown task or changed source: pin the new SHA and re-evaluate the relevant checks under the same standing consent. `changed-checks.mjs --run` and `fast-flow.mjs --tests` are rejected. A QA failure generates a bounded receipt, does not deploy anything and never retries automatically.
-
-The manual planner orders cheap formatting, documentation, structure and lint checks before TypeScript and costly Node/UI tests; it collects inexpensive failures and skips expensive suites after a cheap failure. Reuse existing QA files and receipts. **Exception after terminal QA_FAIL:** an A8-only, exact-SHA pinned, bounded single-test reproduction may capture the missing failure detail without replaying the whole suite; keep the QA checkout clean and call this DIAGNOSTIC, not PASS. Never restart, mutate customer data or reissue unknown tasks. A test failure may be fixed in a new focused code commit followed by a new guarded deploy and an appropriately pinned one-shot QA run; **no further owner question** is required for ordinary non-destructive verification.
-
-## External Chat Bridge overnight cadence (no new scheduler)
-
-Each external Bridge message can initiate another bounded coding turn. It cannot make a single assistant turn run in the background. Read [night code queue](NIGHT_AUTONOMOUS_SPRINT.md), fresh `main`, actual A8 live/QA receipts, and advance one small product-code slice. Avoid audit-only loops and full UI/build sweeps after every small change. If a long suite fails or times out, save a terminal receipt and fix only the relevant test if useful; otherwise mark that feature QA_OPEN and choose a separate, safely decoupled code task on a later turn. Missing or unknown A8 results may **not** be retried or ignored; no unverified deploy. Continue progress on independent source only if doing so does not conflict with live/QA checkout. Preserving safety and truthful PASS/HOLD status is mandatory.
-
-## Stage acceptance
-
-Code completion and release readiness are separate from test approval. If a stage needs non-destructive regression evidence, run the relevant scoped QA under standing consent and report the receipt. Never mark it OWNER ACCEPTED without actual confirmation. Physical reboot, external SSH/WAN operations, unrelated services, sensitive/real data, unowned processes, destructive restoration and other disruptive operations require additional specific consent.
-
-**Operational invariant:** keep protected-service gates, owner marker/PID/start ticks, rollback, exact-SHA source verification and basic loopback HTTP even with tests disabled. Never remove these safety controls to shorten the flow.
+**Docs-only work:** commit to Git only; no A8 tests, builds, refresh or deployment. Passing G2 on one source SHA does not automatically certify newly changed runtime code or a new live installation.

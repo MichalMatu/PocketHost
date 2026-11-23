@@ -80,4 +80,4 @@ Owner screenshots at LAN panel port 18878 confirm that all five Hosting pages re
 - [ ] **P1 Termux:Boot/autostart:** separately authorize an actual Android reboot, then read back PocketHost-owned panel/Node and protected services. No reboot, scheduler or Boot mutation was conducted as part of P0.
 - [ ] **Final owner sign-off** once the browser interaction and P1 checks are complete. Do not mark overall Hosting accepted solely from API/HTTP receipts.
 
-**Next:** browser visual acceptance; optional Node backup UI activation and off-device copy design; separately approved Android reboot/autostart test. Cloudflare, domains and Python/PHP are deferred in [TermuxPanel reuse backlog](TERMUXPANEL_REUSE_BACKLOG.md).
+**Next:** browser visual acceptance; optional Node backup UI activation and off-device copy design; separately approved Android reboot/autostart test. Cloudflare, domains and Python/PHP are deferred in [historical TermuxPanel backlog](https://github.com/MichalMatu/PocketHost/tree/d2bacd081ad0879d49a08e3c7fd97789185ad6e4/docs/TERMUXPANEL_REUSE_BACKLOG.md).

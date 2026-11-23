@@ -1,63 +1,32 @@
 # PocketHost documentation
 
-**Start:** [22 Nov current source/modules checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md), [current handoff](HANDOFF_NEXT_CHAT.md), [MVP tracker](MVP_EXECUTION_PLAN.md), [root AGENTS](../AGENTS.md). The [21 Nov device evidence](checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and older checkpoints are historical; do not load the entire archive. The current A8 live SHA must be independently verified before any new deployment.
+The current tree holds **maintained reference documents** only. Long-running sprint transcripts, retired ADR stubs and old checkpoints remain in [unchanged Git history](https://github.com/MichalMatu/PocketHost/tree/d2bacd081ad0879d49a08e3c7fd97789185ad6e4/docs); do not treat historical SHA snapshots as the live A8 state.
 
-- [ADMIN_MVP](ADMIN_MVP.md)
-- [ARCHITECTURE](ARCHITECTURE.md)
-- [CODE_MAP](CODE_MAP.md)
-- [CLOUDFLARE_SHARED_TUNNEL_MVP](CLOUDFLARE_SHARED_TUNNEL_MVP.md)
-- [DASHBOARD_TELEMETRY_MAP](DASHBOARD_TELEMETRY_MAP.md)
-- [DESIGN_SYSTEM](DESIGN_SYSTEM.md)
-- [DEVELOPMENT_PLAN](DEVELOPMENT_PLAN.md)
-- [DEV_ITERATION](DEV_ITERATION.md)
-- [HANDOFF_NEXT_CHAT](HANDOFF_NEXT_CHAT.md)
-- [LOCAL_AGENT_TERMUX](LOCAL_AGENT_TERMUX.md)
-- [NIGHT_AUTONOMOUS_SPRINT](NIGHT_AUTONOMOUS_SPRINT.md)
-- [MVP_EXECUTION_PLAN](MVP_EXECUTION_PLAN.md)
-- [MODULES](MODULES.md)
-- [PRODUCT](PRODUCT.md)
-- [QUALITY_GATES](QUALITY_GATES.md)
-- [ROADMAP](ROADMAP.md)
-- [S1_RUNIT_REUSE](S1_RUNIT_REUSE.md)
-- [SECURITY_MODEL](SECURITY_MODEL.md)
-- [START_HERE](START_HERE.md)
-- [TARGET_INFORMATION_ARCHITECTURE](TARGET_INFORMATION_ARCHITECTURE.md)
-- [TERMUX_INTEGRATION](TERMUX_INTEGRATION.md)
-- [TERMUX_REBUILD_RECOVERY](TERMUX_REBUILD_RECOVERY.md)
-- [TOOLING_EVALUATION](TOOLING_EVALUATION.md)
-- [UPSTREAM_REUSE_STRATEGY](UPSTREAM_REUSE_STRATEGY.md)
-- [adr/0001-foundation](adr/0001-foundation.md)
-- [adr/0002-upstream-termux](adr/0002-upstream-termux.md)
-- [adr/0003-termux-local-agent-execution](adr/0003-termux-local-agent-execution.md)
-- [adr/0004-ui-design-system-quality](adr/0004-ui-design-system-quality.md)
-- [adr/0005-desktop-first-admin-shell](adr/0005-desktop-first-admin-shell.md)
-- [adr/0006-private-lan-access](adr/0006-private-lan-access.md)
-- [adr/0007-photomap-managed-instance-layout](adr/0007-photomap-managed-instance-layout.md)
-- [adr/0008-photomap-p4-managed-catalog](adr/0008-photomap-p4-managed-catalog.md)
-- [adr/0009-photomap-isolated-runtime](adr/0009-photomap-isolated-runtime.md)
-- [adr/0010-read-only-observability](adr/0010-read-only-observability.md)
-- [adr/0011-h34-termux-administration](adr/0011-h34-termux-administration.md)
-- [adr/0012-private-ui-rapid-review](adr/0012-private-ui-rapid-review.md)
-- [adr/0013-shizuku-power-user](adr/0013-shizuku-power-user.md)
-- [adr/0014-termux-panel-supervision](adr/0014-termux-panel-supervision.md)
-- [adr/0015-unified-android-app-isolated-runtime](adr/0015-unified-android-app-isolated-runtime.md)
-- [adr/0016-web-first-basic-pro-unified-product](adr/0016-web-first-basic-pro-unified-product.md)
-- [adr/0017-termux-first-single-app-integration](adr/0017-termux-first-single-app-integration.md)
-- [modules/ai](modules/ai.md)
-- [modules/config](modules/config.md)
-- [modules/diagnostics](modules/diagnostics.md)
-- [modules/host](modules/host.md)
-- [modules/inventory](modules/inventory.md)
-- [modules/observability](modules/observability.md)
-- [modules/packages](modules/packages.md)
-- [modules/runtime](modules/runtime.md)
-- [modules/shizuku](modules/shizuku.md)
-- [modules/sites](modules/sites.md)
+## Start and operate
 
-- [Historical checkpoint index](checkpoints/README.md)
+- [Start here](START_HERE.md), [current handoff](HANDOFF_NEXT_CHAT.md), [MVP acceptance](MVP_EXECUTION_PLAN.md), [quality gates](QUALITY_GATES.md).
+- [Architecture](ARCHITECTURE.md), [code map](CODE_MAP.md), [module separation](MODULES.md).
+- [A8 Local Agent](LOCAL_AGENT_TERMUX.md), [guarded development](DEV_ITERATION.md), [documentation rules](AGENTS.md).
 
-- [MVP_INTEGRATION_CHECKLIST](MVP_INTEGRATION_CHECKLIST.md)
-- [NODE_HOSTING_LAN_MVP](NODE_HOSTING_LAN_MVP.md)
-- [P1_OFF_DEVICE_RESTIC_PLAN](P1_OFF_DEVICE_RESTIC_PLAN.md)
-- [TERMUXPANEL_REUSE_BACKLOG](TERMUXPANEL_REUSE_BACKLOG.md)
-- [Private visual/API Test Lab](TEST_LAB.md)
+## Detailed references
+
+- [Node Hosting](NODE_HOSTING_LAN_MVP.md), [runit services](S1_RUNIT_REUSE.md), [historical MVP integration and Restic evidence](MVP_INTEGRATION_CHECKLIST.md).
+- [Test Lab](TEST_LAB.md), [off-device recovery design](P1_OFF_DEVICE_RESTIC_PLAN.md), [shared tunnel proposal](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
+- [Roadmap](ROADMAP.md) and [upstream reuse strategy](UPSTREAM_REUSE_STRATEGY.md).
+
+## Module documents
+
+- [`ai`](modules/ai.md)
+- [`config`](modules/config.md)
+- [`diagnostics`](modules/diagnostics.md)
+- [`host`](modules/host.md)
+- [`inventory`](modules/inventory.md)
+- [`observability`](modules/observability.md)
+- [`packages`](modules/packages.md)
+- [`runtime`](modules/runtime.md)
+- [`shizuku`](modules/shizuku.md)
+- [`sites`](modules/sites.md)
+
+## Historical evidence
+
+[Retained evidence index](checkpoints/README.md) and the [pre-cleanup documentation snapshot](https://github.com/MichalMatu/PocketHost/tree/d2bacd081ad0879d49a08e3c7fd97789185ad6e4/docs). Preserve immutable Git commit history; do not squash the release audit trail.

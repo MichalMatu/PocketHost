@@ -23,7 +23,7 @@ optional hardening, do not silently enable WAN access.
 
 ## Entry
 
-Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current delivery and module evidence lives in the [22 November source checkpoint](docs/checkpoints/2026-11-22-source-modules-documentation-checkpoint.md); [21 November A8 evidence](docs/checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and [18 November evidence](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md) and older checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
+Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXECUTION_PLAN.md) and only the nearest scoped `AGENTS.md`. Current source/quality status lives in the [current handoff](docs/HANDOFF_NEXT_CHAT.md); module evidence lives in the [22 November source checkpoint](docs/checkpoints/2026-11-22-source-modules-documentation-checkpoint.md); [21 November A8 evidence](docs/checkpoints/2026-11-21-pocket-host-mvp-handoff.md) and [18 November evidence](docs/checkpoints/2026-11-18-a8-p1-hardening-checkpoint.md) and older checkpoints are historical, not the execution baseline. Always read fresh `main` and independently verified A8 live SHA.
 
 ## Execution
 
@@ -43,4 +43,4 @@ Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXE
 
 - Basic: generic Termux host/platform management, independent Static and Node Hosting; no named hosted customer app or hardcoded project.
 - Pro/Companion/Shizuku, public hosting and untrusted-source isolation are deferred. Delivery stage `READY_FOR_ACCEPTANCE` is not `ACCEPTED`.
-- Static + trusted Node device flows and scoped P1 QA are proven **only within recorded scopes**. Hosting P0 functional acceptance, full-repo G2, Android reboot G3, Services S1–S4 owner acceptance and off-device recovery remain unaccepted/deferred as marked in the checkpoint.
+- Static + trusted Node device flows and scoped P1 QA are proven **only within recorded scopes**. The source-level G0–G2 gate passed at d2bacd0; the owner accepted the current browser UX, and scoped on-device Restic staging restore and fixed S1–S4 service lifecycle have physical PASS evidence. Android reboot G3, loss-of-device/off-device restore and public-hosting certification are not established.
