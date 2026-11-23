@@ -61,6 +61,38 @@ it("rejects a folder without a nonempty index.html before creating a site", asyn
 })
 
 it.each(["root", "wrapped"] as const)(
+  "explains hidden %s folder files before creating a site",
+  async scope => {
+    const homepage = new File(["<h1>Site</h1>"], "index.html")
+    const sidecar = new File(["metadata"], ".DS_Store")
+    if (scope === "wrapped") {
+      Object.defineProperty(homepage, "webkitRelativePath", { value: "homepage/index.html" })
+      Object.defineProperty(sidecar, "webkitRelativePath", { value: "homepage/.DS_Store" })
+    }
+    const fetcher = vi.fn()
+    vi.stubGlobal("fetch", fetcher)
+    const hook = renderHook(() => useOwnedSiteCreation({
+      sitesCount: 0, loading: false, error: null,
+      setSites: vi.fn(), setError: vi.fn(),
+    }))
+    act(() => {
+      hook.result.current.setName("My static site")
+      hook.result.current.setInitialFolder([homepage, sidecar])
+    })
+    await act(async () => {
+      await hook.result.current.createSite({
+        preventDefault: vi.fn(),
+      } as unknown as React.FormEvent<HTMLFormElement>)
+    })
+    expect(hook.result.current.inputError).toBe(
+      "Folder contains hidden files (such as .DS_Store). Remove them before importing.",
+    )
+    expect(hook.result.current.creating).toBe(false)
+    expect(fetcher).not.toHaveBeenCalled()
+  },
+)
+
+it.each(["root", "wrapped"] as const)(
   "rejects a new site folder with case-insensitive duplicate %s paths before POST",
   async scope => {
     const first = new File(["<h1>Page</h1>"], "index.html")
