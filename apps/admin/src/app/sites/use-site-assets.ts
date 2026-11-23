@@ -11,6 +11,9 @@ export function useSiteAssets(
 ) {
   const [assets, setAssets] = React.useState<H3Files | null>(null)
   const [assetsLoading, setAssetsLoading] = React.useState(false)
+  // A refreshed site object invalidates the visible list in the same render,
+  // before the effect's async cleanup or any late GET can update the view.
+  const [assetRevision, setAssetRevision] = React.useState(site)
   const opened = React.useRef(false)
   const sequence = React.useRef(0)
 
@@ -40,6 +43,7 @@ export function useSiteAssets(
     }
     if (busy || site.state === "unknown" || !site.activeRelease) return
     opened.current = true
+    setAssetRevision(site)
     const request = ++sequence.current
     const current = () => request === sequence.current && opened.current
     setAssets(null)
@@ -69,5 +73,9 @@ export function useSiteAssets(
     })
   }
 
-  return { assets, assetsLoading, toggleAssets, resetAssets }
+  return {
+    assets: assetRevision === site ? assets : null,
+    assetsLoading: assetRevision === site ? assetsLoading : false,
+    toggleAssets, resetAssets,
+  }
 }

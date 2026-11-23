@@ -185,7 +185,13 @@ function parseVerification(input: unknown, expected: SnapshotIndexEntry): void {
 }
 
 /** Read-only UI: mutable-data snapshot and staging are not enabled as API actions. */
-export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
+export function NodeDataPanel(props: Props) {
+  // Preserve the component's standalone ownership contract even when its
+  // parent does not key the element on project/owner-session changes.
+  return <NodeDataContent key={(props.projectId ?? "none") + ":" + String(props.ownerAuthorized)} {...props} />
+}
+
+function NodeDataContent({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
   const [report, setReport] = React.useState<Readout | null>(null)
   const [snapshots, setSnapshots] = React.useState<SnapshotIndexEntry[] | null>(null)
   const [scopeUnavailable, setScopeUnavailable] = React.useState(false)

@@ -11,12 +11,16 @@ export function useSiteVersions(
   const [versionsLoading, setVersionsLoading] = React.useState(false)
   const opened = React.useRef(false)
   const requestSequence = React.useRef(0)
+  // Keep the fetch callback stable across hook renders where callers provide
+  // fresh epoch/error callback wrappers but the verified site is unchanged.
+  const currentScope = React.useRef({ epoch, setError })
+  React.useEffect(() => { currentScope.current = { epoch, setError } }, [epoch, setError])
 
   const load = React.useCallback(() => {
-    const revision = epoch.current
+    const revision = currentScope.current.epoch.current
     const request = ++requestSequence.current
     const current = () =>
-      revision === epoch.current && request === requestSequence.current
+      revision === currentScope.current.epoch.current && request === requestSequence.current
     setVersionsLoading(true)
     void fetch(endpoint + "/" + site.id + "/releases", {
       credentials: "same-origin", cache: "no-store", signal: readSignal(),
@@ -38,12 +42,12 @@ export function useSiteVersions(
       if (current() && opened.current) {
         opened.current = false
         setVersions(null)
-        setError(cause instanceof Error ? cause.message : "Version inventory unavailable.")
+        currentScope.current.setError(cause instanceof Error ? cause.message : "Version inventory unavailable.")
       }
     }).finally(() => {
       if (current()) setVersionsLoading(false)
     })
-  }, [site, epoch, setError])
+  }, [site])
 
   React.useEffect(() => {
     // A new verified inventory revision supersedes all prior version GETs.

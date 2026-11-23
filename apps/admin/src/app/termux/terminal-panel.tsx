@@ -83,7 +83,7 @@ export function TermuxTerminalPanel({
     {detectionError && <p role="alert" className="text-sm text-destructive">
       Terminal availability could not be checked. Refresh to retry.
     </p>}
-    {detected === false && !detectionError && !running && <div role="status" className="space-y-2 rounded-md border p-4 text-sm">
+    {detected === false && !detectionError && status?.running === false && <div role="status" className="space-y-2 rounded-md border p-4 text-sm">
       <p><strong>Terminal unavailable:</strong> <code>ttyd</code> is not installed in Termux.</p>
       <p>
         Open <Link to="/packages" className="font-medium underline underline-offset-2">Packages & Software</Link>,
