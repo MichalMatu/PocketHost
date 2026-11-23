@@ -966,7 +966,7 @@ it("rejects a stale Node editor save and never retries the conflicting stage req
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
 
-it.each(["restored", "conflict"] as const)(
+it.each(["restored", "conflict", "readback-drift"] as const)(
   "restores previous Node source only at the observed revision: %s",
   async (scenario) => {
     const user = userEvent.setup()
@@ -1000,11 +1000,12 @@ it.each(["restored", "conflict"] as const)(
           expectedCandidate: current, expectedRevision: 2,
         })
         if (scenario === "conflict") return { ok: false, status: 409 }
-        project = {
+        const acknowledged = {
           ...project, candidateRelease: RELEASE,
           previousCandidate: current, deploymentCount: 3,
         }
-        return { ok: true, json: async () => ({ project }) }
+        if (scenario !== "readback-drift") project = acknowledged
+        return { ok: true, json: async () => ({ project: acknowledged }) }
       }
       throw new Error("Unexpected request " + url)
     })
@@ -1021,10 +1022,14 @@ it.each(["restored", "conflict"] as const)(
       expect(project.previousCandidate).toBe(current)
       expect(project.deploymentCount).toBe(3)
     } else {
-      await screen.findByText("Node source save refused. Refresh project and review the current candidate.")
+      await screen.findByText(scenario === "conflict"
+        ? "Node source save refused. Refresh project and review the current candidate."
+        : "Node source result unconfirmed. Refresh project and review the candidate before retrying.")
       expect(project.candidateRelease).toBe(current)
       expect(project.previousCandidate).toBe(RELEASE)
       expect(project.deploymentCount).toBe(2)
+      expect(screen.queryByText("Previous source candidate restored. No live process was changed."))
+        .toBeNull()
     }
     expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/restore-candidate")))
       .toHaveLength(1)
