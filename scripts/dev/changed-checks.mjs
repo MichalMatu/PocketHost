@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planChangedChecks } from './changed-checks-policy.mjs';
+import { needsChangedTestDependencies, planChangedChecks } from './changed-checks-policy.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const flags = process.argv.slice(2);
@@ -159,7 +159,10 @@ function main() {
   )
     .split('\0')
     .filter(Boolean);
-  const plan = planChangedChecks(paths, buildTestDependencies(head), {
+  const dependencies = needsChangedTestDependencies(paths, deletedPaths)
+    ? buildTestDependencies(head)
+    : {};
+  const plan = planChangedChecks(paths, dependencies, {
     includeAdminLint,
     deletedPaths,
   });
