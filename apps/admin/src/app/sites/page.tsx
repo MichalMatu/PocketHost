@@ -98,7 +98,8 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
           const ack = receipt as FleetSite | null
           if (!ack || ack.id !== site.id || observed.id !== site.id ||
               ack.state !== observed.state || ack.activeRelease !== observed.activeRelease ||
-              ack.previousRelease !== observed.previousRelease ||
+              ack.pid !== observed.pid || ack.startTicks !== observed.startTicks ||
+              ack.port !== observed.port || ack.previousRelease !== observed.previousRelease ||
               ack.releases !== observed.releases || ack.canRollback !== observed.canRollback ||
               ack.fileCount !== observed.fileCount || ack.bytes !== observed.bytes ||
               ack.history.length !== observed.history.length ||
