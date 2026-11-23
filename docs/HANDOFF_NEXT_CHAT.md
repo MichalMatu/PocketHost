@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static active asset readback reconciliation (23 November)
+
+- **Source:** `f694f23c32ca467d2c0e3078e476a62fbb488f85`; regression `3bac4160627214635ce6b8119ae3031aea74d328`. In `apps/admin/src/app/sites/use-site-assets.ts`, the read-only Inspect assets view now rejects a separate asset inventory when its number of files or summed byte count differs from the latest rendered site summary. On disagreement it closes the stale list and gives an explicit Refresh/retry error; no write, host lifecycle, source-log transformation or UI redesign.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-assets-race.interaction.test.tsx` adds two count/byte mismatch cases, asserts immediate retry succeeds and only GET calls occur. Existing cancel/reopen and outdated-response checks retained; the test fixture now supplies the same file count and bytes as the mocked host response.
+- **A8 QA/DEV HOLD:** the immutable N12 result for `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` still reads `unknown` with `interrupted_or_uncertain_execution_no_replay`. A GitHub receipt alone cannot independently reconcile A8 process/task ownership, so do not replay/overlap, restart Local Agent or claim tests/deployment. Once verified free, run separate exact-SHA scoped `format,admin-types,ui` and mapped pending checks on A8, then guarded DEV only after terminal QA PASS and fresh source/PID/ticks/HTTP/protected-services validation.
+
 ## Current continuation — Static folder import parity and pending QA (23 November)
 
 - **Source:** `d83d8c00b18ad9ac091abd1df5c3d2e33ebccc40`; regressions `47d1d8469bf4b54e6cc0e1481d94d447529c1e7e` and `5835258f9407bd455a003ebc34494bd791e7e9a7`. The shared `validateStaticFolderSelection` now detects case-insensitive duplicate file paths after optional one-folder normalization, matching host `validateSiteBundle`. Both create/import and existing-site folder publication fail locally before confirmation/POST/PUT. Existing limits and valid folder behavior unchanged.
