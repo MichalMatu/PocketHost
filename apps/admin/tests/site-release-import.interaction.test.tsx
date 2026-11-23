@@ -283,9 +283,11 @@ it("keeps HTML first-release readback conditions without starting a service", ()
     _expected?: (observed: FleetSite) => boolean,
   ) => {})
   const initial = { ...site, activeRelease: null, fileCount: 0 }
+  const html = "<h1>Initial page</h1>"
+  const byteCount = new TextEncoder().encode(html).length
   const hook = renderHook(() => useSiteReleaseImport({
     site: initial, busy: false, outcomeUnknown: false,
-    html: "<h1>Initial page</h1>", editorReady: true,
+    html, editorReady: true,
     execute, setError: vi.fn(), setMessage: vi.fn(),
   }))
   act(() => { hook.result.current.publishHtml() })
@@ -296,13 +298,36 @@ it("keeps HTML first-release readback conditions without starting a service", ()
   )
   expect(mutation).toBe(true)
   const matches = expected as (observed: FleetSite) => boolean
-  expect(matches({ ...initial, activeRelease: "r-" + "c".repeat(32), fileCount: 1, bytes: 19 }))
+  const release = "r-" + "c".repeat(32)
+  expect(matches({ ...initial, activeRelease: release, fileCount: 1, bytes: byteCount }))
     .toBe(true)
   expect(matches({ ...initial, activeRelease: null, fileCount: 0, bytes: 0 })).toBe(false)
-  expect(matches({ ...initial, activeRelease: "r-" + "c".repeat(32), fileCount: 2, bytes: 19 }))
+  expect(matches({ ...initial, activeRelease: release, fileCount: 2, bytes: byteCount }))
     .toBe(false)
-  expect(matches({ ...initial, activeRelease: "r-" + "c".repeat(32), fileCount: 1, bytes: 0 }))
+  expect(matches({ ...initial, activeRelease: release, fileCount: 1, bytes: 0 }))
     .toBe(false)
+  expect(matches({ ...initial, activeRelease: release, fileCount: 1, bytes: byteCount - 1 }))
+    .toBe(false)
+  expect(matches({ ...initial, activeRelease: release, fileCount: 1, bytes: byteCount + 1 }))
+    .toBe(false)
+})
+
+it("requires the exact UTF-8 byte length when publishing multibyte HTML", () => {
+  const execute = vi.fn(async () => {})
+  const html = "<h1>🦊</h1>"
+  const hook = renderHook(() => useSiteReleaseImport({
+    site: { ...site, activeRelease: null, fileCount: 0 },
+    busy: false, outcomeUnknown: false, html, editorReady: true,
+    execute, setError: vi.fn(), setMessage: vi.fn(),
+  }))
+  act(() => { hook.result.current.publishHtml() })
+  expect(execute).toHaveBeenCalledTimes(1)
+  const expected = execute.mock.calls[0][3] as (observed: FleetSite) => boolean
+  const release = "r-" + "c".repeat(32)
+  const total = new TextEncoder().encode(html).length
+  expect(total).toBeGreaterThan(html.length)
+  expect(expected({ ...site, activeRelease: release, fileCount: 1, bytes: total })).toBe(true)
+  expect(expected({ ...site, activeRelease: release, fileCount: 1, bytes: html.length })).toBe(false)
 })
 
 it("does not import from a site with unverified process identity", () => {
