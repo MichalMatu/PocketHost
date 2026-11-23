@@ -84,7 +84,7 @@ export function useSiteReleaseImport({
     true, observed =>
       observed.activeRelease !== null &&
       observed.activeRelease !== site.activeRelease &&
-      observed.fileCount === 1)
+      observed.fileCount === 1 && observed.bytes > 0)
   }
 
   return { zip, folder, publishHtml }
