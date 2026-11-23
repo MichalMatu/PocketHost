@@ -43,10 +43,17 @@ export function TermuxTerminalPanel({
   const [status, setStatus] = React.useState<Status | null>(null)
   const [error, setError] = React.useState("")
   const [busy, setBusy] = React.useState(false)
+  // An attested running session remains evidence ttyd exists even when the
+  // independent package-detection probe is stale or unavailable.
+  const [observedRunning, setObservedRunning] = React.useState(false)
   React.useEffect(() => {
     let mounted = true
     void read().then(result => {
-      if (mounted) { setStatus(result); setError("") }
+      if (mounted) {
+        setStatus(result)
+        if (result.running) setObservedRunning(true)
+        setError("")
+      }
     }).catch(() => {
       if (mounted) { setStatus(null); setError("Terminal status unavailable. Refresh to check the session.") }
     })
@@ -60,7 +67,9 @@ export function TermuxTerminalPanel({
         : "End this PocketHost-owned ttyd session?")) return
     setBusy(true); setError("")
     try {
-      setStatus(await command(name))
+      const next = await command(name)
+      setStatus(next)
+      if (next.running) setObservedRunning(true)
     } catch {
       setStatus(null)
       setError("Terminal result unconfirmed. Refresh to verify the session before retrying.")
@@ -74,7 +83,7 @@ export function TermuxTerminalPanel({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="font-medium">Interactive Termux terminal</h3>
       <Badge variant="outline">{error ? "Status unverified" :
-        detected === false && !running ? "ttyd not installed" :
+        detected === false && !running && !observedRunning ? "ttyd not installed" :
         status ? running ? "Terminal running" : "Stopped" : "Checking status"}</Badge>
     </div>
     {!running && detected !== false && <p className="text-xs text-muted-foreground">
@@ -83,7 +92,7 @@ export function TermuxTerminalPanel({
     {detectionError && <p role="alert" className="text-sm text-destructive">
       Terminal availability could not be checked. Refresh to retry.
     </p>}
-    {detected === false && !detectionError && status?.running === false && <div role="status" className="space-y-2 rounded-md border p-4 text-sm">
+    {detected === false && !detectionError && !observedRunning && status?.running === false && <div role="status" className="space-y-2 rounded-md border p-4 text-sm">
       <p><strong>Terminal unavailable:</strong> <code>ttyd</code> is not installed in Termux.</p>
       <p>
         Open <Link to="/packages" className="font-medium underline underline-offset-2">Packages & Software</Link>,
