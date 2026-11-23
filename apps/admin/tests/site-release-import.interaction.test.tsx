@@ -313,7 +313,10 @@ it("keeps HTML first-release readback conditions without starting a service", ()
 })
 
 it("requires the exact UTF-8 byte length when publishing multibyte HTML", () => {
-  const execute = vi.fn(async () => {})
+  const execute = vi.fn(async (
+    _job: () => Promise<unknown>, _success: string, _mutation?: boolean,
+    _expected?: (observed: FleetSite) => boolean,
+  ) => {})
   const html = "<h1>🦊</h1>"
   const hook = renderHook(() => useSiteReleaseImport({
     site: { ...site, activeRelease: null, fileCount: 0 },
