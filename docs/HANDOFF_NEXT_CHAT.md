@@ -2,31 +2,26 @@
 status: active
 owner: core
 last_reviewed: 2026-11-23
-purpose: Current A8 ownership, exact-source QA evidence and safe next steps
+purpose: Verified A8 DEV release, scoped QA receipts and next safe actions
 ---
 
 # PocketHost — current handoff
 
-First read [AGENTS](../AGENTS.md), [START_HERE](START_HERE.md), [MVP plan](MVP_EXECUTION_PLAN.md), [A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md) and [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). Use GitHub Connector and immutable tasks at `MichalMatu/local-agent:agent-control`. Only paired Samsung A8 may run QA/build/deploy. No GitHub Actions, Codex, Work, Mac/sandbox project QA or automatic task replay. Standing user consent covers necessary nondestructive A8 QA and guarded private DEV, in separate exact-SHA tasks.
+Read [AGENTS](../AGENTS.md), [START_HERE](START_HERE.md), [MVP plan](MVP_EXECUTION_PLAN.md), [A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md) and [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). Source is `MichalMatu/PocketHost:main`; exclusive paired A8 task transport is `MichalMatu/local-agent:agent-control`. No Codex, Work, GitHub Actions, foreign-host project QA, automatic replay, public changes or protected service mutations.
 
-## Verified state — 23 November 2026
+## Verified delivery — 23 November 2026
 
-- **Source before this handoff rewrite:** `main@193775a7f0ab78116ff28356e9a2aa02e2323ec1`. New `apps/admin/tests/root-layout.interaction.test.tsx` covers route layout, fallback and failure UI. Earlier Node Stage/Restore readback source through `e75c498145f2783db123a60e77aa18fc164371b1` has NOT passed current QA.
-- **Actual A8 live DEV:** `c4dedfd23b597a95a96f00379786fe36f6cf27e2`, NOT the stale `d0468ab` checkpoint. Independent read-only receipt `pockethost-a8-live-preflight-readback-20261123-v2`: owned DEV SHA, panel owner and gateway matched; PID **7907**, start ticks **5399**, HTTP **200**, protected `sshd`/`ssh-agent` down, Agent runit active, DEV and QA checkouts clean with correct origins. Always verify afresh before a future deployment.
-- **N12:** `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains immutable **UNKNOWN**: `interrupted_or_uncertain_execution_no_replay`. Do NOT retry it. Read-only `pockethost-a8-n12-owner-claim-diagnostic-20261123-v1` verified N12 claim/spool digest, free N12 execution and PocketHost resource locks, zero observed Node QA processes and proper A8 identity. One unmatched historical local claim remains; this does NOT certify global maintenance or restart safety.
-- **Accepted cumulative QA plan:** `pockethost-a8-plan-root-layout-193775a-20261123-v1` returned PLAN, no manual review, **66 changed files**, baseline actual live `c4dedfd`, target `193775a`. Categories: syntax, format, structure, docs, root lint, Markdown, admin TypeScript, Node and UI.
+- **Deployed DEV code:** `349087d2981c7fc3d8b9feba12d8fc335956a08b`, from independently verified prior live `c4dedfd23b597a95a96f00379786fe36f6cf27e2`. The earlier `d0468ab` deployment checkpoint is historical, not today's live baseline.
+- **Deployment:** immutable A8 result `pockethost-a8-dev-349087d-deploy-20261123-v1` terminal `done`, nested `PocketHostA8DevFastFlow.status=PASS`, `flow.status=PASS`, `deployment=applied`, verified live SHA, PID **6158**, start ticks **3518977**, HTTP 200, guarded service isolation unchanged, tests not run *inside* deployment. Independent SHA-pinned `format,ui` QA receipt was verified before release.
+- **Post-release smoke:** `pockethost-a8-postdeploy-349087d-http-smoke-20261123-v1` terminal PASS. The six routes `/dashboard`, `/sites`, `/projects`, `/local-agent`, `/services`, `/settings/platform` each returned HTTP 200. PID/ticks and protected services matched. This proves HTTP reachability, NOT real browser screen acceptance or site data integrity.
+- **Last complete focused regression:** `pockethost-a8-ui-regressions-349087d-20261123-v1`, target exact 40-hex `349087d`, base `e47dacea2abc2a85e0d3940569262e783bc2fcf1`, terminal `QA_PASS`: changed-file format PASS and 121/121 UI tests in four corrected files PASS. Test fixture corrections: `d98378a` (site release summary, Node Stage readback), `5e6a95a` (version reopen stale-error checks), `3f369dd` and `349087d` (raw Agent log stalled continuation fixture).
+- **Prior cumulative QA:** `pockethost-a8-cumulative-e47dace-qa-20261123-v1` on `e47dace`: syntax 21/21, format, structure, docs, root lint, Markdown lint, admin TypeScript and Node tests PASS; broad UI reached 300s and nine tests failed. The nine were fixed and confirmed by the later **scoped 121/121 PASS**, but the original whole-suite G2 run was NOT PASS.
+- **N12:** immutable `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains UNKNOWN; never replay. Read-only `pockethost-a8-n12-owner-claim-diagnostic-20261123-v1` proved free N12 execution and PocketHost resource locks. The historical unmatched local claim still forbids claiming unrestricted host maintenance safety. Always fresh-verify owned A8 state before future tasks.
 
-## Terminal cumulative QA: FAIL
+## Next safe work
 
-Task `pockethost-a8-cumulative-193775a-qa-20261123-v1` on exact source `193775a7f0ab78116ff28356e9a2aa02e2323ec1`: **21 syntax checks PASS**, structure PASS, root lint PASS, Markdown lint PASS. **Format FAIL** (at least `scripts/dev/changed-checks-policy.mjs`, `scripts/dev/verify-changed-policy.mjs`, `scripts/dev/verify-changed.mjs`, `scripts/test-lab/artifact-names.mjs`, `scripts/test-lab/capture-warnings.mjs`, `scripts/test-lab/capture.mjs`; receipt may truncate paths). **Docs FAIL**: previous 111 KB handoff exceeded **6144-byte** active-context budget. TypeScript, Node and UI all **SKIPPED**, never mark PASS. No build or deployment occurred.
+1. **No redundant release for this docs-only update.** Fresh `main` may be newer than live `349087d` only because the handoff and quality status were synchronized after the verified release.
+2. For subsequent code edits pin a new exact SHA, choose dependency-mapped targeted QA on A8, inspect terminal results, then separately guarded DEV deployment with fresh actual live base. The private Mac Test Lab exception permits only narrowly scoped read-only browser screenshots/geometry/GET, never off-device build/deploy.
+3. Broader G2 qualification and real browser static ZIP/folder/HTML imports, served-byte comparison, independently created Node project acceptance, mutable-data recovery and G3 physical reboot remain OPEN. Do not use customer data or launch public network exposure under routine test consent.
 
-## Next actions
-
-1. Keep this active handoff below 6144 UTF-8 bytes. All its earlier detailed entries remain available in the [immutable pre-compaction Git version](https://github.com/MichalMatu/PocketHost/blob/193775a7f0ab78116ff28356e9a2aa02e2323ec1/docs/HANDOFF_NEXT_CHAT.md), plus the [checkpoint index](checkpoints/README.md).
-2. On verified A8, obtain full Prettier mismatched-file list using read-only diagnostics. Fix affected source formatting in GitHub; preserve QA checkout cleanliness and do not disable checks.
-3. Re-plan against **actual** live SHA and fresh `main`; run one bounded separate A8 `verify-changed.mjs --base=<actual-live-sha> --execute --approved-head=<exact-main-sha> --approved-checks=<planned-categories>` task. Examine every result. Correct functional regressions if needed. No other executor or stale PASS.
-4. Only after terminal exact-SHA QA PASS, consider a **separate** guarded DEV flow `ops/termux/fast-flow.mjs --base=<fresh-owned-live-sha> --target=<tested-sha> --apply`. Recheck clean source, owner/PID/start ticks, protected services, HTTP and rollback before changes.
-
-## Still open
-
-Real browser ZIP/folder/HTML import, served bytes, independently created Node project acceptance, mutable-data recovery, broad G2/browser visual QA, physical reboot and public cutover. Historic mocks and unrelated test results do not satisfy these.
+Earlier detailed handoff history remains in the [pre-compaction Git revision](https://github.com/MichalMatu/PocketHost/blob/193775a7f0ab78116ff28356e9a2aa02e2323ec1/docs/HANDOFF_NEXT_CHAT.md) and [checkpoint archive](checkpoints/README.md). External Chat Bridge messages, not an internal scheduler, initiate later turns.
