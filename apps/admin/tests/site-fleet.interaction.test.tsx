@@ -1185,6 +1185,9 @@ describe("H2.1 version-management UI", () => {
       previousRelease: previous as string | null,
       canRollback: true,
       releases: 3,
+      // Release details and catalog summary must describe the same active bytes.
+      fileCount: 3,
+      bytes: 11800,
     }
     let versions = [RELEASE, previous, archived].map((id, index) => ({
       id,

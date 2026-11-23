@@ -1280,10 +1280,13 @@ it("loads one local project folder including frontend assets and stages only aft
     name: "folder-node", version: "1.0.0", lockfileVersion: 3,
     packages: { "": { name: "folder-node", version: "1.0.0" } },
   }
+  let staged = false
   const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
     const url = String(input)
     if (url === "/api/v1/node-projects")
-      return { ok: true, json: async () => ({ projects: [current] }) }
+      return { ok: true, json: async () => ({ projects: [
+        staged ? { ...current, state: "source-staged", candidateRelease: RELEASE, deploymentCount: 1 } : current,
+      ] }) }
     if (url.endsWith("/releases"))
       return { ok: true, json: async () => ({ releases: [] }) }
     if (url.endsWith("/runtime"))
@@ -1305,6 +1308,7 @@ it("loads one local project folder including frontend assets and stages only aft
         },
         expectedCandidate: null, expectedRevision: 0,
       })
+      staged = true
       return { ok: true, json: async () => ({ project: {
         ...current, state: "source-staged", candidateRelease: RELEASE, deploymentCount: 1,
       } }) }
