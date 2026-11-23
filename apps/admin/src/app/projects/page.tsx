@@ -19,7 +19,7 @@ import { shortRelease } from "./node-project-display"
 import { NodeRuntimeHistory } from "./node-runtime-history"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
-  validatedExtras, validatedAssets, validProject, parseProjectCatalog, parseNodeHealth, requestJson, NodeProjectValidationError,
+  validatedExtras, validatedAssets, validProject, nodeSourceWriteMatchesReadback, parseProjectCatalog, parseNodeHealth, requestJson, NodeProjectValidationError,
   type Project, type NodeHealth,
   type DependencyReview, type BuildReview, type RollbackPreflight,
 } from "./node-project-client"
@@ -976,7 +976,12 @@ export default function ProjectsPage() {
                 expectedRevision: selected.deploymentCount,
               })
               if (!validProject(data.project)) throw new Error("Invalid stage response")
-              await refresh()
+              const catalog = await refresh()
+              if (!nodeSourceWriteMatchesReadback(selected.id, data.project, catalog)) {
+                invalidateRead(); beginInspection(); resetLogs()
+                setApproved(false); setPreview(null)
+                throw new Error("Node source result unconfirmed. Refresh project and review the candidate before retrying.")
+              }
               await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
               setApproved(false); setBuildCheck(null); setEditorDirty(false); setGithubReview(null)
               setSourceOrigin("staged")
@@ -991,7 +996,12 @@ export default function ProjectsPage() {
                   expectedRevision: selected.deploymentCount,
                 })
                 if (!validProject(data.project)) throw new Error("Invalid restore response")
-                await refresh()
+                const catalog = await refresh()
+                if (!nodeSourceWriteMatchesReadback(selected.id, data.project, catalog)) {
+                  invalidateRead(); beginInspection(); resetLogs()
+                  setApproved(false); setPreview(null)
+                  throw new Error("Node source result unconfirmed. Refresh project and review the candidate before retrying.")
+                }
                 await Promise.all([loadReleases(selected.id), loadRuntime(selected.id)])
                 setApproved(false); setGithubReview(null)
                 setMessage("Previous source candidate restored. No live process was changed.")
