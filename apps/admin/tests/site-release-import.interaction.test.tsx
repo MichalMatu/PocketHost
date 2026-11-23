@@ -58,6 +58,34 @@ it.each([
 })
 
 it.each(["root", "wrapped"] as const)(
+  "rejects hidden %s folder sidecars before confirming a new release",
+  scope => {
+    const homepage = new File(["<h1>Site</h1>"], "index.html")
+    const sidecar = new File(["metadata"], ".DS_Store")
+    if (scope === "wrapped") {
+      Object.defineProperty(homepage, "webkitRelativePath", { value: "homepage/index.html" })
+      Object.defineProperty(sidecar, "webkitRelativePath", { value: "homepage/.DS_Store" })
+    }
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+    const execute = vi.fn(async () => {})
+    const setError = vi.fn()
+    const hook = renderHook(() => useSiteReleaseImport({
+      site, busy: false, outcomeUnknown: false,
+      html: "<h1>Site</h1>", editorReady: true,
+      execute, setError, setMessage: vi.fn(),
+    }))
+    const event = selected([homepage, sidecar])
+    act(() => { hook.result.current.folder(event) })
+    expect(setError).toHaveBeenCalledWith(
+      "Folder contains hidden files (such as .DS_Store). Remove them before importing.",
+    )
+    expect(confirm).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+    expect(event.currentTarget.value).toBe("")
+  },
+)
+
+it.each(["root", "wrapped"] as const)(
   "rejects case-insensitive duplicate %s folder paths before confirming publication",
   scope => {
     const first = new File(["<h1>Page</h1>"], "index.html")
