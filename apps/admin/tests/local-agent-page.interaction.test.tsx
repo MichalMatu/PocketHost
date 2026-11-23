@@ -153,7 +153,7 @@ describe("Local Agent read-only overview", () => {
             headers: new Headers({
               "X-Agent-Log-Cursor": "12:345:79",
               "X-Agent-Log-Reset": "0",
-              "X-Agent-Log-More": "1",
+              "X-Agent-Log-More": rawCalls === 1 ? "0" : "1",
             }),
             arrayBuffer: async () => bytes.buffer,
           }
@@ -165,6 +165,8 @@ describe("Local Agent read-only overview", () => {
       render(<MemoryRouter><LocalAgentPage /></MemoryRouter>)
       fireEvent.click(screen.getByRole("tab", { name: "Live console" }))
       const raw = await screen.findByLabelText("Raw Agent console")
+      await waitFor(() => expect(raw.textContent).toBe(rawEntry))
+      fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
       await waitFor(() =>
         expect(screen.getByText(/Raw log read failed/)).toBeTruthy())
       expect(raw.textContent).toBe(rawEntry)
