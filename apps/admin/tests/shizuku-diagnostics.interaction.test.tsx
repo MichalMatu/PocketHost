@@ -41,7 +41,7 @@ describe("Shizuku native diagnostics", () => {
     }
     expect(screen.getByText(/Native capabilities \(1\)/)).toBeTruthy()
     expect(screen.getByText(/Shizuku Binder operation available/)).toBeTruthy()
-    expect(screen.getByRole("region", { name: "Native capabilities" }).querySelectorAll("li")).toHaveLength(1)
+    expect(screen.getByRole("region", { name: /Native capabilities/ }).querySelectorAll("li")).toHaveLength(1)
     expect(screen.queryByText("Advanced Shizuku diagnostics")).toBeNull()
     expect(screen.queryByText(sample.observedAt)).toBeNull()
   })

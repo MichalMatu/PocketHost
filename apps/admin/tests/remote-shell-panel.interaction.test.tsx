@@ -15,7 +15,7 @@ describe("direct Shizuku shell from private-LAN browser", () => {
       }),
     })
     vi.stubGlobal("fetch", fetchMock)
-    render(<RemoteShellPanel />)
+    render(<RemoteShellPanel authorized={true} />)
     const user = userEvent.setup()
     const run = screen.getByRole("button", { name: "Run on Samsung" })
     expect((run as HTMLButtonElement).disabled).toBe(true)
@@ -39,7 +39,7 @@ describe("direct Shizuku shell from private-LAN browser", () => {
       }),
     }))
     vi.stubGlobal("fetch", fetchMock)
-    render(<RemoteShellPanel />)
+    render(<RemoteShellPanel authorized={true} />)
     const user = userEvent.setup()
     await user.type(screen.getByLabelText("Android shell command"), "not_existing_command")
     await user.click(screen.getByRole("button", { name: "Run on Samsung" }))
@@ -59,7 +59,7 @@ describe("direct Shizuku shell from private-LAN browser", () => {
       }),
     })
     vi.stubGlobal("fetch", fetchMock)
-    render(<RemoteShellPanel />)
+    render(<RemoteShellPanel authorized={true} />)
     const user = userEvent.setup()
     await user.type(screen.getByLabelText("Android shell command"), "id")
     await user.click(screen.getByRole("button", { name: "Run on Samsung" }))

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { render, screen } from "@testing-library/react"
+import { MemoryRouter } from "react-router-dom"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { cloudflareTunnelSchema } from "@/lib/cloudflare-tunnel-schema"
 
@@ -22,7 +23,7 @@ describe("Cloudflare Tunnel protected read-only panel", () => {
   it("shows real observed state and sanitized route without controls", async () => {
     const fetcher = vi.fn(async () => ({ ok: true, json: async () => sample }))
     vi.stubGlobal("fetch", fetcher)
-    render(<CloudflareTunnelPanel />)
+    render(<MemoryRouter><CloudflareTunnelPanel /></MemoryRouter>)
     await screen.findByText("site.example.com")
     expect(screen.getByText(/PID 98/)).toBeTruthy()
     expect(screen.getByText(/Unverified · last log event: registered/)).toBeTruthy()

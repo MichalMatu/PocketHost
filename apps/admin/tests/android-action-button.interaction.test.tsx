@@ -26,6 +26,7 @@ describe("direct Android actions from browser", () => {
   })
 
   it("does not report success after Android refuses a permission mutation", async () => {
+    vi.stubGlobal("confirm", () => true)
     vi.stubGlobal("fetch", vi.fn(async () => ({
       ok: false, status: 502, json: async () => ({
         error: "android-shell-refused", detail: "Permission denied by Android",

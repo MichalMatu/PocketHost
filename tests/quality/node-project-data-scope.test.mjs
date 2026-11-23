@@ -51,10 +51,7 @@ test('mutable Node data remains independent and unconfigured until explicitly pr
     consistency: 'offline-required',
   });
   assert.throws(() => inspector.inspect('node-' + 'a'.repeat(32)), /Node|project/i);
-  assert.throws(
-    () => new NodeProjectDataScope('/tmp/source', '/tmp/source/data'),
-    /separate/,
-  );
+  assert.throws(() => new NodeProjectDataScope('/tmp/source', '/tmp/source/data'), /separate/);
 });
 test('mutable Node data inventory counts only private uploads and databases without backups', (t) => {
   const { project, inspector, dataRoot, ownedData } = fixture(t);
@@ -110,27 +107,35 @@ test('mutable Node data inventory is isolated between two owned projects', (t) =
 test('Node data recovery review fails closed for running, unknown and absent runtime', (t) => {
   const { project, inspector, dataRoot, ownedData } = fixture(t);
   const missing = inspector.inspect(project.id);
-  assert.deepEqual(reviewNodeDataOfflinePrerequisites(missing, {
-    state: 'stopped', desired: 'stopped',
-  }), {
-    status: 'data-not-configured',
-    runtimeState: 'stopped',
-    snapshotEnabled: false,
-    requirements: {
+  assert.deepEqual(
+    reviewNodeDataOfflinePrerequisites(missing, {
+      state: 'stopped',
+      desired: 'stopped',
+    }),
+    {
+      status: 'data-not-configured',
+      runtimeState: 'stopped',
+      snapshotEnabled: false,
+      requirements: {
+        dataOwned: false,
+        runtimeStopped: true,
+        databaseConsistent: false,
+        snapshotApproved: false,
+      },
+    },
+  );
+  assert.deepEqual(
+    reviewNodeDataOfflinePrerequisites(missing, {
+      state: 'stopped',
+      desired: 'running',
+    }).requirements,
+    {
       dataOwned: false,
-      runtimeStopped: true,
+      runtimeStopped: false,
       databaseConsistent: false,
       snapshotApproved: false,
     },
-  });
-  assert.deepEqual(reviewNodeDataOfflinePrerequisites(missing, {
-    state: 'stopped', desired: 'running',
-  }).requirements, {
-    dataOwned: false,
-    runtimeStopped: false,
-    databaseConsistent: false,
-    snapshotApproved: false,
-  });
+  );
   createScope(dataRoot, ownedData);
   const present = inspector.inspect(project.id);
   for (const [state, desired, status] of [

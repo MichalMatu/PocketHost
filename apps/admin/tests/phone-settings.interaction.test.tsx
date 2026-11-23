@@ -47,7 +47,7 @@ afterEach(() => vi.unstubAllGlobals())
 describe("dedicated Phone Settings", () => {
   it("shows saved display values, clear scope and deliberate brightness actions", async () => {
     const calls = mount()
-    await screen.findByText(/Current: 10 min/)
+    await screen.findByText("10 min")
     const slider = screen.getByRole("slider", { name: "Set screen brightness" })
     expect(slider.getAttribute("value")).toBe("154")
     expect(screen.getByText(/Adaptive brightness can override saved levels/)).toBeTruthy()
@@ -103,7 +103,7 @@ describe("dedicated Phone Settings", () => {
     })
     vi.stubGlobal("fetch", fetchMock)
     render(<MemoryRouter><PhoneSettingsPage /></MemoryRouter>)
-    await screen.findByText(/Current: 10 min/)
+    await screen.findByText("10 min")
     expect(commands).toEqual([])
 
     fireEvent.click(screen.getByRole("button", { name: "Check mode" }))
