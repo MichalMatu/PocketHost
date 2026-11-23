@@ -26,17 +26,22 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
   const operationInFlight = React.useRef(false)
   const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
   const readEpoch = React.useRef(0)
-  React.useEffect(() => {
-    readEpoch.current++
-    setOutcomeUnknown(false)
-    // A confirmed inventory refresh invalidates prior runtime observations.
-    setHealth(null)
-    setLogs(null)
-  }, [site])
   const [error, setError] = React.useState<string | null>(null)
   const [message, setMessage] = React.useState<string | null>(null)
   const [health, setHealth] = React.useState<boolean | null>(null)
   const [logs, setLogs] = React.useState<string[] | null>(null)
+  React.useEffect(() => {
+    const revision = ++readEpoch.current
+    // Immediately invalidate stale response identities; reset displayed
+    // runtime observations after commit rather than in the effect body.
+    void Promise.resolve().then(() => {
+      if (revision !== readEpoch.current) return
+      setOutcomeUnknown(false)
+      setHealth(null)
+      setLogs(null)
+    })
+    return () => { readEpoch.current++ }
+  }, [site])
   const { versions, versionsLoading, toggleVersions } = useSiteVersions(site, readEpoch, setError, busy)
   const { assets, assetsLoading, toggleAssets, resetAssets } =
     useSiteAssets(site, setError, busy)

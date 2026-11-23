@@ -22,7 +22,13 @@ export function useSiteAssets(
   }
 
   React.useEffect(() => {
-    resetAssets()
+    const revision = ++sequence.current
+    opened.current = false
+    void Promise.resolve().then(() => {
+      if (revision !== sequence.current) return
+      setAssets(null)
+      setAssetsLoading(false)
+    })
     return () => { sequence.current++ }
   }, [site])
 

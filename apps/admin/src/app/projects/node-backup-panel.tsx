@@ -32,17 +32,9 @@ export function NodeBackupPanel({
   const [selectedSnapshot, setSelectedSnapshot] = React.useState("")
   const ownerSessionVersion = React.useRef(0)
 
-  React.useEffect(() => {
-    // Invalidate responses started before owner access changed.
-    ownerSessionVersion.current += 1
-    if (!ownerAuthorized || !catalogReady) {
-      setBackupApproved(false)
-      setBackupStatus(null)
-      setBackupsEnabled(false)
-      setBackupSnapshots([])
-      setSelectedSnapshot("")
-    }
-  }, [ownerAuthorized, catalogReady])
+  // Parent remounts this panel when catalog or owner access changes.
+  // Reject pending response continuations from the previous session.
+  React.useEffect(() => () => { ownerSessionVersion.current += 1 }, [])
 
   const repositoryReady = backupStatus?.initialized === true &&
     backupStatus.repositoryPresent && backupStatus.keyPresent

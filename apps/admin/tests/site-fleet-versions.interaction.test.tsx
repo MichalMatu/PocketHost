@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
@@ -12,51 +12,6 @@ import SitesPage from "@/app/sites/page"
 
 const ID = "site-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
-
-function makeStaticZip(name = "index.html"): File {
-  const encoder = new TextEncoder()
-  const filename = encoder.encode(name)
-  const payload = encoder.encode("<!doctype html><title>ZIP fixture</title>")
-  let checksum = 0xffffffff
-  for (const byte of payload) {
-    checksum ^= byte
-    for (let bit = 0; bit < 8; bit++)
-      checksum = (checksum >>> 1) ^ ((checksum & 1) ? 0xedb88320 : 0)
-  }
-  checksum = (checksum ^ 0xffffffff) >>> 0
-  const centralOffset = 30 + filename.length + payload.length
-  const centralLength = 46 + filename.length
-  const bytes = new Uint8Array(centralOffset + centralLength + 22)
-  const view = new DataView(bytes.buffer)
-  const write16 = (offset: number, value: number) => view.setUint16(offset, value, true)
-  const write32 = (offset: number, value: number) => view.setUint32(offset, value, true)
-  write32(0, 0x04034b50)
-  write16(4, 20)
-  write16(6, 0x0800)
-  write32(14, checksum)
-  write32(18, payload.length)
-  write32(22, payload.length)
-  write16(26, filename.length)
-  bytes.set(filename, 30)
-  bytes.set(payload, 30 + filename.length)
-  write32(centralOffset, 0x02014b50)
-  write16(centralOffset + 4, 20)
-  write16(centralOffset + 6, 20)
-  write16(centralOffset + 8, 0x0800)
-  write32(centralOffset + 16, checksum)
-  write32(centralOffset + 20, payload.length)
-  write32(centralOffset + 24, payload.length)
-  write16(centralOffset + 28, filename.length)
-  write32(centralOffset + 42, 0)
-  bytes.set(filename, centralOffset + 46)
-  const end = centralOffset + centralLength
-  write32(end, 0x06054b50)
-  write16(end + 8, 1)
-  write16(end + 10, 1)
-  write32(end + 12, centralLength)
-  write32(end + 16, centralOffset)
-  return new File([bytes], "first.zip", { type: "application/zip" })
-}
 
 
 function renderSites(route = "/sites") {
@@ -85,33 +40,6 @@ function project(state: "stopped" | "running" | "unknown" = "stopped", active = 
   }
 }
 
-function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites") {
-  let sites = [...initial]
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input)
-    if (url === "/api/v1/sites" && (!init?.method || init.method === "GET"))
-      return { ok: true, json: async () => ({ sites }) }
-    if (url === "/api/v1/sites/" && init?.method === "POST") {
-      expect((init.headers as Record<string, string>)["X-PocketHost-Intent"]).toBe("owned-sites")
-      expect(JSON.parse(String(init.body)).name).toBe("My own site")
-      const site = project()
-      sites = [site]
-      return { ok: true, json: async () => ({ site }) }
-    }
-    if (url === "/api/v1/sites/" + ID + "/files" && (!init?.method || init.method === "GET"))
-      return { ok: true, json: async () => ({ files: [
-        { name: "index.html", bytes: 120 }, { name: "css/main.css", bytes: 225 },
-      ] }) }
-    if (url.endsWith("/health"))
-      return { ok: true, json: async () => ({ healthy: true }) }
-    if (url.endsWith("/logs"))
-      return { ok: true, json: async () => ({ logs: ["PocketHost owned H2 site listening"] }) }
-    return { ok: false, status: 404, json: async () => ({ error: "not-found" }) }
-  })
-  vi.stubGlobal("fetch", fetchMock)
-  renderSites(route)
-  return fetchMock
-}
 
 afterEach(() => vi.unstubAllGlobals())
 

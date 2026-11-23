@@ -57,8 +57,6 @@ export default function LocalAgentPage() {
 
   React.useEffect(() => {
     const controller = new AbortController()
-    setPlaneLoading(true)
-    setPlaneError(false)
     void fetch("/api/v1/termux-admin?mode=control-plane-diagnostics", {
       method: "GET", credentials: "same-origin", cache: "no-store",
       signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10_000)]),
@@ -257,6 +255,8 @@ export default function LocalAgentPage() {
               rawDecoder.current = new TextDecoder()
               // Retain the previously confirmed source lines until the new
               // snapshot succeeds; a failed refresh must not erase evidence.
+              setPlaneLoading(true)
+              setPlaneError(false)
               setRefreshToken(value => value + 1)
             }}>
             <RefreshCw className="size-4" /> Refresh

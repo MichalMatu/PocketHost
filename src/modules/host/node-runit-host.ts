@@ -211,7 +211,7 @@ function portFree(port: number): Promise<boolean> {
     s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
   });
 }
-/** Reserve only currently unused, unregistered loopback ports in the fixed Node pool. */
+/** Reserve unused fixed-pool loopback ports. */
 export async function selectUnreservedNodePort(
   reserved: ReadonlySet<number>,
   free: (port: number) => Promise<boolean>,
@@ -221,7 +221,7 @@ export async function selectUnreservedNodePort(
   }
   throw new Error('No unreserved loopback Node port');
 }
-/** Fixed loopback-only readiness probe; a foreign HTTP 200 never attests the release. */
+/** Readiness must attest this release, not foreign HTTP 200. */
 export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<boolean> {
   if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 || !/^[a-f0-9]{48}$/.test(nonce))
     throw new RangeError('Unsafe Node readiness probe');
@@ -886,9 +886,7 @@ export class NodeRunitHost {
       history: [],
     };
     this.writeState(id, state);
-    // Enrollment is only issued by the trusted creator after its own unit
-    // scripts and private runtime identity have been written. No HTTP call
-    // may claim a discovered runit service merely by naming it.
+    // Only the attested creator enrolls; never adopt discovered services.
     const unitMarker = JSON.parse(privateText(path.join(service, UNIT_MARKER))) as UnitRecord;
     if (
       unitMarker.owner !== 'pockethost-node-runit' ||
@@ -961,9 +959,7 @@ export class NodeRunitHost {
       if (this.checkReleaseSyntax(id, release).status !== 'syntax-valid') {
         throw new Error('Node release syntax invalid: existing service retained');
       }
-      // An update can fail after stopping the current service. Verify the
-      // entire fallback (source, packages, toolchain and syntax) *before*
-      // halting anything. Otherwise recovery might execute a tampered release.
+      // Re-attest fallback source, packages and tools before stopping live service.
       const recoveryRelease = state?.lastGoodRelease;
       if (recoveryRelease && recoveryRelease !== release) {
         const recovery = this.projects.release(id, recoveryRelease);

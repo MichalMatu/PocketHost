@@ -192,14 +192,9 @@ export function NodeDataPanel({ projectId, ownerAuthorized, busy, getJson, actio
   const [indexUnavailable, setIndexUnavailable] = React.useState(false)
   const [integrity, setIntegrity] = React.useState<Record<string, IntegrityState>>({})
   const requestVersion = React.useRef(0)
-  React.useEffect(() => {
-    requestVersion.current += 1
-    setReport(null)
-    setSnapshots(null)
-    setScopeUnavailable(false)
-    setIndexUnavailable(false)
-    setIntegrity({})
-  }, [projectId, ownerAuthorized])
+  // Parent keys this panel by selected project and owner session; unmount
+  // invalidates pending reads without synchronously resetting effect state.
+  React.useEffect(() => () => { requestVersion.current += 1 }, [])
 
   if (!projectId) return null
 

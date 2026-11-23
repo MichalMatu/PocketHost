@@ -18,7 +18,8 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
   const {
     name, setName, initialZip, setInitialZip, initialFolder, setInitialFolder,
     publishStarter, setPublishStarter, initialHtml, setInitialHtml,
-    initialZipInput, initialFolderInput, creating, inputError, setInputError,
+    initialZipInput, initialFolderInput, clearInitialZip, clearInitialFolder,
+    creating, inputError, setInputError,
     setNotice, createSite,
   } = creation
 
@@ -59,9 +60,8 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
                 const picked = event.currentTarget.files?.[0] ?? null
                 setInitialZip(picked)
                 if (picked) {
-                  setInitialFolder([])
+                  clearInitialFolder()
                   setPublishStarter(false)
-                  if (initialFolderInput.current) initialFolderInput.current.value = ""
                 }
                 setInputError(null)
               }} />
@@ -79,9 +79,8 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
                 const selected = Array.from(event.currentTarget.files ?? [])
                 setInitialFolder(selected)
                 if (selected.length) {
-                  setInitialZip(null)
+                  clearInitialZip()
                   setPublishStarter(false)
-                  if (initialZipInput.current) initialZipInput.current.value = ""
                 }
                 setInputError(null)
               }} />
@@ -100,10 +99,8 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
               </p>
               <Button type="button" variant="outline" size="sm" disabled={creating || loading}
                 onClick={() => {
-                  setInitialZip(null)
-                  setInitialFolder([])
-                  if (initialZipInput.current) initialZipInput.current.value = ""
-                  if (initialFolderInput.current) initialFolderInput.current.value = ""
+                  clearInitialZip()
+                  clearInitialFolder()
                   setInputError(null)
                   setNotice(null)
                 }}>Clear selected import</Button>

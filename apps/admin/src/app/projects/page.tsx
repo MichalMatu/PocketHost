@@ -44,7 +44,7 @@ export default function ProjectsPage() {
   const [selectedId, setSelectedId] = React.useState("")
   // A stable refresh callback needs the actual selection, not the mount-time value.
   const selectedIdRef = React.useRef(selectedId)
-  selectedIdRef.current = selectedId
+  React.useEffect(() => { selectedIdRef.current = selectedId }, [selectedId])
   const [name, setName] = React.useState("")
   const [createPhase, setCreatePhase] = React.useState<"idle" | "pending" | "confirmed" | "rejected" | "unknown">("idle")
   const creatingRef = React.useRef(false)
@@ -169,7 +169,7 @@ export default function ProjectsPage() {
       setCatalogState("error")
       throw cause
     }
-  }, [getJson, beginInspection, resetLogs, invalidateRead, resetDiagnostics])
+  }, [getJson, beginInspection, resetLogs, invalidateRead, resetDiagnostics, setPlan, setExecutionEnabled])
   React.useEffect(() => {
     let live = true
     void Promise.resolve().then(refresh).catch(cause => {
@@ -182,15 +182,20 @@ export default function ProjectsPage() {
   React.useEffect(() => {
     if (catalogState !== "ready" || !selectedId ||
         projects.some(project => project.id === selectedId)) return
-    invalidateRead()
-    beginInspection()
-    resetLogs()
-    setSelectedId("")
-    setApproved(false)
-    setPreview(null)
-    setBuildCheck(null)
-    setGithubReview(null)
-    setEditorDirty(false)
+    let active = true
+    void Promise.resolve().then(() => {
+      if (!active) return
+      invalidateRead()
+      beginInspection()
+      resetLogs()
+      setSelectedId("")
+      setApproved(false)
+      setPreview(null)
+      setBuildCheck(null)
+      setGithubReview(null)
+      setEditorDirty(false)
+    })
+    return () => { active = false }
   }, [catalogState, projects, selectedId, invalidateRead, beginInspection, resetLogs])
 
   const action = (fn: () => Promise<void>) => {
@@ -1058,7 +1063,7 @@ export default function ProjectsPage() {
                   }
                   // Missing or invalid acknowledgement does not prove that the POST failed.
                   setCreatePhase("unknown")
-                  throw new Error("Project creation unconfirmed. Refresh the catalog before another create.")
+                  throw new Error("Project creation unconfirmed. Refresh the catalog before another create.", { cause })
                 } finally {
                   creatingRef.current = false
                 }
@@ -1087,9 +1092,11 @@ export default function ProjectsPage() {
           </p>}
         </div>
       </details>
-      <NodeDataPanel projectId={selected?.id ?? null} ownerAuthorized={ownerAuthorized}
+      <NodeDataPanel key={(selected?.id ?? "none") + ":" + String(ownerAuthorized)}
+         projectId={selected?.id ?? null} ownerAuthorized={ownerAuthorized}
         busy={busy} action={action} getJson={getJson} />
-      <NodeBackupPanel catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
+      <NodeBackupPanel key={String(catalogState === "ready") + ":" + String(ownerAuthorized)}
+         catalogReady={catalogState === "ready"} ownerAuthorized={ownerAuthorized}
         busy={busy} action={action} getJson={getJson} onMessage={setMessage} />
       </div>
     </div>

@@ -30,6 +30,14 @@ export function useOwnedSiteCreation({
     initialFolderInput.current?.setAttribute("webkitdirectory", "")
     initialFolderInput.current?.setAttribute("directory", "")
   }, [])
+  const clearInitialZip = () => {
+    setInitialZip(null)
+    if (initialZipInput.current) initialZipInput.current.value = ""
+  }
+  const clearInitialFolder = () => {
+    setInitialFolder([])
+    if (initialFolderInput.current) initialFolderInput.current.value = ""
+  }
   const [creating, setCreating] = React.useState(false)
   const [inputError, setInputError] = React.useState<string | null>(null)
   const [notice, setNotice] = React.useState<string | null>(null)
@@ -130,7 +138,7 @@ export function useOwnedSiteCreation({
   return {
     name, setName, initialZip, setInitialZip, initialFolder, setInitialFolder,
     publishStarter, setPublishStarter, initialHtml, setInitialHtml,
-    initialZipInput, initialFolderInput, creating, inputError, setInputError,
-    notice, setNotice, createSite,
+    initialZipInput, initialFolderInput, clearInitialZip, clearInitialFolder,
+    creating, inputError, setInputError, notice, setNotice, createSite,
   }
 }

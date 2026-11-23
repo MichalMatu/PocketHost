@@ -12,7 +12,7 @@ export function useSiteVersions(
   const opened = React.useRef(false)
   const requestSequence = React.useRef(0)
 
-  const load = () => {
+  const load = React.useCallback(() => {
     const revision = epoch.current
     const request = ++requestSequence.current
     const current = () =>
@@ -43,15 +43,18 @@ export function useSiteVersions(
     }).finally(() => {
       if (current()) setVersionsLoading(false)
     })
-  }
+  }, [site, epoch, setError])
 
   React.useEffect(() => {
     // A new verified inventory revision supersedes all prior version GETs.
-    requestSequence.current += 1
-    setVersions(null)
-    setVersionsLoading(false)
-    if (opened.current) load()
-  }, [site])
+    const revision = ++requestSequence.current
+    void Promise.resolve().then(() => {
+      if (revision !== requestSequence.current) return
+      setVersions(null)
+      setVersionsLoading(false)
+      if (opened.current) load()
+    })
+  }, [load])
 
   React.useEffect(() => () => { requestSequence.current += 1 }, [])
 

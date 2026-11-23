@@ -316,17 +316,14 @@ function cleanSource(input: unknown): {
   }
   const plan = planNodeDependencies(source.packageJson, source.packageLock);
   const pkg = source.packageJson as { scripts?: { start?: unknown } };
-  // First vertical slice accepts only one known entrypoint; no caller-supplied
-  // paths, postinstall or arbitrary start command are executed by this store.
+  // Fixed entrypoint only; no hooks or custom commands.
   if (pkg.scripts?.start !== 'node server.mjs') {
     throw new RangeError('Node starter must use node server.mjs');
   }
   return { manifest, lock, source: source.serverSource, plan, extraFiles, assetFiles };
 }
 
-/** An immutable source release cannot silently gain new modules/config files.
- * Dependency packages and built dist have their own independent attestations.
- */
+/** Source release excludes separately attested package/build files. */
 function verifySourceLayout(
   folder: string,
   extras: Readonly<Record<string, string>>,
@@ -355,8 +352,7 @@ function verifySourceLayout(
   for (const [relative, entries] of expected) {
     const target = relative ? path.join(folder, relative) : folder;
     const actual = readdirSync(target);
-    // npm and a verified build may publish their own reserved directories,
-    // but only at the release root and never inside user source folders.
+    // Package/build output stays at release root, not in source.
     const allowed = relative === '' ? new Set([...entries, 'node_modules', 'dist']) : entries;
     if (actual.some((name) => !allowed.has(name)))
       throw new Error('Unexpected file in attested Node source release');
@@ -415,12 +411,7 @@ function validateMarker(raw: string, id: string): NodeProjectRecord {
   return v as unknown as NodeProjectRecord;
 }
 
-/**
- * M3 pre-execution source store. A release is a CANDIDATE, not a live
- * deployment; this class never installs npm packages, binds ports,
- * starts daemons or signals any process. The later runit adapter must
- * separately verify provenance, source and effective ownership.
- */
+/** Candidate source store only. Runit re-attests before execution. */
 export class NodeProjectHost {
   private readonly root: string;
   constructor(root = path.join(os.homedir(), 'PocketHost-NodeProjects')) {
@@ -528,8 +519,7 @@ export class NodeProjectHost {
     const source = cleanSource(input);
     return this.mutation(() => {
       const marker = this.record(id);
-      // Check both identity and monotonic history under the exclusive lock.
-      // The history revision prevents A -> B -> A from bypassing conflict checks.
+      // Identity and monotonic history prevent A -> B -> A conflicts.
       if (
         (expectedCandidate !== undefined && marker.candidateRelease !== expectedCandidate) ||
         (expectedRevision !== undefined && marker.history.length !== expectedRevision)
@@ -537,8 +527,7 @@ export class NodeProjectHost {
         throw new Error('Node candidate changed; reload before staging');
       const releases = path.join(this.projectPath(id), 'releases');
       if (marker.candidateRelease) {
-        // Retry-safe under the same project mutation lock. Never trust only
-        // filenames or a candidate ID: re-attest the stored source digests.
+        // Under mutation lock, re-attest source digests on retries.
         const proof = path.join(releases, marker.candidateRelease, RELEASE_PROOF);
         let proven = true;
         try {
@@ -696,8 +685,7 @@ export class NodeProjectHost {
     const manifestText = privateFile(path.join(folder, 'package.json'));
     const lockText = privateFile(path.join(folder, 'package-lock.json'));
     const sourceText = privateFile(path.join(folder, 'server.mjs'), 64 * 1024);
-    // The source proof is generated at staging time. Older unproven candidates
-    // remain inspectable, but must be re-staged before runtime execution.
+    // Unproven legacy candidates require re-staging before runtime.
     const rawProof: unknown = JSON.parse(privateFile(path.join(folder, RELEASE_PROOF), 1024));
     if (!rawProof || typeof rawProof !== 'object' || Array.isArray(rawProof))
       throw new Error('Missing verified Node release source');

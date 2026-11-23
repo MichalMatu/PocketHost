@@ -1,7 +1,8 @@
 import * as React from "react"
 import { describe, expect, it } from "vitest"
 import { render, screen } from "@testing-library/react"
-import { DashboardTooltip, historyTime, type TooltipFields } from "@/app/termux/dashboard-tooltip"
+import { DashboardTooltip, type TooltipFields } from "@/app/termux/dashboard-tooltip"
+import { historyTime } from "@/app/termux/dashboard-history-time"
 
 const source = { observedAt: "2026-11-10T15:22:07.000Z", timestamp: Date.parse("2026-11-10T15:22:07.000Z") }
 

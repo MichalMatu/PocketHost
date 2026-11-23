@@ -16,7 +16,7 @@ export default function RuntimeLogsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const requestedRef = React.useRef<string | null>(null)
   const requestedProject = searchParams.get("project")
-  requestedRef.current = requestedProject
+  React.useEffect(() => { requestedRef.current = requestedProject }, [requestedProject])
   const [targets, setTargets] = React.useState<ProjectLogTarget[]>([])
   const [selectedKey, setSelectedKey] = React.useState("")
   const [staticStatus, setStaticStatus] = React.useState<LogSourceStatus | "loading">("loading")
@@ -83,15 +83,27 @@ export default function RuntimeLogsPage() {
     if (catalogLoading || requestedProject === null) return
     const owned = targets.some(target => target.key === requestedProject)
     const next = owned ? requestedProject : ""
-    setSelectedKey(current => current === next ? current : next)
+    let active = true
+    void Promise.resolve().then(() => {
+      if (active) setSelectedKey(current => current === next ? current : next)
+    })
+    return () => { active = false }
   }, [requestedProject, targets, catalogLoading])
 
   React.useEffect(() => {
+    let active = true
     const target = targets.find(entry => entry.key === selectedKey &&
       (requestedProject === null || entry.key === requestedProject))
     if (target && !catalogLoading) void loadLogs(target)
-    else { version.current += 1; setLines([]); setLogState("idle") }
-    return () => { version.current += 1 }
+    else {
+      version.current += 1
+      void Promise.resolve().then(() => {
+        if (!active) return
+        setLines([])
+        setLogState("idle")
+      })
+    }
+    return () => { active = false; version.current += 1 }
   }, [selectedKey, targets, catalogLoading, loadLogs, requestedProject])
 
   const selected = targets.find(entry => entry.key === selectedKey &&
