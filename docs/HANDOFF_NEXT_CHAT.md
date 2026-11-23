@@ -18,6 +18,10 @@ Read [AGENTS](../AGENTS.md), [START_HERE](START_HERE.md), [MVP plan](MVP_EXECUTI
 - **Prior cumulative QA:** `pockethost-a8-cumulative-e47dace-qa-20261123-v1` on `e47dace`: syntax 21/21, format, structure, docs, root lint, Markdown lint, admin TypeScript and Node tests PASS; broad UI reached 300s and nine tests failed. The nine were fixed and confirmed by the later **scoped 121/121 PASS**, but the original whole-suite G2 run was NOT PASS.
 - **N12:** immutable `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains UNKNOWN; never replay. Read-only `pockethost-a8-n12-owner-claim-diagnostic-20261123-v1` proved free N12 execution and PocketHost resource locks. The historical unmatched local claim still forbids claiming unrestricted host maintenance safety. Always fresh-verify owned A8 state before future tasks.
 
+## Full G2 qualification — 23 November 2026
+
+The owner-approved full A8 G2 was actually executed, **not passed**: task `pockethost-a8-g2-final-3b74c6b-20261123-v1` on exact `3b74c6b` returned terminal QA_FAIL. Admin build + root/admin TypeScript passed; UI 473/486 tests passed (13 failed), Node coverage lines 73.41% below 75%, admin lint 47 errors, full format 61 files and code-budget overages. Follow-up fixes `ef2f6f5` and `a67d9a4` received targeted QA: Node 10 passed, 1 hardlink case skipped due to Android filesystem, scoped SSH lint/format passed, UI 19/21 passed with two Phone Settings assertions still failing. **No complete G2 PASS for current main and no new DEV deployment.** [Exact report](checkpoints/2026-11-23-g2-full-qualification.md).
+
 ## Next safe work
 
 1. **No redundant release for this docs-only update.** Fresh `main` may be newer than live `349087d` only because the handoff and quality status were synchronized after the verified release.

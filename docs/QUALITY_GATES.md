@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-23
 purpose: Separate guarded deployment from independently approved QA
 ---
 
@@ -27,3 +27,7 @@ Historical guarded A8 DEV `d0468ab0e4e7b2830c998aab6f406b2f15ad5a0b` **DEPLOY PA
 ## Source-audit coverage limitation
 
 The `check:boundaries` implementation statically examines imports under `src/`. The separate code-budget scan contains selected browser-import heuristics; neither walks the entire Vite/plugin/UI dependency graph or proves runtime ownership. A PASS is meaningful **within that gate's scope**, not proof of universal modularity or application-data recovery. The [22 November source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md) records the inspected boundaries and outstanding extraction debt. No QA was run during that documentation-only review.
+
+## Full G2 outcome on A8 (23 November)
+
+A full SHA-pinned qualification **was executed**, not merely planned: `pockethost-a8-g2-final-3b74c6b-20261123-v1` at exact `3b74c6b` terminal QA_FAIL. Structure/docs/boundaries/Markdown, TypeScript and Vite build passed; full format, budgets, lint, Node coverage and 13/486 UI assertions failed. Subsequent `a67d9a4` targeted repair QA remained FAIL (19/21 UI; two Phone Settings failures), so **G2 remains unaccepted**. [Detailed A8 evidence and blockers](checkpoints/2026-11-23-g2-full-qualification.md). No post-G2 deployment or physical G3 qualification.

@@ -1,7 +1,7 @@
 ---
 status: index
 owner: core
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-23
 purpose: Git-backed historical evidence locations
 ---
 
@@ -11,6 +11,7 @@ purpose: Git-backed historical evidence locations
 
 Original older contents are in Git at commit `d801da7`; historical stub files are deliberately kept for stable links. Do not preload all checkpoint files.
 
+- [2026-11-23-g2-full-qualification](2026-11-23-g2-full-qualification.md)
 - [2026-11-22-demo-cleanup-overnight-handoff](2026-11-22-demo-cleanup-overnight-handoff.md)
 - [2026-11-22-source-modules-documentation-checkpoint](2026-11-22-source-modules-documentation-checkpoint.md)
 - [2026-11-21-pocket-host-mvp-handoff](2026-11-21-pocket-host-mvp-handoff.md)
