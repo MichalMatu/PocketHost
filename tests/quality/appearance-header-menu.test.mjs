@@ -12,7 +12,7 @@ test('layout has no floating theme settings trigger and keeps one header control
   const customizer = file('theme-customizer/index.tsx');
   assert.doesNotMatch(layout, /ThemeCustomizerTrigger/);
   assert.doesNotMatch(customizer, /fixed top-1\/2|ThemeCustomizerTrigger/);
-  assert.equal((layout.match(/<SiteHeader/g) || []).length, 2);
+  assert.equal((layout.match(/<SiteHeader/g) || []).length, 1);
   assert.match(layout, /activeTab=\{customizerTab\}/);
   assert.match(layout, /onResetAppearance=\{resetAppearance\}/);
   assert.match(file('site-header.tsx'), /<ModeToggle/);

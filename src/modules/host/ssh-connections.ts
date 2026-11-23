@@ -13,6 +13,8 @@ export interface SSHConnection {
 type Input = Omit<SSHConnection, 'id'>;
 const HOST = /^(?:[A-Za-z0-9](?:[A-Za-z0-9._-]{0,251}[A-Za-z0-9])?)$/;
 const USER = /^[A-Za-z_][A-Za-z0-9_.-]{0,31}$/;
+// Explicitly reject ASCII control characters in owner-supplied labels.
+// eslint-disable-next-line no-control-regex
 const NAME = /^[^\r\n\x00-\x1f]{1,48}$/;
 const ID = /^[a-f0-9-]{36}$/;
 const MAX = 24;
