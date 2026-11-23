@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static hidden-file import feedback (23 November)
+
+- **Source:** `7a5535f2def527705736b097eebdf251f1882767`; regressions `57732058468ef8db524ee8b487059ac7d7924565` and `566933b32be4bcd987439a67c86348d6e8e9af96`. `validateStaticFolderSelection` now rejects hidden path segments like macOS `.DS_Store` before existing-site folder confirmation or new-site create/import POST, with actionable feedback. Host `src/shared/static-site-assets.ts` already rejects these paths; matching host behavior without changing valid input, encoded bytes, API contracts or host actions.
+- **Regressions authored, NOT RUN:** `apps/admin/tests/site-create-controller.interaction.test.tsx` and `apps/admin/tests/site-release-import.interaction.test.tsx` each cover root-level and one-common-parent hidden files alongside a nonempty `index.html`. Assertions: no network POST, no release confirmation/execute, UI error, input picker clear where applicable. Existing normal-folder and case-fold duplicate tests retained.
+- **A8 QA / DEV HOLD:** N12 `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains immutable `unknown` / `interrupted_or_uncertain_execution_no_replay`; no independent A8 task/claim/process reconciliation has been obtained. Do not replay/overlap N12, restart Agent, run project QA off the verified Samsung A8 or assert deployment. First reconcile A8 ownership, then pin fresh 40-char main and execute bounded `format,admin-types,ui` with dependency-mapped `syntax,node`; record terminal exact-SHA results and consider guarded DEV only on PASS with live SHA/PID/ticks/HTTP/protected-services readback.
+
 ## Current continuation — Static process ownership readback parity (23 November)
 
 - **Source:** `193f93737b756aea8b173737cf5b8e92ad82db12`; regression `d774b49694b00824a259898520b764a9a4546e1e`. In `apps/admin/src/app/sites/page.tsx`, site-card mutation acknowledgement is now reconciled with the exact subsequent site GET for process `pid`, `startTicks` and owned `port`, in addition to state, release and file-summary fields. A mismatch fails closed, shows `Site action result unconfirmed`, blocks further site writes until refresh, and does not claim Start success. No extra HTTP calls, host process signals or endpoint changes.
