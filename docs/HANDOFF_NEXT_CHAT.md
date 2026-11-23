@@ -9,6 +9,12 @@ purpose: Exact A8 guarded DEV and QA receipts with next autonomous safe code sli
 
 **Runbook:** [night sprint](NIGHT_AUTONOMOUS_SPRINT.md). **Required:** [AGENTS](../AGENTS.md), [Termux A8 transport](LOCAL_AGENT_TERMUX.md), [DEV iteration](DEV_ITERATION.md), [MVP status](MVP_EXECUTION_PLAN.md).
 
+## Current continuation — Static version archive parity (23 November)
+
+- **Source:** `a514eb1f94fb2dd1991c2e44e5483e2545e5aac9`; regression `22c330d35a843d72490c4a711fa2bb92344b60b0`. `useSiteVersions` now reconciles saved-release list length with the latest verified site `releases` summary and requires the active archived release's `fileCount` and `bytes` to agree with that site's `fileCount` and `bytes`. Previously it checked only active and quick-rollback IDs. Mismatches close the archive list, expose Refresh/retry feedback, and do not offer Restore/Prune actions.
+- **Regression authored, NOT RUN:** `apps/admin/tests/site-version-refresh-race.interaction.test.tsx` adds 3 read-only mismatch/retry scenarios (release count, active file count, active bytes), and updates the older minimal hook fixtures with `releases`, `fileCount` and `bytes` fields. Host `SiteFleetHost.details` counts releases from the release directory and active counts from the active release, confirming those two views share semantics. No host/API write.
+- **A8 QA/DEV HOLD:** `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` remains immutable `unknown` with `interrupted_or_uncertain_execution_no_replay`. The agent-control daemon status says `idle` but its host_claims status is `unverified` / `claims_state: unknown`, so it cannot independently clear A8 task/process ownership. Never replay/overlap N12, restart the Agent or perform off-device project QA. Once on-device reconciliation clears pending claims, run separate bounded exact-SHA `format,admin-types,ui` and mapped Node checks before guarded DEV deployment with live owner/process/HTTP/protected services evidence.
+
 ## Current continuation — Static hidden-file import feedback (23 November)
 
 - **Source:** `7a5535f2def527705736b097eebdf251f1882767`; regressions `57732058468ef8db524ee8b487059ac7d7924565` and `566933b32be4bcd987439a67c86348d6e8e9af96`. `validateStaticFolderSelection` now rejects hidden path segments like macOS `.DS_Store` before existing-site folder confirmation or new-site create/import POST, with actionable feedback. Host `src/shared/static-site-assets.ts` already rejects these paths; matching host behavior without changing valid input, encoded bytes, API contracts or host actions.
