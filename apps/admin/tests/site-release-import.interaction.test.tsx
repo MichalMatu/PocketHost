@@ -57,6 +57,34 @@ it.each([
   expect(event.currentTarget.value).toBe("")
 })
 
+it.each(["root", "wrapped"] as const)(
+  "rejects case-insensitive duplicate %s folder paths before confirming publication",
+  scope => {
+    const first = new File(["<h1>Page</h1>"], "index.html")
+    const duplicate = new File(["<h1>Duplicate</h1>"], "INDEX.HTML")
+    if (scope === "wrapped") {
+      Object.defineProperty(first, "webkitRelativePath", { value: "homepage/index.html" })
+      Object.defineProperty(duplicate, "webkitRelativePath", { value: "homepage/INDEX.HTML" })
+    }
+    const execute = vi.fn(async () => {})
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true)
+    const setError = vi.fn()
+    const hook = renderHook(() => useSiteReleaseImport({
+      site, busy: false, outcomeUnknown: false,
+      html: "<h1>Hello</h1>", editorReady: true,
+      execute, setError, setMessage: vi.fn(),
+    }))
+    const event = selected([first, duplicate])
+    act(() => { hook.result.current.folder(event) })
+    expect(setError).toHaveBeenCalledWith(
+      "Folder contains duplicate file paths. Rename files that differ only by case.",
+    )
+    expect(confirm).not.toHaveBeenCalled()
+    expect(execute).not.toHaveBeenCalled()
+    expect(event.currentTarget.value).toBe("")
+  },
+)
+
 it("accepts a directory picker selection with one shared parent folder", () => {
   const html = new File(["<h1>Page</h1>"], "index.html")
   const css = new File(["body {}"], "main.css")
