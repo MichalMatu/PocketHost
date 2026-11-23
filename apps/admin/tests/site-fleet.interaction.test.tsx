@@ -835,6 +835,36 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(calls.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
   })
 
+  it.each(["fileCount", "bytes"] as const)(
+    "blocks new mutations when the write receipt disagrees on %s with exact-site readback",
+    async field => {
+      const user = userEvent.setup()
+      const expected = project("running", true)
+      const acknowledged = { ...expected, [field]: expected[field] + 1 }
+      const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+        const url = String(input)
+        if (url === "/api/v1/sites" && !options?.method)
+          return { ok: true, json: async () => ({ sites: [project("stopped", true)] }) }
+        if (url === "/api/v1/sites/" + ID + "/start" && options?.method === "POST")
+          return { ok: true, json: async () => ({ site: acknowledged }) }
+        if (url === "/api/v1/sites/" + ID && !options?.method)
+          return { ok: true, json: async () => ({ site: expected }) }
+        throw new Error("Unexpected endpoint " + url)
+      })
+      vi.stubGlobal("fetch", requests)
+      renderSites()
+      await screen.findByText("My own site")
+      await user.click(screen.getByRole("button", { name: /^Start$/ }))
+      await screen.findByText(/Site action result unconfirmed/)
+      expect(screen.getByText(/Write actions are paused for this site/)).toBeTruthy()
+      expect((screen.getByRole("button", { name: /^Start$/ }) as HTMLButtonElement).disabled).toBe(true)
+      expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(true)
+      expect(screen.queryByText("Start completed.")).toBeNull()
+      expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+      expect(requests.mock.calls.filter(([url]) => String(url) === "/api/v1/sites")).toHaveLength(1)
+    },
+  )
+
   it("pauses site writes when acknowledged mutation lacks exact-site readback", async () => {
     const user = userEvent.setup()
     const calls = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
