@@ -2,6 +2,19 @@
  * Dependency-aware, intentionally conservative PocketHost DEV gate planner.
  * Pure logic: no Git, filesystem or host operations.
  */
+/** Dependency imports are relevant only to changed source modules.
+ * A docs/test/script-only diff has direct conservative check mappings.
+ */
+export function needsChangedTestDependencies(paths, deletedPaths = []) {
+  const deleted = new Set(deletedPaths);
+  return paths.some(
+    (file) =>
+      !deleted.has(file) &&
+      ((file.startsWith('src/') && /\\.(?:ts|tsx|mjs)$/.test(file)) ||
+        (file.startsWith('apps/admin/src/') && /\\.(?:ts|tsx|js|jsx)$/.test(file))),
+  );
+}
+
 export function planChangedChecks(
   paths,
   dependencies = {},
