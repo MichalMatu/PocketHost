@@ -10,8 +10,8 @@ export function needsChangedTestDependencies(paths, deletedPaths = []) {
   return paths.some(
     (file) =>
       !deleted.has(file) &&
-      ((file.startsWith('src/') && /\\.(?:ts|tsx|mjs)$/.test(file)) ||
-        (file.startsWith('apps/admin/src/') && /\\.(?:ts|tsx|js|jsx)$/.test(file))),
+      ((file.startsWith('src/') && /\.(?:ts|tsx|mjs)$/.test(file)) ||
+        (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file))),
   );
 }
 
