@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `932a067f6e4481263b065f24d66f33ce6f36e9c2`, receipt `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` (HTTP 200, owner identity, protected services unchanged). Separate QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 checks plus budgets). Sprint 1 remains closed; Sprint 2 batch A complete, batch B1 pending.
+- **Last device-attested DEV release:** `7fe7ace0b43cfb6c77938e63be88245ef6969ab0`, receipt `pockethost-a8-sprint2-b1-deploy-7fe7ace-20261124-v1` PASS (HTTP 200, owner identity, protected services unchanged). Nested QA `pockethost-a8-sprint2-b1-qa-7fe7ace-20261124-v1` PASS (5/5 plus budgets; outer build wrapper exit 127); separate `pockethost-a8-sprint2-b1-build-7fe7ace-20261124-v1` direct Vite build PASS. Sprint 2 batches A/B1 complete, B2 active; Sprint 1 remains closed.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
