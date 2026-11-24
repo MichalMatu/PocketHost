@@ -98,7 +98,10 @@ test('companion reads preserve route order, package validation and failure respo
     }),
   );
   const base = '/api/v1/shizuku';
-  assert.deepEqual(api.routes, ['system', 'app', 'apps', 'status'].map((r) => base + '/' + r));
+  assert.deepEqual(
+    api.routes,
+    ['system', 'app', 'apps', 'status'].map((r) => base + '/' + r),
+  );
   for (const route of api.routes) {
     assert.equal((await api.request(route, { method: 'POST' })).status, 405);
     assert.equal(
@@ -164,7 +167,10 @@ test('native action and shell adapters only forward validated envelopes to fixed
       ).status,
       400,
     );
-    assert.equal(calls.some((call) => call.url === native), false);
+    assert.equal(
+      calls.some((call) => call.url === native),
+      false,
+    );
     const result = await api.request(route, request, JSON.stringify(payload));
     assert.equal(result.status, 202);
     assert.deepEqual(result.body, { fixture: true });
