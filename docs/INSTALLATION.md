@@ -14,7 +14,7 @@ Use the one-line command in the [root README](../README.md) on a **fresh officia
 - Require official app-private `HOME` and `PREFIX`, non-root UID and Node.js 22 or newer.
 - Refuse an existing standalone checkout, PocketHost service registration, live owner/gateway markers or leftover stage directories _before_ installing packages.
 - Clone `main` by default, or opt in to a published `POCKETHOST_REF=vX.Y.Z` tag. Never use an unverified remote URL. Keep the original Git origin.
-- Use both committed npm lockfiles, with lifecycle scripts disabled.
+- Use both committed npm lockfiles (root and admin), with lifecycle scripts disabled. npm is the only supported package manager for the panel.
 - Use the standard Termux `termux-services` daemon. If it is absent and there are other enabled/unknown service directories, stop rather than risk starting them. Do not restart a running daemon.
 - Create only `pockethost-panel` and `pockethost-panel-watch`; check the loopback HTTP endpoint and owned PID/source markers. A failed bootstrap remains in a guarded incomplete state that needs manual inspection, **not** an automatic destructive rollback.
 - No public network changes, SSH/tunnel reconfiguration, Local Agent installation, customer-data import, reboot or Termux:Boot setup.
