@@ -1,4 +1,3 @@
-import { readHostMetrics, readProcessInventory, readPackageInventory } from "../../src/modules/host/observability-probes.ts"
 import { readTermuxToolInventory } from "../../src/modules/host/termux-tool-inventory.ts"
 import { applyPackageAction, previewPackageAction, WorkspaceFiles, WorkspaceBackups } from "../../src/modules/host/termux-admin.ts"
 import { TermuxServiceAdmin } from "../../src/modules/host/termux-service-admin.ts"
@@ -17,7 +16,6 @@ import { ResticWorkspaceAdmin } from "../../src/modules/host/termux-restic-admin
 import { TermuxFileRoots, type FileRoot } from "../../src/modules/host/termux-file-roots.ts"
 import { TermuxTerminal } from "../../src/modules/host/termux-terminal.ts"
 import { admitsAgentCommand, OWNER_AGENT_CAPABILITIES } from "../../src/modules/host/termux-agent-contract.ts"
-import { ObservabilityHistory, parseObservabilityScope } from "../../src/modules/observability/overview.ts"
 import { createLanControl, createLanRecovery, availableLanInterfaces } from "../../src/modules/host/lan-control.mjs"
 import { readCompanionStatus, readCompanionApps, readCompanionApp, readCompanionSystem } from "../../src/modules/host/shizuku-companion.mjs"
 import { validateRemoteShellPayload } from "../../src/modules/host/remote-shell-contract.mjs"
@@ -28,7 +26,9 @@ import react from "@vitejs/plugin-react"
 import { defineConfig, type Plugin } from "vite"
 import { nodeProjectApi } from "./plugins/node-project-api.ts"
 import { termuxReadOnlyApi } from "./plugins/host-snapshot-api.ts"
-import { readHostSnapshot } from "../../src/modules/host/host-snapshot.ts"
+import { observabilityApi } from "./plugins/observability-api.ts"
+import { internetConnectivityApi } from "./plugins/internet-connectivity-api.ts"
+import { dashboardTelemetryApi } from "./plugins/dashboard-telemetry-api.ts"
 import { OwnedDemoHost } from "../../src/modules/host/owned-site-host.ts"
 import { createOwnedSiteRuntime } from "../../src/modules/runtime/owned-site-runtime.ts"
 import { SiteFleetHost } from "../../src/modules/host/site-fleet-host.ts"
@@ -37,8 +37,7 @@ import { NodeRunitHost } from "../../src/modules/host/node-runit-host.ts"
 import { nodeHostingUnitName } from "../../src/shared/node-hosting-projection.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
-import { probeInternetConnectivity, allowsInternetProbeRequest } from "../../src/modules/host/internet-connectivity.ts"
-import { DashboardTelemetryRecorder, parseDashboardHistoryRoute, attachDashboardOwnedEvents, reportDashboardOwnedEvent } from "../../src/modules/host/dashboard-telemetry-history.ts"
+import { reportDashboardOwnedEvent } from "../../src/modules/host/dashboard-telemetry-history.ts"
 
 /**
  * Opt-in, DEV-only own-site actions. This is not a production HTTP control API.
@@ -380,82 +379,6 @@ function ownedSiteFleetApi(): Plugin {
     },
   }
 }
-
-/** M3 source-only Node project wizard API: no process manager or implicit execution. */
-/** O1: on-demand, loopback-only read-only observations; no background sampler. */
-function observabilityApi(): Plugin {
-  const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
-  const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
-  const history = new ObservabilityHistory()
-  return {
-    name: "pockethost-observability-o1",
-    apply: "serve",
-    configureServer(server) {
-      server.middlewares.use("/api/v1/observability", async (request, response) => {
-        response.setHeader("Cache-Control", "no-store")
-        response.setHeader("X-Content-Type-Options", "nosniff")
-        response.setHeader("Content-Security-Policy", "default-src 'none'")
-        response.setHeader("Content-Type", "application/json; charset=utf-8")
-        const remote = request.socket.remoteAddress
-        if (
-          !hosts.has(request.headers.host ?? "") ||
-          (request.headers.origin && !origins.has(request.headers.origin)) ||
-          request.headers["sec-fetch-site"] === "cross-site" ||
-          (remote !== "127.0.0.1" && remote !== "::ffff:127.0.0.1")
-        ) {
-          response.statusCode = 403
-          response.end(JSON.stringify({ error: "forbidden" }))
-          return
-        }
-        const scope = parseObservabilityScope(request.url)
-        if (scope === null) {
-          response.statusCode = 404
-          response.end("{}")
-          return
-        }
-        if (request.method !== "GET") {
-          response.setHeader("Allow", "GET")
-          response.statusCode = 405
-          response.end("{}")
-          return
-        }
-        try {
-          const [host, metrics] = await Promise.all([
-            Promise.resolve(readHostSnapshot()),
-            readHostMetrics(),
-          ])
-          const processes = readProcessInventory()
-          const observedAt = new Date().toISOString()
-          // Monitoring has no package list. Avoid five synchronous local CLI probes
-          // on this route; full inventory remains available to Packages and Services.
-          const packages = scope === "monitoring"
-            ? { state: "unavailable" as const, observedAt, installed: [], truncated: false,
-              updates: { state: "unknown" as const, candidates: [] } }
-            : readPackageInventory()
-          // M0: global O1 is product-neutral; P4 events remain accessible
-          // only through an explicit, scoped GET-only endpoint.
-          const diagnostics = { state: "unavailable" as const, events: [] }
-          const payload = history.append({
-            version: 1,
-            mode: "read-only",
-            observedAt,
-            host,
-            metrics,
-            processes,
-            packages,
-            diagnostics,
-          }, { includePackageAlerts: scope === "full" })
-          response.statusCode = 200
-          response.end(JSON.stringify(payload))
-        } catch {
-          response.statusCode = 503
-          response.end(JSON.stringify({ error: "observation-unavailable" }))
-        }
-      })
-    },
-  }
-}
-
 
 /** Opt-in manual LAN listener control. Never signals a preexisting gateway. */
 /** Native Android Companion status, forwarded from an on-device read-only provider. */
@@ -1411,93 +1334,6 @@ function termuxAdminApi(): Plugin {
             response.end('{"error":"operation-failed-or-refused"}')
           }
         }
-      })
-    },
-  }
-}
-
-/** Fixed endpoint, read-only, on-demand; no network discovery or background scan. */
-function internetConnectivityApi(): Plugin {
-  let cached: Awaited<ReturnType<typeof probeInternetConnectivity>> | null = null
-  let cachedAt = 0
-  let pending: Promise<Awaited<ReturnType<typeof probeInternetConnectivity>>> | null = null
-  function read() {
-    if (cached && Date.now() - cachedAt < 12000) return Promise.resolve(cached)
-    if (pending) return pending
-    pending = probeInternetConnectivity().then(value => {
-      cached = value
-      cachedAt = Date.now()
-      return value
-    }).finally(() => { pending = null })
-    return pending
-  }
-  return {
-    name: "pockethost-internet-connectivity",
-    apply: "serve",
-    configureServer(server) {
-      server.middlewares.use("/api/v1/internet-connectivity", async (request, response) => {
-        response.setHeader("Cache-Control", "no-store")
-        response.setHeader("X-Content-Type-Options", "nosniff")
-        response.setHeader("Content-Security-Policy", "default-src 'none'")
-        response.setHeader("Content-Type", "application/json; charset=utf-8")
-        if (!allowsInternetProbeRequest({
-          host: request.headers.host, origin: request.headers.origin,
-          remote: request.socket.remoteAddress,
-          fetchSite: request.headers["sec-fetch-site"],
-          method: request.method, route: request.url,
-        })) {
-          response.statusCode = 403
-          response.end(JSON.stringify({ error: "forbidden" }))
-          return
-        }
-        try {
-          response.end(JSON.stringify(await read()))
-        } catch {
-          response.statusCode = 503
-          response.end(JSON.stringify({ error: "probe-unavailable" }))
-        }
-      })
-    },
-  }
-}
-
-/** Owner-approved 60s read-only sampler in the existing DEV panel process. */
-function dashboardTelemetryApi(): Plugin {
-  return {
-    name: "pockethost-dashboard-history",
-    apply: "serve",
-    configureServer(server) {
-      const recorder = new DashboardTelemetryRecorder()
-      attachDashboardOwnedEvents(recorder.store)
-      recorder.start()
-      server.httpServer?.once("close", () => {
-        attachDashboardOwnedEvents(null)
-        recorder.stop()
-      })
-
-      server.middlewares.use("/api/v1/dashboard/history", (request, response) => {
-        response.setHeader("Cache-Control", "no-store")
-        response.setHeader("X-Content-Type-Options", "nosniff")
-        response.setHeader("Content-Security-Policy", "default-src 'none'")
-        response.setHeader("Content-Type", "application/json; charset=utf-8")
-        if (!allowsInternetProbeRequest({
-          host: request.headers.host, origin: request.headers.origin,
-          remote: request.socket.remoteAddress,
-          fetchSite: request.headers["sec-fetch-site"],
-          method: request.method, route: "/",
-        })) {
-          response.statusCode = 403
-          response.end(JSON.stringify({ error: "forbidden" }))
-          return
-        }
-        const range = parseDashboardHistoryRoute(request.url ?? "/")
-        if (!range) {
-          response.statusCode = 404
-          response.end(JSON.stringify({ error: "invalid-history-range" }))
-          return
-        }
-        response.statusCode = 200
-        response.end(JSON.stringify(recorder.store.history(range)))
       })
     },
   }

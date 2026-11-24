@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `8f933f0ddc853023d62975ca6f7854b2b1b5e061`, `pockethost-a8-sprint3-c-deploy-8f933f0-20261124-v1` PASS (HTTP 200, protected services unchanged). `pockethost-a8-sprint3-c-qa-8f933f0-20261124-v1` PASS (9/9, build, 3/3 exact inventory projections). Sprints 1–3 closed; Sprint 4 active. Earlier receipts in roadmap; live dependencies untouched.
+- **Last device-attested DEV release:** `eaaebf08e64c33e876fda81ebae77cd1f2f25909`, `pockethost-a8-sprint4-a-deploy-eaaebf0-20261124-v1` PASS (HTTP 200, protected services unchanged). `pockethost-a8-sprint4-a-qa-eaaebf0-20261124-v1` PASS (29 Node, 25 UI, types/build). Sprints 1–3 closed; Sprint 4 active. Live dependencies untouched.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -25,7 +25,7 @@ The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Current work: [Sprint 4](ROADMAP.md). Sprint 3 closed: live snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200, protected unchanged. Static profile 90/90: separate/shared end RSS 212204/73508 KiB; retain per-site PID/ownership. Frontend-only DEV/preview 24/24: RSS 389424/83148 KiB, no PSS; API/render equivalence not proven. Receipts in roadmap and decisions in architecture. S4A extracts host snapshot adapter with unchanged route/method/peer checks; exact A8 QA and deploy pending. Public exposure, reboot and off-device recovery remain separate.
+Current work: [Sprint 4](ROADMAP.md). Sprint 3 closed: live snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200, protected unchanged. Static profile 90/90: separate/shared end RSS 212204/73508 KiB; retain per-site PID/ownership. Frontend-only DEV/preview 24/24: RSS 389424/83148 KiB, no PSS; API/render equivalence not proven. Receipts in roadmap and decisions in architecture. S4A QA/deploy PASS. S4B extracts observability, internet connectivity and dashboard history adapters; preserve scope, cache and sampler lifecycle. Exact A8 QA/deploy pending. Existing Base UI non-native button and SVG test warnings tracked separately. Public exposure, reboot and off-device recovery remain separate.
 
 ## Owner's next visit
 
