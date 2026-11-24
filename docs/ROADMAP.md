@@ -7,7 +7,7 @@ purpose: Ordered post-v1 sprint backlog and completion evidence
 
 # PocketHost — post-v1 roadmap
 
-The owner resumed development on 24 November. Preserve the accepted v1.0.0 source tag, Git history and independent A8 deployment evidence. This file is the single current sprint checklist; update it at each milestone. Mark an item [x] only when its stated acceptance evidence exists. Record exact source SHA, QA receipt and (for runtime changes) independent guarded deployment receipt. Unknown or failed checks stay open/HOLD; never replay unknown tasks. Do not repeat completed tests without a relevant change. Work on one sprint at a time.
+Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 evidence. Mark [x] only with exact-source QA and required guarded deployment receipts. Unknown/failed checks stay HOLD; never replay unknown tasks or repeat passed checks without relevant changes. One sprint at a time.
 
 ## Maintenance already delivered
 
@@ -29,14 +29,14 @@ Runtime source `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: exact A8 QA `pocketho
 - [ ] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
 - [ ] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
 
-A8 read-only reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd`: 473 tracked source files, four documentation-only module directories, nine direct npm dependencies with no literal references, 18 possible unused UI files. The scan is a candidate list, not a complete import graph. Knip is available as a pinned npm exec script, not an installed root dependency; no download was performed.
+Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). Literal reference scan is not a complete import graph; no Knip download.
 
 - [x] Batch A: remove four unreferenced upstream UI components (drawer, hover-card, navigation-menu, card-decorator; 21,273 source bytes). Exact A8 QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200, protected services unchanged.
 - [x] Batch B1: remove eleven additional unreferenced UI files (24,009 source bytes): unused Node LAN view, brand icons and nine unused primitives. Active Node owner-access workflow stays in projects/page.tsx. At `7fe7ace0b43cfb6c77938e63be88245ef6969ab0`, `pockethost-a8-sprint2-b1-qa-7fe7ace-20261124-v1` inner QA PASS (5/5 and budgets), original npm build wrapper exit 127; separate direct Vite build `pockethost-a8-sprint2-b1-build-7fe7ace-20261124-v1` PASS; guarded deploy `pockethost-a8-sprint2-b1-deploy-7fe7ace-20261124-v1` PASS, HTTP 200 and protected services unchanged. Total 15 files / 45,282 source bytes removed.
 - [x] Batch B2: removed nine direct dependencies (24 to 15), ten lockfile entries (559 to 549) and obsolete pnpm lock. Offline lock preflight `pockethost-a8-sprint2-b2-lock-preflight-a0c6591-20261124-v2` PASS; exact checksum and clean install `pockethost-a8-sprint2-b2-dependency-qa-179dc5a-20261124-v1` PASS; isolated types/build/8 Node tests/navigation `pockethost-a8-sprint2-b2-clean-build-179dc5a-20261124-v1` PASS. Guarded source refresh `pockethost-a8-sprint2-b2-source-deploy-179dc5a-20261124-v1` PASS, HTTP 200, protected services unchanged, retained versions verified; no live dependency installation or upgrades. Preserve date-fns and Vite declaration.
-- [ ] Remaining hook/font candidates: decide separately after reference review.
+- [ ] Batch D1: remove unused use-fullscreen hook and fonts helper (1,387 bytes); A8 compatibility audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS, no source references beyond definitions; type/build QA and guarded refresh pending.
 - [x] Batch C: six implemented modules; four placeholder scopes consolidated, eight policy/spec files removed. Structure/docs/boundaries/budgets/format/Markdown/lint PASS at `6961599` (foundation 19/20; stale archive fixture). Fixture corrected at `567ef2d`; `pockethost-a8-sprint2-c-foundation-567ef2d-20261124-v1` PASS (4/4, foundation suite). No runtime change or restart.
-- [ ] Batch D: audit legacy demo live state, route/API/gateway and facade references. Preserve any existing demo and its management path; do not remove active compatibility or shared feature flags. Keep both referenced theme catalogs.
+- [ ] Batch D2: compatibility audit at `4904f28` confirms absent demo directory and no listener on port 18787 on A8. Legacy route/API/gateway still wired; preserve management for other installations and shared Hosting flags. Decide retirement with explicit route/port contract tests. Config/package facades have test consumers; both theme catalogs have live consumers.
 
 ## Sprint 3 — A8 performance
 
