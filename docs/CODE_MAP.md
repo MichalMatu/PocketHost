@@ -11,7 +11,7 @@ purpose: Compact source and QA entry map for safe feature-bounded changes
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Browser routes, feature components and hooks  | `apps/admin/src/app/`; no direct Termux host effects                                       |
 | Browser contracts, validation and API clients | `apps/admin/src/lib/`; interact through bounded HTTP APIs                                  |
-| Node/Vite API bridge                          | `apps/admin/vite.config.ts` and `apps/admin/plugins/`; server-side only |
+| Node/Vite API bridge                          | `apps/admin/vite.config.ts` and `apps/admin/plugins/`; server-side only                    |
 | Portable types and domain rules               | `src/shared/`; no host/process effects                                                     |
 | Privileged host adapters                      | `src/modules/host/`; files, runit, process ownership, Local Agent and Static/Node backends |
 | Pure policy / domain modules                  | `src/modules/runtime/`, `sites/`, `config/`, `packages/`, `observability/`                 |

@@ -13,8 +13,7 @@ export function readRunitRegistry(registerFile: string): Registration[] {
   const raw = safeFile(registerFile);
   if (raw === null) return [];
   const data: unknown = JSON.parse(raw);
-  if (!Array.isArray(data) || data.length > MAX_MANAGED)
-    throw new Error('Invalid runit registry');
+  if (!Array.isArray(data) || data.length > MAX_MANAGED) throw new Error('Invalid runit registry');
   const names = new Set<string>();
   return data.map((entry: unknown) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry))
