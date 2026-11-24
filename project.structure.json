@@ -1,12 +1,5 @@
 {
-  "modules": [
-    "host",
-    "runtime",
-    "packages",
-    "sites",
-    "config",
-    "observability"
-  ],
+  "modules": ["host", "runtime", "packages", "sites", "config", "observability"],
   "rootDirectories": ["apps", "docs", "src", "scripts", "tests", "native", "ops"],
   "requiredFiles": [
     "README.md",
