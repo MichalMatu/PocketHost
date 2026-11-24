@@ -115,7 +115,10 @@ test('static API creates, publishes, rolls back and removes only a temporary fix
   await new Promise((resolve) => socket.close(resolve));
   const fleet = new SiteFleetHost(path.join(tmp, 'managed'), port);
   const events = [];
-  const plugin = ownedSiteFleetApi(() => fleet, (event) => events.push(event));
+  const plugin = ownedSiteFleetApi(
+    () => fleet,
+    (event) => events.push(event),
+  );
   const intent = {
     origin: 'http://127.0.0.1:8787',
     'x-pockethost-intent': 'owned-sites',
@@ -136,7 +139,10 @@ test('static API creates, publishes, rolls back and removes only a temporary fix
     const published = await call(target + '/deploy', 'PUT', intent, bundle('<h1>one</h1>'));
     assert.equal(published.status, 200);
     const first = json(published).site;
-    assert.equal((await call(target + '/deploy', 'PUT', intent, bundle('<h1>two</h1>'))).status, 200);
+    assert.equal(
+      (await call(target + '/deploy', 'PUT', intent, bundle('<h1>two</h1>'))).status,
+      200,
+    );
     const rolled = await call(target + '/rollback', 'POST', intent);
     assert.equal(rolled.status, 200);
     assert.equal(json(rolled).site.activeRelease, first.activeRelease);
