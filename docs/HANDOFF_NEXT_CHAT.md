@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `28adcdc27f51b1b9d9c2cdb9da7079ba917d9d6f`, receipt `pockethost-a8-sprint2-d2-deploy-28adcdc-20261124-v1` PASS (HTTP 200, protected services unchanged), QA `pockethost-a8-sprint2-d2-qa-28adcdc-20261124-v1` PASS (26/26 plus types/build and gates). Sprint 1 and Sprint 2 closed; 18 source files, nine direct dependencies and four placeholder scopes removed, legacy compatibility retained. Existing live node_modules untouched. See roadmap for earlier receipts.
+- **Last device-attested DEV release:** `8f933f0ddc853023d62975ca6f7854b2b1b5e061`, `pockethost-a8-sprint3-c-deploy-8f933f0-20261124-v1` PASS (HTTP 200, protected services unchanged). `pockethost-a8-sprint3-c-qa-8f933f0-20261124-v1` PASS (9/9, build, 3/3 exact inventory projections). Sprints 1–2 closed; Sprint 3 active. Earlier receipts in roadmap; live dependencies untouched.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -25,7 +25,7 @@ The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Current work: follow the living [sprint checklist](ROADMAP.md), now Sprint 3 (measured A8 performance). S3A baseline PASS; host snapshot median 560.61 ms, idle panel RSS 195380 KiB. S3B PASS: 7 services, 3/3 equal projections; median 201.28 to 37.54 ms. S3C snapshot-only batch implementation and exact QA pending. Public exposure, Android reboot and off-device recovery remain separately scoped.
+Current work: follow the living [sprint checklist](ROADMAP.md), now Sprint 3 (measured A8 performance). S3A baseline PASS; host snapshot median 560.61 ms, idle panel RSS 195380 KiB. S3B PASS: 7 services, 3/3 equal projections; median 201.28 to 37.54 ms. S3C QA and guarded deploy PASS. S3D postbaseline pending: `pockethost-a8-sprint3-c-postbaseline-8f933f0-20261124-v1`; no further runtime change until result. Public exposure, Android reboot and off-device recovery remain separately scoped.
 
 ## Owner's next visit
 
