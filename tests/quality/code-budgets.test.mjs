@@ -38,8 +38,14 @@ test('browser code cannot import host-only Node APIs', () =>
     assert.match(validateCodeBudgets(root).join('\n'), /Host-only import/);
   }));
 
-test('an oversized legacy file may not grow', () =>
+test('Vite composition has the standard new-source budget', () =>
   withTree((put, root) => {
     put('apps/admin/vite.config.ts', 'x'.repeat(24 * 1024 + 1));
+    assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
+  }));
+
+test('an oversized legacy file may not grow', () =>
+  withTree((put, root) => {
+    put('src/modules/host/site-fleet-host.ts', 'x'.repeat(27960));
     assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
   }));
