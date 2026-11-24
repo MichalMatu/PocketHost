@@ -17,9 +17,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
-import { endpoint, maxStarterHtml, readSignal, mutate, siteAddress, StaticSiteInputRejected } from "./site-client"
+import { endpoint, maxStarterHtml, readSignal, mutate, removeSite, siteAddress, StaticSiteInputRejected } from "./site-client"
 
-function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise<void> }) {
+function SiteCard({ site, onChange, onRemoved }: {
+  site: FleetSite; onChange: (removedId?: string) => Promise<void>; onRemoved: (name: string) => void
+}) {
   const [busy, setBusy] = React.useState(false)
   // React state is applied after this event turn; the ref prevents a second
   // mutation/read from entering the same site while the first is in flight.
@@ -128,6 +130,25 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         resetAssets()
       }
       if (currentRead()) setMessage(success)
+    } finally {
+      operationInFlight.current = false
+      setBusy(false)
+    }
+  }
+  const remove = async () => {
+    if (operationInFlight.current || busy || outcomeUnknown || site.state !== "stopped") return
+    if (!window.confirm("Permanently delete " + site.name + " and all its saved versions?")) return
+    operationInFlight.current = true
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await removeSite(site)
+      await onChange(site.id)
+      onRemoved(site.name)
+    } catch {
+      setOutcomeUnknown(true)
+      setError("Site removal unconfirmed. Refresh the owned inventory before retrying.")
     } finally {
       operationInFlight.current = false
       setBusy(false)
@@ -302,6 +323,13 @@ function SiteCard({ site, onChange }: { site: FleetSite; onChange: () => Promise
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
         <SiteDeploymentHistory site={site} />
+        <section className="space-y-2 rounded-md border p-3">
+          <p className="text-xs text-muted-foreground">
+            Delete this stopped site and all saved versions. Stop a running site first.
+          </p>
+          <Button variant="destructive" disabled={busy || outcomeUnknown || site.state !== "stopped"}
+            onClick={() => void remove()}>Delete site</Button>
+        </section>
         {logs && <section className="space-y-2">
           <h3 className="text-sm font-semibold">Owned runtime logs</h3>
           <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
@@ -321,6 +349,7 @@ export default function SitesPage() {
     sitesCount: sites.length, loading, error, setSites, setError,
   })
   const { creating, notice } = creation
+  const [removalNotice, setRemovalNotice] = React.useState<string | null>(null)
 
   return (
     <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
@@ -340,6 +369,7 @@ export default function SitesPage() {
         {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {notice && <p role="status" className="text-sm">{notice}</p>}
+        {removalNotice && <p role="status" className="text-sm">{removalNotice}</p>}
         {!loading && sites.length === 0 && !error && <p className="text-muted-foreground text-sm">
           No static sites yet. Create your first site above.
         </p>}
@@ -347,7 +377,11 @@ export default function SitesPage() {
           <p role="alert" className="text-sm">This static site was not found in the owned inventory.</p>}
         <div className="grid gap-5">
           {sites.filter(site => !selectedSiteId || site.id === selectedSiteId)
-            .map(site => <SiteCard key={site.id} site={site} onChange={reload} />)}
+            .map(site => <SiteCard key={site.id} site={site} onChange={removedId => reload(undefined, removedId)}
+              onRemoved={name => {
+                setRemovalNotice("Deleted " + name + ".")
+                if (selectedSiteId === site.id) setSearchParams({})
+              }} />)}
         </div>
         <p className="text-muted-foreground text-xs">
           Each site is bound to its own local-only port; the manually enabled trusted-LAN gateway

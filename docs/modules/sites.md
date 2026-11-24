@@ -52,3 +52,7 @@ The /sites form now offers an explicit **Publish starter HTML on creation** chec
 ## Custom initial HTML (2026-11-22)
 
 The optional starter HTML creation mode now reveals an editable, prefilled `index.html` textarea and a Reset sample HTML action. A non-empty custom page up to 32 KiB of UTF-8 is bundled as a one-file JSON release sent through the existing single POST import operation. Empty or oversized multibyte HTML is rejected locally **before** allocating a site. Successful independent exact-site/inventory readback clears the draft back to the bundled sample. Existing ZIP/folder modes and deployed sites are unchanged. Three interaction regression fixtures cover edited payload, empty HTML and oversized UTF-8; tests still require fresh exact-SHA QA approval.
+
+## Whole-site removal
+
+Explicit Delete site is available only for stopped, verified owned sites. The API checks the selected release snapshot, free port and owned tree before removing it from the active namespace and wiping its contents. Linked or unexpected files, running/uncertain processes and stale snapshots are refused. All versions are removed; an interrupted cleanup remains inert. The UI requires confirmation and fresh inventory absence before reporting success. Fixture tests are committed; A8 exact-source QA and separate deployment remain pending.

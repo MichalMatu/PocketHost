@@ -10,4 +10,4 @@ No foreign service changes, cross-module host internals or unrequested operation
 
 ## Gate
 
-Follow the root `AGENTS.md` as the single authority: A8-only guarded deployment, exact live-SHA ownership checks, and **fresh owner approval naming a 40-character SHA and check categories** for every QA, lint, typecheck, format or test execution. A Git commit is not deployment evidence.
+Follow the root `AGENTS.md` as the single authority: A8-only guarded deployment, exact live-SHA ownership checks, and **standing owner QA consent from root AGENTS.md**, with exact 40-character SHA and check categories for each execution. A Git commit is not deployment evidence.

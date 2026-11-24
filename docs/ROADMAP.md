@@ -17,9 +17,11 @@ The owner resumed development on 24 November. Preserve the accepted v1.0.0 sourc
 ## Sprint 1 — v1.0.1: Static Hosting lifecycle (ACTIVE)
 
 - [x] Source diagnosis: whole-site deletion missing in UI, API and SiteFleetHost; eight-site limit cannot be reclaimed.
-- [ ] Implement explicit owned-site removal, including last site and empty catalog; safe stopped/verified process state, scoped filesystem validation, freed allocation, no foreign service impact; deliberate UI confirmation and inventory readback.
+- [x] Implement explicit owned-site removal, including last site and empty catalog; safe stopped/verified process state, scoped filesystem validation, freed allocation, no foreign service impact; deliberate UI confirmation and inventory readback.
 - [ ] Test empty and populated site removal, running/unknown refusal or verified stop, foreign paths, symlinks, concurrent/stale writes, failure outcomes, last-site empty state and capacity/port reuse; test isolated fixtures only.
 - [ ] Exact-SHA A8 QA, separate guarded DEV deployment/readback, document evidence. No actual customer-site deletion without separate owner action.
+
+Source candidate includes whole-site DELETE and isolated host/UI regressions; QA/deployment remain pending. A8 preflight `pockethost-a8-static-lifecycle-preflight-20261124-v1` returned READ_ONLY_READY at live `349087d` with protected services attested.
 
 ## Sprint 2 — simplify and remove unused code
 

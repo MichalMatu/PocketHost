@@ -330,11 +330,12 @@ function ownedSiteFleetApi(): Plugin {
         const command = request.method === "POST" && !!id &&
           ["start", "stop", "restart", "rollback"].includes(action ?? "")
         const upload = request.method === "PUT" && !!id && action === "deploy"
+        const remove = request.method === "DELETE" && !!id && !action
         const versionCommand = !!releaseRoute && (
           (request.method === "POST" && releaseRoute[3] === "restore") ||
           (request.method === "DELETE" && releaseRoute[3] === "prune")
         )
-        if (!create && !importInitial && !command && !upload && !versionCommand) {
+        if (!create && !importInitial && !command && !upload && !versionCommand && !remove) {
           response.statusCode = 404
           response.end("{}")
           return
@@ -383,6 +384,11 @@ function ownedSiteFleetApi(): Plugin {
               // never an automatic retry or blind directory removal.
               return fleet.deploy(created.id, files)
             }
+            if (remove) {
+              if (request.headers["content-type"]?.split(";")[0]?.trim() !== "application/json")
+                throw new RangeError("Removal requires a site snapshot")
+              return fleet.remove(id!, JSON.parse((await body(request, 1024)).toString("utf8")))
+            }
             if (upload) {
               const contentType = request.headers["content-type"]?.split(";")[0]?.trim()
               let files
@@ -412,7 +418,7 @@ function ownedSiteFleetApi(): Plugin {
             reportDashboardOwnedEvent("owned-release-rolled-back")
           if (action === "restart") reportDashboardOwnedEvent("owned-service-restarted")
           response.statusCode = create || importInitial ? 201 : 200
-          response.end(JSON.stringify({ site: result }))
+          response.end(JSON.stringify(remove ? result : { site: result }))
         } catch (error) {
           response.statusCode = error instanceof RangeError || error instanceof SyntaxError ? 400 : 409
           response.end(JSON.stringify({

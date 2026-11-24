@@ -3,13 +3,11 @@ import { randomUUID } from 'node:crypto';
 import {
   closeSync,
   existsSync,
-  fstatSync,
   lstatSync,
   mkdirSync,
   mkdtempSync,
   openSync,
   readFileSync,
-  readSync,
   readdirSync,
   readlinkSync,
   realpathSync,
@@ -34,6 +32,11 @@ export type {
   FleetRelease,
 } from './site-fleet-contract.ts';
 import { packStaticZip } from './site-fleet-zip.ts';
+import {
+  assertRemovalSnapshot,
+  readStaticSiteLogs,
+  removeStaticSiteTree,
+} from './site-fleet-storage.ts';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -447,6 +450,17 @@ export class SiteFleetHost {
     });
   }
 
+  async remove(id: string, expected: unknown): Promise<{ deleted: string }> {
+    return this.lock(async () => {
+      const item = this.inspect(id);
+      if (item.state !== 'stopped' || this.record(id).process || !(await portFree(item.port)))
+        throw new Error('Stop and verify the site before removal');
+      assertRemovalSnapshot(this.inspect(id), expected);
+      removeStaticSiteTree(this.site(id));
+      return { deleted: id };
+    });
+  }
+
   async create(name: string): Promise<FleetProject> {
     return this.lock(async () => {
       const label = validateName(name);
@@ -704,31 +718,6 @@ export class SiteFleetHost {
   }
   logs(id: string): string[] {
     this.record(id);
-    const filename = path.join(this.site(id), 'activity.log');
-    if (!existsSync(filename)) return [];
-    const stat = lstatSync(filename);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error('Unsafe owned log');
-    const fd = openSync(filename, 'r');
-    try {
-      const count = Math.min(fstatSync(fd).size, 8192);
-      const buffer = Buffer.alloc(count);
-      readSync(fd, buffer, 0, count, fstatSync(fd).size - count);
-      return buffer
-        .toString('utf8')
-        .split('\n')
-        .filter(Boolean)
-        .slice(-25)
-        .map((line) =>
-          [...line]
-            .filter((char) => {
-              const code = char.charCodeAt(0);
-              return code >= 32 && code !== 127;
-            })
-            .join('')
-            .slice(0, 200),
-        );
-    } finally {
-      closeSync(fd);
-    }
+    return readStaticSiteLogs(this.site(id));
   }
 }

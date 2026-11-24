@@ -199,6 +199,18 @@ export async function mutate(url: string, method: "POST" | "PUT" | "DELETE", bod
   }
   return parseFleetSite(await response.json())
 }
+export async function removeSite(site: FleetSite): Promise<void> {
+  const response = await fetch(endpoint + "/" + site.id, {
+    method: "DELETE", credentials: "same-origin", signal: readSignal(),
+    headers: { "X-PocketHost-Intent": intent, "Content-Type": "application/json" },
+    body: JSON.stringify({ activeRelease: site.activeRelease, releases: site.releases }),
+  })
+  if (!response.ok) throw new Error("Site removal unconfirmed. Refresh before retrying.")
+  const receipt: unknown = await response.json()
+  if (!receipt || typeof receipt !== "object" || !("deleted" in receipt) ||
+      receipt.deleted !== site.id || Object.keys(receipt).length !== 1)
+    throw new Error("Site removal receipt is invalid.")
+}
 export function siteAddress(site: FleetSite): string {
   if (typeof window !== "undefined" && window.location.port === "18878") {
     return window.location.protocol + "//" + window.location.hostname + ":18879/h2/" + site.id + "/"

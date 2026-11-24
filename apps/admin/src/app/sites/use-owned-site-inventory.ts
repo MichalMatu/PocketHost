@@ -17,12 +17,14 @@ export function useOwnedSiteInventory() {
     setLoading(false)
   }, [])
 
-  const reload = React.useCallback(async (signal?: AbortSignal) => {
+  const reload = React.useCallback(async (signal?: AbortSignal, removedId?: string) => {
     const current = ++sequence.current
     try {
       const observed = await readSites(signal)
       if (signal?.aborted || current !== sequence.current)
         throw new Error("Owned inventory refresh was superseded.")
+      if (removedId && observed.some(site => site.id === removedId))
+        throw new Error("Site removal unconfirmed. Refresh the owned inventory before retrying.")
       updateSites(observed)
       setError(null)
     } catch (cause) {
