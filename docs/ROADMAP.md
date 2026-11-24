@@ -55,7 +55,8 @@ Audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979
 - [x] S4C: Termux/Shizuku; `pockethost-a8-sprint4-c-qa-1d153dd-20261124-v1` PASS (22 Node, 43 UI); `pockethost-a8-sprint4-c-deploy-1d153dd-20261124-v1` PASS.
 - [x] S4D: hosting/LAN; `pockethost-a8-sprint4-d-qa-b619114-20261124-v1` PASS (70 Node, 66 UI); `pockethost-a8-sprint4-d-deploy-b619114-20261124-v1` PASS.
 - [x] S4E1: Termux API; `pockethost-a8-sprint4-e1-qa-38cb4cd-20261124-v1` PASS (46 Node, 67 UI); `pockethost-a8-sprint4-e1-deploy-38cb4cd-20261124-v1` PASS.
-- [ ] S4E2: Node runtime helpers and Termux registry I/O; then boundaries.
+- [x] S4E2: Node runtime helpers and Termux registry I/O; strict adapter typing and QA mapping corrected. `pockethost-a8-sprint4-e2-qa-911953d-20261124-v1` PASS (12 checks, budgets, Vite build); `pockethost-a8-sprint4-e2-deploy-911953d-20261124-v1` PASS, HTTP 200, protected unchanged.
+- [ ] S4E3: syntax-aware browser/host import boundary and regression fixtures; QA pending.
 - [ ] S4F: integration, recovery/endurance and final regression; reconcile docs.
 - [ ] Standalone updater/clean-device acceptance separate; physical install/reboot/real data need distinct scope.
 

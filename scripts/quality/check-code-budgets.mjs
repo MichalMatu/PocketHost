@@ -1,6 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { isBuiltin } from 'node:module';
+import ts from 'typescript';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const BASE_BYTES = 24 * 1024;
@@ -30,6 +32,61 @@ const legacyBytes = new Map([
   ['src/modules/host/termux-service-admin.ts', 123965],
 ]);
 
+/** Browser imports are checked syntactically, including lazy imports and re-exports. */
+function inspectBrowserImports(root, file, relative, source, errors) {
+  const ast = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true);
+  const browserRoot = path.join(root, 'apps/admin/src');
+  const hostRoot = path.join(root, 'src/modules/host');
+  const pluginsRoot = path.join(root, 'apps/admin/plugins');
+  const inside = (target, folder) => target === folder || target.startsWith(folder + path.sep);
+
+  function check(node, computed = false) {
+    if (!node || !ts.isStringLiteralLike(node)) {
+      if (computed) errors.push('Non-literal module import in browser UI: ' + relative);
+      return;
+    }
+    const specifier = node.text;
+    const clean = specifier.split(/[?#]/)[0];
+    const target = clean.startsWith('@/')
+      ? path.resolve(browserRoot, clean.slice(2))
+      : clean.startsWith('.')
+        ? path.resolve(path.dirname(file), clean)
+        : clean.startsWith('/@fs/')
+          ? path.resolve('/', clean.slice(5))
+          : null;
+    if (
+      clean.startsWith('node:') ||
+      isBuiltin(clean) ||
+      (target &&
+        (inside(target, hostRoot) ||
+          inside(target, pluginsRoot) ||
+          target === path.join(root, 'apps/admin/vite.config.ts')))
+    )
+      errors.push('Host-only import in browser UI: ' + relative + ' (' + specifier + ')');
+  }
+
+  function visit(node) {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) {
+      if (node.moduleSpecifier) check(node.moduleSpecifier);
+    } else if (
+      ts.isImportEqualsDeclaration(node) &&
+      ts.isExternalModuleReference(node.moduleReference)
+    ) {
+      check(node.moduleReference.expression, true);
+    } else if (
+      ts.isCallExpression(node) &&
+      (node.expression.kind === ts.SyntaxKind.ImportKeyword ||
+        (ts.isIdentifier(node.expression) && node.expression.text === 'require'))
+    ) {
+      check(node.arguments[0], true);
+    } else if (ts.isImportTypeNode(node) && ts.isLiteralTypeNode(node.argument)) {
+      check(node.argument.literal);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+}
+
 export function validateCodeBudgets(root = repositoryRoot) {
   const errors = [];
   const checked = new Set();
@@ -53,13 +110,8 @@ export function validateCodeBudgets(root = repositoryRoot) {
             : BASE_LINES)
     )
       errors.push('Too many lines: ' + relative + ' (' + lines + ')');
-    if (
-      relative.startsWith('apps/admin/src/') &&
-      /^\s*(?:import|export)\s+(?:[^'"\n]*?\s+from\s+)?['"](?:node:(?:fs|child_process|os|net|http|https)|[^'"]*src\/modules\/host\/)/m.test(
-        source,
-      )
-    )
-      errors.push('Host-only import in browser UI: ' + relative);
+    if (relative.startsWith('apps/admin/src/'))
+      inspectBrowserImports(root, file, relative, source, errors);
   }
   function walk(directory) {
     for (const entry of readdirSync(directory, { withFileTypes: true })) {
@@ -71,7 +123,12 @@ export function validateCodeBudgets(root = repositoryRoot) {
       }
       if (entry.isDirectory()) {
         if (!['node_modules', 'dist', 'coverage', '.tmp'].includes(entry.name)) walk(full);
-      } else if (entry.isFile() && /\.(?:ts|tsx|mjs)$/.test(entry.name)) inspect(full, relative);
+      } else if (
+        entry.isFile() &&
+        (/\.(?:ts|tsx|mjs)$/.test(entry.name) ||
+          (relative.startsWith('apps/admin/src/') && /\.(?:js|jsx|cjs|cts|mts)$/.test(entry.name)))
+      )
+        inspect(full, relative);
     }
   }
   for (const relative of [

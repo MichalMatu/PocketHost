@@ -85,7 +85,7 @@ switches for absent settings.
 
 `apps/admin/vite.config.ts` now contains composition only, with dedicated Node project, host snapshot, observability, connectivity, dashboard history, Termux tools, Shizuku, static hosting, network and Termux admin adapters under `apps/admin/plugins`; it is **not** a browser module. Do not import `src/modules/host` into `apps/admin/src`. The `host` module contains most real implementations; the four former documentation-only placeholders have been consolidated into the module ownership document. See the [actual module inventory](MODULES.md) and [source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).
 
-Static import/budget gates cover documented paths, but do not establish whole-application dependency or runtime process isolation. The historical documentation-only checkpoint did not establish runtime process isolation.
+S4E3 strengthens the browser import/budget gate using the existing TypeScript parser: static imports, re-exports, literal dynamic imports, import types and CommonJS require are inspected; computed module imports are refused. Server adapters remain outside browser scope. This source check does not establish full transitive dependency or runtime process isolation. The historical documentation-only checkpoint did not establish runtime process isolation.
 
 ## Performance decisions (Sprint 3)
 

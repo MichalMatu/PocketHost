@@ -49,3 +49,44 @@ test('an oversized legacy file may not grow', () =>
     put('src/modules/host/site-fleet-host.ts', 'x'.repeat(27960));
     assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
   }));
+
+test('browser module boundary covers dynamic imports, re-exports, aliases and bare builtins', () =>
+  withTree((put, root) => {
+    const cases = [
+      ['lazy.ts', "const load = () => import('node:fs/promises');"],
+      ['bare.ts', "import { spawn } from 'child_process';"],
+      ['reexport.ts', "export { host } from '../../../../src/modules/host/private.ts';"],
+      ['alias.ts', "import('@/../../../src/modules/host/private.ts');"],
+      ['plugin.ts', "import('../../plugins/termux-admin-api.ts');"],
+      ['require.js', "const host = require('node:os');"],
+      ['typed.ts', "type Host = import('node:net').Socket;"],
+      ['multiline.ts', "import {\n  readFileSync\n} from 'fs';"],
+    ];
+    for (const [file, source] of cases) put('apps/admin/src/app/' + file, source);
+    const errors = validateCodeBudgets(root);
+    assert.equal(errors.length, cases.length);
+    for (const [file] of cases) {
+      assert.ok(errors.some((error) => error.includes('app/' + file + ' (')), file);
+    }
+  }));
+
+test('computed imports are not silently accepted by the browser boundary', () =>
+  withTree((put, root) => {
+    put('apps/admin/src/app/lazy.ts', 'const load = (name) => import(name);');
+    assert.match(validateCodeBudgets(root).join('\n'), /Non-literal module import/);
+  }));
+
+test('browser lazy UI imports, shared types and comments remain allowed', () =>
+  withTree((put, root) => {
+    put(
+      'apps/admin/src/app/page.ts',
+      [
+        "const load = () => import('@/app/other');",
+        "import type { Shared } from '../../../../src/shared/types.ts';",
+        "const text = \"import('node:fs')\";",
+        "// import('node:fs');",
+      ].join('\n'),
+    );
+    put('apps/admin/plugins/api.ts', "import { readFileSync } from 'node:fs';");
+    assert.deepEqual(validateCodeBudgets(root), []);
+  }));
