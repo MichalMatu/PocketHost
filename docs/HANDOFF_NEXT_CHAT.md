@@ -1,7 +1,7 @@
 ---
-status: stable
+status: active
 owner: core
-last_reviewed: 2026-11-23
+last_reviewed: 2026-11-24
 purpose: V1 source acceptance, deploy boundary and safe future resume
 ---
 
@@ -21,12 +21,12 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 ## Resume discipline
 
-PocketHost is **frozen as v1.0.0 source baseline** after repository/documentation cleanup. The tag marks source, not a fresh A8 deploy. Do not resume the old night feature queue or repeat passed G2 solely because older documents show its earlier failures. The immutable N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` is still UNKNOWN; do not replay it.
+The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development on 24 November. The tag marks source, not a fresh A8 deploy. Do not resume the old night feature queue or repeat passed G2 solely because older documents show its earlier failures. The immutable N12 task `pockethost-a8-night-n12-dde5a04-qa-20261122-v1` is still UNKNOWN; do not replay it.
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Next optional development: compare [upstream TermuxPanel](UPSTREAM_REUSE_STRATEGY.md) selectively. Public exposure, Android reboot and off-device recovery remain separately scoped.
+Current work: follow the living [sprint checklist](ROADMAP.md), starting with Static Hosting removal. Public exposure, Android reboot and off-device recovery remain separately scoped.
 
 ## Owner's next visit
 
-Do not act on the old night-sprint backlog. Resume only on explicit owner request, starting from the `v1.0.0` tag and fresh `main`. The ordered next-development backlog is [v1.1 traffic analytics → read-only SQLite Studio → optional app starters](ROADMAP.md). Preserve all existing Git history and the immutable A8 QA receipts. No additional device tests or operations were requested at freeze.
+Do not act on the old night-sprint backlog. Resume from fresh main and the first unfinished item in [ROADMAP.md](ROADMAP.md). Update checklist evidence after each step. Preserve all existing Git history and immutable A8 receipts.
