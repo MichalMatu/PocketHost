@@ -25,7 +25,7 @@ The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Current work: follow the living [sprint checklist](ROADMAP.md), now Sprint 3 (measured A8 performance). S3A baseline PASS; host snapshot median 560.61 ms, idle panel RSS 195380 KiB. Next S3B isolate runit status overhead and compare batch equivalence before code changes. Public exposure, Android reboot and off-device recovery remain separately scoped.
+Current work: follow the living [sprint checklist](ROADMAP.md), now Sprint 3 (measured A8 performance). S3A baseline PASS; host snapshot median 560.61 ms, idle panel RSS 195380 KiB. S3B PASS: 7 services, 3/3 equal projections; median 201.28 to 37.54 ms. S3C snapshot-only batch implementation and exact QA pending. Public exposure, Android reboot and off-device recovery remain separately scoped.
 
 ## Owner's next visit
 

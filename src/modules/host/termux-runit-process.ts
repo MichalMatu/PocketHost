@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { lstatSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { PREFIX } from './termux-worker-scripts.ts';
+import { PREFIX, SERVICE_NAME } from './termux-worker-scripts.ts';
 import type { RunitProcessObservation, TermuxService } from './termux-service-models.ts';
 
 /**
@@ -116,6 +116,59 @@ export function readRunitState(serviceRoot: string, name: string): TermuxService
   } catch {
     return 'unknown';
   }
+}
+
+/**
+ * One bounded read-only status command for already discovered services.
+ * Missing, ambiguous or failed results are unknown; this is never ownership proof.
+ */
+export function readRunitStates(
+  serviceRoot: string,
+  names: readonly string[],
+  readStatus: (units: string[]) => string | null = (units) => {
+    const result = spawnSync(path.join(PREFIX, 'bin', 'sv'), ['status', ...units], {
+      encoding: 'utf8',
+      shell: false,
+      timeout: 5000,
+      maxBuffer: 256 * 1024,
+      stdio: ['ignore', 'pipe', 'ignore'],
+    });
+    // sv may return a nonzero count when only some units cannot be observed.
+    return !result.error && result.status !== null ? result.stdout : null;
+  },
+): Map<string, TermuxService['state']> {
+  if (
+    !path.isAbsolute(serviceRoot) ||
+    names.length > 100 ||
+    new Set(names).size !== names.length ||
+    names.some((name) => !SERVICE_NAME.test(name))
+  )
+    throw new RangeError('Invalid runit status batch');
+  const states = new Map<string, TermuxService['state']>(names.map((name) => [name, 'unknown']));
+  if (names.length === 0) return states;
+  const units = new Map(names.map((name) => [path.join(serviceRoot, name), name]));
+  let output: string | null;
+  try {
+    output = readStatus([...units.keys()]);
+  } catch {
+    return states;
+  }
+  if (typeof output !== 'string' || Buffer.byteLength(output) > 256 * 1024) return states;
+  const seen = new Set<string>();
+  for (const line of output.split('\n')) {
+    const match = /^([^:]+): (.+?): (.*)$/.exec(line);
+    const name = match && units.get(match[2]);
+    if (!match || !name) continue;
+    const state =
+      match[1] === 'run' && /^\(pid [1-9]\d*\) \d+s(?:[;,]|$)/.test(match[3])
+        ? 'running'
+        : match[1] === 'down' && /^\d+s(?:[;,]|$)/.test(match[3])
+          ? 'stopped'
+          : 'unknown';
+    states.set(name, seen.has(name) || line.length > 2048 ? 'unknown' : state);
+    seen.add(name);
+  }
+  return states;
 }
 
 /** Read-only runit down-marker readback, with callback ownership re-attestation. */

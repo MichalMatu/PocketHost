@@ -41,7 +41,8 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 ## Sprint 3 — A8 performance (ACTIVE)
 
 - [x] S3A: `pockethost-a8-sprint3-a-baseline-dd9d527-20261124-v1` PASS at live `28adcdc`: observed idle 0.4–2.39% of one core/195380 KiB RSS; serial load 34.24%/203656 KiB, 15/15 HTTP 200. Median ms: sites 75.08, sites API 31.65, host snapshot 560.61. Zero procfs disk-byte deltas; one running static site. Battery full, raw temp 307; no energy estimate. Protected services unchanged.
-- [ ] S3B: isolate synchronous service status cost; compare bounded per-unit vs batched runit status and exact state equivalence. Inspect static process RSS; no ownership or lifecycle changes.
+- [x] S3B: `pockethost-a8-sprint3-b-runit-profile-6fd2cc1-20261124-v1` PASS: 7 services, 3/3 identical full projections; median 201.28 → 37.54 ms (81.35% less); static process RSS 39661568 bytes.
+- [ ] S3C: batch read-only host snapshot status, retain single-service lifecycle probes; exact QA and deploy, repeat baseline.
 - [ ] Assess one Node process per static site, synchronous file operations and Vite DEV serving overhead. Compare shared static server/runit designs before changing lifecycle.
 - [ ] Apply only measured improvements; benchmark before/after and verify isolation and regressions. No new watchdog, scheduler or unrelated service changes.
 

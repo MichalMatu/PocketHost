@@ -3,6 +3,7 @@ import { statfsSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { TermuxServiceAdmin, type TermuxService } from './termux-service-admin.ts';
+import { readRunitStates } from './termux-runit-process.ts';
 
 // Host service inventory is discovered on this device, never configured with
 // product-specific unit names, project names or customer domains.
@@ -91,9 +92,28 @@ export function readStorageSnapshot(
   }
 }
 
+/** Project read-only states in one batch; leave lifecycle inventory and probes unchanged. */
+export function readSnapshotServices(
+  readInventory: (probe: (name: string) => ServiceState) => TermuxService[] = (probe) =>
+    new TermuxServiceAdmin().list(probe),
+  readStates: (names: string[]) => Map<string, ServiceState> = (names) =>
+    readRunitStates(path.join(TERMUX_PREFIX, 'var', 'service'), names),
+): TermuxService[] {
+  const observed = new Set<string>();
+  const inventory = readInventory((name) => {
+    observed.add(name);
+    return 'unknown';
+  });
+  const states = readStates([...observed]);
+  return inventory.map((service) => ({
+    ...service,
+    state: observed.has(service.name) ? (states.get(service.name) ?? 'unknown') : 'unknown',
+  }));
+}
+
 /** Fixed read-only probes; no request data, shell fragments or secret values in output. */
 export function readHostSnapshot(
-  readServices: () => TermuxService[] = () => new TermuxServiceAdmin().list(),
+  readServices: () => TermuxService[] = readSnapshotServices,
   observedAt: () => string = () => new Date().toISOString(),
   readStorage: () => StorageSnapshot | null = readStorageSnapshot,
 ): HostSnapshot {

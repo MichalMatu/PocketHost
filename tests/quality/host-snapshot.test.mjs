@@ -5,7 +5,9 @@ import {
   probeServiceState,
   readStorageSnapshot,
   readHostSnapshot,
+  readSnapshotServices,
 } from '../../src/modules/host/host-snapshot.ts';
+import { readRunitStates } from '../../src/modules/host/termux-runit-process.ts';
 
 test('runit statuses are bounded and do not reveal process PIDs', () => {
   assert.equal(parseRunitStatus('run: /srv/site (pid 42) 10s'), 'running');
@@ -108,4 +110,73 @@ test('empty host may report zero discovered runit services', () => {
     () => null,
   );
   assert.deepEqual(snapshot.services, []);
+});
+
+test('batch status matches only exact requested units and rejects ambiguous or missing rows', () => {
+  const root = '/fixed/service';
+  const names = ['worker-a', 'worker-b', 'worker-c', 'worker-d', 'worker-e', 'worker-f'];
+  let calls = 0;
+  const states = readRunitStates(root, names, (units) => {
+    calls++;
+    assert.deepEqual(units, names.map((name) => root + '/' + name));
+    return [
+      'run: /fixed/service/worker-a: (pid 42) 10s; run: log: (pid 43) 12s',
+      'down: /fixed/service/worker-b: 1s, normally up',
+      'run: /fixed/service/worker-c: (pid 44) 5s',
+      'down: /fixed/service/worker-c: 1s',
+      'run: /fixed/service/worker-d-extra: (pid 45) 5s',
+      'run: /fixed/service/worker-e: malformed',
+      'fail: /fixed/service/worker-f: runsv not running',
+    ].join('\n');
+  });
+  assert.equal(calls, 1);
+  assert.deepEqual([...states.values()], [
+    'running',
+    'stopped',
+    'unknown',
+    'unknown',
+    'unknown',
+    'unknown',
+  ]);
+});
+
+test('batch status bounds names, command count and output; failures stay unknown', () => {
+  const root = '/fixed/service';
+  let calls = 0;
+  const forbidden = () => {
+    calls++;
+    throw new Error('unexpected command');
+  };
+  assert.deepEqual([...readRunitStates(root, [], forbidden)], []);
+  for (const names of [['../outside'], ['worker', 'worker'], Array(101).fill('worker')]) {
+    assert.throws(() => readRunitStates(root, names, forbidden), RangeError);
+  }
+  assert.throws(() => readRunitStates('relative', ['worker'], forbidden), RangeError);
+  assert.equal(calls, 0);
+  for (const read of [() => null, () => 'x'.repeat(256 * 1024 + 1), forbidden]) {
+    assert.equal(readRunitStates(root, ['worker'], read).get('worker'), 'unknown');
+  }
+});
+
+test('snapshot batches only resolved inventory entries without granting ownership', () => {
+  let calls = 0;
+  const result = readSnapshotServices(
+    (probe) => [
+      { name: 'worker-a', state: probe('worker-a'), registered: false, protected: true },
+      { name: 'worker-b', state: 'unknown', registered: true, protected: false },
+    ],
+    (names) => {
+      calls++;
+      assert.deepEqual(names, ['worker-a']);
+      return new Map([
+        ['worker-a', 'running'],
+        ['worker-b', 'running'],
+      ]);
+    },
+  );
+  assert.equal(calls, 1);
+  assert.deepEqual(result, [
+    { name: 'worker-a', state: 'running', registered: false, protected: true },
+    { name: 'worker-b', state: 'unknown', registered: true, protected: false },
+  ]);
 });
