@@ -290,3 +290,24 @@ test('deleted privileged source remains blocked for explicit review', () => {
   const plan = planChangedChecks(deletedPaths, {}, { deletedPaths });
   assert.ok(plan.review.some((reason) => reason.includes('Deletion needs explicit impact review')));
 });
+
+test('reviewed server adapters require strict root and admin types and isolated HTTP tests', () => {
+  const mappings = [
+    ['dashboard-telemetry-api.ts', 'monitoring-api.test.mjs'],
+    ['internet-connectivity-api.ts', 'monitoring-api.test.mjs'],
+    ['site-fleet-api.ts', 'hosting-network-api.test.mjs'],
+    ['termux-admin-action.ts', 'termux-admin-api.test.mjs'],
+    ['termux-admin-api.ts', 'termux-admin-api.test.mjs'],
+  ];
+  for (const [file, suite] of mappings) {
+    const plan = planChangedChecks(['apps/admin/plugins/' + file]);
+    assert.deepEqual(plan.review, []);
+    assert.ok(command(plan, 'root incremental typecheck'));
+    assert.ok(command(plan, 'admin incremental typecheck'));
+    assert.ok(command(plan, 'structure'));
+    assert.ok(command(plan, 'boundaries'));
+    assert.deepEqual(command(plan, 'node tests').argv.slice(2), ['tests/quality/' + suite]);
+  }
+  const unknown = planChangedChecks(['apps/admin/plugins/unknown-api.ts']);
+  assert.ok(unknown.review.some((reason) => reason.includes('Explicit impact review')));
+});

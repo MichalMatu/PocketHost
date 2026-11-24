@@ -2,6 +2,15 @@
  * Dependency-aware, intentionally conservative PocketHost DEV gate planner.
  * Pure logic: no Git, filesystem or host operations.
  */
+// Reviewed server-side Vite adapters and their isolated HTTP regression suites.
+const reviewedAdapters = new Map([
+  ['dashboard-telemetry-api.ts', 'monitoring-api.test.mjs'],
+  ['internet-connectivity-api.ts', 'monitoring-api.test.mjs'],
+  ['site-fleet-api.ts', 'hosting-network-api.test.mjs'],
+  ['termux-admin-action.ts', 'termux-admin-api.test.mjs'],
+  ['termux-admin-api.ts', 'termux-admin-api.test.mjs'],
+]);
+
 /** Dependency imports are relevant only to changed source modules.
  * A docs/test/script-only diff has direct conservative check mappings.
  */
@@ -113,6 +122,17 @@ export function planChangedChecks(
       // renders correctly. The static import graph does not validate CSS rules,
       // selectors, or responsive geometry; require an explicit visual scope.
       review.push('Stylesheet change needs browser layout impact review: ' + file);
+    } else if (
+      file.startsWith('apps/admin/plugins/') &&
+      reviewedAdapters.has(file.slice('apps/admin/plugins/'.length))
+    ) {
+      // Server adapters are imported by root HTTP tests and by the Vite config.
+      rootTypes = true;
+      adminTypes = true;
+      boundaries = true;
+      structure = true;
+      adminLint.push(file.slice('apps/admin/'.length));
+      node.add('tests/quality/' + reviewedAdapters.get(file.slice('apps/admin/plugins/'.length)));
     } else if (file === 'apps/admin/vite.config.ts') {
       // This is the exact DEV API registration boundary. Changes require
       // typechecking, route-preservation and targeted service UI regression.

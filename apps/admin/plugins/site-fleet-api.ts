@@ -178,6 +178,7 @@ export function ownedSiteFleetApi(
             if (versionCommand && releaseRoute) {
               const selectedSite = releaseRoute[1]
               const revision = releaseRoute[2]
+              if (!selectedSite || !revision) throw new RangeError("Invalid release route")
               return releaseRoute[3] === "restore"
                 ? fleet.restoreRelease(selectedSite, revision)
                 : fleet.pruneRelease(selectedSite, revision)

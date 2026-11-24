@@ -120,3 +120,43 @@ test('Termux API serializes typed actions and recovers the queue after a refusal
   assert.deepEqual(JSON.parse(stopped.data), { terminal: { state: 'stopped' } });
   assert.deepEqual(calls, ['start', 'stop']);
 });
+
+test('Termux file actions distinguish omitted content from an empty file', async () => {
+  const calls = [];
+  const api = fixture({
+    files: {
+      apply(...args) {
+        calls.push(args);
+      },
+    },
+    fileRoots: {
+      apply(...args) {
+        calls.push(args);
+        return { changed: true };
+      },
+    },
+  });
+  assert.equal(
+    (await api(post, JSON.stringify({ action: 'file', name: 'mkdir', path: 'folder' }))).status,
+    200,
+  );
+  assert.equal(
+    (
+      await api(
+        post,
+        JSON.stringify({
+          action: 'full-file',
+          name: 'save',
+          root: 'home',
+          path: 'a.txt',
+          content: '',
+        }),
+      )
+    ).status,
+    200,
+  );
+  assert.deepEqual(calls, [
+    ['mkdir', 'folder', {}],
+    ['home', 'save', 'a.txt', { content: '' }],
+  ]);
+});

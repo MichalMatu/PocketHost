@@ -56,6 +56,11 @@ export async function runTermuxAdminAction(input: TermuxAdminInput, context: Ter
     if (input.name === "stop") return { terminal: terminal.stop() }
     throw new RangeError("Invalid terminal action")
   }
+  const filePayload = {
+    ...(input.destination === undefined ? {} : { destination: input.destination }),
+    ...(input.content === undefined ? {} : { content: input.content }),
+    ...(input.base64 === undefined ? {} : { base64: input.base64 }),
+  }
   if (input.action === "full-file") {
     const root = (input.root ?? "") as FileRoot
     const relative = input.path ?? ""
@@ -63,7 +68,7 @@ export async function runTermuxAdminAction(input: TermuxAdminInput, context: Ter
     if (input.name === "export") return fileRoots.export(root, relative)
     if (["mkdir","save","copy","copy-tree","move","delete","delete-tree","upload"].includes(input.name ?? "")) {
       return fileRoots.apply(root, input.name as "mkdir"|"save"|"copy"|"copy-tree"|"move"|"delete"|"delete-tree"|"upload",
-        relative, { destination: input.destination, content: input.content, base64: input.base64 })
+        relative, filePayload)
     }
     throw new RangeError("Unknown filesystem operation")
   }
@@ -206,9 +211,7 @@ export async function runTermuxAdminAction(input: TermuxAdminInput, context: Ter
   if (input.action === "file") {
     if (!input.name || !["mkdir", "save", "rename", "delete", "copy", "upload"].includes(input.name))
       throw new RangeError("Invalid file action")
-    files.apply(input.name as "mkdir" | "save" | "rename" | "delete" | "copy" | "upload", input.path ?? "", {
-      destination: input.destination, content: input.content, base64: input.base64,
-    })
+    files.apply(input.name as "mkdir" | "save" | "rename" | "delete" | "copy" | "upload", input.path ?? "", filePayload)
     return { changed: true }
   }
   if (input.action === "read-file") {

@@ -25,10 +25,10 @@ export function dashboardTelemetryApi(
         response.setHeader("Content-Security-Policy", "default-src 'none'")
         response.setHeader("Content-Type", "application/json; charset=utf-8")
         if (!allowsInternetProbeRequest({
-          host: request.headers.host, origin: request.headers.origin,
-          remote: request.socket.remoteAddress,
-          fetchSite: request.headers["sec-fetch-site"],
-          method: request.method, route: "/",
+          host: request.headers.host ?? "", origin: request.headers.origin ?? "",
+          remote: request.socket.remoteAddress ?? "",
+          fetchSite: request.headers["sec-fetch-site"] ?? "",
+          method: request.method ?? "", route: "/",
         })) {
           response.statusCode = 403
           response.end(JSON.stringify({ error: "forbidden" }))

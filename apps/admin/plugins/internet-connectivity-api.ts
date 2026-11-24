@@ -26,10 +26,10 @@ export function internetConnectivityApi(probe: () => ReturnType<typeof probeInte
         response.setHeader("Content-Security-Policy", "default-src 'none'")
         response.setHeader("Content-Type", "application/json; charset=utf-8")
         if (!allowsInternetProbeRequest({
-          host: request.headers.host, origin: request.headers.origin,
-          remote: request.socket.remoteAddress,
-          fetchSite: request.headers["sec-fetch-site"],
-          method: request.method, route: request.url,
+          host: request.headers.host ?? "", origin: request.headers.origin ?? "",
+          remote: request.socket.remoteAddress ?? "",
+          fetchSite: request.headers["sec-fetch-site"] ?? "",
+          method: request.method ?? "", route: request.url ?? "",
         })) {
           response.statusCode = 403
           response.end(JSON.stringify({ error: "forbidden" }))

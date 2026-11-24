@@ -50,10 +50,10 @@ export function termuxAdminApi(context: TermuxAdminContext = createTermuxAdminCo
         }
         const browserIntent = !!request.headers.origin && origins.has(request.headers.origin)
         const agentIntent = admitsAgentCommand({
-          origin: request.headers.origin,
-          intent: request.headers["x-pockethost-intent"] as string | undefined,
-          agentIntent: request.headers["x-pockethost-agent-intent"] as string | undefined,
-          fetchSite: request.headers["sec-fetch-site"] as string | undefined,
+          origin: request.headers.origin ?? "",
+          intent: (request.headers["x-pockethost-intent"] as string | undefined) ?? "",
+          agentIntent: (request.headers["x-pockethost-agent-intent"] as string | undefined) ?? "",
+          fetchSite: (request.headers["sec-fetch-site"] as string | undefined) ?? "",
         })
         if (request.method !== "POST" ||
             !(browserIntent || agentIntent) ||
