@@ -4,8 +4,7 @@ import {
   createOwnedSiteRuntime,
   SiteOwnershipError,
 } from '../../src/modules/runtime/owned-site-runtime.ts';
-import { OWNED_DEMO_ID } from '../../src/shared/owned-site.ts';
-import { demoDocument, assertOwnedDemoId } from '../../src/modules/sites/owned-demo-spec.ts';
+import { OWNED_DEMO_ID, demoDocument } from '../../src/shared/owned-site.ts';
 
 const absent = () => ({
   version: 1,
@@ -74,6 +73,11 @@ test('external or nonexistent services cannot be started, stopped or published',
   assert.throws(runtime.logs, SiteOwnershipError);
   set({ ...absent(), ownership: 'external', state: 'running' });
   await assert.rejects(runtime.stop(), SiteOwnershipError);
+  for (const id of ['foreign-owned', '../../outside']) {
+    set({ ...absent(), id, ownership: 'pockethost', state: 'running' });
+    await assert.rejects(runtime.stop(), SiteOwnershipError);
+    assert.throws(() => runtime.publish(2), SiteOwnershipError);
+  }
   assert.deepEqual(events, []);
 });
 
@@ -94,10 +98,7 @@ test('single explicit site can be created, started, published, rolled back and s
   assert.deepEqual(events, ['create', 'start', 'publish:2', 'rollback', 'stop', 'start', 'stop']);
 });
 
-test('fixed ID rejects discovered services; only built-in static documents are published', () => {
-  assert.equal(assertOwnedDemoId(OWNED_DEMO_ID), OWNED_DEMO_ID);
-  assert.throws(() => assertOwnedDemoId('foreign-owned'), RangeError);
-  assert.throws(() => assertOwnedDemoId('../../outside'), RangeError);
+test('shared production demo renderer accepts only built-in versions', () => {
   assert.match(demoDocument(1), /First local site/);
   assert.match(demoDocument(2), /Updated local site/);
   assert.throws(() => demoDocument('<script>'), RangeError);

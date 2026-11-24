@@ -13,6 +13,7 @@ import {
 } from 'node:fs';
 import { createServer } from 'node:net';
 import { OwnedDemoHost } from '../../src/modules/host/owned-site-host.ts';
+import { demoDocument } from '../../src/shared/owned-site.ts';
 
 function allocatePort() {
   return new Promise((resolve, reject) => {
@@ -51,7 +52,7 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
     assert.match(site.inspectProject().startTicks, /^\d+$/);
     let response = await fetch(`http://127.0.0.1:${port}/`);
     assert.equal(response.status, 200);
-    assert.match(await response.text(), /First local site/);
+    assert.equal(await response.text(), demoDocument(1));
     assert.equal((await fetch(`http://127.0.0.1:${port}/etc/passwd`)).status, 404);
     assert.equal((await fetch(`http://127.0.0.1:${port}/`, { method: 'POST' })).status, 405);
     assert.equal(site.publish(1).contentVersion, 1);
@@ -66,7 +67,7 @@ test('owned demo: explicit create, start, live deploy, rollback, logs and verifi
       1,
     );
     response = await fetch(`http://127.0.0.1:${port}/`);
-    assert.match(await response.text(), /Updated local site/);
+    assert.equal(await response.text(), demoDocument(2));
     const restored = site.rollback();
     assert.equal(restored.contentVersion, 1);
     assert.equal(restored.previousVersion, null);

@@ -20,6 +20,7 @@ import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:net';
 import {
   OWNED_DEMO_ID,
+  demoDocument,
   type DemoVersion,
   type OwnedDemoDeployment,
   type OwnedDemoProject,
@@ -104,18 +105,6 @@ async function availablePort(port: number): Promise<boolean> {
     socket.once('error', () => resolve(false));
     socket.listen(port, '127.0.0.1', () => socket.close(() => resolve(true)));
   });
-}
-
-function staticDocument(version: DemoVersion): string {
-  const label = version === 1 ? 'First local site' : 'Updated local site';
-  return [
-    '<!doctype html><html lang="en"><head><meta charset="UTF-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<title>PocketHost test site</title></head><body>',
-    '<main style="font-family:system-ui;max-width:55ch;margin:15vh auto;padding:1rem">',
-    `<h1>${label}</h1><p>PocketHost managed demo · v${version} · loopback only.</p></main>`,
-    '</body></html>',
-  ].join('\n');
 }
 
 export class OwnedDemoHost implements OwnedSitePort {
@@ -291,7 +280,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     verifyPlainDirectory(this.root);
     mkdirSync(this.site, { mode: 0o700 });
     verifyPlainDirectory(this.site);
-    writeFileSync(path.join(this.site, 'index-v1.html'), staticDocument(1), {
+    writeFileSync(path.join(this.site, 'index-v1.html'), demoDocument(1), {
       mode: 0o600,
       flag: 'wx',
     });
@@ -410,7 +399,7 @@ export class OwnedDemoHost implements OwnedSitePort {
     if (target === item.contentVersion) return this.inspect();
     const archive = path.join(this.site, `index-v${target}.html`);
     if (!existsSync(archive)) {
-      writeFileSync(archive, staticDocument(target), { flag: 'wx', mode: 0o600 });
+      writeFileSync(archive, demoDocument(target), { flag: 'wx', mode: 0o600 });
     }
     const nextDocument = this.document(target === 1 ? 'index-v1.html' : 'index-v2.html');
     this.addDeployment(item, 'publish', item.contentVersion, target);

@@ -53,3 +53,17 @@ export interface OwnedSitePort {
   rollback(): OwnedSiteSnapshot;
   readLogs(): ReadonlyArray<string>;
 }
+
+/** Built-in legacy demo release; preserve the host's existing HTML bytes. */
+export function demoDocument(version: DemoVersion): string {
+  if (version !== 1 && version !== 2) throw new RangeError('Unknown demo version');
+  const label = version === 1 ? 'First local site' : 'Updated local site';
+  return [
+    '<!doctype html><html lang="en"><head><meta charset="UTF-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<title>PocketHost test site</title></head><body>',
+    '<main style="font-family:system-ui;max-width:55ch;margin:15vh auto;padding:1rem">',
+    `<h1>${label}</h1><p>PocketHost managed demo · v${version} · loopback only.</p></main>`,
+    '</body></html>',
+  ].join('\n');
+}
