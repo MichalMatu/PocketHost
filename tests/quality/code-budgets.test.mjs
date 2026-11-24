@@ -66,7 +66,10 @@ test('browser module boundary covers dynamic imports, re-exports, aliases and ba
     const errors = validateCodeBudgets(root);
     assert.equal(errors.length, cases.length);
     for (const [file] of cases) {
-      assert.ok(errors.some((error) => error.includes('app/' + file + ' (')), file);
+      assert.ok(
+        errors.some((error) => error.includes('app/' + file + ' (')),
+        file,
+      );
     }
   }));
 
@@ -83,7 +86,7 @@ test('browser lazy UI imports, shared types and comments remain allowed', () =>
       [
         "const load = () => import('@/app/other');",
         "import type { Shared } from '../../../../src/shared/types.ts';",
-        "const text = \"import('node:fs')\";",
+        'const text = "import(\'node:fs\')";',
         "// import('node:fs');",
       ].join('\n'),
     );
