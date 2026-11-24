@@ -25,9 +25,16 @@ Runtime source `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: exact A8 QA `pocketho
 
 ## Sprint 2 — simplify and remove unused code (ACTIVE)
 
-- [ ] Measure dead code/dependencies with import/route references and existing analysis tooling (verify availability first) before deleting anything.
+- [x] Measure dead code/dependencies with import/route references and existing analysis tooling (verify availability first) before deleting anything.
 - [ ] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
 - [ ] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
+
+A8 read-only reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd`: 473 tracked source files, four documentation-only module directories, nine direct npm dependencies with no literal references, 18 possible unused UI files. The scan is a candidate list, not a complete import graph. Knip is available as a pinned npm exec script, not an installed root dependency; no download was performed.
+
+- [ ] Batch A: remove four unreferenced upstream UI components (drawer, hover-card, navigation-menu, card-decorator; 21,273 source bytes). Exact-SHA type closure, route preservation and guarded deployment pending.
+- [ ] Batch B: validate remaining unused UI candidates and dependency graph, including CSS and build-time references; prune only confirmed unused dependencies with consistent lockfile.
+- [ ] Batch C: evaluate four documentation-only module directories and their structure/test contracts; preserve active Host/Shizuku/diagnostics functionality.
+- [ ] Batch D: resolve legacy demo route/API and duplicated facades without touching any existing owned demo instance. Keep both referenced theme catalogs unless an explicit product decision changes them.
 
 ## Sprint 3 — A8 performance
 
