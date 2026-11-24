@@ -16,18 +16,16 @@ The current tree holds **maintained reference documents** only. Long-running spr
 - [Test Lab](TEST_LAB.md), [off-device recovery design](P1_OFF_DEVICE_RESTIC_PLAN.md), [shared tunnel proposal](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
 - [Roadmap](ROADMAP.md) and [upstream reuse strategy](UPSTREAM_REUSE_STRATEGY.md).
 
-## Module documents
+## Implemented module documents
 
-- [`ai`](modules/ai.md)
 - [`config`](modules/config.md)
-- [`diagnostics`](modules/diagnostics.md)
 - [`host`](modules/host.md)
-- [`inventory`](modules/inventory.md)
 - [`observability`](modules/observability.md)
 - [`packages`](modules/packages.md)
 - [`runtime`](modules/runtime.md)
-- [`shizuku`](modules/shizuku.md)
 - [`sites`](modules/sites.md)
+
+Former documentation-only module scopes are recorded in [module ownership](MODULES.md).
 
 ## Historical evidence
 

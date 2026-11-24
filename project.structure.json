@@ -1,15 +1,11 @@
 {
   "modules": [
-    "inventory",
     "host",
     "runtime",
     "packages",
     "sites",
     "config",
-    "diagnostics",
-    "observability",
-    "ai",
-    "shizuku"
+    "observability"
   ],
   "rootDirectories": ["apps", "docs", "src", "scripts", "tests", "native", "ops"],
   "requiredFiles": [

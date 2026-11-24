@@ -1,7 +1,7 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-24
 purpose: Minimal component boundaries
 ---
 
@@ -81,8 +81,8 @@ from Android Termux:Boot qualification, and readiness is distinct from PID
 liveness. Do not introduce extra periodic health workers or fake status
 switches for absent settings.
 
-## Current implementation boundaries and debt (22 November source review)
+## Current implementation boundaries and debt
 
-The server-side HTTP/API composition currently lives primarily in `apps/admin/vite.config.ts` with a dedicated `apps/admin/plugins/node-project-api.ts` extraction; it is **not** a browser module. Do not import `src/modules/host` into `apps/admin/src`. The `host` module contains most real implementations; some registered domain modules are placeholders. See the [actual module inventory](MODULES.md) and [source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).
+The server-side HTTP/API composition currently lives primarily in `apps/admin/vite.config.ts` with a dedicated `apps/admin/plugins/node-project-api.ts` extraction; it is **not** a browser module. Do not import `src/modules/host` into `apps/admin/src`. The `host` module contains most real implementations; the four former documentation-only placeholders have been consolidated into the module ownership document. See the [actual module inventory](MODULES.md) and [source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).
 
 Static import/budget gates cover documented paths, but do not establish whole-application dependency or runtime process isolation. No architecture refactor or new QA was performed in the documentation-only checkpoint.

@@ -36,10 +36,10 @@ test('foundation: valid project documentation', () => {
 
 test('structure rejects missing module agent policy', (t) => {
   const root = fixture(t);
-  unlinkSync(path.join(root, 'src/modules/inventory/AGENTS.md'));
+  unlinkSync(path.join(root, 'src/modules/observability/AGENTS.md'));
   assert.match(
     validateStructure(root).join('\n'),
-    /Missing required file: src\/modules\/inventory\/AGENTS.md/,
+    /Missing required file: src\/modules\/observability\/AGENTS.md/,
   );
 });
 
@@ -121,24 +121,24 @@ test('foundation: module boundaries are valid', () => {
 test('boundaries reject importing another module implementation', (t) => {
   const root = fixture(t);
   writeFileSync(
-    path.join(root, 'src/modules/inventory/probe.ts'),
+    path.join(root, 'src/modules/observability/probe.ts'),
     "import '../runtime/service';\n",
   );
   assert.match(
     validateBoundaries(root).join('\n'),
-    /Cross-module import in modules\/inventory\/probe.ts/,
+    /Cross-module import in modules\/observability\/probe.ts/,
   );
 });
 
 test('boundaries reject host I/O outside host adapter', (t) => {
   const root = fixture(t);
   writeFileSync(
-    path.join(root, 'src/modules/inventory/probe.ts'),
+    path.join(root, 'src/modules/observability/probe.ts'),
     "import { execFile } from 'node:child_process';\n",
   );
   assert.match(
     validateBoundaries(root).join('\n'),
-    /Host-only import in modules\/inventory\/probe.ts/,
+    /Host-only import in modules\/observability\/probe.ts/,
   );
 });
 

@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-22
+last_reviewed: 2026-11-24
 purpose: Compact source and QA entry map for safe feature-bounded changes
 ---
 
@@ -15,11 +15,12 @@ purpose: Compact source and QA entry map for safe feature-bounded changes
 | Portable types and domain rules               | `src/shared/`; no host/process effects                                                     |
 | Privileged host adapters                      | `src/modules/host/`; files, runit, process ownership, Local Agent and Static/Node backends |
 | Pure policy / domain modules                  | `src/modules/runtime/`, `sites/`, `config/`, `packages/`, `observability/`                 |
-| Registered placeholder scopes                 | `src/modules/ai/`, `diagnostics/`, `inventory/`, `shizuku/`                                |
 | Guarded A8 deployment                         | `ops/termux/fast-flow.mjs`, `ops/termux/refresh-panel.mjs`                                 |
 | Selective QA policy and planners              | `scripts/dev/verify-changed.mjs`, `scripts/dev/changed-checks.mjs`                         |
 | Source boundaries and budgets                 | `scripts/quality/check-structure.mjs`, `check-boundaries.mjs`, `check-code-budgets.mjs`    |
 | Tests                                         | `tests/quality/*.test.mjs` and `apps/admin/tests/*.test.tsx`                               |
+
+Former AI, diagnostics, inventory and Shizuku placeholder contracts are consolidated in [module ownership](MODULES.md); active host/native functionality is unchanged.
 
 **Real API seam:** `vite.config.ts` still composes many host-facing endpoints (pinned large legacy file); `plugins/node-project-api.ts` demonstrates a bounded server-only extraction. Extract routes incrementally; do not move host calls into browser components or make a competing worker/supervisor.
 
