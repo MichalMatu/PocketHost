@@ -2,14 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import os from 'node:os';
 import path from 'node:path';
-import {
-  existsSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { SITE_LIMIT, SiteFleetHost } from '../../src/modules/host/site-fleet-host.ts';
 
@@ -104,7 +97,9 @@ test('H2 removal reclaims a slot from a full eight-site catalog', async () => {
     assert.equal(replacement.port, victim.port);
     assert.notEqual(replacement.id, victim.id);
     assert.equal(fleet.list().length, SITE_LIMIT);
-    assert.ok(sites.filter((site) => site.id !== victim.id).every((site) => fleet.inspect(site.id)));
+    for (const site of sites.filter((item) => item.id !== victim.id)) {
+      assert.equal(fleet.inspect(site.id).id, site.id);
+    }
     for (const site of fleet.list()) await fleet.remove(site.id, snapshot(site));
     assert.deepEqual(fleet.list(), []);
   });
