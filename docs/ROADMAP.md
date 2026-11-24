@@ -23,11 +23,11 @@ Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 ev
 
 Runtime source `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: exact A8 QA `pockethost-a8-static-removal-qa-120adca-20261124-v1` PASS (12/12 checks plus code budgets); separate deploy `pockethost-a8-static-removal-deploy-120adca-20261124-v1` PASS, HTTP 200 and protected services unchanged. Additional test-only coverage for eight-site capacity, concurrent mutations, uncertain PID and occupied port: exact A8 QA `pockethost-a8-static-edge-qa-bf671cf-20261124-v1` PASS (4/4 checks) at `bf671cf9f1893cf9e2c8606c21e55b1c46f1351c`. No redeployment needed for test/docs-only changes. No real sites deleted. A8 preflight `pockethost-a8-static-lifecycle-preflight-20261124-v1` returned READ_ONLY_READY at live `349087d` with protected services attested.
 
-## Sprint 2 — simplify and remove unused code (ACTIVE)
+## Sprint 2 — simplify and remove unused code (CLOSED)
 
 - [x] Measure dead code/dependencies with import/route references and existing analysis tooling (verify availability first) before deleting anything.
-- [ ] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
-- [ ] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
+- [x] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
+- [x] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
 
 Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). Literal reference scan is not a complete import graph; no Knip download.
 
@@ -36,11 +36,11 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 - [x] Batch B2: removed nine direct dependencies (24 to 15), ten lockfile entries (559 to 549) and obsolete pnpm lock. Offline lock preflight `pockethost-a8-sprint2-b2-lock-preflight-a0c6591-20261124-v2` PASS; exact checksum and clean install `pockethost-a8-sprint2-b2-dependency-qa-179dc5a-20261124-v1` PASS; isolated types/build/8 Node tests/navigation `pockethost-a8-sprint2-b2-clean-build-179dc5a-20261124-v1` PASS. Guarded source refresh `pockethost-a8-sprint2-b2-source-deploy-179dc5a-20261124-v1` PASS, HTTP 200, protected services unchanged, retained versions verified; no live dependency installation or upgrades. Preserve date-fns and Vite declaration.
 - [x] Batch D1: two unused helpers removed (1,387 bytes). `pockethost-a8-sprint2-d1-qa-c69cc47-20261124-v1` PASS (types/build/5 Node tests and docs/budgets); `pockethost-a8-sprint2-d1-deploy-c69cc47-20261124-v1` PASS at `c69cc47`, HTTP 200, protected services unchanged.
 - [x] Batch C: six implemented modules; four placeholder scopes consolidated, eight policy/spec files removed. Structure/docs/boundaries/budgets/format/Markdown/lint PASS at `6961599` (foundation 19/20; stale archive fixture). Fixture corrected at `567ef2d`; `pockethost-a8-sprint2-c-foundation-567ef2d-20261124-v1` PASS (4/4, foundation suite). No runtime change or restart.
-- [ ] Batch D2: audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS (demo absent on A8, port 18787 not listening). Retain legacy API/route/gateway for compatibility, shared Hosting flags, referenced theme catalogs and tested config/package facades. Consolidate duplicate test-only demo renderer into the shared contract using the host's exact HTML; verify isolated lifecycle, API and gateway regressions. No live demo mutation.
+- [x] Batch D2: compatibility audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS (demo absent on A8). Preserve legacy route/API/gateway, shared flags, referenced themes and tested facades. Consolidated renderer; QA `pockethost-a8-sprint2-d2-qa-28adcdc-20261124-v1` PASS (26/26, types/build); deploy `pockethost-a8-sprint2-d2-deploy-28adcdc-20261124-v1` PASS at `28adcdc`, HTTP 200, protected services unchanged. No demo mutation.
 
-## Sprint 3 — A8 performance
+## Sprint 3 — A8 performance (ACTIVE)
 
-- [ ] Record repeatable idle and bounded load baselines for CPU, RSS, I/O, latency, processes/descriptors and battery where measurable; do not invent battery readings.
+- [ ] S3A: record observed idle and bounded serial read-only HTTP load baselines (CPU, RSS, I/O, latency, process/FD counts; battery if readable). Pin live SHA/PID/start ticks and report inaccessible metrics as unknown; no customer-site writes.
 - [ ] Assess one Node process per static site, synchronous file operations and Vite DEV serving overhead. Compare shared static server/runit designs before changing lifecycle.
 - [ ] Apply only measured improvements; benchmark before/after and verify isolation and regressions. No new watchdog, scheduler or unrelated service changes.
 
