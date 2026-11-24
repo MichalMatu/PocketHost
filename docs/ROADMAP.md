@@ -21,7 +21,7 @@ Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 ev
 - [x] Test empty and populated site removal, running/unknown refusal or verified stop, foreign paths, symlinks, concurrent/stale writes, failure outcomes, last-site empty state and capacity/port reuse; test isolated fixtures only.
 - [x] Exact-SHA A8 QA, separate guarded DEV deployment/readback, document evidence. No actual customer-site deletion without separate owner action.
 
-Runtime source `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: exact A8 QA `pockethost-a8-static-removal-qa-120adca-20261124-v1` PASS (12/12 checks plus code budgets); separate deploy `pockethost-a8-static-removal-deploy-120adca-20261124-v1` PASS, HTTP 200 and protected services unchanged. Additional test-only coverage for eight-site capacity, concurrent mutations, uncertain PID and occupied port: exact A8 QA `pockethost-a8-static-edge-qa-bf671cf-20261124-v1` PASS (4/4 checks) at `bf671cf9f1893cf9e2c8606c21e55b1c46f1351c`. No redeployment needed for test/docs-only changes. No real sites deleted. A8 preflight `pockethost-a8-static-lifecycle-preflight-20261124-v1` returned READ_ONLY_READY at live `349087d` with protected services attested.
+Runtime `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: QA `pockethost-a8-static-removal-qa-120adca-20261124-v1` PASS (12/12 checks plus code budgets); separate deploy `pockethost-a8-static-removal-deploy-120adca-20261124-v1` PASS, HTTP 200 and protected services unchanged. Additional test-only coverage for eight-site capacity, concurrent mutations, uncertain PID and occupied port: exact A8 QA `pockethost-a8-static-edge-qa-bf671cf-20261124-v1` PASS (4/4 checks) at `bf671cf9f1893cf9e2c8606c21e55b1c46f1351c`. No real sites deleted; test/docs-only changes required no redeployment.
 
 ## Sprint 2 — simplify and remove unused code (CLOSED)
 
@@ -40,7 +40,8 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 
 ## Sprint 3 — A8 performance (ACTIVE)
 
-- [ ] S3A: record observed idle and bounded serial read-only HTTP load baselines (CPU, RSS, I/O, latency, process/FD counts; battery if readable). Pin live SHA/PID/start ticks and report inaccessible metrics as unknown; no customer-site writes.
+- [x] S3A: `pockethost-a8-sprint3-a-baseline-dd9d527-20261124-v1` PASS at live `28adcdc`: observed idle 0.4–2.39% of one core/195380 KiB RSS; serial load 34.24%/203656 KiB, 15/15 HTTP 200. Median ms: sites 75.08, sites API 31.65, host snapshot 560.61. Zero procfs disk-byte deltas; one running static site. Battery full, raw temp 307; no energy estimate. Protected services unchanged.
+- [ ] S3B: isolate synchronous service status cost; compare bounded per-unit vs batched runit status and exact state equivalence. Inspect static process RSS; no ownership or lifecycle changes.
 - [ ] Assess one Node process per static site, synchronous file operations and Vite DEV serving overhead. Compare shared static server/runit designs before changing lifecycle.
 - [ ] Apply only measured improvements; benchmark before/after and verify isolation and regressions. No new watchdog, scheduler or unrelated service changes.
 
