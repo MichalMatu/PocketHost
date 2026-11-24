@@ -174,12 +174,17 @@ test('docs reject historical checkpoints missing from their archive index', (t) 
   const root = fixture(t);
   const file = path.join(root, 'docs/checkpoints/README.md');
   const original = readFileSync(file, 'utf8');
-  assert.match(original, /\(2026-11-05-foundation\.md\)/);
-  writeFileSync(file, original.replace('(2026-11-05-foundation.md)', '(missing-foundation.md)'));
+  const checkpoint = '2026-01-01-foundation-fixture.md';
+  writeFileSync(
+    path.join(root, 'docs/checkpoints', checkpoint),
+    '---\nstatus: checkpoint\nowner: core\nlast_reviewed: 2026-01-01\npurpose: Test fixture\n---\n\n# Fixture\n',
+  );
   assert.match(
     validateDocs(root).join('\n'),
-    /Document missing from checkpoint archive index: docs\/checkpoints\/2026-11-05-foundation\.md/,
+    /Document missing from checkpoint archive index: docs\/checkpoints\/2026-01-01-foundation-fixture\.md/,
   );
+  writeFileSync(file, original + '\n- [Fixture](' + checkpoint + ')\n');
+  assert.deepEqual(validateDocs(root), []);
 });
 
 test('structure allows the checkpoint archive index but rejects non-dated checkpoint files', (t) => {
