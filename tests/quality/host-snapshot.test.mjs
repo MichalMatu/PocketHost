@@ -131,14 +131,10 @@ test('batch status rejects ambiguous, missing and unexpected units', () => {
     ].join('\n');
   });
   assert.equal(calls, 1);
-  assert.deepEqual([...states.values()], [
-    'running',
-    'stopped',
-    'unknown',
-    'unknown',
-    'unknown',
-    'unknown',
-  ]);
+  assert.deepEqual(
+    [...states.values()],
+    ['running', 'stopped', 'unknown', 'unknown', 'unknown', 'unknown'],
+  );
 });
 
 test('batch status bounds names, command count and output; failures stay unknown', () => {
