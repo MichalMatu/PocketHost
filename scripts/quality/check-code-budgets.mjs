@@ -23,7 +23,6 @@ const legacyBytes = new Map([
   ['apps/admin/src/utils/shadcn-ui-theme-presets.ts', 30629],
   ['apps/admin/src/utils/tweakcn-theme-presets.ts', 109279],
   ['apps/admin/tests/node-projects.interaction.test.tsx', 70274],
-  ['apps/admin/vite.config.ts', 92033],
   ['src/modules/host/dashboard-telemetry-history.ts', 28055],
   ['src/modules/host/node-project-host.ts', 31554],
   ['src/modules/host/node-runit-host.ts', 48579],

@@ -29,7 +29,7 @@ Runtime `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: QA `pockethost-a8-static-rem
 - [x] Evaluate legacy demo, placeholder modules, duplicate facades and themes; remove only proven unused parts, preserve used workflows and compatibility.
 - [x] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
 
-Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). Literal scan only; no Knip download.
+Audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). No Knip download.
 
 - [x] Batch A: four unused UI components removed (21,273 bytes). QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200, protected unchanged.
 - [x] Batch B1: eleven unused UI files removed (24,009 bytes); active Node owner workflow retained. At `7fe7ace0b43cfb6c77938e63be88245ef6969ab0`, `pockethost-a8-sprint2-b1-qa-7fe7ace-20261124-v1` inner QA PASS (5/5 and budgets), npm wrapper exit 127; direct build `pockethost-a8-sprint2-b1-build-7fe7ace-20261124-v1` PASS; guarded deploy `pockethost-a8-sprint2-b1-deploy-7fe7ace-20261124-v1` PASS, HTTP 200, protected unchanged.
@@ -53,8 +53,9 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 - [x] S4A: host snapshot adapter; `pockethost-a8-sprint4-a-qa-eaaebf0-20261124-v1` PASS (29 Node, 25 UI); `pockethost-a8-sprint4-a-deploy-eaaebf0-20261124-v1` PASS, HTTP 200.
 - [x] S4B: monitoring adapters; `pockethost-a8-sprint4-b-qa-916b420-20261124-v1` PASS (53 Node, 25 UI); `pockethost-a8-sprint4-b-deploy-916b420-20261124-v1` PASS.
 - [x] S4C: Termux/Shizuku; `pockethost-a8-sprint4-c-qa-1d153dd-20261124-v1` PASS (22 Node, 43 UI); `pockethost-a8-sprint4-c-deploy-1d153dd-20261124-v1` PASS.
-- [ ] S4D: extract hosting/LAN adapters; HTTP fixture and lifecycle regressions.
-- [ ] S4E: split large host/admin modules; consolidate contracts and boundaries.
+- [x] S4D: hosting/LAN; `pockethost-a8-sprint4-d-qa-b619114-20261124-v1` PASS (70 Node, 66 UI); `pockethost-a8-sprint4-d-deploy-b619114-20261124-v1` PASS.
+- [ ] S4E1: Termux API composition/read/action/context split; preserve serialization.
+- [ ] S4E2: split large host modules; consolidate contracts and boundaries.
 - [ ] S4F: integration, recovery/endurance and final regression; reconcile docs.
 - [ ] Evaluate standalone updater and clean-device acceptance separately; physical install/reboot/real data need separate scope.
 
@@ -79,4 +80,4 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 
 Python/PHP runtimes, off-device disaster recovery, physical Android reboot G3, public ingress, untrusted-code isolation and security sprint remain separately scoped. Preserve the trusted-LAN MVP, protected services and independent Local Agent. Do not merge upstream Express backend, cron, watchdog, backup engine or tunnel automation wholesale; comply with MIT notice requirements for copied code.
 
-Start each session with [current handoff](HANDOFF_NEXT_CHAT.md), [architecture](ARCHITECTURE.md), [quality evidence](QUALITY_GATES.md), [Local Agent transport](LOCAL_AGENT_TERMUX.md) and this checklist.
+Resume from [handoff](HANDOFF_NEXT_CHAT.md) and this checklist.

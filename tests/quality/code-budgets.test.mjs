@@ -40,6 +40,6 @@ test('browser code cannot import host-only Node APIs', () =>
 
 test('an oversized legacy file may not grow', () =>
   withTree((put, root) => {
-    put('apps/admin/vite.config.ts', 'x'.repeat(92034));
+    put('apps/admin/vite.config.ts', 'x'.repeat(24 * 1024 + 1));
     assert.match(validateCodeBudgets(root).join('\n'), /Oversized code file/);
   }));
