@@ -157,8 +157,9 @@ export function readRunitStates(
   const seen = new Set<string>();
   for (const line of output.split('\n')) {
     const match = /^([^:]+): (.+?): (.*)$/.exec(line);
-    const name = match && units.get(match[2]);
-    if (!match || !name) continue;
+    if (!match || match[2] === undefined || match[3] === undefined) continue;
+    const name = units.get(match[2]);
+    if (!name) continue;
     const state =
       match[1] === 'run' && /^\(pid [1-9]\d*\) \d+s(?:[;,]|$)/.test(match[3])
         ? 'running'
