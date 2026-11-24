@@ -3,27 +3,32 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const vite = readFileSync(new URL('../../apps/admin/vite.config.ts', import.meta.url), 'utf8');
+const demo = readFileSync(
+  new URL('../../apps/admin/plugins/owned-demo-api.ts', import.meta.url),
+  'utf8',
+);
 const page = readFileSync(
   new URL('../../apps/admin/src/app/owned-site/page.tsx', import.meta.url),
   'utf8',
 );
 
 test('P3 API is explicit DEV opt-in and localhost-only', () => {
-  assert.match(vite, /POCKETHOST_ENABLE_OWNED_SITE_DEV/);
-  assert.match(vite, /127\.0\.0\.1:8787/);
-  assert.match(vite, /adapter = enabled \? new OwnedDemoHost/);
-  assert.match(vite, /runtime = adapter \? createOwnedSiteRuntime/);
-  assert.match(vite, /"x-pockethost-intent"/);
-  assert.match(vite, /"transfer-encoding"/);
-  assert.match(vite, /serializeMutation/);
-  assert.match(vite, /"owned-demo"/);
+  assert.match(vite, /ownedDemoApi\(\)/);
+  assert.match(demo, /POCKETHOST_ENABLE_OWNED_SITE_DEV/);
+  assert.match(demo, /127\.0\.0\.1:8787/);
+  assert.match(demo, /adapter = enabled \? new OwnedDemoHost/);
+  assert.match(demo, /runtime = adapter \? createOwnedSiteRuntime/);
+  assert.match(demo, /"x-pockethost-intent"/);
+  assert.match(demo, /"transfer-encoding"/);
+  assert.match(demo, /serializeMutation/);
+  assert.match(demo, /"owned-demo"/);
   assert.match(
-    vite,
+    demo,
     /allowedActions = new Set\(\["create", "start", "stop", "restart", "publish\/v1", "publish\/v2", "rollback"\]\)/,
   );
-  assert.match(vite, /action === "publish\/v1" \? runtime\.publish\(1\)/);
-  assert.match(vite, /action === "publish\/v2" \? runtime\.publish\(2\)/);
-  assert.doesNotMatch(vite, /req\.body\.command|shell:\s*true/);
+  assert.match(demo, /action === "publish\/v1" \? runtime\.publish\(1\)/);
+  assert.match(demo, /action === "publish\/v2" \? runtime\.publish\(2\)/);
+  assert.doesNotMatch(demo, /req\.body\.command|shell:\s*true/);
 });
 
 test('P3 UI does not execute host commands and never offers external control', () => {

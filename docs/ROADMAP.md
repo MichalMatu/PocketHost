@@ -19,19 +19,19 @@ Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 ev
 - [x] Source diagnosis: whole-site deletion missing in UI, API and SiteFleetHost; eight-site limit cannot be reclaimed.
 - [x] Implement explicit owned-site removal, including last site and empty catalog; safe stopped/verified process state, scoped filesystem validation, freed allocation, no foreign service impact; deliberate UI confirmation and inventory readback.
 - [x] Test empty and populated site removal, running/unknown refusal or verified stop, foreign paths, symlinks, concurrent/stale writes, failure outcomes, last-site empty state and capacity/port reuse; test isolated fixtures only.
-- [x] Exact-SHA A8 QA, separate guarded DEV deployment/readback, document evidence. No real-site deletion.
+- [x] Exact-SHA A8 QA, separate guarded DEV deployment/readback, document evidence.
 
 Runtime `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: QA `pockethost-a8-static-removal-qa-120adca-20261124-v1` PASS (12/12 checks plus code budgets); separate deploy `pockethost-a8-static-removal-deploy-120adca-20261124-v1` PASS, HTTP 200; protected unchanged. Additional test-only coverage for eight-site capacity, concurrent mutations, uncertain PID and occupied port: exact A8 QA `pockethost-a8-static-edge-qa-bf671cf-20261124-v1` PASS (4/4 checks) at `bf671cf9f1893cf9e2c8606c21e55b1c46f1351c`. No real sites deleted.
 
 ## Sprint 2 — simplify and remove unused code (CLOSED)
 
 - [x] Measure dead code/dependencies with import/route references and available analysis tooling before deleting anything.
-- [x] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
+- [x] Evaluate legacy demo, placeholder modules, duplicate facades and themes; remove only proven unused parts, preserve used workflows and compatibility.
 - [x] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
 
 Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). Literal scan only; no Knip download.
 
-- [x] Batch A: four unused UI components removed (21,273 bytes). Exact A8 QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200, protected services unchanged.
+- [x] Batch A: four unused UI components removed (21,273 bytes). QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200, protected unchanged.
 - [x] Batch B1: eleven unused UI files removed (24,009 bytes); active Node owner workflow retained. At `7fe7ace0b43cfb6c77938e63be88245ef6969ab0`, `pockethost-a8-sprint2-b1-qa-7fe7ace-20261124-v1` inner QA PASS (5/5 and budgets), npm wrapper exit 127; direct build `pockethost-a8-sprint2-b1-build-7fe7ace-20261124-v1` PASS; guarded deploy `pockethost-a8-sprint2-b1-deploy-7fe7ace-20261124-v1` PASS, HTTP 200, protected unchanged.
 - [x] Batch B2: removed nine direct dependencies (24 to 15), ten lockfile entries (559 to 549) and pnpm lock. Offline lock preflight `pockethost-a8-sprint2-b2-lock-preflight-a0c6591-20261124-v2` PASS; exact checksum and clean install `pockethost-a8-sprint2-b2-dependency-qa-179dc5a-20261124-v1` PASS; isolated types/build/8 Node tests/navigation `pockethost-a8-sprint2-b2-clean-build-179dc5a-20261124-v1` PASS. Refresh `pockethost-a8-sprint2-b2-source-deploy-179dc5a-20261124-v1` PASS, HTTP 200, protected services unchanged, retained versions verified; live dependencies untouched.
 - [x] Batch D1: two unused helpers removed (1,387 bytes). `pockethost-a8-sprint2-d1-qa-c69cc47-20261124-v1` PASS (types/build/5 Node tests and docs/budgets); `pockethost-a8-sprint2-d1-deploy-c69cc47-20261124-v1` PASS at `c69cc47`, HTTP 200, protected services unchanged.
@@ -52,11 +52,11 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 
 - [x] S4A: host snapshot adapter; `pockethost-a8-sprint4-a-qa-eaaebf0-20261124-v1` PASS (29 Node, 25 UI); `pockethost-a8-sprint4-a-deploy-eaaebf0-20261124-v1` PASS, HTTP 200.
 - [x] S4B: monitoring adapters; `pockethost-a8-sprint4-b-qa-916b420-20261124-v1` PASS (53 Node, 25 UI); `pockethost-a8-sprint4-b-deploy-916b420-20261124-v1` PASS.
-- [ ] S4C: extract Termux tools and Shizuku adapters; isolated forwarding/denial tests.
-- [ ] S4D: extract hosting and network adapters.
+- [x] S4C: Termux/Shizuku; `pockethost-a8-sprint4-c-qa-1d153dd-20261124-v1` PASS (22 Node, 43 UI); `pockethost-a8-sprint4-c-deploy-1d153dd-20261124-v1` PASS.
+- [ ] S4D: extract hosting/LAN adapters; HTTP fixture and lifecycle regressions.
 - [ ] S4E: split large host/admin modules; consolidate contracts and boundaries.
 - [ ] S4F: integration, recovery/endurance and final regression; reconcile docs.
-- [ ] Evaluate standalone updater and clean-device acceptance separately; physical install/reboot and real data operations require distinct scope.
+- [ ] Evaluate standalone updater and clean-device acceptance separately; physical install/reboot/real data need separate scope.
 
 ## Sprint 5 — v1.1: Traffic Analytics
 
