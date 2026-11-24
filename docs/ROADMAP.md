@@ -12,7 +12,7 @@ Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 ev
 ## Maintenance already delivered
 
 - [x] v1.0.0 source qualification: G0–G2 at d2bacd0 (see [quality gates](QUALITY_GATES.md)).
-- [x] Opt-in standalone Termux installer source and manifest/structure/docs QA at b8d67ba; see [installation](INSTALLATION.md). Actual clean-device installation and generic update path remain unqualified.
+- [x] Opt-in standalone Termux installer source and manifest/structure/docs QA at b8d67ba; see [installation](INSTALLATION.md). Clean-device install/update unqualified.
 
 ## Sprint 1 — v1.0.1: Static Hosting lifecycle (CLOSED)
 
@@ -25,7 +25,7 @@ Runtime `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: QA `pockethost-a8-static-rem
 
 ## Sprint 2 — simplify and remove unused code (CLOSED)
 
-- [x] Measure dead code/dependencies with import/route references and existing analysis tooling (verify availability first) before deleting anything.
+- [x] Measure dead code/dependencies with import/route references and available analysis tooling before deleting anything.
 - [x] Evaluate legacy owned-demo route/API, placeholder module declarations, duplicated facades and theme preset catalog; remove only proven unused parts, preserve used workflows and compatibility.
 - [x] Targeted regression tests, dependency/structure checks and guarded A8 verification where applicable.
 
@@ -40,19 +40,19 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 
 ## Sprint 3 — A8 performance (ACTIVE)
 
-- [x] S3A: `pockethost-a8-sprint3-a-baseline-dd9d527-20261124-v1` PASS at live `28adcdc`: idle CPU 0.4–2.39% of one core/RSS 195380 KiB; load 34.24%/203656 KiB. Median ms: sites 75.08, sites API 31.65, snapshot 560.61; 15/15 HTTP 200. One running site; no energy estimate.
+- [x] S3A: `pockethost-a8-sprint3-a-baseline-dd9d527-20261124-v1` PASS at live `28adcdc`: idle CPU 0.4–2.39% of one core/RSS 195380 KiB; load 34.24%/203656 KiB. Median ms: sites 75.08, sites API 31.65, snapshot 560.61; 15/15 HTTP 200. One running site.
 - [x] S3B: `pockethost-a8-sprint3-b-runit-profile-6fd2cc1-20261124-v1` PASS: 7 services, 3/3 identical full projections; median 201.28 → 37.54 ms (81.35% less); static process RSS 39661568 bytes.
 - [x] S3C: snapshot batch only; lifecycle probes unchanged. `pockethost-a8-sprint3-c-qa-8f933f0-20261124-v1` PASS (9/9, build, 3/3 equal projections; median 165.51 → 39.66 ms); `pockethost-a8-sprint3-c-deploy-8f933f0-20261124-v1` PASS, HTTP 200, protected unchanged.
-- [x] S3D: `pockethost-a8-sprint3-c-postbaseline-8f933f0-20261124-v1` PASS: live snapshot median 560.61 → 119.90 ms (-78.6%), 15/15 HTTP 200; load RSS 203656 → 199984 KiB. Idle CPU did not improve. Protected unchanged.
+- [x] S3D: `pockethost-a8-sprint3-c-postbaseline-8f933f0-20261124-v1` PASS: live snapshot median 560.61 → 119.90 ms (-78.6%), 15/15 HTTP 200; load RSS 203656 → 199984 KiB. Idle CPU unchanged in benefit; protected unchanged.
 - [x] S3E: `pockethost-a8-sprint3-e-static-profile-892a938-20261124-v1` PASS: 90/90 responses, 3 separate vs 1 shared process; end RSS 212204 → 73508 KiB, CPU ticks 108 → 77. Keep separate ownership/PID lifecycle; shared migration needs explicit isolation and recovery design. RSS is not PSS.
-- [ ] S3F: compare frontend-only Vite DEV vs built preview (isolated loopback; no live API plugins), record RSS/PSS if readable, startup and initial asset latency; no production switch.
-- [ ] Apply measured improvements; verify before/after and isolation. No new watchdog, scheduler or unrelated service changes.
+- [x] S3F: `pockethost-a8-sprint3-f-vite-profile-8e630e3-20261124-v1` PASS: frontend-only DEV/preview 24/24 HTTP 200; end RSS 389424/83148 KiB; PSS unavailable. Not full-page/API equivalent.
+- [ ] S3G: document architecture decisions for built UI/API separation, static lifecycle and residual synchronous I/O; no live switch without equivalence QA.
 
 ## Sprint 4 — architecture and test quality
 
 - [ ] Incrementally extract server API plugins from vite.config.ts; split termux-service-admin, node-runit-host and large UI pages by responsibility, preserving behavior.
 - [ ] Consolidate duplicate validation/contracts; improve actual browser/server import boundary checks and file budgets.
-- [ ] Add missing real API lifecycle, race/failure/recovery and bounded endurance tests; use isolated fixtures and existing QA/Test Lab, not another framework.
+- [ ] Add missing real API lifecycle, race/failure/recovery and bounded endurance tests in existing isolated QA/Test Lab.
 - [ ] Reconcile stale module/docs statuses with exact receipts. Evaluate standalone updater and clean-device acceptance; physical install/reboot and real data operations require separate scope.
 
 ## Sprint 5 — v1.1: Traffic Analytics
