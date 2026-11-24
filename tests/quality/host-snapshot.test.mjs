@@ -112,13 +112,14 @@ test('empty host may report zero discovered runit services', () => {
   assert.deepEqual(snapshot.services, []);
 });
 
-test('batch status matches only exact requested units and rejects ambiguous or missing rows', () => {
+test('batch status rejects ambiguous, missing and unexpected units', () => {
   const root = '/fixed/service';
   const names = ['worker-a', 'worker-b', 'worker-c', 'worker-d', 'worker-e', 'worker-f'];
   let calls = 0;
   const states = readRunitStates(root, names, (units) => {
     calls++;
-    assert.deepEqual(units, names.map((name) => root + '/' + name));
+    const expectedUnits = names.map((name) => root + '/' + name);
+    assert.deepEqual(units, expectedUnits);
     return [
       'run: /fixed/service/worker-a: (pid 42) 10s; run: log: (pid 43) 12s',
       'down: /fixed/service/worker-b: 1s, normally up',
