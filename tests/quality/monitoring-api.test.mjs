@@ -86,7 +86,10 @@ test('observability API keeps history per adapter and skips packages in monitori
   assert.equal(packageCalls, 0);
   assert.equal(monitoring.body.packages.state, 'unavailable');
   assert.equal(monitoring.body.history.length, 1);
-  assert.equal(monitoring.body.alerts.some((s) => s.includes('Package')), false);
+  assert.equal(
+    monitoring.body.alerts.some((s) => s.includes('Package')),
+    false,
+  );
   const full = await api.request();
   assert.equal(full.status, 200);
   assert.equal(packageCalls, 1);
