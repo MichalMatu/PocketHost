@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `349087d2981c7fc3d8b9feba12d8fc335956a08b`, receipt `pockethost-a8-dev-349087d-deploy-20261123-v1` (owned PID/ticks and HTTP 200, protected services unchanged), followed by six-route HTTP smoke PASS. The qualified source `d2bacd0` was **not** deployed by the G2 tasks.
+- **Last device-attested DEV release:** `120adca4fcb9ee4cc089b58994bc0a87ca35f583`, receipt `pockethost-a8-static-removal-deploy-120adca-20261124-v1` (HTTP 200, owned PID/ticks, protected services unchanged). Separate exact-source changed QA `pockethost-a8-static-removal-qa-120adca-20261124-v1` PASS (12/12 checks plus code budgets). Sprint 1 additional fixture coverage remains pending.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows

@@ -11,7 +11,7 @@ Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [qual
 
 **Source baseline:** `main@d2bacd081ad0879d49a08e3c7fd97789185ad6e4` qualified G0–G2 on A8 (486/486 UI, 469 Node PASS, 1 SKIP; 76.11% line coverage). Subsequent documentation-only cleanup does not constitute a new application QA run.
 
-**Last confirmed deployed A8 DEV:** `349087d2981c7fc3d8b9feba12d8fc335956a08b`. Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
+**Last confirmed deployed A8 DEV:** `120adca4fcb9ee4cc089b58994bc0a87ca35f583` (Static Hosting removal, see [roadmap](ROADMAP.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
 
 **Recovery:** scoped encrypted local Node Restic backup → isolated restore and hash comparison was performed. This does not prove off-device disaster recovery. See [MVP evidence](MVP_INTEGRATION_CHECKLIST.md).
 
