@@ -22,7 +22,13 @@ function readSnapshots(value: unknown): Snapshot[] {
   return value as Snapshot[]
 }
 
-export function NodeBackupPanel({
+export function NodeBackupPanel(props: Props) {
+  // Catalog or owner changes invalidate the entire inspected session, including
+  // approval and selected snapshots, even when the caller does not remount us.
+  return <NodeBackupSession key={String(props.catalogReady) + ":" + String(props.ownerAuthorized)} {...props} />
+}
+
+function NodeBackupSession({
   catalogReady, ownerAuthorized, busy, getJson, action, onMessage,
 }: Props) {
   const [backupStatus, setBackupStatus] = React.useState<BackupStatus | null>(null)
@@ -32,18 +38,24 @@ export function NodeBackupPanel({
   const [selectedSnapshot, setSelectedSnapshot] = React.useState("")
   const ownerSessionVersion = React.useRef(0)
 
-  // Parent remounts this panel when catalog or owner access changes.
-  // Reject pending response continuations from the previous session.
-  React.useEffect(() => () => { ownerSessionVersion.current += 1 }, [])
+  const activeSession = React.useRef(true)
+  React.useEffect(() => {
+    activeSession.current = true
+    return () => {
+      activeSession.current = false
+      ownerSessionVersion.current += 1
+    }
+  }, [])
 
   const repositoryReady = backupStatus?.initialized === true &&
     backupStatus.repositoryPresent && backupStatus.keyPresent
   const canMutate = catalogReady && ownerAuthorized && repositoryReady && backupsEnabled
 
   const guardedGetJson: Props["getJson"] = async (url, method, body) => {
+    if (!activeSession.current) throw new Error("Owner session changed. Inspect backups again.")
     const version = ownerSessionVersion.current
     const result = await getJson(url, method, body)
-    if (version !== ownerSessionVersion.current) {
+    if (!activeSession.current || version !== ownerSessionVersion.current) {
       throw new Error("Owner session changed. Inspect backups again.")
     }
     return result

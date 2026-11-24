@@ -9,17 +9,17 @@ purpose: Concise accepted MVP features and evidence boundaries
 
 **Owner state:** current private-LAN MVP and browser UX accepted for the present stage. **Engineering state:** A8 source G0–G2 PASS at `d2bacd0`; last separately confirmed DEV deployment `349087d`. These are deliberately different milestones.
 
-| Area | Established evidence | Boundary |
-| --- | --- | --- |
-| Admin/dashboard and Local Agent | Owned A8 panel deployment, diagnostics, scoped UI and HTTP route checks | Do not expose admin publicly |
-| SSH and interactive terminal | Dedicated SSH lifecycle and browser interactive session previously PASS | Keep independently managed SSH services protected |
-| Static Hosting | Owned HTML publish, serve/update/rollback and active ZIP export→isolated reimport with matching content | Do not equate API round-trip with every browser ZIP edge case |
-| Trusted Node Hosting | Create/stage/deploy/readiness/logs/update/stop/start/rollback PASS on A8 | Source runs as Termux UID, without untrusted-code isolation |
-| Deployments / logs / hosting overview | Owned project inventory, scoped logs and direct links verified | No claim of public domain/TLS cutover |
-| Services S1–S4 | Full fixed-worker owned lifecycle PASS including archive/restore/retire | Arbitrary third-party workers not admitted implicitly |
-| Backups | Local encrypted Node Restic snapshot and isolated staging restore of 10/10 files verified | Not a full-device or off-device disaster-recovery qualification |
-| MQTT, health, autostart | Loopback MQTT and manual diagnostics PASS; 3 boot hooks observed | Actual Android post-reboot recovery not qualified |
-| G0–G2 | 486/486 UI, Node 469 PASS / 1 SKIP and 76.11% line coverage | Current release/source SHA remain separate |
+| Area                                  | Established evidence                                                                                    | Boundary                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Admin/dashboard and Local Agent       | Owned A8 panel deployment, diagnostics, scoped UI and HTTP route checks                                 | Do not expose admin publicly                                    |
+| SSH and interactive terminal          | Dedicated SSH lifecycle and browser interactive session previously PASS                                 | Keep independently managed SSH services protected               |
+| Static Hosting                        | Owned HTML publish, serve/update/rollback and active ZIP export→isolated reimport with matching content | Do not equate API round-trip with every browser ZIP edge case   |
+| Trusted Node Hosting                  | Create/stage/deploy/readiness/logs/update/stop/start/rollback PASS on A8                                | Source runs as Termux UID, without untrusted-code isolation     |
+| Deployments / logs / hosting overview | Owned project inventory, scoped logs and direct links verified                                          | No claim of public domain/TLS cutover                           |
+| Services S1–S4                        | Full fixed-worker owned lifecycle PASS including archive/restore/retire                                 | Arbitrary third-party workers not admitted implicitly           |
+| Backups                               | Local encrypted Node Restic snapshot and isolated staging restore of 10/10 files verified               | Not a full-device or off-device disaster-recovery qualification |
+| MQTT, health, autostart               | Loopback MQTT and manual diagnostics PASS; 3 boot hooks observed                                        | Actual Android post-reboot recovery not qualified               |
+| G0–G2                                 | 486/486 UI, Node 469 PASS / 1 SKIP and 76.11% line coverage                                             | Current release/source SHA remain separate                      |
 
 **Source evidence:** [quality gates](QUALITY_GATES.md), [current handoff](HANDOFF_NEXT_CHAT.md), [hosting and backup acceptance records](MVP_INTEGRATION_CHECKLIST.md), and [21 November device checkpoint](checkpoints/2026-11-21-pocket-host-mvp-handoff.md). Older checkpoints are in [Git history](checkpoints/README.md).
 
