@@ -1,6 +1,14 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { observeRunitProcess, readRunitState, readRunitAutostart } from './termux-runit-process.ts';
 import { isReserved, resolveRunitServiceTarget } from './termux-service-path.ts';
+import {
+  MAX_MANAGED,
+  MAX_TEMPLATE_WORKERS,
+  readRunitRegistry,
+  writeRunitRegistry,
+  readArchivedWorkers,
+  writeArchivedWorkers,
+} from './termux-runit-registry.ts';
 import type {
   WorkerTemplate,
   StagedWorkerTemplate,
@@ -85,8 +93,6 @@ import {
 // unit, and every subsequent operation re-attests its canonical target.
 // Preexisting service registrations keep their exact-target constraint.
 const MAX_ENTRIES = 100;
-const MAX_MANAGED = 32;
-const MAX_TEMPLATE_WORKERS = 4;
 const RECOVERY_WINDOW_MS = 60 * 60 * 1000;
 const RECOVERY_COOLDOWN_MS = 2 * 60 * 1000;
 const RECOVERY_MAX_ATTEMPTS = 2;
@@ -122,145 +128,19 @@ export class TermuxServiceAdmin {
   }
 
   private registry(): Registration[] {
-    const raw = safeFile(this.registerFile);
-    if (raw === null) return [];
-    const data: unknown = JSON.parse(raw);
-    if (!Array.isArray(data) || data.length > MAX_MANAGED)
-      throw new Error('Invalid runit registry');
-    const names = new Set<string>();
-    return data.map((entry: unknown) => {
-      if (!entry || typeof entry !== 'object' || Array.isArray(entry))
-        throw new Error('Invalid runit registry entry');
-      const value = entry as Record<string, unknown>;
-      if (
-        !['addedAt,name,target', 'addedAt,name,runSha256,target'].includes(
-          Object.keys(value).sort().join(','),
-        ) ||
-        typeof value.name !== 'string' ||
-        typeof value.target !== 'string' ||
-        typeof value.addedAt !== 'string' ||
-        !/^\d{4}-\d\d-\d\dT/.test(value.addedAt) ||
-        (value.runSha256 !== undefined &&
-          (typeof value.runSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(value.runSha256))) ||
-        isReserved(value.name, value.target) ||
-        names.has(value.name)
-      )
-        throw new Error('Unsafe runit registration');
-      valid(value.name);
-      names.add(value.name);
-      return {
-        name: value.name,
-        target: value.target,
-        addedAt: value.addedAt,
-        ...(typeof value.runSha256 === 'string' ? { runSha256: value.runSha256 } : {}),
-      };
-    });
+    return readRunitRegistry(this.registerFile);
   }
 
   private save(registrations: Registration[]): void {
-    if (registrations.length > MAX_MANAGED) throw new RangeError('Too many managed services');
-    const folder = path.dirname(this.registerFile);
-    mkdirSync(folder, { recursive: true, mode: 0o700 });
-    if (lstatSync(folder).isSymbolicLink() || !lstatSync(folder).isDirectory())
-      throw new Error('Unsafe runit registry parent');
-    safeFile(this.registerFile); // refuse an existing symlink, directory or malformed filesystem object
-    const temporary = path.join(folder, '.runit-registry-' + randomUUID());
-    writeFileSync(temporary, JSON.stringify(registrations) + '\n', { flag: 'wx', mode: 0o600 });
-    try {
-      renameSync(temporary, this.registerFile);
-    } catch (error) {
-      try {
-        rmSync(temporary, { force: true });
-      } catch {
-        /* best effort */
-      }
-      throw error;
-    }
+    writeRunitRegistry(this.registerFile, registrations);
   }
 
-  /**
-   * Private archive ledger is separate from live service authority. A marker
-   * alone can never adopt a foreign or abandoned service into the registry.
-   */
   private archivedRegistry(): ArchivedWorker[] {
-    try {
-      const file = lstatSync(this.archiveFile);
-      if (
-        !file.isFile() ||
-        file.isSymbolicLink() ||
-        file.nlink !== 1 ||
-        file.uid !== process.getuid?.() ||
-        (file.mode & 0o077) !== 0
-      )
-        throw new Error('Unsafe archive ledger permissions');
-    } catch (error) {
-      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return [];
-      throw error;
-    }
-    const raw = safeFile(this.archiveFile);
-    if (raw === null) throw new Error('Archive ledger disappeared during read');
-    const value: unknown = JSON.parse(raw);
-    if (!Array.isArray(value) || value.length > MAX_TEMPLATE_WORKERS)
-      throw new Error('Invalid archived worker ledger');
-    const seen = new Set<string>();
-    return value.map((candidate: unknown) => {
-      if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate))
-        throw new Error('Invalid archived worker entry');
-      const v = candidate as Record<string, unknown>;
-      if (
-        ![
-          'archivedAt,instanceId,name,runSha256,target,template',
-          'archivedAt,instanceId,name,runSha256,sourceSha256,target,template',
-        ].includes(Object.keys(v).sort().join(',')) ||
-        typeof v.name !== 'string' ||
-        typeof v.target !== 'string' ||
-        typeof v.instanceId !== 'string' ||
-        typeof v.runSha256 !== 'string' ||
-        typeof v.archivedAt !== 'string' ||
-        ![
-          'heartbeat-worker-v1',
-          'python-heartbeat-v1',
-          'python-source-v1',
-          'node-source-v1',
-        ].includes(v.template as string) ||
-        (isStagedWorker(v.template as WorkerTemplate)
-          ? typeof v.sourceSha256 !== 'string' || !/^[a-f0-9]{64}$/.test(v.sourceSha256)
-          : v.sourceSha256 !== undefined) ||
-        !/^[0-9a-f-]{36}$/.test(v.instanceId) ||
-        !/^[a-f0-9]{64}$/.test(v.runSha256) ||
-        !Number.isFinite(Date.parse(v.archivedAt)) ||
-        v.target !== path.join(PREFIX, 'var', 'sv', v.name) ||
-        seen.has(v.name)
-      )
-        throw new Error('Untrusted archived worker entry');
-      valid(v.name);
-      if (isReserved(v.name)) throw new Error('Protected archive name');
-      seen.add(v.name);
-      return v as unknown as ArchivedWorker;
-    });
+    return readArchivedWorkers(this.archiveFile);
   }
 
   private saveArchived(items: ArchivedWorker[]): void {
-    if (items.length > MAX_TEMPLATE_WORKERS) throw new RangeError('Archive quota reached');
-    const folder = path.dirname(this.archiveFile);
-    mkdirSync(folder, { recursive: true, mode: 0o700 });
-    const parent = lstatSync(folder);
-    if (
-      !parent.isDirectory() ||
-      parent.isSymbolicLink() ||
-      parent.uid !== process.getuid?.() ||
-      (parent.mode & 0o077) !== 0
-    )
-      throw new Error('Unsafe archive state directory');
-    // Refuse an existing archive with unsafe permissions or identity.
-    this.archivedRegistry();
-    const temporary = path.join(folder, '.archived-worker-' + randomUUID());
-    writeFileSync(temporary, JSON.stringify(items) + '\n', { flag: 'wx', mode: 0o600 });
-    try {
-      renameSync(temporary, this.archiveFile);
-    } finally {
-      if (existsSync(temporary)) rmSync(temporary, { force: true });
-    }
+    writeArchivedWorkers(this.archiveFile, items);
   }
 
   /** Never trust an archival log subprocess without checking its source. */

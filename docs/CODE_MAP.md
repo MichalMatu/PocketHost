@@ -11,7 +11,7 @@ purpose: Compact source and QA entry map for safe feature-bounded changes
 | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
 | Browser routes, feature components and hooks  | `apps/admin/src/app/`; no direct Termux host effects                                       |
 | Browser contracts, validation and API clients | `apps/admin/src/lib/`; interact through bounded HTTP APIs                                  |
-| Node/Vite API bridge                          | `apps/admin/vite.config.ts` and `apps/admin/plugins/node-project-api.ts`; server-side only |
+| Node/Vite API bridge                          | `apps/admin/vite.config.ts` and `apps/admin/plugins/`; server-side only |
 | Portable types and domain rules               | `src/shared/`; no host/process effects                                                     |
 | Privileged host adapters                      | `src/modules/host/`; files, runit, process ownership, Local Agent and Static/Node backends |
 | Pure policy / domain modules                  | `src/modules/runtime/`, `sites/`, `config/`, `packages/`, `observability/`                 |
@@ -22,6 +22,6 @@ purpose: Compact source and QA entry map for safe feature-bounded changes
 
 Former AI, diagnostics, inventory and Shizuku placeholder contracts are consolidated in [module ownership](MODULES.md); active host/native functionality is unchanged.
 
-**Real API seam:** `vite.config.ts` still composes many host-facing endpoints (pinned large legacy file); `plugins/node-project-api.ts` demonstrates a bounded server-only extraction. Extract routes incrementally; do not move host calls into browser components or make a competing worker/supervisor.
+**Real API seam:** `vite.config.ts` is a slim composer for server-only adapters under `apps/admin/plugins/`. Termux admin shares one context and serialized action queue. Host runtime helpers and registries remain under `src/modules/host`; do not move host calls into browser components or introduce another supervisor.
 
 **Current source-level modularity assessment:** [module map](MODULES.md) and [22 November checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md). The static gates do not exhaustively verify imports across the Vite/browser boundary. Open nearest `AGENTS.md` only, and distinguish source inspection from approved A8 QA.

@@ -1,22 +1,15 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { randomBytes } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
-  constants,
-  fstatSync,
-  lstatSync,
   mkdirSync,
   openSync,
   closeSync,
   readFileSync,
   readlinkSync,
-  realpathSync,
-  renameSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
-import { createServer } from 'node:net';
-import http from 'node:http';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
@@ -36,302 +29,35 @@ import {
 } from '../../shared/node-hosting-projection.ts';
 import { createHostingRegistries } from '../../shared/hosting-registry.ts';
 
-const PREFIX = '/data/data/com.termux/files/usr';
-const FIRST_PORT = 19300;
-const PORT_COUNT = 32;
-const RELEASE = /^r-[a-f0-9]{32}$/;
-const UNIT_MARKER = '.pockethost-node-unit.json';
-const RUNTIME_MARKER = '.pockethost-node-runtime.json';
-const MAX_HISTORY = 24;
-
-type ProcessProof = { pid: number; ticks: string };
-type RuntimeRecord = {
-  schema: 1;
-  owner: 'pockethost-node-runit';
-  projectId: string;
-  unit: string;
-  port: number;
-  desired: 'stopped' | 'running';
-  activeRelease: string | null;
-  lastGoodRelease: string | null;
-  previousGoodRelease?: string | null;
-  process: ProcessProof | null;
-  readinessNonce: string;
-  history: {
-    at: string;
-    action: 'start' | 'update' | 'stop' | 'failed' | 'rollback';
-    release: string;
-  }[];
-};
-type UnitRecord = {
-  schema: 1;
-  owner: 'pockethost-node-runit';
-  projectId: string;
-  unit: string;
-  port: number;
-  runDigest: string;
-  logDigest: string;
-  readinessNonce: string;
-};
-
-function checkedDirectory(folder: string): void {
-  const s = lstatSync(folder);
-  if (
-    !s.isDirectory() ||
-    s.isSymbolicLink() ||
-    realpathSync(folder) !== folder ||
-    s.uid !== process.getuid?.()
-  )
-    throw new Error('Untrusted Node runtime directory');
-}
-function privateText(filename: string, max = 16384): string {
-  const s = lstatSync(filename);
-  if (
-    !s.isFile() ||
-    s.isSymbolicLink() ||
-    s.nlink !== 1 ||
-    s.uid !== process.getuid?.() ||
-    (s.mode & 0o077) !== 0 ||
-    s.size > max
-  )
-    throw new Error('Untrusted Node runtime file');
-  const fd = openSync(filename, constants.O_RDONLY | constants.O_NOFOLLOW);
-  try {
-    const current = fstatSync(fd);
-    if (
-      !current.isFile() ||
-      current.nlink !== 1 ||
-      current.ino !== s.ino ||
-      current.dev !== s.dev ||
-      current.uid !== s.uid ||
-      (current.mode & 0o077) !== 0 ||
-      current.size > max
-    )
-      throw new Error('Node runtime file changed during verification');
-    return readFileSync(fd, 'utf8');
-  } finally {
-    closeSync(fd);
-  }
-}
-function absent(name: string): boolean {
-  try {
-    lstatSync(name);
-    return false;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true;
-    throw error;
-  }
-}
-function atomic(folder: string, name: string, content: string, mode = 0o600): void {
-  checkedDirectory(folder);
-  const target = path.join(folder, name);
-  if (!absent(target)) privateText(target);
-  const temp = path.join(folder, '.node-' + randomUUID());
-  writeFileSync(temp, content, { flag: 'wx', mode });
-  try {
-    renameSync(temp, target);
-  } finally {
-    if (!absent(temp)) rmSync(temp);
-  }
-}
-function quote(input: string): string {
-  return "'" + input.replaceAll("'", "'\\''") + "'";
-}
-function digest(value: string): string {
-  return createHash('sha256').update(value).digest('hex');
-}
-function nodeLogRun(logFolder: string): string {
-  return (
-    '#!' +
-    PREFIX +
-    '/bin/sh\nexec ' +
-    quote(PREFIX + '/bin/svlogd') +
-    ' -tt ' +
-    quote(logFolder) +
-    '\n'
-  );
-}
-/** A clean env blocks accidental inheritance of PocketHost admin credentials. */
-export function runScript(folder: string, port: number, readinessNonce: string): string {
-  if (
-    !path.isAbsolute(folder) ||
-    !Number.isSafeInteger(port) ||
-    port < FIRST_PORT ||
-    port >= FIRST_PORT + PORT_COUNT ||
-    !/^[a-f0-9]{48}$/.test(readinessNonce)
-  ) {
-    throw new RangeError('Invalid owned Node process launch');
-  }
-  return (
-    '#!' +
-    PREFIX +
-    '/bin/sh\nset -eu\ncd ' +
-    quote(folder) +
-    '\nexec ' +
-    quote(PREFIX + '/bin/env') +
-    ' -i' +
-    ' PATH=' +
-    quote(PREFIX + '/bin') +
-    ' HOME=' +
-    quote(folder) +
-    ' TMPDIR=' +
-    quote(PREFIX + '/tmp') +
-    ' NODE_ENV=' +
-    quote('production') +
-    ' PORT=' +
-    quote(String(port)) +
-    ' POCKETHOST_READINESS_NONCE=' +
-    quote(readinessNonce) +
-    ' ' +
-    quote(PREFIX + '/bin/node') +
-    ' ' +
-    quote(path.join(folder, 'server.mjs')) +
-    '\n'
-  );
-}
-function observedTicks(pid: number): string | null {
-  try {
-    const raw = readFileSync('/proc/' + pid + '/stat', 'utf8');
-    const ticks = raw
-      .slice(raw.lastIndexOf(')') + 2)
-      .trim()
-      .split(/\s+/)[19];
-    return ticks && /^\d+$/.test(ticks) ? ticks : null;
-  } catch {
-    return null;
-  }
-}
-function pause(): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, 250));
-}
-function portFree(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const s = createServer();
-    s.once('error', () => resolve(false));
-    s.listen(port, '127.0.0.1', () => s.close(() => resolve(true)));
-  });
-}
-/** Reserve unused fixed-pool loopback ports. */
-export async function selectUnreservedNodePort(
-  reserved: ReadonlySet<number>,
-  free: (port: number) => Promise<boolean>,
-): Promise<number> {
-  for (let port = FIRST_PORT; port < FIRST_PORT + PORT_COUNT; port++) {
-    if (!reserved.has(port) && (await free(port))) return port;
-  }
-  throw new Error('No unreserved loopback Node port');
-}
-/** Readiness must attest this release, not foreign HTTP 200. */
-export function probeOwnedNodeReadiness(port: number, nonce: string): Promise<boolean> {
-  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535 || !/^[a-f0-9]{48}$/.test(nonce))
-    throw new RangeError('Unsafe Node readiness probe');
-  return new Promise((resolve) => {
-    const request = http.get(
-      {
-        hostname: '127.0.0.1',
-        port,
-        path: '/__pockethost/ready',
-        timeout: 600,
-        agent: false,
-      },
-      (response) => {
-        response.resume();
-        resolve(response.statusCode === 200 && response.headers['x-pockethost-ready'] === nonce);
-      },
-    );
-    request.on('timeout', () => request.destroy());
-    request.on('error', () => resolve(false));
-  });
-}
-/** Bounded local HTTP observation. Never forwards admin headers or exposes HTML execution. */
-export function readBoundedNodePreview(port: number): Promise<string> {
-  if (!Number.isSafeInteger(port) || port < 1024 || port > 65535)
-    throw new RangeError('Invalid local preview port');
-  return new Promise((resolve, reject) => {
-    const request = http.get(
-      {
-        hostname: '127.0.0.1',
-        port,
-        path: '/',
-        agent: false,
-        timeout: 1500,
-        signal: AbortSignal.timeout(3000),
-        headers: { accept: 'text/plain, text/html' },
-      },
-      (response) => {
-        if (response.statusCode !== 200) {
-          response.destroy();
-          reject(new Error('Node preview returned non-success status'));
-          return;
-        }
-        const chunks: Buffer[] = [];
-        let total = 0;
-        response.on('data', (part: Buffer | string) => {
-          const bytes = Buffer.isBuffer(part) ? part : Buffer.from(part);
-          total += bytes.length;
-          if (total > 8192) {
-            request.destroy(new Error('Node preview response exceeds safe budget'));
-            return;
-          }
-          chunks.push(bytes);
-        });
-        response.once('end', () => {
-          const clean = Buffer.concat(chunks)
-            .toString('utf8')
-            .split('')
-            .filter((character) => {
-              const code = character.charCodeAt(0);
-              return (code > 31 && code !== 127) || code === 9 || code === 10;
-            })
-            .join('');
-          resolve(clean);
-        });
-        response.once('error', reject);
-      },
-    );
-    request.once('timeout', () => request.destroy(new Error('Node preview timeout')));
-    request.once('error', reject);
-  });
-}
-function stored(raw: string, id: string): RuntimeRecord {
-  const v: unknown = JSON.parse(raw);
-  if (!v || typeof v !== 'object' || Array.isArray(v))
-    throw new Error('Invalid Node runtime state');
-  const s = v as RuntimeRecord;
-  if (
-    s.schema !== 1 ||
-    s.owner !== 'pockethost-node-runit' ||
-    s.projectId !== id ||
-    s.unit !== unitName(id) ||
-    !Number.isSafeInteger(s.port) ||
-    s.port < FIRST_PORT ||
-    s.port >= FIRST_PORT + PORT_COUNT ||
-    !['running', 'stopped'].includes(s.desired) ||
-    typeof s.readinessNonce !== 'string' ||
-    !/^[a-f0-9]{48}$/.test(s.readinessNonce) ||
-    (s.activeRelease !== null && !RELEASE.test(s.activeRelease)) ||
-    (s.lastGoodRelease !== null && !RELEASE.test(s.lastGoodRelease)) ||
-    (s.previousGoodRelease !== undefined &&
-      s.previousGoodRelease !== null &&
-      !RELEASE.test(s.previousGoodRelease)) ||
-    (s.process !== null &&
-      (!Number.isSafeInteger(s.process.pid) ||
-        s.process.pid < 2 ||
-        !/^\d+$/.test(s.process.ticks))) ||
-    !Array.isArray(s.history) ||
-    s.history.length > MAX_HISTORY ||
-    s.history.some(
-      (event) =>
-        !event ||
-        !RELEASE.test(event.release) ||
-        !['start', 'update', 'stop', 'failed', 'rollback'].includes(event.action) ||
-        !Number.isFinite(Date.parse(event.at)),
-    )
-  ) {
-    throw new Error('Unsafe Node runtime record');
-  }
-  return s;
-}
+import {
+  PREFIX,
+  RELEASE,
+  UNIT_MARKER,
+  RUNTIME_MARKER,
+  MAX_HISTORY,
+  stored,
+  type ProcessProof,
+  type RuntimeRecord,
+  type UnitRecord,
+} from './node-runit-records.ts';
+import { checkedDirectory, privateText, absent, atomic } from './node-runit-storage.ts';
+import {
+  digest,
+  nodeLogRun,
+  runScript,
+  observedTicks,
+  pause,
+  portFree,
+  selectUnreservedNodePort,
+  probeOwnedNodeReadiness,
+  readBoundedNodePreview,
+} from './node-runit-probes.ts';
+export {
+  runScript,
+  selectUnreservedNodePort,
+  probeOwnedNodeReadiness,
+  readBoundedNodePreview,
+} from './node-runit-probes.ts';
 
 /**
  * M3 Node releases use the EXISTING Termux runit and registered service API.

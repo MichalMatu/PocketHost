@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `b619114f02f8d7b05c484eb042a84de02e816b64`, `pockethost-a8-sprint4-d-deploy-b619114-20261124-v1` PASS (HTTP 200, protected services unchanged). `pockethost-a8-sprint4-d-qa-b619114-20261124-v1` PASS (70 Node, 66 UI, types/build). Sprints 1–3 closed; Sprint 4 active. Live dependencies untouched.
+- **Last device-attested DEV release:** `38cb4cdf79be66539ba295f36363528e26ed888e`, `pockethost-a8-sprint4-e1-deploy-38cb4cd-20261124-v1` PASS (HTTP 200, protected unchanged). `pockethost-a8-sprint4-e1-qa-38cb4cd-20261124-v1` PASS (46 Node, 67 UI, types/build). Sprints 1–3 closed; Sprint 4 active. Live dependencies untouched.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -25,7 +25,7 @@ The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Current work: [Sprint 4](ROADMAP.md). Sprint 3 closed: live snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200, protected unchanged. Static profile 90/90: separate/shared end RSS 212204/73508 KiB; retain per-site PID/ownership. Frontend-only DEV/preview 24/24: RSS 389424/83148 KiB, no PSS; API/render equivalence not proven. Receipts in roadmap and decisions in architecture. S4A–D QA/deploy PASS. S4E1 extracts the remaining Termux admin API into context, read, action and HTTP composition; preserve shared serialized mutations, raw log bytes and intent checks. Exact A8 QA/deploy pending; then S4E2 and S4F. Existing Base UI non-native button and SVG test warnings tracked separately. Public exposure, reboot and off-device recovery remain separate.
+Current work: [Sprint 4](ROADMAP.md). Sprint 3 closed: live snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200, protected unchanged. Static profile 90/90: separate/shared end RSS 212204/73508 KiB; retain per-site PID/ownership. Frontend-only DEV/preview 24/24: RSS 389424/83148 KiB, no PSS; API/render equivalence not proven. Receipts in roadmap and decisions in architecture. S4A–E1 QA/deploy PASS. Vite composition is 1.8 kB. S4E2 extracts Node runtime records/storage/probes and Termux live/archive registry I/O without changing ownership, paths, quotas, public facade or lifecycle. Exact A8 QA/deploy pending; then boundary follow-up and S4F. Existing Base UI non-native button and SVG test warnings tracked separately. Public exposure, reboot and off-device recovery remain separate.
 
 ## Owner's next visit
 

@@ -31,12 +31,12 @@ Runtime `120adca4fcb9ee4cc089b58994bc0a87ca35f583`: QA `pockethost-a8-static-rem
 
 Audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979fd` (473 files). No Knip download.
 
-- [x] Batch A: four unused UI components removed (21,273 bytes). QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200, protected unchanged.
+- [x] Batch A: four unused UI components removed (21,273 bytes). QA `pockethost-a8-sprint2-ui-prune-qa-932a067-20261124-v1` PASS (5/5 and budgets); deploy `pockethost-a8-sprint2-ui-prune-deploy-932a067-20261124-v1` PASS at `932a067f6e4481263b065f24d66f33ce6f36e9c2`, HTTP 200.
 - [x] Batch B1: eleven unused UI files removed (24,009 bytes); active Node owner workflow retained. At `7fe7ace0b43cfb6c77938e63be88245ef6969ab0`, `pockethost-a8-sprint2-b1-qa-7fe7ace-20261124-v1` inner QA PASS (5/5 and budgets), npm wrapper exit 127; direct build `pockethost-a8-sprint2-b1-build-7fe7ace-20261124-v1` PASS; guarded deploy `pockethost-a8-sprint2-b1-deploy-7fe7ace-20261124-v1` PASS, HTTP 200, protected unchanged.
-- [x] Batch B2: removed nine direct dependencies (24 to 15), ten lockfile entries (559 to 549) and pnpm lock. Offline lock preflight `pockethost-a8-sprint2-b2-lock-preflight-a0c6591-20261124-v2` PASS; exact checksum and clean install `pockethost-a8-sprint2-b2-dependency-qa-179dc5a-20261124-v1` PASS; isolated types/build/8 Node tests/navigation `pockethost-a8-sprint2-b2-clean-build-179dc5a-20261124-v1` PASS. Refresh `pockethost-a8-sprint2-b2-source-deploy-179dc5a-20261124-v1` PASS, HTTP 200, protected services unchanged, retained versions verified; live dependencies untouched.
-- [x] Batch D1: two unused helpers removed (1,387 bytes). `pockethost-a8-sprint2-d1-qa-c69cc47-20261124-v1` PASS (types/build/5 Node tests and docs/budgets); `pockethost-a8-sprint2-d1-deploy-c69cc47-20261124-v1` PASS at `c69cc47`, HTTP 200, protected services unchanged.
+- [x] Batch B2: removed nine direct dependencies (24 to 15), ten lockfile entries (559 to 549) and pnpm lock. Offline lock preflight `pockethost-a8-sprint2-b2-lock-preflight-a0c6591-20261124-v2` PASS; exact checksum and clean install `pockethost-a8-sprint2-b2-dependency-qa-179dc5a-20261124-v1` PASS; isolated types/build/8 Node tests/navigation `pockethost-a8-sprint2-b2-clean-build-179dc5a-20261124-v1` PASS. Refresh `pockethost-a8-sprint2-b2-source-deploy-179dc5a-20261124-v1` PASS, HTTP 200, protected unchanged, retained versions verified; live dependencies untouched.
+- [x] Batch D1: two unused helpers removed (1,387 bytes). `pockethost-a8-sprint2-d1-qa-c69cc47-20261124-v1` PASS (types/build/5 Node tests and docs/budgets); `pockethost-a8-sprint2-d1-deploy-c69cc47-20261124-v1` PASS at `c69cc47`, HTTP 200, protected unchanged.
 - [x] Batch C: six implemented modules; four placeholder scopes consolidated, eight policy/spec files removed. Structure/docs/boundaries/budgets/format/Markdown/lint PASS at `6961599` (foundation 19/20; stale archive fixture). Fixture corrected at `567ef2d`; `pockethost-a8-sprint2-c-foundation-567ef2d-20261124-v1` PASS (4/4, foundation suite). No restart.
-- [x] Batch D2: compatibility audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS (demo absent on A8). Preserve legacy route/API/gateway, shared flags, referenced themes and tested facades. Consolidated renderer; QA `pockethost-a8-sprint2-d2-qa-28adcdc-20261124-v1` PASS (26/26, types/build); deploy `pockethost-a8-sprint2-d2-deploy-28adcdc-20261124-v1` PASS at `28adcdc`, HTTP 200, protected services unchanged.
+- [x] Batch D2: compatibility audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS (demo absent on A8). Preserve legacy route/API/gateway, shared flags, referenced themes and tested facades. Consolidated renderer; QA `pockethost-a8-sprint2-d2-qa-28adcdc-20261124-v1` PASS (26/26, types/build); deploy `pockethost-a8-sprint2-d2-deploy-28adcdc-20261124-v1` PASS at `28adcdc`, HTTP 200, protected unchanged.
 
 ## Sprint 3 — A8 performance (CLOSED)
 
@@ -54,10 +54,10 @@ Audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979
 - [x] S4B: monitoring adapters; `pockethost-a8-sprint4-b-qa-916b420-20261124-v1` PASS (53 Node, 25 UI); `pockethost-a8-sprint4-b-deploy-916b420-20261124-v1` PASS.
 - [x] S4C: Termux/Shizuku; `pockethost-a8-sprint4-c-qa-1d153dd-20261124-v1` PASS (22 Node, 43 UI); `pockethost-a8-sprint4-c-deploy-1d153dd-20261124-v1` PASS.
 - [x] S4D: hosting/LAN; `pockethost-a8-sprint4-d-qa-b619114-20261124-v1` PASS (70 Node, 66 UI); `pockethost-a8-sprint4-d-deploy-b619114-20261124-v1` PASS.
-- [ ] S4E1: Termux API composition/read/action/context split; preserve serialization.
-- [ ] S4E2: split large host modules; consolidate contracts and boundaries.
+- [x] S4E1: Termux API; `pockethost-a8-sprint4-e1-qa-38cb4cd-20261124-v1` PASS (46 Node, 67 UI); `pockethost-a8-sprint4-e1-deploy-38cb4cd-20261124-v1` PASS.
+- [ ] S4E2: Node runtime helpers and Termux registry I/O; then boundaries.
 - [ ] S4F: integration, recovery/endurance and final regression; reconcile docs.
-- [ ] Evaluate standalone updater and clean-device acceptance separately; physical install/reboot/real data need separate scope.
+- [ ] Standalone updater/clean-device acceptance separate; physical install/reboot/real data need distinct scope.
 
 ## Sprint 5 — v1.1: Traffic Analytics
 

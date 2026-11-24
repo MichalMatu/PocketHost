@@ -11,7 +11,7 @@ Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [qual
 
 **Source baseline:** `main@d2bacd081ad0879d49a08e3c7fd97789185ad6e4` qualified G0–G2 on A8 (486/486 UI, 469 Node PASS, 1 SKIP; 76.11% line coverage). Subsequent documentation-only cleanup does not constitute a new application QA run.
 
-**Last confirmed deployed A8 DEV:** `b619114f02f8d7b05c484eb042a84de02e816b64` (Sprint 4D hosting/LAN adapters, see [roadmap](ROADMAP.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
+**Last confirmed deployed A8 DEV:** `38cb4cdf79be66539ba295f36363528e26ed888e` (Sprint 4E1 Termux admin split, see [roadmap](ROADMAP.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
 
 **Recovery:** scoped encrypted local Node Restic backup → isolated restore and hash comparison was performed. This does not prove off-device disaster recovery. See [MVP evidence](MVP_INTEGRATION_CHECKLIST.md).
 
