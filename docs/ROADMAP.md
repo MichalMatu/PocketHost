@@ -38,7 +38,7 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 - [x] Batch C: six implemented modules; four placeholder scopes consolidated, eight policy/spec files removed. Structure/docs/boundaries/budgets/format/Markdown/lint PASS at `6961599` (foundation 19/20; stale archive fixture). Fixture corrected at `567ef2d`; `pockethost-a8-sprint2-c-foundation-567ef2d-20261124-v1` PASS (4/4, foundation suite). No restart.
 - [x] Batch D2: compatibility audit `pockethost-a8-sprint2-d-compatibility-audit-4904f28-20261124-v1` PASS (demo absent on A8). Preserve legacy route/API/gateway, shared flags, referenced themes and tested facades. Consolidated renderer; QA `pockethost-a8-sprint2-d2-qa-28adcdc-20261124-v1` PASS (26/26, types/build); deploy `pockethost-a8-sprint2-d2-deploy-28adcdc-20261124-v1` PASS at `28adcdc`, HTTP 200, protected services unchanged.
 
-## Sprint 3 — A8 performance (ACTIVE)
+## Sprint 3 — A8 performance (CLOSED)
 
 - [x] S3A: `pockethost-a8-sprint3-a-baseline-dd9d527-20261124-v1` PASS at live `28adcdc`: idle CPU 0.4–2.39% of one core/RSS 195380 KiB; load 34.24%/203656 KiB. Median ms: sites 75.08, sites API 31.65, snapshot 560.61; 15/15 HTTP 200. One running site.
 - [x] S3B: `pockethost-a8-sprint3-b-runit-profile-6fd2cc1-20261124-v1` PASS: 7 services, 3/3 identical full projections; median 201.28 → 37.54 ms (81.35% less); static process RSS 39661568 bytes.
@@ -46,11 +46,11 @@ Reference audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS
 - [x] S3D: `pockethost-a8-sprint3-c-postbaseline-8f933f0-20261124-v1` PASS: live snapshot median 560.61 → 119.90 ms (-78.6%), 15/15 HTTP 200; load RSS 203656 → 199984 KiB. Idle CPU unchanged in benefit; protected unchanged.
 - [x] S3E: `pockethost-a8-sprint3-e-static-profile-892a938-20261124-v1` PASS: 90/90 responses, 3 separate vs 1 shared process; end RSS 212204 → 73508 KiB, CPU ticks 108 → 77. Keep separate ownership/PID lifecycle; shared migration needs explicit isolation and recovery design. RSS is not PSS.
 - [x] S3F: `pockethost-a8-sprint3-f-vite-profile-8e630e3-20261124-v1` PASS: frontend-only DEV/preview 24/24 HTTP 200; end RSS 389424/83148 KiB; PSS unavailable. Not full-page/API equivalent.
-- [ ] S3G: document architecture decisions for built UI/API separation, static lifecycle and residual synchronous I/O; no live switch without equivalence QA.
+- [x] S3G: decision recorded in [architecture](ARCHITECTURE.md): retain static lifecycle, extract API composition before any built UI switch; no speculative I/O/cache changes.
 
-## Sprint 4 — architecture and test quality
+## Sprint 4 — architecture and test quality (ACTIVE)
 
-- [ ] Incrementally extract server API plugins from vite.config.ts; split termux-service-admin, node-runit-host and large UI pages by responsibility, preserving behavior.
+- [ ] S4A: extract host snapshot Vite adapter unchanged, test registration/HTTP outcomes and guarded deploy. Then extract further API adapters; split large host/UI modules by responsibility.
 - [ ] Consolidate duplicate validation/contracts; improve actual browser/server import boundary checks and file budgets.
 - [ ] Add missing real API lifecycle, race/failure/recovery and bounded endurance tests in existing isolated QA/Test Lab.
 - [ ] Reconcile stale module/docs statuses with exact receipts. Evaluate standalone updater and clean-device acceptance; physical install/reboot and real data operations require separate scope.

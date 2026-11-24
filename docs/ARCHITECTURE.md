@@ -83,6 +83,14 @@ switches for absent settings.
 
 ## Current implementation boundaries and debt
 
-The server-side HTTP/API composition currently lives primarily in `apps/admin/vite.config.ts` with a dedicated `apps/admin/plugins/node-project-api.ts` extraction; it is **not** a browser module. Do not import `src/modules/host` into `apps/admin/src`. The `host` module contains most real implementations; the four former documentation-only placeholders have been consolidated into the module ownership document. See the [actual module inventory](MODULES.md) and [source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).
+The server-side HTTP/API composition currently lives primarily in `apps/admin/vite.config.ts` with dedicated Node project and host snapshot adapters under `apps/admin/plugins`; it is **not** a browser module. Do not import `src/modules/host` into `apps/admin/src`. The `host` module contains most real implementations; the four former documentation-only placeholders have been consolidated into the module ownership document. See the [actual module inventory](MODULES.md) and [source checkpoint](checkpoints/2026-11-22-source-modules-documentation-checkpoint.md).
 
-Static import/budget gates cover documented paths, but do not establish whole-application dependency or runtime process isolation. No architecture refactor or new QA was performed in the documentation-only checkpoint.
+Static import/budget gates cover documented paths, but do not establish whole-application dependency or runtime process isolation. The historical documentation-only checkpoint did not establish runtime process isolation.
+
+## Performance decisions (Sprint 3)
+
+The A8 evidence in [roadmap](ROADMAP.md) supports the deployed snapshot batch (median 560.61 to 119.90 ms). Do not generalize this to all endpoints or idle CPU. Static shared-process profiling reduced summed RSS but does not preserve the current independent PID/cwd/argv ownership, stop/restart and gateway checks. Keep the per-site process model until a replacement proves independent lifecycle, crash containment, migration, rollback and equivalent releases/preview routing.
+
+The isolated frontend-only Vite DEV/preview comparison showed lower RSS and cold asset latency for built assets. It excluded API plugins, browser rendering and live HMR/watch behavior; PSS was unavailable. A built UI switch is not approved by this evidence alone. Extract server-only HTTP adapters incrementally with existing route contracts, then qualify a common API composition independently of the development server. Prove same-origin routing, terminal HTTP/WebSocket proxy, ownership, process shutdown, telemetry/recovery, SPA fallback and deployment rollback before a built UI runtime replaces DEV. Continue using the existing runit supervisor and guarded DEV flow.
+
+Retain synchronous ownership and release checks until isolated measurements identify a worthwhile change that preserves the exact semantics. Avoid speculative caches, extra supervisors or service changes. The next implementation is S4A: move the host snapshot adapter with a test injection seam; leave all host probes, response contracts and runtime composition otherwise unchanged.
