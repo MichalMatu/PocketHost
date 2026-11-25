@@ -39,6 +39,8 @@ Sprint 4 scoped code and integration regression closed. New physical reboot, ext
 - `pockethost-a8-sprint5-deploy-b49b81a-20261125-v1`: terminal PASS; target live SHA matches, panel HTTP 200, protected services and dependency installation unchanged.
 - `pockethost-a8-sprint5-postflight-b49b81a-20261125-v1`: terminal read-only PASS, one existing Static and one Node project, 4/4 traffic API reads across both ranges; all returned missing snapshots, no mutations or forced application restarts. Live collection in existing projects is not yet observed; isolated HTTP collection is qualified.
 
+- Final closeout: `pockethost-a8-sprint5-closeout-gate-95d015f-20261125-v1` passed structure, full/changed docs, boundaries, budgets and Markdown; formatting failed on one extra space. `pockethost-a8-sprint5-closeout-format-c064fb7-20261125-v1` passed all three documentation checks at `c064fb7` after that whitespace-only correction; prior foundation and runtime evidence verified, live SHA unchanged. Sprint 6 remains TODO for the next iteration. This final evidence entry is documentation-only; no rebuild or deployment.
+
 No fresh whole-repository test aggregate, seven-day physical endurance, or browser visual acceptance is claimed. The earlier Host-header fixture error was corrected without changing the production boundary. See [architecture](ARCHITECTURE.md) for collection semantics and retention constraints.
 
 ## Engineering constraints
