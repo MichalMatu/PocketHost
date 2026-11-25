@@ -1,7 +1,7 @@
 ---
 status: accepted-with-follow-up
 owner: core
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-25
 purpose: Minimal component boundaries
 ---
 
@@ -94,3 +94,15 @@ The A8 evidence in [roadmap](ROADMAP.md) supports the deployed snapshot batch (m
 The isolated frontend-only Vite DEV/preview comparison showed lower RSS and cold asset latency for built assets. It excluded API plugins, browser rendering and live HMR/watch behavior; PSS was unavailable. A built UI switch is not approved by this evidence alone. Extract server-only HTTP adapters incrementally with existing route contracts, then qualify a common API composition independently of the development server. Prove same-origin routing, terminal HTTP/WebSocket proxy, ownership, process shutdown, telemetry/recovery, SPA fallback and deployment rollback before a built UI runtime replaces DEV. Continue using the existing runit supervisor and guarded DEV flow.
 
 Retain synchronous ownership and release checks until isolated measurements identify a worthwhile change that preserves the exact semantics. Avoid speculative caches, extra supervisors or service changes. S4A host snapshot extraction is deployed. S4B monitoring adapters are deployed. S4C Termux/Shizuku adapters are deployed. S4D hosting/LAN adapters are deployed. S4E1 split the remaining Termux admin adapter into a shared host context, read projections, typed action dispatch and one HTTP serialization/intent boundary. Vite remains the runtime composer; independent built UI/API equivalence still requires QA. S4E2 moves Node runit record validation, owned-file primitives and local probes into separate modules, and extracts Termux registry/archive I/O. Preserve public host facades and every ownership check.
+
+## Traffic Analytics (Sprint 5)
+
+`traffic-history.mjs` holds bounded aggregates; `traffic-store.mjs` owns validated per-project snapshots; `traffic-http.mjs` observes completed HTTP responses. Static collection uses its own server and Node collection uses the native HTTP diagnostics channel via its existing runit launch script. `traffic-runtime.ts` projects snapshots only after the hosting API verifies the project; PID/start ticks distinguish a current process from historical data. The browser uses a typed parser and opens/refetches the traffic panel on demand. No additional supervisor, dependency or background UI polling was added.
+
+- GET `/api/v1/sites/:id/traffic?range=24h|7d` and `/api/v1/node-projects/:id/traffic?range=24h|7d`. Missing/unavailable snapshots are distinct from measured zero; stale (over 30 seconds) or historically attested RPS is unavailable.
+- Counts include completed native HTTP responses, not aborted requests, WebSocket traffic or HTTP/2. Bytes are response payload, excluding headers/framing; Node readiness excluded, Static health and previews included. Paths omit query strings and fragments, but path segments may themselves contain identifiers. At most 32 approximate path counters per UTC hour, 120 characters per path, top ten lower-bound counts and explicit overflow.
+- Each project has at most 168 hourly buckets and 60 second counters. The 24h/7d views prune the logical window; snapshots persist atomically with a coalesced 15-second write after traffic in the existing process. Idle or stopped snapshots are not physically rewritten on a timer; old buckets are pruned on read/next write. Abrupt process termination may lose an unflushed batch.
+- Local storage under `.local/state/pockethost/traffic-v1`: maximum 24 project identities and 4 MiB per file, with at most a snapshot and temporary file per identity. Verified Static removal attempts to reclaim only its own analytics files; unsafe or failed cleanup is left intact. Capacity exhaustion or corrupt storage disables collection rather than blocking the hosted response. This is bounded storage, not strict wall-clock physical erasure; no independent timed purge.
+- Existing running applications adopt instrumentation on their normal next start. Do not force customer application restarts for analytics. Node applications share the Termux UID; no isolation claim.
+
+Final scoped QA, benchmark and A8 deploy/postflight receipts are in [quality gates](QUALITY_GATES.md).

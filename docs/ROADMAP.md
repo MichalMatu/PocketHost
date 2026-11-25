@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-25
 purpose: Ordered post-v1 sprint backlog and completion evidence
 ---
 
@@ -62,11 +62,13 @@ A8 QA/deploy PASS; immutable receipts: `pockethost-a8-sprint4-<step>-<qa|deploy>
 - [x] S4F: layered regression, backup session fix, guarded deploy `08caecc` PASS; HTTP 200. See [quality evidence](QUALITY_GATES.md). Physical recovery/endurance qualification remains separate.
 - [ ] Standalone updater/clean-device acceptance separately scoped.
 
-## Sprint 5 — v1.1: Traffic Analytics
+## Sprint 5 — v1.1: Traffic Analytics (CLOSED)
 
-- [ ] Review [TermuxPanel](https://github.com/himalayladha/termux-hosting-panel) analytics implementation and license before reuse.
-- [ ] Per-site request counts, status breakdown, bytes, top routes and bounded time-series/RPS. Reuse telemetry and release identities; measure overhead, bound storage, no additional supervisor.
-- [ ] Exact-SHA tests and guarded A8 deployment/readback.
+- [x] Review [TermuxPanel](https://github.com/himalayladha/termux-hosting-panel) analytics and MIT license; independently implement bounded per-project collection.
+- [x] Static and Node request counts, status breakdown, response payload bytes, top paths, hourly history and 60-second RPS; on-demand UI for 24h/7d, project/process identity, failure tolerance and bounded storage without an additional supervisor.
+- [x] Isolated A8 retention/capacity/HTTP integration, affected UI regression, CPU/RSS/disk benchmark, build, guarded DEV deployment and read-only live API verification.
+
+Runtime `b49b81a70a15d44ebaf3ec3733f168ba1936edbb`: final delta QA 10/10 PASS, affected UI 143/143 PASS at `66b46ea` (UI unchanged thereafter), deploy and postflight PASS. See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md) for scope and limitations. Existing applications were not restarted; both returned missing snapshots on live readback and begin collecting on their next normal start. No Sprint 6 work started.
 
 ## Sprint 6 — SQLite Studio
 

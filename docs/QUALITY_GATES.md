@@ -29,6 +29,18 @@ purpose: G0–G2 closure and independently verified deployment boundary
 
 Sprint 4 scoped code and integration regression closed. New physical reboot, extended endurance, off-device restore and clean-device updater qualification were not performed. Historical scoped recovery evidence remains in the handoff. A source commit or successful tests cannot substitute for live deployment evidence.
 
+## Sprint 5 closure — Traffic Analytics
+
+- `pockethost-a8-sprint5-a-qa-668a5fc-20261125-v1` and `pockethost-a8-sprint5-b-qa-5726b80-20261125-v1`: history and collector scoped QA PASS (5/5 checks each, budgets PASS).
+- `pockethost-a8-sprint5-c-qa-66b46ea-20261125-v1`: format, boundaries, structure, root/admin lint/types and Node integration PASS, budgets PASS; UI timed out at the 300-second gate, not a PASS for that run.
+- `pockethost-a8-sprint5-c-ui-build-66b46ea-20261125-v1`: all 19 mapped UI files, 143/143 tests and build PASS in three bounded batches.
+- `pockethost-a8-sprint5-retention-qa-b49b81a-20261125-v1`: final source `b49b81a70a15d44ebaf3ec3733f168ba1936edbb`, all 10 checks PASS, including real HTTP integration and capacity recovery after verified Static deletion; budgets and admin build PASS. UI unchanged since the 143-test receipt.
+- Final isolated Android HTTP benchmark: two baseline and two instrumented samples of 300 completed requests each. Mean CPU overhead 178000 microseconds per 300 requests, RSS overhead 2584576 bytes, peak RSS overhead 1912 KiB; active snapshots 498–499 bytes, 4096 allocated bytes. Benchmark budgets PASS; not an endurance or fleet-wide load test.
+- `pockethost-a8-sprint5-deploy-b49b81a-20261125-v1`: terminal PASS; target live SHA matches, panel HTTP 200, protected services and dependency installation unchanged.
+- `pockethost-a8-sprint5-postflight-b49b81a-20261125-v1`: terminal read-only PASS, one existing Static and one Node project, 4/4 traffic API reads across both ranges; all returned missing snapshots, no mutations or forced application restarts. Live collection in existing projects is not yet observed; isolated HTTP collection is qualified.
+
+No fresh whole-repository test aggregate, seven-day physical endurance, or browser visual acceptance is claimed. The earlier Host-header fixture error was corrected without changing the production boundary. See [architecture](ARCHITECTURE.md) for collection semantics and retention constraints.
+
 ## Engineering constraints
 
 New production TS/TSX/MJS files: **24 KiB / 700 lines**; test files: **32 KiB / 1200 lines**. Older pinned oversized files must shrink, not grow. The browser UI must not import privileged Termux host modules. Root `check:boundaries` and code-budget rules are conservative static checks; they do not prove total import-graph isolation or sandboxing.
