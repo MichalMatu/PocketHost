@@ -103,7 +103,7 @@ describe("one-file static site MVP", () => {
     await user.type(screen.getByLabelText("Site name"), "One HTML page")
     await user.click(screen.getByRole("button", { name: "Create site" }))
     await screen.findByText(/created\. Edit HTML/)
-    await user.click(screen.getByRole("button", { name: "Edit starter HTML" }))
+    await user.click(await screen.findByRole("button", { name: "Edit starter HTML" }))
     await user.clear(screen.getByLabelText("index.html source"))
     await user.type(screen.getByLabelText("index.html source"), "<h1>v1</h1>")
     await user.click(screen.getByRole("button", { name: "Publish HTML" }))
