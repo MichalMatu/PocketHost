@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { test } from 'node:test';
-import { QuickTunnelSession, quickTunnelUrl } from '../../src/modules/host/quick-tunnel-session.mjs';
+import {
+  QuickTunnelSession,
+  quickTunnelUrl,
+} from '../../src/modules/host/quick-tunnel-session.mjs';
 
 const id = 'site-' + 'a'.repeat(32);
 const other = 'site-' + 'b'.repeat(32);

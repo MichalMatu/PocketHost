@@ -11,9 +11,7 @@ const BINARY = '/data/data/com.termux/files/usr/bin/cloudflared';
 /** Only the dedicated URL row in cloudflared's startup table is accepted. */
 export function quickTunnelUrl(line) {
   if (typeof line !== 'string' || line.length > 4096) return null;
-  const match = /(?:^|\|\s*)(https:\/\/[a-z0-9-]+\.trycloudflare\.com)\s*\|?\s*$/.exec(
-    line.trim(),
-  );
+  const match = /(?:^|\|\s*)(https:\/\/[a-z0-9-]+\.trycloudflare\.com)\s*\|?\s*$/.exec(line.trim());
   if (!match || !URL.test(match[1]) || match[1] === 'https://api.trycloudflare.com') return null;
   return match[1];
 }
