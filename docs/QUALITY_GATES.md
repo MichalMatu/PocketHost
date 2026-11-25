@@ -68,3 +68,12 @@ Sprints 1–6 closed within their scoped acceptance criteria.
 - `pockethost-a8-s7-deploy-baeacfb-20261125-v1`: terminal PASS; exact live SHA, PID/start ticks and HTTP 200 confirmed; guarded refresh attested unchanged protected services and dependencies. No rollback needed.
 
 S1–S7 closed; roadmap S8–S12 frozen by owner. Queue empty at closeout check. Documentation-only freeze commit does not change deployed runtime, execute tests or restart the panel.
+
+## CF1 scoped QA and DEV deployment
+
+- `pockethost-a8-cf1a-origin-qa-695a3ca-20261125-v1` and `pockethost-a8-cf1b-session-qa-b08e168-20261125-v1`: terminal PASS for the isolated public origin and fake-connector lifecycle.
+- `pockethost-a8-cf1c-integration-qa-7be3866-20261125-v1`: 11/12 checks passed, including Node/API, lint and both typechecks; UI failed and exceeded the 180-second gate. Isolated diagnostic `pockethost-a8-cf1c-ui-diagnostic-7be3866-20261125-v1` confirmed two ambiguous Refresh selectors. Only those selectors were corrected; production logic and assertions were unchanged.
+- `pockethost-a8-cf1c-ui-build-122f31e-20261125-v1`: final exact source `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b`, format, admin lint, types, budgets and build PASS; all 12 mapped UI files and 86/86 tests passed across three bounded batches. Prior unchanged backend evidence retained.
+- `pockethost-a8-cf1c-deploy-122f31e-20261125-v1`: separate guarded DEV deployment PASS, exact live SHA, PID/start ticks, HTTP 200, protected services and dependencies unchanged. No public tunnel was started by the task.
+
+CF1 implementation and DEV deployment qualified. Real external HTTPS acceptance remains pending separate approval for a disposable fixture. No new whole-repository aggregate or public hosting certification is claimed.

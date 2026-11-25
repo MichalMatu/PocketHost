@@ -13,11 +13,24 @@ publication is implied by this plan.
 
 | Stage | Scope | Estimated difficulty | State |
 | --- | --- | --- | --- |
-| CF1 | Quick Tunnel without account, one static site, temporary HTTPS URL | Low | Preflight |
+| CF1 | Quick Tunnel without account, one static site, temporary HTTPS URL | Low | Deployed; public HTTPS acceptance pending |
 | CF2 | Owned runit enrollment, lifecycle and reconnect/readback | Low–medium | Deferred |
 | CF3 | Cloudflare account setup and scoped API integration | Medium | Deferred |
 | CF4 | Named tunnel, domains/subdomains, routing and Node hosting | Medium | Deferred |
 | CF5 | Diagnostics, recovery and endurance qualification | Medium | Deferred |
+
+## CF1 implementation and acceptance
+
+- CF1A public origin: scoped A8 QA PASS at `695a3ca`.
+- CF1B Quick Tunnel session: scoped A8 QA PASS at `b08e168`.
+- CF1C API and shared UI: scoped QA and build PASS at `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b`.
+  All 86 mapped UI tests across 12 files passed in three batches.
+- Separate guarded A8 DEV deployment at the same SHA: PASS, HTTP 200,
+  protected services and dependencies unchanged. See [quality gates](QUALITY_GATES.md).
+- No public tunnel started during QA or deployment. Real external HTTPS,
+  connector shutdown and publication readback remain unverified against
+  a real connector. Next step requires separate approval for a disposable
+  public fixture; do not publish an existing site automatically.
 
 ## CF1 contract
 
