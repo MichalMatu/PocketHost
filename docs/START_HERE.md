@@ -7,7 +7,7 @@ purpose: Short current entrypoint for stable PocketHost MVP
 
 # Start here
 
-Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [quality evidence](QUALITY_GATES.md), and [architecture](ARCHITECTURE.md). The v1.0.0 source baseline stays frozen. Sprints 1–7 are closed. CF1 scoped implementation, QA and DEV deployment are closed; the owner confirmed public HTTPS reachability. S8–S12 remain unstarted until explicitly resumed. See [roadmap](ROADMAP.md).
+Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [quality evidence](QUALITY_GATES.md), and [architecture](ARCHITECTURE.md). The v1.0.0 source baseline stays frozen. Sprints 1–7 are closed. CF1 scoped implementation, QA and DEV deployment are closed; the owner confirmed public HTTPS reachability. UX-01–UX-07 are the current owner-authorized priority; S8–S12 and CF2–CF5 follow UX-07. See [roadmap](ROADMAP.md).
 
 **Source baseline:** `main@d2bacd081ad0879d49a08e3c7fd97789185ad6e4` qualified G0–G2 on A8 (486/486 UI, 469 Node PASS, 1 SKIP; 76.11% line coverage). Subsequent documentation-only cleanup does not constitute a new application QA run.
 

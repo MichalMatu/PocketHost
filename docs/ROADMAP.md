@@ -7,7 +7,7 @@ purpose: Ordered post-v1 sprint backlog and completion evidence
 
 # PocketHost — post-v1 roadmap
 
-**FROZEN after S7 — owner-directed pause, 2026-11-25.** S1–S7 are closed. S8–S12 are retained for future review; do not start them, schedule tasks or change the device without a new explicit implementation instruction.
+**ACTIVE — UX-01–UX-07, owner reprioritization 2026-11-25.** S1–S7 and CF1 are closed. UX work precedes S8–S12 and CF2–CF5.
 
 Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 evidence. Mark [x] only with exact-source QA and required guarded deployment receipts. Unknown/failed checks stay HOLD; never replay unknown tasks or repeat passed checks without relevant changes. One sprint at a time.
 
@@ -91,7 +91,50 @@ Depends on S6 closure; keep the existing HTML starter and Node example/import fl
 
 Runtime `baeacfb`: 191/191 UI tests across 24 files, exact-source format/lint/types, code budgets and build PASS. Isolated Static HTML/CSS serve/rollback and Node manifest/lock/staging, loopback JSON/readiness/404 and candidate rollback PASS. Guarded DEV deployment and live SHA/HTTP readback PASS. SQLite starter intentionally deferred; no new dependency or automatic application start. See [quality evidence](QUALITY_GATES.md).
 
-## Sprint 8 — HTTP performance and traffic latency (FROZEN — TODO)
+## Current priority — UX-01–UX-07 (owner resumed, 25 November 2026)
+
+The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-01 is active. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+
+Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
+
+### UX-01 — Static Hosting workspaces (ACTIVE)
+
+- [ ] Separate list `/sites`, creation `/sites/new` (dedicated sidebar item and list CTA), and single-site workspace `/sites/:id`; keep old deep links functional, route selection validated against owned inventory, correct back/refresh/not-found behavior.
+- [ ] Keep list concise: name, observed status, address and useful summary; no embedded create form or mutation-heavy detail panels. On verified creation navigate to the new stopped site; after verified deletion return to list. Prevent duplicate writes, stale results and unknown-outcome retries.
+- [ ] Organize detail by Overview, Files, Versions, Traffic, Public access, Logs and Settings; reuse existing hooks/components, preserve readback, lifecycle, release protections, public access and all existing features. No real-site mutation during QA.
+- [ ] Migrate all route consumers and existing tests; add route isolation, deep link, invalid ID, success/failure and navigation regression tests. Exact-SHA A8 gate/build, separate guarded DEV deploy/readback, desktop visual comparison.
+
+### UX-02 — Node.js Hosting workspaces (QUEUED)
+
+- [ ] Separate application list, creation/import and selected application workspace; group runtime, source/dependencies/build, releases, logs, traffic, data/SQLite and backup into coherent views.
+- [ ] Extract oversized controller/presentation responsibilities; preserve owner session, stale-response fencing, review/approval, staging, runtime and backup semantics. Test routes and cross-project isolation; QA/deploy/readback.
+
+### UX-03 — Shared UI foundations (QUEUED)
+
+- [ ] Inventory and consolidate existing shadcn primitives/compositions: page header and breadcrumbs, tables, action hierarchy, fields, status, empty/loading/error states, confirmations and accessible controls. Use Tailwind utilities and Lucide, not bespoke widgets.
+- [ ] Unify control sizes, labels, icons, spacing and feedback; address measured small targets; preserve keyboard/focus behavior. QA/deploy/readback.
+
+### UX-04 — Information architecture and noise reduction (QUEUED)
+
+- [ ] Review every reachable screen at desktop 1440×900, including selected Node project and advanced sections; identify duplicate labels, descriptions, cards, inventory and navigation across Hosting, Services, Dashboard and Monitoring.
+- [ ] Keep each screen focused on one task, one main action where meaningful; move technical IDs/PID/ticks into diagnostics. Consolidate duplicated presentation without removing distinct independent routes or essential warnings. QA/deploy/readback.
+
+### UX-05 — CSS and template cleanup (QUEUED)
+
+- [ ] Inventory CSS imports, selectors, Tailwind important modifiers, inline styles, arbitrary values and template leftovers. Remove unused App.css and unnecessary decorative transitions only after reference checks; preserve essential theme tokens, focus and reduced-motion behavior.
+- [ ] Target zero custom presentation CSS and zero important overrides in application-owned code; document any indispensable vendor/behavioral exception. Keep genuinely dynamic styles where necessary, avoid moving CSS debt into arbitrary utilities. QA/deploy/readback.
+
+### UX-06 — Module boundaries and enforceable quality (QUEUED)
+
+- [ ] Split Projects, Runit actions/health, dashboard and other oversized view modules by ownership; separate data/actions/presentation, remove dead code after caller checks, avoid speculative wrappers.
+- [ ] Extend current size/structure/boundary gates with view budgets (target 300 lines, cap 500 for new/changed views with explicit shrinking exceptions), CSS/important/inline-style checks and duplication measurement (target below 3% after defining scope/baseline). Do not count generated/vendor/theme data as view modules. Use existing tooling first. Preserve TypeScript, lint, Vitest and build gates. QA/deploy/readback.
+
+### UX-07 — Visual and regression closeout (QUEUED)
+
+- [ ] Repeat desktop screenshots of all reachable routes and relevant read-only detail states; compare before/after, inspect visual hierarchy, empty/error/loading states, keyboard/focus, control geometry and overflow. Zero unexpected console errors and failed requests; do not infer interaction PASS from screenshots.
+- [ ] Exact-SHA affected and aggregate regression gates, final guarded DEV deployment/readback, updated handoff/quality evidence and owner visual acceptance. No unrelated host changes. Record remaining exceptions and defer further feature work until closure.
+
+## Sprint 8 — HTTP performance and traffic latency (DEFERRED AFTER UX-07 — TODO)
 
 Extends S3 and S5 without changing process ownership.
 
@@ -100,7 +143,7 @@ Extends S3 and S5 without changing process ownership.
 - [ ] S8C: extend completed-response traffic aggregates with bounded latency statistics (explicit units, counts, missing state, schema migration/retention). Preserve 24h/7d, existing byte semantics and old snapshots; distinguish application response time from synthetic health probes. No per-request SQL or unbounded histories.
 - [ ] S8D: prove correctness, measured A8 resource budgets and regression behavior. If gzip or a latency metric fails the measured gate, document rejection rather than force adoption. Exact-SHA QA and guarded deploy/readback; confirm existing-project traffic collection on normal subsequent starts, without restarting unrelated workloads.
 
-## Sprint 9 — File Manager Pro and project dependencies (FROZEN — TODO)
+## Sprint 9 — File Manager Pro and project dependencies (DEFERRED AFTER UX-07 — TODO)
 
 Keep file and package changes as separate verified batches; use staged releases, not in-place edits of active deployments.
 
@@ -109,7 +152,7 @@ Keep file and package changes as separate verified batches; use staged releases,
 - [ ] S9C: compare upstream package inventory/install/remove/update with existing Node dependency review and NodeDependencyPreparer. Add missing read-only per-project inventory and candidate manifest/lock changes through current staged dependency/build flow; no npm update or pip install in a live runtime, no host-global changes. Python packages stay in S12.
 - [ ] S9D: separate exact-SHA QA and guarded deploy/readback for file and dependency batches. Preserve known immutable release and dependency attestation contracts.
 
-## Sprint 10 — Monitoring and optional notifications (FROZEN — TODO)
+## Sprint 10 — Monitoring and optional notifications (DEFERRED AFTER UX-07 — TODO)
 
 Depends on S8 telemetry and existing runit readiness contracts.
 
@@ -118,7 +161,7 @@ Depends on S8 telemetry and existing runit readiness contracts.
 - [ ] S10C: no new polling daemon, cron or auto-healer. Any continuous monitoring cadence or external alerts require separate owner scope. Keep runit the sole supervisor; do not restart apps because a dashboard observation fails.
 - [ ] S10D: exact-SHA A8 QA and guarded deploy/readback for approved local functionality; use fake notification transport for tests. Record separately whether external delivery is approved/qualified.
 
-## Sprint 11 — GitHub Auto Deploy (FROZEN — TODO — GATED)
+## Sprint 11 — GitHub Auto Deploy (DEFERRED AFTER UX-07 — TODO — GATED)
 
 Depends on S7/S9 candidate creation and S10 visibility; reuse existing GitHub preview, immutable source/release, dependency/build, owner and rollback contracts.
 
@@ -127,7 +170,7 @@ Depends on S7/S9 candidate creation and S10 visibility; reuse existing GitHub pr
 - [ ] S11C: external webhook ingress, credentials, signature verification, public exposure and trust policy require an explicitly approved separate scope; do not expose the LAN admin or route tasks through a competing agent/scheduler. Until approved, qualify local fixtures only and retain manual deployment.
 - [ ] S11D: exact-SHA A8 QA and guarded deploy/readback of any approved local changes. External end-to-end acceptance remains gated; no claim of live auto-deploy from fixture results.
 
-## Sprint 12 — Python/PHP Hosting (FROZEN — TODO — GATED)
+## Sprint 12 — Python/PHP Hosting (DEFERRED AFTER UX-07 — TODO — GATED)
 
 Depends on closed or explicitly deferred S11 and accepted shared staging, ownership, dependency and readiness contracts. Separate owner authorization for additional runtimes/host package changes.
 
@@ -135,9 +178,9 @@ Depends on closed or explicitly deferred S11 and accepted shared staging, owners
 - [ ] S12B: qualify one runtime at a time in isolated A8 fixtures, including dependency versions (private Python environment), start/stop/health/logs, crash containment, upgrades and rollback. No global pip installs or blanket package changes.
 - [ ] S12C: exact-SHA QA and guarded deployment per runtime after approval. Reject or defer unsupported/resource-heavy capabilities rather than weaken the current runtime.
 
-## Cloudflare publishing (CF1 — owner resumed)
+## Cloudflare publishing (CF1 CLOSED; CF2–CF5 deferred)
 
-See [Cloudflare roadmap](CLOUDFLARE_ROADMAP.md) for CF1–CF5 scope, UX integration and qualification. CF1 preflight is the only resumed work; S8–S12 remain frozen.
+See [Cloudflare roadmap](CLOUDFLARE_ROADMAP.md) for CF1–CF5 scope, UX integration and qualification. CF1 is closed. CF2–CF5 are deferred after UX-07 and retain their independent approval gates.
 
 ## Deferred / separate owner scope
 
@@ -145,4 +188,4 @@ TeleDrive (Telegram file transport), email routing, off-device disaster recovery
 
 ## Cross-sprint acceptance
 
-One sprint at a time; preserve completed S1–S5 and their existing evidence. Before each new runtime batch, inspect fresh main, actual A8 live SHA, pending tasks, nearest rules and both relevant source implementations. Separate exact-SHA scoped QA from guarded DEV deployment; document terminal receipts, baseline/limits and explicit NOT RUN/HOLD/deferred states. Reuse existing tests and avoid repeating passed scopes without relevant changes. Documentation-only updates do not run A8 tasks. See [upstream source audit](UPSTREAM_REUSE_STRATEGY.md) for rationale, and [handoff](HANDOFF_NEXT_CHAT.md) for resume.
+One sprint at a time; preserve completed S1–S7 and CF1 and their existing evidence. Before each new runtime batch, inspect fresh main, actual A8 live SHA, pending tasks, nearest rules and both relevant source implementations. Separate exact-SHA scoped QA from guarded DEV deployment; document terminal receipts, baseline/limits and explicit NOT RUN/HOLD/deferred states. Reuse existing tests and avoid repeating passed scopes without relevant changes. Documentation-only updates do not run A8 tasks. See [upstream source audit](UPSTREAM_REUSE_STRATEGY.md) for rationale, and [handoff](HANDOFF_NEXT_CHAT.md) for resume.

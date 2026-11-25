@@ -7,7 +7,7 @@ purpose: Incremental public publishing for owned hosting projects
 
 # Cloudflare publishing
 
-Owner resumed **CF1 only** after S7 closure. S8–S12 remain frozen. No public
+Owner resumed CF1 after S7 closure; CF1 is now closed. UX-01–UX-07 take current priority; CF2–CF5 and S8–S12 remain deferred until UX-07 closure. No public
 route, package change, existing tunnel modification or real application
 publication is implied by this plan.
 

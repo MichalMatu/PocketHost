@@ -55,4 +55,4 @@ Start with [documentation index](docs/README.md), [architecture](docs/ARCHITECTU
 
 ## Next development stage
 
-**Release baseline: `v1.0.0` (source-only freeze).** Post-v1 Sprints 1–7 are closed. Development is paused at the owner's request; S8–S12 in [the ordered v1.1 roadmap](docs/ROADMAP.md) are preserved but frozen until explicitly resumed. No new sprint or device task is authorized by the roadmap alone. Use [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel) as a selectively reviewed MIT-licensed reference; do not merge its entire backend. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).
+**Release baseline: `v1.0.0` (source-only freeze).** Post-v1 Sprints 1–7 are closed. The owner resumed development with UX-01–UX-07 in [the ordered v1.1 roadmap](docs/ROADMAP.md); remaining S8–S12 and CF2–CF5 are deferred until that UX stage is closed. Use [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel) as a selectively reviewed MIT-licensed reference; do not merge its entire backend. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).
