@@ -1,3 +1,4 @@
+import { TrafficPanel } from "@/components/traffic-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatBytes } from "@/lib/format-memory"
@@ -6,6 +7,7 @@ import type { FleetRelease, FleetSite } from "@/lib/site-fleet-schema"
 
 export function SiteProcessSummary({ site }: { site: FleetSite }) {
   return (
+    <>
         <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
           <div className="min-w-0 space-y-1">
             <dt className="text-xs text-muted-foreground">Active release</dt>
@@ -38,6 +40,8 @@ export function SiteProcessSummary({ site }: { site: FleetSite }) {
             <dd className="text-xs text-muted-foreground">Since process start</dd>
           </div>
         </dl>
+        <TrafficPanel key={site.id} projectId={site.id} kind="static" />
+    </>
   )
 }
 

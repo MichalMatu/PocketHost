@@ -8,6 +8,7 @@ import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-impor
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
 import { NodeProjectPicker } from "./node-project-picker"
+import { TrafficPanel } from "@/components/traffic-panel"
 import { NodeRuntimeDetails } from "./node-runtime-details"
 import { NodeReleaseInventory } from "./node-release-inventory"
 import { useNodeProjectInspection } from "./use-node-project-inspection"
@@ -412,6 +413,7 @@ export default function ProjectsPage() {
               </p>}
               <NodeRuntimeDetails runtime={runtime} plan={plan}
                 buildReview={buildReview} dependencyReview={dependencyReview} />
+              {selected && <TrafficPanel key={selected.id} projectId={selected.id} kind="node" />}
               {plan && (plan.missingTools.length > 0 || plan.conflicts.length > 0 ||
                   (plan.dependencyIssues?.length ?? 0) > 0) &&
                 <p role="alert" className="text-sm text-destructive">{[

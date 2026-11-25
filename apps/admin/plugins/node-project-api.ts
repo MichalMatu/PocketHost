@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto"
+import { readNodeTraffic } from "../../../src/modules/host/traffic-runtime.ts"
 import { NodeProjectHost } from "../../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../../src/modules/host/node-github-source.ts"
 import { NodeRunitHost } from "../../../src/modules/host/node-runit-host.ts"
@@ -148,7 +149,7 @@ export function nodeProjectApi(): Plugin {
         // The LAN proxy rewrites Host/Origin, but owner authentication remains
         // mandatory for writes regardless of whether the caller was proxied.
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots|traffic))?$/.exec(route)
         const snapshotVerify = /^\/(node-[a-f0-9]{32})\/data-snapshots\/(snapshot-[a-f0-9]{32})\/verify$/.exec(route)
         const id = match?.[1] ?? snapshotVerify?.[1]
         const op = match?.[2] ?? (snapshotVerify ? "verify-snapshot" : undefined)
@@ -175,6 +176,7 @@ export function nodeProjectApi(): Plugin {
                 snapshots: (await nodeBackup!.snapshots()).map(({ id, time }) => ({ id, time })),
               } :
               id && !op ? { project: host.inspect(id) } :
+              id && op === "traffic" ? readNodeTraffic(runtime!, id, request.url) :
               id && op === "releases" ? { releases: host.candidates(id) } :
               id && op === "data-scope" ? reviewData(id) :
               id && op === "data-snapshots" ? {

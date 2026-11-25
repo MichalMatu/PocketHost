@@ -458,6 +458,14 @@ export class NodeRunitHost {
     }
     return this.checkReleaseSyntax(id, release);
   }
+  /** Read-only identity for distinguishing a live collector from historical data. */
+  trafficProcess(id: string): ProcessProof | null {
+    const state = this.record(id);
+    if (!state?.activeRelease || !state.process) return null;
+    const current = this.observe(id, state.activeRelease);
+    return current !== 'down' && current !== 'unknown' &&
+      current.pid === state.process.pid && current.ticks === state.process.ticks ? current : null;
+  }
   status(id: string): {
     state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';
     port: number | null;

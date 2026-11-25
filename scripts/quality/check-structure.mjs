@@ -11,6 +11,8 @@ const approvedHostScripts = new Set([
   'src/modules/host/traffic-history.mjs',
   'src/modules/host/traffic-store.mjs',
   'src/modules/host/traffic-http.mjs',
+  'src/modules/host/traffic-node-preload.mjs',
+  'src/modules/host/traffic-store.d.mts',
   'src/modules/host/site-fleet-proxy.mjs',
   'src/modules/host/lan-gateway.mjs',
   // Explicitly scoped host-only LAN control and its TypeScript ESM declaration.

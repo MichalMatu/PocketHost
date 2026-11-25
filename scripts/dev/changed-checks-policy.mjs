@@ -7,6 +7,7 @@ const reviewedAdapters = new Map([
   ['dashboard-telemetry-api.ts', 'monitoring-api.test.mjs'],
   ['internet-connectivity-api.ts', 'monitoring-api.test.mjs'],
   ['site-fleet-api.ts', 'hosting-network-api.test.mjs'],
+  ['node-project-api.ts', 'traffic-hosting-api.test.mjs'],
   ['termux-admin-action.ts', 'termux-admin-api.test.mjs'],
   ['termux-admin-api.ts', 'termux-admin-api.test.mjs'],
 ]);
@@ -91,7 +92,7 @@ export function planChangedChecks(
     const markdown = file.endsWith('.md');
     if (markdown && !file.startsWith('apps/admin/')) docs.push(file);
     if (
-      /\.(?:md|mjs|js|ts|tsx|json|css)$/.test(file) &&
+      /\.(?:md|mjs|js|ts|tsx|mts|json|css)$/.test(file) &&
       !file.endsWith('package-lock.json') &&
       !file.endsWith('pnpm-lock.yaml')
     ) {
@@ -107,6 +108,14 @@ export function planChangedChecks(
     if (file.startsWith('apps/admin/tests/') && /\.test\.(tsx|ts)$/.test(file)) {
       ui.add(file.slice('apps/admin/'.length));
       adminLint.push(file.slice('apps/admin/'.length));
+      continue;
+    }
+    if (file === 'src/modules/host/traffic-store.d.mts') {
+      rootTypes = true;
+      adminTypes = true;
+      boundaries = true;
+      structure = true;
+      node.add('tests/quality/traffic-collector.test.mjs');
       continue;
     }
     if (file.startsWith('src/') && /\.(?:ts|tsx|mjs)$/.test(file)) {
@@ -133,6 +142,7 @@ export function planChangedChecks(
       structure = true;
       adminLint.push(file.slice('apps/admin/'.length));
       node.add('tests/quality/' + reviewedAdapters.get(file.slice('apps/admin/plugins/'.length)));
+      if (file === 'apps/admin/plugins/site-fleet-api.ts') node.add('tests/quality/traffic-hosting-api.test.mjs');
     } else if (file === 'apps/admin/vite.config.ts') {
       // This is the exact DEV API registration boundary. Changes require
       // typechecking, route-preservation and targeted service UI regression.

@@ -1,4 +1,5 @@
 import type { Plugin } from "vite"
+import { readOwnedTraffic } from "../../../src/modules/host/traffic-runtime.ts"
 import { SiteFleetHost } from "../../../src/modules/host/site-fleet-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../../src/modules/sites/site-bundle.ts"
 import type { IncomingMessage } from "node:http"
@@ -68,7 +69,7 @@ export function ownedSiteFleetApi(
           return
         }
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|export|start|stop|restart|rollback|deploy|releases))?$/.exec(route)
+        const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|export|start|stop|restart|rollback|deploy|releases|traffic))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
         const action = match?.[2]
@@ -81,6 +82,13 @@ export function ownedSiteFleetApi(
                 'attachment; filename="' + id + "-" + result.release + '.zip"')
               response.setHeader("Content-Length", result.archive.length)
               response.end(result.archive)
+              return
+            }
+            if (id && action === "traffic") {
+              const site = fleet.inspect(id)
+              const proof = site.state === "running" && site.pid !== null && site.startTicks !== null
+                ? { pid: site.pid, startTicks: site.startTicks } : null
+              response.end(JSON.stringify(readOwnedTraffic(id, request.url ?? "", proof)))
               return
             }
             const result = route === "/" ? { sites: fleet.list() } :

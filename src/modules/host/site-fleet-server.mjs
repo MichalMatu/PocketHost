@@ -1,6 +1,9 @@
 import http from 'node:http';
 import { readFileSync, lstatSync, realpathSync } from 'node:fs';
 import path from 'node:path';
+import os from 'node:os';
+import { createTrafficRecorder } from './traffic-store.mjs';
+import { observeTrafficResponse } from './traffic-http.mjs';
 
 const MIME = Object.freeze({
   html: 'text/html; charset=utf-8',
@@ -95,7 +98,7 @@ function getRelease(site, id, port, instance, selectedRelease = null) {
 }
 
 /** Inert when imported; an explicitly owned child process starts the server. */
-export function startSiteServer({ port, id, instance, site = process.cwd() }) {
+export function startSiteServer({ port, id, instance, site = process.cwd(), trafficRoot = null }) {
   if (
     !Number.isSafeInteger(port) ||
     port < 1024 ||
@@ -105,7 +108,20 @@ export function startSiteServer({ port, id, instance, site = process.cwd() }) {
   )
     throw new Error('Invalid owned site server configuration');
   getRelease(site, id, port, instance);
+  let recorder = null;
+  try {
+    if (trafficRoot) recorder = createTrafficRecorder(trafficRoot, id);
+  } catch {
+    // Telemetry is optional; serving the verified release is not.
+  }
   const server = http.createServer((request, response) => {
+    if (recorder) {
+      try {
+        observeTrafficResponse(request, response, recorder.record);
+      } catch {
+        // A collector failure must not interrupt an owned site.
+      }
+    }
     response.setHeader('Cache-Control', 'no-store');
     response.setHeader('X-Content-Type-Options', 'nosniff');
     response.setHeader('Referrer-Policy', 'no-referrer');
@@ -149,7 +165,9 @@ export function startSiteServer({ port, id, instance, site = process.cwd() }) {
     process.exitCode = 3;
   });
   server.listen(port, '127.0.0.1', () => console.log('PocketHost owned H2 site listening'));
-  process.once('SIGTERM', () => server.close(() => process.exit(0)));
+  process.once('SIGTERM', () => server.close(async () => {
+    try { await recorder?.close(); } finally { process.exit(0); }
+  }));
   return server;
 }
 
@@ -159,6 +177,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
       port: Number(process.argv[2]),
       instance: process.argv[3],
       id: process.argv[4],
+      trafficRoot: process.cwd() === path.join(os.homedir(), 'Projects', 'PocketHost-UserSites', process.argv[4] ?? '')
+        ? path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1') : null,
     });
   } catch {
     process.exitCode = 2;

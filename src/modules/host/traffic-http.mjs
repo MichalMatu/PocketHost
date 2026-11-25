@@ -29,13 +29,27 @@ export function observeTrafficResponse(request, response, record, clock = Date.n
     }
   }
   response.write = function (...args) {
+    const before = bytes;
     if (!ending) add(args[0], args[1]);
-    return Reflect.apply(originalWrite, this, args);
+    try {
+      return Reflect.apply(originalWrite, this, args);
+    } catch (error) {
+      bytes = before;
+      throw error;
+    }
   };
   response.end = function (...args) {
+    const before = bytes;
+    const wasEnding = ending;
     if (!ending) add(args[0], args[1]);
     ending = true;
-    return Reflect.apply(originalEnd, this, args);
+    try {
+      return Reflect.apply(originalEnd, this, args);
+    } catch (error) {
+      bytes = before;
+      ending = wasEnding;
+      throw error;
+    }
   };
   response.once('finish', () => {
     try {
