@@ -287,7 +287,7 @@ test('query and response scope, bounded pages, unsupported view functions and si
   assert.deepEqual(unsupported.rows, []);
 });
 
-test('read-only HTTP API honors existing owner, scope, origin and rejects arbitrary SQL or mutation', async (t) => {
+test('read-only HTTP API honors existing owner, scope, origin and rejects arbitrary SQL or mutation', async () => {
   const tmp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-sqlite-api-'));
   const keys = [
     'HOME',

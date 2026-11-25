@@ -6,6 +6,8 @@ export const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.met
 
 const approvedHostScripts = new Set([
   'src/modules/host/owned-site-server.mjs',
+  // Bounded one-shot SQLite read-only child, never a persistent service.
+  'src/modules/host/node-sqlite-reader.mjs',
   'src/modules/host/site-fleet-server.mjs',
   // Shared by the standalone owned Static and Node HTTP collectors.
   'src/modules/host/traffic-history.mjs',
