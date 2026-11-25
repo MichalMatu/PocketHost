@@ -2,7 +2,7 @@ import * as React from "react"
 import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { createMemoryRouter, RouterProvider } from "react-router-dom"
-import { afterEach, expect, it, vi } from "vitest"
+import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { routes } from "@/config/routes"
 
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -16,6 +16,12 @@ const first = {
   memoryBytes: null, uptimeSeconds: null, healthy: null, history: [],
 }
 const second = { ...first, id: "site-" + "b".repeat(32), name: "Second website", port: 19081 }
+
+// Keep the real lazy route configuration but pre-load its module outside the
+// DOM query's 1-second timeout on the resource-constrained A8.
+beforeAll(async () => {
+  await import("@/app/sites/page")
+}, 30_000)
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -33,7 +39,7 @@ it("separates the catalog, creation and one owned site's controls", async () => 
     ? { ok: true, json: async () => ({ sites: [first, second] }) } : { ok: false, status: 404 })
   vi.stubGlobal("fetch", fetcher)
   const router = mount("/sites")
-  const firstLink = await screen.findByRole("link", { name: first.name })
+  const firstLink = await screen.findByRole("link", { name: first.name }, { timeout: 5000 })
   expect(screen.getByRole("link", { name: second.name })).toBeTruthy()
   expect(screen.queryByLabelText("Site name")).toBeNull()
   expect(screen.queryByRole("button", { name: "Delete site" })).toBeNull()
@@ -57,7 +63,7 @@ it.each(["/sites/not-owned", "/sites?site=not-owned"])("never falls back to anot
   vi.stubGlobal("fetch", vi.fn(async (url: RequestInfo | URL) => String(url) === "/api/v1/sites"
     ? { ok: true, json: async () => ({ sites: [first] }) } : { ok: false, status: 404 }))
   mount(path)
-  expect(await screen.findByText("This static site was not found in the owned inventory.")).toBeTruthy()
+  expect(await screen.findByText("This static site was not found in the owned inventory.", {}, { timeout: 5000 })).toBeTruthy()
   expect(screen.queryByText(first.name)).toBeNull()
   expect(screen.queryByRole("button", { name: "Delete site" })).toBeNull()
   expect(screen.queryByLabelText("Site name")).toBeNull()
