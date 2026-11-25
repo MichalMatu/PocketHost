@@ -164,6 +164,7 @@ describe("H2 browser site-manager lifecycle", () => {
     const tooLarge = new File([new Uint8Array(2 * 1024 * 1024 + 1)], "oversized.html", {
       type: "text/html",
     })
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.upload(screen.getByLabelText("Upload folder"), tooLarge)
     await screen.findByText(/Folder exceeds 100 files, 2 MiB per file or 8 MiB total/)
     expect(screen.queryByText(/Write actions are paused for this site/)).toBeNull()
@@ -184,6 +185,7 @@ describe("H2 browser site-manager lifecycle", () => {
     vi.stubGlobal("fetch", calls)
     renderSites()
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.upload(screen.getByLabelText("Upload static ZIP"),
       new File(["bad ZIP"], "bad.zip", { type: "application/zip" }))
     await screen.findByText(/The site files were rejected/)
@@ -279,6 +281,7 @@ describe("H2 browser site-manager lifecycle", () => {
     renderSites()
     await screen.findByText("My own site")
     const zip = new File(["ZIP-FIXTURE-CONTENTS"], "site.zip", { type: "application/zip" })
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.upload(screen.getByLabelText("Upload static ZIP"), zip)
     await screen.findByText("ZIP was published as a new immutable release.")
     expect(requests.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(1)
@@ -291,6 +294,7 @@ describe("H2 browser site-manager lifecycle", () => {
     const user = userEvent.setup()
     const requests = withSites([project("stopped", false)])
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.upload(screen.getByLabelText("Upload static ZIP"),
       new File([], "empty.zip", { type: "application/zip" }))
     await screen.findByText("The selected ZIP is empty.")
@@ -310,6 +314,7 @@ describe("H2 browser site-manager lifecycle", () => {
     vi.stubGlobal("fetch", requests)
     renderSites()
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.upload(screen.getByLabelText("Upload static ZIP"),
       new File(["bad archive"], "bad.zip", { type: "application/zip" }))
     await screen.findByText(/The site files were rejected/)
@@ -323,6 +328,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/Process identity is uncertain/)
     expect((screen.getByRole("button", { name: /Start/ }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(true)
+    await user.click(await screen.findByRole("tab", { name: "Logs" }))
     await user.click(screen.getByRole("button", { name: /Read logs/ }))
     await screen.findByText(/PocketHost owned H2 site listening/)
     expect(fetchMock.mock.calls.every(call => call[1]?.method !== "POST")).toBe(true)
@@ -332,6 +338,7 @@ describe("H2 browser site-manager lifecycle", () => {
     const user = userEvent.setup()
     const calls = withSites([project("stopped", true)])
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(screen.getByRole("button", { name: "Inspect assets" }))
     await screen.findByText("css/main.css")
     expect(screen.getByRole("region", { name: "Active assets of My own site" })).toBeTruthy()
@@ -385,6 +392,7 @@ describe("H2 browser site-manager lifecycle", () => {
     vi.stubGlobal("fetch", calls)
     renderSites()
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Logs" }))
     await user.click(screen.getByRole("button", { name: /Read logs/ }))
     await user.click(screen.getByRole("button", { name: "Refresh", exact: true }))
     await waitFor(() => expect(calls.mock.calls.filter(([url]) =>

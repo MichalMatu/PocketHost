@@ -121,6 +121,7 @@ describe("H2.1 version-management UI", () => {
     })
     vi.stubGlobal("fetch", requests)
 
+    await user.click(await screen.findByRole("tab", { name: "Versions" }))
     await user.click(screen.getByRole("button", { name: "Manage versions" }))
     const cancel = screen.getByRole("button", { name: "Cancel version read" }) as HTMLButtonElement
     expect(cancel.disabled).toBe(false)
@@ -142,6 +143,7 @@ describe("H2.1 version-management UI", () => {
     const user = userEvent.setup()
     const mock = withVersionedSite()
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Versions" }))
     await user.click(screen.getByRole("button", { name: /Manage versions/ }))
     await screen.findByRole("heading", { name: "Saved releases" })
     expect(screen.getAllByRole("link", { name: "Preview" })).toHaveLength(3)
@@ -161,6 +163,7 @@ describe("H2.1 version-management UI", () => {
     const user = userEvent.setup()
     const mock = withVersionedSite()
     await screen.findByText("My own site")
+    await user.click(await screen.findByRole("tab", { name: "Versions" }))
     await user.click(screen.getByRole("button", { name: /Manage versions/ }))
     await screen.findByRole("heading", { name: "Saved releases" })
     await user.click(screen.getAllByRole("button", { name: "Restore" })[2])
@@ -176,6 +179,7 @@ describe("H2.1 version-management UI", () => {
     const user = userEvent.setup()
     const mock = withVersionedSite("unknown")
     await screen.findByText(/Process identity is uncertain/)
+    await user.click(await screen.findByRole("tab", { name: "Versions" }))
     await user.click(screen.getByRole("button", { name: /Manage versions/ }))
     await screen.findByRole("heading", { name: "Saved releases" })
     expect(screen.queryAllByRole("link", { name: "Preview" })).toHaveLength(0)

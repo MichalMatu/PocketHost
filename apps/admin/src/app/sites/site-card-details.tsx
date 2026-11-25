@@ -1,4 +1,3 @@
-import { TrafficPanel } from "@/components/traffic-panel"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatBytes } from "@/lib/format-memory"
@@ -40,7 +39,6 @@ export function SiteProcessSummary({ site }: { site: FleetSite }) {
             <dd className="text-xs text-muted-foreground">Since process start</dd>
           </div>
         </dl>
-        <TrafficPanel key={site.id} projectId={site.id} kind="static" />
     </>
   )
 }

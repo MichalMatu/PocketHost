@@ -51,6 +51,7 @@ describe("Static site HTML starter", () => {
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter initialEntries={["/sites/" + site.id]}><SitesPage /></MemoryRouter>)
     await screen.findByText("My test")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(screen.getByRole("button", { name: "Edit starter HTML" }))
     await user.click(screen.getByRole("button", { name: "Publish HTML" }))
     expect(await screen.findByText(/HTML was published as a new immutable release/)).toBeTruthy()

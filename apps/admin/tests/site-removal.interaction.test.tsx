@@ -47,6 +47,7 @@ function setup(mode: "success" | "uncertain" | "running" | "stale" = "success") 
 it("removes the final site only after confirmation and inventory readback", async () => {
   const { requests, confirm } = setup()
   const user = userEvent.setup()
+  await user.click(await screen.findByRole("tab", { name: "Settings" }))
   await screen.findByRole("button", { name: "Delete site" })
   confirm.mockReturnValueOnce(false)
   await user.click(screen.getByRole("button", { name: "Delete site" }))
@@ -60,6 +61,7 @@ it("removes the final site only after confirmation and inventory readback", asyn
 
 it("disables deletion for a running site", async () => {
   const { requests } = setup("running")
+  await userEvent.setup().click(await screen.findByRole("tab", { name: "Settings" }))
   const button = await screen.findByRole("button", { name: "Delete site" }) as HTMLButtonElement
   expect(button.disabled).toBe(true)
   expect(requests.mock.calls.every(([, opts]) => !opts?.method)).toBe(true)
@@ -68,6 +70,7 @@ it("disables deletion for a running site", async () => {
 it.each(["uncertain", "stale"] as const)("blocks writes after %s removal", async mode => {
   const { requests } = setup(mode)
   const user = userEvent.setup()
+  await user.click(await screen.findByRole("tab", { name: "Settings" }))
   await user.click(await screen.findByRole("button", { name: "Delete site" }))
   await screen.findByText("Site removal unconfirmed. Refresh the owned inventory before retrying.")
   await waitFor(() => {

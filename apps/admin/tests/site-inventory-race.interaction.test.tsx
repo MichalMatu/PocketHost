@@ -83,6 +83,7 @@ describe("Quick HTML editor read freshness", () => {
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter initialEntries={["/sites/" + ID]}><SitesPage /></MemoryRouter>)
     await screen.findByText("Race fixture")
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(screen.getByRole("button", { name: "Edit current HTML" }))
     await screen.findByText("Loading active index.html…")
     current = newer

@@ -103,6 +103,7 @@ describe("one-file static site MVP", () => {
     await user.type(screen.getByLabelText("Site name"), "One HTML page")
     await user.click(screen.getByRole("button", { name: "Create site" }))
     await screen.findByText(/created\. Edit HTML/)
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(await screen.findByRole("button", { name: "Edit starter HTML" }))
     await user.clear(screen.getByLabelText("index.html source"))
     await user.type(screen.getByLabelText("index.html source"), "<h1>v1</h1>")
@@ -195,6 +196,7 @@ describe("active HTML read cancel and retry", () => {
     })
     vi.stubGlobal("fetch", fetcher)
     render(<MemoryRouter initialEntries={["/sites/" + ID]}><SitesPage /></MemoryRouter>)
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(await screen.findByRole("button", { name: "Edit current HTML" }))
     const cancel = screen.getByRole("button", { name: "Cancel HTML read" }) as HTMLButtonElement
     expect(cancel.disabled).toBe(false)
@@ -228,6 +230,7 @@ describe("active HTML read cancel and retry", () => {
     })
     vi.stubGlobal("fetch", fetcher)
     render(<MemoryRouter initialEntries={["/sites/" + ID]}><SitesPage /></MemoryRouter>)
+    await user.click(await screen.findByRole("tab", { name: "Files" }))
     await user.click(await screen.findByRole("button", { name: "Edit current HTML" }))
     await screen.findByText("Could not load the published HTML for editing.")
     expect(screen.getByRole("button", { name: "Edit current HTML" })).toBeTruthy()

@@ -424,6 +424,7 @@ describe("H2 browser site-manager lifecycle", () => {
     expect((screen.getByRole("button", { name: /^Stop$/ }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByRole("button", { name: /^Restart$/ }) as HTMLButtonElement).disabled).toBe(true)
     expect((screen.getByLabelText("Upload static ZIP") as HTMLInputElement).disabled).toBe(true)
+    await user.click(await screen.findByRole("tab", { name: "Logs" }))
     await user.click(screen.getByRole("button", { name: /Read logs/ }))
     await screen.findByText("read-only audit trail")
     expect((screen.getByRole("button", { name: /^Stop$/ }) as HTMLButtonElement).disabled).toBe(true)

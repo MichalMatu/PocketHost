@@ -1,6 +1,8 @@
 import * as React from "react"
 import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Upload, FileArchive } from "lucide-react"
 
+import { TrafficPanel } from "@/components/traffic-panel"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { PublicAccessPanel } from "@/components/public-access-panel"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
 import { useSiteVersions } from "./use-site-versions"
@@ -9,7 +11,7 @@ import { useSiteHtmlEditor } from "./use-site-html-editor"
 import { useSiteReleaseImport } from "./use-site-release-import"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { formatBytes } from "@/lib/format-memory"
 import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
@@ -190,9 +192,7 @@ export function SiteDetailPanel({ site, onChange, onRemoved }: {
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           <FolderOpen className="size-5" /> {site.name}
-          <Badge variant="outline">Owned static site</Badge>
         </CardTitle>
-        <CardDescription className="break-all font-mono text-xs">{site.id}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="flex flex-wrap gap-2">
@@ -202,7 +202,6 @@ export function SiteDetailPanel({ site, onChange, onRemoved }: {
           <Badge variant="outline">{site.releases} releases</Badge>
           {health !== null && <Badge variant="outline">HTTP: {health ? "healthy" : "unavailable"}</Badge>}
         </div>
-        <SiteProcessSummary site={site} />
         {site.state === "unknown" && <p role="alert" className="text-destructive text-sm">
           Process identity is uncertain. All mutations are blocked; no unverified process is signalled.
         </p>}
@@ -210,70 +209,6 @@ export function SiteDetailPanel({ site, onChange, onRemoved }: {
           <a className="inline-flex py-1 text-sm underline underline-offset-4"
             target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>
         </div>}
-        <PublicAccessPanel siteId={site.id} siteName={site.name} running={site.state === "running"}
-          disabled={busy || outcomeUnknown} />
-        <section className="space-y-3 rounded-md border p-3" aria-label={"Quick HTML starter for " + site.name}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <p className="text-sm font-medium">Quick HTML website</p>
-              <p className="text-xs text-muted-foreground">
-                Edit index.html → Publish HTML → Start → Open hosted site.
-                Open the editor again to update; each publish creates a rollback version.
-              </p>
-            </div>
-            <Button size="sm" variant="outline"
-              disabled={busy || outcomeUnknown || site.state === "unknown" || site.fileCount > 1}
-              onClick={toggleHtmlEditor}>
-              {htmlLoading ? "Cancel HTML read" : editorVisible ? "Hide HTML editor" :
-                site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
-            </Button>
-          </div>
-          {site.fileCount > 1 && <p className="text-xs text-muted-foreground">
-            The quick editor is for single-file HTML sites. Existing multi-file releases are left unchanged.
-          </p>}
-          {editorVisible && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
-          {editorReady && <div className="space-y-2">
-            <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
-              index.html source
-            </label>
-            <p className="text-xs text-muted-foreground">
-              {editorRelease ? "Editing active release " + editorRelease.slice(0, 12) + "…" : "Editing new starter page"}
-            </p>
-            <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
-              value={html} onChange={event => setHtml(event.target.value)}
-              disabled={busy || outcomeUnknown || site.state === "unknown"}
-              className="w-full rounded-md border bg-background p-3 font-mono text-xs"
-            />
-            <p className="text-xs text-muted-foreground">
-              One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
-              Each publish creates a new version you can roll back.
-            </p>
-            <Button size="sm" disabled={busy || outcomeUnknown || !editorReady || site.state === "unknown" || !html.trim() ||
-              new TextEncoder().encode(html).length > maxStarterHtml}
-              onClick={publishHtml}>
-              Publish HTML
-            </Button>
-          </div>}
-        </section>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-zip"}>
-              <FileArchive className="size-4" /> Upload static ZIP
-            </label>
-            <Input id={site.id + "-zip"} type="file" accept=".zip,application/zip"
-              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={zip} />
-            <p className="text-xs text-muted-foreground">
-              Max 9 MiB compressed, root index.html required. Upload publishes a new immutable release.
-            </p>
-          </div>
-          <div className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-folder"}>
-              <Upload className="size-4" /> Upload folder
-            </label>
-            <Input ref={folderInput} id={site.id + "-folder"} type="file" multiple
-              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={folder} />
-          </div>
-        </div>
         <div className="flex flex-wrap gap-2">
           {site.state === "running" ? <>
             <Button variant="outline" disabled={busy || outcomeUnknown} onClick={() => action("restart")}><RotateCcw /> Restart</Button>
@@ -283,36 +218,7 @@ export function SiteDetailPanel({ site, onChange, onRemoved }: {
           <Button variant="outline" disabled={busy || outcomeUnknown || site.state === "unknown" || !site.canRollback}
             onClick={() => action("rollback")}><History /> Rollback</Button>
           <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
-          <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
-          {site.activeRelease && <a
-            className="inline-flex min-h-9 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
-            href={endpoint + "/" + site.id + "/export"}
-            download={site.id + "-" + site.activeRelease + ".zip"}>
-            <FileArchive className="mr-2 size-4" /> Download active ZIP
-          </a>}
-          <Button variant="outline" disabled={busy || site.state === "unknown" || !site.activeRelease}
-            onClick={toggleAssets}>
-            <FolderOpen /> {assetsLoading ? "Cancel asset read" : assets !== null ? "Hide assets" : "Inspect assets"}
-          </Button>
-          <Button variant="outline" disabled={busy} onClick={toggleVersions}>
-            <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Cancel version read" : "Manage versions"}
-          </Button>
         </div>
-        {assetsLoading && <p role="status" className="text-xs text-muted-foreground">
-          Reading active release assets…
-        </p>}
-        {assets !== null && <section className="space-y-2 rounded-lg border p-4" aria-label={"Active assets of " + site.name}>
-          <h3 className="text-sm font-semibold">Active release assets ({assets.length})</h3>
-          <div className="max-h-72 overflow-auto">
-            {assets.map(item => <div key={item.name} className="flex justify-between gap-3 border-b py-2 text-xs">
-              <span className="break-all font-mono">{item.name}</span>
-              <span className="shrink-0">{item.bytes} B</span>
-            </div>)}
-            {assets.length === 0 && <p className="text-muted-foreground text-xs">No active files.</p>}
-          </div>
-        </section>}
-        <SiteVersionHistory site={site} versions={versions} busy={busy || outcomeUnknown}
-          previewBase={siteAddress(site)} onVersionAction={versionAction} />
         {busy && <p role="status" className="text-sm">Working with this owned site…</p>}
         {outcomeUnknown && <p role="alert" className="text-destructive text-sm">
           Write actions are paused for this site until the owned inventory is refreshed.
@@ -320,20 +226,143 @@ export function SiteDetailPanel({ site, onChange, onRemoved }: {
         </p>}
         {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
         {message && <p role="status" className="text-sm">{message}</p>}
-        <SiteDeploymentHistory site={site} />
-        <section className="space-y-2 rounded-md border p-3">
-          <p className="text-xs text-muted-foreground">
-            Delete this stopped site and all saved versions. Stop a running site first.
-          </p>
-          <Button variant="destructive" disabled={busy || outcomeUnknown || site.state !== "stopped"}
-            onClick={() => void remove()}>Delete site</Button>
-        </section>
-        {logs && <section className="space-y-2">
-          <h3 className="text-sm font-semibold">Owned runtime logs</h3>
-          <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
-            {logs.length ? logs.join("\n") : "No owned logs"}
-          </pre>
-        </section>}
+        <Tabs defaultValue="Overview" className="gap-4">
+          <TabsList aria-label="Website sections" className="max-w-full flex-wrap group-data-horizontal/tabs:h-auto">
+            <TabsTrigger value="Overview" className="min-h-9 px-3">Overview</TabsTrigger>
+            <TabsTrigger value="Files" className="min-h-9 px-3">Files</TabsTrigger>
+            <TabsTrigger value="Versions" className="min-h-9 px-3">Versions</TabsTrigger>
+            <TabsTrigger value="Traffic" className="min-h-9 px-3">Traffic</TabsTrigger>
+            <TabsTrigger value="Public access" className="min-h-9 px-3">Public access</TabsTrigger>
+            <TabsTrigger value="Logs" className="min-h-9 px-3">Logs</TabsTrigger>
+            <TabsTrigger value="Settings" className="min-h-9 px-3">Settings</TabsTrigger>
+          </TabsList>
+          <TabsContent value="Overview" keepMounted className="space-y-4">
+            <SiteProcessSummary site={site} />
+          </TabsContent>
+          <TabsContent value="Files" keepMounted className="space-y-4">
+            <section className="space-y-3 rounded-md border p-3" aria-label={"Quick HTML starter for " + site.name}>
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <p className="text-sm font-medium">Quick HTML website</p>
+                  <p className="text-xs text-muted-foreground">
+                    Edit index.html → Publish HTML → Start → Open hosted site.
+                    Open the editor again to update; each publish creates a rollback version.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline"
+                  disabled={busy || outcomeUnknown || site.state === "unknown" || site.fileCount > 1}
+                  onClick={toggleHtmlEditor}>
+                  {htmlLoading ? "Cancel HTML read" : editorVisible ? "Hide HTML editor" :
+                    site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
+                </Button>
+              </div>
+              {site.fileCount > 1 && <p className="text-xs text-muted-foreground">
+                The quick editor is for single-file HTML sites. Existing multi-file releases are left unchanged.
+              </p>}
+              {editorVisible && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
+              {editorReady && <div className="space-y-2">
+                <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
+                  index.html source
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  {editorRelease ? "Editing active release " + editorRelease.slice(0, 12) + "…" : "Editing new starter page"}
+                </p>
+                <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
+                  value={html} onChange={event => setHtml(event.target.value)}
+                  disabled={busy || outcomeUnknown || site.state === "unknown"}
+                  className="w-full rounded-md border bg-background p-3 font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
+                  Each publish creates a new version you can roll back.
+                </p>
+                <Button size="sm" disabled={busy || outcomeUnknown || !editorReady || site.state === "unknown" || !html.trim() ||
+                  new TextEncoder().encode(html).length > maxStarterHtml}
+                  onClick={publishHtml}>
+                  Publish HTML
+                </Button>
+              </div>}
+            </section>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-zip"}>
+                  <FileArchive className="size-4" /> Upload static ZIP
+                </label>
+                <Input id={site.id + "-zip"} type="file" accept=".zip,application/zip"
+                  disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={zip} />
+                <p className="text-xs text-muted-foreground">
+                  Max 9 MiB compressed, root index.html required. Upload publishes a new immutable release.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-folder"}>
+                  <Upload className="size-4" /> Upload folder
+                </label>
+                <Input ref={folderInput} id={site.id + "-folder"} type="file" multiple
+                  disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={folder} />
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {site.activeRelease && <a
+                className="inline-flex min-h-9 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
+                href={endpoint + "/" + site.id + "/export"}
+                download={site.id + "-" + site.activeRelease + ".zip"}>
+                <FileArchive className="mr-2 size-4" /> Download active ZIP
+              </a>}
+              <Button variant="outline" disabled={busy || site.state === "unknown" || !site.activeRelease}
+                onClick={toggleAssets}>
+                <FolderOpen /> {assetsLoading ? "Cancel asset read" : assets !== null ? "Hide assets" : "Inspect assets"}
+              </Button>
+            </div>
+            {assetsLoading && <p role="status" className="text-xs text-muted-foreground">
+              Reading active release assets…
+            </p>}
+            {assets !== null && <section className="space-y-2 rounded-lg border p-4" aria-label={"Active assets of " + site.name}>
+              <h3 className="text-sm font-semibold">Active release assets ({assets.length})</h3>
+              <div className="max-h-72 overflow-auto">
+                {assets.map(item => <div key={item.name} className="flex justify-between gap-3 border-b py-2 text-xs">
+                  <span className="break-all font-mono">{item.name}</span>
+                  <span className="shrink-0">{item.bytes} B</span>
+                </div>)}
+                {assets.length === 0 && <p className="text-muted-foreground text-xs">No active files.</p>}
+              </div>
+            </section>}
+          </TabsContent>
+          <TabsContent value="Versions" keepMounted className="space-y-4">
+              <Button variant="outline" disabled={busy} onClick={toggleVersions}>
+                <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Cancel version read" : "Manage versions"}
+              </Button>
+            <SiteVersionHistory site={site} versions={versions} busy={busy || outcomeUnknown}
+              previewBase={siteAddress(site)} onVersionAction={versionAction} />
+            <SiteDeploymentHistory site={site} />
+          </TabsContent>
+          <TabsContent value="Traffic" keepMounted className="space-y-4">
+            <TrafficPanel key={site.id} projectId={site.id} kind="static" />
+          </TabsContent>
+          <TabsContent value="Public access" keepMounted className="space-y-4">
+            <PublicAccessPanel siteId={site.id} siteName={site.name} running={site.state === "running"}
+              disabled={busy || outcomeUnknown} />
+          </TabsContent>
+          <TabsContent value="Logs" keepMounted className="space-y-4">
+              <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
+            {logs && <section className="space-y-2">
+              <h3 className="text-sm font-semibold">Owned runtime logs</h3>
+              <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
+                {logs.length ? logs.join("\n") : "No owned logs"}
+              </pre>
+            </section>}
+          </TabsContent>
+          <TabsContent value="Settings" keepMounted className="space-y-4">
+            <section className="space-y-2 rounded-md border p-3">
+              <p className="break-all font-mono text-xs">{site.id}</p>
+              <p className="text-xs text-muted-foreground">
+                Delete this stopped site and all saved versions. Stop a running site first.
+              </p>
+              <Button variant="destructive" disabled={busy || outcomeUnknown || site.state !== "stopped"}
+                onClick={() => void remove()}>Delete site</Button>
+            </section>
+          </TabsContent>
+        </Tabs>
       </CardContent>
     </Card>
   )
