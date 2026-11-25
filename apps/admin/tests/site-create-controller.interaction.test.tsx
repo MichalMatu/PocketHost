@@ -146,7 +146,11 @@ it("rejects empty starter HTML locally before a create request", async () => {
 })
 
 it("uses two explicit starter files without creating on selection, and restores single HTML on switch", async () => {
-  const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => ({ ok: false, status: 400 }))
+  const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+    expect(url).toBe("/api/v1/sites/import?name=Multi%20file")
+    expect(options?.method).toBe("POST")
+    return { ok: false, status: 400 }
+  })
   vi.stubGlobal("fetch", fetcher)
   const hook = renderHook(() => useOwnedSiteCreation({
     sitesCount: 0, loading: false, error: null, setSites: vi.fn(), setError: vi.fn(),
