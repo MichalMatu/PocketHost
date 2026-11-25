@@ -14,7 +14,7 @@ const ID = "site-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 
 
-function renderSites(route = "/sites") {
+function renderSites(route = "/sites/" + ID) {
   return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
 }
 
@@ -40,7 +40,7 @@ function project(state: "stopped" | "running" | "unknown" = "stopped", active = 
   }
 }
 
-function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites") {
+function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites/" + ID) {
   let sites = [...initial]
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)

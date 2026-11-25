@@ -14,7 +14,7 @@ const ID = "site-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 
 
-function renderSites(route = "/sites") {
+function renderSites(route = "/sites/" + ID) {
   return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
 }
 

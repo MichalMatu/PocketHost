@@ -1,61 +1,79 @@
 import * as React from "react"
-import { useSearchParams } from "react-router-dom"
-import { RefreshCw } from "lucide-react"
+import { matchPath, useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { Plus, RefreshCw } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Button } from "@/components/ui/button"
-import { useOwnedSiteInventory } from "./use-owned-site-inventory"
+import { siteDetailPath } from "./site-route"
 import { useOwnedSiteCreation } from "./use-owned-site-creation"
-import { SiteCreationForm } from "./site-creation-form"
+import { useOwnedSiteInventory } from "./use-owned-site-inventory"
+import { SiteCreationWorkspace } from "./site-creation-workspace"
 import { SiteDetailPanel } from "./site-detail-panel"
+import { SiteCatalog } from "./site-catalog"
 
 export default function SitesPage() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const selectedSiteId = searchParams.get("site")
-  const { sites, setSites, loading, error, setError, reload, refresh } = useOwnedSiteInventory()
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const adding = matchPath("/sites/new", location.pathname) !== null
+  const selectedSiteId = adding ? null :
+    matchPath("/sites/:id", location.pathname)?.params.id ?? searchParams.get("site")
+  const inventory = useOwnedSiteInventory()
+  const { sites, loading, error, reload, refresh, setSites, setError } = inventory
+  const selected = sites.find(site => site.id === selectedSiteId)
+  const selection = React.useRef(selectedSiteId)
+  React.useEffect(() => {
+    selection.current = selectedSiteId
+    return () => { selection.current = null }
+  }, [selectedSiteId])
+  const routeKey = React.useRef<string | null>(location.key)
+  React.useEffect(() => {
+    routeKey.current = location.key
+    return () => { routeKey.current = null }
+  }, [location.key])
   const creation = useOwnedSiteCreation({
     sitesCount: sites.length, loading, error, setSites, setError,
+    onCreated: (id, message) => {
+      if (adding && routeKey.current === location.key) void navigate(siteDetailPath(id), {
+        replace: true, state: { siteId: id, notice: message },
+      })
+    },
   })
-  const { creating, notice } = creation
-  const [removalNotice, setRemovalNotice] = React.useState<string | null>(null)
+  const notice = location.state?.siteId === selectedSiteId && typeof location.state?.notice === "string"
+    ? location.state.notice : null
 
   return (
-    <BaseLayout title="Hosted sites" description="Create and operate your own static sites on Samsung Termux, without a shell.">
+    <BaseLayout>
       <div className="space-y-5 px-4 pb-8 lg:px-6">
-        <div className="flex min-h-10 items-center justify-end">
-          <Button type="button" variant="outline" disabled={loading || creating} onClick={() => void refresh()}>
-            <RefreshCw className="size-4" /> Refresh
-          </Button>
-        </div>
-        <SiteCreationForm creation={creation} sitesCount={sites.length} loading={loading} error={error} />
-        {selectedSiteId && <div className="flex flex-wrap items-center gap-3 text-sm">
-          <span>{sites.some(site => site.id === selectedSiteId)
-            ? "Selected static site: " + sites.find(site => site.id === selectedSiteId)?.name
-            : "Selected static site: " + selectedSiteId}</span>
-          <Button variant="outline" size="sm" onClick={() => setSearchParams({})}>Show all sites</Button>
-        </div>}
-        {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
-        {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
-        {notice && <p role="status" className="text-sm">{notice}</p>}
-        {removalNotice && <p role="status" className="text-sm">{removalNotice}</p>}
-        {!loading && sites.length === 0 && !error && <p className="text-muted-foreground text-sm">
-          No static sites yet. Create your first site above.
-        </p>}
-        {!loading && selectedSiteId && !sites.some(site => site.id === selectedSiteId) && !error &&
-          <p role="alert" className="text-sm">This static site was not found in the owned inventory.</p>}
-        <div className="grid gap-5">
-          {sites.filter(site => !selectedSiteId || site.id === selectedSiteId)
-            .map(site => <SiteDetailPanel key={site.id} site={site} onChange={removedId => reload(undefined, removedId)}
-              onRemoved={name => {
-                setRemovalNotice("Deleted " + name + ".")
-                if (selectedSiteId === site.id) setSearchParams({})
-              }} />)}
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Each site is bound to its own local-only port; the manually enabled trusted-LAN gateway
-          publishes GET/HEAD-only previews on its separate site origin. No authentication is provided
-          on this development LAN; never expose it on untrusted networks.
-        </p>
+        {adding ? <SiteCreationWorkspace inventory={inventory} creation={creation} /> : <>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="text-xl font-semibold">{selectedSiteId !== null ? "Website details" : "Static websites"}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedSiteId !== null
+                ? <Button variant="outline" onClick={() => void navigate("/sites")}>Show all sites</Button>
+                : <Button disabled={creation.creating || loading || error !== null || sites.length >= 8}
+                    onClick={() => void navigate("/sites/new")}><Plus /> Add website</Button>}
+              <Button variant="outline" disabled={loading || creation.creating} onClick={() => void refresh()}>
+                <RefreshCw /> Refresh
+              </Button>
+            </div>
+          </div>
+          {loading && <p role="status" className="text-sm">Reading owned site inventory…</p>}
+          {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+          {notice && !error && <p role="status" className="text-sm">{notice}</p>}
+          {creation.creating && <p role="status" className="text-sm">Creating site and verifying readback…</p>}
+          {!creation.creating && (selectedSiteId === null
+            ? !loading && !error && <SiteCatalog sites={sites} />
+            : selected
+              ? <SiteDetailPanel key={selected.id} site={selected} onChange={removedId => reload(undefined, removedId)}
+                  onRemoved={name => {
+                    if (selection.current === selected.id) void navigate("/sites", {
+                      replace: true, state: { siteId: null, notice: "Deleted " + name + "." },
+                    })
+                  }} />
+              : !loading && !error && <p role="alert" className="text-sm">This static site was not found in the owned inventory.</p>)}
+        </>}
+        <p className="text-muted-foreground text-xs">Use the management panel only on a trusted LAN.</p>
       </div>
     </BaseLayout>
   )

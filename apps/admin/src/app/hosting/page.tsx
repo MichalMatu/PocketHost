@@ -1,3 +1,4 @@
+import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 
@@ -141,7 +142,7 @@ export default function HostingPage() {
                   {staticInventory.items.map(site => (
                     <div key={site.id} className="space-y-1 rounded-md border p-3 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <Link to={"/sites?site=" + encodeURIComponent(site.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{site.name}</Link>
+                        <Link to={siteDetailPath(site.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{site.name}</Link>
                         <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                       </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">

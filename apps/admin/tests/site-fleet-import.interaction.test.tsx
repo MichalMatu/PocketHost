@@ -59,7 +59,7 @@ function makeStaticZip(name = "index.html"): File {
 }
 
 
-function renderSites(route = "/sites") {
+function renderSites(route = "/sites/new") {
   return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
 }
 
@@ -85,7 +85,7 @@ function project(state: "stopped" | "running" | "unknown" = "stopped", active = 
   }
 }
 
-function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites") {
+function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites/new") {
   let sites = [...initial]
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -221,7 +221,7 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(calls.mock.calls.some(([url, options]) =>
       String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
     expect(screen.getByText("My own site")).toBeTruthy()
-    expect(screen.getByRole("button", { name: "Create site" })).toBeTruthy()
+    expect(screen.queryByRole("button", { name: "Create site" })).toBeNull()
     expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
   })
 
@@ -335,12 +335,12 @@ describe("H2 browser site-manager lifecycle", () => {
     })
     vi.stubGlobal("fetch", requests)
     renderSites()
-    await screen.findByText("My own site")
+    await screen.findByText("1 of 8 sites registered.")
     await user.type(screen.getByLabelText("Site name"), "My own site")
     await user.upload(screen.getByLabelText("Initial ZIP (optional)"), makeStaticZip())
     await user.click(screen.getByRole("button", { name: "Create and import ZIP" }))
     await screen.findByText(/Create and ZIP import result unconfirmed/)
-    expect(screen.queryByText("My own site")).toBeNull()
+    expect(screen.queryByText("1 of 8 sites registered.")).toBeNull()
     expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
     expect(requests.mock.calls.filter(([, opts]) => opts?.method === "POST")).toHaveLength(1)
   })
@@ -357,7 +357,7 @@ describe("H2 browser site-manager lifecycle", () => {
       throw new Error("Unexpected endpoint " + url)
     })
     vi.stubGlobal("fetch", calls)
-    renderSites()
+    renderSites("/sites/" + ID)
     await screen.findByText("My own site")
     const start = screen.getByRole("button", { name: /^Start$/ })
     act(() => {
@@ -391,7 +391,7 @@ describe("H2 browser site-manager lifecycle", () => {
       return { ok: false, status: 404, json: async () => ({ error: "not-found" }) }
     })
     vi.stubGlobal("fetch", calls)
-    renderSites()
+    renderSites("/sites/" + ID)
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Start$/ }))
     await screen.findByText("Start completed.")
@@ -417,7 +417,7 @@ describe("H2 browser site-manager lifecycle", () => {
     })
     vi.stubGlobal("fetch", calls)
     vi.stubGlobal("confirm", vi.fn(() => true))
-    renderSites()
+    renderSites("/sites/" + ID)
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /^Stop$/ }))
     await screen.findByText(/Write actions are paused for this site/)

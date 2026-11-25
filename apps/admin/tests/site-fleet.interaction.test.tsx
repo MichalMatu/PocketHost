@@ -59,7 +59,7 @@ function makeStaticZip(name = "index.html"): File {
 }
 
 
-function renderSites(route = "/sites") {
+function renderSites(route = "/sites/new") {
   return render(<MemoryRouter initialEntries={[route]}><SitesPage /></MemoryRouter>)
 }
 
@@ -85,7 +85,7 @@ function project(state: "stopped" | "running" | "unknown" = "stopped", active = 
   }
 }
 
-function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites") {
+function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites/new") {
   let sites = [...initial]
   const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
@@ -123,10 +123,10 @@ describe("Static Hosting catalog states", () => {
   ])("keeps API failure %i distinct from no sites", async (status, message) => {
     const calls = vi.fn(async () => ({ ok: false, status }))
     vi.stubGlobal("fetch", calls)
-    renderSites()
+    renderSites("/sites")
     expect((await screen.findByRole("alert")).textContent).toBe(message)
     expect(screen.queryByText(/No static sites yet/)).toBeNull()
-    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Add website" }) as HTMLButtonElement).disabled).toBe(true)
     expect(calls.mock.calls).toHaveLength(1)
   })
 
@@ -141,14 +141,14 @@ describe("Static Hosting catalog states", () => {
       throw new Error("Unexpected endpoint " + String(input))
     })
     vi.stubGlobal("fetch", requests)
-    renderSites()
+    renderSites("/sites")
     await screen.findByText("My own site")
     failed = true
     await user.click(screen.getByRole("button", { name: "Refresh" }))
     await screen.findByText("Could not load static sites. Try Refresh.")
     expect(screen.queryByText("My own site")).toBeNull()
     expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
-    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Add website" }) as HTMLButtonElement).disabled).toBe(true)
     expect(requests.mock.calls.every(([, options]) => !options?.method)).toBe(true)
   })
 
@@ -161,12 +161,12 @@ describe("Static Hosting catalog states", () => {
       ] }),
     }))
     vi.stubGlobal("fetch", calls)
-    renderSites()
+    renderSites("/sites")
     await screen.findByText("Invalid static site inventory. No changes were made.")
     expect(screen.queryByText("My own site")).toBeNull()
     expect(screen.queryByText("Conflicting site name")).toBeNull()
     expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
-    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Add website" }) as HTMLButtonElement).disabled).toBe(true)
     expect(calls.mock.calls).toHaveLength(1)
   })
 
@@ -175,10 +175,10 @@ describe("Static Hosting catalog states", () => {
       ok: true, status: 200, json: async () => ({ sites: [{ id: "not-owned" }] }),
     }))
     vi.stubGlobal("fetch", calls)
-    renderSites()
+    renderSites("/sites")
     await screen.findByText("Invalid static site inventory. No changes were made.")
     expect(screen.queryByText(/No static sites yet/)).toBeNull()
-    expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
+    expect((screen.getByRole("button", { name: "Add website" }) as HTMLButtonElement).disabled).toBe(true)
   })
 })
 
@@ -189,7 +189,8 @@ describe("H2 browser site-manager lifecycle", () => {
       project("stopped", true),
       { ...project("stopped", true), id: "site-" + "c".repeat(32), name: "Other owned site" },
     ], "/sites?site=" + ID)
-    await screen.findByText("Selected static site: My own site")
+    await screen.findByText("My own site")
+    expect(screen.queryByLabelText("Site name")).toBeNull()
     expect(screen.queryByText("Other owned site")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Show all sites" }))
     expect(await screen.findByText("Other owned site")).toBeTruthy()
@@ -263,12 +264,12 @@ describe("H2 browser site-manager lifecycle", () => {
       })
       vi.stubGlobal("fetch", requests)
       renderSites()
-      await screen.findByText("My own site")
+      await screen.findByText("1 of 8 sites registered.")
       await user.type(screen.getByLabelText("Site name"), "Another site")
       await user.click(screen.getByRole("button", { name: "Create site" }))
       await screen.findByText(scenario === "post-unconfirmed"
         ? /Create result unconfirmed/ : /Creation was acknowledged/)
-      expect(screen.queryByText("My own site")).toBeNull()
+      expect(screen.queryByText("1 of 8 sites registered.")).toBeNull()
       expect(screen.queryByRole("button", { name: /^Start$/ })).toBeNull()
       expect((screen.getByRole("button", { name: "Create site" }) as HTMLButtonElement).disabled).toBe(true)
       expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
@@ -297,17 +298,17 @@ describe("H2 browser site-manager lifecycle", () => {
     })
     vi.stubGlobal("fetch", requests)
     renderSites()
-    await screen.findByText("My own site")
+    await screen.findByText("1 of 8 sites registered.")
     await user.type(screen.getByLabelText("Site name"), "Rejected site")
     await user.click(screen.getByRole("button", { name: "Create site" }))
     await screen.findByText(/The site name was rejected/)
-    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(screen.getByText("1 of 8 sites registered.")).toBeTruthy()
     expect(screen.queryByText(/Create result unconfirmed/)).toBeNull()
     await user.clear(screen.getByLabelText("Site name"))
     await user.type(screen.getByLabelText("Site name"), "Corrected site")
     await user.click(screen.getByRole("button", { name: "Create site" }))
     await screen.findByText(/created. Edit HTML to publish the first release/)
-    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(screen.getByText("Corrected site")).toBeTruthy()
     expect(screen.getByText(accepted.id)).toBeTruthy()
     expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(2)
   })

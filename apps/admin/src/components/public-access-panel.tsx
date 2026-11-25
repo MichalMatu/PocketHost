@@ -1,3 +1,4 @@
+import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { z } from "zod"
@@ -131,7 +132,7 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
           }}>Unpublish</Button>}
       </div>
       {siteId ? <Link to="/services/cloudflare" className="block w-fit text-xs underline">Cloudflare settings</Link> :
-        <Link to={publication?.siteId ? "/sites?site=" + publication.siteId : "/sites"}
+        <Link to={publication?.siteId ? siteDetailPath(publication.siteId) : "/sites"}
           className="block w-fit text-xs underline">Manage static websites</Link>}
     </div>
   </details>

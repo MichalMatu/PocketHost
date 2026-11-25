@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI run reported **486/486 tests**; the former Vitest filter excluded two TSX files (corrected in Sprint 4F). Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV checkout:** `af0b35a6acb3fc03350d86d9263d7b655d6fa875`, `pockethost-a8-cf1-ux-hmr-af0b35a-20261125-v1` PASS. Runtime startup marker remains `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b` (guarded full deployment PASS), with verified UI-only HMR drift, unchanged PID/start ticks, reachable panel and unchanged protected services/publication URL. CF1A–CF1C and final UX scoped QA PASS, 89/89 mapped UI tests and build PASS. Sprints 1–7 and CF1 implementation closed; UX-01–UX-07 now prioritized, S8–S12 deferred; see [quality gates](QUALITY_GATES.md).
+- **Last device-attested DEV checkout:** `8e43290a574ccb945e1258539ca668c71466fa8c`, UX-01A QA/build and `pockethost-a8-ux01a-hmr-8e43290-20261125-v2` PASS. Runtime startup marker remains `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b` (guarded full deployment PASS), with verified UI-only HMR drift, unchanged PID/start ticks, reachable panel and unchanged protected services/publication URL. CF1A–CF1C and final UX scoped QA PASS, 89/89 mapped UI tests and build PASS. Sprints 1–7 and CF1 implementation closed; UX-01–UX-07 now prioritized, S8–S12 deferred; see [quality gates](QUALITY_GATES.md).
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -29,7 +29,7 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 ## Current owner assignment — UX-01
 
-The owner resumed UX implementation on 25 November. Follow the ordered [UX-01–UX-07 roadmap](UX_EXECUTION_PLAN.md). Start with Static Hosting list/create/detail route separation. Read-only A8 audit and Mac screenshot geometry PASS; the supplied screenshots informed the UX plan. Do not claim new runtime QA or deployment before terminal receipts. All remaining feature sprints follow UX-07.
+The owner resumed UX implementation on 25 November. Follow the ordered [UX-01–UX-07 roadmap](UX_EXECUTION_PLAN.md). UX-01A extraction deployed; continue UX-01B Static Hosting list/create/detail route separation. Read-only A8 audit and Mac screenshot geometry PASS; the supplied screenshots informed the UX plan. Do not claim new runtime QA or deployment before terminal receipts. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 

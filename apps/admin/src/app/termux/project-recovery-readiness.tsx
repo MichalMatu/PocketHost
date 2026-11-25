@@ -1,3 +1,4 @@
+import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
@@ -97,7 +98,7 @@ export function ProjectRecoveryReadiness({ refreshToken = 0 }: {
             {staticSites.items.map(item =>
               <div key={item.id} className="space-y-1 border-t pt-2 text-xs">
                 <Link className="font-medium underline underline-offset-2"
-                  to={"/sites?site=" + encodeURIComponent(item.id)}>{item.name}</Link>
+                  to={siteDetailPath(item.id)}>{item.name}</Link>
                 <p>{item.releases} local release(s) · {item.canRollback
                   ? "Rollback available" : "No immediate rollback target"}</p>
                 <p className="text-muted-foreground">Download the active ZIP from the site page and keep it separately; off-device recovery remains unverified.</p>

@@ -12,11 +12,12 @@ type CreationOptions = {
   error: string | null
   setSites: React.Dispatch<React.SetStateAction<FleetSite[]>>
   setError: React.Dispatch<React.SetStateAction<string | null>>
+  onCreated?: (id: string, notice: string) => void
 }
 
 /** Owns the single-request Static Hosting create/import flow and its form state. */
 export function useOwnedSiteCreation({
-  sitesCount, loading, error, setSites, setError,
+  sitesCount, loading, error, setSites, setError, onCreated,
 }: CreationOptions) {
   const createInFlight = React.useRef(false)
   const [name, setName] = React.useState("")
@@ -32,10 +33,6 @@ export function useOwnedSiteCreation({
   }
   const initialZipInput = React.useRef<HTMLInputElement>(null)
   const initialFolderInput = React.useRef<HTMLInputElement>(null)
-  React.useEffect(() => {
-    initialFolderInput.current?.setAttribute("webkitdirectory", "")
-    initialFolderInput.current?.setAttribute("directory", "")
-  }, [])
   const clearInitialZip = () => {
     setInitialZip(null)
     if (initialZipInput.current) initialZipInput.current.value = ""
@@ -127,11 +124,13 @@ export function useOwnedSiteCreation({
         setStarterKind("html")
         if (initialZipInput.current) initialZipInput.current.value = ""
         if (initialFolderInput.current) initialFolderInput.current.value = ""
-        setNotice(hasFirstFiles
+        const success = hasFirstFiles
           ? 'Site "' + created.name + '" created and ' +
             (firstRelease ? "ZIP" : firstFolder.length ? "folder" : "starter HTML") +
             ' published as its first immutable release. Press Start when ready.'
-          : 'Site "' + created.name + '" created. Edit HTML to publish the first release.')
+          : 'Site "' + created.name + '" created. Edit HTML to publish the first release.'
+        setNotice(success)
+        onCreated?.(created.id, success)
       } catch {
         setSites([])
         setError(hasFirstFiles

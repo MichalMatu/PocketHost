@@ -15,6 +15,8 @@ Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, t
 
 ### UX-01 — Static Hosting workspaces (ACTIVE)
 
+UX-01A extracted the detail panel (catalog page 397 to 62 lines). Exact-source `8e43290a574ccb945e1258539ca668c71466fa8c`: `pockethost-a8-ux01a-qa-8e43290-20261125-v1` gate 6/6 and budgets PASS, npm build wrapper failed on PATH; separate `pockethost-a8-ux01a-build-8e43290-20261125-v1` direct Vite PASS. `pockethost-a8-ux01a-hmr-8e43290-20261125-v2` terminal PASS, panel and protected services unchanged, publication unchanged, source readback PASS, no restart. UX-01B route separation is the next candidate; no qualification claimed before its receipts.
+
 - [ ] Separate list `/sites`, creation `/sites/new` (dedicated sidebar item and list CTA), and single-site workspace `/sites/:id`; keep old deep links functional, route selection validated against owned inventory, correct back/refresh/not-found behavior.
 - [ ] Keep list concise: name, observed status, address and useful summary; no embedded create form or mutation-heavy detail panels. On verified creation navigate to the new stopped site; after verified deletion return to list. Prevent duplicate writes, stale results and unknown-outcome retries.
 - [ ] Organize detail by Overview, Files, Versions, Traffic, Public access, Logs and Settings; reuse existing hooks/components, preserve readback, lifecycle, release protections, public access and all existing features. No real-site mutation during QA.

@@ -49,7 +49,7 @@ describe("Static site HTML starter", () => {
         ? { site: current } : { sites: [current] } }
     })
     vi.stubGlobal("fetch", requests)
-    render(<MemoryRouter><SitesPage /></MemoryRouter>)
+    render(<MemoryRouter initialEntries={["/sites/" + site.id]}><SitesPage /></MemoryRouter>)
     await screen.findByText("My test")
     await user.click(screen.getByRole("button", { name: "Edit starter HTML" }))
     await user.click(screen.getByRole("button", { name: "Publish HTML" }))

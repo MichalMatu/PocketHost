@@ -1,3 +1,4 @@
+import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -126,7 +127,7 @@ export default function DeploymentsPage() {
                   Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline underline-offset-4" to={"/sites?site=" + encodeURIComponent(site.id)}>Open site settings</Link>
+                  <Link className="underline underline-offset-4" to={siteDetailPath(site.id)}>Open site settings</Link>
                   <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
                   {site.state === "unknown"
                     ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>

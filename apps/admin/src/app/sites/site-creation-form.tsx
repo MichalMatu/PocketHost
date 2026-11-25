@@ -1,3 +1,4 @@
+import * as React from "react"
 import { FolderOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,6 +22,10 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
     creating, inputError, setInputError,
     setNotice, createSite,
   } = creation
+  React.useEffect(() => {
+    initialFolderInput.current?.setAttribute("webkitdirectory", "")
+    initialFolderInput.current?.setAttribute("directory", "")
+  }, [initialFolderInput])
 
   return (
     <Card>

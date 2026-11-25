@@ -52,9 +52,9 @@ it("removes the final site only after confirmation and inventory readback", asyn
   await user.click(screen.getByRole("button", { name: "Delete site" }))
   expect(requests.mock.calls.filter(([, opts]) => opts?.method === "DELETE")).toHaveLength(0)
   await user.click(screen.getByRole("button", { name: "Delete site" }))
-  await screen.findByText("No static sites yet. Create your first site above.")
+  await screen.findByText("No static sites yet.")
   expect(screen.queryByRole("button", { name: "Delete site" })).toBeNull()
-  await waitFor(() => expect(screen.queryByText(/Selected static site:/)).toBeNull())
+  await waitFor(() => expect(screen.queryByText("Website details")).toBeNull())
   expect(requests.mock.calls.filter(([, opts]) => opts?.method === "DELETE")).toHaveLength(1)
 })
 

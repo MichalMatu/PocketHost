@@ -1,6 +1,6 @@
 import {
   Activity, Archive, Bot, Boxes, FolderOpen, Globe2, HeartPulse, GitBranch,
-  History, LayoutDashboard, ListTree, Network, Package, Power,
+  History, LayoutDashboard, ListTree, Network, Package, Plus, Power,
   ScrollText, ServerCog, Settings, Smartphone, Terminal,
 } from "lucide-react"
 import { serviceWorkspaces } from "@/config/service-workspaces"
@@ -20,6 +20,7 @@ export const navGroups = [
     items: [
       { title: "Hosting overview", url: "/hosting", icon: ServerCog },
       { title: "Static websites", url: "/sites", icon: Globe2 },
+      { title: "Add website", url: "/sites/new", icon: Plus },
       { title: "Node.js applications", url: "/projects", icon: FolderOpen },
       { title: "Deployments", url: "/deployments", icon: History },
       { title: "Project logs", url: "/runtime-logs", icon: ScrollText },

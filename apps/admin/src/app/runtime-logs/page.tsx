@@ -1,3 +1,4 @@
+import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
@@ -120,7 +121,7 @@ export default function RuntimeLogsPage() {
   const hasSourceError = staticStatus === "error" || nodeStatus === "error"
   const projectLink = selected?.kind === "node"
     ? "/projects?project=" + encodeURIComponent(selected.id)
-    : selected ? "/sites?site=" + encodeURIComponent(selected.id) : "/sites"
+    : selected ? siteDetailPath(selected.id) : "/sites"
 
   return (
     <BaseLayout title="Project logs" description="Bounded logs from PocketHost-owned projects">
