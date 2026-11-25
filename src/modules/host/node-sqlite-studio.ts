@@ -23,7 +23,8 @@ const same = (a: Identity, b: Identity): boolean =>
 
 export function parseSqliteQuery(url: string): SqliteQuery {
   if (url.length > 512) throw new RangeError('SQLite URL budget');
-  const params = new URLSearchParams(url.split('?')[1] ?? '');
+  const separator = url.indexOf('?');
+  const params = new URLSearchParams(separator < 0 ? '' : url.slice(separator + 1));
   for (const key of params.keys()) {
     if (!['db', 'table', 'page'].includes(key) || params.getAll(key).length !== 1) {
       throw new RangeError('Invalid SQLite query parameters');

@@ -77,6 +77,10 @@ function importDependencies(source, file, tracked) {
     const resolved = resolveImport(file, spec, tracked);
     if (resolved) found.add(resolved);
   }
+  for (const match of source.matchAll(/new URL\(\s*['"]([^'"]+)['"]\s*,\s*import\.meta\.url\s*\)/g)) {
+    const resolved = resolveImport(file, match[1], tracked);
+    if (resolved) found.add(resolved);
+  }
   return [...found];
 }
 
@@ -96,7 +100,7 @@ function buildTestDependencies(head) {
   const tracked = new Set(files);
   const sourceFiles = files.filter(
     (file) =>
-      /^(?:src\/|apps\/admin\/src\/|tests\/quality\/|apps\/admin\/tests\/|scripts\/)/.test(file) &&
+      /^(?:src\/|apps\/admin\/src\/|apps\/admin\/plugins\/|tests\/quality\/|apps\/admin\/tests\/|scripts\/)/.test(file) &&
       /\.(?:ts|tsx|js|jsx|mjs|css)$/.test(file),
   );
   const edges = new Map();

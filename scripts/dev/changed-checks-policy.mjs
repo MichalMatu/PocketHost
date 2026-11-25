@@ -8,6 +8,7 @@ const reviewedAdapters = new Map([
   ['internet-connectivity-api.ts', 'monitoring-api.test.mjs'],
   ['site-fleet-api.ts', 'hosting-network-api.test.mjs'],
   ['node-project-api.ts', 'traffic-hosting-api.test.mjs'],
+  ['node-sqlite-api.ts', 'node-sqlite-studio.test.mjs'],
   ['termux-admin-action.ts', 'termux-admin-api.test.mjs'],
   ['termux-admin-api.ts', 'termux-admin-api.test.mjs'],
 ]);
@@ -142,6 +143,8 @@ export function planChangedChecks(
       structure = true;
       adminLint.push(file.slice('apps/admin/'.length));
       node.add('tests/quality/' + reviewedAdapters.get(file.slice('apps/admin/plugins/'.length)));
+      if (file === 'apps/admin/plugins/node-project-api.ts')
+        node.add('tests/quality/node-sqlite-studio.test.mjs');
       if (file === 'apps/admin/plugins/site-fleet-api.ts')
         node.add('tests/quality/traffic-hosting-api.test.mjs');
     } else if (file === 'apps/admin/vite.config.ts') {

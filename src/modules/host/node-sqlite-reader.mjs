@@ -109,7 +109,7 @@ function cell(kind, preview, bytes) {
   }
   if (kind !== 'text' && kind !== 'blob') throw new RangeError('unknown SQLite value');
   return {
-    kind, value: kind === 'text' ? Buffer.from(preview, 'hex').toString('utf8') : preview,
+    kind, value: kind === 'text' ? Buffer.from(preview, 'hex').toString('utf8') : preview.toLowerCase(),
     bytes, truncated: bytes > (kind === 'text' ? SQLITE_TEXT_BYTES : SQLITE_BLOB_BYTES),
   };
 }
@@ -147,7 +147,7 @@ function inspect(input) {
       'PRAGMA busy_timeout=100; PRAGMA hard_heap_limit=16777216; BEGIN');
     const tables = tableCatalog(db, input.databaseId);
     if (!input.tableId) {
-      result = { state: 'available', tables: tables.map(({ withoutRowid: _unused, ...table }) => table) };
+      result = { state: 'available', tables: tables.map(({ id, name, type, columns, state }) => ({ id, name, type, columns, state })) };
     } else {
       const table = tables.find((item) => item.id === input.tableId);
       if (!table) result = failure('stale');
@@ -167,7 +167,7 @@ function classify(error) {
   const code = Number(error?.errcode) & 255;
   if (code === 5 || code === 6) return 'locked';
   if (code === 11 || code === 26) return 'corrupt';
-  if (code === 7 || code === 18 || code === 23 || error instanceof RangeError) return 'unsupported';
+  if (code === 7 || code === 18 || code === 23 || /not authorized|prohibited/i.test(String(error?.message)) || error instanceof RangeError) return 'unsupported';
   if (error?.code === 'ENOENT') return 'stale';
   return 'unavailable';
 }
