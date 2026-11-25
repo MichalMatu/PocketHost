@@ -21,13 +21,14 @@ const project = {
 
 afterEach(() => vi.unstubAllGlobals())
 
-function setup(mode: string, state: "stopped" | "running" | "unknown", removalOK = true) {
+function setup(mode: string, state: "stopped" | "running" | "unknown", removalOK = true, drift = false) {
   let present = true
+  let desired = state === "running" || drift ? "running" : "stopped"
   const requests = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input)
     if (url === api) return { ok: true, json: async () => ({ accessMode: mode, projects: present ? [project] : [] }) }
     if (url === api + "/" + id + "/runtime") return { ok: true, json: async () => ({
-      runtime: { state, desired: state === "running" ? "running" : "stopped", port: 19301,
+      runtime: { state, desired, port: 19301,
         activeRelease: release, lastGoodRelease: release, previousGoodRelease: null, history: [] },
       executionEnabled: true,
     }) }
@@ -35,6 +36,10 @@ function setup(mode: string, state: "stopped" | "running" | "unknown", removalOK
       plan: { release, allowed: true, missingTools: [], conflicts: [], reason: "ready" }, executionEnabled: true,
     }) }
     if (url === api + "/" + id + "/releases") return { ok: true, json: async () => ({ releases: [] }) }
+    if (url === api + "/" + id + "/stop" && init?.method === "POST") {
+      desired = "stopped"
+      return { ok: true, json: async () => ({ runtime: { state: "stopped", desired, activeRelease: release } }) }
+    }
     if (url === api + "/" + id + "/remove" && init?.method === "POST") {
       if (!removalOK) return { ok: false, status: 503 }
       present = false
@@ -94,4 +99,23 @@ it("uncertain deletion hides stale controls and requires refresh", async () => {
   await screen.findByText("Removal unconfirmed. Refresh before another operation.")
   expect(screen.queryByRole("button", { name: "Delete project" })).toBeNull()
   expect(calls.mock.calls.filter(([, init]) => init?.method === "POST")).toHaveLength(1)
+})
+
+it("reconciles a stopped process with running desired state before enabling start and removal", async () => {
+  const user = userEvent.setup()
+  const calls = setup("trusted-lan", "stopped", true, true)
+  await user.click(await screen.findByRole("button", { name: project.name }))
+  const confirmStop = await screen.findByRole("button", { name: "Confirm stopped state" })
+  const remove = screen.getByRole("button", { name: "Delete project" }) as HTMLButtonElement
+  expect(remove.disabled).toBe(true)
+  expect((confirmStop as HTMLButtonElement).disabled).toBe(true)
+  await user.click(screen.getByLabelText("Approve local Node execution"))
+  await user.click(confirmStop)
+  await screen.findByText("Owned Node service stopped.")
+  await waitFor(() => expect(remove.disabled).toBe(false))
+  await user.click(screen.getByLabelText("Approve local Node execution"))
+  expect((screen.getByRole("button", { name: "Start stopped service" }) as HTMLButtonElement).disabled).toBe(false)
+  await user.click(remove)
+  await screen.findByText("Project removed. Source, data and logs retained.")
+  expect(calls.mock.calls.filter(([, init]) => init?.method === "POST").map(([url]) => String(url).split("/").at(-1))).toEqual(["stop", "remove"])
 })

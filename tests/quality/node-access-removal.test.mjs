@@ -248,6 +248,17 @@ test(
         assert.equal(deployed.body.runtime.state, 'running');
         assert.equal((await call('/' + p.id + '/health')).body.health.ready, true);
         assert.equal((await call('/' + p.id + '/remove', approval(project, release))).status, 409);
+        // Simulate an out-of-band stop of this isolated fixture, not the live project.
+        const stopped = spawnSync(
+          PREFIX + '/bin/sv',
+          ['-w', '20', 'force-stop', path.join(serviceRoot, nodeHostingUnitName(p.id))],
+          { timeout: 25000 },
+        );
+        assert.equal(stopped.status, 0);
+        const drift = (await call('/' + p.id + '/runtime')).body.runtime;
+        assert.equal(drift.state, 'stopped');
+        assert.equal(drift.desired, 'running');
+        assert.equal((await call('/' + p.id + '/remove', approval(project, release))).status, 409);
         assert.equal(
           (await call('/' + p.id + '/stop', { approved: true })).body.runtime.state,
           'stopped',

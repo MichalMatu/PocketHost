@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
+import { NodeLifecycleActions } from "./node-lifecycle-actions"
 import { NodeOwnerPanel } from "./node-owner-panel"
 import { NodeProjectRemoval, verifyNodeRemoval } from "./node-project-removal"
 import { NodeProjectPicker } from "./node-project-picker"
@@ -386,6 +387,28 @@ export default function ProjectsPage() {
             HTTP readiness: {!health ? "not checked" : health.ready === null ? "not probed" : health.ready ? "ready" : "not ready"}
           </CardDescription></CardHeader>
         <CardContent className="space-y-4">
+          <NodeLifecycleActions runtime={runtime} approved={approved} onApprove={setApproved}
+            disabled={busy || !ownerAuthorized || !executionEnabled}
+            onAction={(op, message) => action(() => runRuntimeAction(selected.id, op, { approved: true }, message))} />
+          <NodeProjectRemoval project={selected} runtime={runtime} disabled={busy || !ownerAuthorized || catalogState !== "ready"}
+            onRemove={() => action(async () => {
+              try {
+                const result = await getJson(api + "/" + selected.id + "/remove", "POST", {
+                  approved: true, expectedRevision: selected.deploymentCount,
+                  expectedCandidate: selected.candidateRelease, expectedActiveRelease: runtime?.activeRelease ?? null,
+                })
+                verifyNodeRemoval(result, selected.id)
+                const catalog = await refresh()
+                if (catalog.some(item => item.id === selected.id)) throw new Error("Project still in catalog")
+                invalidateRead(); beginInspection(); resetLogs()
+                setSelectedId(""); setSearchParams({}, { replace: true })
+                setMessage("Project removed. Source, data and logs retained.")
+              } catch (cause) {
+                verifiedCatalog.current = []; setProjects([]); setCatalogState("error")
+                invalidateRead(); beginInspection(); resetLogs(); setSelectedId("")
+                throw new Error("Removal unconfirmed. Refresh before another operation.", { cause })
+              }
+            })} />
           <nav aria-label="Node project sections" className="flex flex-wrap gap-4 text-sm">
             <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-runtime">Runtime</a>
             <a className="rounded-md border px-3 py-1.5 text-sm hover:bg-muted" href="#node-source">Source</a>
@@ -404,11 +427,6 @@ export default function ProjectsPage() {
                 <p role="alert" className="text-sm text-destructive">{[
                   ...plan.missingTools, ...plan.conflicts, ...(plan.dependencyIssues ?? []),
                 ].join(", ")}</p>}
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
-                  onChange={event => setApproved(event.target.checked)} />
-                Approve running this trusted Node application.
-              </label>
               <div className="flex flex-wrap gap-2">
                 <Button disabled={busy} variant="outline" onClick={() => action(async () => {
                   await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
@@ -655,13 +673,6 @@ export default function ProjectsPage() {
                 <summary className="cursor-pointer text-sm font-medium">Maintenance & rollback
                 </summary>
                 <div className="mt-3 flex flex-wrap gap-2">
-                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
-                  runtime?.state !== "stopped" || !runtime.activeRelease ||
-                  runtime.activeRelease !== runtime.lastGoodRelease}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "start", { approved: true },
-                      "Previously verified Node release started and readiness confirmed.")
-                  })}>Start stopped service</Button>
                 <Button variant="outline" disabled={busy || !ownerAuthorized || !runtime?.previousGoodRelease}
                   onClick={() => action(async () => {
                     setRollbackPreflight(null)
@@ -695,18 +706,6 @@ export default function ProjectsPage() {
                     await runRuntimeAction(selected.id, "rollback", { approved: true },
                       "Previous verified Node release restored by host.")
                   })}>Rollback active release</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled || runtime?.state !== "running"}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "stop", { approved: true },
-                      "Owned Node service stopped.")
-                  })}>Stop owned service</Button>
-                <Button variant="outline" disabled={busy || !ownerAuthorized || !approved || !executionEnabled ||
-                  runtime?.state !== "running" || !runtime.activeRelease ||
-                  runtime.activeRelease !== runtime.lastGoodRelease}
-                  onClick={() => action(async () => {
-                    await runRuntimeAction(selected.id, "restart", { approved: true },
-                      "Owned Node service restarted and readiness verified.")
-                  })}>Restart service</Button>
                 </div>
               </details>
 {rollbackPreflight && <p className="text-muted-foreground text-xs"
@@ -1011,25 +1010,6 @@ export default function ProjectsPage() {
           </div>
             </div>
           </details>
-          <NodeProjectRemoval project={selected} runtime={runtime} disabled={busy || !ownerAuthorized || catalogState !== "ready"}
-            onRemove={() => action(async () => {
-              try {
-                const result = await getJson(api + "/" + selected.id + "/remove", "POST", {
-                  approved: true, expectedRevision: selected.deploymentCount,
-                  expectedCandidate: selected.candidateRelease, expectedActiveRelease: runtime?.activeRelease ?? null,
-                })
-                verifyNodeRemoval(result, selected.id)
-                const catalog = await refresh()
-                if (catalog.some(item => item.id === selected.id)) throw new Error("Project still in catalog")
-                invalidateRead(); beginInspection(); resetLogs()
-                setSelectedId(""); setSearchParams({}, { replace: true })
-                setMessage("Project removed. Source, data and logs retained.")
-              } catch (cause) {
-                verifiedCatalog.current = []; setProjects([]); setCatalogState("error")
-                invalidateRead(); beginInspection(); resetLogs(); setSelectedId("")
-                throw new Error("Removal unconfirmed. Refresh before another operation.", { cause })
-              }
-            })} />
           <NodeReleaseInventory releases={releases} loading={releasesLoading}
             error={releasesError} checked={releasesChecked} busy={busy}
             activeRelease={runtime?.activeRelease} running={runtime?.state === "running"}

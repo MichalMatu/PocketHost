@@ -9,7 +9,8 @@ export function NodeProjectRemoval({ project, runtime, disabled, onRemove }: {
   return <section className="space-y-2 rounded-md border p-3" aria-label="Remove Node project">
     <p className="text-sm text-muted-foreground">
       Remove this stopped project from Hosting. Source, application data and logs are retained.
-      {!stopped && " Review runtime and stop the project first."}
+      {!stopped && (runtime?.state === "stopped" && runtime.desired === "running"
+        ? " Confirm stopped state above first." : " Review runtime and stop the project first.")}
     </p>
     <Button variant="destructive" disabled={disabled || !stopped} onClick={() => {
       if (window.confirm("Remove " + project.name + " from Hosting? Files and logs will be retained.")) onRemove()
