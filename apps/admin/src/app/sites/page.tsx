@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom"
 import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Upload, FileArchive } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { PublicAccessPanel } from "@/components/public-access-panel"
 import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
 import { useOwnedSiteInventory } from "./use-owned-site-inventory"
 import { useOwnedSiteCreation } from "./use-owned-site-creation"
@@ -214,6 +215,8 @@ function SiteCard({ site, onChange, onRemoved }: {
           <a className="inline-flex py-1 text-sm underline underline-offset-4"
             target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>
         </div>}
+        <PublicAccessPanel siteId={site.id} siteName={site.name} running={site.state === "running"}
+          disabled={busy || outcomeUnknown} />
         <section className="space-y-3 rounded-md border p-3" aria-label={"Quick HTML starter for " + site.name}>
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>

@@ -4,6 +4,7 @@ import { RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { PublicAccessPanel } from "@/components/public-access-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanel } from "@/app/termux/protected-services-panel"
 import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
@@ -25,6 +26,8 @@ export default function ServiceDetailPage({ service: selectedService }: {
         <div className="flex flex-wrap items-center gap-2">
           {service === "ssh" ? <span className="text-sm text-muted-foreground">
             Galaxy A8 · dedicated SSH and saved connections
+          </span> : service === "cloudflare" ? <span className="text-sm text-muted-foreground">
+            Owned Quick Tunnel · external connectors protected
           </span> : <Badge variant="outline" className="gap-1">
             <ShieldCheck className="size-3" />Protected · read-only
           </Badge>}
@@ -39,7 +42,10 @@ export default function ServiceDetailPage({ service: selectedService }: {
       {!item && <p role="alert" className="text-sm text-muted-foreground">
         Unknown service. No diagnostics were requested.
       </p>}
-      {service === "cloudflare" && <CloudflareTunnelPanel refreshToken={refreshToken} />}
+      {service === "cloudflare" && <>
+        <PublicAccessPanel />
+        <CloudflareTunnelPanel refreshToken={refreshToken} />
+      </>}
       {service === "ssh" && <>
         <LocalAgentOperationsPanel scope="ssh" refreshToken={refreshToken} />
         <SSHConnectionsPanel />

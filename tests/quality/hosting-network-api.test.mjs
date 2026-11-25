@@ -200,3 +200,58 @@ test('LAN adapter preserves intent, deferred disable and owned-only listener lif
   });
   assert.deepEqual(calls, ['start:192.168.0.100', 'close']);
 });
+
+test('public static publication requires separate intent and verified running site', async (t) => {
+  flags(t, true);
+  const id = 'site-' + 'a'.repeat(32);
+  const calls = [];
+  let ready = false;
+  let state = { siteId: null, state: 'stopped', url: null, reason: null };
+  const publication = {
+    status: () => state,
+    start: async (siteId) => {
+      calls.push('start:' + siteId);
+      state = { siteId, state: 'url-assigned', url: 'https://fixture.trycloudflare.com', reason: null };
+      return state;
+    },
+    stop: async (siteId) => {
+      if (siteId !== state.siteId) throw Error('foreign');
+      calls.push('stop:' + siteId);
+      state = { siteId, state: 'stopped', url: null, reason: null };
+      return state;
+    },
+  };
+  const fleet = {
+    inspect: (siteId) => {
+      assert.equal(siteId, id);
+      return { state: ready ? 'running' : 'stopped' };
+    },
+    health: async () => ready,
+    stop: async () => {
+      calls.push('site-stop');
+      return { state: 'stopped' };
+    },
+  };
+  const plugin = ownedSiteFleetApi(() => fleet, () => {}, () => publication);
+  const intent = {
+    origin: 'http://127.0.0.1:8787',
+    'x-pockethost-intent': 'public-static',
+  };
+  await withApi(plugin, '/api/v1/sites', async (call) => {
+    const route = '/' + id;
+    assert.deepEqual(json(await call('/publication')), { publication: state });
+    assert.equal((await call(route + '/publish-public', 'POST')).status, 403);
+    assert.equal((await call(route + '/publish-public?port=8787', 'POST', intent)).status, 403);
+    assert.equal((await call(route + '/publish-public', 'POST', intent, '{}')).status, 403);
+    assert.equal((await call(route + '/publish-public', 'POST', intent)).status, 409);
+    assert.deepEqual(calls, []);
+    ready = true;
+    assert.equal((await call(route + '/publish-public', 'POST', intent)).status, 200);
+    assert.equal(json(await call('/publication')).publication.url, 'https://fixture.trycloudflare.com');
+    const siteIntent = { ...intent, 'x-pockethost-intent': 'owned-sites' };
+    assert.equal((await call(route + '/stop', 'POST', siteIntent)).status, 409);
+    assert.equal((await call(route + '/unpublish-public', 'POST', intent)).status, 200);
+    assert.equal((await call(route + '/stop', 'POST', siteIntent)).status, 200);
+    assert.deepEqual(calls, ['start:' + id, 'stop:' + id, 'site-stop']);
+  });
+});

@@ -111,6 +111,15 @@ export function planChangedChecks(
       adminLint.push(file.slice('apps/admin/'.length));
       continue;
     }
+    if (file === 'src/modules/host/quick-tunnel-session.d.mts') {
+      rootTypes = true;
+      adminTypes = true;
+      boundaries = true;
+      structure = true;
+      node.add('tests/quality/quick-tunnel-session.test.mjs');
+      node.add('tests/quality/hosting-network-api.test.mjs');
+      continue;
+    }
     if (file === 'src/modules/host/traffic-store.d.mts') {
       rootTypes = true;
       adminTypes = true;

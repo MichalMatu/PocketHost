@@ -1,4 +1,5 @@
 import type { Plugin } from "vite"
+import { QuickTunnelSession, type QuickTunnelController } from "../../../src/modules/host/quick-tunnel-session.mjs"
 import { readOwnedTraffic } from "../../../src/modules/host/traffic-runtime.ts"
 import { SiteFleetHost } from "../../../src/modules/host/site-fleet-host.ts"
 import { decodeSiteFolder, decodeSiteZip, MAX_UPLOAD_BYTES } from "../../../src/modules/sites/site-bundle.ts"
@@ -13,6 +14,7 @@ import { reportDashboardOwnedEvent } from "../../../src/modules/host/dashboard-t
 export function ownedSiteFleetApi(
   createFleet: () => SiteFleetHost = () => new SiteFleetHost(),
   reportEvent: typeof reportDashboardOwnedEvent = reportDashboardOwnedEvent,
+  createPublication: () => QuickTunnelController = () => new QuickTunnelSession(),
 ): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
@@ -40,6 +42,12 @@ export function ownedSiteFleetApi(
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
         process.env.POCKETHOST_ENABLE_USER_SITES_DEV === "1"
       const fleet = enabled ? createFleet() : null
+      const publication = fleet ? createPublication() : null
+      server.httpServer?.once("close", () => {
+        const current = publication?.status()
+        if (current?.siteId && !["stopped", "failed"].includes(current.state))
+          void publication?.stop(current.siteId).catch(() => undefined)
+      })
       let writes: Promise<void> = Promise.resolve()
       function serialize<T>(fn: () => Promise<T>): Promise<T> {
         const result = writes.then(fn, fn)
@@ -69,6 +77,34 @@ export function ownedSiteFleetApi(
           return
         }
         const route = request.url?.split("?")[0] ?? ""
+        if (publication && route === "/publication" && request.method === "GET") {
+          response.end(JSON.stringify({ publication: publication.status() }))
+          return
+        }
+        const publicAction = /^\/(site-[a-f0-9]{32})\/(publish-public|unpublish-public)$/.exec(route)
+        if (publication && publicAction && request.method === "POST") {
+          if (!origin || !origins.has(origin) || request.headers["x-pockethost-intent"] !== "public-static" ||
+              request.url !== route || request.headers["transfer-encoding"] !== undefined ||
+              ![undefined, "0"].includes(request.headers["content-length"])) {
+            response.statusCode = 403
+            response.end(JSON.stringify({ error: "publication-not-authorized" }))
+            return
+          }
+          try {
+            const siteId = publicAction[1]!
+            const state = await serialize(async () => {
+              if (publicAction[2] === "unpublish-public") return publication.stop(siteId)
+              if (fleet.inspect(siteId).state !== "running" || !(await fleet.health(siteId)))
+                throw new Error("Owned site is not ready")
+              return publication.start(siteId)
+            })
+            response.end(JSON.stringify({ publication: state }))
+          } catch {
+            response.statusCode = 409
+            response.end(JSON.stringify({ error: "publication-rejected" }))
+          }
+          return
+        }
         const match = /^\/(site-[a-f0-9]{32})(?:\/(logs|health|files|html|export|start|stop|restart|rollback|deploy|releases|traffic))?$/.exec(route)
         const releaseRoute = /^\/(site-[a-f0-9]{32})\/releases\/(r-[a-f0-9]{32})\/(restore|prune)$/.exec(route)
         const id = match?.[1]
@@ -137,6 +173,10 @@ export function ownedSiteFleetApi(
         }
         try {
           const result = await serialize(async () => {
+            const current = publication?.status()
+            if (current?.siteId === id && current && !["stopped", "failed"].includes(current.state) &&
+                (remove || action === "stop" || action === "restart"))
+              throw new Error("Unpublish before stopping or replacing the site process")
             if (create) {
               const data = await body(request, 1024)
               const parsed: unknown = JSON.parse(data.toString("utf8"))
