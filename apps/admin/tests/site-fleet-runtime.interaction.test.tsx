@@ -357,7 +357,7 @@ describe("H2 browser site-manager lifecycle", () => {
     renderSites()
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /Verify HTTP/ }))
-    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await user.click(screen.getByRole("button", { name: "Refresh", exact: true }))
     await waitFor(() => expect(calls.mock.calls.filter(([url]) =>
       String(url) === "/api/v1/sites")).toHaveLength(2))
     await act(async () => {
@@ -386,7 +386,7 @@ describe("H2 browser site-manager lifecycle", () => {
     renderSites()
     await screen.findByText("My own site")
     await user.click(screen.getByRole("button", { name: /Read logs/ }))
-    await user.click(screen.getByRole("button", { name: /Refresh/ }))
+    await user.click(screen.getByRole("button", { name: "Refresh", exact: true }))
     await waitFor(() => expect(calls.mock.calls.filter(([url]) =>
       String(url) === "/api/v1/sites")).toHaveLength(2))
     await act(async () => {
