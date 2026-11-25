@@ -7,6 +7,8 @@ purpose: Ordered post-v1 sprint backlog and completion evidence
 
 # PocketHost — post-v1 roadmap
 
+**FROZEN after S7 — owner-directed pause, 2026-11-25.** S1–S7 are closed. S8–S12 are retained for future review; do not start them, schedule tasks or change the device without a new explicit implementation instruction.
+
 Living post-v1 checklist. Preserve the v1.0.0 tag, history and independent A8 evidence. Mark [x] only with exact-source QA and required guarded deployment receipts. Unknown/failed checks stay HOLD; never replay unknown tasks or repeat passed checks without relevant changes. One sprint at a time.
 
 ## Maintenance already delivered
@@ -79,15 +81,17 @@ Runtime `b49b81a`: 10/10 final QA checks, 143/143 affected UI tests at `66b46ea`
 
 Runtime `e11ee09`: S6A native SQLite capability PASS; exact A8 QA 15/15, budgets/build PASS, isolated benchmark 10/10 (median 976.5 ms, main/WAL unchanged), separate guarded deployment PASS, live SHA and HTTP 200 confirmed. SHM coordination may change; hardlink coverage is filesystem-dependent. See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md).
 
-## Sprint 7 — Application Starters (TODO — NEXT ITERATION)
+## Sprint 7 — Application Starters (CLOSED)
 
 Depends on S6 closure; keep the existing HTML starter and Node example/import flows.
 
-- [ ] S7A: compare upstream HTML/CSS and Node HTTP examples with existing `starterHtml`, Node manifest/lock/source examples and import flows. Enumerate actual missing templates; skip equivalent ones.
-- [ ] S7B: add useful self-contained Static/Node templates (e.g. static multi-file site, minimal JSON API; optional SQLite example only after S6 contracts are established). Preserve assigned port, loopback policy, immutable staged release, reviewed dependency/build plan and no automatic start.
-- [ ] S7C: verify template selection, generated files/lock consistency, cancellation, create/stage/deploy/rollback in isolated fixtures. Exact-SHA QA and separate guarded DEV deploy/readback. No Python/PHP before S12.
+- [x] S7A: compare upstream HTML/CSS and Node HTTP examples with existing `starterHtml`, Node manifest/lock/source examples and import flows. Enumerate actual missing templates; skip equivalent ones.
+- [x] S7B: add useful self-contained Static/Node templates (e.g. static multi-file site, minimal JSON API; optional SQLite example only after S6 contracts are established). Preserve assigned port, loopback policy, immutable staged release, reviewed dependency/build plan and no automatic start.
+- [x] S7C: verify template selection, generated files/lock consistency, cancellation, create/stage/deploy/rollback in isolated fixtures. Exact-SHA QA and separate guarded DEV deploy/readback. No Python/PHP before S12.
 
-## Sprint 8 — HTTP performance and traffic latency (TODO)
+Runtime `baeacfb`: 191/191 UI tests across 24 files, exact-source format/lint/types, code budgets and build PASS. Isolated Static HTML/CSS serve/rollback and Node manifest/lock/staging, loopback JSON/readiness/404 and candidate rollback PASS. Guarded DEV deployment and live SHA/HTTP readback PASS. SQLite starter intentionally deferred; no new dependency or automatic application start. See [quality evidence](QUALITY_GATES.md).
+
+## Sprint 8 — HTTP performance and traffic latency (FROZEN — TODO)
 
 Extends S3 and S5 without changing process ownership.
 
@@ -96,7 +100,7 @@ Extends S3 and S5 without changing process ownership.
 - [ ] S8C: extend completed-response traffic aggregates with bounded latency statistics (explicit units, counts, missing state, schema migration/retention). Preserve 24h/7d, existing byte semantics and old snapshots; distinguish application response time from synthetic health probes. No per-request SQL or unbounded histories.
 - [ ] S8D: prove correctness, measured A8 resource budgets and regression behavior. If gzip or a latency metric fails the measured gate, document rejection rather than force adoption. Exact-SHA QA and guarded deploy/readback; confirm existing-project traffic collection on normal subsequent starts, without restarting unrelated workloads.
 
-## Sprint 9 — File Manager Pro and project dependencies (TODO)
+## Sprint 9 — File Manager Pro and project dependencies (FROZEN — TODO)
 
 Keep file and package changes as separate verified batches; use staged releases, not in-place edits of active deployments.
 
@@ -105,7 +109,7 @@ Keep file and package changes as separate verified batches; use staged releases,
 - [ ] S9C: compare upstream package inventory/install/remove/update with existing Node dependency review and NodeDependencyPreparer. Add missing read-only per-project inventory and candidate manifest/lock changes through current staged dependency/build flow; no npm update or pip install in a live runtime, no host-global changes. Python packages stay in S12.
 - [ ] S9D: separate exact-SHA QA and guarded deploy/readback for file and dependency batches. Preserve known immutable release and dependency attestation contracts.
 
-## Sprint 10 — Monitoring and optional notifications (TODO)
+## Sprint 10 — Monitoring and optional notifications (FROZEN — TODO)
 
 Depends on S8 telemetry and existing runit readiness contracts.
 
@@ -114,7 +118,7 @@ Depends on S8 telemetry and existing runit readiness contracts.
 - [ ] S10C: no new polling daemon, cron or auto-healer. Any continuous monitoring cadence or external alerts require separate owner scope. Keep runit the sole supervisor; do not restart apps because a dashboard observation fails.
 - [ ] S10D: exact-SHA A8 QA and guarded deploy/readback for approved local functionality; use fake notification transport for tests. Record separately whether external delivery is approved/qualified.
 
-## Sprint 11 — GitHub Auto Deploy (TODO — GATED)
+## Sprint 11 — GitHub Auto Deploy (FROZEN — TODO — GATED)
 
 Depends on S7/S9 candidate creation and S10 visibility; reuse existing GitHub preview, immutable source/release, dependency/build, owner and rollback contracts.
 
@@ -123,7 +127,7 @@ Depends on S7/S9 candidate creation and S10 visibility; reuse existing GitHub pr
 - [ ] S11C: external webhook ingress, credentials, signature verification, public exposure and trust policy require an explicitly approved separate scope; do not expose the LAN admin or route tasks through a competing agent/scheduler. Until approved, qualify local fixtures only and retain manual deployment.
 - [ ] S11D: exact-SHA A8 QA and guarded deploy/readback of any approved local changes. External end-to-end acceptance remains gated; no claim of live auto-deploy from fixture results.
 
-## Sprint 12 — Python/PHP Hosting (TODO — GATED)
+## Sprint 12 — Python/PHP Hosting (FROZEN — TODO — GATED)
 
 Depends on closed or explicitly deferred S11 and accepted shared staging, ownership, dependency and readiness contracts. Separate owner authorization for additional runtimes/host package changes.
 

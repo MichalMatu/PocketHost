@@ -117,3 +117,7 @@ runs require separately scoped owner approval.
 ## SQLite Studio
 
 From the selected owned Node project, open the data panel and choose **Browse databases**. The existing owner session is required. Select a private `db/` SQLite file, then a table or view; inspect its schema and paginated rows. Large text and BLOB values are previews. Unsupported, locked, corrupt, busy and stale selections are explicit; refresh when file identity changes. SQLite Studio never starts/stops the application, exposes arbitrary SQL or writes database records. Active WAL requires existing sidecars; SQLite may update SHM coordination bytes. Offline-only means the application must already be safely stopped, not that the panel will stop it. See [architecture](ARCHITECTURE.md) and [quality evidence](QUALITY_GATES.md) for scope and limits.
+
+## JSON API starter
+
+In Source files, choose **Load JSON API starter** and confirm replacement of the editor draft. The generated manifest, lockfile and server.mjs have no external dependency. GET /api/status returns JSON, with an explicit missing-route response and existing readiness nonce. Selection alone never stages or starts the app; use Validate and stage source, then the existing execution plan and explicit approval. The assigned PORT and loopback listener remain mandatory. Cancel leaves the draft unchanged.

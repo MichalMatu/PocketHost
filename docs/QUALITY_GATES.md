@@ -56,4 +56,15 @@ Only verified A8 Local Agent may run project QA/build/deploy. Targeted tests req
 - `pockethost-a8-s6-perf-e11ee09-20261125-v1`: PASS on isolated Android fixture (5,000 initial records, active WAL, ten page reads). Catalog 25 ms; page median 976.5 ms, maximum 1,006 ms; parent CPU 600 ms total and RSS 77 MiB; agent-observed task peak RSS 162.45 MiB; maximum response 6,031 bytes. Main/WAL hashes and file inventory unchanged. Not a fleet-wide load or endurance test.
 - `pockethost-a8-s6-deploy-e11ee09-20261125-v1`: separate guarded DEV deployment PASS; live SHA exactly matches the qualified source, loopback HTTP 200, owner PID/start ticks confirmed, protected services and dependencies unchanged. No rollback invoked. Functional SQLite HTTP/UI evidence uses isolated fixtures; no customer database was queried or mutated for acceptance.
 
-Sprints 1–6 closed within their scoped acceptance criteria. No S7 implementation or device task started.
+Sprints 1–6 closed within their scoped acceptance criteria.
+
+## Sprint 7 closure — Application Starters
+
+- `pockethost-a8-sprint7-preflight-0e278f7-20261125-v1`: read-only PASS, existing live and QA source `e11ee09`, HTTP 200, protected baseline attested.
+- Upstream comparison retained existing single-file HTML and plain HTTP Node examples. Added independent multi-file HTML/CSS and JSON API starter; optional SQLite, Python and PHP templates deferred. No new dependencies.
+- Initial QA held on incorrect task scope, then two lint errors in a test mock, then the 300-second UI runner timeout. A bounded rerun exposed a missing /plan fixture response; corrected without weakening production logic.
+- `pockethost-a8-s7-final-ui-baeacfb-20261125-v1`: exact source `baeacfbc127f8c679bc6e2ee886bb4fe199edb70`, format, admin lint and TypeScript PASS. All 24 mapped UI files, 191/191 tests passed in six bounded batches; budgets and admin build PASS.
+- `pockethost-a8-s7-fixtures-baeacfb-20261125-v1`: isolated Android fixtures PASS, two Static files served byte-for-byte, Static release rollback, Node manifest/lock consistency, immutable candidate staging, readiness nonce, JSON 200 and missing-route 404, candidate rollback and no automatic start. Node was explicitly executed as an isolated subprocess, not an additional managed runit deployment/active-runtime rollback test. No customer data or existing app was used for acceptance.
+- `pockethost-a8-s7-deploy-baeacfb-20261125-v1`: terminal PASS; exact live SHA, PID/start ticks and HTTP 200 confirmed; guarded refresh attested unchanged protected services and dependencies. No rollback needed.
+
+S1–S7 closed; roadmap S8–S12 frozen by owner. Queue empty at closeout check. Documentation-only freeze commit does not change deployed runtime, execute tests or restart the panel.
