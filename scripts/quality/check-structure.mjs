@@ -16,6 +16,8 @@ const approvedHostScripts = new Set([
   'src/modules/host/traffic-node-preload.mjs',
   'src/modules/host/traffic-store.d.mts',
   'src/modules/host/site-fleet-proxy.mjs',
+  // Temporary public ingress for a verified owned static site only.
+  'src/modules/host/public-static-origin.mjs',
   'src/modules/host/lan-gateway.mjs',
   // Explicitly scoped host-only LAN control and its TypeScript ESM declaration.
   'src/modules/host/lan-control.mjs',

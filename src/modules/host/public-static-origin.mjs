@@ -22,7 +22,12 @@ export function publicAssetPath(url) {
   } catch {
     return null;
   }
-  if (decoded.includes('\\') || /[\x00-\x1f\x7f%]/.test(decoded)) return null;
+  if (
+    decoded.includes('\\') ||
+    decoded.includes('%') ||
+    Array.from(decoded).some((char) => char.charCodeAt(0) < 32 || char.charCodeAt(0) === 127)
+  )
+    return null;
   if (decoded === '/') return '/';
   const segments = decoded.slice(1).split('/');
   if (

@@ -51,20 +51,17 @@ function close(server) {
 
 function request(port, path, method = 'GET', headers = {}) {
   return new Promise((resolve, reject) => {
-    const req = http.request(
-      { host: '127.0.0.1', port, path, method, headers },
-      (res) => {
-        const parts = [];
-        res.on('data', (part) => parts.push(part));
-        res.on('end', () =>
-          resolve({
-            status: res.statusCode,
-            headers: res.headers,
-            body: Buffer.concat(parts).toString(),
-          }),
-        );
-      },
-    );
+    const req = http.request({ host: '127.0.0.1', port, path, method, headers }, (res) => {
+      const parts = [];
+      res.on('data', (part) => parts.push(part));
+      res.on('end', () =>
+        resolve({
+          status: res.statusCode,
+          headers: res.headers,
+          body: Buffer.concat(parts).toString(),
+        }),
+      );
+    });
     req.on('error', reject);
     req.end();
   });
