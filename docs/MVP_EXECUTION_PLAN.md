@@ -1,13 +1,13 @@
 ---
 status: stable
 owner: product
-last_reviewed: 2026-11-23
+last_reviewed: 2026-11-25
 purpose: Concise accepted MVP features and evidence boundaries
 ---
 
 # PocketHost MVP acceptance
 
-**Owner state:** current private-LAN MVP and browser UX accepted for the present stage. **Engineering state:** A8 source G0–G2 PASS at `d2bacd0`; last separately confirmed DEV deployment `349087d`. These are deliberately different milestones.
+**Owner state:** current private-LAN MVP and browser UX accepted for the present stage. **Engineering state:** A8 source G0–G2 PASS at `d2bacd0`; last separately confirmed DEV deployment `b49b81a` (Sprint 5). These are deliberately different milestones.
 
 | Area                                  | Established evidence                                                                                    | Boundary                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
@@ -29,4 +29,4 @@ purpose: Concise accepted MVP features and evidence boundaries
 2. **Selective upstream evaluation:** compare `himalayladha/termux-hosting-panel` ideas, licenses and tests before implementing feature-bounded replacements. See [reuse strategy](UPSTREAM_REUSE_STRATEGY.md).
 3. **Optional later work:** off-device Restic recovery, Android reboot G3, public ingress policy, broader runtimes and stronger isolation. Treat these as new product decisions, not retroactive reasons to fail the accepted private-LAN MVP.
 
-Do not start further development automatically from this document.
+Post-v1 Sprints 1–5 are closed. Sprint 6 — SQLite Studio is TODO for the next iteration; see [roadmap](ROADMAP.md). Do not start further development automatically from this document.

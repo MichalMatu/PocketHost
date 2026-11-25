@@ -64,13 +64,13 @@ A8 QA/deploy PASS; immutable receipts: `pockethost-a8-sprint4-<step>-<qa|deploy>
 
 ## Sprint 5 — v1.1: Traffic Analytics (CLOSED)
 
-- [x] Review [TermuxPanel](https://github.com/himalayladha/termux-hosting-panel) analytics and MIT license; independently implement bounded per-project collection.
-- [x] Static and Node request counts, status breakdown, response payload bytes, top paths, hourly history and 60-second RPS; on-demand UI for 24h/7d, project/process identity, failure tolerance and bounded storage without an additional supervisor.
-- [x] Isolated A8 retention/capacity/HTTP integration, affected UI regression, CPU/RSS/disk benchmark, build, guarded DEV deployment and read-only live API verification.
+- [x] Upstream MIT review; independent per-project implementation, no extra supervisor.
+- [x] Static/Node requests, status codes, response bytes, top paths, 24h/7d history and RPS; bounded retention and storage.
+- [x] A8 integration, affected UI, benchmark, build, guarded deployment and live API readback PASS.
 
-Runtime `b49b81a70a15d44ebaf3ec3733f168ba1936edbb`: final delta QA 10/10 PASS, affected UI 143/143 PASS at `66b46ea` (UI unchanged thereafter), deploy and postflight PASS. See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md) for scope and limitations. Existing applications were not restarted; both returned missing snapshots on live readback and begin collecting on their next normal start. No Sprint 6 work started.
+Runtime `b49b81a`: 10/10 final QA checks, 143/143 affected UI tests at `66b46ea` (UI unchanged). See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md).
 
-## Sprint 6 — SQLite Studio
+## Sprint 6 — SQLite Studio (TODO — NEXT ITERATION)
 
 - [ ] Review upstream database UX; implement read-only scoped discovery, schema/tables and paginated rows for owned projects.
 - [ ] No arbitrary SQL console, host scan, DB mutation or live replacement. Test bounds, ownership, malformed data and read errors.
