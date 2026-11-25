@@ -1,4 +1,4 @@
-import { lstatSync, readdirSync, realpathSync, type Stats } from 'node:fs';
+import { lstatSync, opendirSync, readdirSync, realpathSync, type Stats } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NodeProjectHost } from './node-project-host.ts';
@@ -127,6 +127,63 @@ export class NodeProjectDataScope {
       throw new Error('Noncanonical Node data directory');
     }
     return stat;
+  }
+
+
+  /** SQLite Studio: enumerate only the selected owned project's db tree. */
+  inspectSqliteFiles(projectId: string): {
+    configured: boolean;
+    files: { absolute: string; relative: string; stat: Stats }[];
+  } {
+    if (!PROJECT_ID.test(projectId)) throw new RangeError('Invalid Node project ID');
+    if (this.projects.inspect(projectId).id !== projectId) {
+      throw new Error('Node project identity mismatch');
+    }
+    const files: { absolute: string; relative: string; stat: Stats }[] = [];
+    const absent = { configured: false, files };
+    if (!this.stat(this.dataRoot)) return absent;
+    this.privateEntry(this.dataRoot, true);
+    const owned = path.join(this.dataRoot, projectId);
+    if (!this.stat(owned)) return absent;
+    this.privateEntry(owned, true);
+    const dbRoot = path.join(owned, 'db');
+    if (!this.stat(dbRoot)) return absent;
+    let directories = 0;
+    let totalBytes = 0;
+    const started = performance.now();
+    const visit = (directory: string, depth: number): void => {
+      if (depth > MAX_DEPTH || ++directories > MAX_DIRECTORIES) {
+        throw new RangeError('SQLite directory budget exceeded');
+      }
+      this.privateEntry(directory, true);
+      const handle = opendirSync(directory);
+      try {
+        for (let entry = handle.readSync(); entry; entry = handle.readSync()) {
+          if (performance.now() - started > 750) throw new RangeError('SQLite scan timed out');
+          if (!CHILD_NAME.test(entry.name) || entry.name.length > 120) {
+            throw new Error('Invalid SQLite data filename');
+          }
+          const absolute = path.join(directory, entry.name);
+          if (entry.isDirectory()) {
+            visit(absolute, depth + 1);
+          } else {
+            const stat = this.privateEntry(absolute, false);
+            if (realpathSync(absolute) !== absolute) throw new Error('Noncanonical SQLite file');
+            totalBytes += stat.size;
+            if (stat.size > MAX_FILE_BYTES || files.length >= MAX_FILES ||
+                totalBytes > MAX_TOTAL_BYTES) {
+              throw new RangeError('SQLite file budget exceeded');
+            }
+            files.push({ absolute, relative: path.relative(dbRoot, absolute), stat });
+          }
+        }
+      } finally {
+        handle.closeSync();
+      }
+      this.privateEntry(directory, true);
+    };
+    visit(dbRoot, 1);
+    return { configured: true, files };
   }
 
   inspect(projectId: string): NodeProjectDataScopeReport {

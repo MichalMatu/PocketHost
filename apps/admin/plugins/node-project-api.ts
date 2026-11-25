@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto"
+import { createSqliteReadApi } from "./node-sqlite-api.ts"
 import { readNodeTraffic } from "../../../src/modules/host/traffic-runtime.ts"
 import { NodeProjectHost } from "../../../src/modules/host/node-project-host.ts"
 import { previewPublicGitHubNodeSource } from "../../../src/modules/host/node-github-source.ts"
@@ -43,7 +44,6 @@ export function nodeProjectApi(): Plugin {
     name: "pockethost-owned-node-projects-dev",
     apply: "serve",
     configureServer(server) {
-      // A separate opt-in is required even when static H2 is enabled.
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
         process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1"
       const host = enabled ? new NodeProjectHost() : null
@@ -51,6 +51,7 @@ export function nodeProjectApi(): Plugin {
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const nodeData = enabled ? new NodeProjectDataScope() : null
       const dataSnapshots = enabled ? new NodeProjectDataSnapshots() : null
+      const sqlite = nodeData && createSqliteReadApi(nodeData, id => runtime!.status(id))
       const executionEnabled = process.env.POCKETHOST_ENABLE_NODE_RUNTIME_DEV === "1"
       const dependencyInstallEnabled = process.env.POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV === "1"
       const buildEnabled = process.env.POCKETHOST_ENABLE_NODE_BUILD_DEV === "1"
@@ -107,14 +108,10 @@ export function nodeProjectApi(): Plugin {
         return { data, recovery }
       }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
-      // Explicit owner authentication, independent of the caller's intent header.
-      // Never disclose or log this private host-configured token.
       const ownerSecret = process.env.POCKETHOST_NODE_OWNER_TOKEN ?? ""
       const ownerConfigured = /^[A-Za-z0-9_-]{32,128}$/.test(ownerSecret)
       function ownerAuthorized(request: IncomingMessage): boolean {
         const submitted = request.headers["x-pockethost-node-owner"]
-        // Validate ASCII before comparing: equal UTF-16 string lengths do
-        // not guarantee equal Buffer lengths for timingSafeEqual.
         return ownerConfigured && typeof submitted === "string" &&
           /^[A-Za-z0-9_-]{32,128}$/.test(submitted) &&
           submitted.length === ownerSecret.length &&
@@ -146,8 +143,7 @@ export function nodeProjectApi(): Plugin {
           response.end('{"error":"node-projects-disabled"}')
           return
         }
-        // The LAN proxy rewrites Host/Origin, but owner authentication remains
-        // mandatory for writes regardless of whether the caller was proxied.
+        if (sqlite && await sqlite(request, response, ownerAuthorized(request))) return
         const route = request.url?.split("?")[0] ?? ""
         const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots|traffic))?$/.exec(route)
         const snapshotVerify = /^\/(node-[a-f0-9]{32})\/data-snapshots\/(snapshot-[a-f0-9]{32})\/verify$/.exec(route)
