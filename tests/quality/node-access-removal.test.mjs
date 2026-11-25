@@ -41,6 +41,21 @@ function approval(project, active = null) {
     expectedActiveRelease: active,
   };
 }
+async function stopFixtureSupervisor(supervisor) {
+  if (supervisor?.pid) {
+    const exited =
+      supervisor.exitCode === null && supervisor.signalCode === null
+        ? once(supervisor, 'exit')
+        : null;
+    try {
+      process.kill(-supervisor.pid, 'SIGTERM');
+    } catch (error) {
+      if (error.code !== 'ESRCH') throw error;
+    }
+    if (exited) await exited;
+  }
+}
+
 async function fixture(mode, secret, fn) {
   const previous = envKeys.map((key) => process.env[key]);
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-node-remove-'));
@@ -133,18 +148,7 @@ async function fixture(mode, secret, fn) {
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
-    if (supervisor?.pid) {
-      const exited =
-        supervisor.exitCode === null && supervisor.signalCode === null
-          ? once(supervisor, 'exit')
-          : null;
-      try {
-        process.kill(-supervisor.pid, 'SIGTERM');
-      } catch (error) {
-        if (error.code !== 'ESRCH') throw error;
-      }
-      if (exited) await exited;
-    }
+    await stopFixtureSupervisor(supervisor);
     // This is the private mkdtemp fixture only, never the actual A8 registry or app data.
     rmSync(home, { recursive: true, force: true });
     envKeys.forEach((key, i) => {
