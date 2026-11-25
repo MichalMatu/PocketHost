@@ -272,7 +272,7 @@ export function nodeProjectApi(): Plugin {
                 const added = observed.filter((item) =>
                   !previous.some((old) => old.id === item.id))
                 if (added.length !== 1) throw new Error("New Node snapshot not confirmed")
-                return { backupCreated: true, snapshot: added[0].id,
+                return { backupCreated: true, snapshot: added[0]!.id,
                   backup: nodeBackup!.status() }
               }
               if (Object.keys(input).sort().join(",") !== "approved,snapshot" ||
