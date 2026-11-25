@@ -1,5 +1,6 @@
 import * as React from "react"
 import { Button } from "@/components/ui/button"
+import { NodeSqlitePanel } from "./node-sqlite-panel"
 
 const api = "/api/v1/node-projects"
 
@@ -326,6 +327,7 @@ function NodeDataContent({ projectId, ownerAuthorized, busy, getJson, action }: 
         </div>}
         <p className="text-xs text-muted-foreground">Snapshot creation and restore remain disabled.</p>
       </div>}
+      <NodeSqlitePanel projectId={projectId} ownerAuthorized={ownerAuthorized} busy={busy} getJson={getJson} />
       <p className="text-xs text-muted-foreground">
         No application-data snapshot or restore action is available here. Local staging code is not yet
         qualified for database-consistent recovery; this inspection does not create a backup.
