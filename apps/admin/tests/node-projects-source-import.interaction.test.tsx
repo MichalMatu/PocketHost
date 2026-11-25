@@ -153,6 +153,11 @@ it("loads JSON API only after explicit confirmation, without staging or starting
         state: "not-provisioned", desired: "stopped", port: null,
         activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
       }, executionEnabled: false }) }
+    if (url.endsWith("/plan"))
+      return { ok: true, json: async () => ({ plan: {
+        release: null, port: null, missingTools: [], conflicts: [],
+        dependencyCount: 0, allowed: false, reason: "no-candidate",
+      }, executionEnabled: false }) }
     throw new Error("Unexpected request " + url)
   })
   vi.stubGlobal("fetch", calls)
