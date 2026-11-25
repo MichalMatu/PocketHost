@@ -237,7 +237,11 @@ test('public static publication requires separate intent and verified running si
       return { state: 'stopped' };
     },
   };
-  const plugin = ownedSiteFleetApi(() => fleet, () => {}, () => publication);
+  const plugin = ownedSiteFleetApi(
+    () => fleet,
+    () => {},
+    () => publication,
+  );
   const intent = {
     origin: 'http://127.0.0.1:8787',
     'x-pockethost-intent': 'public-static',
