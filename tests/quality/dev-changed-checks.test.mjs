@@ -297,6 +297,7 @@ test('reviewed server adapters require strict root and admin types and isolated 
     ['internet-connectivity-api.ts', 'monitoring-api.test.mjs'],
     ['site-fleet-api.ts', 'hosting-network-api.test.mjs'],
     ['node-project-api.ts', 'traffic-hosting-api.test.mjs'],
+    ['node-sqlite-api.ts', 'node-sqlite-studio.test.mjs'],
     ['termux-admin-action.ts', 'termux-admin-api.test.mjs'],
     ['termux-admin-api.ts', 'termux-admin-api.test.mjs'],
   ];
@@ -314,7 +315,12 @@ test('reviewed server adapters require strict root and admin types and isolated 
             'tests/quality/hosting-network-api.test.mjs',
             'tests/quality/traffic-hosting-api.test.mjs',
           ]
-        : ['tests/quality/' + suite],
+        : file === 'node-project-api.ts'
+          ? [
+              'tests/quality/node-sqlite-studio.test.mjs',
+              'tests/quality/traffic-hosting-api.test.mjs',
+            ]
+          : ['tests/quality/' + suite],
     );
   }
   const unknown = planChangedChecks(['apps/admin/plugins/unknown-api.ts']);
