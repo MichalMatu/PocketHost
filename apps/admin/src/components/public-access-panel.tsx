@@ -24,6 +24,7 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
   const [error, setError] = React.useState<string | null>(null)
   const [copyMessage, setCopyMessage] = React.useState<string | null>(null)
   const inFlight = React.useRef(false)
+  const addressRef = React.useRef<HTMLAnchorElement>(null)
   const read = async (action?: "publish-public" | "unpublish-public", target?: string) => {
     if (inFlight.current) return
     inFlight.current = true
@@ -54,10 +55,43 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
   const matching = publication !== null && (!siteId || publication.siteId === siteId)
   const url = matching ? publication?.url : null
 
-  return <details className="space-y-3 rounded-md border p-3"
+  const copyLink = async () => {
+    if (!url) return
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url)
+        setCopyMessage("Link copied.")
+        return
+      }
+    } catch {
+      // Private HTTP LAN pages may not have access to the Clipboard API.
+    }
+    const address = addressRef.current
+    const selection = window.getSelection()
+    if (address && selection) {
+      const range = document.createRange()
+      range.selectNodeContents(address)
+      selection.removeAllRanges()
+      selection.addRange(range)
+      try {
+        if (typeof document.execCommand === "function" && document.execCommand("copy")) {
+          selection.removeAllRanges()
+          setCopyMessage("Link copied.")
+          return
+        }
+      } catch {
+        // Keep the visible address selected for manual copying.
+      }
+      setCopyMessage("Address selected. Copy it manually (Ctrl+C or Cmd+C).")
+      return
+    }
+    setCopyMessage("Copy unavailable. Select the address manually.")
+  }
+
+  return <details className="rounded-md border p-3"
     onToggle={event => { if (event.currentTarget.open) void read() }}>
     <summary className="cursor-pointer text-sm font-medium">Public access · Quick Tunnel</summary>
-    <div className="mt-3 space-y-3 text-sm">
+    <div className="grid gap-3 pt-3 text-sm">
       <p className="text-xs text-muted-foreground">
         Temporary HTTPS address, no account required. Intended for demos, not production.
         The address can change when republished. Active release updates are public;
@@ -72,17 +106,13 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
                 publication.state === "failed" ? "Publication failed" :
                   publication.state === "stopping" ? "Stopping" : "Not published"}
       </p>}
-      {url && <div className="space-y-2">
-        <a href={url} target="_blank" rel="noopener noreferrer" className="break-all underline">{url}</a>
-        <div><Button size="sm" variant="outline" onClick={() => {
-          if (!navigator.clipboard) {
-            setCopyMessage("Copy unavailable. Select the address manually.")
-            return
-          }
-          void navigator.clipboard.writeText(url).then(() => setCopyMessage("Link copied."))
-            .catch(() => setCopyMessage("Copy unavailable. Select the address manually."))
-        }}>Copy link</Button></div>
-        {copyMessage && <p role="status" className="text-xs">{copyMessage}</p>}
+      {url && <div className="grid gap-2">
+        <a ref={addressRef} href={url} target="_blank" rel="noopener noreferrer"
+          className="break-all underline">{url}</a>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button size="sm" variant="outline" onClick={() => void copyLink()}>Copy link</Button>
+          {copyMessage && <p role="status" className="text-xs">{copyMessage}</p>}
+        </div>
       </div>}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" variant="outline" disabled={busy} onClick={() => void read()}>
@@ -100,9 +130,9 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
             if (publication.siteId) void read("unpublish-public", publication.siteId)
           }}>Unpublish</Button>}
       </div>
-      {siteId ? <Link to="/services/cloudflare" className="text-xs underline">Cloudflare settings</Link> :
+      {siteId ? <Link to="/services/cloudflare" className="block w-fit text-xs underline">Cloudflare settings</Link> :
         <Link to={publication?.siteId ? "/sites?site=" + publication.siteId : "/sites"}
-          className="text-xs underline">Manage static websites</Link>}
+          className="block w-fit text-xs underline">Manage static websites</Link>}
     </div>
   </details>
 }
