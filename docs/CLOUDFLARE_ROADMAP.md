@@ -11,13 +11,13 @@ Owner resumed CF1 after S7 closure; CF1 is now closed. UX-01–UX-07 take curren
 route, package change, existing tunnel modification or real application
 publication is implied by this plan.
 
-| Stage | Scope | Estimated difficulty | State |
-| --- | --- | --- | --- |
-| CF1 | Quick Tunnel without account, one static site, temporary HTTPS URL | Low | Closed — scoped implementation and DEV acceptance |
-| CF2 | Owned runit enrollment, lifecycle and reconnect/readback | Low–medium | Deferred |
-| CF3 | Cloudflare account setup and scoped API integration | Medium | Deferred |
-| CF4 | Named tunnel, domains/subdomains, routing and Node hosting | Medium | Deferred |
-| CF5 | Diagnostics, recovery and endurance qualification | Medium | Deferred |
+| Stage | Scope                                                              | Estimated difficulty | State                                             |
+| ----- | ------------------------------------------------------------------ | -------------------- | ------------------------------------------------- |
+| CF1   | Quick Tunnel without account, one static site, temporary HTTPS URL | Low                  | Closed — scoped implementation and DEV acceptance |
+| CF2   | Owned runit enrollment, lifecycle and reconnect/readback           | Low–medium           | Deferred                                          |
+| CF3   | Cloudflare account setup and scoped API integration                | Medium               | Deferred                                          |
+| CF4   | Named tunnel, domains/subdomains, routing and Node hosting         | Medium               | Deferred                                          |
+| CF5   | Diagnostics, recovery and endurance qualification                  | Medium               | Deferred                                          |
 
 ## CF1 implementation and acceptance
 

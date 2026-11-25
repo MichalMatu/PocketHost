@@ -29,7 +29,7 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 ## Current owner assignment — UX-01
 
-The owner resumed UX implementation on 25 November. Follow the ordered [UX-01–UX-07 roadmap](ROADMAP.md#current-priority--ux-01ux-07-owner-resumed-25-november-2026). Start with Static Hosting list/create/detail route separation. Read-only A8 audit and Mac screenshot geometry PASS; the supplied screenshots informed the UX plan. Do not claim new runtime QA or deployment before terminal receipts. All remaining feature sprints follow UX-07.
+The owner resumed UX implementation on 25 November. Follow the ordered [UX-01–UX-07 roadmap](UX_EXECUTION_PLAN.md). Start with Static Hosting list/create/detail route separation. Read-only A8 audit and Mac screenshot geometry PASS; the supplied screenshots informed the UX plan. Do not claim new runtime QA or deployment before terminal receipts. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 
