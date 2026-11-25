@@ -251,7 +251,7 @@ test(
         // Simulate an out-of-band stop of this isolated fixture, not the live project.
         const stopped = spawnSync(
           PREFIX + '/bin/sv',
-          ['-w', '20', 'force-stop', path.join(serviceRoot, nodeHostingUnitName(p.id))],
+          ['-w', '20', 'stop', path.join(serviceRoot, nodeHostingUnitName(p.id))],
           { timeout: 25000 },
         );
         assert.equal(stopped.status, 0);
