@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto"
+import { nodeOwnerAccess } from "../../../src/modules/host/node-owner-access.ts"
 import { createSqliteReadApi } from "./node-sqlite-api.ts"
 import { readNodeTraffic } from "../../../src/modules/host/traffic-runtime.ts"
 import { NodeProjectHost } from "../../../src/modules/host/node-project-host.ts"
@@ -16,7 +16,7 @@ import type { IncomingMessage } from "node:http"
 import type { Plugin } from "vite"
 
 /** Server-only Node hosting; LAN mutation requires an owner-held secret. */
-export function nodeProjectApi(): Plugin {
+export function nodeProjectApi(roots?: { serviceRoot: string; logRoot: string }): Plugin {
   const hosts = new Set(["127.0.0.1:8787", "localhost:8787"])
   const origins = new Set(["http://127.0.0.1:8787", "http://localhost:8787"])
   async function readJson(request: IncomingMessage, limit: number): Promise<unknown> {
@@ -47,7 +47,7 @@ export function nodeProjectApi(): Plugin {
       const enabled = process.env.POCKETHOST_ENABLE_OWNED_SITE_DEV === "1" &&
         process.env.POCKETHOST_ENABLE_NODE_HOSTING_DEV === "1"
       const host = enabled ? new NodeProjectHost() : null
-      const runtime = enabled ? new NodeRunitHost() : null
+      const runtime = enabled ? new NodeRunitHost(undefined, roots?.serviceRoot, roots?.logRoot) : null
       const nodeBackup = enabled ? new NodeProjectBackupHost() : null
       const nodeData = enabled ? new NodeProjectDataScope() : null
       const dataSnapshots = enabled ? new NodeProjectDataSnapshots() : null
@@ -108,15 +108,10 @@ export function nodeProjectApi(): Plugin {
         return { data, recovery }
       }
       const backupEnabled = process.env.POCKETHOST_ENABLE_NODE_BACKUPS_DEV === "1"
-      const ownerSecret = process.env.POCKETHOST_NODE_OWNER_TOKEN ?? ""
-      const ownerConfigured = /^[A-Za-z0-9_-]{32,128}$/.test(ownerSecret)
-      function ownerAuthorized(request: IncomingMessage): boolean {
-        const submitted = request.headers["x-pockethost-node-owner"]
-        return ownerConfigured && typeof submitted === "string" &&
-          /^[A-Za-z0-9_-]{32,128}$/.test(submitted) &&
-          submitted.length === ownerSecret.length &&
-          timingSafeEqual(Buffer.from(submitted, "ascii"), Buffer.from(ownerSecret, "ascii"))
-      }
+      const access = nodeOwnerAccess(process.env.POCKETHOST_NODE_ACCESS_MODE,
+        process.env.POCKETHOST_NODE_OWNER_TOKEN ?? "")
+      const ownerAuthorized = (request: IncomingMessage) =>
+        access.authorized(request.headers["x-pockethost-node-owner"])
       let pending: Promise<void> = Promise.resolve()
       function serial<T>(fn: () => T): Promise<T> {
         const action = pending.then(fn, fn)
@@ -145,7 +140,7 @@ export function nodeProjectApi(): Plugin {
         }
         if (sqlite && await sqlite(request, response, ownerAuthorized(request))) return
         const route = request.url?.split("?")[0] ?? ""
-        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots|traffic))?$/.exec(route)
+        const match = /^\/(node-[a-f0-9]{32})(?:\/(releases|stage|restore-candidate|remove|runtime|plan|logs|deploy|start|stop|restart|rollback|check-build|preview|source|health|dependency-review|install-dependencies|build-review|build|rollback-preview|data-scope|data-snapshots|traffic))?$/.exec(route)
         const snapshotVerify = /^\/(node-[a-f0-9]{32})\/data-snapshots\/(snapshot-[a-f0-9]{32})\/verify$/.exec(route)
         const id = match?.[1] ?? snapshotVerify?.[1]
         const op = match?.[2] ?? (snapshotVerify ? "verify-snapshot" : undefined)
@@ -163,8 +158,8 @@ export function nodeProjectApi(): Plugin {
         if (request.method === "GET") {
           try {
             const data = route === "/owner-session" ?
-              { configured: ownerConfigured, authorized: ownerAuthorized(request) } :
-              route === "/" ? { projects: host.list() } :
+              { configured: access.configured, authorized: ownerAuthorized(request), mode: access.mode } :
+              route === "/" ? { projects: host.list(), accessMode: access.mode } :
               route === "/toolchain" ? { toolchain: runtime!.toolVersions() } :
               route === "/registry" ? { registries: runtime!.registryProjection() } :
               route === "/backup" ? { backup: nodeBackup!.status(), backupsEnabled: backupEnabled } :
@@ -211,6 +206,7 @@ export function nodeProjectApi(): Plugin {
         const githubPreview = request.method === "POST" && route === "/github/preview"
         const stage = request.method === "POST" && !!id && op === "stage"
         const restore = request.method === "POST" && !!id && op === "restore-candidate"
+        const remove = request.method === "POST" && !!id && op === "remove"
         const deploy = request.method === "POST" && !!id && op === "deploy"
         const start = request.method === "POST" && !!id && op === "start"
         const stop = request.method === "POST" && !!id && op === "stop"
@@ -221,7 +217,7 @@ export function nodeProjectApi(): Plugin {
         const executeBuild = request.method === "POST" && !!id && op === "build"
         const createBackup = request.method === "POST" && route === "/backup/create"
         const restoreBackup = request.method === "POST" && route === "/backup/restore"
-        if (!create && !githubPreview && !stage && !restore && !deploy && !start && !stop &&
+        if (!create && !githubPreview && !stage && !restore && !remove && !deploy && !start && !stop &&
             !restart && !rollback && !checkBuild && !installDependencies && !executeBuild &&
             !createBackup && !restoreBackup) {
           response.statusCode = 404
@@ -348,6 +344,10 @@ export function nodeProjectApi(): Plugin {
               return { runtime: rollback ? await runtime!.rollback(id!, true) :
                 restart ? await runtime!.restart(id!, true) :
                 start ? await runtime!.start(id!, true) : await runtime!.stop(id!, true) }
+            }
+            if (remove) {
+              const body = await readJson(request, 1024)
+              return runtime!.removeProject(id!, body)
             }
             if (restore) {
               const input = await readJson(request, 1024)

@@ -35,7 +35,7 @@ Read this file, [START_HERE](docs/START_HERE.md), the [MVP tracker](docs/MVP_EXE
 ## Safety
 
 - Discovered processes, services, applications and user files are **external until verified owned**; never stop, adopt, edit or recover protected/foreign services. Local Agent and SSH/tunnels are independent protected surfaces.
-- Hosted Node code shares the Termux UID and is **not sandboxed**; trusted owner-reviewed code only. Node writes require the verified owner token. Unknown/stale catalog, unsafe path/symlink, missing authorization or failed readback must fail closed.
+- Hosted Node code shares the Termux UID and is **not sandboxed**; trusted owner-reviewed code only. Node writes require the verified owner token in protected mode. The owner expressly authorized optional token access on the trusted private LAN; only explicit host-selected trusted-lan mode may waive that credential. All existing execution, ownership and state checks remain mandatory. Unknown/stale catalog, unsafe path/symlink, missing authorization or failed readback must fail closed.
 - DEV panel is unauthenticated HTTP restricted to **trusted private LAN**, never WAN or a public proxy by default. No exposed credentials, unsolicited shell, SSH/WAN changes, package upgrades, reboot, physical destructive tests, backups or off-device transfer without distinct scope-specific approval.
 - Runit is the only process supervisor; do not add a competing watchdog, cron or scheduler. Preserve independent access to Services overview, Runit, Autostart, Hosting, Health, Local Agent, SSH and related subpages.
 

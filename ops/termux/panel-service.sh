@@ -41,6 +41,7 @@ case "${1:-}" in
     export POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV=0
     export POCKETHOST_ENABLE_NODE_BUILD_DEV=0
     unset POCKETHOST_NODE_OWNER_TOKEN
+    export POCKETHOST_NODE_ACCESS_MODE=protected
     node_token_file="$STATE/node-owner-token"
     if [ -f "$node_token_file" ] && [ ! -L "$node_token_file" ] && \
       [ "$("$PREFIX/bin/stat" -c '%a' "$node_token_file" 2>/dev/null || :)" = 600 ] && \
@@ -59,6 +60,27 @@ case "${1:-}" in
           ;;
       esac
       unset node_token
+    fi
+    # Only an explicit private host policy can opt out of token authentication.
+    node_mode_file="$STATE/node-access-mode"
+    if [ -e "$node_mode_file" ] || [ -L "$node_mode_file" ]; then
+      if [ -f "$node_mode_file" ] && [ ! -L "$node_mode_file" ] && \
+        [ "$("$PREFIX/bin/stat" -c '%a:%u:%h' "$node_mode_file" 2>/dev/null || :)" = "600:$("$PREFIX/bin/id" -u):1" ] && \
+        [ "$("$PREFIX/bin/stat" -c '%s' "$node_mode_file" 2>/dev/null || :)" -le 32 ]; then
+        case "$("$PREFIX/bin/cat" "$node_mode_file")" in
+          trusted-lan)
+            export POCKETHOST_NODE_ACCESS_MODE=trusted-lan
+            export POCKETHOST_ENABLE_NODE_HOSTING_DEV=1
+            export POCKETHOST_ENABLE_NODE_RUNTIME_DEV=1
+            export POCKETHOST_ENABLE_NODE_DEPENDENCIES_DEV=1
+            export POCKETHOST_ENABLE_NODE_BUILD_DEV=1
+            ;;
+          protected) ;;
+          *) export POCKETHOST_NODE_ACCESS_MODE=invalid ;;
+        esac
+      else
+        export POCKETHOST_NODE_ACCESS_MODE=invalid
+      fi
     fi
     # Runit directly execs Vite; update only the verified prior PocketHost
     # owner markers to this same PID/start tick, never adopt a live outsider.

@@ -169,6 +169,10 @@ export function planChangedChecks(
     } else if (file.startsWith('scripts/') && file.endsWith('.mjs')) {
       rootLint.push(file);
       structure = true;
+    } else if (file === 'ops/termux/panel-service.sh') {
+      // Explicitly reviewed startup policy; fixture HTTP test also checks shell syntax.
+      node.add('tests/quality/node-access-removal.test.mjs');
+      structure = true;
     } else if (file === 'ops/termux/fast-flow.mjs') {
       // The only reviewed DEV orchestration script. Other ops remain manual-review only.
       node.add('tests/quality/dev-fast-flow.test.mjs');

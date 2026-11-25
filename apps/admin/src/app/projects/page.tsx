@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { readLocalNodeFiles, readLocalNodeFolder } from "@/lib/node-source-import"
 import { NodeBackupPanel } from "./node-backup-panel"
 import { NodeDataPanel } from "./node-data-panel"
+import { NodeOwnerPanel } from "./node-owner-panel"
+import { NodeProjectRemoval, verifyNodeRemoval } from "./node-project-removal"
 import { NodeProjectPicker } from "./node-project-picker"
 import { TrafficPanel } from "@/components/traffic-panel"
 import { NodeRuntimeDetails } from "./node-runtime-details"
@@ -31,7 +33,9 @@ export default function ProjectsPage() {
   const lanView = typeof window !== "undefined" && !["localhost", "127.0.0.1"].includes(window.location.hostname)
   const tokenRef = React.useRef("")
   const [token, setToken] = React.useState("")
-  const [ownerAuthorized, setOwnerAuthorized] = React.useState(false)
+  const [tokenAuthorized, setOwnerAuthorized] = React.useState(false)
+  const [accessMode, setAccessMode] = React.useState<"protected" | "trusted-lan">("protected")
+  const ownerAuthorized = accessMode === "trusted-lan" || tokenAuthorized
   const [ownerConfigured, setOwnerConfigured] = React.useState<boolean | null>(null)
   const getJson = React.useCallback((url: string, method?: "POST", body?: unknown) =>
     requestJson(url, method, body, tokenRef.current), [])
@@ -130,6 +134,9 @@ export default function ProjectsPage() {
       // Stale responses do not change the catalog or its dependent selection.
       if (request !== catalogRequest.current) return verifiedCatalog.current
       const catalog = parseProjectCatalog(data.projects)
+      if (data.accessMode !== undefined && data.accessMode !== "protected" && data.accessMode !== "trusted-lan")
+        throw new Error("Invalid Node access policy")
+      setAccessMode(data.accessMode === "trusted-lan" ? "trusted-lan" : "protected")
       const selectedBefore = verifiedCatalog.current.find(project => project.id === selectedIdRef.current)
       const selectedAfter = catalog.find(project => project.id === selectedIdRef.current)
       // Reuse a selected project only while its verified release revision is unchanged.
@@ -157,6 +164,7 @@ export default function ProjectsPage() {
       // Ignore late failures after a more recent refresh (or unmount).
       if (request !== catalogRequest.current) return verifiedCatalog.current
       verifiedCatalog.current = []
+      setAccessMode("protected"); setOwnerAuthorized(false)
       invalidateRead()
       beginInspection()
       resetLogs()
@@ -324,50 +332,26 @@ export default function ProjectsPage() {
             setGithubRepository("")
             await Promise.all([loadReleases(project.id), loadRuntime(project.id)])
           })} />}
-      <Card id="node-owner-access">
-        <CardContent className="space-y-2 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 className="text-sm font-semibold">Node.js owner access</h2>
-            <p role="status" className="text-xs text-muted-foreground">
-              Owner: {ownerAuthorized ? "authenticated" : ownerConfigured === false ? "host token not configured" : "locked"}.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="flex min-w-52 flex-1 items-center gap-2 text-sm">
-              <span className="shrink-0">Owner token</span>
-              <Input aria-label="Node owner token" type="password" autoComplete="off" value={token}
-                onChange={event => {
-                  tokenRef.current = event.target.value
-                  setToken(event.target.value)
-                  revokeOwnerAccess()
-                }} />
-            </label>
-            <Button disabled={busy || token.length < 32} onClick={() => action(async () => {
-              const attemptedToken = tokenRef.current
-              const response = await requestJson(api + "/owner-session", undefined, undefined, attemptedToken)
-              // Lock or token edits can happen while a network reply is pending.
-              if (tokenRef.current !== attemptedToken)
-                throw new Error("Owner token changed while verifying. Unlock again.")
-              if (typeof response.configured !== "boolean" || typeof response.authorized !== "boolean")
-                throw new Error("Invalid owner session response")
-              setOwnerConfigured(response.configured)
-              setOwnerAuthorized(response.authorized)
-              if (!response.authorized)
-                throw new Error(response.configured ? "Invalid Node owner token." : "Node owner token is not configured on the host.")
-              setMessage("Owner authenticated for Node management.")
-            })}>Unlock management</Button>
-            <Button variant="outline" disabled={!token} onClick={() => {
-              tokenRef.current = ""
-              setToken("")
-              revokeOwnerAccess()
-              setMessage("Owner access locked.")
-            }}>Lock</Button>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Token stays in this tab. {lanView ? "LAN HTTP is unencrypted — trusted network only." : "Only use trusted Node code."}
-          </p>
-        </CardContent>
-      </Card>
+      <NodeOwnerPanel trusted={accessMode === "trusted-lan"} authorized={ownerAuthorized}
+        configured={ownerConfigured} token={token} busy={busy} lanView={lanView}
+        onToken={value => { tokenRef.current = value; setToken(value); revokeOwnerAccess() }}
+        onUnlock={() => action(async () => {
+          const attemptedToken = tokenRef.current
+          const response = await requestJson(api + "/owner-session", undefined, undefined, attemptedToken)
+          if (tokenRef.current !== attemptedToken)
+            throw new Error("Owner token changed while verifying. Unlock again.")
+          if (typeof response.configured !== "boolean" || typeof response.authorized !== "boolean" ||
+              (response.mode !== undefined && response.mode !== "protected"))
+            throw new Error("Invalid owner session response")
+          setOwnerConfigured(response.configured)
+          setOwnerAuthorized(response.authorized)
+          if (!response.authorized)
+            throw new Error(response.configured ? "Invalid Node owner token." : "Node owner token is not configured on the host.")
+          setMessage("Owner authenticated for Node management.")
+        })}
+        onLock={() => {
+          tokenRef.current = ""; setToken(""); revokeOwnerAccess(); setMessage("Owner access locked.")
+        }} />
       {catalogState === "disabled" && <p role="status" className="text-muted-foreground text-sm">{disabledMessage}</p>}
       {toolchainStatus === "loading" && <p role="status" className="text-muted-foreground text-sm">
         Checking Node tools…
@@ -1027,6 +1011,25 @@ export default function ProjectsPage() {
           </div>
             </div>
           </details>
+          <NodeProjectRemoval project={selected} runtime={runtime} disabled={busy || !ownerAuthorized || catalogState !== "ready"}
+            onRemove={() => action(async () => {
+              try {
+                const result = await getJson(api + "/" + selected.id + "/remove", "POST", {
+                  approved: true, expectedRevision: selected.deploymentCount,
+                  expectedCandidate: selected.candidateRelease, expectedActiveRelease: runtime?.activeRelease ?? null,
+                })
+                verifyNodeRemoval(result, selected.id)
+                const catalog = await refresh()
+                if (catalog.some(item => item.id === selected.id)) throw new Error("Project still in catalog")
+                invalidateRead(); beginInspection(); resetLogs()
+                setSelectedId(""); setSearchParams({}, { replace: true })
+                setMessage("Project removed. Source, data and logs retained.")
+              } catch (cause) {
+                verifiedCatalog.current = []; setProjects([]); setCatalogState("error")
+                invalidateRead(); beginInspection(); resetLogs(); setSelectedId("")
+                throw new Error("Removal unconfirmed. Refresh before another operation.", { cause })
+              }
+            })} />
           <NodeReleaseInventory releases={releases} loading={releasesLoading}
             error={releasesError} checked={releasesChecked} busy={busy}
             activeRelease={runtime?.activeRelease} running={runtime?.state === "running"}

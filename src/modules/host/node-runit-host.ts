@@ -12,6 +12,7 @@ import {
 } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { retireNodeProject } from './node-project-retirement.ts';
 import { NodeProjectHost } from './node-project-host.ts';
 import { NodeDependencyPreparer } from './node-dependency-preparer.ts';
 import { NodeBuildPreparer } from './node-build-preparer.ts';
@@ -931,6 +932,27 @@ export class NodeRunitHost {
     // locks. If stop succeeds but start fails, the project stays stopped.
     await this.stop(id, true);
     return this.start(id, true);
+  }
+  async removeProject(id: string, approval: unknown) {
+    return retireNodeProject({
+      root: this.projectRoot,
+      id,
+      approval,
+      inspect: () => this.projects.inspect(id),
+      record: () => this.record(id),
+      stopped: async () => {
+        const state = this.record(id);
+        return !!state && this.unitState(id) === 'down' && (await portFree(state.port));
+      },
+      detach: async (destination) => {
+        const state = this.record(id);
+        if (!state || state.desired !== 'stopped' || state.process !== null ||
+            this.unitState(id) !== 'down') throw new Error('Node unit no longer safely stopped');
+        const { service } = this.context(id);
+        await this.admin.retireProvisionedNode(id, service, destination);
+      },
+      catalog: () => this.projects.list(),
+    });
   }
   /** Current loopback readiness of the *same* verified process and release. */
   async health(id: string): Promise<{

@@ -9,19 +9,18 @@ purpose: Current private-LAN Node owner API contract and scoped A8 acceptance
 
 ## Scope and trust boundary
 
-`/projects` manages only PocketHost-created Node projects. All writes and
+`/projects` manages only PocketHost-created Node projects. In protected mode, all writes and
 private source/preview reads under `/api/v1/node-projects` require an owner
-secret. The browser sends `X-PocketHost-Node-Owner`; the server compares it
+secret. In explicit trusted-lan mode the existing same-origin and request intent checks remain, but the token is not required. The browser sends `X-PocketHost-Node-Owner`; the server compares it
 in constant time with `POCKETHOST_NODE_OWNER_TOKEN`. The header
 `X-PocketHost-Intent: owned-node-project` and same-origin checks are
 additional request checks, **not** authentication. No token is returned by the
 API, persisted by the editor, or committed to Git.
 
 On the verified A8 DEV runit panel, the launcher activates Node Hosting
-only if `~/.local/state/pockethost/node-owner-token` is a regular, owner-owned
+in protected mode only if `~/.local/state/pockethost/node-owner-token` is a regular, owner-owned
 file with mode `0600` holding exactly one 32–128-character URL-safe token.
-It disables Node when the token is missing or invalid without affecting
-Static Hosting. This private token must be generated on A8, read **locally**
+It disables Node in protected mode when the token is missing or invalid without affecting Static Hosting. This private token must be generated on A8, read **locally**
 in Termux to unlock the browser, and never sent through Git, logs, the
 dashboard, or this chat. It is not a sandbox boundary: trusted user Node
 code runs with the same Termux UID and could read its owner's files.
@@ -53,6 +52,12 @@ there is no WAN port or public Node ingress. A credential transmitted over
 plain HTTP is **not confidential against devices on the same LAN**. Only use
 this owner flow on a trusted private network; do not expose it over a public
 network. The Node process runs with the **Termux UID**, not in a sandbox.
+
+## Optional owner token and project removal
+
+Host-local policy: `~/.local/state/pockethost/node-access-mode`, regular owner-owned file, mode 0600, one line `protected` or `trusted-lan`. Absent means protected; invalid policy fails closed. The launcher applies the mode at the next guarded panel restart. Trusted LAN requires no token entry, and must never be used for public admin ingress. The UI displays the effective server mode; it does not grant itself a mode change. Existing token files are retained when switching modes.
+
+Delete project removes an exact verified stopped or never-provisioned Node project from the active catalog. The POST requires explicit approval and expected source revision, candidate and active release, with backend re-attestation under the global lifecycle lock. The stopped owned unit is detached from runit and its registration revoked. Source and unit files move to sibling `PocketHost-NodeProjects-retired/<id>/`; private mutable data and logs remain in their existing paths. The action is not permanent erasure or an automatic restore feature. A partially completed retirement requires manual reconciliation. Running, unknown, changed or foreign units are refused.
 
 ## Existing implementation reused
 

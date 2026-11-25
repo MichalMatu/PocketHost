@@ -75,6 +75,7 @@ import {
 import os from 'node:os';
 import path from 'node:path';
 import { executeFixed, type Exec, type HostCommandResult } from './termux-admin.ts';
+import { nodeHostingUnitName } from '../../shared/node-hosting-projection.ts';
 import { evaluateHealthPolicy } from '../../shared/hosting-health-policy.ts';
 import {
   probeOwnedWorkerHttp,
@@ -1108,6 +1109,45 @@ export class TermuxServiceAdmin {
       ),
     );
     return { changed: true };
+  }
+
+  /** Internal Node creator only: remove the exact stopped enrolled unit, retain files. */
+  async retireProvisionedNode(id: string, target: string, destination: string): Promise<void> {
+    const name = nodeHostingUnitName(id);
+    const release = acquireStandaloneLifecycleLock(this.registerFile);
+    try {
+      const registrations = this.registry();
+      const verify = () => {
+        if (target !== path.join(this.serviceRoot, name) ||
+            this.target(name) !== target || lstatSync(target).isSymbolicLink() ||
+            this.identity(name, target, this.registry()) !== 'verified' ||
+            readRunitAutostart(this.serviceRoot, name, true, () => this.target(name)) !== false)
+          throw new Error('Node unit identity or autostart changed');
+      };
+      verify();
+      if (readRunitState(this.serviceRoot, name) !== 'stopped' ||
+          !path.isAbsolute(destination) || path.basename(destination) !== 'unit' ||
+          path.basename(path.dirname(destination)) !== id ||
+          realpathSync(path.dirname(destination)) !== path.dirname(destination) ||
+          existsSync(destination))
+        throw new Error('Node retirement target or stopped state unverified');
+      const result = await executeFixed(path.join(PREFIX, 'bin', 'sv'), ['exit', target], {
+        timeout: 20000, maxBuffer: 12000,
+      });
+      if (result.exit !== 0) throw new Error('Node runit supervisor exit refused');
+      verify();
+      if (readRunitState(this.serviceRoot, name) === 'running')
+        throw new Error('Node unit became active');
+      // Rename the exact private unit outside runsvdir before removing its registry authority.
+      renameSync(target, destination);
+      if (existsSync(target) || runSha256(destination) !==
+          registrations.find(entry => entry.name === name)?.runSha256)
+        throw new Error('Node service retirement readback failed');
+      this.save(this.registry().filter(entry => entry.name !== name));
+      if (this.registry().some(entry => entry.name === name)) throw new Error('Node registry removal failed');
+    } finally {
+      release();
+    }
   }
 
   /** Explain failed enrollment without exposing a run path or source material. */
