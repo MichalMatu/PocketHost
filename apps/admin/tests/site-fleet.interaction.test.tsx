@@ -308,7 +308,7 @@ describe("H2 browser site-manager lifecycle", () => {
     await user.type(screen.getByLabelText("Site name"), "Corrected site")
     await user.click(screen.getByRole("button", { name: "Create site" }))
     await screen.findByText(/created. Edit HTML to publish the first release/)
-    expect(screen.getByText("Corrected site")).toBeTruthy()
+    expect(await screen.findByText("Corrected site")).toBeTruthy()
     expect(screen.getByText(accepted.id)).toBeTruthy()
     expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(2)
   })
@@ -368,7 +368,9 @@ describe("H2 browser site-manager lifecycle", () => {
     await screen.findByText(/created and starter HTML published as its first immutable release/)
     expect(calls.mock.calls.filter(([, options]) => options?.method).map(([, options]) => options?.method))
       .toEqual(["POST"])
-    await user.click(screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }))
+    await user.click(await screen.findByRole("button", { name: "Show all sites" }))
+    await user.click(await screen.findByRole("button", { name: "Add website" }))
+    await user.click(await screen.findByRole("checkbox", { name: /Publish starter HTML on creation/ }))
     expect((screen.getByLabelText("Initial HTML") as HTMLTextAreaElement).value)
       .toContain("<h1>My first PocketHost site</h1>")
   })
@@ -436,8 +438,10 @@ describe("H2 browser site-manager lifecycle", () => {
       .toEqual(["POST"])
     expect(calls.mock.calls.some(([url, options]) =>
       String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
-    expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
-    expect((screen.getByRole("checkbox", { name: /Publish starter HTML on creation/ }) as HTMLInputElement).checked)
+    expect(await screen.findByRole("button", { name: /^Start$/ })).toBeTruthy()
+    await user.click(screen.getByRole("button", { name: "Show all sites" }))
+    await user.click(await screen.findByRole("button", { name: "Add website" }))
+    expect((await screen.findByRole("checkbox", { name: /Publish starter HTML on creation/ }) as HTMLInputElement).checked)
       .toBe(false)
   })
 
@@ -501,7 +505,7 @@ describe("H2 browser site-manager lifecycle", () => {
       .toEqual(["POST"])
     expect(requests.mock.calls.some(([url, options]) =>
       String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
-    expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
+    expect(await screen.findByRole("button", { name: /^Start$/ })).toBeTruthy()
   })
 
   it("rejects an oversized initial folder before sending a create request", async () => {
