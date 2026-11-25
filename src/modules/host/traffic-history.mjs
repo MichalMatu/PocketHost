@@ -17,9 +17,13 @@ export function trafficPath(uri) {
     !route.startsWith('/') ||
     route.startsWith('//') ||
     route.length > TRAFFIC_PATH_LENGTH ||
-    /[\x00-\x20\x7f\\]/.test(route)
+    route.includes('\\')
   )
     return null;
+  for (let index = 0; index < route.length; index++) {
+    const character = route.charCodeAt(index);
+    if (character <= 32 || character === 127) return null;
+  }
   return route;
 }
 
@@ -35,7 +39,9 @@ function validPairs(rows, limit, key) {
   return (
     Array.isArray(rows) &&
     rows.length <= limit &&
-    rows.every((row) => Array.isArray(row) && row.length === 2 && key(row[0]) && positive(row[1])) &&
+    rows.every(
+      (row) => Array.isArray(row) && row.length === 2 && key(row[0]) && positive(row[1]),
+    ) &&
     new Set(rows.map((row) => row[0])).size === rows.length &&
     count(sum(rows))
   );
@@ -91,7 +97,7 @@ export class TrafficHistory {
         !validPairs(snapshot.seconds, 60, (n) => aligned(n, SECOND)) ||
         snapshot.hours.some((b) => b.at > snapshot.lastAt) ||
         snapshot.seconds.some(([at]) => at > snapshot.lastAt) ||
-        new Set(snapshot.hours.map((b) => b.at)).size !== snapshot.hours.length
+        snapshot.hours.some((b, index) => index > 0 && snapshot.hours[index - 1].at >= b.at)
       )
         throw new Error('Invalid traffic history');
       this.#startedAt = snapshot.startedAt;
@@ -120,8 +126,10 @@ export class TrafficHistory {
     if (!epoch(at) || at < this.#lastAt || !code(status) || !count(bytes)) return false;
     const hour = Math.floor(at / HOUR) * HOUR;
     const second = Math.floor(at / SECOND) * SECOND;
-    if (hour !== Math.floor(this.#lastAt / HOUR) * HOUR ||
-        second !== Math.floor(this.#lastAt / SECOND) * SECOND)
+    if (
+      hour !== Math.floor(this.#lastAt / HOUR) * HOUR ||
+      second !== Math.floor(this.#lastAt / SECOND) * SECOND
+    )
       this.#prune(at);
     let bucket = this.#hours.at(-1);
     if (bucket?.at !== hour) {
@@ -170,8 +178,7 @@ export class TrafficHistory {
       requests += bucket.requests;
       bytes += bucket.bytes;
       otherPaths += bucket.otherPaths;
-      for (const [key, value] of bucket.statuses)
-        statuses.set(key, (statuses.get(key) ?? 0) + value);
+      for (const [key, value] of bucket.statuses) statuses.set(key, (statuses.get(key) ?? 0) + value);
       for (const [key, value] of bucket.paths) paths.set(key, (paths.get(key) ?? 0) + value);
     }
     return {
@@ -184,7 +191,9 @@ export class TrafficHistory {
       bytes,
       rps: sum(snapshot.seconds) / 60,
       statuses: [...statuses].sort((a, b) => a[0] - b[0]),
-      topPaths: [...paths].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 10),
+      topPaths: [...paths]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 10),
       otherPaths,
       history: buckets.map(({ at, requests, bytes }) => ({ at, requests, bytes })),
     };

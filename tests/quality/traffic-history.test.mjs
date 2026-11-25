@@ -27,8 +27,14 @@ test('HTTP totals, exact status codes, payload bytes and project-local RPS', () 
   assert.equal(result.requests, 2);
   assert.equal(result.bytes, 12);
   assert.equal(result.rps, 2 / 60);
-  assert.deepEqual(result.statuses, [[200, 1], [404, 1]]);
-  assert.deepEqual(result.topPaths, [['/index', 1], ['/missing', 1]]);
+  assert.deepEqual(result.statuses, [
+    [200, 1],
+    [404, 1],
+  ]);
+  assert.deepEqual(result.topPaths, [
+    ['/index', 1],
+    ['/missing', 1],
+  ]);
   assert.equal(b.summary(start + 1000).requests, 1);
   assert.equal(b.summary(start + 1000).rps, 1 / 60);
   assert.equal(a.summary(start + 61000).rps, 0);
