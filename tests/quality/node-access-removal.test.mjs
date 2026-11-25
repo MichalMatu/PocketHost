@@ -36,7 +36,7 @@ function approval(project, active = null) {
     expectedCandidate: project.candidateRelease, expectedActiveRelease: active,
   };
 }
-async function fixture(t, mode, secret, fn) {
+async function fixture(mode, secret, fn) {
   const previous = envKeys.map(key => process.env[key]);
   const home = mkdtempSync(path.join(os.tmpdir(), 'ph-node-remove-'));
   const serviceRoot = path.join(home, 'services');
@@ -97,10 +97,11 @@ async function fixture(t, mode, secret, fn) {
   } finally {
     server.closeAllConnections();
     await new Promise(resolve => server.close(resolve));
-    if (supervisor?.pid && supervisor.exitCode === null && supervisor.signalCode === null) {
-      const exited = once(supervisor, 'exit');
-      process.kill(-supervisor.pid, 'SIGTERM');
-      await exited;
+    if (supervisor?.pid) {
+      const exited = supervisor.exitCode === null && supervisor.signalCode === null ? once(supervisor, 'exit') : null;
+      try { process.kill(-supervisor.pid, 'SIGTERM'); }
+      catch (error) { if (error.code !== 'ESRCH') throw error; }
+      if (exited) await exited;
     }
     // This is the private mkdtemp fixture only, never the actual A8 registry or app data.
     rmSync(home, { recursive: true, force: true });
@@ -121,8 +122,8 @@ test('owner token is optional only for explicit trusted LAN; invalid policy fail
   assert.equal(spawnSync('sh', ['-n', 'ops/termux/panel-service.sh']).status, 0);
 });
 
-test('protected HTTP lifecycle requires token; never-provisioned removal preserves source and data', async t => {
-  await fixture(t, 'protected', TOKEN, async ({ call, root, home }) => {
+test('protected HTTP lifecycle requires token; never-provisioned removal preserves source and data', async () => {
+  await fixture('protected', TOKEN, async ({ call, root, home }) => {
     const auth = { 'x-pockethost-node-owner': TOKEN };
     assert.equal((await call('/owner-session')).body.authorized, false);
     assert.equal((await call('/', { name: 'Denied' })).status, 403);
@@ -144,8 +145,8 @@ test('protected HTTP lifecycle requires token; never-provisioned removal preserv
   });
 });
 
-test('trusted LAN HTTP mode needs no token but rejects wrong origin, missing intent and stale approval', async t => {
-  await fixture(t, 'trusted-lan', '', async ({ call }) => {
+test('trusted LAN HTTP mode needs no token but rejects wrong origin, missing intent and stale approval', async () => {
+  await fixture('trusted-lan', '', async ({ call }) => {
     assert.deepEqual((await call('/owner-session')).body, { configured: false, authorized: true, mode: 'trusted-lan' });
     assert.equal((await call('/')).body.accessMode, 'trusted-lan');
     assert.equal((await call('/', { name: 'Denied' }, { origin: 'https://foreign.invalid' })).status, 403);

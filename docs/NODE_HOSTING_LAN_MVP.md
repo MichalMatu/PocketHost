@@ -41,10 +41,10 @@ it atomically with owner-only permissions; read it directly in Termux, for
 example `cat ~/.local/state/pockethost/node-owner-token`, only on a trusted
 screen. Any activation occurs on the next separately guarded DEV panel
 restart and never enables WAN, SSH, external service control, or arbitrary
-project execution without an authenticated and reviewed owner action. If unset or malformed, **all Node mutations are denied**;
+project execution without an authenticated and reviewed owner action. In protected mode, if unset or malformed, **all Node mutations are denied**;
 read-only inventory remains available. To confirm configuration without
 revealing the token, use `GET /api/v1/node-projects/owner-session`:
-`{ "configured": true|false, "authorized": true|false }`. The browser stores
+`{ "configured": true|false, "authorized": true|false }`. In protected mode, the browser stores
 the token only in the current tab's React state and clears it on Lock/unmount. Lock or token edits also discard all previously checked one-shot approvals and review state; asynchronous verification for a superseded token cannot unlock the tab. Lock does not revoke the host-configured token globally—rotate that token in the private panel environment to revoke access across tabs.
 
 The LAN gateway retains its exact private interface and origin policy;
