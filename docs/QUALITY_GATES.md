@@ -76,4 +76,12 @@ S1–S7 closed; roadmap S8–S12 frozen by owner. Queue empty at closeout check.
 - `pockethost-a8-cf1c-ui-build-122f31e-20261125-v1`: final exact source `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b`, format, admin lint, types, budgets and build PASS; all 12 mapped UI files and 86/86 tests passed across three bounded batches. Prior unchanged backend evidence retained.
 - `pockethost-a8-cf1c-deploy-122f31e-20261125-v1`: separate guarded DEV deployment PASS, exact live SHA, PID/start ticks, HTTP 200, protected services and dependencies unchanged. No public tunnel was started by the task.
 
-CF1 implementation and DEV deployment qualified. Real external HTTPS acceptance remains pending separate approval for a disposable fixture. No new whole-repository aggregate or public hosting certification is claimed.
+CF1 implementation and DEV deployment qualified; the owner subsequently confirmed that a manually published HTTPS site works. No new whole-repository aggregate or public hosting certification is claimed.
+
+## CF1 UX closeout — 2026-11-25
+
+- `pockethost-a8-cf1-ux-qa-af0b35a-20261125-v1`: exact source `af0b35a6acb3fc03350d86d9263d7b655d6fa875`, format, admin lint/types, budgets and Vite build PASS; all 12 mapped UI files and 89/89 tests passed in three bounded batches (25 + 46 + 18). Three added clipboard regressions cover native clipboard, HTTP fallback and denied-copy manual selection. Publication state/URL unchanged. No new dependencies or backend changes.
+- `pockethost-a8-cf1-ux-hmr-af0b35a-20261125-v1`: terminal PASS, guarded UI-only sync, live checkout `af0b35a6acb3fc03350d86d9263d7b655d6fa875`, startup marker `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b`, PID 26109 and start ticks 21941706 unchanged. Guarded pre/postflight verified owner and UI-only source drift, panel reachable, served Vite component readback PASS, protected services and active publication URL unchanged. No panel restart or automatic public action.
+- Owner confirmed real HTTPS reachability in their browser; no independent WAN probe, real connector shutdown or endurance test was performed. Browser clipboard integration was tested with mocks, not a physical clipboard or visual screenshot acceptance. Do not disturb the live publication for these deferred checks.
+
+CF1 scoped implementation, QA, DEV deployment and UX corrections CLOSED. Queue empty at final verification. CF2–CF5 and S8–S12 remain deferred; no new sprint. Documentation-only closeout does not restart or deploy anything.

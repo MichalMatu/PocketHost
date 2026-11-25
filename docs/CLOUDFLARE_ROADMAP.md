@@ -13,7 +13,7 @@ publication is implied by this plan.
 
 | Stage | Scope | Estimated difficulty | State |
 | --- | --- | --- | --- |
-| CF1 | Quick Tunnel without account, one static site, temporary HTTPS URL | Low | Deployed; public HTTPS acceptance pending |
+| CF1 | Quick Tunnel without account, one static site, temporary HTTPS URL | Low | Closed — scoped implementation and DEV acceptance |
 | CF2 | Owned runit enrollment, lifecycle and reconnect/readback | Low–medium | Deferred |
 | CF3 | Cloudflare account setup and scoped API integration | Medium | Deferred |
 | CF4 | Named tunnel, domains/subdomains, routing and Node hosting | Medium | Deferred |
@@ -27,10 +27,18 @@ publication is implied by this plan.
   All 86 mapped UI tests across 12 files passed in three batches.
 - Separate guarded A8 DEV deployment at the same SHA: PASS, HTTP 200,
   protected services and dependencies unchanged. See [quality gates](QUALITY_GATES.md).
-- No public tunnel started during QA or deployment. Real external HTTPS,
-  connector shutdown and publication readback remain unverified against
-  a real connector. Next step requires separate approval for a disposable
-  public fixture; do not publish an existing site automatically.
+- Owner manually published a static site and confirmed its public HTTPS URL works.
+  A8 readback confirmed the same URL-assigned session before and after UX QA
+  and deployment. No automated public publication or stop was performed.
+- Final UX source `af0b35a6acb3fc03350d86d9263d7b655d6fa875`: clipboard fallback for private HTTP LAN,
+  disclosure spacing, three new clipboard tests; 89/89 mapped UI tests,
+  format, admin lint/types, code budgets and build PASS.
+- Guarded UI-only HMR sync PASS at the final source; served component readback,
+  panel PID/start ticks, publication URL and protected services unchanged.
+  Startup marker remains `122f31e` by design.
+- CF1 implementation is closed within this scoped acceptance. Independent
+  external HTTPS probing, real connector shutdown and endurance remain
+  unqualified. Do not interrupt the owner's active tunnel for these checks.
 
 ## CF1 contract
 
