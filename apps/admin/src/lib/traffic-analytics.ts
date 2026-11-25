@@ -38,7 +38,7 @@ export function parseTrafficResult(value: unknown, projectId: string, range: Tra
       s.history.reduce((total, b) => total + b.requests, 0) !== s.requests ||
       s.history.reduce((total, b) => total + b.bytes, 0) !== s.bytes ||
       s.statuses.reduce((total, [, n]) => total + n, 0) !== s.requests ||
-      (parsed.current ? s.rps === null : s.rps !== null)) throw new Error("Invalid traffic totals")
+      (!parsed.current && s.rps !== null)) throw new Error("Invalid traffic totals")
   }
   return parsed
 }

@@ -463,8 +463,12 @@ export class NodeRunitHost {
     const state = this.record(id);
     if (!state?.activeRelease || !state.process) return null;
     const current = this.observe(id, state.activeRelease);
-    return current !== 'down' && current !== 'unknown' &&
-      current.pid === state.process.pid && current.ticks === state.process.ticks ? current : null;
+    return current !== 'down' &&
+      current !== 'unknown' &&
+      current.pid === state.process.pid &&
+      current.ticks === state.process.ticks
+      ? current
+      : null;
   }
   status(id: string): {
     state: 'not-provisioned' | 'stopped' | 'running' | 'unknown';

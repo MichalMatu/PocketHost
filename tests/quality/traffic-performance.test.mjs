@@ -83,8 +83,14 @@ async function sample(parent, enabled, index) {
     const [code] = await exit;
     assert.equal(code, 0);
     const entries = enabled ? readdirSync(root) : [];
-    const diskBytes = entries.reduce((total, name) => total + statSync(path.join(root, name)).size, 0);
-    const diskAllocatedBytes = entries.reduce((total, name) => total + statSync(path.join(root, name)).blocks * 512, 0);
+    const diskBytes = entries.reduce(
+      (total, name) => total + statSync(path.join(root, name)).size,
+      0,
+    );
+    const diskAllocatedBytes = entries.reduce(
+      (total, name) => total + statSync(path.join(root, name)).blocks * 512,
+      0,
+    );
     if (enabled) {
       assert.equal(measured.requests, requests);
       assert.equal(measured.bytes, requests * 7);
@@ -99,28 +105,45 @@ async function sample(parent, enabled, index) {
   }
 }
 
-test('real loopback traffic overhead stays within a bounded isolated process budget', { timeout: 90000 }, async () => {
-  const root = mkdtempSync(path.join(os.tmpdir(), 'pockethost-traffic-bench-'));
-  try {
-    const samples = [];
-    for (let i = 0; i < 4; i++) samples.push(await sample(root, i % 2 === 1, i));
-    const mean = (enabled, key) => samples.filter(s => s.enabled === enabled).reduce((n, s) => n + s[key], 0) / 2;
-    const cpuOverheadUs = mean(true, 'cpuUs') - mean(false, 'cpuUs');
-    const rssOverheadBytes = mean(true, 'rss') - mean(false, 'rss');
-    const peakOverheadKiB = mean(true, 'peakRssKiB') - mean(false, 'peakRssKiB');
-    assert.ok(cpuOverheadUs < 1500000, 'CPU overhead exceeds isolated budget');
-    assert.ok(rssOverheadBytes < 32 * 1024 * 1024, 'RSS overhead exceeds isolated budget');
-    assert.ok(samples.filter(s => s.enabled).every(s => s.diskBytes < 128 * 1024));
-    if (process.env.POCKETHOST_TRAFFIC_BENCH_SHA && /^[a-f0-9]{40}$/.test(process.env.POCKETHOST_TRAFFIC_BENCH_SHA)) {
-      const checkout = fileURLToPath(new URL('../../', import.meta.url));
-      const output = path.join(checkout, '.tmp');
-      mkdirSync(output, { recursive: true });
-      writeFileSync(path.join(output, 'traffic-bench-' + process.env.POCKETHOST_TRAFFIC_BENCH_SHA + '.json'),
-        JSON.stringify({ sha: process.env.POCKETHOST_TRAFFIC_BENCH_SHA, platform: process.platform,
-          requestsPerSample: requests, samples, cpuOverheadUs, rssOverheadBytes, peakOverheadKiB }) + '\n',
-        { mode: 0o600, flag: 'wx' });
+test(
+  'real loopback traffic overhead stays within a bounded isolated process budget',
+  { timeout: 90000 },
+  async () => {
+    const root = mkdtempSync(path.join(os.tmpdir(), 'pockethost-traffic-bench-'));
+    try {
+      const samples = [];
+      for (let i = 0; i < 4; i++) samples.push(await sample(root, i % 2 === 1, i));
+      const mean = (enabled, key) =>
+        samples.filter((s) => s.enabled === enabled).reduce((n, s) => n + s[key], 0) / 2;
+      const cpuOverheadUs = mean(true, 'cpuUs') - mean(false, 'cpuUs');
+      const rssOverheadBytes = mean(true, 'rss') - mean(false, 'rss');
+      const peakOverheadKiB = mean(true, 'peakRssKiB') - mean(false, 'peakRssKiB');
+      assert.ok(cpuOverheadUs < 1500000, 'CPU overhead exceeds isolated budget');
+      assert.ok(rssOverheadBytes < 32 * 1024 * 1024, 'RSS overhead exceeds isolated budget');
+      assert.ok(samples.filter((s) => s.enabled).every((s) => s.diskBytes < 128 * 1024));
+      if (
+        process.env.POCKETHOST_TRAFFIC_BENCH_SHA &&
+        /^[a-f0-9]{40}$/.test(process.env.POCKETHOST_TRAFFIC_BENCH_SHA)
+      ) {
+        const checkout = fileURLToPath(new URL('../../', import.meta.url));
+        const output = path.join(checkout, '.tmp');
+        mkdirSync(output, { recursive: true });
+        writeFileSync(
+          path.join(output, 'traffic-bench-' + process.env.POCKETHOST_TRAFFIC_BENCH_SHA + '.json'),
+          JSON.stringify({
+            sha: process.env.POCKETHOST_TRAFFIC_BENCH_SHA,
+            platform: process.platform,
+            requestsPerSample: requests,
+            samples,
+            cpuOverheadUs,
+            rssOverheadBytes,
+            peakOverheadKiB,
+          }) + '\n',
+          { mode: 0o600, flag: 'wx' },
+        );
+      }
+    } finally {
+      rmSync(root, { recursive: true, force: true });
     }
-  } finally {
-    rmSync(root, { recursive: true, force: true });
-  }
-});
+  },
+);

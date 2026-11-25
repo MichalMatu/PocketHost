@@ -41,16 +41,26 @@ async function waitFor(fn) {
 
 async function api(plugin, fn) {
   let handler;
-  plugin.configureServer({ middlewares: { use(_route, callback) { handler = callback; } } });
+  plugin.configureServer({
+    middlewares: {
+      use(_route, callback) {
+        handler = callback;
+      },
+    },
+  });
   const server = createServer((req, res) => {
-    Promise.resolve(handler(req, res)).catch(() => { res.statusCode = 500; res.end(); });
+    Promise.resolve(handler(req, res)).catch(() => {
+      res.statusCode = 500;
+      res.end();
+    });
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
     const base = 'http://127.0.0.1:' + server.address().port;
     await fn(async (route, options = {}) => {
       const response = await fetch(base + route, {
-        ...options, headers: { host: '127.0.0.1:8787', ...options.headers },
+        ...options,
+        headers: { host: '127.0.0.1:8787', ...options.headers },
       });
       return { status: response.status, body: await response.json() };
     });
@@ -63,7 +73,12 @@ async function api(plugin, fn) {
 test('owned Static and Node traffic, real HTTP, separate histories and read-only project APIs', async () => {
   assert.equal(typeof startSiteServer, 'function');
   const tmp = mkdtempSync(path.join(os.tmpdir(), 'pockethost-traffic-hosting-'));
-  const keys = ['HOME', 'POCKETHOST_ENABLE_OWNED_SITE_DEV', 'POCKETHOST_ENABLE_USER_SITES_DEV', 'POCKETHOST_ENABLE_NODE_HOSTING_DEV'];
+  const keys = [
+    'HOME',
+    'POCKETHOST_ENABLE_OWNED_SITE_DEV',
+    'POCKETHOST_ENABLE_USER_SITES_DEV',
+    'POCKETHOST_ENABLE_NODE_HOSTING_DEV',
+  ];
   const before = keys.map((key) => process.env[key]);
   let fleet;
   let site;
@@ -86,16 +101,33 @@ test('owned Static and Node traffic, real HTTP, separate histories and read-only
     assert.equal((await fetch(staticUrl + '/', { method: 'HEAD' })).status, 200);
     const project = new NodeProjectHost().create('Traffic Node');
     const port = await freePort();
-    const folder = path.join(tmp, 'PocketHost-NodeProjects', project.id, 'releases', 'r-' + 'a'.repeat(32));
+    const folder = path.join(
+      tmp,
+      'PocketHost-NodeProjects',
+      project.id,
+      'releases',
+      'r-' + 'a'.repeat(32),
+    );
     mkdirSync(folder);
     const source = path.join(folder, 'server.mjs');
-    writeFileSync(source, "import http from 'node:http'; http.createServer((req,res)=>{res.writeHead(req.url.startsWith('/bad')?503:200);res.end('node');}).listen(Number(process.env.PORT),'127.0.0.1',()=>console.log('READY'));");
+    writeFileSync(
+      source,
+      "import http from 'node:http'; http.createServer((req,res)=>{res.writeHead(req.url.startsWith('/bad')?503:200);res.end('node');}).listen(Number(process.env.PORT),'127.0.0.1',()=>console.log('READY'));",
+    );
     const script = runScript(folder, 19301, 'e'.repeat(48));
     assert.match(script, /--import/);
     assert.match(script, /POCKETHOST_TRAFFIC_ID=/);
-    const preload = fileURLToPath(new URL('../../src/modules/host/traffic-node-preload.mjs', import.meta.url));
-    child = spawn(process.execPath, ['--import', preload, source], { cwd: folder,
-      env: { ...process.env, PORT: String(port), POCKETHOST_TRAFFIC_ID: project.id, POCKETHOST_TRAFFIC_ROOT: root },
+    const preload = fileURLToPath(
+      new URL('../../src/modules/host/traffic-node-preload.mjs', import.meta.url),
+    );
+    child = spawn(process.execPath, ['--import', preload, source], {
+      cwd: folder,
+      env: {
+        ...process.env,
+        PORT: String(port),
+        POCKETHOST_TRAFFIC_ID: project.id,
+        POCKETHOST_TRAFFIC_ROOT: root,
+      },
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     await waitFor(() => child.stdout.read()?.toString().includes('READY'));
@@ -106,25 +138,45 @@ test('owned Static and Node traffic, real HTTP, separate histories and read-only
     const data = await waitFor(() => {
       const a = readTraffic(root, site.id);
       const b = readTraffic(root, project.id);
-      return a.state === 'available' && a.summary.statuses.some(([code]) => code === 404) &&
-        b.state === 'available' && b.summary.requests === 2 ? { a, b } : null;
+      return a.state === 'available' &&
+        a.summary.statuses.some(([code]) => code === 404) &&
+        b.state === 'available' &&
+        b.summary.requests === 2
+        ? { a, b }
+        : null;
     });
     assert.equal(data.b.summary.bytes, 8);
-    assert.deepEqual(data.b.summary.statuses, [[200, 1], [503, 1]]);
-    assert.deepEqual(data.b.summary.topPaths, [['/bad', 1], ['/hello', 1]]);
+    assert.deepEqual(data.b.summary.statuses, [
+      [200, 1],
+      [503, 1],
+    ]);
+    assert.deepEqual(data.b.summary.topPaths, [
+      ['/bad', 1],
+      ['/hello', 1],
+    ]);
     assert.ok(!JSON.stringify(data).includes('secret'));
     assert.equal(readOwnedTraffic(project.id, '?range=7d', data.b.session).current, true);
     assert.throws(() => readOwnedTraffic(project.id, '?range=bad', null), /range/);
-    await api(ownedSiteFleetApi(() => fleet), async (call) => {
-      const result = await call('/' + site.id + '/traffic?range=7d');
-      assert.equal(result.status, 200);
-      assert.equal(result.body.projectId, site.id);
-      assert.equal(result.body.current, true);
-      assert.equal(result.body.summary.range, '7d');
-      assert.equal((await call('/' + project.id + '/traffic')).status, 404);
-      assert.equal((await call('/' + site.id + '/traffic', { headers: { origin: 'https://foreign.invalid' } })).status, 403);
-      assert.equal((await call('/' + site.id + '/traffic', { method: 'POST' })).status, 404);
-    });
+    await api(
+      ownedSiteFleetApi(() => fleet),
+      async (call) => {
+        const result = await call('/' + site.id + '/traffic?range=7d');
+        assert.equal(result.status, 200);
+        assert.equal(result.body.projectId, site.id);
+        assert.equal(result.body.current, true);
+        assert.equal(result.body.summary.range, '7d');
+        assert.equal((await call('/' + project.id + '/traffic')).status, 404);
+        assert.equal(
+          (
+            await call('/' + site.id + '/traffic', {
+              headers: { origin: 'https://foreign.invalid' },
+            })
+          ).status,
+          403,
+        );
+        assert.equal((await call('/' + site.id + '/traffic', { method: 'POST' })).status, 404);
+      },
+    );
     await api(nodeProjectApi(), async (call) => {
       const result = await call('/' + project.id + '/traffic');
       assert.equal(result.status, 200);
@@ -136,7 +188,11 @@ test('owned Static and Node traffic, real HTTP, separate histories and read-only
       assert.equal((await call('/node-' + 'f'.repeat(32) + '/traffic')).status, 409);
     });
   } finally {
-    if (child && child.exitCode === null && child.signalCode === null) { const exit = once(child, 'exit'); child.kill(); await exit; }
+    if (child && child.exitCode === null && child.signalCode === null) {
+      const exit = once(child, 'exit');
+      child.kill();
+      await exit;
+    }
     if (site && fleet) await fleet.stop(site.id).catch(() => {});
     for (let i = 0; i < keys.length; i++) {
       if (before[i] === undefined) delete process.env[keys[i]];

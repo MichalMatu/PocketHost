@@ -307,9 +307,15 @@ test('reviewed server adapters require strict root and admin types and isolated 
     assert.ok(command(plan, 'admin incremental typecheck'));
     assert.ok(command(plan, 'structure'));
     assert.ok(command(plan, 'boundaries'));
-    assert.deepEqual(command(plan, 'node tests').argv.slice(2), file === 'site-fleet-api.ts'
-      ? ['tests/quality/hosting-network-api.test.mjs', 'tests/quality/traffic-hosting-api.test.mjs']
-      : ['tests/quality/' + suite]);
+    assert.deepEqual(
+      command(plan, 'node tests').argv.slice(2),
+      file === 'site-fleet-api.ts'
+        ? [
+            'tests/quality/hosting-network-api.test.mjs',
+            'tests/quality/traffic-hosting-api.test.mjs',
+          ]
+        : ['tests/quality/' + suite],
+    );
   }
   const unknown = planChangedChecks(['apps/admin/plugins/unknown-api.ts']);
   assert.ok(unknown.review.some((reason) => reason.includes('Explicit impact review')));

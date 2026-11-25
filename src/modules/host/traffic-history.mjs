@@ -69,6 +69,17 @@ function increment(rows, key, cap) {
   return true;
 }
 
+/** Misra-Gries counters preserve exact totals and favor repeated paths under churn. */
+function recordPath(bucket, route) {
+  if (route === null) {
+    bucket.otherPaths++;
+  } else if (!increment(bucket.paths, route, TRAFFIC_PATH_LIMIT)) {
+    for (const entry of bucket.paths) entry[1]--;
+    bucket.paths = bucket.paths.filter((entry) => entry[1] > 0);
+    bucket.otherPaths += TRAFFIC_PATH_LIMIT + 1;
+  }
+}
+
 /**
  * One instance per attested project. Hour-aligned history includes the current
  * hour; live RPS is the count in the current and preceding 59 UTC seconds / 60.
@@ -140,8 +151,7 @@ export class TrafficHistory {
     bucket.requests++;
     bucket.bytes += bytes;
     increment(bucket.statuses, status, 500);
-    const route = trafficPath(path);
-    if (route === null || !increment(bucket.paths, route, TRAFFIC_PATH_LIMIT)) bucket.otherPaths++;
+    recordPath(bucket, trafficPath(path));
     increment(this.#seconds, second, 60);
     this.#lastAt = at;
     return true;

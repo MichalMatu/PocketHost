@@ -88,7 +88,7 @@ export function TrafficPanel({ projectId, kind }: { projectId: string; kind: "st
         </div>
         <p className="text-xs text-muted-foreground">
           {data.current ? "Current process snapshot" : "Historical snapshot; current process not verified"} · Saved {new Date(data.persistedAt).toLocaleString()}.
-          {" "}Writes are batched; recent traffic may not be included yet.
+          {" "}Writes are batched; recent traffic may not be included yet. RPS is unavailable when the snapshot is older than 30 seconds.
         </p>
         <div className="grid gap-3 md:grid-cols-2">
           <HistoryChart summary={data.summary} metric="requests" />
@@ -104,11 +104,11 @@ export function TrafficPanel({ projectId, kind }: { projectId: string; kind: "st
             {data.summary.topPaths.length === 0 && <p className="text-xs text-muted-foreground">No recorded paths</p>}
             <ul className="max-h-48 overflow-auto text-xs">{data.summary.topPaths.map(([route, n]) =>
               <li key={route} className="flex justify-between gap-2 border-b py-1"><span className="break-all">{route}</span><span>{n}</span></li>)}</ul>
-            {data.summary.otherPaths > 0 && <p className="text-xs text-muted-foreground">{data.summary.otherPaths} requests outside tracked paths; counts are lower bounds.</p>}
+            {data.summary.otherPaths > 0 && <p className="text-xs text-muted-foreground">{data.summary.otherPaths} requests not assigned to retained path counters; counts are lower bounds.</p>}
           </div>
         </div>
       </>}
-      <p className="text-xs text-muted-foreground">Up to 7 days of hourly history; blank hours have no recorded responses. Payload excludes HTTP headers. Node readiness probes excluded. Query strings are not stored.</p>
+      <p className="text-xs text-muted-foreground">Up to 7 days of hourly history; blank hours have no recorded responses. Payload excludes HTTP headers. Node readiness probes excluded; Static health and preview requests included. Query strings are not stored.</p>
     </>}
   </section>
 }

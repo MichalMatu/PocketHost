@@ -48,12 +48,22 @@ test('bounded cardinality, no query or fragment, explicit omitted path count', (
   history.record(hit(start, { path: '/route/0#ignored' }));
   const result = history.summary(start);
   assert.equal(result.requests, TRAFFIC_PATH_LIMIT + 14);
-  assert.equal(result.otherPaths, 13);
-  assert.deepEqual(result.topPaths[0], ['/route/0', 2]);
-  assert.equal(history.snapshot(start).hours[0].paths.length, TRAFFIC_PATH_LIMIT);
+  assert.equal(result.otherPaths, TRAFFIC_PATH_LIMIT + 2);
+  assert.equal(history.snapshot(start).hours[0].paths.length, 12);
   assert.equal(JSON.stringify(history.snapshot(start)).includes('secret'), false);
   assert.equal(trafficPath('//example'), null);
   assert.equal(trafficPath('/a b'), null);
+});
+
+test('late frequent paths remain visible despite a high-cardinality prefix', () => {
+  const history = new TrafficHistory(start);
+  for (let i = 0; i < 128; i++) history.record(hit(start, { path: '/unique/' + i }));
+  for (let i = 0; i < 150; i++) history.record(hit(start, { path: '/popular' }));
+  const result = history.summary(start);
+  assert.equal(result.requests, 278);
+  assert.ok(result.topPaths[0][0] === '/popular' && result.topPaths[0][1] >= 146);
+  assert.ok(history.snapshot(start).hours[0].paths.length <= TRAFFIC_PATH_LIMIT);
+  assert.doesNotThrow(() => new TrafficHistory(start, history.snapshot(start)));
 });
 
 test('hourly retention is bounded and summaries use their declared UTC window', () => {

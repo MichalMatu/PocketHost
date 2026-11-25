@@ -165,9 +165,15 @@ export function startSiteServer({ port, id, instance, site = process.cwd(), traf
     process.exitCode = 3;
   });
   server.listen(port, '127.0.0.1', () => console.log('PocketHost owned H2 site listening'));
-  process.once('SIGTERM', () => server.close(async () => {
-    try { await recorder?.close(); } finally { process.exit(0); }
-  }));
+  process.once('SIGTERM', () =>
+    server.close(async () => {
+      try {
+        await recorder?.close();
+      } finally {
+        process.exit(0);
+      }
+    }),
+  );
   return server;
 }
 
@@ -177,8 +183,11 @@ if (process.argv[1] && path.resolve(process.argv[1]) === import.meta.filename) {
       port: Number(process.argv[2]),
       instance: process.argv[3],
       id: process.argv[4],
-      trafficRoot: process.cwd() === path.join(os.homedir(), 'Projects', 'PocketHost-UserSites', process.argv[4] ?? '')
-        ? path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1') : null,
+      trafficRoot:
+        process.cwd() ===
+        path.join(os.homedir(), 'Projects', 'PocketHost-UserSites', process.argv[4] ?? '')
+          ? path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1')
+          : null,
     });
   } catch {
     process.exitCode = 2;

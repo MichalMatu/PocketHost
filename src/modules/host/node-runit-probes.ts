@@ -35,22 +35,37 @@ export function runScript(folder: string, port: number, readinessNonce: string):
     throw new RangeError('Invalid owned Node process launch');
   }
   const project = path.basename(path.dirname(path.dirname(folder)));
-  const instrument = /^node-[a-f0-9]{32}$/.test(project) &&
-    folder === path.join(os.homedir(), 'PocketHost-NodeProjects', project, 'releases', path.basename(folder));
+  const instrument =
+    /^node-[a-f0-9]{32}$/.test(project) &&
+    folder ===
+      path.join(
+        os.homedir(),
+        'PocketHost-NodeProjects',
+        project,
+        'releases',
+        path.basename(folder),
+      );
   const preload = path.join(import.meta.dirname, 'traffic-node-preload.mjs');
   const trafficEnv = instrument
-    ? ' POCKETHOST_TRAFFIC_ID=' + quote(project) +
-      ' POCKETHOST_TRAFFIC_ROOT=' + quote(path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1'))
+    ? ' POCKETHOST_TRAFFIC_ID=' +
+      quote(project) +
+      ' POCKETHOST_TRAFFIC_ROOT=' +
+      quote(path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1'))
     : '';
   const args = instrument
-    ? '\nset --\nif [ -r ' + quote(preload) + ' ]; then set -- --import ' + quote(preload) + '; fi\n'
+    ? '\nset --\nif [ -r ' +
+      quote(preload) +
+      ' ]; then set -- --import ' +
+      quote(preload) +
+      '; fi\n'
     : '\nset --\n';
   return (
     '#!' +
     PREFIX +
     '/bin/sh\nset -eu\ncd ' +
     quote(folder) +
-    args + 'exec ' +
+    args +
+    'exec ' +
     quote(PREFIX + '/bin/env') +
     ' -i' +
     ' PATH=' +
@@ -64,7 +79,8 @@ export function runScript(folder: string, port: number, readinessNonce: string):
     ' PORT=' +
     quote(String(port)) +
     ' POCKETHOST_READINESS_NONCE=' +
-    quote(readinessNonce) + trafficEnv +
+    quote(readinessNonce) +
+    trafficEnv +
     ' ' +
     quote(PREFIX + '/bin/node') +
     ' "$@" ' +

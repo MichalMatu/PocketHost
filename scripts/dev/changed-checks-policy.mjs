@@ -142,7 +142,8 @@ export function planChangedChecks(
       structure = true;
       adminLint.push(file.slice('apps/admin/'.length));
       node.add('tests/quality/' + reviewedAdapters.get(file.slice('apps/admin/plugins/'.length)));
-      if (file === 'apps/admin/plugins/site-fleet-api.ts') node.add('tests/quality/traffic-hosting-api.test.mjs');
+      if (file === 'apps/admin/plugins/site-fleet-api.ts')
+        node.add('tests/quality/traffic-hosting-api.test.mjs');
     } else if (file === 'apps/admin/vite.config.ts') {
       // This is the exact DEV API registration boundary. Changes require
       // typechecking, route-preservation and targeted service UI regression.

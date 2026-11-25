@@ -1,3 +1,7 @@
+export const TRAFFIC_FILE_LIMIT: number;
+export const TRAFFIC_PROJECT_LIMIT: number;
+export const TRAFFIC_FLUSH_MS: number;
+export function trafficProcessIdentity(): TrafficSession;
 export type TrafficRange = '24h' | '7d';
 export type TrafficSummary = {
   range: TrafficRange;
@@ -17,10 +21,19 @@ export type TrafficSession = { pid: number; startTicks: string };
 export type TrafficRead =
   | { state: 'missing' | 'unavailable' }
   | { state: 'available'; session: TrafficSession; persistedAt: number; summary: TrafficSummary };
-export function readTraffic(root: string, projectId: string, range?: TrafficRange, now?: number): TrafficRead;
+export function readTraffic(
+  root: string,
+  projectId: string,
+  range?: TrafficRange,
+  now?: number,
+): TrafficRead;
 
 export function createTrafficRecorder(
   root: string,
   projectId: string,
   options?: { identity?: TrafficSession; clock?: () => number; flushMs?: number },
-): { record(observation: { at: number; status: number; bytes: number; path: string }): boolean; flush(): Promise<boolean>; close(): Promise<boolean> } | null;
+): {
+  record(observation: { at: number; status: number; bytes: number; path: string }): boolean;
+  flush(): Promise<boolean>;
+  close(): Promise<boolean>;
+} | null;
