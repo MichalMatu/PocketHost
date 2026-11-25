@@ -135,9 +135,13 @@ Depends on closed or explicitly deferred S11 and accepted shared staging, owners
 - [ ] S12B: qualify one runtime at a time in isolated A8 fixtures, including dependency versions (private Python environment), start/stop/health/logs, crash containment, upgrades and rollback. No global pip installs or blanket package changes.
 - [ ] S12C: exact-SHA QA and guarded deployment per runtime after approval. Reject or defer unsupported/resource-heavy capabilities rather than weaken the current runtime.
 
+## Cloudflare publishing (CF1 — owner resumed)
+
+See [Cloudflare roadmap](CLOUDFLARE_ROADMAP.md) for CF1–CF5 scope, UX integration and qualification. CF1 preflight is the only resumed work; S8–S12 remain frozen.
+
 ## Deferred / separate owner scope
 
-TeleDrive (Telegram file transport), domain/subdomain/Cloudflare management, email routing, off-device disaster recovery, physical Android reboot G3, standalone updater/clean-device acceptance, extended endurance, public ingress, untrusted-code isolation and the security sprint remain optional separate decisions. Do not treat upstream cron/watchdog, process manager, backup commands or whole Express backend as adoption candidates. Preserve the trusted-LAN MVP, protected services, independent Local Agent and MIT notices for any copied source.
+TeleDrive (Telegram file transport), email routing, off-device disaster recovery, physical Android reboot G3, standalone updater/clean-device acceptance, extended endurance, public ingress, untrusted-code isolation and the security sprint remain optional separate decisions. Do not treat upstream cron/watchdog, process manager, backup commands or whole Express backend as adoption candidates. Preserve the trusted-LAN MVP, protected services, independent Local Agent and MIT notices for any copied source.
 
 ## Cross-sprint acceptance
 
