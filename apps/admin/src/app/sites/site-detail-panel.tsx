@@ -1,0 +1,340 @@
+import * as React from "react"
+import { Activity, FolderOpen, History, Play, RefreshCw, RotateCcw, Square, Upload, FileArchive } from "lucide-react"
+
+import { PublicAccessPanel } from "@/components/public-access-panel"
+import { SiteProcessSummary, SiteVersionHistory, SiteDeploymentHistory } from "./site-card-details"
+import { useSiteVersions } from "./use-site-versions"
+import { useSiteAssets } from "./use-site-assets"
+import { useSiteHtmlEditor } from "./use-site-html-editor"
+import { useSiteReleaseImport } from "./use-site-release-import"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { formatBytes } from "@/lib/format-memory"
+import { parseFleetHealth, parseFleetLogs, parseFleetSite, type FleetRelease, type FleetSite } from "@/lib/site-fleet-schema"
+import { endpoint, maxStarterHtml, readSignal, mutate, removeSite, siteAddress, StaticSiteInputRejected } from "./site-client"
+
+export function SiteDetailPanel({ site, onChange, onRemoved }: {
+  site: FleetSite; onChange: (removedId?: string) => Promise<void>; onRemoved: (name: string) => void
+}) {
+  const [busy, setBusy] = React.useState(false)
+  // React state is applied after this event turn; the ref prevents a second
+  // mutation/read from entering the same site while the first is in flight.
+  const operationInFlight = React.useRef(false)
+  const [outcomeUnknown, setOutcomeUnknown] = React.useState(false)
+  const readEpoch = React.useRef(0)
+  const [error, setError] = React.useState<string | null>(null)
+  const [message, setMessage] = React.useState<string | null>(null)
+  const [health, setHealth] = React.useState<boolean | null>(null)
+  const [logs, setLogs] = React.useState<string[] | null>(null)
+  React.useEffect(() => {
+    const revision = ++readEpoch.current
+    // Immediately invalidate stale response identities; reset displayed
+    // runtime observations after commit rather than in the effect body.
+    void Promise.resolve().then(() => {
+      if (revision !== readEpoch.current) return
+      setOutcomeUnknown(false)
+      setHealth(null)
+      setLogs(null)
+    })
+    return () => { readEpoch.current++ }
+  }, [site])
+  const { versions, versionsLoading, toggleVersions } = useSiteVersions(site, readEpoch, setError, busy)
+  const { assets, assetsLoading, toggleAssets, resetAssets } =
+    useSiteAssets(site, setError, busy)
+  const { html, setHtml, htmlLoading, editorRelease, editorVisible, editorReady,
+    toggleHtmlEditor, closeHtmlEditor } = useSiteHtmlEditor(site, readEpoch, busy, setError)
+  const folderInput = React.useRef<HTMLInputElement>(null)
+  React.useEffect(() => {
+    folderInput.current?.setAttribute("webkitdirectory", "")
+    folderInput.current?.setAttribute("directory", "")
+  }, [])
+  const versionAction = (release: FleetRelease, action: "restore" | "prune") => {
+    if (site.state === "unknown" || busy || outcomeUnknown) return
+    const verb = action === "restore" ? "Restore this archived version" : "Permanently delete this archived version"
+    if (!window.confirm(verb + " (" + release.id + ") of " + site.name + "?")) return
+    void execute(
+      () => mutate(endpoint + "/" + site.id + "/releases/" + release.id + "/" + action,
+        action === "restore" ? "POST" : "DELETE"),
+      action === "restore" ? "Selected release restored. You can still use one-step Rollback." : "Archived release permanently removed.", true,
+      observed => action === "restore"
+        ? observed.activeRelease === release.id
+        : observed.releases === site.releases - 1 && observed.activeRelease === site.activeRelease,
+    )
+  }
+  const execute = async (
+    job: () => Promise<unknown>, success: string, mutation = false,
+    expected?: (observed: FleetSite) => boolean,
+  ) => {
+    if (operationInFlight.current || busy || (mutation && outcomeUnknown)) return
+    operationInFlight.current = true
+    const readRevision = readEpoch.current
+    const currentRead = () => mutation || readRevision === readEpoch.current
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    setHealth(null)
+    try {
+      let receipt: unknown
+      try {
+        receipt = await job()
+      } catch (cause) {
+        if (mutation && !(cause instanceof StaticSiteInputRejected))
+          setOutcomeUnknown(true)
+        if (currentRead()) {
+          setError(mutation
+            ? (cause instanceof StaticSiteInputRejected
+              ? cause.message
+              : "Result unconfirmed. Refresh the site state before retrying; no automatic retry.")
+            : cause instanceof Error ? cause.message : "Read failed.")
+        }
+        return
+      }
+      if (mutation) {
+        try {
+          const response = await fetch(endpoint + "/" + site.id, {
+            credentials: "same-origin", cache: "no-store", signal: readSignal(),
+          })
+          if (!response.ok) throw new Error("site-readback-unavailable")
+          const observed = parseFleetSite(await response.json())
+          const ack = receipt as FleetSite | null
+          if (!ack || ack.id !== site.id || observed.id !== site.id ||
+              ack.state !== observed.state || ack.activeRelease !== observed.activeRelease ||
+              ack.pid !== observed.pid || ack.startTicks !== observed.startTicks ||
+              ack.port !== observed.port || ack.previousRelease !== observed.previousRelease ||
+              ack.releases !== observed.releases || ack.canRollback !== observed.canRollback ||
+              ack.fileCount !== observed.fileCount || ack.bytes !== observed.bytes ||
+              ack.history.length !== observed.history.length ||
+              (expected && !expected(observed)))
+            throw new Error("site-state-drift")
+          if (observed.activeRelease !== site.activeRelease) closeHtmlEditor()
+        } catch {
+          setOutcomeUnknown(true)
+          setError("Site action result unconfirmed. Refresh the exact site state before retrying.")
+          return
+        }
+      }
+      if (mutation) {
+        try {
+          await onChange()
+        } catch {
+          setOutcomeUnknown(true)
+          setError("Site action confirmed, but inventory refresh failed. Refresh before another write.")
+          return
+        }
+        resetAssets()
+      }
+      if (currentRead()) setMessage(success)
+    } finally {
+      operationInFlight.current = false
+      setBusy(false)
+    }
+  }
+  const remove = async () => {
+    if (operationInFlight.current || busy || outcomeUnknown || site.state !== "stopped") return
+    if (!window.confirm("Permanently delete " + site.name + " and all its saved versions?")) return
+    operationInFlight.current = true
+    setBusy(true)
+    setError(null)
+    setMessage(null)
+    try {
+      await removeSite(site)
+      await onChange(site.id)
+      onRemoved(site.name)
+    } catch {
+      setOutcomeUnknown(true)
+      setError("Site removal unconfirmed. Refresh the owned inventory before retrying.")
+    } finally {
+      operationInFlight.current = false
+      setBusy(false)
+    }
+  }
+  const action = (name: "start" | "stop" | "restart" | "rollback") => {
+    if (site.state === "unknown" || outcomeUnknown) return
+    if ((name === "stop" || name === "restart" || name === "rollback") &&
+        !window.confirm("Apply " + name + " only to " + site.name + "?")) return
+    void execute(() => mutate(endpoint + "/" + site.id + "/" + name, "POST"),
+      name[0].toUpperCase() + name.slice(1) + " completed.", true,
+      observed => name === "stop" ? observed.state === "stopped" :
+        name === "rollback" ? observed.activeRelease === site.previousRelease :
+        observed.state === "running")
+  }
+  const { zip, folder, publishHtml } = useSiteReleaseImport({
+    site, busy, outcomeUnknown, html, editorReady, execute, setError, setMessage,
+  })
+  const verify = () => {
+    const revision = readEpoch.current
+    void execute(async () => {
+      const response = await fetch(endpoint + "/" + site.id + "/health", {
+        credentials: "same-origin", cache: "no-store", signal: readSignal(),
+      })
+      if (!response.ok) throw new Error("HTTP verification is unavailable.")
+      const ready = parseFleetHealth(await response.json())
+      if (revision === readEpoch.current) setHealth(ready)
+    }, "HTTP check completed.")
+  }
+  const loadLogs = () => {
+    const revision = readEpoch.current
+    void execute(async () => {
+      const response = await fetch(endpoint + "/" + site.id + "/logs", {
+        credentials: "same-origin", cache: "no-store", signal: readSignal(),
+      })
+      if (!response.ok) throw new Error("Owned logs are not available.")
+      const lines = parseFleetLogs(await response.json())
+      if (revision === readEpoch.current) setLogs(lines)
+    }, "Owned logs refreshed.")
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <FolderOpen className="size-5" /> {site.name}
+          <Badge variant="outline">Owned static site</Badge>
+        </CardTitle>
+        <CardDescription className="break-all font-mono text-xs">{site.id}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <div className="flex flex-wrap gap-2">
+          <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
+          <Badge variant="outline">127.0.0.1:{site.port}</Badge>
+          <Badge variant="outline">{site.fileCount} files · {formatBytes(site.bytes)}</Badge>
+          <Badge variant="outline">{site.releases} releases</Badge>
+          {health !== null && <Badge variant="outline">HTTP: {health ? "healthy" : "unavailable"}</Badge>}
+        </div>
+        <SiteProcessSummary site={site} />
+        {site.state === "unknown" && <p role="alert" className="text-destructive text-sm">
+          Process identity is uncertain. All mutations are blocked; no unverified process is signalled.
+        </p>}
+        {site.state === "running" && <div className="pb-2 pt-1">
+          <a className="inline-flex py-1 text-sm underline underline-offset-4"
+            target="_blank" rel="noopener noreferrer" href={siteAddress(site)}>Open hosted site</a>
+        </div>}
+        <PublicAccessPanel siteId={site.id} siteName={site.name} running={site.state === "running"}
+          disabled={busy || outcomeUnknown} />
+        <section className="space-y-3 rounded-md border p-3" aria-label={"Quick HTML starter for " + site.name}>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium">Quick HTML website</p>
+              <p className="text-xs text-muted-foreground">
+                Edit index.html → Publish HTML → Start → Open hosted site.
+                Open the editor again to update; each publish creates a rollback version.
+              </p>
+            </div>
+            <Button size="sm" variant="outline"
+              disabled={busy || outcomeUnknown || site.state === "unknown" || site.fileCount > 1}
+              onClick={toggleHtmlEditor}>
+              {htmlLoading ? "Cancel HTML read" : editorVisible ? "Hide HTML editor" :
+                site.activeRelease ? "Edit current HTML" : "Edit starter HTML"}
+            </Button>
+          </div>
+          {site.fileCount > 1 && <p className="text-xs text-muted-foreground">
+            The quick editor is for single-file HTML sites. Existing multi-file releases are left unchanged.
+          </p>}
+          {editorVisible && htmlLoading && <p role="status" className="text-xs">Loading active index.html…</p>}
+          {editorReady && <div className="space-y-2">
+            <label className="block text-xs font-medium" htmlFor={site.id + "-html"}>
+              index.html source
+            </label>
+            <p className="text-xs text-muted-foreground">
+              {editorRelease ? "Editing active release " + editorRelease.slice(0, 12) + "…" : "Editing new starter page"}
+            </p>
+            <textarea id={site.id + "-html"} rows={11} maxLength={maxStarterHtml}
+              value={html} onChange={event => setHtml(event.target.value)}
+              disabled={busy || outcomeUnknown || site.state === "unknown"}
+              className="w-full rounded-md border bg-background p-3 font-mono text-xs"
+            />
+            <p className="text-xs text-muted-foreground">
+              One static index.html, maximum 32 KiB. Publishing does not start a stopped site.
+              Each publish creates a new version you can roll back.
+            </p>
+            <Button size="sm" disabled={busy || outcomeUnknown || !editorReady || site.state === "unknown" || !html.trim() ||
+              new TextEncoder().encode(html).length > maxStarterHtml}
+              onClick={publishHtml}>
+              Publish HTML
+            </Button>
+          </div>}
+        </section>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-zip"}>
+              <FileArchive className="size-4" /> Upload static ZIP
+            </label>
+            <Input id={site.id + "-zip"} type="file" accept=".zip,application/zip"
+              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={zip} />
+            <p className="text-xs text-muted-foreground">
+              Max 9 MiB compressed, root index.html required. Upload publishes a new immutable release.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium" htmlFor={site.id + "-folder"}>
+              <Upload className="size-4" /> Upload folder
+            </label>
+            <Input ref={folderInput} id={site.id + "-folder"} type="file" multiple
+              disabled={busy || outcomeUnknown || site.state === "unknown"} onChange={folder} />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {site.state === "running" ? <>
+            <Button variant="outline" disabled={busy || outcomeUnknown} onClick={() => action("restart")}><RotateCcw /> Restart</Button>
+            <Button variant="outline" disabled={busy || outcomeUnknown} onClick={() => action("stop")}><Square /> Stop</Button>
+          </> : <Button disabled={busy || outcomeUnknown || site.state === "unknown" || !site.activeRelease}
+            onClick={() => action("start")}><Play /> Start</Button>}
+          <Button variant="outline" disabled={busy || outcomeUnknown || site.state === "unknown" || !site.canRollback}
+            onClick={() => action("rollback")}><History /> Rollback</Button>
+          <Button variant="outline" disabled={busy} onClick={verify}><Activity /> Verify HTTP</Button>
+          <Button variant="outline" disabled={busy} onClick={loadLogs}><RefreshCw /> Read logs</Button>
+          {site.activeRelease && <a
+            className="inline-flex min-h-9 items-center justify-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
+            href={endpoint + "/" + site.id + "/export"}
+            download={site.id + "-" + site.activeRelease + ".zip"}>
+            <FileArchive className="mr-2 size-4" /> Download active ZIP
+          </a>}
+          <Button variant="outline" disabled={busy || site.state === "unknown" || !site.activeRelease}
+            onClick={toggleAssets}>
+            <FolderOpen /> {assetsLoading ? "Cancel asset read" : assets !== null ? "Hide assets" : "Inspect assets"}
+          </Button>
+          <Button variant="outline" disabled={busy} onClick={toggleVersions}>
+            <History /> {versions !== null ? "Hide versions" : versionsLoading ? "Cancel version read" : "Manage versions"}
+          </Button>
+        </div>
+        {assetsLoading && <p role="status" className="text-xs text-muted-foreground">
+          Reading active release assets…
+        </p>}
+        {assets !== null && <section className="space-y-2 rounded-lg border p-4" aria-label={"Active assets of " + site.name}>
+          <h3 className="text-sm font-semibold">Active release assets ({assets.length})</h3>
+          <div className="max-h-72 overflow-auto">
+            {assets.map(item => <div key={item.name} className="flex justify-between gap-3 border-b py-2 text-xs">
+              <span className="break-all font-mono">{item.name}</span>
+              <span className="shrink-0">{item.bytes} B</span>
+            </div>)}
+            {assets.length === 0 && <p className="text-muted-foreground text-xs">No active files.</p>}
+          </div>
+        </section>}
+        <SiteVersionHistory site={site} versions={versions} busy={busy || outcomeUnknown}
+          previewBase={siteAddress(site)} onVersionAction={versionAction} />
+        {busy && <p role="status" className="text-sm">Working with this owned site…</p>}
+        {outcomeUnknown && <p role="alert" className="text-destructive text-sm">
+          Write actions are paused for this site until the owned inventory is refreshed.
+          Read-only logs and HTTP checks remain available.
+        </p>}
+        {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
+        {message && <p role="status" className="text-sm">{message}</p>}
+        <SiteDeploymentHistory site={site} />
+        <section className="space-y-2 rounded-md border p-3">
+          <p className="text-xs text-muted-foreground">
+            Delete this stopped site and all saved versions. Stop a running site first.
+          </p>
+          <Button variant="destructive" disabled={busy || outcomeUnknown || site.state !== "stopped"}
+            onClick={() => void remove()}>Delete site</Button>
+        </section>
+        {logs && <section className="space-y-2">
+          <h3 className="text-sm font-semibold">Owned runtime logs</h3>
+          <pre className="max-h-48 overflow-auto rounded-md bg-muted p-3 text-xs">
+            {logs.length ? logs.join("\n") : "No owned logs"}
+          </pre>
+        </section>}
+      </CardContent>
+    </Card>
+  )
+}
