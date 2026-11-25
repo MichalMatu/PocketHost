@@ -70,14 +70,16 @@ A8 QA/deploy PASS; immutable receipts: `pockethost-a8-sprint4-<step>-<qa|deploy>
 
 Runtime `b49b81a`: 10/10 final QA checks, 143/143 affected UI tests at `66b46ea` (UI unchanged). See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md).
 
-## Sprint 6 — SQLite Studio (TODO — NEXT ITERATION)
+## Sprint 6 — SQLite Studio (CLOSED)
 
-- [ ] S6A: review the upstream database UX and the existing `NodeProjectDataScope` ownership/data contracts. On the A8, compare installed SQLite capabilities (including CLI/native Node availability and sql.js only if needed) in isolated fixtures. Select the smallest bounded, read-only adapter with verified WAL/consistency behavior; do not assume a main-file copy reflects committed WAL changes.
-- [ ] S6B: discover SQLite files only in the selected verified owned Node project's private `db` category, never in the host or other projects. Use opaque scoped identities, verified paths, bounded file/scan/time/response sizes, explicit unsupported/locked/corrupt states. No arbitrary SQL, create/delete/import/export of live databases, or writes/replacements.
-- [ ] S6C: typed GET contracts and project-scoped database picker, schema, table/view list and paginated rows. Handle quoted identifiers, empty tables, BLOBs, large values and stale UI responses; no unbounded COUNT or query. If safe live reads cannot be established, expose an explicit offline-only state rather than forcing stops or inventing consistency.
-- [ ] S6D: isolated A8 fixtures for WAL, identity changes, symlinks/hardlinks, malformed files, page bounds, concurrent writes/reads, data invariance and UI errors; measure CPU/RSS/latency. Exact-SHA QA, separate guarded DEV deploy/readback. No real data mutation or backup/recovery claim.
+- [x] S6A: review the upstream database UX and the existing `NodeProjectDataScope` ownership/data contracts. On the A8, compare installed SQLite capabilities (including CLI/native Node availability and sql.js only if needed) in isolated fixtures. Select the smallest bounded, read-only adapter with verified WAL/consistency behavior; do not assume a main-file copy reflects committed WAL changes.
+- [x] S6B: discover SQLite files only in the selected verified owned Node project's private `db` category, never in the host or other projects. Use opaque scoped identities, verified paths, bounded file/scan/time/response sizes, explicit unsupported/locked/corrupt states. No arbitrary SQL, create/delete/import/export of live databases, or writes/replacements.
+- [x] S6C: typed GET contracts and project-scoped database picker, schema, table/view list and paginated rows. Handle quoted identifiers, empty tables, BLOBs, large values and stale UI responses; no unbounded COUNT or query. If safe live reads cannot be established, expose an explicit offline-only state rather than forcing stops or inventing consistency.
+- [x] S6D: isolated A8 fixtures for WAL, identity changes, symlinks/hardlinks, malformed files, page bounds, concurrent writes/reads, data invariance and UI errors; measure CPU/RSS/latency. Exact-SHA QA, separate guarded DEV deploy/readback. No real data mutation or backup/recovery claim.
 
-## Sprint 7 — Application Starters (TODO)
+Runtime `e11ee09`: S6A native SQLite capability PASS; exact A8 QA 15/15, budgets/build PASS, isolated benchmark 10/10 (median 976.5 ms, main/WAL unchanged), separate guarded deployment PASS, live SHA and HTTP 200 confirmed. SHM coordination may change; hardlink coverage is filesystem-dependent. See [quality evidence](QUALITY_GATES.md) and [architecture](ARCHITECTURE.md).
+
+## Sprint 7 — Application Starters (TODO — NEXT ITERATION)
 
 Depends on S6 closure; keep the existing HTML starter and Node example/import flows.
 

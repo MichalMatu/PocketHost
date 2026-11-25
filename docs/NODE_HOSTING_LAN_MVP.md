@@ -113,3 +113,7 @@ project data recovery, untrusted-code isolation, full G2 or G3. See the
 and [MVP acceptance](MVP_EXECUTION_PLAN.md). No build, app execution or QA
 is implied by this document refresh; new physical/device or automated test
 runs require separately scoped owner approval.
+
+## SQLite Studio
+
+From the selected owned Node project, open the data panel and choose **Browse databases**. The existing owner session is required. Select a private `db/` SQLite file, then a table or view; inspect its schema and paginated rows. Large text and BLOB values are previews. Unsupported, locked, corrupt, busy and stale selections are explicit; refresh when file identity changes. SQLite Studio never starts/stops the application, exposes arbitrary SQL or writes database records. Active WAL requires existing sidecars; SQLite may update SHM coordination bytes. Offline-only means the application must already be safely stopped, not that the panel will stop it. See [architecture](ARCHITECTURE.md) and [quality evidence](QUALITY_GATES.md) for scope and limits.

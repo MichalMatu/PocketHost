@@ -19,6 +19,7 @@ The installer downloads PocketHost, installs the required Termux packages (`node
 - **Host and services:** dashboard, health/diagnostics, runit service inventory, manual recovery controls, Termux packages, SSH and terminal.
 - **Static Hosting:** create owned websites from HTML, folders or ZIP archives, inspect releases, update content, serve over HTTP and roll back.
 - **Node.js Hosting:** owner-gated source intake, dependency/build preparation, guarded release deployment, start/stop, readiness checks, logs, update and rollback.
+- **SQLite Studio:** read-only inspection of private SQLite databases in owned Node projects, with table/view schema and bounded row pagination.
 - **Operations:** project inventories, release histories, bounded runtime logs, an independent Local Agent console, local MQTT diagnostics and on-demand health checks.
 - **Backups:** encrypted on-device Restic snapshots of the scoped Node project source, with an **isolated staging restore** verified on Samsung A8. Versions/rollback are distinct from backup.
 
@@ -26,7 +27,7 @@ The installer downloads PocketHost, installs the required Termux packages (`node
 
 On **23 November 2026**, source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4` passed the complete A8 G0–G2 qualification: **486/486 UI assertions**, **469 Node tests passed / 1 skipped**, **76.11% Node line coverage**, structure/boundaries/budgets, lint, formatting, TypeScript and production Vite build. See [quality evidence](docs/QUALITY_GATES.md).
 
-The last separately attested **deployed DEV** revision was `349087d2981c7fc3d8b9feba12d8fc335956a08b`; a successful source test is **not** a device deployment. The owner has accepted the browser UX at the present stage. No Android reboot, full-device-loss recovery or public-hosting certification is implied.
+The last separately attested **deployed DEV** revision was `e11ee0995a939e7ffe71c695eeeb02addd0f9fe4`; a successful source test is **not** a device deployment. The owner has accepted the browser UX at the present stage. No Android reboot, full-device-loss recovery or public-hosting certification is implied.
 
 ## Scope and safety
 
@@ -53,4 +54,4 @@ Start with [documentation index](docs/README.md), [architecture](docs/ARCHITECTU
 
 ## Next development stage
 
-**Release baseline: `v1.0.0` (source-only freeze).** No new build, device deployment or tests were performed for this documentation-only closeout. When development resumes, start with [the ordered v1.1 roadmap](docs/ROADMAP.md): traffic analytics, then read-only SQLite Studio, then optional HTML/Node starters. Use [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel) as a selectively reviewed MIT-licensed reference; do not merge its entire backend. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).
+**Release baseline: `v1.0.0` (source-only freeze).** Post-v1 Sprints 1–6 are closed, including traffic analytics and read-only SQLite Studio. The next owner-directed iteration in [the ordered v1.1 roadmap](docs/ROADMAP.md) is Sprint 7 — Application Starters. Use [TermuxPanel by Himalay Ladha](https://github.com/himalayladha/termux-hosting-panel) as a selectively reviewed MIT-licensed reference; do not merge its entire backend. See [upstream reuse notes](docs/UPSTREAM_REUSE_STRATEGY.md).

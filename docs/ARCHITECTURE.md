@@ -106,3 +106,11 @@ Retain synchronous ownership and release checks until isolated measurements iden
 - Existing running applications adopt instrumentation on their normal next start. Do not force customer application restarts for analytics. Node applications share the Termux UID; no isolation claim.
 
 Final scoped QA, benchmark and A8 deploy/postflight receipts are in [quality gates](QUALITY_GATES.md).
+
+## SQLite Studio (Sprint 6)
+
+The Projects data panel opens SQLite Studio explicitly, using the existing Node owner session. `node-sqlite-api.ts` handles only GET `/api/v1/node-projects/:id/sqlite` with optional opaque `db`, `table` and `page` parameters. `node-sqlite-studio.ts` uses `NodeProjectDataScope` to discover only the selected project's private `db` category; `src/shared/node-sqlite-studio.ts` validates scoped response identities and limits on both sides. No arbitrary SQL, export/import, file creation, database mutation or service stops.
+
+One on-demand subprocess (`node-sqlite-reader.mjs`) uses native `node:sqlite`, read-only connections, query-only/trusted-schema settings and a restricted authorizer. The A8 runtime is Node 24.22.3 / SQLite 3.54.1; unsupported native capabilities fail closed. Bounds include 16 MiB per file, 128 tables, 24 columns, 20 rows per page, 50 pages, 64-byte text and 16-byte BLOB previews, 256 KiB response, 3-second subprocess timeout and 16 MiB SQLite heap limit. Each page is a distinct snapshot; views do not guarantee stable order. No full row count.
+
+Active WAL reads require both existing WAL and SHM sidecars; SQLite can change SHM coordination bytes, but isolated tests preserve main/WAL bytes and file inventory. A clean WAL-mode database without sidecars is read immutable only after observed stopped runtime; otherwise it is offline-only. Rollback journals, invalid paths, identity changes, concurrent reader requests and unsupported schemas are handled explicitly. These are inspection semantics, not a backup consistency or untrusted-code isolation guarantee. See [quality evidence](QUALITY_GATES.md).
