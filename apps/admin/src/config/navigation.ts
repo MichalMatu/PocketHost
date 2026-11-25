@@ -18,9 +18,9 @@ export const navGroups = [
   {
     label: "Hosting",
     items: [
+      { title: "Add website", url: "/sites/new", icon: Plus },
       { title: "Hosting overview", url: "/hosting", icon: ServerCog },
       { title: "Static websites", url: "/sites", icon: Globe2 },
-      { title: "Add website", url: "/sites/new", icon: Plus },
       { title: "Node.js applications", url: "/projects", icon: FolderOpen },
       { title: "Deployments", url: "/deployments", icon: History },
       { title: "Project logs", url: "/runtime-logs", icon: ScrollText },
