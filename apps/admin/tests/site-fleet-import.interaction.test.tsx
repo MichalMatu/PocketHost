@@ -220,7 +220,7 @@ describe("H2 browser site-manager lifecycle", () => {
     expect(operations).toEqual(["POST"])
     expect(calls.mock.calls.some(([url, options]) =>
       String(url) === "/api/v1/sites/" + ID && !options?.method)).toBe(true)
-    expect(screen.getByText("My own site")).toBeTruthy()
+    expect(await screen.findByText("My own site")).toBeTruthy()
     expect(screen.queryByRole("button", { name: "Create site" })).toBeNull()
     expect(screen.getByRole("button", { name: /^Start$/ })).toBeTruthy()
   })
