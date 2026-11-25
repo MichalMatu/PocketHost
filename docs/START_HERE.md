@@ -1,17 +1,17 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-25
 purpose: Short current entrypoint for stable PocketHost MVP
 ---
 
 # Start here
 
-Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [quality evidence](QUALITY_GATES.md), and [architecture](ARCHITECTURE.md). The v1.0.0 source baseline stays frozen. Active development follows the [living sprint checklist](ROADMAP.md), not the former overnight sprint.
+Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [quality evidence](QUALITY_GATES.md), and [architecture](ARCHITECTURE.md). The v1.0.0 source baseline stays frozen. Sprints 1–4 are closed; further development requires new owner direction. See [roadmap](ROADMAP.md).
 
 **Source baseline:** `main@d2bacd081ad0879d49a08e3c7fd97789185ad6e4` qualified G0–G2 on A8 (486/486 UI, 469 Node PASS, 1 SKIP; 76.11% line coverage). Subsequent documentation-only cleanup does not constitute a new application QA run.
 
-**Last confirmed deployed A8 DEV:** `911953d2ad4f691eaa40c60d3a73dc839fcade3f` (Sprint 4E2 runtime helpers and strict adapter typing, see [roadmap](ROADMAP.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
+**Last confirmed deployed A8 DEV:** `08caecc44a5ef1333a791c94d5b437cb0da49c97` (Sprint 4 final guarded deploy; see [quality gates](QUALITY_GATES.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
 
 **Recovery:** scoped encrypted local Node Restic backup → isolated restore and hash comparison was performed. This does not prove off-device disaster recovery. See [MVP evidence](MVP_INTEGRATION_CHECKLIST.md).
 

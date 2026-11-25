@@ -1,15 +1,15 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-24
+last_reviewed: 2026-11-25
 purpose: V1 source acceptance, deploy boundary and safe future resume
 ---
 
 # PocketHost — v1 handoff
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
-- **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. All 77 UI test files, **486/486 assertions** passed; Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
-- **Last device-attested DEV release:** `911953d2ad4f691eaa40c60d3a73dc839fcade3f`, `pockethost-a8-sprint4-e2-deploy-911953d-20261124-v1` PASS (HTTP 200, protected unchanged). `pockethost-a8-sprint4-e2-qa-911953d-20261124-v1` PASS (12 planned checks, budgets and Vite build). Sprints 1–3 closed; Sprint 4 active. Live dependencies untouched.
+- **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI run reported **486/486 tests**; the former Vitest filter excluded two TSX files (corrected in Sprint 4F).  Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
+- **Last device-attested DEV release:** `08caecc44a5ef1333a791c94d5b437cb0da49c97`, `pockethost-a8-sprint4-f-deploy-08caecc-20261125-v1` PASS (HTTP 200, protected unchanged). Sprints 1–4 closed. Layered QA evidence and limitations in [quality gates](QUALITY_GATES.md). Dependencies untouched.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -25,8 +25,8 @@ The v1.0.0 source baseline remains frozen; the owner resumed post-v1 development
 
 If later editing runtime code, first obtain fresh `main` and real A8 live SHA, run only approved non-destructive exact-SHA QA via the paired A8 Local Agent, and separately guarded-deploy/read back the new revision. Docs-only edits: Git commit only, no A8 build, test, service restart or deployment. Never use GitHub Actions, Codex or Work.
 
-Current work: [Sprint 4](ROADMAP.md). Sprint 3 closed: live snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200, protected unchanged. Static profile 90/90: separate/shared end RSS 212204/73508 KiB; retain per-site PID/ownership. Frontend-only DEV/preview 24/24: RSS 389424/83148 KiB, no PSS; API/render equivalence not proven. Receipts in roadmap and decisions in architecture. S4A–E2 QA/deploy PASS. Vite composition is 1.8 kB. S4E2 extracts Node runtime records/storage/probes and Termux live/archive registry I/O, fixes strict adapter typing and maps adapter QA. S4E3 introduces syntax-aware browser import checks; A8 QA pending, then S4F. Existing Base UI non-native button and SVG test warnings tracked separately. Public exposure, reboot and off-device recovery remain separate.
+[Sprint 4](ROADMAP.md) closed: server adapters, runtime helper split, strict types, syntax-aware browser boundary and backup-session invalidation. Sprint 3 evidence: snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200; static RSS and built UI experiments do not establish equivalent independent lifecycle or API/render behavior. See architecture. Public exposure, physical reboot, extended device endurance and off-device recovery remain separately scoped. No next sprint started.
 
 ## Owner's next visit
 
-Do not act on the old night-sprint backlog. Resume from fresh main and the first unfinished item in [ROADMAP.md](ROADMAP.md). Update checklist evidence after each step. Preserve all existing Git history and immutable A8 receipts.
+Do not act on the old night-sprint backlog. Do not start Sprint 5 or later without a new owner direction. Resume from fresh main and independently verified live SHA. Update checklist evidence after each step. Preserve all existing Git history and immutable A8 receipts.

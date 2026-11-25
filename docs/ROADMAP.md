@@ -48,7 +48,7 @@ Audit `pockethost-a8-sprint2-reference-audit-24979fd-20261124-v2` PASS at `24979
 - [x] S3F: `pockethost-a8-sprint3-f-vite-profile-8e630e3-20261124-v1` PASS: frontend-only DEV/preview 24/24 HTTP 200; end RSS 389424/83148 KiB; PSS unavailable. Not full-page/API equivalent.
 - [x] S3G: decision recorded in [architecture](ARCHITECTURE.md): retain static lifecycle, extract API composition before any built UI switch; no speculative I/O/cache changes.
 
-## Sprint 4 — architecture and test quality (ACTIVE)
+## Sprint 4 — architecture and test quality (CLOSED)
 
 A8 QA/deploy PASS; immutable receipts: `pockethost-a8-sprint4-<step>-<qa|deploy>-<sha>-20261124-v1`.
 
@@ -58,8 +58,8 @@ A8 QA/deploy PASS; immutable receipts: `pockethost-a8-sprint4-<step>-<qa|deploy>
 - [x] S4D: hosting/LAN; `b619114` (70 Node, 66 UI).
 - [x] S4E1: Termux API; `38cb4cd` (46 Node, 67 UI).
 - [x] S4E2: runtime helpers, registry I/O, strict typing; `911953d` (12 checks, build; HTTP 200, protected unchanged).
-- [ ] S4E3: browser/host import boundary and regression fixtures.
-- [ ] S4F: integration, recovery/endurance, final regression and docs.
+- [x] S4E3: browser/host boundary QA PASS at `c21b278`.
+- [x] S4F: layered regression, backup session fix, guarded deploy `08caecc` PASS; HTTP 200. See [quality evidence](QUALITY_GATES.md). Physical recovery/endurance qualification remains separate.
 - [ ] Standalone updater/clean-device acceptance separately scoped.
 
 ## Sprint 5 — v1.1: Traffic Analytics
