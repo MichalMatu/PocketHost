@@ -6,6 +6,8 @@ import path from 'node:path';
 import test from 'node:test';
 import {
   createTrafficRecorder,
+  discardTraffic,
+  TRAFFIC_PROJECT_LIMIT,
   readTraffic,
   TRAFFIC_FILE_LIMIT,
 } from '../../src/modules/host/traffic-store.mjs';
@@ -68,6 +70,34 @@ test('invalid storage is unavailable and never overwritten', async () => {
     assert.equal(createTrafficRecorder(root, first, options), null);
     assert.equal(readFileSync(file, 'utf8'), 'broken');
     assert.equal(readTraffic(root, '../wrong', '24h', start).state, 'unavailable');
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('retention survives reload and deleting one owned project releases its storage slot', async () => {
+  const dir = mkdtempSync(path.join(os.tmpdir(), 'pockethost-traffic-'));
+  const root = path.join(dir, 'traffic');
+  try {
+    for (let i = 0; i < TRAFFIC_PROJECT_LIMIT; i++) {
+      const id = 'site-' + i.toString(16).padStart(32, '0');
+      const recorder = createTrafficRecorder(root, id, options);
+      assert.ok(recorder);
+      recorder.record(observation);
+      assert.equal(await recorder.close(), true);
+    }
+    const old = 'site-' + '0'.repeat(32);
+    const retained = 'site-' + '0'.repeat(31) + '1';
+    const later = start + 168 * 3600000;
+    assert.equal(readTraffic(root, old, '7d', later).summary.requests, 0);
+    assert.equal(createTrafficRecorder(root, second, options), null);
+    assert.equal(discardTraffic(root, '../foreign'), false);
+    assert.equal(discardTraffic(root, old), true);
+    assert.equal(readTraffic(root, old, '7d', later).state, 'missing');
+    assert.equal(readTraffic(root, retained, '7d', start).summary.requests, 1);
+    const replacement = createTrafficRecorder(root, second, options);
+    assert.ok(replacement);
+    assert.equal(await replacement.close(), true);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

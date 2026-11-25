@@ -214,6 +214,14 @@ test('owned Static and Node traffic, real HTTP, separate histories and read-only
       assert.equal(result.body.summary.requests, 2);
       assert.equal((await call('/node-' + 'f'.repeat(32) + '/traffic')).status, 409);
     });
+    const stopped = await fleet.stop(site.id);
+    await fleet.remove(site.id, {
+      activeRelease: stopped.activeRelease,
+      releases: stopped.releases,
+    });
+    assert.equal(readTraffic(root, site.id).state, 'missing');
+    assert.equal(readTraffic(root, project.id).summary.requests, 2);
+    site = undefined;
   } finally {
     if (child && child.exitCode === null && child.signalCode === null) {
       const exit = once(child, 'exit');

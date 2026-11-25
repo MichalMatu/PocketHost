@@ -9,6 +9,7 @@ import {
   realpathSync,
   readdirSync,
   readFileSync,
+  unlinkSync,
 } from 'node:fs';
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
@@ -130,6 +131,24 @@ export function readTraffic(root, projectId, range = '24h', now = Date.now()) {
     };
   } catch {
     return { state: 'unavailable' };
+  }
+}
+
+/** Called only after verified whole-project removal; never touches other projects. */
+export function discardTraffic(root, projectId) {
+  try {
+    const file = location(root, projectId);
+    if (!optionalStat(root)) return true;
+    directory(root);
+    const files = [file, path.join(root, projectId + '.tmp')];
+    for (const entry of files) {
+      const stat = optionalStat(entry);
+      if (stat) safeFile(stat);
+    }
+    for (const entry of files) if (optionalStat(entry)) unlinkSync(entry);
+    return true;
+  } catch {
+    return false;
   }
 }
 

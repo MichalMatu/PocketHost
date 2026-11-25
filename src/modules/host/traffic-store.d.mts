@@ -1,6 +1,7 @@
 export const TRAFFIC_FILE_LIMIT: number;
 export const TRAFFIC_PROJECT_LIMIT: number;
 export const TRAFFIC_FLUSH_MS: number;
+export function discardTraffic(root: string, projectId: string): boolean;
 export function trafficProcessIdentity(): TrafficSession;
 export type TrafficRange = '24h' | '7d';
 export type TrafficSummary = {

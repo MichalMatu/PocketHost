@@ -31,6 +31,7 @@ export type {
   FleetFile,
   FleetRelease,
 } from './site-fleet-contract.ts';
+import { discardTraffic } from './traffic-store.mjs';
 import { packStaticZip } from './site-fleet-zip.ts';
 import {
   assertRemovalSnapshot,
@@ -457,6 +458,8 @@ export class SiteFleetHost {
         throw new Error('Stop and verify the site before removal');
       assertRemovalSnapshot(this.inspect(id), expected);
       removeStaticSiteTree(this.site(id));
+      if (this.root === path.join(os.homedir(), 'Projects', ROOT_NAME))
+        discardTraffic(path.join(os.homedir(), '.local', 'state', 'pockethost', 'traffic-v1'), id);
       return { deleted: id };
     });
   }
