@@ -8,7 +8,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 # PocketHost — v1 handoff
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
-- **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI run reported **486/486 tests**; the former Vitest filter excluded two TSX files (corrected in Sprint 4F).  Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
+- **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI run reported **486/486 tests**; the former Vitest filter excluded two TSX files (corrected in Sprint 4F). Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. The one hardlink scenario was skipped due to the Android filesystem. The two admin lint warnings were not blocking.
 - **Last device-attested DEV release:** `b49b81a70a15d44ebaf3ec3733f168ba1936edbb`, `pockethost-a8-sprint5-deploy-b49b81a-20261125-v1` PASS (HTTP 200, protected services/dependencies unchanged). Read-only traffic API postflight PASS. Sprints 1–5 closed; see [quality gates](QUALITY_GATES.md).
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
