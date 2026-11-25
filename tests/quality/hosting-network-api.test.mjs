@@ -211,7 +211,12 @@ test('public static publication requires separate intent and verified running si
     status: () => state,
     start: async (siteId) => {
       calls.push('start:' + siteId);
-      state = { siteId, state: 'url-assigned', url: 'https://fixture.trycloudflare.com', reason: null };
+      state = {
+        siteId,
+        state: 'url-assigned',
+        url: 'https://fixture.trycloudflare.com',
+        reason: null,
+      };
       return state;
     },
     stop: async (siteId) => {
@@ -247,7 +252,10 @@ test('public static publication requires separate intent and verified running si
     assert.deepEqual(calls, []);
     ready = true;
     assert.equal((await call(route + '/publish-public', 'POST', intent)).status, 200);
-    assert.equal(json(await call('/publication')).publication.url, 'https://fixture.trycloudflare.com');
+    assert.equal(
+      json(await call('/publication')).publication.url,
+      'https://fixture.trycloudflare.com',
+    );
     const siteIntent = { ...intent, 'x-pockethost-intent': 'owned-sites' };
     assert.equal((await call(route + '/stop', 'POST', siteIntent)).status, 409);
     assert.equal((await call(route + '/unpublish-public', 'POST', intent)).status, 200);
