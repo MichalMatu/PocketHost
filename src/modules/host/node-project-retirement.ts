@@ -1,4 +1,13 @@
-import { closeSync, lstatSync, mkdirSync, openSync, realpathSync, renameSync, rmSync, readdirSync } from 'node:fs';
+import {
+  closeSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  realpathSync,
+  renameSync,
+  rmSync,
+  readdirSync,
+} from 'node:fs';
 import path from 'node:path';
 import { absent, checkedDirectory } from './node-runit-storage.ts';
 import type { NodeProjectSummary } from './node-project-host.ts';
@@ -20,14 +29,16 @@ export function removalApproval(value: unknown): RemovalApproval {
     throw new RangeError('Invalid Node removal approval');
   const v = value as Record<string, unknown>;
   if (
-    Object.keys(v).sort().join(',') !== 'approved,expectedActiveRelease,expectedCandidate,expectedRevision' ||
+    Object.keys(v).sort().join(',') !==
+      'approved,expectedActiveRelease,expectedCandidate,expectedRevision' ||
     v.approved !== true ||
     !Number.isSafeInteger(v.expectedRevision) ||
     Number(v.expectedRevision) < 0 ||
     Number(v.expectedRevision) > 30 ||
     !release(v.expectedCandidate) ||
     !release(v.expectedActiveRelease)
-  ) throw new RangeError('Explicit pinned Node removal approval required');
+  )
+    throw new RangeError('Explicit pinned Node removal approval required');
   return v as RemovalApproval;
 }
 
@@ -52,27 +63,38 @@ export async function retireNodeProject(options: {
   try {
     const project = options.inspect();
     const state = options.record();
-    if (project.id !== id || project.deploymentCount !== approval.expectedRevision ||
-        project.candidateRelease !== approval.expectedCandidate ||
-        (state?.activeRelease ?? null) !== approval.expectedActiveRelease)
+    if (
+      project.id !== id ||
+      project.deploymentCount !== approval.expectedRevision ||
+      project.candidateRelease !== approval.expectedCandidate ||
+      (state?.activeRelease ?? null) !== approval.expectedActiveRelease
+    )
       throw new Error('Project changed before removal');
-    if (state && (state.desired !== 'stopped' || state.process !== null || !(await options.stopped())))
+    if (
+      state &&
+      (state.desired !== 'stopped' || state.process !== null || !(await options.stopped()))
+    )
       throw new Error('Project must be verifiably stopped');
     const source = path.join(root, id);
-    if (!absent(path.join(source, '.node-runtime.lock'))) throw new Error('Runtime operation pending');
+    if (!absent(path.join(source, '.node-runtime.lock')))
+      throw new Error('Runtime operation pending');
     // Sibling quarantine is outside the active source / Restic scope.
     const quarantine = root + '-retired';
     if (absent(quarantine)) mkdirSync(quarantine, { mode: 0o700 });
     checkedDirectory(quarantine);
-    if ((lstatSync(quarantine).mode & 0o077) !== 0 || realpathSync(quarantine) !== quarantine ||
-        readdirSync(quarantine).length >= 32) throw new Error('Retired project quarantine unavailable');
+    if (
+      (lstatSync(quarantine).mode & 0o077) !== 0 ||
+      realpathSync(quarantine) !== quarantine ||
+      readdirSync(quarantine).length >= 32
+    )
+      throw new Error('Retired project quarantine unavailable');
     const destination = path.join(quarantine, id);
     if (!absent(destination)) throw new Error('Removal already attempted; inspect quarantine');
     // Hold the global lifecycle lock through detach and catalog readback.
     mkdirSync(destination, { mode: 0o700 });
     if (state) await options.detach(path.join(destination, 'unit'));
     renameSync(source, path.join(destination, 'project'));
-    if (!absent(source) || options.catalog().some(p => p.id === id))
+    if (!absent(source) || options.catalog().some((p) => p.id === id))
       throw new Error('Node removal readback unconfirmed');
     return { removed: true, id, filesRetained: true };
   } finally {

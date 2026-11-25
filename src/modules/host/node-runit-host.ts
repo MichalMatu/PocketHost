@@ -946,8 +946,13 @@ export class NodeRunitHost {
       },
       detach: async (destination) => {
         const state = this.record(id);
-        if (!state || state.desired !== 'stopped' || state.process !== null ||
-            this.unitState(id) !== 'down') throw new Error('Node unit no longer safely stopped');
+        if (
+          !state ||
+          state.desired !== 'stopped' ||
+          state.process !== null ||
+          this.unitState(id) !== 'down'
+        )
+          throw new Error('Node unit no longer safely stopped');
         const { service } = this.context(id);
         await this.admin.retireProvisionedNode(id, service, destination);
       },
