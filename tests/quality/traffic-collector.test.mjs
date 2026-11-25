@@ -4,8 +4,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { createTrafficRecorder, readTraffic, TRAFFIC_FILE_LIMIT } from '../../src/modules/host/traffic-store.mjs';
-import { observeTrafficResponse, subscribeTrafficHttp } from '../../src/modules/host/traffic-http.mjs';
+import {
+  createTrafficRecorder,
+  readTraffic,
+  TRAFFIC_FILE_LIMIT,
+} from '../../src/modules/host/traffic-store.mjs';
+import {
+  observeTrafficResponse,
+  subscribeTrafficHttp,
+} from '../../src/modules/host/traffic-http.mjs';
 
 const start = Date.parse('2026-11-25T01:00:00Z');
 const first = 'site-' + 'a'.repeat(32);
@@ -80,21 +87,29 @@ async function fixture(handler, exercise) {
 
 test('real HTTP completion counts chunks and UTF-8 payload, not HEAD or 204 bytes', async () => {
   const hits = [];
-  await fixture((req, res) => {
-    observeTrafficResponse(req, res, (row) => hits.push(row), () => start);
-    if (req.url === '/empty') {
-      res.writeHead(204);
-      res.end('not sent');
-      return;
-    }
-    res.writeHead(201);
-    res.write('ą');
-    res.end(Buffer.from('test'));
-  }, async (_port, base) => {
-    assert.equal(await (await fetch(base + '/hello?q=private')).text(), 'ątest');
-    assert.equal(await (await fetch(base + '/head', { method: 'HEAD' })).text(), '');
-    assert.equal((await fetch(base + '/empty')).status, 204);
-  });
+  await fixture(
+    (req, res) => {
+      observeTrafficResponse(
+        req,
+        res,
+        (row) => hits.push(row),
+        () => start,
+      );
+      if (req.url === '/empty') {
+        res.writeHead(204);
+        res.end('not sent');
+        return;
+      }
+      res.writeHead(201);
+      res.write('ą');
+      res.end(Buffer.from('test'));
+    },
+    async (_port, base) => {
+      assert.equal(await (await fetch(base + '/hello?q=private')).text(), 'ątest');
+      assert.equal(await (await fetch(base + '/head', { method: 'HEAD' })).text(), '');
+      assert.equal((await fetch(base + '/empty')).status, 204);
+    },
+  );
   assert.deepEqual(hits, [
     { at: start, status: 201, bytes: 6, path: '/hello?q=private' },
     { at: start, status: 201, bytes: 0, path: '/head' },
@@ -104,17 +119,27 @@ test('real HTTP completion counts chunks and UTF-8 payload, not HEAD or 204 byte
 
 test('native Node HTTP channel observes only the selected port and excludes readiness', async () => {
   const hits = [];
-  await fixture((_req, res) => res.end('node'), async (port, base) => {
-    const unsubscribe = subscribeTrafficHttp(port, (row) => hits.push(row), () => start);
-    try {
-      await (await fetch(base + '/__pockethost/ready')).text();
-      await (await fetch(base + '/data')).text();
-      await fixture((_req, res) => res.end('foreign'), async (_other, url) => {
-        await (await fetch(url)).text();
-      });
-    } finally {
-      unsubscribe();
-    }
-  });
+  await fixture(
+    (_req, res) => res.end('node'),
+    async (port, base) => {
+      const unsubscribe = subscribeTrafficHttp(
+        port,
+        (row) => hits.push(row),
+        () => start,
+      );
+      try {
+        await (await fetch(base + '/__pockethost/ready')).text();
+        await (await fetch(base + '/data')).text();
+        await fixture(
+          (_req, res) => res.end('foreign'),
+          async (_other, url) => {
+            await (await fetch(url)).text();
+          },
+        );
+      } finally {
+        unsubscribe();
+      }
+    },
+  );
   assert.deepEqual(hits, [{ at: start, status: 200, bytes: 4, path: '/data' }]);
 });

@@ -55,7 +55,10 @@ export function subscribeTrafficHttp(port, record, clock = Date.now) {
   const requests = channel('http.server.request.start');
   const listener = ({ request, response }) => {
     try {
-      if (request.socket.localPort !== port || request.url?.split('?', 1)[0] === '/__pockethost/ready')
+      if (
+        request.socket.localPort !== port ||
+        request.url?.split('?', 1)[0] === '/__pockethost/ready'
+      )
         return;
       observeTrafficResponse(request, response, record, clock);
     } catch {

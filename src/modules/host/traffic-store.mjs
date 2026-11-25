@@ -1,4 +1,15 @@
-import { constants, lstatSync, mkdirSync, openSync, closeSync, fstatSync, readSync, realpathSync, readdirSync, readFileSync } from 'node:fs';
+import {
+  constants,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  closeSync,
+  fstatSync,
+  readSync,
+  realpathSync,
+  readdirSync,
+  readFileSync,
+} from 'node:fs';
 import { writeFile, rename, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { TrafficHistory } from './traffic-history.mjs';
@@ -31,8 +42,13 @@ function optionalStat(file) {
 }
 
 function safeFile(stat) {
-  if (!stat.isFile() || stat.isSymbolicLink() || stat.nlink !== 1 ||
-      stat.uid !== process.getuid?.() || stat.size > TRAFFIC_FILE_LIMIT)
+  if (
+    !stat.isFile() ||
+    stat.isSymbolicLink() ||
+    stat.nlink !== 1 ||
+    stat.uid !== process.getuid?.() ||
+    stat.size > TRAFFIC_FILE_LIMIT
+  )
     throw new Error('Unsafe analytics file');
 }
 
@@ -61,23 +77,38 @@ function safeRead(file) {
 }
 
 function sessionValid(session) {
-  return session && Number.isSafeInteger(session.pid) && session.pid > 0 &&
-    typeof session.startTicks === 'string' && /^\d{1,24}$/.test(session.startTicks);
+  return (
+    session &&
+    Number.isSafeInteger(session.pid) &&
+    session.pid > 0 &&
+    typeof session.startTicks === 'string' &&
+    /^\d{1,24}$/.test(session.startTicks)
+  );
 }
 
 export function trafficProcessIdentity() {
   const raw = readFileSync('/proc/self/stat', 'utf8');
-  const startTicks = raw.slice(raw.lastIndexOf(')') + 2).trim().split(/\s+/)[19];
+  const startTicks = raw
+    .slice(raw.lastIndexOf(')') + 2)
+    .trim()
+    .split(/\s+/)[19];
   const identity = { pid: process.pid, startTicks };
   if (!sessionValid(identity)) throw new Error('Missing analytics process identity');
   return identity;
 }
 
 function validatedDocument(document, projectId, now) {
-  if (document?.schema !== 1 || document.projectId !== projectId ||
-      !sessionValid(document.session) ||
-      !Number.isSafeInteger(document.persistedAt) || document.persistedAt > now ||
-      document.persistedAt < 0 || document.history?.lastAt > document.persistedAt)
+  if (
+    document?.schema !== 1 ||
+    document.projectId !== projectId ||
+    !sessionValid(document.session) ||
+    !Number.isSafeInteger(document.persistedAt) ||
+    document.persistedAt > now ||
+    document.persistedAt < 0 ||
+    !document.history ||
+    typeof document.history !== 'object' ||
+    document.history.lastAt > document.persistedAt
+  )
     throw new Error('Invalid analytics document');
   return new TrafficHistory(now, document.history);
 }
@@ -114,8 +145,7 @@ function prepare(root, projectId) {
   }
   directory(root);
   const entries = readdirSync(root);
-  if (entries.length > TRAFFIC_PROJECT_LIMIT * 2 ||
-      entries.some((entry) => !FILE.test(entry)))
+  if (entries.length > TRAFFIC_PROJECT_LIMIT * 2 || entries.some((entry) => !FILE.test(entry)))
     throw new Error('Analytics directory budget or identity mismatch');
   const owners = new Set(entries.map((entry) => entry.replace(/\.(json|tmp)$/, '')));
   if (!owners.has(projectId) && owners.size >= TRAFFIC_PROJECT_LIMIT)
