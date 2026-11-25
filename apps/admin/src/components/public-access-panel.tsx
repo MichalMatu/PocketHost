@@ -75,6 +75,10 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
       {url && <div className="space-y-2">
         <a href={url} target="_blank" rel="noopener noreferrer" className="break-all underline">{url}</a>
         <div><Button size="sm" variant="outline" onClick={() => {
+          if (!navigator.clipboard) {
+            setCopyMessage("Copy unavailable. Select the address manually.")
+            return
+          }
           void navigator.clipboard.writeText(url).then(() => setCopyMessage("Link copied."))
             .catch(() => setCopyMessage("Copy unavailable. Select the address manually."))
         }}>Copy link</Button></div>

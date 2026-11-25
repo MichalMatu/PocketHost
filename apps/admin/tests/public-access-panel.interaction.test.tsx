@@ -20,6 +20,8 @@ it("requires explicit publication intent, shows the assigned URL and supports un
   vi.stubGlobal("fetch", fetcher)
   vi.stubGlobal("confirm", vi.fn(() => true))
   render(<MemoryRouter><PublicAccessPanel siteId={id} running siteName="Demo" /></MemoryRouter>)
+  const details = screen.getByText("Public access · Quick Tunnel").parentElement as HTMLDetailsElement
+  details.open = true
   fireEvent.click(screen.getByRole("button", { name: "Refresh publication" }))
   await screen.findByText("Not published")
   expect(fetcher.mock.calls.every(call => call[1].method === "GET")).toBe(true)
@@ -35,6 +37,8 @@ it("does not show an untrusted URL or allow publishing after an invalid read", a
     publication: { siteId: id, state: "url-assigned", url: "https://foreign.example", reason: null },
   }) })))
   render(<MemoryRouter><PublicAccessPanel siteId={id} running /></MemoryRouter>)
+  const details = screen.getByText("Public access · Quick Tunnel").parentElement as HTMLDetailsElement
+  details.open = true
   fireEvent.click(screen.getByRole("button", { name: "Refresh publication" }))
   await screen.findByRole("alert")
   expect((screen.getByRole("button", { name: "Publish to Internet" }) as HTMLButtonElement).disabled).toBe(true)
