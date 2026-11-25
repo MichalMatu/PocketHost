@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createServer } from 'node:http';
+import { createServer, request } from 'node:http';
 import { createServer as createSocket } from 'node:net';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
@@ -56,14 +56,41 @@ async function api(plugin, fn) {
   });
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   try {
-    const base = 'http://127.0.0.1:' + server.address().port;
-    await fn(async (route, options = {}) => {
-      const response = await fetch(base + route, {
-        ...options,
-        headers: { host: '127.0.0.1:8787', ...options.headers },
-      });
-      return { status: response.status, body: await response.json() };
-    });
+    const port = server.address().port;
+    // Match the existing hosting API fixtures: Fetch may rewrite Host to the
+    // ephemeral port, which must be rejected by the production adapter.
+    await fn(
+      (route, options = {}) =>
+        new Promise((resolve, reject) => {
+          const req = request(
+            {
+              hostname: '127.0.0.1',
+              port,
+              path: route,
+              method: options.method ?? 'GET',
+              headers: { host: '127.0.0.1:8787', connection: 'close', ...options.headers },
+            },
+            (res) => {
+              const chunks = [];
+              res.on('data', (chunk) => chunks.push(chunk));
+              res.once('error', reject);
+              res.once('end', () => {
+                try {
+                  resolve({
+                    status: res.statusCode,
+                    body: JSON.parse(Buffer.concat(chunks).toString('utf8')),
+                  });
+                } catch (error) {
+                  reject(error);
+                }
+              });
+            },
+          );
+          req.once('error', reject);
+          req.setTimeout(5000, () => req.destroy(new Error('Traffic API fixture timeout')));
+          req.end();
+        }),
+    );
   } finally {
     server.closeAllConnections();
     await new Promise((resolve) => server.close(resolve));
