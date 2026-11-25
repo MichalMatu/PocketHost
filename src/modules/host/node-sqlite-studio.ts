@@ -4,22 +4,39 @@ import { closeSync, constants, fstatSync, openSync, readSync, type Stats } from 
 import { fileURLToPath } from 'node:url';
 import { NodeProjectDataScope } from './node-project-data-scope.ts';
 import {
-  parseSqliteRead, SQLITE_ID, SQLITE_MAX_PAGE, SQLITE_MAX_RESPONSE_BYTES,
-  type SqliteDatabase, type SqliteMode, type SqliteQuery, type SqliteRead, type SqliteState,
+  parseSqliteRead,
+  SQLITE_ID,
+  SQLITE_MAX_PAGE,
+  SQLITE_MAX_RESPONSE_BYTES,
+  type SqliteDatabase,
+  type SqliteMode,
+  type SqliteQuery,
+  type SqliteRead,
+  type SqliteState,
 } from '../../shared/node-sqlite-studio.ts';
 
 const reader = fileURLToPath(new URL('./node-sqlite-reader.mjs', import.meta.url));
 type ScopedFile = ReturnType<NodeProjectDataScope['inspectSqliteFiles']>['files'][number];
 type Identity = { dev: number; ino: number; size: number; ctimeMs: number; mtimeMs: number };
-type Candidate = { entry: SqliteDatabase; file: ScopedFile;
-  sidecars: Record<string, Identity | null> };
+type Candidate = {
+  entry: SqliteDatabase;
+  file: ScopedFile;
+  sidecars: Record<string, Identity | null>;
+};
 type RuntimeStatus = { state: string; desired: string };
 const identity = (stat: Stats): Identity => ({
-  dev: stat.dev, ino: stat.ino, size: stat.size, ctimeMs: stat.ctimeMs, mtimeMs: stat.mtimeMs,
+  dev: stat.dev,
+  ino: stat.ino,
+  size: stat.size,
+  ctimeMs: stat.ctimeMs,
+  mtimeMs: stat.mtimeMs,
 });
 const same = (a: Identity, b: Identity): boolean =>
-  a.dev === b.dev && a.ino === b.ino && a.size === b.size &&
-  a.ctimeMs === b.ctimeMs && a.mtimeMs === b.mtimeMs;
+  a.dev === b.dev &&
+  a.ino === b.ino &&
+  a.size === b.size &&
+  a.ctimeMs === b.ctimeMs &&
+  a.mtimeMs === b.mtimeMs;
 
 export function parseSqliteQuery(url: string): SqliteQuery {
   if (url.length > 512) throw new RangeError('SQLite URL budget');
@@ -33,10 +50,13 @@ export function parseSqliteQuery(url: string): SqliteQuery {
   const databaseId = params.get('db');
   const tableId = params.get('table');
   const pageText = params.get('page');
-  if ((databaseId !== null && !SQLITE_ID.test(databaseId)) ||
-      (tableId !== null && (!databaseId || !SQLITE_ID.test(tableId))) ||
-      (pageText !== null && (!tableId || !/^[1-9][0-9]?$/.test(pageText) ||
-        Number(pageText) > SQLITE_MAX_PAGE))) throw new RangeError('Invalid SQLite selection');
+  if (
+    (databaseId !== null && !SQLITE_ID.test(databaseId)) ||
+    (tableId !== null && (!databaseId || !SQLITE_ID.test(tableId))) ||
+    (pageText !== null &&
+      (!tableId || !/^[1-9][0-9]?$/.test(pageText) || Number(pageText) > SQLITE_MAX_PAGE))
+  )
+    throw new RangeError('Invalid SQLite selection');
   return { databaseId, tableId, page: pageText === null ? 1 : Number(pageText) };
 }
 
@@ -49,15 +69,21 @@ function header(file: ScopedFile): Buffer | null {
       throw new Error('SQLite file changed');
     }
     const bytes = Buffer.alloc(100);
-    if (readSync(fd, bytes, 0, bytes.length, 0) !== bytes.length ||
-        !same(identity(fstatSync(fd)), identity(stat))) throw new Error('SQLite header changed');
+    if (
+      readSync(fd, bytes, 0, bytes.length, 0) !== bytes.length ||
+      !same(identity(fstatSync(fd)), identity(stat))
+    )
+      throw new Error('SQLite header changed');
     return bytes.subarray(0, 16).equals(Buffer.from('SQLite format 3\0')) ? bytes : null;
   } finally {
     closeSync(fd);
   }
 }
-function readiness(file: ScopedFile, sidecars: Record<string, Identity | null>, offline: boolean):
-  { state: SqliteState; mode: SqliteMode | null } {
+function readiness(
+  file: ScopedFile,
+  sidecars: Record<string, Identity | null>,
+  offline: boolean,
+): { state: SqliteState; mode: SqliteMode | null } {
   try {
     const bytes = header(file);
     if (!bytes) return { state: 'corrupt', mode: null };
@@ -77,32 +103,61 @@ function readiness(file: ScopedFile, sidecars: Record<string, Identity | null>, 
 }
 function empty(projectId: string, query: SqliteQuery, state: SqliteState): SqliteRead {
   if (!query.databaseId) return { kind: 'catalog', projectId, state, databases: [] };
-  if (!query.tableId) return {
-    kind: 'tables', projectId, databaseId: query.databaseId, state, mode: null, tables: [],
+  if (!query.tableId)
+    return {
+      kind: 'tables',
+      projectId,
+      databaseId: query.databaseId,
+      state,
+      mode: null,
+      tables: [],
+    };
+  return {
+    kind: 'rows',
+    projectId,
+    databaseId: query.databaseId,
+    tableId: query.tableId,
+    state,
+    mode: null,
+    page: query.page,
+    columns: [],
+    rows: [],
+    hasMore: false,
   };
-  return { kind: 'rows', projectId, databaseId: query.databaseId, tableId: query.tableId,
-    state, mode: null, page: query.page, columns: [], rows: [], hasMore: false };
 }
 function launch(input: object): Promise<Record<string, unknown>> {
   return new Promise((resolve) => {
-    const child = execFile(process.execPath, ['--max-old-space-size=48', reader], {
-      timeout: 3000, killSignal: 'SIGKILL', maxBuffer: SQLITE_MAX_RESPONSE_BYTES,
-      encoding: 'utf8',
-    }, (error, stdout) => {
-      if (error) {
-        resolve({ state: error.killed || error.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'
-          ? 'busy' : 'unavailable' });
-        return;
-      }
-      try {
-        const result: unknown = JSON.parse(stdout);
-        if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error();
-        resolve(result as Record<string, unknown>);
-      } catch {
-        resolve({ state: 'unavailable' });
-      }
+    const child = execFile(
+      process.execPath,
+      ['--max-old-space-size=48', reader],
+      {
+        timeout: 3000,
+        killSignal: 'SIGKILL',
+        maxBuffer: SQLITE_MAX_RESPONSE_BYTES,
+        encoding: 'utf8',
+      },
+      (error, stdout) => {
+        if (error) {
+          resolve({
+            state:
+              error.killed || error.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER'
+                ? 'busy'
+                : 'unavailable',
+          });
+          return;
+        }
+        try {
+          const result: unknown = JSON.parse(stdout);
+          if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error();
+          resolve(result as Record<string, unknown>);
+        } catch {
+          resolve({ state: 'unavailable' });
+        }
+      },
+    );
+    child.stdin?.on('error', () => {
+      /* The terminal child callback owns the outcome. */
     });
-    child.stdin?.on('error', () => { /* The terminal child callback owns the outcome. */ });
     child.stdin?.end(JSON.stringify(input));
   });
 }
@@ -113,8 +168,13 @@ export class NodeSqliteStudio {
   private readonly scope: NodeProjectDataScope;
   private readonly runtime: (projectId: string) => RuntimeStatus;
 
-  constructor(scope = new NodeProjectDataScope(), runtime: (projectId: string) => RuntimeStatus =
-    () => ({ state: 'unknown', desired: 'running' })) {
+  constructor(
+    scope = new NodeProjectDataScope(),
+    runtime: (projectId: string) => RuntimeStatus = () => ({
+      state: 'unknown',
+      desired: 'running',
+    }),
+  ) {
     this.scope = scope;
     this.runtime = runtime;
   }
@@ -132,21 +192,26 @@ export class NodeSqliteStudio {
     const { configured, files } = this.scope.inspectSqliteFiles(projectId);
     const indexed = new Map(files.map((file) => [file.relative, file]));
     const offline = this.offline(projectId);
-    const candidates = files.filter((file) => /\.(?:db|sqlite|sqlite3)$/i.test(file.relative))
+    const candidates = files
+      .filter((file) => /\.(?:db|sqlite|sqlite3)$/i.test(file.relative))
       .map((file): Candidate => {
         const sidecars: Record<string, Identity | null> = {};
         for (const suffix of ['-wal', '-shm', '-journal']) {
           const side = indexed.get(file.relative + suffix);
           sidecars[suffix] = side ? identity(side.stat) : null;
         }
-        const id = createHash('sha256').update(JSON.stringify([
-          projectId, file.relative, identity(file.stat),
-        ])).digest('hex');
+        const id = createHash('sha256')
+          .update(JSON.stringify([projectId, file.relative, identity(file.stat)]))
+          .digest('hex');
         const entry = {
-          id, name: file.relative, bytes: file.stat.size, ...readiness(file, sidecars, offline),
+          id,
+          name: file.relative,
+          bytes: file.stat.size,
+          ...readiness(file, sidecars, offline),
         };
         return { entry, file, sidecars };
-      }).sort((a, b) => a.entry.name.localeCompare(b.entry.name));
+      })
+      .sort((a, b) => a.entry.name.localeCompare(b.entry.name));
     return { configured, candidates };
   }
 
@@ -154,10 +219,17 @@ export class NodeSqliteStudio {
     try {
       const { configured, candidates } = this.catalog(projectId);
       if (!configured) return empty(projectId, query, 'not-configured');
-      if (!query.databaseId) return parseSqliteRead({
-        kind: 'catalog', projectId, state: 'available',
-        databases: candidates.map(({ entry }) => entry),
-      }, projectId, query);
+      if (!query.databaseId)
+        return parseSqliteRead(
+          {
+            kind: 'catalog',
+            projectId,
+            state: 'available',
+            databases: candidates.map(({ entry }) => entry),
+          },
+          projectId,
+          query,
+        );
       const candidate = candidates.find(({ entry }) => entry.id === query.databaseId);
       if (!candidate) return empty(projectId, query, 'stale');
       const { entry, file, sidecars } = candidate;
@@ -166,23 +238,39 @@ export class NodeSqliteStudio {
       this.active = true;
       try {
         const result = await launch({
-          filename: file.absolute, main: identity(file.stat), sidecars,
-          databaseId: query.databaseId, tableId: query.tableId, page: query.page, mode: entry.mode,
+          filename: file.absolute,
+          main: identity(file.stat),
+          sidecars,
+          databaseId: query.databaseId,
+          tableId: query.tableId,
+          page: query.page,
+          mode: entry.mode,
         });
         // Re-attest project, path, file version and read mode after the child exits.
         const fresh = this.catalog(projectId).candidates.find((item) => item.entry.id === entry.id);
-        if (!fresh || fresh.entry.mode !== entry.mode ||
-            ['-wal', '-shm', '-journal'].some((suffix) => {
-              const a = sidecars[suffix];
-              const b = fresh.sidecars[suffix];
-              return a && b ? a.dev !== b.dev || a.ino !== b.ino : a !== b;
-            })) return empty(projectId, query, 'stale');
+        if (
+          !fresh ||
+          fresh.entry.mode !== entry.mode ||
+          ['-wal', '-shm', '-journal'].some((suffix) => {
+            const a = sidecars[suffix];
+            const b = fresh.sidecars[suffix];
+            return a && b ? a.dev !== b.dev || a.ino !== b.ino : a !== b;
+          })
+        )
+          return empty(projectId, query, 'stale');
         const base = empty(projectId, query, 'unavailable');
-        const response = parseSqliteRead({
-          ...base, ...result, mode: result.state === 'available' ? entry.mode : null,
-        }, projectId, query);
+        const response = parseSqliteRead(
+          {
+            ...base,
+            ...result,
+            mode: result.state === 'available' ? entry.mode : null,
+          },
+          projectId,
+          query,
+        );
         return Buffer.byteLength(JSON.stringify(response)) <= SQLITE_MAX_RESPONSE_BYTES
-          ? response : empty(projectId, query, 'unsupported');
+          ? response
+          : empty(projectId, query, 'unsupported');
       } finally {
         this.active = false;
       }

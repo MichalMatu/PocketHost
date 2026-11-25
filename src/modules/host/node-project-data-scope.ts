@@ -129,7 +129,6 @@ export class NodeProjectDataScope {
     return stat;
   }
 
-
   /** SQLite Studio: enumerate only the selected owned project's db tree. */
   inspectSqliteFiles(projectId: string): {
     configured: boolean;
@@ -170,8 +169,11 @@ export class NodeProjectDataScope {
             const stat = this.privateEntry(absolute, false);
             if (realpathSync(absolute) !== absolute) throw new Error('Noncanonical SQLite file');
             totalBytes += stat.size;
-            if (stat.size > MAX_FILE_BYTES || files.length >= MAX_FILES ||
-                totalBytes > MAX_TOTAL_BYTES) {
+            if (
+              stat.size > MAX_FILE_BYTES ||
+              files.length >= MAX_FILES ||
+              totalBytes > MAX_TOTAL_BYTES
+            ) {
               throw new RangeError('SQLite file budget exceeded');
             }
             files.push({ absolute, relative: path.relative(dbRoot, absolute), stat });
