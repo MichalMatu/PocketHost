@@ -2,7 +2,7 @@ import * as React from "react"
 import type { FleetSite } from "@/lib/site-fleet-schema"
 import { verifyCreatedSiteReadback } from "./verify-created-site"
 import {
-  endpoint, starterHtml, maxStarterHtml, encodeBase64, mutate, encodeStaticFolder,
+  endpoint, starterHtml, multiFileStarterHtml, starterCss, maxStarterHtml, encodeBase64, mutate, encodeStaticFolder,
   StaticSiteInputRejected, validateStaticZipSelection, inspectInitialStaticZip,
 } from "./site-client"
 
@@ -24,6 +24,12 @@ export function useOwnedSiteCreation({
   const [initialFolder, setInitialFolder] = React.useState<File[]>([])
   const [publishStarter, setPublishStarter] = React.useState(false)
   const [initialHtml, setInitialHtml] = React.useState(starterHtml)
+  const [starterKind, setStarterKind] = React.useState<"html" | "html-css">("html")
+  const chooseStarter = (kind: "html" | "html-css") => {
+    setStarterKind(kind)
+    setInitialHtml(kind === "html-css" ? multiFileStarterHtml : starterHtml)
+    setInputError(null)
+  }
   const initialZipInput = React.useRef<HTMLInputElement>(null)
   const initialFolderInput = React.useRef<HTMLInputElement>(null)
   React.useEffect(() => {
@@ -88,7 +94,9 @@ export function useOwnedSiteCreation({
         const folderPayload = firstFolder.length ? await encodeStaticFolder(firstFolder) : null
         const starterPayload = starter ? JSON.stringify({ files: [{
           name: "index.html", base64: encodeBase64(new TextEncoder().encode(initialHtml)),
-        }] }) : null
+        }, ...(starterKind === "html-css" ? [{
+          name: "style.css", base64: encodeBase64(new TextEncoder().encode(starterCss)),
+        }] : [])] }) : null
         const importEndpoint = endpoint + "/import?name=" + encodeURIComponent(name.trim())
         created = firstRelease
           ? await mutate(importEndpoint, "POST", firstRelease, "application/zip")
@@ -116,6 +124,7 @@ export function useOwnedSiteCreation({
         setInitialFolder([])
         setPublishStarter(false)
         setInitialHtml(starterHtml)
+        setStarterKind("html")
         if (initialZipInput.current) initialZipInput.current.value = ""
         if (initialFolderInput.current) initialFolderInput.current.value = ""
         setNotice(hasFirstFiles
@@ -137,7 +146,7 @@ export function useOwnedSiteCreation({
 
   return {
     name, setName, initialZip, setInitialZip, initialFolder, setInitialFolder,
-    publishStarter, setPublishStarter, initialHtml, setInitialHtml,
+    publishStarter, setPublishStarter, initialHtml, setInitialHtml, starterKind, chooseStarter,
     initialZipInput, initialFolderInput, clearInitialZip, clearInitialFolder,
     creating, inputError, setInputError, notice, setNotice, createSite,
   }

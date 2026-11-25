@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { starterHtml } from "./site-client"
 import type { useOwnedSiteCreation } from "./use-owned-site-creation"
 
 type Props = {
@@ -17,7 +16,7 @@ type Props = {
 export function SiteCreationForm({ creation, sitesCount, loading, error }: Props) {
   const {
     name, setName, initialZip, setInitialZip, initialFolder, setInitialFolder,
-    publishStarter, setPublishStarter, initialHtml, setInitialHtml,
+    publishStarter, setPublishStarter, initialHtml, setInitialHtml, starterKind, chooseStarter,
     initialZipInput, initialFolderInput, clearInitialZip, clearInitialFolder,
     creating, inputError, setInputError,
     setNotice, createSite,
@@ -121,6 +120,17 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
               Publish an editable index.html as the first stopped release, with no automatic start.
             </p>
             {publishStarter && <div className="space-y-2">
+              <label className="grid gap-1 text-sm">Starter template
+                <select className="rounded-md border bg-background p-2"
+                  disabled={creating || loading} value={starterKind}
+                  onChange={event => chooseStarter(event.target.value === "html-css" ? "html-css" : "html")}>
+                  <option value="html">Single HTML file</option>
+                  <option value="html-css">HTML + CSS files</option>
+                </select>
+              </label>
+              {starterKind === "html-css" && <p className="text-xs text-muted-foreground">
+                Includes index.html and style.css. Changing the template resets the sample HTML.
+              </p>}
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <label htmlFor="initial-owned-site-html" className="text-xs font-medium">
                   Initial HTML
@@ -128,8 +138,7 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
                 <Button type="button" variant="outline" size="sm"
                   disabled={creating || loading}
                   onClick={() => {
-                    setInitialHtml(starterHtml)
-                    setInputError(null)
+                    chooseStarter(starterKind)
                   }}>
                   Reset sample HTML
                 </Button>

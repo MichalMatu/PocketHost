@@ -18,6 +18,7 @@ import { useNodeHostDiagnostics } from "./use-node-host-diagnostics"
 import { useNodeProjectScopedRead } from "./use-node-project-scoped-read"
 import { shortRelease } from "./node-project-display"
 import { NodeRuntimeHistory } from "./node-runtime-history"
+import { jsonApiStarter } from "./node-starters"
 import {
   api, disabledMessage, examplePackage, exampleLock, exampleSource,
   validatedExtras, validatedAssets, validProject, nodeSourceWriteMatchesReadback, parseProjectCatalog, parseNodeHealth, requestJson, NodeProjectValidationError,
@@ -765,6 +766,16 @@ export default function ProjectsPage() {
               No public routes or automatic startup.
             </p>
           </details>
+          <Button variant="outline" disabled={busy || !ownerAuthorized}
+            onClick={() => {
+              if (!window.confirm("Replace the editor draft with the JSON API starter? Nothing is staged or started.")) return
+              setManifest(jsonApiStarter.manifest); setLockfile(jsonApiStarter.lockfile)
+              setSource(jsonApiStarter.source); setSourceOrigin("example")
+              setExtraFiles({}); setAssetFiles({}); setEditorDirty(true)
+              resetRuntimeReviews(); setApproved(false); setBuildCheck(null)
+              setPlan(null); setPreview(null); setExecutionEnabled(false); setGithubReview(null)
+              setError(null); setMessage("JSON API starter loaded. Review and stage when ready.")
+            }}>Load JSON API starter</Button>
           <div className="flex flex-wrap items-end gap-2">
             <label className="grid min-w-56 flex-1 gap-1 text-sm">Public GitHub repository
               <Input aria-label="Public GitHub repository" placeholder="owner/repository"

@@ -144,3 +144,27 @@ it("rejects empty starter HTML locally before a create request", async () => {
   expect(hook.result.current.inputError).toBe("Initial index.html cannot be empty.")
   expect(fetcher).not.toHaveBeenCalled()
 })
+
+it("uses two explicit starter files without creating on selection, and restores single HTML on switch", async () => {
+  const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => ({ ok: false, status: 400 }))
+  vi.stubGlobal("fetch", fetcher)
+  const hook = renderHook(() => useOwnedSiteCreation({
+    sitesCount: 0, loading: false, error: null, setSites: vi.fn(), setError: vi.fn(),
+  }))
+  act(() => {
+    hook.result.current.setName("Multi file")
+    hook.result.current.setPublishStarter(true)
+    hook.result.current.chooseStarter("html-css")
+  })
+  expect(hook.result.current.initialHtml).toContain('href="style.css"')
+  expect(fetcher).not.toHaveBeenCalled()
+  const submit = { preventDefault: vi.fn() } as unknown as React.FormEvent<HTMLFormElement>
+  await act(async () => { await hook.result.current.createSite(submit) })
+  const payload = JSON.parse(String(fetcher.mock.calls[0][1]?.body))
+  expect(payload.files.map((file: { name: string }) => file.name)).toEqual(["index.html", "style.css"])
+  expect(atob(payload.files[1].base64)).toContain("body {")
+  act(() => { hook.result.current.chooseStarter("html") })
+  expect(hook.result.current.initialHtml).toContain("<style>")
+  act(() => { hook.result.current.setPublishStarter(false) })
+  expect(fetcher).toHaveBeenCalledTimes(1)
+})

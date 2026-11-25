@@ -134,3 +134,44 @@ it("imports a pinned GitHub frontend bundle and preserves it in the staged relea
   expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/deploy"))).toHaveLength(0)
 })
 
+
+it("loads JSON API only after explicit confirmation, without staging or starting", async () => {
+  const user = userEvent.setup()
+  const project = {
+    id: ID, name: "Starter fixture", kind: "node", state: "created",
+    runtime: "not-provisioned", activeRelease: null, candidateRelease: null,
+    previousCandidate: null, deploymentCount: 0, createdAt: "2026-11-09T12:00:00Z",
+  }
+  const calls = vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input)
+    if (url === "/api/v1/node-projects")
+      return { ok: true, json: async () => ({ projects: [project] }) }
+    if (url.endsWith("/releases"))
+      return { ok: true, json: async () => ({ releases: [] }) }
+    if (url.endsWith("/runtime"))
+      return { ok: true, json: async () => ({ runtime: {
+        state: "not-provisioned", desired: "stopped", port: null,
+        activeRelease: null, lastGoodRelease: null, previousGoodRelease: null, history: [],
+      }, executionEnabled: false }) }
+    throw new Error("Unexpected request " + url)
+  })
+  vi.stubGlobal("fetch", calls)
+  vi.stubGlobal("confirm", vi.fn().mockReturnValueOnce(false).mockReturnValueOnce(true))
+  render(<MemoryRouter><ProjectsPage /></MemoryRouter>)
+  await unlockNodeOwner()
+  await user.click(await screen.findByRole("button", { name: "Starter fixture" }))
+  await screen.findByText(/not-provisioned · Live:/)
+  const editor = screen.getByLabelText("server.mjs") as HTMLTextAreaElement
+  const original = editor.value
+  const load = screen.getByRole("button", { name: "Load JSON API starter" })
+  await user.click(load)
+  expect(editor.value).toBe(original)
+  await user.click(load)
+  expect(editor.value).toContain("/api/status")
+  expect(editor.value).toContain("127.0.0.1")
+  const manifest = JSON.parse((screen.getByLabelText("package.json") as HTMLTextAreaElement).value)
+  const lock = JSON.parse((screen.getByLabelText("package-lock.json") as HTMLTextAreaElement).value)
+  expect(lock.packages[""].name).toBe(manifest.name)
+  expect(lock.packages[""].version).toBe(manifest.version)
+  expect(calls.mock.calls.some(([url]) => /\/(stage|deploy|start)$/.test(String(url)))).toBe(false)
+})

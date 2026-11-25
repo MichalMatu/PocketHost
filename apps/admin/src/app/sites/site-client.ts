@@ -172,6 +172,9 @@ export const starterHtml = `<!doctype html>
 </body>
 </html>`
 
+export const starterCss = "body { font: 18px system-ui, sans-serif; max-width: 720px; margin: 15vh auto; padding: 1rem; }\nh1 { color: #156f60; }\n"
+export const multiFileStarterHtml = starterHtml.replace(/<style>[\s\S]*?<\/style>/, '<link rel="stylesheet" href="style.css">')
+
 export async function readSites(signal?: AbortSignal): Promise<FleetSite[]> {
   const response = await fetch(endpoint, { credentials: "same-origin", cache: "no-store", signal: readSignal(signal) })
   if (response.status === 404) throw new Error("Static hosting is disabled on this panel.")
