@@ -178,7 +178,8 @@ export class TrafficHistory {
       requests += bucket.requests;
       bytes += bucket.bytes;
       otherPaths += bucket.otherPaths;
-      for (const [key, value] of bucket.statuses) statuses.set(key, (statuses.get(key) ?? 0) + value);
+      for (const [key, value] of bucket.statuses)
+        statuses.set(key, (statuses.get(key) ?? 0) + value);
       for (const [key, value] of bucket.paths) paths.set(key, (paths.get(key) ?? 0) + value);
     }
     return {
@@ -191,9 +192,7 @@ export class TrafficHistory {
       bytes,
       rps: sum(snapshot.seconds) / 60,
       statuses: [...statuses].sort((a, b) => a[0] - b[0]),
-      topPaths: [...paths]
-        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-        .slice(0, 10),
+      topPaths: [...paths].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).slice(0, 10),
       otherPaths,
       history: buckets.map(({ at, requests, bytes }) => ({ at, requests, bytes })),
     };
