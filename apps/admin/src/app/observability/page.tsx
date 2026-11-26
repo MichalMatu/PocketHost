@@ -3,7 +3,7 @@ import { Activity, ChevronDown, ChevronRight, Info, RefreshCw, ShieldCheck } fro
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
@@ -53,7 +53,7 @@ function ownershipLabel(ownership: Process["ownership"]) {
 function AccessInfoDialog() {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+      <DialogTrigger render={<Button variant="outline" />}>
         <Info className="size-4" /> Source access
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
@@ -172,7 +172,7 @@ export default function ObservabilityPage() {
             {snapshot && <Badge variant="outline">Checked {seenAt(snapshot.observedAt)}</Badge>}
             {error && snapshot && <Badge variant="outline">Last known snapshot</Badge>}
           </div>
-          <Button variant="outline" size="sm" disabled={loading} onClick={() => void refresh()}>
+          <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
           </Button>
         </div>
@@ -195,9 +195,9 @@ export default function ObservabilityPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <Input aria-label="Filter processes" placeholder="Filter name, PID or identity…" value={query} onChange={event => setQuery(event.target.value)} className="max-w-64" />
                   <div role="group" aria-label="Process sort" className="flex flex-wrap gap-1">
-                    <Button size="sm" variant={order === "cpu" ? "secondary" : "outline"} aria-pressed={order === "cpu"} onClick={() => setOrder("cpu")}>CPU ticks</Button>
-                    <Button size="sm" variant={order === "ram" ? "secondary" : "outline"} aria-pressed={order === "ram"} onClick={() => setOrder("ram")}>Process RAM</Button>
-                    <Button size="sm" variant={order === "pid" ? "secondary" : "outline"} aria-pressed={order === "pid"} onClick={() => setOrder("pid")}>PID</Button>
+                    <Button variant={order === "cpu" ? "secondary" : "outline"} aria-pressed={order === "cpu"} onClick={() => setOrder("cpu")}>CPU ticks</Button>
+                    <Button variant={order === "ram" ? "secondary" : "outline"} aria-pressed={order === "ram"} onClick={() => setOrder("ram")}>Process RAM</Button>
+                    <Button variant={order === "pid" ? "secondary" : "outline"} aria-pressed={order === "pid"} onClick={() => setOrder("pid")}>PID</Button>
                   </div>
                 </div>
                 {processesOk && processList.length > 0 ? (
@@ -223,7 +223,7 @@ export default function ObservabilityPage() {
                               <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : formatMemory(process.rssMiB)}</td>
                               <td className="p-3">{ownershipLabel(process.ownership)}</td>
                               <td className="p-3 text-right">
-                                <Button size="sm" variant="ghost" aria-label={`Process details for PID ${process.pid}`}
+                                <Button variant="ghost" aria-label={`Process details for PID ${process.pid}`}
                                   aria-expanded={expanded} onClick={() => setExpandedProcess(expanded ? null : identity)}>
                                   {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                                   {expanded ? "Hide" : "Details"}
@@ -277,7 +277,7 @@ export default function ObservabilityPage() {
                         ? "No structured diagnostic events in this observation."
                         : snapshot.diagnostics.events.length + " structured diagnostic events available."}
                   </span>
-                  <Link to="/runtime-logs" className="font-medium underline underline-offset-4">Logs & Diagnostics</Link>
+                  <Link to="/runtime-logs" className={buttonVariants({ variant: "link", className: "underline" })}>Logs & Diagnostics</Link>
                 </div>
               </CardContent>
             </Card>

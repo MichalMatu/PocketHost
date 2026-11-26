@@ -71,6 +71,9 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(within(table).getAllByRole("row")[1]?.textContent).toContain("node")
     expect(table.textContent).toContain("Ownership unknown")
     expect(table.textContent).toContain("Observer process")
+    for (const control of [screen.getByRole("button", { name: "Refresh" }), screen.getByRole("button", { name: "CPU ticks" }), screen.getByRole("button", { name: "Process RAM" }), screen.getByRole("button", { name: "PID" }), screen.getByRole("button", { name: "Process details for PID 110" }), screen.getByRole("link", { name: "Logs & Diagnostics" })]) {
+      expect(control.classList.contains("h-8")).toBe(true)
+    }
     expect(screen.queryByText("CPU ticks (lifetime total)")).toBeNull()
     fireEvent.click(screen.getByRole("button", { name: "Process details for PID 110" }))
     expect(screen.getByText("CPU ticks (lifetime total)")).toBeTruthy()
