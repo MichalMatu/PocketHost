@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-25
+last_reviewed: 2026-11-26
 purpose: Detailed UX sprint acceptance checklist
 ---
 
@@ -9,7 +9,7 @@ purpose: Detailed UX sprint acceptance checklist
 
 ## Current priority
 
-The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-02 is active by explicit owner reprioritization; UX-01 visual acceptance remains pending. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-03 is active; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with detail-screen visual acceptance pending. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
 
 Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
 
@@ -21,16 +21,20 @@ UX-01A extracted the detail panel (catalog page 397 to 62 lines). Exact-source `
 - [x] Keep list concise: name, observed status, address and useful summary; no embedded create form or mutation-heavy detail panels. On verified creation navigate to the new stopped site; after verified deletion return to list. Prevent duplicate writes, stale results and unknown-outcome retries.
 - [x] Organize detail by Overview, Files, Versions, Traffic, Public access, Logs and Settings; reuse existing hooks/components, preserve readback, lifecycle, release protections, public access and all existing features. No real-site mutation during QA.
 - [x] Migrate route consumers and existing tests; add route isolation, deep link, invalid ID, success/failure and navigation regression tests. Exact-SHA scoped A8 gate/build and separate guarded DEV deploy/readback PASS.
-- [ ] Desktop visual comparison at 1440×900: catalog, create form and seven tabs of a verified owned site. Mac Lab requires fresh exact-live-SHA approval per [Test Lab](TEST_LAB.md); its current fixed route aliases do not cover the new create/detail screens. Keep capture read-only (same-origin GET/HEAD, no form submits or site mutations), images private, compact geometry report only. Owner reprioritized UX-02 after reviewing Node screenshots; retain this visual acceptance item.
+- [ ] Desktop visual comparison at 1440×900: catalog, create form and seven tabs of a verified owned site. Mac Lab uses standing read-only consent pinned to exact live SHA per [Test Lab](TEST_LAB.md); its current fixed route aliases do not cover the new create/detail screens. Keep capture read-only (same-origin GET/HEAD, no form submits or site mutations), images private, compact geometry report only. Owner reprioritized UX-02 after reviewing Node screenshots; retain this visual acceptance item.
 
-### UX-02 — Node.js Hosting workspaces (ACTIVE)
+### UX-02 — Node.js Hosting workspaces (IMPLEMENTED)
 
-Owner requested modular folders, a compact Node workspace and enforceable quality gates. Split catalog, creation, diagnostics, backups and per-project tabs; keep legacy project links. Route entry is limited to 120 lines, new view/state/action modules to 350 lines and the existing 24 KiB source budget. No reverse view dependencies or direct browser transport in view modules. Affected checks include budget tests and shared test-helper consumers. QA and guarded DEV deployment are pending. No new hosting ingress.
+Owner requested modular folders, a compact Node workspace and enforceable quality gates. Split catalog, creation, diagnostics, backups and per-project tabs; keep legacy project links. Route entry is limited to 120 lines, new view/state/action modules to 350 lines and the existing 24 KiB source budget. No reverse view dependencies or direct browser transport in view modules. Affected checks include budget tests and shared test-helper consumers. Scoped QA/build and guarded DEV deployment PASS at `47f4f1186d92665b2e0df560567a2d3a90acfa01`. No new hosting ingress.
 
-- [ ] Separate application list, creation/import and selected application workspace; group runtime, source/dependencies/build, releases, logs, traffic, data/SQLite and backup into coherent views.
-- [ ] Extract oversized controller/presentation responsibilities; preserve owner session, stale-response fencing, review/approval, staging, runtime and backup semantics. Test routes and cross-project isolation; QA/deploy/readback.
+- [x] Separate application list, creation/import and selected application workspace; group runtime, source/dependencies/build, releases, logs, traffic, data/SQLite and backup into coherent views.
+- [x] Extract oversized controller/presentation responsibilities; preserve owner session, stale-response fencing, review/approval, staging, runtime and backup semantics. Test routes and cross-project isolation; QA/deploy/readback.
 
-### UX-03 — Shared UI foundations (QUEUED)
+- [ ] Complete visual inspection of create, detail and advanced workspace screens; the Node catalog rendered at all three viewports with no horizontal overflow or JavaScript errors.
+
+### UX-03 — Shared UI foundations (ACTIVE)
+
+Shared sidebar layout and global stylesheet cleanup deployed at `b8051992d4ea3640f06606d5bba01a11df965dd8`: 175/175 UI tests across 28 files, scoped Node, syntax, formatting, lint, types, budgets and build PASS. Removed four global `!important` rules. Read-only Mac geometry comparison: Dashboard, Projects and Network 9/9 rendered, no new overflow or JS/request failures. Network link target cleanup deployed at `cf29a0aa6ec94cba3858cb315beae49472d04eb5`; scoped QA/build PASS. Network 3/3 after-captures show zero small controls (previously two) and zero overflow. Existing projects, publication and protected services unchanged. Visual inspection, nondefault sidebar combinations and broader control inventory remain open; geometry does not substitute for visual or interaction acceptance.
 
 - [ ] Inventory and consolidate existing shadcn primitives/compositions: page header and breadcrumbs, tables, action hierarchy, fields, status, empty/loading/error states, confirmations and accessible controls. Use Tailwind utilities and Lucide, not bespoke widgets.
 - [ ] Unify control sizes, labels, icons, spacing and feedback; address measured small targets; preserve keyboard/focus behavior. QA/deploy/readback.

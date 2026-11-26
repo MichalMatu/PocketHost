@@ -1,3 +1,10 @@
+/** Exact headings for routes whose identity must be verified after SPA navigation. */
+export const routeTitles = Object.freeze({
+  dashboard: 'Dashboard',
+  hosting: 'Hosting',
+  projects: 'Node.js applications',
+});
+
 /** Browser-evaluable route readiness check; never reads input values or response bodies. */
 export function isRouteReady(expected, context = {}) {
   const doc = context.doc ?? globalThis.document;

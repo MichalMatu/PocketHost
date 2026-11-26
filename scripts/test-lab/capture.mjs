@@ -7,7 +7,7 @@ import { screenshotName, routePaths } from './artifact-names.mjs';
 import { scrollCaptureTargets } from './scroll-capture-targets.mjs';
 import { inspectPageGeometry } from './layout-geometry.mjs';
 import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
-import { isRouteReady } from './route-readiness.mjs';
+import { isRouteReady, routeTitles } from './route-readiness.mjs';
 import { captureMobileNavigation } from './mobile-navigation-capture.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -274,12 +274,11 @@ async function main() {
         canceledRequests++;
       } else failedRequests++;
     });
-    const titles = { dashboard: 'Dashboard', hosting: 'Hosting', projects: 'Projects' };
 
     let first = true;
     for (const route of config.pages) {
       const destination = config.origin + routes[route];
-      const expectedRoute = { path: routes[route], title: titles[route] ?? null };
+      const expectedRoute = { path: routes[route], title: routeTitles[route] ?? null };
       await page.setViewportSize({ width: 1440, height: 900 });
       let status = null,
         navigationError = null;

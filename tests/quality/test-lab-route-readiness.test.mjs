@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isRouteReady } from '../../scripts/test-lab/route-readiness.mjs';
+import { isRouteReady, routeTitles } from '../../scripts/test-lab/route-readiness.mjs';
 
 function pageState(
   pathname,
-  { loading = false, sidebar = true, root = true, title = 'Projects' } = {},
+  { loading = false, sidebar = true, root = true, title = routeTitles.projects } = {},
 ) {
   const doc = {
     querySelector(selector) {
@@ -21,7 +21,9 @@ function pageState(
 }
 
 test('Test Lab only accepts the selected completed route, not stale SPA content', () => {
-  const expected = { path: '/projects', title: 'Projects' };
+  const expected = { path: '/projects', title: routeTitles.projects };
+  assert.equal(routeTitles.projects, 'Node.js applications');
+  assert.equal(isRouteReady(expected, pageState('/projects', { title: 'Projects' })), false);
   assert.equal(isRouteReady(expected, pageState('/sites')), false);
   assert.equal(isRouteReady(expected, pageState('/projects', { loading: true })), false);
   assert.equal(isRouteReady(expected, pageState('/projects', { title: 'Sites' })), false);

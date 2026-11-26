@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-25
+last_reviewed: 2026-11-26
 purpose: V1 source acceptance, deploy boundary and safe future resume
 ---
 
@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI **486/486** (two TSX exclusions corrected in Sprint 4F). Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. Android hardlink SKIP.
-- **Last device-attested DEV checkout:** `c5dc8202d38a2bdfa99ea3779e474658b373b79d`; guarded restart/readback PASS (`pockethost-a8-node-lifecycle-ux-deploy-c5dc820-20261126-v1`). QA at this SHA: 6 static gates, 83 UI tests, 4 isolated E2E tests, build/budgets PASS. Visible Start/Stop/Restart/Delete and explicit observed-stopped/desired-running reconciliation deployed. Trusted LAN policy retained; local tokenless authorization and served lifecycle source verified. Demo and protected services unchanged; LAN absent during postflight, owner browser acceptance pending. Publication remains stopped/no URL, unchanged by this deployment; no republication without approval. Previous Node removal QA at `5434e8f`: 199 PASS, 1 Android hardlink SKIP. UX-01 A–C/menu HMR PASS; visual acceptance pending. UX-02 modular workspace and quality gate in progress; QA/deploy pending; UX-01–UX-07 precede S8–S12.
+- **Last device-attested DEV checkout:** `cf29a0aa6ec94cba3858cb315beae49472d04eb5` (Network shared link targets); `pockethost-a8-ux03-network-qa-cf29a0a-20261126-v1` and `pockethost-a8-ux03-network-deploy-cf29a0a-20261126-v1` PASS. Preceding global sidebar/CSS change `b805199` passed 175/175 UI tests and build, guarded DEV deployment and nine before/after geometry comparisons. Network after-captures PASS 3/3, small targets 2→0, no overflow, JS or request failures. Publication, existing project and protected services unchanged. No new publication. LAN browser captures succeeded after deployment; manual visual inspection remains pending. Tool/document-only commits after the deployed source do not imply runtime drift.
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -27,9 +27,9 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 [Sprint 4](ROADMAP.md) closed: server adapters, runtime helper split, strict types, syntax-aware browser boundary and backup-session invalidation. Sprint 3 evidence: snapshot median 560.61 to 119.90 ms (-78.6%), 15/15 HTTP 200; static RSS and built UI experiments do not establish equivalent independent lifecycle or API/render behavior. See architecture. Public exposure, physical reboot, extended device endurance and off-device recovery remain separately scoped. Sprint 5 traffic analytics is deployed; existing Static and Node applications were not restarted, and their live snapshots are missing until their normal next start. Collection was proven in isolated real HTTP fixtures. Sprint 6 read-only SQLite Studio is deployed and qualified on isolated fixtures; no real application database was used for acceptance. WAL SHM coordination may change. Sprint 7 Application Starters is deployed. Deferred S8–S12: [upstream reuse](UPSTREAM_REUSE_STRATEGY.md) and [roadmap](ROADMAP.md).
 
-## Current owner assignment — UX-02
+## Current owner assignment — UX-03
 
-Owner reprioritized Node UX-02 after reviewing screenshots. Follow the [UX roadmap](UX_EXECUTION_PLAN.md). UX-01A, UX-01B and UX-01C implementation, scoped QA and DEV deployment PASS. UX-01 remains open only for desktop visual acceptance. Current menu and cross-screen recommendations are in [navigation map](NAVIGATION_MAP.md). Obtain fresh exact-live-SHA Mac Lab approval; the existing capture allowlist supports the catalog but not `/sites/new` or selected-site tabs. Extend the read-only capture scope safely before capturing those views; no automatic write or new public session. Read-only A8 audit and Mac screenshot geometry PASS; the supplied screenshots informed the UX plan. Do not claim new runtime QA or deployment before terminal receipts. All remaining feature sprints follow UX-07.
+Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX roadmap](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01 and UX-02 implementation/QA/DEV deployment verified; selected detail/create views need visual acceptance. UX-03 shared sidebar and Network link geometry improvements deployed. Continue the shared component and screen inventory; capture remaining views using the read-only allowlist, keep raw screenshots local and redact any individually selected private evidence. The corrected Projects heading in Test Lab is proven by three viewport captures; source-level QA of the integrated tool remains separate. Never infer visual approval from geometry alone. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 
