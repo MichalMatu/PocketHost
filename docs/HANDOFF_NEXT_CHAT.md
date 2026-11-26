@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI **486/486** (two TSX exclusions corrected in Sprint 4F). Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. Android hardlink SKIP.
-- **Last device-attested DEV checkout:** `a38571c5856e8ba8cd2f18f1fe2e788d50253d27`. Hosting/Deployments exact-source QA/build and guarded deployment PASS; project, stopped publication and protected services unchanged. Mac after-capture: 20 local screenshots, 12/12 rendered, zero JS/request errors, overflow or small controls. Final image inspection pending; LAN gateway has no bind, A8 loopback HTTP 200, wlan0 IPv4 not reported. Exact receipts and blockers: [UX plan](UX_EXECUTION_PLAN.md).
+- **Last device-attested DEV checkout:** `5fcabbeb53c2902d160edd470ba02f9dc73738d3`. Services/Workloads/Health UX, exact-source QA/build and guarded deploy PASS. Synthetic offline Mac before/after: 15/15 captures per revision, no overflow or JS errors; reviewed desktop/mobile previews. Actual LAN still unavailable; real Runit inventory not visually qualified. [Evidence and next steps](UX_EXECUTION_PLAN.md).
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -29,7 +29,7 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 ## Current owner assignment — UX-03 / UX-04
 
-Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; detail/create visual acceptance pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Monitoring review continues. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
+Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; detail/create visual acceptance pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Workloads/Health scoped synthetic visual review complete; Monitoring/Logs next. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 
