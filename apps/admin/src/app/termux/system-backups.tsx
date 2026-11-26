@@ -116,8 +116,8 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
       <Badge variant="outline">{!status ? "Repository unverified" : status.initialized ? "Encrypted repository ready" : "Not initialized"}</Badge>
     </div>
     <div className="flex flex-wrap gap-2">
-      <Button size="sm" disabled={busy || !detected || !status || !!error} onClick={() => void run("backup")}>Create full backup</Button>
-      <Button size="sm" variant="outline" disabled={busy || !detected || !status?.initialized || !!error}
+      <Button disabled={busy || !detected || !status || !!error} onClick={() => void run("backup")}>Create full backup</Button>
+      <Button variant="outline" disabled={busy || !detected || !status?.initialized || !!error}
         onClick={() => void run("check")}>Verify repository</Button>
 
     </div>
@@ -129,8 +129,8 @@ export function FullTermuxBackups({ detected, refreshToken = 0 }: { detected: bo
           <p className="font-mono text-muted-foreground">{item.id.slice(0, 18)}…</p>
         </div>
         <div className="flex flex-wrap gap-1">
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void run("restore", item.id)}>Restore to staging</Button>
-          <Button size="sm" variant="outline" disabled={busy} onClick={() => void run("forget", item.id)}>Forget</Button>
+          <Button variant="outline" disabled={busy} onClick={() => void run("restore", item.id)}>Restore to staging</Button>
+          <Button variant="outline" disabled={busy} onClick={() => void run("forget", item.id)}>Forget</Button>
         </div>
       </div>)}
       {records?.length === 0 && <p className="text-sm text-muted-foreground">No snapshots for this scope.</p>}

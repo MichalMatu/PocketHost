@@ -195,16 +195,16 @@ export function WorkspaceBackupActions({ refreshToken = 0 }: { refreshToken?: nu
   }
   return <div className="space-y-3 rounded-md border p-3">
     <h3 className="text-sm font-medium">Workspace snapshots</h3>
-    <Button disabled={busy} size="sm" onClick={() => void run("create")}>Create snapshot</Button>
+    <Button disabled={busy} onClick={() => void run("create")}>Create snapshot</Button>
 
     {items?.map(item => <div key={item.name} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 text-xs">
       <span>{item.createdAt.slice(0, 19).replace("T", " ")} · {item.files} files</span>
       <div className="flex gap-2">
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => void run("verify", item.name)}>Verify</Button>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => void run("restore", item.name)}>Restore</Button>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => void run("delete", item.name)}>Delete</Button>
       </div>
     </div>)}

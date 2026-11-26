@@ -138,10 +138,10 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
                 <GuardNotice>
                   These are local recovery mechanisms, not off-device disaster recovery.
                   Keep an independent copy and its recovery key outside this phone.
-                  Termux backups, PocketHost workspace snapshots, and <a href="/sites"
-                    className="underline underline-offset-4">website versions</a> are separate.
+                  Termux backups, PocketHost workspace snapshots, and website versions are separate.
                   Restores use an isolated location.
                 </GuardNotice>
+                <Link to="/sites" className={buttonVariants({ variant: "link", className: "underline" })}>Website versions</Link>
                 <div className="flex flex-wrap gap-2">{tooling.map(item =>
                   <Badge key={item.id} variant="outline">{item.id}: {item.state}</Badge>)}</div>
               </CardContent>

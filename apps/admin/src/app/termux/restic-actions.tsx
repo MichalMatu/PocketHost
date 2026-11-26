@@ -68,11 +68,11 @@ export function ResticActions({ detected, refreshToken = 0 }: { detected: boolea
 
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" disabled={busy || status?.initialized === true}
+        <Button disabled={busy || status?.initialized === true}
           onClick={() => void run("init")}>Initialize repository</Button>
-        <Button size="sm" disabled={busy}
+        <Button disabled={busy}
           onClick={() => void run("backup")}>Create Restic backup</Button>
-        <Button size="sm" variant="outline" disabled={busy || !status?.initialized}
+        <Button variant="outline" disabled={busy || !status?.initialized}
           onClick={() => void run("check")}>Check repository</Button>
       </div>
       <div className="max-h-64 space-y-2 overflow-auto">
@@ -82,9 +82,9 @@ export function ResticActions({ detected, refreshToken = 0 }: { detected: boolea
             <p className="font-mono text-xs text-muted-foreground">{item.id.slice(0, 16)}…</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button size="sm" variant="outline" disabled={busy}
+            <Button variant="outline" disabled={busy}
               onClick={() => void run("restore", item.id)}>Restore to staging</Button>
-            <Button size="sm" variant="outline" disabled={busy}
+            <Button variant="outline" disabled={busy}
               onClick={() => void run("forget", item.id)}>Forget / Prune</Button>
           </div>
         </div>)}

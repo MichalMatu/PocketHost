@@ -1,7 +1,7 @@
 import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
@@ -69,7 +69,7 @@ export function ProjectRecoveryReadiness({ refreshToken = 0 }: {
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <CardTitle className="text-base">Project recovery coverage</CardTitle>
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void inspect()}>
+        <Button variant="outline" disabled={busy} onClick={() => void inspect()}>
           {busy ? "Checking…" : "Refresh project coverage"}
         </Button>
       </div>
@@ -97,7 +97,7 @@ export function ProjectRecoveryReadiness({ refreshToken = 0 }: {
             {staticSites.items.length === 0 && <p className="text-xs">No owned sites.</p>}
             {staticSites.items.map(item =>
               <div key={item.id} className="space-y-1 border-t pt-2 text-xs">
-                <Link className="font-medium underline underline-offset-2"
+                <Link className={buttonVariants({ variant: "link", className: "underline max-w-full whitespace-normal text-left" })}
                   to={siteDetailPath(item.id)}>{item.name}</Link>
                 <p>{item.releases} local release(s) · {item.canRollback
                   ? "Rollback available" : "No immediate rollback target"}</p>
@@ -115,7 +115,7 @@ export function ProjectRecoveryReadiness({ refreshToken = 0 }: {
             {nodeProjects.items.length === 0 && <p className="text-xs">No owned projects.</p>}
             {nodeProjects.items.map(item =>
               <div key={item.id} className="space-y-1 border-t pt-2 text-xs">
-                <Link className="font-medium underline underline-offset-2"
+                <Link className={buttonVariants({ variant: "link", className: "underline max-w-full whitespace-normal text-left" })}
                   to={"/projects?project=" + encodeURIComponent(item.id)}>{item.name}</Link>
                 <p>{item.activeRelease ? "Release present" : "No deployed release"}
                   {item.previousGoodRelease ? " · Previous good release present" : ""}</p>
