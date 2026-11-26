@@ -1,3 +1,4 @@
+import { RefreshCw, Eye, Activity } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { parseNodeHealth } from "../node-project-client"
 import { NodeRuntimeDetails } from "../node-runtime-details"
@@ -22,7 +23,7 @@ export function NodeRuntimeView({ controller, standalone = false }: { controller
     <div className="flex flex-wrap gap-2">
       <Button disabled={busy} variant="outline" onClick={() => action(async () => {
         await loadRuntime(selected.id); setMessage("Runtime status and plan refreshed.")
-      })}>Review plan</Button>
+      })}><RefreshCw aria-hidden="true" />Review plan</Button>
       {(!standalone || selected.candidateRelease !== runtime?.activeRelease) && <Button disabled={!canPublish} variant={canPublish ? "default" : "outline"}
         className={!canPublish ? "cursor-not-allowed opacity-35" : undefined}
         title={!canPublish ? "Unlock owner access, review the plan, approve execution and select an eligible staged release." : "Publish the reviewed release"}
@@ -31,7 +32,7 @@ export function NodeRuntimeView({ controller, standalone = false }: { controller
             { approved: true, release: selected.candidateRelease },
             "Owned Node release started and readiness verified by host.")
         })}>{runtime?.activeRelease ? "Publish update" : "Deploy selected release"}</Button>}
-      {!standalone && <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+      <Button variant="outline" disabled={busy} onClick={() => action(async () => {
         // A failed or pending GET must not keep the previous probe marked ready.
         setHealth(null)
         const response = await readScoped(selected.id, "health")
@@ -55,7 +56,7 @@ export function NodeRuntimeView({ controller, standalone = false }: { controller
         }
         setHealth(observed)
         setMessage("Current Node readiness checked against verified local ownership.")
-      })}>Check live readiness</Button>
+      })}><Activity aria-hidden="true" />Check live readiness</Button>
       <Button variant="outline" disabled={busy || !ownerAuthorized ||
         runtime?.state !== "running" || !runtime?.activeRelease}
         onClick={() => action(async () => {
@@ -73,8 +74,8 @@ export function NodeRuntimeView({ controller, standalone = false }: { controller
             throw new Error("Invalid private Node preview response")
           setPreview({ release: value.release, body: value.body })
           setMessage("Private loopback response inspected as plain text, not published.")
-        })}>Preview local response</Button>
-      <Button variant="outline" disabled={busy} onClick={() => action(async () => {
+        })}><Eye aria-hidden="true" />Preview local response</Button>
+      {!standalone && <Button variant="outline" disabled={busy} onClick={() => action(async () => {
         const current = await loadLogs(selected.id)
         if (current) setMessage("Bounded runit logs loaded.")
       })}>View logs</Button>}

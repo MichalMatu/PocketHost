@@ -49,9 +49,9 @@ export async function removeNodeProject(controller: SelectedNodeController, onRe
     const catalog = await refresh()
     if (catalog.some(item => item.id === selected.id)) throw new Error("Project still in catalog")
     invalidateRead(); beginInspection(); resetLogs()
+    setSelectedId(""); setSearchParams({}, { replace: true })
     setMessage("Project removed. Source, data and logs retained.")
     onRemoved?.()
-    setMessage("Project removed. Source, data and logs retained.")
   } catch (cause) {
     verifiedCatalog.current = []; setProjects([]); setCatalogState("error")
     invalidateRead(); beginInspection(); resetLogs(); setSelectedId("")
