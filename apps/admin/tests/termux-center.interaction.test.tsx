@@ -232,6 +232,7 @@ describe("H3 strict read-only contracts", () => {
     const calls = vi.fn()
     vi.stubGlobal("fetch", calls)
     render(<MemoryRouter><ServicesOverviewPage /></MemoryRouter>)
+    expect(screen.getByRole("heading", { name: "Services", level: 1 })).toBeTruthy()
     expect(screen.getByRole("navigation", { name: "Service management areas" })).toBeTruthy()
     for (const [label, url] of [
       ["Runit services", "/services/runit"],

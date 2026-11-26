@@ -125,7 +125,7 @@ export function HostingWorkloads({
     const value = sample?.release === release ? sample : null
     return <div className="flex flex-wrap items-center gap-2">
       <span className="text-xs text-muted-foreground" role="status">
-        HTTP readiness snapshot: {value?.state === "checking" ? "checking…" :
+        HTTP readiness: {value?.state === "checking" ? "checking…" :
           value?.state === "ready" ? "ready at last check" :
           value?.state === "not-ready" ? "not ready at last check" :
           value?.state === "unavailable" ? "unavailable / identity uncertain" :
@@ -144,15 +144,15 @@ export function HostingWorkloads({
   return <div className="space-y-4">
     <p className="text-xs text-muted-foreground">
       {view === "health"
-        ? "Manually probe the current verified release. Unknown or stopped workloads cannot be marked healthy. No periodic health polling or restart is enabled."
-        : "PocketHost-owned Hosting workloads, independent of runit inventory. Runtime state does not prove HTTP readiness; health checks are on their own Services page."}
+        ? "Check the current verified release. Unknown or stopped workloads cannot be marked healthy."
+        : "PocketHost-owned runtime inventory, separate from runit. A running process does not prove HTTP readiness."}
     </p>
     {(staticSites.state === "unavailable" || nodeProjects.state === "unavailable") &&
       <Button size="sm" className="min-h-10" variant="outline" onClick={() => setRetryToken(value => value + 1)}>
         Retry hosting inventory
       </Button>}
     <section className="space-y-2" aria-label="Node Hosting workloads">
-      <h3 className="text-sm font-medium">Node.js projects</h3>
+      <h2 className="text-base font-semibold">Node.js projects</h2>
       {nodeProjects.state === "loading" && <p role="status" className="text-xs">Loading Node projects…</p>}
       {nodeProjects.state === "disabled" && <p className="text-xs text-muted-foreground">
         Node Hosting is not enabled on this panel.
@@ -180,6 +180,8 @@ export function HostingWorkloads({
             <div><dt className="inline font-medium">Desired: </dt><dd className="inline">{project.desired}</dd></div>
             <div><dt className="inline font-medium">Active release: </dt><dd className="inline">{project.activeRelease ?? "none"}</dd></div>
             <div><dt className="inline font-medium">Last good: </dt><dd className="inline">{project.lastGoodRelease ?? "none"}</dd></div>
+            {project.previousGoodRelease && project.previousGoodRelease !== project.activeRelease &&
+              <div><dt className="inline font-medium">Rollback candidate: </dt><dd className="inline font-mono">{project.previousGoodRelease}</dd></div>}
           </dl>
         </details>
         {project.desired === "running" && project.state !== "running" &&
@@ -189,7 +191,7 @@ export function HostingWorkloads({
           </p>}
         {view === "health" ? <>
           {diagnostic("node", project.id, project.state === "running", project.activeRelease)}
-          <div className="space-y-1 border-t pt-2">
+          <div className="space-y-1 rounded-md border p-3">
             <p className="text-xs text-muted-foreground">
               Rollback record: {project.previousGoodRelease &&
                 project.previousGoodRelease !== project.activeRelease &&
@@ -199,17 +201,11 @@ export function HostingWorkloads({
                     ? "blocked: process identity unknown"
                     : "no distinct previous good release recorded"}.
             </p>
-            {project.previousGoodRelease &&
-              project.previousGoodRelease !== project.activeRelease &&
-              <p className="break-all font-mono text-xs text-muted-foreground">
-                Candidate: {project.previousGoodRelease}
-              </p>}
             <Link className={buttonVariants({ variant: "ghost", className: "min-h-10 whitespace-normal text-left" })} to="/projects">
               Review deployment and rollback in Projects
             </Link>
             <p className="text-xs text-muted-foreground">
-              This is an inventory hint, not rollback approval. Source/dependency
-              preflight and explicit local-only deployment remain required.
+              Rollback requires source/dependency preflight and explicit local-only deployment approval.
             </p>
           </div>
         </> :
@@ -222,7 +218,7 @@ export function HostingWorkloads({
       </div>)}
     </section>
     <section className="space-y-2" aria-label="Static Hosting workloads">
-      <h3 className="text-sm font-medium">Static sites</h3>
+      <h2 className="text-base font-semibold">Static sites</h2>
       {staticSites.state === "loading" && <p role="status" className="text-xs">Loading static sites…</p>}
       {staticSites.state === "disabled" && <p className="text-xs text-muted-foreground">
         Static Hosting is not enabled on this panel.

@@ -7,10 +7,10 @@ export default function ServicesOverviewPage() {
   const items = navGroups.find(group => group.label === "Services")
     ?.items.filter(item => item.url !== "/services") ?? []
 
-  return <BaseLayout title="Services" description="Choose the service area you want to manage">
+  return <BaseLayout>
     <div className="space-y-4 px-4 pb-8 lg:px-6">
       <div className="space-y-1">
-        <div className="text-xl font-semibold tracking-tight" aria-hidden="true">Services</div>
+        <h1 className="text-xl font-semibold tracking-tight">Services</h1>
         <p className="text-sm text-muted-foreground">
           Protected and observed services remain read-only. Each area loads independently.
         </p>
