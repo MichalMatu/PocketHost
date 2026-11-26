@@ -9,7 +9,7 @@ purpose: V1 source acceptance, deploy boundary and safe future resume
 
 - **Source:** `MichalMatu/PocketHost` `main`; G2-qualified runtime source `d2bacd081ad0879d49a08e3c7fd97789185ad6e4`.
 - **G0–G2:** terminal `QA_PASS` on the paired Samsung A8 for `pockethost-a8-g2-final-core-d2bacd0-20261123-v1` and `pockethost-a8-g2-final-allui-d2bacd0-20261123-v1`. Historical UI **486/486** (two TSX exclusions corrected in Sprint 4F). Node **469 PASS, 1 SKIP**, line coverage **76.11%**; structure, docs, boundaries, budgets, Markdown, Prettier, root/admin lint, root/admin types and Vite build passed. Android hardlink SKIP.
-- **Last device-attested DEV checkout:** `c687a693131a041b08095ac2391c1fbf8d9629b3`. Dashboard exact-source QA/build and guarded deploy PASS; synthetic offline Mac 6/6 before and after, desktop/mobile inspected in both monitoring modes. Prior Monitoring/Logs and Services/Workloads/Health synthetic review PASS. LAN unavailable; real-data visual acceptance pending. [Evidence and next steps](UX_EXECUTION_PLAN.md).
+- **Last device-attested DEV checkout:** `05497834f321156ed16eb495d889b24a9c9f4b19`. Static Hosting creation/runtime UX exact-source QA/build and guarded deployment PASS; synthetic Mac 30/30 before and after, 14 before and six changed-state after previews inspected. Prior Dashboard, Monitoring/Logs and Services/Workloads/Health synthetic review PASS. LAN unavailable; real-data visual acceptance pending. [Evidence and next steps](UX_EXECUTION_PLAN.md).
 - **Browser UX:** owner reported acceptance of the current MVP (not an additional automated test receipt).
 
 ## Previously verified physical recovery and owned workflows
@@ -29,7 +29,7 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 ## Current owner assignment — UX-03 / UX-04
 
-Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; detail/create visual acceptance pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Workloads/Health, Monitoring/Logs and Dashboard scoped synthetic visual review complete; remaining create/detail workspace routes next. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
+Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; Static synthetic visual comparison complete, Node detail/create comparison pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Workloads/Health, Monitoring/Logs and Dashboard scoped synthetic visual review complete; Node create/detail workspace routes next. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 
