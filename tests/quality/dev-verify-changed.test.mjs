@@ -89,8 +89,14 @@ test('reviewed index CSS requires regressions and keeps separate visual acceptan
   const prepared = prepareChangedVerification(plan, { reviewedCss: true });
   assert.deepEqual(prepared.review, []);
   assert.equal(prepared.visualReviewRequired, true);
-  assert.ok(prepared.checks.some((check) => check.argv.includes('tests/appearance.interaction.test.tsx')));
-  assert.ok(prepared.checks.some((check) => check.argv.includes('tests/tablet-sidebar-breakpoint.interaction.test.tsx')));
+  assert.ok(
+    prepared.checks.some((check) => check.argv.includes('tests/appearance.interaction.test.tsx')),
+  );
+  assert.ok(
+    prepared.checks.some((check) =>
+      check.argv.includes('tests/tablet-sidebar-breakpoint.interaction.test.tsx'),
+    ),
+  );
   assert.throws(() => selectApprovedVerification(prepared.checks, 'format', prepared));
   assert.equal(
     selectApprovedVerification(prepared.checks, 'format,admin-types,ui', prepared).length,
@@ -105,7 +111,10 @@ test('reviewed index CSS requires regressions and keeps separate visual acceptan
   assert.ok(other.review.length);
   assert.deepEqual(other.checks, []);
   const deleted = planChangedChecks([css], {}, { deletedPaths: [css] });
-  assert.ok(prepareChangedVerification({ ...deleted, head: 'a'.repeat(40) }, { reviewedCss: true }).review.length);
+  assert.ok(
+    prepareChangedVerification({ ...deleted, head: 'a'.repeat(40) }, { reviewedCss: true }).review
+      .length,
+  );
 });
 
 test('invalid or unrecognized check specifications cannot execute', () => {
