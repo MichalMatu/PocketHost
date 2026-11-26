@@ -9,10 +9,12 @@ export default function ServicesOverviewPage() {
 
   return <BaseLayout title="Services" description="Choose the service area you want to manage">
     <div className="space-y-4 px-4 pb-8 lg:px-6">
-      <p className="text-sm text-muted-foreground">
-        Each area loads independently when opened. PocketHost only controls services
-        it has explicitly enrolled; protected and observed services remain read-only.
-      </p>
+      <div className="space-y-1">
+        <div className="text-xl font-semibold tracking-tight" aria-hidden="true">Services</div>
+        <p className="text-sm text-muted-foreground">
+          Protected and observed services remain read-only. Each area loads independently.
+        </p>
+      </div>
       <nav aria-label="Service management areas" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {items.map(({ title, url, icon: Icon }) => <Link key={url} to={url}
           className="flex min-h-16 items-center gap-3 rounded-lg border px-4 py-3 text-sm
@@ -24,8 +26,7 @@ export default function ServicesOverviewPage() {
         </Link>)}
       </nav>
       <p className="text-xs text-muted-foreground">
-        Service processes, boot settings and HTTP readiness are separate responsibilities.
-        A running process does not prove application health.
+        A running process does not prove HTTP readiness. PocketHost controls only explicitly enrolled services.
       </p>
     </div>
   </BaseLayout>

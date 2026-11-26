@@ -12,6 +12,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
 }))
 import TermuxCenterPage from "@/app/termux/page"
 import ServicesOverviewPage from "@/app/services/services-overview-page"
+import { HostingWorkloads } from "@/app/termux/hosting-workloads"
 
 const time = "2026-11-07T13:00:00.000Z"
 const siteId = "site-" + "a".repeat(32)
@@ -203,6 +204,27 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.getByText("Project recovery coverage")).toBeTruthy()
     await waitFor(() => expect(calls.mock.calls.some(call =>
       String(call[0]) === "/api/v1/sites")).toBe(true))
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+  })
+
+  it("keeps workload identifiers behind a collapsed runtime disclosure", async () => {
+    const user = userEvent.setup()
+    const calls = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      expect(init?.method ?? "GET").toBe("GET")
+      return String(input) === "/api/v1/sites"
+        ? { ok: true, json: async () => ({ sites: [site] }) }
+        : { ok: false, status: 404 }
+    })
+    vi.stubGlobal("fetch", calls)
+    render(<MemoryRouter><HostingWorkloads /></MemoryRouter>)
+    await screen.findByText(site.name)
+    expect(screen.getByText("Saved releases: 1")).toBeTruthy()
+    const details = screen.getByText("Runtime details")
+    expect(details.closest("details")?.open).toBe(false)
+    expect(screen.getByText(siteId).closest("details")).toBe(details.closest("details"))
+    await user.click(details)
+    expect(details.closest("details")?.open).toBe(true)
+    expect(screen.getByRole("link", { name: "Manage site" }).getAttribute("href")).toBe("/sites")
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 

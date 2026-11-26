@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { parseFleetHealth, parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
 
@@ -133,7 +133,7 @@ export function HostingWorkloads({
         {value?.checkedAtMs !== null && value?.checkedAtMs !== undefined &&
           " · " + new Date(value.checkedAtMs).toLocaleTimeString()}
       </span>
-      <Button variant="outline" size="sm"
+      <Button variant="outline" className="min-h-10" size="sm"
         disabled={!running || !release || value?.state === "checking"}
         onClick={() => void health(kind, id, release)}>
         Check health
@@ -148,7 +148,7 @@ export function HostingWorkloads({
         : "PocketHost-owned Hosting workloads, independent of runit inventory. Runtime state does not prove HTTP readiness; health checks are on their own Services page."}
     </p>
     {(staticSites.state === "unavailable" || nodeProjects.state === "unavailable") &&
-      <Button size="sm" variant="outline" onClick={() => setRetryToken(value => value + 1)}>
+      <Button size="sm" className="min-h-10" variant="outline" onClick={() => setRetryToken(value => value + 1)}>
         Retry hosting inventory
       </Button>}
     <section className="space-y-2" aria-label="Node Hosting workloads">
@@ -163,22 +163,25 @@ export function HostingWorkloads({
       {nodeProjects.state === "ready" && nodeProjects.items.length === 0 &&
         <p className="text-xs text-muted-foreground">No PocketHost Node projects yet.</p>}
       {nodeProjects.items.map(project => <div key={project.id}
-        className="space-y-2 rounded-md border p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{project.name}</p>
-            <p className="break-all font-mono text-xs text-muted-foreground">{project.id}</p>
-          </div>
-          <Badge variant="outline">Node · {project.state}</Badge>
+        className="space-y-2 border-t py-3 first:pt-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 break-words text-sm font-medium">{project.name}</p>
+          <Badge variant={project.state === "unknown" ? "destructive" : project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
         </div>
-        {view === "inventory" && <>
-          <p className="break-all text-xs text-muted-foreground">
-            Desired: {project.desired} · Observed: {project.state} · Port: {project.port ?? "not assigned"}
-          </p>
-          <p className="break-all text-xs text-muted-foreground">
-            Active release: {project.activeRelease ?? "none"} · Last good: {project.lastGoodRelease ?? "none"}
-          </p>
-        </>}
+        {view === "inventory" && <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>Port: {project.port ?? "not assigned"}</span>
+          <span>{project.activeRelease ? "Active release" : "No active release"}</span>
+          {project.desired !== project.state && <span>Desired: {project.desired}</span>}
+        </p>}
+        <details className="text-sm">
+          <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">Runtime details</summary>
+          <dl className="space-y-1 break-all text-xs text-muted-foreground">
+            <div><dt className="inline font-medium">Project ID: </dt><dd className="inline font-mono">{project.id}</dd></div>
+            <div><dt className="inline font-medium">Desired: </dt><dd className="inline">{project.desired}</dd></div>
+            <div><dt className="inline font-medium">Active release: </dt><dd className="inline">{project.activeRelease ?? "none"}</dd></div>
+            <div><dt className="inline font-medium">Last good: </dt><dd className="inline">{project.lastGoodRelease ?? "none"}</dd></div>
+          </dl>
+        </details>
         {project.desired === "running" && project.state !== "running" &&
           <p role="alert" className="text-xs">
             Desired/observed state differs. Policy: {project.healthDecision.action}
@@ -201,7 +204,7 @@ export function HostingWorkloads({
               <p className="break-all font-mono text-xs text-muted-foreground">
                 Candidate: {project.previousGoodRelease}
               </p>}
-            <Link className="text-xs underline underline-offset-4" to="/projects">
+            <Link className={buttonVariants({ variant: "ghost", className: "min-h-10 whitespace-normal text-left" })} to="/projects">
               Review deployment and rollback in Projects
             </Link>
             <p className="text-xs text-muted-foreground">
@@ -210,7 +213,7 @@ export function HostingWorkloads({
             </p>
           </div>
         </> :
-          <Link className="text-xs underline underline-offset-4" to="/projects">
+          <Link className={buttonVariants({ variant: "ghost", className: "min-h-10 whitespace-normal text-left" })} to="/projects">
             Manage project
           </Link>}
         {project.state === "unknown" && <p role="alert" className="text-xs">
@@ -230,21 +233,25 @@ export function HostingWorkloads({
       {staticSites.state === "ready" && staticSites.items.length === 0 &&
         <p className="text-xs text-muted-foreground">No PocketHost static sites yet.</p>}
       {staticSites.items.map(site => <div key={site.id}
-        className="space-y-2 rounded-md border p-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">{site.name}</p>
-            <p className="break-all font-mono text-xs text-muted-foreground">{site.id}</p>
-          </div>
-          <Badge variant="outline">Static · {site.state}</Badge>
+        className="space-y-2 border-t py-3 first:pt-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="min-w-0 break-words text-sm font-medium">{site.name}</p>
+          <Badge variant={site.state === "unknown" ? "destructive" : site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
         </div>
-        {view === "inventory" &&
-          <p className="break-all text-xs text-muted-foreground">
-            Active release: {site.activeRelease ?? "none"} · Releases: {site.releases}
-          </p>}
+        {view === "inventory" && <p className="flex flex-wrap gap-x-3 gap-y-1 text-sm text-muted-foreground">
+          <span>{site.activeRelease ? "Active release" : "No active release"}</span>
+          <span>Saved releases: {site.releases}</span>
+        </p>}
+        <details className="text-sm">
+          <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">Runtime details</summary>
+          <dl className="space-y-1 break-all text-xs text-muted-foreground">
+            <div><dt className="inline font-medium">Site ID: </dt><dd className="inline font-mono">{site.id}</dd></div>
+            <div><dt className="inline font-medium">Active release: </dt><dd className="inline">{site.activeRelease ?? "none"}</dd></div>
+          </dl>
+        </details>
         {view === "health" ?
           diagnostic("static", site.id, site.state === "running", site.activeRelease) :
-          <Link className="text-xs underline underline-offset-4" to="/sites">
+          <Link className={buttonVariants({ variant: "ghost", className: "min-h-10 whitespace-normal text-left" })} to="/sites">
             Manage site
           </Link>}
         {site.state === "unknown" && <p role="alert" className="text-xs">
