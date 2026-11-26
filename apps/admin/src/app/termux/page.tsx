@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { Archive, Boxes, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { parseObservabilitySnapshot, type ObservabilitySnapshot } from "@/lib/observability-schema"
 import { parseH3Tools, type H3Tools } from "@/lib/termux-center-schema"
@@ -91,8 +91,8 @@ export default function TermuxCenterPage({ section = "packages" }: { section?: T
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline" className="gap-1"><ShieldCheck className="size-3" />Termux</Badge>
-            <Link to="/settings/network" className="text-muted-foreground text-xs underline-offset-4 hover:underline">
-              <Badge variant="outline">LAN only · no login</Badge>
+            <Link to="/settings/network" className={buttonVariants({ variant: "outline" })}>
+              LAN only · no login
             </Link>
             </div>
           {overviewTracked && <p role="status" className="text-xs text-muted-foreground">

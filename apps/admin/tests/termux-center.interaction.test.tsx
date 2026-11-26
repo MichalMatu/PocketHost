@@ -157,6 +157,7 @@ describe("H3 strict read-only contracts", () => {
     await screen.findByText("curl")
     const link = screen.getByRole("link", { name: "LAN only · no login" })
     expect(link.getAttribute("href")).toBe("/settings/network")
+    expect(link.classList.contains("h-8")).toBe(true)
     expect(screen.queryByText(/This trusted-LAN development panel has no login/)).toBeNull()
   })
 
