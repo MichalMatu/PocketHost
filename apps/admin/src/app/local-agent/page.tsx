@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { GitBranch, RefreshCw, TerminalSquare } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ControlPlanePanel } from "@/app/termux/control-plane-panel"
 import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
@@ -246,10 +246,10 @@ export default function LocalAgentPage() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">{live ? "Log updates · 5s" : "Log updates paused"}</Badge>
-          <Button size="sm" variant="outline" onClick={() => setLive(value => !value)}>
+          <Button variant="outline" onClick={() => setLive(value => !value)}>
             {live ? "Pause log updates" : "Resume log updates"}
           </Button>
-          <Button size="sm" variant="outline" onClick={() => {
+          <Button variant="outline" onClick={() => {
               rawManualRead.current = true
               rawCursor.current = null
               rawDecoder.current = new TextDecoder()
@@ -268,7 +268,7 @@ export default function LocalAgentPage() {
         {views.map(item => <Button type="button" role="tab" key={item.value}
           aria-selected={view === item.value}
           variant={view === item.value ? "default" : "outline"}
-          size="sm" onClick={() => setView(item.value)}>
+          onClick={() => setView(item.value)}>
           {item.label}
         </Button>)}
       </nav>
@@ -305,7 +305,7 @@ export default function LocalAgentPage() {
             <CardHeader><CardTitle>GitHub transport</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <p className="flex items-center gap-2"><GitBranch className="size-4" aria-hidden="true" />
-                <a className="underline underline-offset-2" href="https://github.com/MichalMatu/local-agent"
+                <a className={buttonVariants({ variant: "link", className: "underline" })} href="https://github.com/MichalMatu/local-agent"
                   target="_blank" rel="noreferrer">MichalMatu/local-agent</a></p>
               <p>Task / result branch: <strong>agent-control</strong></p>
               <p>Agent source branch: <strong>main</strong></p>
@@ -384,9 +384,9 @@ export default function LocalAgentPage() {
                 Termux svlogd/current · original lines · no filtering · updates every 5s
               </p>
               <div className="flex flex-wrap items-center gap-2">
-                <Button variant="outline" size="sm" disabled={!rawText}
+                <Button variant="outline" disabled={!rawText}
                   onClick={() => void copyRawLog()}>Copy loaded log</Button>
-                <Button variant="outline" size="sm"
+                <Button variant="outline"
                   onClick={() => {
                     setFollowTail(true)
                     if (rawViewport.current) rawViewport.current.scrollTop = rawViewport.current.scrollHeight
@@ -398,7 +398,7 @@ export default function LocalAgentPage() {
               <p role="alert" className="text-sm text-muted-foreground">
                 Raw log read failed. {rawText ? "Last read is still shown." : "No log available."}
               </p>
-              <Button variant="outline" size="sm" disabled={rawLoading}
+              <Button variant="outline" disabled={rawLoading}
                 onClick={() => {
                   rawManualRead.current = true
                   setRawError(false)
@@ -436,7 +436,7 @@ export default function LocalAgentPage() {
               unavailable evidence is not proof of a stopped service.</p>
             <p>Local snapshot: {formatAgentTime(plane?.observedAt)}
               {planeError ? " · unable to refresh" : ""}</p>
-            <Button variant="outline" size="sm" onClick={() => setAdvanced(open => !open)}>
+            <Button variant="outline" onClick={() => setAdvanced(open => !open)}>
               {advanced ? "Hide technical details" : "Show technical details"}
             </Button>
           </CardContent>

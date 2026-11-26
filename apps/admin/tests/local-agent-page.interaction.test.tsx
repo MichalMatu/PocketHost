@@ -76,6 +76,10 @@ describe("Local Agent read-only overview", () => {
     expect(screen.getByText("383")).toBeTruthy()
     expect(screen.getByText(/Uptime 6 d 19 h 50 min 15 s/)).toBeTruthy()
     expect(screen.getByText("agent-control")).toBeTruthy()
+    for (const control of [screen.getByRole("button", { name: "Pause log updates" }), screen.getByRole("button", { name: "Refresh" }), ...screen.getAllByRole("tab"), screen.getByRole("link", { name: "MichalMatu/local-agent" })]) {
+      expect(control.classList.contains("h-8")).toBe(true)
+    }
+    expect(screen.getByRole("link", { name: "MichalMatu/local-agent" }).getAttribute("href")).toBe("https://github.com/MichalMatu/local-agent")
     expect(screen.getAllByText(/Not checked by panel/).length).toBeGreaterThan(0)
     expect(screen.getByText(/Current task:/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /Stop agent|Start agent|Restart agent/i })).toBeNull()
