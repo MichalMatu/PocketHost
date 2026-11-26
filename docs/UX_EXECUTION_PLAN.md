@@ -9,7 +9,7 @@ purpose: Detailed UX sprint acceptance checklist
 
 ## Current priority
 
-The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-01 is active. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-02 is active by explicit owner reprioritization; UX-01 visual acceptance remains pending. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
 
 Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
 
@@ -21,9 +21,11 @@ UX-01A extracted the detail panel (catalog page 397 to 62 lines). Exact-source `
 - [x] Keep list concise: name, observed status, address and useful summary; no embedded create form or mutation-heavy detail panels. On verified creation navigate to the new stopped site; after verified deletion return to list. Prevent duplicate writes, stale results and unknown-outcome retries.
 - [x] Organize detail by Overview, Files, Versions, Traffic, Public access, Logs and Settings; reuse existing hooks/components, preserve readback, lifecycle, release protections, public access and all existing features. No real-site mutation during QA.
 - [x] Migrate route consumers and existing tests; add route isolation, deep link, invalid ID, success/failure and navigation regression tests. Exact-SHA scoped A8 gate/build and separate guarded DEV deploy/readback PASS.
-- [ ] Desktop visual comparison at 1440×900: catalog, create form and seven tabs of a verified owned site. Mac Lab requires fresh exact-live-SHA approval per [Test Lab](TEST_LAB.md); its current fixed route aliases do not cover the new create/detail screens. Keep capture read-only (same-origin GET/HEAD, no form submits or site mutations), images private, compact geometry report only. Do not start UX-02 until visual acceptance.
+- [ ] Desktop visual comparison at 1440×900: catalog, create form and seven tabs of a verified owned site. Mac Lab requires fresh exact-live-SHA approval per [Test Lab](TEST_LAB.md); its current fixed route aliases do not cover the new create/detail screens. Keep capture read-only (same-origin GET/HEAD, no form submits or site mutations), images private, compact geometry report only. Owner reprioritized UX-02 after reviewing Node screenshots; retain this visual acceptance item.
 
-### UX-02 — Node.js Hosting workspaces (QUEUED)
+### UX-02 — Node.js Hosting workspaces (ACTIVE)
+
+Owner requested modular folders, a compact Node workspace and enforceable quality gates. Split catalog, creation, diagnostics, backups and per-project tabs; keep legacy project links. Route entry is limited to 120 lines, new view/state/action modules to 350 lines and the existing 24 KiB source budget. No reverse view dependencies or direct browser transport in view modules. Affected checks include budget tests and shared test-helper consumers. QA and guarded DEV deployment are pending. No new hosting ingress.
 
 - [ ] Separate application list, creation/import and selected application workspace; group runtime, source/dependencies/build, releases, logs, traffic, data/SQLite and backup into coherent views.
 - [ ] Extract oversized controller/presentation responsibilities; preserve owner session, stale-response fencing, review/approval, staging, runtime and backup semantics. Test routes and cross-project isolation; QA/deploy/readback.

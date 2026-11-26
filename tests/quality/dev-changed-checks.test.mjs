@@ -326,3 +326,16 @@ test('reviewed server adapters require strict root and admin types and isolated 
   const unknown = planChangedChecks(['apps/admin/plugins/unknown-api.ts']);
   assert.ok(unknown.review.some((reason) => reason.includes('Explicit impact review')));
 });
+
+test('Node workspace edits require budgets and shared test helpers map to consumers', () => {
+  const view = 'apps/admin/src/app/projects/views/node-workspace.tsx';
+  const helper = 'apps/admin/tests/helpers/node-project-workflow-harness.tsx';
+  const consumer = 'apps/admin/tests/node-projects.interaction.test.tsx';
+  const dependencies = { [consumer]: [view, helper] };
+  assert.equal(needsChangedTestDependencies([helper]), true);
+  const result = planChangedChecks([view, helper], dependencies, { includeAdminLint: true });
+  assert.deepEqual(result.review, []);
+  assert.ok(command(result, 'node tests').argv.includes('tests/quality/code-budgets.test.mjs'));
+  assert.ok(command(result, 'ui tests').argv.includes('tests/node-projects.interaction.test.tsx'));
+  assert.ok(command(result, 'admin changed-file lint').argv.includes('tests/helpers/node-project-workflow-harness.tsx'));
+});

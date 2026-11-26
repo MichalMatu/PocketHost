@@ -45,7 +45,7 @@ export default function ProjectsPage() {
         </div>
       </div>
       <NodeAccessView controller={c} showTrusted={false} />
-      <NodeFeedback controller={c} />
+      <NodeFeedback controller={c} showDiagnostics={diagnostics} />
       {adding ? <NodeCreateView controller={c} standalone onCreated={id => go("/projects/" + id)} />
         : backups ? <NodeBackupsView controller={c} standalone />
         : diagnostics ? <NodeHostDiagnosticsView controller={c} />
