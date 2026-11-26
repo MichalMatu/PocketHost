@@ -1,6 +1,6 @@
 import * as React from "react"
 import { afterEach, describe, expect, it, vi } from "vitest"
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
@@ -10,6 +10,9 @@ vi.mock("@/components/layouts/base-layout", () => ({
 import HostingPage from "@/app/hosting/page"
 
 afterEach(() => vi.unstubAllGlobals())
+
+const staticHosting = () => within(screen.getByRole("region", { name: "Static Hosting" }))
+const nodeHosting = () => within(screen.getByRole("region", { name: "Node.js Hosting" }))
 
 describe("Hosting selection", () => {
   it("can retry a stalled Node inventory without accepting the old failure", async () => {
@@ -31,15 +34,15 @@ describe("Hosting selection", () => {
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
 
-    expect(await screen.findByText("Static hosting: 0 running · 0 total")).toBeTruthy()
+    expect(await staticHosting().findByText("0 running · 0 total")).toBeTruthy()
     await waitFor(() => expect(nodeFetches).toBe(1))
     const refresh = screen.getByRole("button", { name: "Refresh" })
     expect(refresh.hasAttribute("disabled")).toBe(false)
     fireEvent.click(refresh)
 
-    expect(await screen.findByText("Node hosting: Not enabled on this panel")).toBeTruthy()
+    expect(await nodeHosting().findByText("Not enabled on this panel")).toBeTruthy()
     await act(async () => { rejectFirst?.(new Error("late network failure")) })
-    expect(screen.getByText("Node hosting: Not enabled on this panel")).toBeTruthy()
+    expect(nodeHosting().getByText("Not enabled on this panel")).toBeTruthy()
     expect(nodeFetches).toBe(2)
   })
 
@@ -51,8 +54,8 @@ describe("Hosting selection", () => {
     }))
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
-    expect(await screen.findByText("Static hosting: 0 running · 0 total")).toBeTruthy()
-    expect(await screen.findByText("Node hosting: Not enabled on this panel")).toBeTruthy()
+    expect(await staticHosting().findByText("0 running · 0 total")).toBeTruthy()
+    expect(await nodeHosting().findByText("Not enabled on this panel")).toBeTruthy()
     expect(screen.getByRole("link", { name: "Manage static websites" }).getAttribute("href"))
       .toBe("/sites")
     expect(screen.getByRole("link", { name: "Manage Node.js projects" }).getAttribute("href"))
@@ -74,7 +77,7 @@ describe("Hosting selection", () => {
       json: async () => ({ sites: [{ id: "foreign", kind: "static-site" }] }),
     })))
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
-    expect(await screen.findByText("Static hosting: Status unavailable — retry Refresh")).toBeTruthy()
+    expect(await staticHosting().findByText("Status unavailable — retry Refresh")).toBeTruthy()
   })
   it("shows actual running and stopped static sites and verified Node runtime", async () => {
     const release = "r-" + "b".repeat(32)
@@ -105,8 +108,8 @@ describe("Hosting selection", () => {
     })
     vi.stubGlobal("fetch", requests)
     render(<MemoryRouter><HostingPage /></MemoryRouter>)
-    expect(await screen.findByText("Static hosting: 1 running · 2 total")).toBeTruthy()
-    expect(await screen.findByText("Node hosting: 1 running · 1 total")).toBeTruthy()
+    expect(await staticHosting().findByText("1 running · 2 total")).toBeTruthy()
+    expect(await nodeHosting().findByText("1 running · 1 total")).toBeTruthy()
     expect(screen.getByText("My site")).toBeTruthy()
     expect(screen.getByText("Draft")).toBeTruthy()
     expect(screen.getByText("My Node")).toBeTruthy()

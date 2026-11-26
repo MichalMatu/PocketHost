@@ -123,13 +123,13 @@ export default function HostingPage() {
           </Button>
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
-          <Card>
+          <Card role="region" aria-labelledby="static-hosting-heading">
             <CardHeader className="border-b">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle><h2>Static Hosting</h2></CardTitle>
+                <CardTitle><h2 id="static-hosting-heading">Static Hosting</h2></CardTitle>
                 <Link to="/sites" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage static websites</Link>
               </div>
-              <p role="status" aria-busy={staticInventory.status === "loading"} className="text-sm text-muted-foreground">
+              <p role="status" aria-label="Static hosting status" aria-busy={staticInventory.status === "loading"} className="text-sm text-muted-foreground">
                 {statusText(staticInventory)}
               </p>
             </CardHeader>
@@ -159,13 +159,13 @@ export default function HostingPage() {
               )}
             </CardContent>
           </Card>
-          <Card>
+          <Card role="region" aria-labelledby="node-hosting-heading">
             <CardHeader className="border-b">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle><h2>Node.js Hosting</h2></CardTitle>
+                <CardTitle><h2 id="node-hosting-heading">Node.js Hosting</h2></CardTitle>
                 <Link to="/projects" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage Node.js projects</Link>
               </div>
-              <p role="status" aria-busy={nodeInventory.status === "loading"} className="text-sm text-muted-foreground">
+              <p role="status" aria-label="Node hosting status" aria-busy={nodeInventory.status === "loading"} className="text-sm text-muted-foreground">
                 {statusText(nodeInventory)}
               </p>
             </CardHeader>
@@ -212,8 +212,8 @@ export default function HostingPage() {
           </Card>
         </div>
         <nav aria-label="Hosting operations" className="flex flex-wrap items-center gap-2 border-t pt-4">
-          <Link to="/deployments" className={buttonVariants({ variant: "outline" })}>Deployment history</Link>
-          <Link to="/runtime-logs" className={buttonVariants({ variant: "outline" })}>Project logs</Link>
+          <Link to="/deployments" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Deployment history</Link>
+          <Link to="/runtime-logs" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Project logs</Link>
         </nav>
       </div>
     </BaseLayout>
