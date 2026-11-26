@@ -337,5 +337,6 @@ test('Node workspace edits require budgets and shared test helpers map to consum
   assert.deepEqual(result.review, []);
   assert.ok(command(result, 'node tests').argv.includes('tests/quality/code-budgets.test.mjs'));
   assert.ok(command(result, 'ui tests').argv.includes('tests/node-projects.interaction.test.tsx'));
-  assert.ok(command(result, 'admin changed-file lint').argv.includes('tests/helpers/node-project-workflow-harness.tsx'));
+  const lint = command(result, 'admin changed-file lint');
+  assert.ok(lint.argv.includes('tests/helpers/node-project-workflow-harness.tsx'));
 });
