@@ -5,7 +5,7 @@ import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { readNodeRuntimeCatalog, readNodeHealth, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
 import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 
@@ -112,9 +112,7 @@ export default function HostingPage() {
     <BaseLayout title="Hosting" description="Manage websites and Node.js applications hosted on this device.">
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-muted-foreground">
-            Current inventory from PocketHost-owned hosting APIs. Refresh after publishing or changing a runtime.
-          </p>
+          <div className="text-xl font-semibold tracking-tight" aria-hidden="true">Hosting</div>
           <Button size="lg" variant="outline" className="min-h-10" onClick={() => {
               for (const controller of checks.current.values()) controller.abort()
               checks.current.clear()
@@ -126,26 +124,28 @@ export default function HostingPage() {
         </div>
         <div className="grid gap-4 lg:grid-cols-2">
           <Card>
-            <CardHeader>
-              <CardTitle>Static Hosting</CardTitle>
-              <CardDescription>HTML websites and prebuilt frontend files.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p role="status" aria-busy={staticInventory.status === "loading"} className="text-sm">
-                Static hosting: {statusText(staticInventory)}
+            <CardHeader className="border-b">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle><h2>Static Hosting</h2></CardTitle>
+                <Link to="/sites" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage static websites</Link>
+              </div>
+              <p role="status" aria-busy={staticInventory.status === "loading"} className="text-sm text-muted-foreground">
+                {statusText(staticInventory)}
               </p>
+            </CardHeader>
+            <CardContent>
               {staticInventory.status === "enabled" && (
-                <div className="space-y-2">
+                <div className="divide-y">
                   {staticInventory.items.length === 0 && (
                     <p className="text-sm text-muted-foreground">No static websites yet.</p>
                   )}
                   {staticInventory.items.map(site => (
-                    <div key={site.id} className="space-y-1 rounded-md border p-3 text-sm">
+                    <div key={site.id} className="space-y-2 py-3 first:pt-0 last:pb-0 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <Link to={siteDetailPath(site.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{site.name}</Link>
                         <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                       </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                         <span title={site.activeRelease ?? undefined}>Release: {releaseLabel(site.activeRelease)}</span>
                         <span>{site.releases} releases</span>
                         <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className="inline-flex min-h-10 items-center rounded px-2 underline underline-offset-4">Logs</Link>
@@ -157,30 +157,31 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Link to="/sites" className={buttonVariants({ variant: "default", className: "min-h-10" })}>Manage static websites</Link>
             </CardContent>
           </Card>
           <Card>
-            <CardHeader>
-              <CardTitle>Node.js Hosting</CardTitle>
-              <CardDescription>Backend services, APIs and server-side JavaScript.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p role="status" aria-busy={nodeInventory.status === "loading"} className="text-sm">
-                Node hosting: {statusText(nodeInventory)}
+            <CardHeader className="border-b">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle><h2>Node.js Hosting</h2></CardTitle>
+                <Link to="/projects" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage Node.js projects</Link>
+              </div>
+              <p role="status" aria-busy={nodeInventory.status === "loading"} className="text-sm text-muted-foreground">
+                {statusText(nodeInventory)}
               </p>
+            </CardHeader>
+            <CardContent>
               {nodeInventory.status === "enabled" && (
-                <div className="space-y-2">
+                <div className="divide-y">
                   {nodeInventory.items.length === 0 && (
                     <p className="text-sm text-muted-foreground">No Node.js projects yet.</p>
                   )}
                   {nodeInventory.items.map(project => (
-                    <div key={project.id} className="space-y-1 rounded-md border p-3 text-sm">
+                    <div key={project.id} className="space-y-2 py-3 first:pt-0 last:pb-0 text-sm">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <Link to={"/projects?project=" + encodeURIComponent(project.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{project.name}</Link>
                         <Badge variant={project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
                       </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
                         <span title={project.activeRelease ?? undefined}>Release: {releaseLabel(project.activeRelease)}</span>
                         {project.port !== null && <span>Port: {project.port}</span>}
                         <span>Desired: {project.desired}</span>
@@ -207,20 +208,13 @@ export default function HostingPage() {
                   ))}
                 </div>
               )}
-              <Link to="/projects" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage Node.js projects</Link>
             </CardContent>
           </Card>
         </div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Operations</CardTitle>
-            <CardDescription>Inspect published releases and runtime output.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
-            <Link to="/deployments" className="inline-flex min-h-10 items-center underline underline-offset-4">Deployment history</Link>
-            <Link to="/runtime-logs" className="inline-flex min-h-10 items-center underline underline-offset-4">Project logs</Link>
-          </CardContent>
-        </Card>
+        <nav aria-label="Hosting operations" className="flex flex-wrap items-center gap-2 border-t pt-4">
+          <Link to="/deployments" className={buttonVariants({ variant: "outline" })}>Deployment history</Link>
+          <Link to="/runtime-logs" className={buttonVariants({ variant: "outline" })}>Project logs</Link>
+        </nav>
       </div>
     </BaseLayout>
   )

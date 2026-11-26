@@ -82,6 +82,11 @@ it("Deployments shows only owned static and Node project histories", async () =>
   render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
   await screen.findByText("Example static")
   await screen.findByText("Example Node")
+  expect(screen.getByRole("heading", { level: 2, name: "Static sites" })).toBeTruthy()
+  expect(screen.getByRole("heading", { level: 2, name: "Node.js applications" })).toBeTruthy()
+  expect(screen.getByRole("heading", { level: 3, name: "Example static" })).toBeTruthy()
+  expect(screen.getByRole("link", { name: "Manage static sites" }).getAttribute("href")).toBe("/sites")
+  expect(screen.getByRole("link", { name: "Manage Node projects" }).getAttribute("href")).toBe("/projects")
   const links = [screen.getByRole("link", { name: "Open site settings" }), screen.getByRole("link", { name: "Open project" }), ...screen.getAllByRole("link", { name: "Logs", exact: true })]
   expect(links.every(link => link.classList.contains("h-8") && link.hasAttribute("href"))).toBe(true)
   const historyControls = screen.getAllByText("Deployment history (1)")
@@ -261,6 +266,20 @@ it("rejects malformed static inventory instead of treating it as empty", async (
   await screen.findByText("Invalid static site inventory.")
   expect(screen.queryByText("No static sites yet.")).toBeNull()
   expect(screen.queryByText("PocketHost Demo")).toBeNull()
+})
+
+it("Hosting overview groups management and operations without duplicate instructional copy", async () => {
+  setup(true)
+  render(<MemoryRouter><HostingPage /></MemoryRouter>)
+  await screen.findByText("Example Node")
+  expect(screen.getByRole("heading", { level: 2, name: "Static Hosting" })).toBeTruthy()
+  expect(screen.getByRole("heading", { level: 2, name: "Node.js Hosting" })).toBeTruthy()
+  expect(screen.getByRole("link", { name: "Manage static websites" }).getAttribute("href")).toBe("/sites")
+  expect(screen.getByRole("link", { name: "Manage Node.js projects" }).getAttribute("href")).toBe("/projects")
+  expect(screen.getByRole("navigation", { name: "Hosting operations" })).toBeTruthy()
+  expect(screen.getByRole("link", { name: "Deployment history" }).getAttribute("href")).toBe("/deployments")
+  expect(screen.getByRole("link", { name: "Project logs" }).getAttribute("href")).toBe("/runtime-logs")
+  expect(screen.queryByText(/Current inventory from PocketHost-owned/)).toBeNull()
 })
 
 it("Hosting overview checks HTTP readiness only after an explicit click", async () => {
