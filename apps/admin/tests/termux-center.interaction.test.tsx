@@ -127,6 +127,22 @@ describe("H3 strict read-only contracts", () => {
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
   })
 
+  it("uses standard package selection and sorting targets without changing packages", async () => {
+    const user = userEvent.setup()
+    const calls = mount("packages")
+    const item = await screen.findByRole("button", { name: "curl" })
+    const sort = screen.getByRole("button", { name: /Package ↑/ })
+    for (const control of [item, sort, screen.getByRole("tab", { name: "Installed" })]) {
+      expect(control.classList.contains("h-8")).toBe(true)
+    }
+    expect(sort.closest("th")?.getAttribute("aria-sort")).toBe("ascending")
+    await user.click(sort)
+    expect(sort.closest("th")?.getAttribute("aria-sort")).toBe("descending")
+    await user.click(item)
+    expect(screen.getByRole("button", { name: "Preview removal" }).classList.contains("h-8")).toBe(true)
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+  })
+
   it("Refresh reloads the full Termux package inventory", async () => {
     const user = userEvent.setup()
     const calls = mount("packages")

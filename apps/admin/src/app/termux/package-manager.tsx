@@ -182,7 +182,7 @@ export function PackageManager({
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center gap-2" aria-label="Package ecosystems">
       {(["termux", "node", "python"] as const).map(item =>
-        <Button key={item} size="sm" variant={ecosystem === item ? "secondary" : "outline"}
+        <Button key={item} variant={ecosystem === item ? "secondary" : "outline"}
           onClick={() => changeEcosystem(item)} disabled={isBusy}>
           {item === "termux" ? "Termux" : item === "node" ? "Node" : "Python"} · {counts[item] ?? "—"}
         </Button>)}
@@ -193,10 +193,10 @@ export function PackageManager({
     </div>
 
     {ecosystem === "termux" && <div role="tablist" aria-label="Package views" className="flex flex-wrap gap-2">
-      <Button size="sm" role="tab" aria-selected={view === "installed"}
+      <Button role="tab" aria-selected={view === "installed"}
         variant={view === "installed" ? "secondary" : "outline"} disabled={isBusy}
         onClick={() => changeView("installed")}>Installed</Button>
-      <Button size="sm" role="tab" aria-selected={view === "available"}
+      <Button role="tab" aria-selected={view === "available"}
         variant={view === "available" ? "secondary" : "outline"} disabled={isBusy}
         onClick={() => changeView("available")}>Available</Button>
     </div>}
@@ -204,12 +204,12 @@ export function PackageManager({
       <Input aria-label="Search packages" className="min-w-44 flex-1" placeholder="Search packages…"
         value={query} disabled={isBusy} onChange={event => changeQuery(event.target.value)} />
       {ecosystem === "termux" && <>
-        <Button size="sm" variant="outline" disabled={isBusy || !validPackageName(query.trim().toLowerCase())}
+        <Button variant="outline" disabled={isBusy || !validPackageName(query.trim().toLowerCase())}
           onClick={() => void searchCatalog()}>Search catalog</Button>
-        <Button size="sm" variant="outline" disabled={isBusy}
+        <Button variant="outline" disabled={isBusy}
           title="Refreshes local apt metadata only; it does not install updates"
           onClick={() => void refreshIndexes()}>Check updates</Button>
-        <Button size="sm" variant="outline" disabled={isBusy}
+        <Button variant="outline" disabled={isBusy}
           onClick={() => void preview("upgrade-all")}>Preview all upgrades</Button>
       </>}
     </div>
@@ -226,20 +226,24 @@ export function PackageManager({
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-background">
             <tr className="border-b">
-              <th className="p-2 text-left"><button type="button" onClick={() => chooseSort("name")}>
-                Package {sort === "name" ? (descending ? "↓" : "↑") : ""}
-              </button></th>
-              <th className="p-2 text-left"><button type="button" onClick={() => chooseSort("version")}>
-                Version {sort === "version" ? (descending ? "↓" : "↑") : ""}
-              </button></th>
+              <th className="p-2 text-left" aria-sort={sort === "name" ? (descending ? "descending" : "ascending") : "none"}>
+                <Button type="button" variant="ghost" className="min-w-8" onClick={() => chooseSort("name")}>
+                  Package {sort === "name" ? (descending ? "↓" : "↑") : ""}
+                </Button>
+              </th>
+              <th className="p-2 text-left" aria-sort={sort === "version" ? (descending ? "descending" : "ascending") : "none"}>
+                <Button type="button" variant="ghost" className="min-w-8" onClick={() => chooseSort("version")}>
+                  Version {sort === "version" ? (descending ? "↓" : "↑") : ""}
+                </Button>
+              </th>
               {ecosystem === "termux" && <th className="p-2 text-left">Updates</th>}
             </tr>
           </thead>
           <tbody>
             {visible.map(item => <tr key={item.ecosystem + ":" + item.name}
               className={selected?.ecosystem === item.ecosystem && selected.name === item.name ? "bg-muted/50" : "border-b"}>
-              <td className="p-2"><button type="button" className="text-left font-medium underline-offset-4 hover:underline"
-                disabled={isBusy} onClick={() => choose(item)}>{item.name}</button></td>
+              <td className="p-2"><Button type="button" variant="link" className="min-w-8 justify-start"
+                disabled={isBusy} onClick={() => choose(item)}>{item.name}</Button></td>
               <td className="p-2 font-mono text-xs">{item.version}</td>
               {ecosystem === "termux" && <td className="p-2 text-xs">
                 {cachedUpdateHints.has(item.name) ? <Badge variant="outline">Cached hint</Badge> :
@@ -280,10 +284,10 @@ export function PackageManager({
         <p className="text-muted-foreground text-xs">Cached update hint · verify with Check updates before applying.</p>}
       {selected.description && <p className="text-sm text-muted-foreground">{selected.description}</p>}
       {canManage && <div className="flex flex-wrap gap-2">
-        <Button size="sm" disabled={isBusy} onClick={() => void preview("install")}>Preview install</Button>
-        <Button size="sm" variant="outline" disabled={isBusy || !selectedInstalled}
+        <Button disabled={isBusy} onClick={() => void preview("install")}>Preview install</Button>
+        <Button variant="outline" disabled={isBusy || !selectedInstalled}
           onClick={() => void preview("upgrade")}>Preview upgrade</Button>
-        <Button size="sm" variant="outline" disabled={isBusy || !selectedInstalled}
+        <Button variant="outline" disabled={isBusy || !selectedInstalled}
           onClick={() => void preview("remove")}>Preview removal</Button>
       </div>}
     </div>}
@@ -291,7 +295,7 @@ export function PackageManager({
     {plan && <div className="space-y-2 rounded-md border p-3">
       <p className="text-sm font-medium">Preview: {plan.kind}{plan.name ? " · " + plan.name : ""}</p>
       <p className="text-xs text-muted-foreground">Apt simulation only. Confirm before applying.</p>
-      <Button size="sm" disabled={isBusy} onClick={() => void apply()}>Apply previewed changes</Button>
+      <Button disabled={isBusy} onClick={() => void apply()}>Apply previewed changes</Button>
     </div>}
     {operationBusy && <p role="status">Termux operation in progress…</p>}
     {message && <p role="status" className="text-sm">{message}</p>}
