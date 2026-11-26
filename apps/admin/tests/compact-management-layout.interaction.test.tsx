@@ -18,8 +18,8 @@ vi.mock("@/components/theme-customizer", () => ({
   ThemeCustomizer: () => null,
 }))
 vi.mock("@/components/ui/sidebar", () => ({
-  SidebarProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
-  SidebarInset: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  SidebarProvider: ({ children, className }: { children: React.ReactNode; className?: string }) => <div data-testid="sidebar-provider" className={className}>{children}</div>,
+  SidebarInset: ({ children, className }: { children: React.ReactNode; className?: string }) => <main className={className}>{children}</main>,
 }))
 vi.mock("@/hooks/use-sidebar-config", () => ({
   useSidebarConfig: () => ({
@@ -103,6 +103,10 @@ describe("PocketHost global heading density", () => {
     expect(rendered.container.querySelector("h1")?.parentElement?.classList.contains("sr-only")).toBe(true)
     expect(rendered.container.querySelector(".text-2xl")).toBeNull()
     expect(rendered.container.querySelector('[data-testid="page-content"]')).not.toBeNull()
+    const provider = rendered.getByTestId("sidebar-provider")
+    expect(provider.classList.contains("flex-row-reverse")).toBe(true)
+    expect(provider.firstElementChild?.tagName).toBe("NAV")
+    expect(provider.querySelector("main")?.classList.contains("md:peer-data-[variant=inset]:mr-0")).toBe(true)
   })
 
   it("automatically keeps newly added PocketHost routes compact", () => {

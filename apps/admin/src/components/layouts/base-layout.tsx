@@ -53,7 +53,8 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
     />
   )
   const content = (
-    <SidebarInset>
+    <SidebarInset className={config.side === "right" ?
+      "md:peer-data-[variant=inset]:ml-2 md:peer-data-[variant=inset]:mr-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:mr-2" : undefined}>
       <SiteHeader
         onCustomize={openCustomizer}
         onResetAppearance={resetAppearance}
@@ -81,13 +82,10 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
         "--sidebar-width-icon": "3rem",
         "--header-height": "calc(var(--spacing) * 14)",
       } as React.CSSProperties}
-      className={config.collapsible === "none" ? "sidebar-none-mode" : ""}
+      className={config.side === "right" ? "flex-row-reverse" : undefined}
     >
-      {config.side === "left" ? (
-        <>{sidebar}{content}</>
-      ) : (
-        <>{content}{sidebar}</>
-      )}
+      {sidebar}
+      {content}
       <ThemeCustomizer
         key={customizerVersion}
         open={themeCustomizerOpen}
