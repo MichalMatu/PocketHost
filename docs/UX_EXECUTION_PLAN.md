@@ -9,7 +9,7 @@ purpose: Detailed UX sprint acceptance checklist
 
 ## Current priority
 
-The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-03 is active; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with detail-screen visual acceptance pending. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-03 and the scoped UX-04 Hosting/Deployments work are active; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with detail-screen visual acceptance pending. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
 
 Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
 
@@ -39,7 +39,9 @@ Shared sidebar layout and global stylesheet cleanup deployed at `b8051992d4ea364
 - [ ] Inventory and consolidate existing shadcn primitives/compositions: page header and breadcrumbs, tables, action hierarchy, fields, status, empty/loading/error states, confirmations and accessible controls. Use Tailwind utilities and Lucide, not bespoke widgets.
 - [ ] Unify control sizes, labels, icons, spacing and feedback; address measured small targets; preserve keyboard/focus behavior. QA/deploy/readback.
 
-### UX-04 — Information architecture and noise reduction (QUEUED)
+### UX-04 — Information architecture and noise reduction (ACTIVE)
+
+Hosting/Deployments layout at `1efa081` passed exact-source QA/build and guarded DEV deployment. Two synthetic desktop previews informed the refinement at `a38571c`: status adjacent to project name, action hierarchy, technical release IDs in disclosure, desired-state mismatch retained. Exact-source QA/build/deployment PASS at `a38571c`; 20 local after-captures, 12/12 rendered with no JS/request failures, overflow or small controls. Final image inspection is pending (synthetic preview timed out). A8 loopback remains reachable and exact source verified; LAN gateway bind absent and wlan0 IPv4 not reported by the read-only probe. Mac TCP probes failed. Do not treat geometry as aesthetic acceptance or repeat passed QA. Restore visual access only within the existing owner-approved network policy.
 
 - [ ] Review every reachable screen at desktop 1440×900, including selected Node project and advanced sections; identify duplicate labels, descriptions, cards, inventory and navigation across Hosting, Services, Dashboard and Monitoring.
 - [ ] Keep each screen focused on one task, one main action where meaningful; move technical IDs/PID/ticks into diagnostics. Consolidate duplicated presentation without removing distinct independent routes or essential warnings. QA/deploy/readback.
