@@ -2,7 +2,7 @@ import * as React from "react"
 import { Network, RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
   parseNetworkAccessStatus, type NetworkAccessStatus,
@@ -140,8 +140,20 @@ export default function NetworkAccessPage() {
                   <Button disabled={busy || status.enabled || !bind} onClick={() => void change(true)}>Enable Home LAN</Button>
                   <Button variant="outline" disabled={busy || !status.enabled} onClick={() => void change(false)}>Disable Home LAN</Button>
                 </div>
-                {status.adminUrl && <p className="text-sm">Admin: <a className="underline" href={status.adminUrl} target="_blank" rel="noreferrer">{status.adminUrl}</a></p>}
-                {status.siteUrl && <p className="text-sm">Demo: <a className="underline" href={status.siteUrl} target="_blank" rel="noreferrer">{status.siteUrl}</a></p>}
+                {status.adminUrl && (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span>Admin:</span>
+                    <a className={buttonVariants({ variant: "link", size: "lg", className: "underline" })}
+                      href={status.adminUrl} target="_blank" rel="noreferrer">{status.adminUrl}</a>
+                  </div>
+                )}
+                {status.siteUrl && (
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <span>Demo:</span>
+                    <a className={buttonVariants({ variant: "link", size: "lg", className: "underline" })}
+                      href={status.siteUrl} target="_blank" rel="noreferrer">{status.siteUrl}</a>
+                  </div>
+                )}
               </>
             )}
             <p className="text-muted-foreground text-xs">

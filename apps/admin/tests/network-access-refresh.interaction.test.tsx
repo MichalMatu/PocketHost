@@ -20,6 +20,24 @@ const stale = {
 }
 
 describe("Network Access manual refresh", () => {
+  it("uses standard large link targets without changing LAN destinations or submitting writes", async () => {
+    const siteUrl = "http://192.168.0.16:18879/"
+    const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => ({
+      ok: true, json: async () => ({ ...live, siteUrl }),
+    }))
+    vi.stubGlobal("fetch", fetcher)
+    render(<NetworkAccessPage />)
+
+    for (const url of [live.adminUrl, siteUrl]) {
+      const link = await screen.findByRole("link", { name: url })
+      expect(link.getAttribute("href")).toBe(url)
+      expect(link.getAttribute("target")).toBe("_blank")
+      expect(link.getAttribute("rel")).toBe("noreferrer")
+      expect(link.classList.contains("h-9")).toBe(true)
+    }
+    expect(fetcher.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+  })
+
   it("discards a superseded LAN snapshot even if its transport ignores abort", async () => {
     type Reply = { ok: boolean; json: () => Promise<unknown> }
     const replies: Array<(response: Reply) => void> = []
