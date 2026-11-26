@@ -129,13 +129,13 @@ function SummaryCard({ title, value, detail, icon: Icon, loading }: {
 }) {
   return (
     <Card className="min-w-0 gap-2 py-3">
-      <CardHeader className="gap-1 px-4">
-        <CardDescription className="flex items-center gap-2">
-          <Icon className="size-4" />{title}
+      <CardHeader className="gap-1 px-3 sm:px-4">
+        <CardDescription className="flex items-start gap-1.5">
+          <Icon className="mt-0.5 size-4 shrink-0" />{title}
         </CardDescription>
-        <CardTitle className="text-2xl tabular-nums">{metricValue(value, loading)}</CardTitle>
+        <CardTitle className="break-words text-lg tabular-nums sm:text-2xl">{metricValue(value, loading)}</CardTitle>
       </CardHeader>
-      {detail && <CardContent className="px-4 text-xs text-muted-foreground">{detail}</CardContent>}
+      {detail && <CardContent className="px-3 text-xs text-muted-foreground sm:px-4">{detail}</CardContent>}
     </Card>
   )
 }
@@ -295,20 +295,23 @@ export default function SystemPage() {
     : "Disconnected · last status received"
 
   return (
-    <BaseLayout title="Dashboard" description="Live health of the Android host and services">
+    <BaseLayout>
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{host ? "Termux online" : "Termux unavailable"}</Badge>
-            <Badge variant="outline">{collectorLabel}</Badge>
-            {sampledAt && <Badge variant="outline">Checked {clock(sampledAt)}</Badge>}
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline">{host ? "Termux online" : "Termux unavailable"}</Badge>
+              <Badge variant="outline">{collectorLabel}</Badge>
+              {sampledAt && <span className="tabular-nums">Checked {clock(sampledAt)}</span>}
+            </div>
           </div>
           <Button variant="outline" size="lg" className="min-h-10" onClick={() => setGeneration(value => value + 1)}>
             <RefreshCw className="size-4" />Refresh
           </Button>
         </div>
 
-        <div className="min-h-20 space-y-1 text-xs text-muted-foreground md:min-h-16" role="status"
+        <div className="space-y-1 text-xs text-muted-foreground" role="status"
           aria-label="Monitoring source availability">
           <p className="font-medium text-foreground">
             {companionReady ? "Enhanced monitoring · Companion + Shizuku" : "Basic monitoring · Termux"}
@@ -324,7 +327,7 @@ export default function SystemPage() {
           {companionReady && (cpu === null || !androidTrafficReady) &&
             <p>Some Android readings are unavailable; their charts are hidden.</p>}
         </div>
-        <div data-testid="system-metrics" aria-busy={active} className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div data-testid="system-metrics" aria-busy={active} className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
           <SummaryCard title="Android CPU"
             value={cpu === null ? null : cpu.toFixed(1) + "%"}
             icon={Cpu} loading={active} detail={cpu === null ? bridgeState : ""} />
@@ -336,7 +339,7 @@ export default function SystemPage() {
             icon={ServerCog} loading={active} detail={serviceUnknown ? "Some states unknown · read-only" : "Observed runit units · read-only"} />
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3" data-testid="device-status">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3" data-testid="device-status">
           <Card className="gap-2 py-3">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Battery className="size-4" />Battery · Termux:API / sysfs</CardDescription>
@@ -354,7 +357,7 @@ export default function SystemPage() {
             </CardHeader>
             <CardContent className="px-4 text-xs text-muted-foreground">Since device boot</CardContent>
           </Card>
-          <Card className="gap-2 py-3">
+          <Card className="col-span-2 gap-2 py-3 sm:col-span-1">
             <CardHeader className="gap-1 px-4">
               <CardDescription className="flex items-center gap-2"><Wifi className="size-4" />DNS · Termux</CardDescription>
               <CardTitle className="text-lg tabular-nums">{dnsMs === null ? dnsFailed === true ? "Lookup failed" : "Unavailable" : dnsMs.toFixed(1) + " ms"}</CardTitle>
@@ -373,9 +376,9 @@ export default function SystemPage() {
         <div className="flex min-h-10 flex-wrap items-center justify-between gap-3">
           <span className="text-muted-foreground text-xs">History · 24 h detailed, 7 d hourly</span>
           <div className="flex gap-1" role="group" aria-label="History window">
-            <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("1h")}>1 hour</Button>
-            <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("24h")}>24 hours</Button>
-            <Button variant={historyRange === "7d" ? "secondary" : "outline"} size="lg" className="min-h-10" onClick={() => setHistoryRange("7d")}>7 days</Button>
+            <Button variant={historyRange === "1h" ? "secondary" : "outline"} size="lg" className="min-h-10" aria-pressed={historyRange === "1h"} onClick={() => setHistoryRange("1h")}>1 hour</Button>
+            <Button variant={historyRange === "24h" ? "secondary" : "outline"} size="lg" className="min-h-10" aria-pressed={historyRange === "24h"} onClick={() => setHistoryRange("24h")}>24 hours</Button>
+            <Button variant={historyRange === "7d" ? "secondary" : "outline"} size="lg" className="min-h-10" aria-pressed={historyRange === "7d"} onClick={() => setHistoryRange("7d")}>7 days</Button>
           </div>
         </div>
 

@@ -87,6 +87,8 @@ describe("PocketHost real-data dashboard", () => {
         url.includes("dashboard/history") ? historyFixture() : hostFixture,
     })))
     render(<MemoryRouter><SystemPage /></MemoryRouter>)
+    expect(screen.getByRole("heading", { level: 1, name: "Dashboard" })).toBeTruthy()
+    expect(screen.getByRole("button", { name: "1 hour" }).getAttribute("aria-pressed")).toBe("true")
     const metrics = screen.getByTestId("system-metrics")
     expect(within(metrics).getAllByLabelText("Loading")).toHaveLength(4)
     await within(metrics).findByText("22.5%")
