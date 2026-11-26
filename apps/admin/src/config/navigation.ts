@@ -22,6 +22,7 @@ export const navGroups = [
       { title: "Hosting overview", url: "/hosting", icon: ServerCog },
       { title: "Static websites", url: "/sites", icon: Globe2 },
       { title: "Node.js applications", url: "/projects", icon: FolderOpen },
+      { title: "Add application", url: "/projects/new", icon: Plus },
       { title: "Deployments", url: "/deployments", icon: History },
       { title: "Project logs", url: "/runtime-logs", icon: ScrollText },
     ],

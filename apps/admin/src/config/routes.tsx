@@ -64,7 +64,13 @@ export const routes: RouteObject[] = [
   { path: "/sites/new", lazy: page(() => import("@/app/sites/page")) },
   { path: "/sites/:id", lazy: page(() => import("@/app/sites/page")) },
   { path: "/deployments", lazy: page(() => import("@/app/deployments/page")) },
-  { path: "/projects", lazy: page(() => import("@/app/projects/page")) },
+  { path: "/projects", lazy: page(() => import("@/app/projects/page")), children: [
+    { index: true, element: <></> },
+    { path: "/projects/new", element: <></> },
+    { path: "/projects/backups", element: <></> },
+    { path: "/projects/diagnostics", element: <></> },
+    { path: "/projects/:id", element: <></> },
+  ] },
   { path: "/runtime-logs", lazy: page(() => import("@/app/runtime-logs/page")) },
   // PocketHost management dashboard and settings.
   { path: "/dashboard", lazy: page(() => import("@/app/termux/system-page")) },

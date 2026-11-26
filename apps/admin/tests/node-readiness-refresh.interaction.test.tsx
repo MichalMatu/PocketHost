@@ -3,7 +3,7 @@ import { afterEach, expect, it, vi } from "vitest"
 import { act, render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
-import ProjectsPage from "@/app/projects/page"
+import ProjectsPage from "./helpers/node-project-workflow-harness"
 
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,

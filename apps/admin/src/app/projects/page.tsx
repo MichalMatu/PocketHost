@@ -1,55 +1,62 @@
+import { matchPath, useLocation, useNavigate, useSearchParams } from "react-router-dom"
+import { ArrowLeft, Plus, Archive, Wrench } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { Button } from "@/components/ui/button"
 import { useNodeProjectController } from "./state/use-node-project-controller"
-import { NodeLifecycleActions } from "./node-lifecycle-actions"
-import { NodeRuntimeHistory } from "./node-runtime-history"
 import { NodeAccessView } from "./views/node-access-view"
 import { NodeFeedback } from "./views/node-feedback"
 import { NodeCatalogView } from "./views/node-catalog-view"
 import { NodeCreateView } from "./views/node-create-view"
 import { NodeBackupsView } from "./views/node-backups-view"
-import { NodeDataView } from "./views/node-data-view"
+import { NodeHostDiagnosticsView } from "./views/node-host-diagnostics-view"
 import { NodeRefresh } from "./views/node-refresh"
-import { NodeProjectSummary } from "./views/node-project-summary"
-import { NodeRemoveView } from "./views/node-remove-view"
-import { NodeRuntimeView } from "./views/node-runtime-view"
-import { NodeBuildView } from "./views/node-build-view"
-import { NodeRecoveryView } from "./views/node-recovery-view"
-import { NodeSourceView } from "./views/node-source-view"
-import { NodeReleasesView } from "./views/node-releases-view"
+import { NodeWorkspace, nodeWorkspaceTab } from "./views/node-workspace"
 
 export default function ProjectsPage() {
-  const c = useNodeProjectController()
-  const current = c.selected && c.catalogState === "ready" ? { ...c, selected: c.selected } : null
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const adding = matchPath("/projects/new", location.pathname) !== null
+  const backups = matchPath("/projects/backups", location.pathname) !== null
+  const diagnostics = matchPath("/projects/diagnostics", location.pathname) !== null
+  const requested = adding || backups || diagnostics ? null :
+    matchPath("/projects/:id", location.pathname)?.params.id ?? params.get("project")
+  const c = useNodeProjectController(requested)
+  const selected = c.selected?.id === requested ? c.selected : undefined
+  const detail = requested !== null
+  const go = (url: string) => { void navigate(url) }
+  const title = adding ? "Add Node.js application" : backups ? "Node backups" : diagnostics ? "Node diagnostics" : "Node.js applications"
   return <BaseLayout>
     <div className="space-y-4 px-4 pb-8 lg:px-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold">Node.js applications</h1>
-        <NodeRefresh controller={c} />
+        <div className="flex flex-wrap items-center gap-3">
+          {(adding || backups || diagnostics || detail) && <Button variant="ghost" disabled={c.busy} onClick={() => go("/projects")}>
+            <ArrowLeft aria-hidden="true" />Applications
+          </Button>}
+          {!detail && <h1 className="text-xl font-semibold">{title}</h1>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {!adding && !backups && !diagnostics && !detail && <>
+            <Button variant="outline" disabled={c.busy} onClick={() => go("/projects/diagnostics")}><Wrench aria-hidden="true" />Diagnostics</Button>
+            <Button variant="outline" disabled={c.busy} onClick={() => go("/projects/backups")}><Archive aria-hidden="true" />Backups</Button>
+            <Button disabled={c.busy} onClick={() => go("/projects/new")}><Plus aria-hidden="true" />Add application</Button>
+          </>}
+          <NodeRefresh controller={c} projectId={selected?.id} />
+        </div>
       </div>
-      <NodeCatalogView controller={c} />
-      <NodeAccessView controller={c} />
+      <NodeAccessView controller={c} showTrusted={false} />
       <NodeFeedback controller={c} />
-      {current && <section className="space-y-4 rounded-lg border p-4">
-        <NodeProjectSummary controller={current} />
-        <NodeLifecycleActions runtime={c.runtime} approved={c.approved} onApprove={c.setApproved}
-          disabled={c.busy || !c.ownerAuthorized || !c.executionEnabled}
-          onAction={(op, message) => c.action(() => c.runRuntimeAction(current.selected.id, op, { approved: true }, message))} />
-        <NodeRemoveView controller={current} />
-        <nav aria-label="Node project sections" className="flex flex-wrap gap-2 text-sm">
-          <a href="#node-runtime">Runtime</a><a href="#node-source">Source</a><a href="#node-candidates">Releases</a>
-        </nav>
-        <section id="node-runtime" className="space-y-3">
-          <NodeRuntimeView controller={current} />
-          <NodeBuildView controller={current} />
-          <NodeRecoveryView controller={current} />
-          <NodeRuntimeHistory history={c.runtime?.history ?? []} />
-        </section>
-        <NodeSourceView controller={current} />
-        <NodeReleasesView controller={current} />
-      </section>}
-      <NodeCreateView controller={c} />
-      <NodeDataView controller={c} />
-      <NodeBackupsView controller={c} />
+      {adding ? <NodeCreateView controller={c} standalone onCreated={id => go("/projects/" + id)} />
+        : backups ? <NodeBackupsView controller={c} standalone />
+        : diagnostics ? <NodeHostDiagnosticsView controller={c} />
+        : detail ? c.catalogState === "ready" && selected
+          ? <NodeWorkspace key={selected.id} controller={{ ...c, selected }} tab={nodeWorkspaceTab(params.get("tab"))}
+              onTab={tab => setParams(current => { const next = new URLSearchParams(current); next.set("tab", tab); return next }, { replace: true })}
+              onRemoved={() => go("/projects")} />
+          : c.catalogState === "ready" && !c.projects.some(project => project.id === requested)
+            ? <p role="alert">Application not found.</p>
+            : c.catalogState === "loading" || c.catalogState === "ready" ? <p role="status">Loading application…</p> : null
+        : <NodeCatalogView controller={c} onSelect={id => go("/projects/" + id)} />}
     </div>
   </BaseLayout>
 }

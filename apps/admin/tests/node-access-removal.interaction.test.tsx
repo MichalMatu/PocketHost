@@ -8,7 +8,7 @@ vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
 
-import ProjectsPage from "@/app/projects/page"
+import ProjectsPage from "./helpers/node-project-workflow-harness"
 
 const api = "/api/v1/node-projects"
 const id = "node-" + "a".repeat(32)

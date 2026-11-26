@@ -6,7 +6,7 @@ import { MemoryRouter } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
-import ProjectsPage from "@/app/projects/page"
+import ProjectsPage from "./helpers/node-project-workflow-harness"
 const ID = "node-" + "a".repeat(32)
 const RELEASE = "r-" + "b".repeat(32)
 const OWNER_TOKEN = "A".repeat(40)

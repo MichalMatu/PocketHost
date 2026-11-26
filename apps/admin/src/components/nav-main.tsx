@@ -40,6 +40,9 @@ export function NavMain({
   const location = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
   const closeMobileMenu = () => { if (isMobile) setOpenMobile(false) }
+  const activePage = (url: string) => location.pathname === url ||
+    ((url === "/projects" || url === "/sites") && location.pathname.startsWith(url + "/") &&
+      location.pathname !== url + "/new")
 
   // Check if any subitem is active to determine if parent should be open
   const shouldBeOpen = (item: (typeof items)[0]) => {
@@ -112,8 +115,8 @@ export function NavMain({
               <SidebarMenuButton
                 tooltip={item.title}
                 className="cursor-pointer"
-                isActive={location.pathname === item.url}
-                render={<Link to={item.url} aria-current={location.pathname === item.url ? "page" : undefined} onClick={closeMobileMenu} />}
+                isActive={activePage(item.url)}
+                render={<Link to={item.url} aria-current={activePage(item.url) ? "page" : undefined} onClick={closeMobileMenu} />}
               >
                 {item.icon && <item.icon />}
                 <span>{item.title}</span>

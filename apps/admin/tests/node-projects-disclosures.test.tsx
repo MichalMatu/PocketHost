@@ -5,7 +5,7 @@ import { MemoryRouter, useNavigate } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
   BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
 }))
-import ProjectsPage from "@/app/projects/page"
+import ProjectsPage from "./helpers/node-project-workflow-harness"
 import { NodeBackupPanel } from "@/app/projects/node-backup-panel"
 
 it("keeps advanced Node actions and all source editors closed by default", async () => {
