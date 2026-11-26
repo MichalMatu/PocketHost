@@ -22,9 +22,11 @@ const stale = {
 describe("Network Access manual refresh", () => {
   it("uses standard large link targets without changing LAN destinations or submitting writes", async () => {
     const siteUrl = "http://192.168.0.16:18879/"
-    const fetcher = vi.fn(async (_url: string, _options?: RequestInit) => ({
-      ok: true, json: async () => ({ ...live, siteUrl }),
-    }))
+    const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+      void url
+      void options
+      return { ok: true, json: async () => ({ ...live, siteUrl }) }
+    })
     vi.stubGlobal("fetch", fetcher)
     render(<NetworkAccessPage />)
 
