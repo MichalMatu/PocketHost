@@ -143,6 +143,8 @@ it("Runtime logs reads only selected owned project, redacts secrets, and can swi
   const requests = setup(true)
   render(<MemoryRouter><RuntimeLogsPage /></MemoryRouter>)
   await screen.findByText(/static published/)
+  expect(screen.getByRole("heading", { level: 1, name: "Project logs" })).toBeTruthy()
+  expect(screen.getByRole("button", { name: "Example static (Static)" }).getAttribute("aria-pressed")).toBe("true")
   expect(screen.getByRole("link", { name: "Open Sites manager" }).getAttribute("href"))
     .toBe("/sites/" + staticSite.id)
   expect(screen.getByText(/\[sensitive log line hidden\]/)).toBeTruthy()

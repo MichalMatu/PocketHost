@@ -80,7 +80,7 @@ function DiagnosticSource({ name, scope, state, observedAt }: {
   observedAt: string
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 py-2 last:border-b-0">
+    <div className="flex items-start justify-between gap-3 border-b border-border/50 py-3 last:border-b-0">
       <div className="min-w-0">
         <p className="text-sm font-medium">{name}</p>
         <p className="text-muted-foreground text-xs">{scope}</p>
@@ -164,13 +164,16 @@ export default function ObservabilityPage() {
   const processesOk = snapshot?.processes.state === "ok"
 
   return (
-    <BaseLayout title="Monitoring" description="Termux process diagnostics and telemetry access">
+    <BaseLayout>
       <div className="flex flex-col gap-5 px-4 pb-8 lg:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline"><ShieldCheck className="size-3" />Termux · read-only</Badge>
-            {snapshot && <Badge variant="outline">Checked {seenAt(snapshot.observedAt)}</Badge>}
-            {error && snapshot && <Badge variant="outline">Last known snapshot</Badge>}
+          <div className="space-y-1">
+            <h1 className="text-xl font-semibold tracking-tight">Monitoring</h1>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              <Badge variant="outline"><ShieldCheck className="size-3" />Termux · read-only</Badge>
+              {snapshot && <span className="tabular-nums">Checked {seenAt(snapshot.observedAt)}</span>}
+              {error && snapshot && <Badge variant="outline">Last known snapshot</Badge>}
+            </div>
           </div>
           <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
@@ -202,14 +205,14 @@ export default function ObservabilityPage() {
                 </div>
                 {processesOk && processList.length > 0 ? (
                   <div className="max-h-[320px] overflow-auto rounded-md border">
-                    <table className="w-full min-w-[640px] text-left text-xs" aria-label="Termux-visible process details">
+                    <table className="w-full text-left text-xs md:min-w-[640px]" aria-label="Termux-visible process details">
                       <thead className="sticky top-0 z-10 bg-background text-muted-foreground">
                         <tr className="border-b">
                           <th scope="col" className="p-3">Process</th>
-                          <th scope="col" className="p-3">PID</th>
-                          <th scope="col" className="p-3 text-right">Resident RAM</th>
-                          <th scope="col" className="p-3">Ownership</th>
-                          <th scope="col" className="p-3 text-right">Details</th>
+                          <th scope="col" className="hidden p-3 md:table-cell">PID</th>
+                          <th scope="col" className="px-2 py-3 text-right md:p-3">RAM</th>
+                          <th scope="col" className="hidden p-3 md:table-cell">Ownership</th>
+                          <th scope="col" className="px-2 py-3 text-right md:p-3">Details</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -218,15 +221,18 @@ export default function ObservabilityPage() {
                           const expanded = expandedProcess === identity
                           return <React.Fragment key={identity}>
                             <tr className="border-b border-border/50">
-                              <td className="p-3 font-medium">{process.name ?? "Unknown"}</td>
-                              <td className="p-3 tabular-nums">{process.pid}</td>
-                              <td className="p-3 text-right tabular-nums">{process.rssMiB === null ? "Unavailable" : formatMemory(process.rssMiB)}</td>
-                              <td className="p-3">{ownershipLabel(process.ownership)}</td>
-                              <td className="p-3 text-right">
-                                <Button variant="ghost" aria-label={`Process details for PID ${process.pid}`}
+                              <td className="min-w-0 px-2 py-3 font-medium md:p-3">
+                                <span className="break-all">{process.name ?? "Unknown"}</span>
+                                <span className="mt-1 block text-muted-foreground md:hidden">PID {process.pid} · {ownershipLabel(process.ownership)}</span>
+                              </td>
+                              <td className="hidden p-3 tabular-nums md:table-cell">{process.pid}</td>
+                              <td className="px-2 py-3 text-right tabular-nums md:p-3">{process.rssMiB === null ? "Unavailable" : formatMemory(process.rssMiB)}</td>
+                              <td className="hidden p-3 md:table-cell">{ownershipLabel(process.ownership)}</td>
+                              <td className="px-2 py-3 text-right md:p-3">
+                                <Button variant="ghost" className="min-h-10 min-w-10" aria-label={`Process details for PID ${process.pid}`}
                                   aria-expanded={expanded} onClick={() => setExpandedProcess(expanded ? null : identity)}>
                                   {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
-                                  {expanded ? "Hide" : "Details"}
+                                  <span className="hidden sm:inline">{expanded ? "Hide" : "Details"}</span>
                                 </Button>
                               </td>
                             </tr>
@@ -277,7 +283,7 @@ export default function ObservabilityPage() {
                         ? "No structured diagnostic events in this observation."
                         : snapshot.diagnostics.events.length + " structured diagnostic events available."}
                   </span>
-                  <Link to="/runtime-logs" className={buttonVariants({ variant: "link", className: "underline" })}>Logs & Diagnostics</Link>
+                  <Link to="/runtime-logs" className={buttonVariants({ variant: "link", className: "min-h-10 underline" })}>Project logs</Link>
                 </div>
               </CardContent>
             </Card>
