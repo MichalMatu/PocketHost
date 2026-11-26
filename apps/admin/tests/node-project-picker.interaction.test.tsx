@@ -21,9 +21,11 @@ it("shows project names and delegates only the chosen item to the parent", async
   const onSelect = vi.fn()
   render(<NodeProjectPicker projects={projects} selectedId="node-one" busy={false}
     onSelect={onSelect} />)
-  expect(screen.getByText("Owned projects")).toBeTruthy()
+  expect(screen.getByRole("region", { name: "Owned projects" })).toBeTruthy()
+  expect(screen.queryByText("Owned projects")).toBeNull()
   const buttons = screen.getAllByRole("button")
-  expect(buttons.map(button => button.textContent)).toEqual(["First Node", "Second Node"])
+  expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(["First Node", "Second Node"])
+  expect(buttons.map(button => button.textContent)).toEqual(["First NodeNo source", "Second NodeNo source"])
   expect(buttons.map(button => button.getAttribute("aria-pressed"))).toEqual(["true", "false"])
   const user = userEvent.setup()
   await user.click(screen.getByRole("button", { name: "Second Node" }))
