@@ -82,6 +82,32 @@ test('admin asset review blocks execution even alongside a mapped UI test', () =
   assert.deepEqual(prepared.checks, []);
 });
 
+test('reviewed index CSS requires regressions and keeps separate visual acceptance', () => {
+  const css = 'apps/admin/src/index.css';
+  const plan = makePlan([css]);
+  assert.ok(prepareChangedVerification(plan).review.length);
+  const prepared = prepareChangedVerification(plan, { reviewedCss: true });
+  assert.deepEqual(prepared.review, []);
+  assert.equal(prepared.visualReviewRequired, true);
+  assert.ok(prepared.checks.some((check) => check.argv.includes('tests/appearance.interaction.test.tsx')));
+  assert.ok(prepared.checks.some((check) => check.argv.includes('tests/tablet-sidebar-breakpoint.interaction.test.tsx')));
+  assert.throws(() => selectApprovedVerification(prepared.checks, 'format', prepared));
+  assert.equal(
+    selectApprovedVerification(prepared.checks, 'format,admin-types,ui', prepared).length,
+    3,
+  );
+  const mixed = prepareChangedVerification(makePlan([css, 'package.json']), { reviewedCss: true });
+  assert.ok(mixed.review.some((reason) => reason.includes('package.json')));
+  assert.deepEqual(mixed.checks, []);
+  const other = prepareChangedVerification(makePlan(['apps/admin/src/App.css']), {
+    reviewedCss: true,
+  });
+  assert.ok(other.review.length);
+  assert.deepEqual(other.checks, []);
+  const deleted = planChangedChecks([css], {}, { deletedPaths: [css] });
+  assert.ok(prepareChangedVerification({ ...deleted, head: 'a'.repeat(40) }, { reviewedCss: true }).review.length);
+});
+
 test('invalid or unrecognized check specifications cannot execute', () => {
   const plan = makePlan([]);
   plan.commands = [{ label: 'deploy', cwd: '.', argv: ['node', '-e', 'foo'] }];

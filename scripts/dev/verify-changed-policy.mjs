@@ -17,7 +17,15 @@ const priority = new Map([
   ['ui tests', 3],
 ]);
 
-export function prepareChangedVerification(plan) {
+const reviewedCssPath = 'apps/admin/src/index.css';
+const cssReviewReason = 'Stylesheet change needs browser layout impact review: ' + reviewedCssPath;
+const cssUiTests = [
+  'tests/appearance.interaction.test.tsx',
+  'tests/compact-management-layout.interaction.test.tsx',
+  'tests/tablet-sidebar-breakpoint.interaction.test.tsx',
+];
+
+export function prepareChangedVerification(plan, { reviewedCss = false } = {}) {
   if (
     !plan ||
     !Array.isArray(plan.changed) ||
@@ -27,7 +35,12 @@ export function prepareChangedVerification(plan) {
   ) {
     throw new Error('Invalid changed-checks plan');
   }
-  const reasons = [...plan.review];
+  const cssEligible =
+    reviewedCss === true &&
+    plan.changed.includes(reviewedCssPath) &&
+    plan.review.includes(cssReviewReason);
+  const reasons = plan.review.filter((reason) => !(cssEligible && reason === cssReviewReason));
+  if (reviewedCss && !cssEligible) reasons.push('CSS review does not match the changed stylesheet');
   const checks = [];
   const names = new Set();
   for (const file of plan.changed) {
@@ -53,6 +66,26 @@ export function prepareChangedVerification(plan) {
     names.add(check.label);
     checks.push(check);
   }
+  if (cssEligible && reasons.length === 0) {
+    const ui = checks.find((check) => check.label === 'ui tests');
+    if (ui) {
+      ui.argv = [...ui.argv.slice(0, 4), ...new Set([...ui.argv.slice(4), ...cssUiTests])];
+    } else {
+      checks.push({
+        label: 'ui tests',
+        cwd: 'apps/admin',
+        argv: ['npm', 'run', 'test:ui', '--', ...cssUiTests],
+      });
+    }
+    if (!names.has('admin incremental typecheck')) {
+      checks.push({
+        label: 'admin incremental typecheck',
+        cwd: 'apps/admin',
+        argv: ['npm', 'exec', '--no', '--', 'tsc', '-b', '--pretty', 'false'],
+      });
+    }
+    if (!names.has('changed-file format')) reasons.push('CSS formatting check missing');
+  }
   const sorted = checks
     .map((check, index) => ({ check, index }))
     .sort(
@@ -62,13 +95,17 @@ export function prepareChangedVerification(plan) {
         a.index - b.index,
     )
     .map((item) => item.check);
-  return { review: reasons, checks: reasons.length ? [] : sorted };
+  return {
+    review: reasons,
+    checks: reasons.length ? [] : sorted,
+    ...(cssEligible ? { visualReviewRequired: true } : {}),
+  };
 }
 
 /**
  * One manual run executes ONLY explicitly approved check categories from the
  * prepared exact-SHA plan; no "all" or implicit suite expansion option.
- * The consent itself remains a separate user decision, not a CLI capability.
+ * Standing owner consent does not remove the exact-SHA and scope requirements.
  */
 const approvalLabels = new Map([
   ['format', 'changed-file format'],
@@ -84,7 +121,7 @@ const approvalLabels = new Map([
   ['ui', 'ui tests'],
 ]);
 
-export function selectApprovedVerification(checks, scope) {
+export function selectApprovedVerification(checks, scope, { visualReviewRequired = false } = {}) {
   if (
     !Array.isArray(checks) ||
     typeof scope !== 'string' ||
@@ -93,6 +130,8 @@ export function selectApprovedVerification(checks, scope) {
   )
     throw new Error('Invalid explicit QA scope');
   const ids = scope.split(',');
+  if (visualReviewRequired && !['format', 'admin-types', 'ui'].every((id) => ids.includes(id)))
+    throw new Error('Reviewed CSS requires format, admin-types and ui QA');
   if (
     new Set(ids).size !== ids.length ||
     ids.some((id) => id !== 'syntax' && !approvalLabels.has(id))
