@@ -93,3 +93,21 @@ test('browser lazy UI imports, shared types and comments remain allowed', () =>
     put('apps/admin/plugins/api.ts', "import { readFileSync } from 'node:fs';");
     assert.deepEqual(validateCodeBudgets(root), []);
   }));
+
+test('Node workspace rejects oversized modules, reversed dependencies and view transport', () =>
+  withTree((put, root) => {
+    const base = 'apps/admin/src/app/projects/';
+    put(base + 'page.tsx', '\n'.repeat(120));
+    put(base + 'views/large.tsx', '\n'.repeat(350));
+    put(base + 'state/controller.ts', "import { View } from '../views/view';");
+    put(base + 'views/view.tsx', "fetch('/api/v1/node-projects');");
+    const errors = validateCodeBudgets(root).join('\n');
+    assert.match(errors, /Node workspace line budget: .*page\.tsx/);
+    assert.match(errors, /Node workspace line budget: .*large\.tsx/);
+    assert.match(errors, /Node workspace reverse dependency/);
+    assert.match(errors, /Node workspace direct transport in view/);
+  }));
+
+test('current repository satisfies code budgets', () => {
+  assert.deepEqual(validateCodeBudgets(), []);
+});

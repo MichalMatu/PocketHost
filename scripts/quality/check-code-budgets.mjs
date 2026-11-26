@@ -13,7 +13,6 @@ const TEST_LINES = 1200;
 // Pinned oversized legacy source: it may shrink or disappear, never grow.
 const legacyBytes = new Map([
   ['apps/admin/src/app/dashboard/components/data-table.tsx', 38492],
-  ['apps/admin/src/app/projects/page.tsx', 69621],
   ['apps/admin/src/app/settings/notifications/page.tsx', 36311],
   ['apps/admin/src/app/shizuku/page.tsx', 33172],
   ['apps/admin/src/app/sites/page.tsx', 28679],
@@ -87,6 +86,44 @@ function inspectBrowserImports(root, file, relative, source, errors) {
   visit(ast);
 }
 
+// Node workspace composition must remain small; state/actions must not depend on views.
+function inspectNodeWorkspace(relative, source, errors) {
+  const prefix = 'apps/admin/src/app/projects/';
+  if (!relative.startsWith(prefix)) return;
+  const local = relative.slice(prefix.length);
+  const layer = local.split('/')[0];
+  const layered = ['views', 'state', 'actions'].includes(layer);
+  const limit = local === 'page.tsx' ? 120 : layered ? 350 : BASE_LINES;
+  if (source.split('\n').length > limit)
+    errors.push('Node workspace line budget: ' + relative + ' (max ' + limit + ')');
+  if (!layered) return;
+  const ast = ts.createSourceFile(relative, source, ts.ScriptTarget.Latest, true);
+  function checkImport(specifier) {
+    if (!specifier || !ts.isStringLiteralLike(specifier)) return;
+    const target = specifier.text;
+    if (
+      /\/page(?:\.[a-z]+)?$/.test(target) ||
+      (layer !== 'views' && /(?:^|\/)views\//.test(target))
+    )
+      errors.push('Node workspace reverse dependency: ' + relative + ' (' + target + ')');
+  }
+  function visit(node) {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node))
+      checkImport(node.moduleSpecifier);
+    if (ts.isCallExpression(node)) {
+      if (node.expression.kind === ts.SyntaxKind.ImportKeyword) checkImport(node.arguments[0]);
+      if (
+        layer === 'views' &&
+        ts.isIdentifier(node.expression) &&
+        ['fetch', 'requestJson'].includes(node.expression.text)
+      )
+        errors.push('Node workspace direct transport in view: ' + relative);
+    }
+    ts.forEachChild(node, visit);
+  }
+  visit(ast);
+}
+
 export function validateCodeBudgets(root = repositoryRoot) {
   const errors = [];
   const checked = new Set();
@@ -100,6 +137,7 @@ export function validateCodeBudgets(root = repositoryRoot) {
       errors.push('Oversized code file: ' + relative + ' (' + bytes + ' > ' + maximum + ')');
     const source = readFileSync(file, 'utf8');
     const lines = source.split('\n').length;
+    inspectNodeWorkspace(relative, source, errors);
     if (
       !legacyBytes.has(relative) &&
       lines >

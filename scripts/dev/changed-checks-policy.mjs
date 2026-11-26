@@ -22,7 +22,8 @@ export function needsChangedTestDependencies(paths, deletedPaths = []) {
     (file) =>
       !deleted.has(file) &&
       ((file.startsWith('src/') && /\.(?:ts|tsx|mjs)$/.test(file)) ||
-        (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file))),
+        (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file)) ||
+        (file.startsWith('apps/admin/tests/helpers/') && /\.tsx?$/.test(file))),
   );
 }
 
@@ -106,6 +107,15 @@ export function planChangedChecks(
       // A test-only edit must not need a repo-wide structure gate.
       continue;
     }
+    if (file.startsWith('apps/admin/tests/helpers/') && /\.tsx?$/.test(file)) {
+      const matching = Object.entries(dependencies).filter(
+        ([test, targets]) => test.startsWith('apps/admin/tests/') && targets.includes(file),
+      );
+      for (const [test] of matching) ui.add(test.slice('apps/admin/'.length));
+      if (!matching.length) review.push('No known test dependency: ' + file);
+      adminLint.push(file.slice('apps/admin/'.length));
+      continue;
+    }
     if (file.startsWith('apps/admin/tests/') && /\.test\.(tsx|ts)$/.test(file)) {
       ui.add(file.slice('apps/admin/'.length));
       adminLint.push(file.slice('apps/admin/'.length));
@@ -136,6 +146,8 @@ export function planChangedChecks(
     } else if (file.startsWith('apps/admin/src/') && /\.(?:ts|tsx|js|jsx)$/.test(file)) {
       adminTypes = true;
       adminLint.push(file.slice('apps/admin/'.length));
+      if (file.startsWith('apps/admin/src/app/projects/'))
+        node.add('tests/quality/code-budgets.test.mjs');
     } else if (file.startsWith('apps/admin/src/') && /\.(?:css|scss)$/.test(file)) {
       // A formatter alone cannot establish that an edited stylesheet still
       // renders correctly. The static import graph does not validate CSS rules,
