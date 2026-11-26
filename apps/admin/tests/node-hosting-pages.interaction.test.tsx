@@ -87,6 +87,10 @@ it("Deployments shows only owned static and Node project histories", async () =>
   expect(screen.getByRole("heading", { level: 3, name: "Example static" })).toBeTruthy()
   expect(screen.getByRole("link", { name: "Manage static sites" }).getAttribute("href")).toBe("/sites")
   expect(screen.getByRole("link", { name: "Manage Node projects" }).getAttribute("href")).toBe("/projects")
+  expect(screen.getAllByText("Active release")).toHaveLength(2)
+  for (const active of screen.getAllByText(/^Active: r-/)) {
+    expect(active.closest("details")?.open).toBe(false)
+  }
   const links = [screen.getByRole("link", { name: "Open site settings" }), screen.getByRole("link", { name: "Open project" }), ...screen.getAllByRole("link", { name: "Logs", exact: true })]
   expect(links.every(link => link.classList.contains("h-8") && link.hasAttribute("href"))).toBe(true)
   const historyControls = screen.getAllByText("Deployment history (1)")

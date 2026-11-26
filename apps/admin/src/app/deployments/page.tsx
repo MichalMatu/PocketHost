@@ -119,31 +119,33 @@ export default function DeploymentsPage() {
               // SiteFleetHost.inspect returns history newest first.
               const latest = site.history[0]
               return <section className="space-y-3 py-4 first:pt-0 last:pb-0" key={site.id}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="min-w-0 break-words text-base font-semibold">{site.name}</h3>
                   <Badge variant={site.state === "unknown" ? "destructive" : site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                 </div>
-                <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                  <span title={site.activeRelease ?? undefined}>Active: {shortRelease(site.activeRelease)}</span>
-                  <span title={site.previousRelease ?? undefined}>Previous: {shortRelease(site.previousRelease)}</span>
+                <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <span>{site.activeRelease ? "Active release" : "No active release"}</span>
                   <span>Saved releases: {site.releases}</span>
                 </p>
                 <p className="text-muted-foreground text-sm">
                   Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Link className={buttonVariants({ variant: "outline" })} to={siteDetailPath(site.id)}>Open site settings</Link>
-                  <Link className={buttonVariants({ variant: "outline" })} to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
+                  <Link className={buttonVariants({ variant: "secondary" })} to={siteDetailPath(site.id)}>Open site settings</Link>
+                  <Link className={buttonVariants({ variant: "ghost" })} to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
                   {site.state === "unknown"
                     ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
                     : site.canRollback
                       ? <span className="text-muted-foreground text-xs">Rollback available in Sites</span>
                       : null}
                 </div>
-                {site.history.length > 0
-                  ? <details className="border-t pt-2 text-sm">
-                      <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">Deployment history ({site.history.length})</summary>
-                      <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + site.name}>
+                <details className="border-t pt-2 text-sm">
+                      <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">{site.history.length > 0 ? "Deployment history (" + site.history.length + ")" : "Release details"}</summary>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 py-2 text-sm text-muted-foreground">
+                        <span title={site.activeRelease ?? undefined}>Active: {shortRelease(site.activeRelease)}</span>
+                        <span title={site.previousRelease ?? undefined}>Previous: {shortRelease(site.previousRelease)}</span>
+                      </div>
+                      {site.history.length > 0 ? <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + site.name}>
                         {site.history.slice(0, 8).map((entry, i) => (
                           <li key={entry.at + i}>
                             <span className="text-muted-foreground">{localTime(entry.at)}</span> · {entry.action} ·
@@ -151,9 +153,8 @@ export default function DeploymentsPage() {
                             {" → "}<span title={entry.to}>{shortRelease(entry.to)}</span>
                           </li>
                         ))}
-                      </ol>
-                    </details>
-                  : <p className="text-muted-foreground text-xs">No deployment history.</p>}
+                      </ol> : <p className="text-muted-foreground text-sm">No deployment history.</p>}
+                </details>
               </section>
             })}
           </CardContent>
@@ -177,40 +178,42 @@ export default function DeploymentsPage() {
               const latest = node.history[node.history.length - 1]
               const projectUrl = "/projects?project=" + encodeURIComponent(node.id)
               return <section className="space-y-3 py-4 first:pt-0 last:pb-0" key={node.id}>
-                <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h3 className="min-w-0 break-words text-base font-semibold">{node.name}</h3>
                   <Badge variant={node.state === "unknown" ? "destructive" : node.state === "running" ? "secondary" : "outline"}>{node.state}</Badge>
                 </div>
-                <p className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-                  <span>Desired: {node.desired}</span>
-                  <span title={node.activeRelease ?? undefined}>Active: {shortRelease(node.activeRelease)}</span>
-                  <span title={node.previousGoodRelease ?? undefined}>Previous good: {shortRelease(node.previousGoodRelease)}</span>
+                <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                  <span>{node.activeRelease ? "Active release" : "No active release"}</span>
+                  {node.state !== node.desired && <span>Desired: {node.desired}</span>}
                 </p>
                 <p className="text-muted-foreground text-sm">
                   Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
-                  <Link className={buttonVariants({ variant: "outline" })} to={projectUrl}>Open project</Link>
-                  <Link className={buttonVariants({ variant: "outline" })} to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
+                  <Link className={buttonVariants({ variant: "secondary" })} to={projectUrl}>Open project</Link>
+                  <Link className={buttonVariants({ variant: "ghost" })} to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
                   {node.state === "unknown"
                     ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
                     : node.previousGoodRelease
                       ? <Link className={buttonVariants({ variant: "outline" })} to={projectUrl}>Review rollback in project</Link>
                       : null}
                 </div>
-                {node.history.length > 0
-                  ? <details className="border-t pt-2 text-sm">
-                      <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">Deployment history ({node.history.length})</summary>
-                      <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + node.name}>
+                <details className="border-t pt-2 text-sm">
+                      <summary className="cursor-pointer rounded py-2 font-medium focus-visible:outline-2 focus-visible:outline-ring">{node.history.length > 0 ? "Deployment history (" + node.history.length + ")" : "Release details"}</summary>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 py-2 text-sm text-muted-foreground">
+                        <span title={node.activeRelease ?? undefined}>Active: {shortRelease(node.activeRelease)}</span>
+                        <span title={node.previousGoodRelease ?? undefined}>Previous good: {shortRelease(node.previousGoodRelease)}</span>
+                        <span>Desired: {node.desired}</span>
+                      </div>
+                      {node.history.length > 0 ? <ol className="mt-2 max-h-44 overflow-auto space-y-1" aria-label={"Deployment history for " + node.name}>
                         {node.history.slice(-8).reverse().map((entry, i) => (
                           <li key={entry.at + i}>
                             <span className="text-muted-foreground">{localTime(entry.at)}</span> · {entry.action} ·
                             <span title={entry.release}> {shortRelease(entry.release)}</span>
                           </li>
                         ))}
-                      </ol>
-                    </details>
-                  : <p className="text-muted-foreground text-xs">No deployment history.</p>}
+                      </ol> : <p className="text-muted-foreground text-sm">No deployment history.</p>}
+                </details>
               </section>
             })}
           </CardContent>

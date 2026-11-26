@@ -41,7 +41,7 @@ function statusText<T extends { state: string }>(inventory: Inventory<T>): strin
 }
 
 function releaseLabel(release: string | null): string {
-  return release ? release.slice(0, 12) + "…" : "None published"
+  return release ? "Active release" : "None published"
 }
 
 export default function HostingPage() {
@@ -127,7 +127,7 @@ export default function HostingPage() {
             <CardHeader className="border-b">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle><h2 id="static-hosting-heading">Static Hosting</h2></CardTitle>
-                <Link to="/sites" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage static websites</Link>
+                <Link to="/sites" className={buttonVariants({ variant: "secondary", className: "min-h-10" })}>Manage static websites</Link>
               </div>
               <p role="status" aria-label="Static hosting status" aria-busy={staticInventory.status === "loading"} className="text-sm text-muted-foreground">
                 {statusText(staticInventory)}
@@ -141,14 +141,14 @@ export default function HostingPage() {
                   )}
                   {staticInventory.items.map(site => (
                     <div key={site.id} className="space-y-2 py-3 first:pt-0 last:pb-0 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Link to={siteDetailPath(site.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{site.name}</Link>
-                        <Badge variant={site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
+                        <Badge variant={site.state === "unknown" ? "destructive" : site.state === "running" ? "secondary" : "outline"}>{site.state}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                        <span title={site.activeRelease ?? undefined}>Release: {releaseLabel(site.activeRelease)}</span>
+                        <span title={site.activeRelease ?? undefined}>{releaseLabel(site.activeRelease)}</span>
                         <span>{site.releases} releases</span>
-                        <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className="inline-flex min-h-10 items-center rounded px-2 underline underline-offset-4">Logs</Link>
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)} className={buttonVariants({ variant: "ghost", className: "min-h-10" })}>Logs</Link>
                         {site.state === "running" && (
                           <span>HTTP: {site.healthy === true ? "healthy" : site.healthy === false ? "unavailable" : "not checked"}</span>
                         )}
@@ -163,7 +163,7 @@ export default function HostingPage() {
             <CardHeader className="border-b">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle><h2 id="node-hosting-heading">Node.js Hosting</h2></CardTitle>
-                <Link to="/projects" className={buttonVariants({ variant: "outline", className: "min-h-10" })}>Manage Node.js projects</Link>
+                <Link to="/projects" className={buttonVariants({ variant: "secondary", className: "min-h-10" })}>Manage Node.js projects</Link>
               </div>
               <p role="status" aria-label="Node hosting status" aria-busy={nodeInventory.status === "loading"} className="text-sm text-muted-foreground">
                 {statusText(nodeInventory)}
@@ -177,15 +177,15 @@ export default function HostingPage() {
                   )}
                   {nodeInventory.items.map(project => (
                     <div key={project.id} className="space-y-2 py-3 first:pt-0 last:pb-0 text-sm">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Link to={"/projects?project=" + encodeURIComponent(project.id)} className="inline-flex min-h-10 min-w-0 items-center break-words font-medium underline underline-offset-4">{project.name}</Link>
-                        <Badge variant={project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
+                        <Badge variant={project.state === "unknown" ? "destructive" : project.state === "running" ? "secondary" : "outline"}>{project.state}</Badge>
                       </div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-                        <span title={project.activeRelease ?? undefined}>Release: {releaseLabel(project.activeRelease)}</span>
+                        <span title={project.activeRelease ?? undefined}>{releaseLabel(project.activeRelease)}</span>
                         {project.port !== null && <span>Port: {project.port}</span>}
-                        <span>Desired: {project.desired}</span>
-                        <Link to={"/runtime-logs?project=" + encodeURIComponent("node:" + project.id)} className="inline-flex min-h-10 items-center rounded px-2 underline underline-offset-4">Logs</Link>
+                        {project.state !== project.desired && <span>Desired: {project.desired}</span>}
+                        <Link to={"/runtime-logs?project=" + encodeURIComponent("node:" + project.id)} className={buttonVariants({ variant: "ghost", className: "min-h-10" })}>Logs</Link>
                       </div>
                       {project.state === "running" && (
                         <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
