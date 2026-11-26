@@ -63,6 +63,8 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     render(<MemoryRouter><ObservabilityPage /></MemoryRouter>)
     expect(await screen.findByText("Process diagnostics")).toBeTruthy()
     expect(fetchMock.mock.calls[0]?.[0]).toBe("/api/v1/observability?scope=monitoring")
+    expect(screen.getByRole("heading", { level: 1, name: "Monitoring" })).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Project logs" }).getAttribute("href")).toBe("/runtime-logs")
     expect(screen.getByText("Telemetry sources")).toBeTruthy()
     expect(screen.getByText("Diagnostic events")).toBeTruthy()
     expect(screen.getByText("2 visible processes")).toBeTruthy()
@@ -71,7 +73,7 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(within(table).getAllByRole("row")[1]?.textContent).toContain("node")
     expect(table.textContent).toContain("Ownership unknown")
     expect(table.textContent).toContain("Observer process")
-    for (const control of [screen.getByRole("button", { name: "Refresh" }), screen.getByRole("button", { name: "CPU ticks" }), screen.getByRole("button", { name: "Process RAM" }), screen.getByRole("button", { name: "PID" }), screen.getByRole("button", { name: "Process details for PID 110" }), screen.getByRole("link", { name: "Logs & Diagnostics" })]) {
+    for (const control of [screen.getByRole("button", { name: "Refresh" }), screen.getByRole("button", { name: "CPU ticks" }), screen.getByRole("button", { name: "Process RAM" }), screen.getByRole("button", { name: "PID" }), screen.getByRole("button", { name: "Process details for PID 110" }), screen.getByRole("link", { name: "Project logs" })]) {
       expect(control.classList.contains("h-8")).toBe(true)
     }
     expect(screen.queryByText("CPU ticks (lifetime total)")).toBeNull()
@@ -126,7 +128,7 @@ describe("Monitoring screen: diagnostic-only scope", () => {
     expect(screen.queryByRole("table")).toBeNull()
     expect(screen.getByText(/no zero-process assumption/)).toBeTruthy()
     expect(screen.getByText("Host diagnostic event stream is not connected yet.")).toBeTruthy()
-    expect(screen.getByRole("link", { name: "Logs & Diagnostics" })).toBeTruthy()
+    expect(screen.getByRole("link", { name: "Project logs" })).toBeTruthy()
     expect(screen.queryByText("Diagnostic events")).toBeNull()
   })
 
