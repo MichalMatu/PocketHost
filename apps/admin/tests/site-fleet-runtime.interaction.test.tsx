@@ -71,6 +71,17 @@ function withSites(initial: ReturnType<typeof project>[] = [], route = "/sites/"
 afterEach(() => vi.unstubAllGlobals())
 
 describe("H2 browser site-manager lifecycle", () => {
+  it.each(["running", "unknown", "stopped"] as const)(
+    "distinguishes missing uptime from stopped state for %s",
+    async state => {
+      withSites([{ ...project(state, true), uptimeSeconds: null }])
+      await screen.findByText("My own site")
+      const uptime = screen.getByText("Uptime").parentElement
+      expect(uptime?.textContent).toContain(state === "stopped" ? "Not running" : "Not measured")
+      expect(screen.getByText("Runtime details")).toBeTruthy()
+    },
+  )
+
   it.each(["fileCount", "bytes"] as const)(
     "blocks new mutations when the write receipt disagrees on %s with exact-site readback",
     async field => {

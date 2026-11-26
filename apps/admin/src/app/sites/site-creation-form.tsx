@@ -28,15 +28,15 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
   }, [initialFolderInput])
 
   return (
-    <Card>
+    <Card className="max-w-3xl">
       <CardHeader>
         <CardTitle>New hosted site</CardTitle>
         <CardDescription>HTML, CSS and JavaScript. Import a ZIP or folder; up to eight sites.</CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={createSite} aria-busy={creating} className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <label htmlFor="new-owned-site" className="sr-only">Site name</label>
+        <form onSubmit={createSite} aria-busy={creating} className="space-y-4">
+          <div className="space-y-1">
+            <label htmlFor="new-owned-site" className="text-sm font-medium">Site name</label>
             <Input id="new-owned-site" value={name}
               disabled={creating || loading}
               onChange={event => {
@@ -44,12 +44,6 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
                 setInputError(null)
               }}
               placeholder="My first site" minLength={2} maxLength={60} required />
-            <Button type="submit"
-              disabled={creating || loading || error !== null || sitesCount >= 8 || name.trim().length < 2}>
-              <FolderOpen /> {initialZip ? "Create and import ZIP" :
-                initialFolder.length ? "Create and import folder" :
-                publishStarter ? "Create with starter HTML" : "Create site"}
-            </Button>
           </div>
           {creating && <p role="status" className="text-sm text-muted-foreground">
             Creating site and verifying readback…
@@ -162,6 +156,14 @@ export function SiteCreationForm({ creation, sitesCount, loading, error }: Props
               </p>
             </div>}
             {inputError && <p role="alert" className="text-destructive text-sm">{inputError}</p>}
+          </div>
+          <div className="flex justify-end border-t pt-3">
+            <Button type="submit" className="w-full sm:w-auto"
+              disabled={creating || loading || error !== null || sitesCount >= 8 || name.trim().length < 2}>
+              <FolderOpen /> {initialZip ? "Create and import ZIP" :
+                initialFolder.length ? "Create and import folder" :
+                publishStarter ? "Create with starter HTML" : "Create site"}
+            </Button>
           </div>
         </form>
       </CardContent>

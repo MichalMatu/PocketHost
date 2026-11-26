@@ -7,23 +7,7 @@ import type { FleetRelease, FleetSite } from "@/lib/site-fleet-schema"
 export function SiteProcessSummary({ site }: { site: FleetSite }) {
   return (
     <>
-        <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-          <div className="min-w-0 space-y-1">
-            <dt className="text-xs text-muted-foreground">Active release</dt>
-            <dd className="truncate font-mono text-sm font-medium"
-              title={site.activeRelease ?? "No release published"}>
-              {site.activeRelease ? site.activeRelease.slice(0, 12) + "…" : "Not published"}
-            </dd>
-          </div>
-          <div className="min-w-0 space-y-1">
-            <dt className="text-xs text-muted-foreground">Verified process</dt>
-            <dd className="font-mono text-sm font-medium tabular-nums">
-              {site.pid === null ? "Not running" : "PID " + site.pid}
-            </dd>
-            {site.startTicks !== null && <dd className="text-xs text-muted-foreground tabular-nums">
-              Start ticks: {site.startTicks}
-            </dd>}
-          </div>
+        <dl className="grid gap-4 rounded-lg border p-4 text-sm sm:grid-cols-2">
           <div className="min-w-0 space-y-1">
             <dt className="text-xs text-muted-foreground">Process memory</dt>
             <dd className="text-lg font-semibold tabular-nums">
@@ -34,11 +18,32 @@ export function SiteProcessSummary({ site }: { site: FleetSite }) {
           <div className="min-w-0 space-y-1">
             <dt className="text-xs text-muted-foreground">Uptime</dt>
             <dd className="text-lg font-semibold tabular-nums">
-              {site.uptimeSeconds === null ? "Not running" : formatUptime(site.uptimeSeconds)}
+              {site.uptimeSeconds === null ? (site.state === "stopped" ? "Not running" : "Not measured") : formatUptime(site.uptimeSeconds)}
             </dd>
             <dd className="text-xs text-muted-foreground">Since process start</dd>
           </div>
         </dl>
+        <details className="rounded-md border p-3 text-sm">
+          <summary className="cursor-pointer font-medium">Runtime details</summary>
+          <dl className="grid gap-3 pt-3 sm:grid-cols-2">
+            <div className="min-w-0 space-y-1">
+              <dt className="text-xs text-muted-foreground">Active release</dt>
+              <dd className="truncate font-mono text-sm font-medium"
+                title={site.activeRelease ?? "No release published"}>
+                {site.activeRelease ? site.activeRelease.slice(0, 12) + "…" : "Not published"}
+              </dd>
+            </div>
+            <div className="min-w-0 space-y-1">
+              <dt className="text-xs text-muted-foreground">Verified process</dt>
+              <dd className="font-mono text-sm font-medium tabular-nums">
+                {site.pid === null ? (site.state === "stopped" ? "Not running" : "Not verified") : "PID " + site.pid}
+              </dd>
+              {site.startTicks !== null && <dd className="text-xs text-muted-foreground tabular-nums">
+                Start ticks: {site.startTicks}
+              </dd>}
+            </div>
+          </dl>
+        </details>
     </>
   )
 }
