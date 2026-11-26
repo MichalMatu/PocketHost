@@ -1,6 +1,6 @@
 import { AppWindow, Cpu, Settings2, Terminal, Activity, Search, ExternalLink } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import type { ShizukuStatus } from "@/lib/shizuku-schema"
@@ -43,7 +43,7 @@ export function ShizukuNavigation({ section, onChange }: {
   return <div className="flex gap-2 overflow-x-auto pb-2" role="tablist" aria-label="Android modules">
           {sections.map((item, index) => {
             const Icon = item.icon
-            return <Button key={item.id} id={"android-tab-" + item.id} size="sm" role="tab"
+            return <Button key={item.id} id={"android-tab-" + item.id} role="tab"
               aria-controls="android-module-panel" aria-selected={section === item.id}
               tabIndex={section === item.id ? 0 : -1}
               className="shrink-0 whitespace-nowrap"
@@ -74,7 +74,7 @@ export function ShizukuBridgeWarning({ status, reason }: {
               <p>{reason}</p>
               <p>Install or start Shizuku and PocketHost Companion as needed, authorize access, then use Refresh. The browser cannot verify whether either app is installed.</p>
               <span>
-              <a className="ml-2 inline-flex items-center gap-1 underline underline-offset-4"
+              <a className={buttonVariants({ variant: "link", className: "underline" })}
                 href="https://shizuku.rikka.app/guide/setup/" target="_blank" rel="noreferrer">
                 Setup guide <ExternalLink className="size-3" />
               </a>

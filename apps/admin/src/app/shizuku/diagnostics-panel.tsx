@@ -71,7 +71,7 @@ export function ShizukuDiagnosticsPanel() {
         Read-only checks when opening this tab or on request. No Android settings are changed.
       </CardDescription>
       <CardAction>
-        <Button size="sm" variant="outline" disabled={loading}
+        <Button variant="outline" disabled={loading}
           onClick={() => setRefresh(current => current + 1)}>
           {loading ? "Checking…" : "Run diagnostics"}
         </Button>

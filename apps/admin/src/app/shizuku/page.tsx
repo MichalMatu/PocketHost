@@ -177,7 +177,7 @@ export default function ShizukuPage() {
             <Badge variant="outline"><ShieldCheck className="size-3" /> {bridgeState}</Badge>
             <LastSample observedAt={status?.observedAt} />
           </div>
-          <Button variant="outline" size="sm" disabled={loading}
+          <Button variant="outline" disabled={loading}
             onClick={() => {
               // Preserve last inventory while refreshing; actions disabled until status verifies.
               setAppsError(false)
@@ -210,7 +210,7 @@ export default function ShizukuPage() {
                 <SearchField label="Search Android packages" placeholder="Find application or package…"
                   value={appSearch} onChange={value => { setAppSearch(value); setAppPage(0) }} />
                 {(["all", "user", "system"] as const).map(filter => (
-                  <Button size="sm" key={filter} variant={packageFilter === filter ? "default" : "outline"}
+                  <Button key={filter} variant={packageFilter === filter ? "default" : "outline"}
                     onClick={() => { setPackageFilter(filter); setAppPage(0) }}>{filter === "all" ? "All" : filter === "user" ? "User" : "System"}</Button>
                 ))}
               </div>
@@ -235,8 +235,8 @@ export default function ShizukuPage() {
                     <div className="flex items-center justify-between gap-2 p-2 text-xs text-muted-foreground">
                       <span>{shownApps.length ? appPage * PAGE_SIZE + 1 : 0}–{Math.min((appPage + 1) * PAGE_SIZE, shownApps.length)} of {shownApps.length}</span>
                       <div className="flex gap-1">
-                        <Button size="sm" variant="outline" aria-label="Previous applications" disabled={appPage === 0} onClick={() => setAppPage(p => p - 1)}>Previous</Button>
-                        <Button size="sm" variant="outline" aria-label="Next applications" disabled={(appPage + 1) * PAGE_SIZE >= shownApps.length} onClick={() => setAppPage(p => p + 1)}>Next</Button>
+                        <Button variant="outline" aria-label="Previous applications" disabled={appPage === 0} onClick={() => setAppPage(p => p - 1)}>Previous</Button>
+                        <Button variant="outline" aria-label="Next applications" disabled={(appPage + 1) * PAGE_SIZE >= shownApps.length} onClick={() => setAppPage(p => p + 1)}>Next</Button>
                       </div>
                     </div>
                   </div>
@@ -257,9 +257,9 @@ export default function ShizukuPage() {
                           <p className="font-medium break-words">{appDetail.label || appDetail.packageName}</p>
                         </div>
                         <div className="flex flex-wrap gap-2" role="group" aria-label="Application detail view">
-                          <Button size="sm" variant={appView === "details" ? "default" : "outline"}
+                          <Button variant={appView === "details" ? "default" : "outline"}
                             aria-pressed={appView === "details"} onClick={() => setAppView("details")}>Details</Button>
-                          <Button size="sm" variant={appView === "permissions" ? "default" : "outline"}
+                          <Button variant={appView === "permissions" ? "default" : "outline"}
                             aria-pressed={appView === "permissions"} onClick={() => setAppView("permissions")}>
                             Permissions ({appDetail.permissions.length})
                           </Button>
@@ -278,7 +278,7 @@ export default function ShizukuPage() {
                         </div>
                         <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-3 text-sm">
                           <span>{appDetail.permissions.length} requested permissions</span>
-                          <Button size="sm" variant="outline" onClick={() => setAppView("permissions")}>Manage permissions</Button>
+                          <Button variant="outline" onClick={() => setAppView("permissions")}>Manage permissions</Button>
                         </div>
                         </> : <>
                           <div className="flex flex-wrap gap-2 text-xs">
@@ -313,7 +313,7 @@ export default function ShizukuPage() {
                         <p role="status" className="text-muted-foreground text-sm">
                           {detailError ? "App detail request failed. Retry or choose another app." : "Detailed metadata unavailable for this Android user."}
                         </p>
-                        <Button size="sm" variant="outline" onClick={() => void selectPackage(selectedPackage)}>Retry app details</Button>
+                        <Button variant="outline" onClick={() => void selectPackage(selectedPackage)}>Retry app details</Button>
                       </div>
                     )}
                     {selectedPackage && appDetail && appsVerified && !detailLoading && (
@@ -400,8 +400,8 @@ export default function ShizukuPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>Showing {shownProcesses.length ? processPage * PAGE_SIZE + 1 : 0}–{Math.min((processPage + 1) * PAGE_SIZE, shownProcesses.length)} of {shownProcesses.length}{system.processesTruncated ? " · inventory capped at 1200" : ""}</span>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="outline" aria-label="Previous processes" disabled={processPage === 0} onClick={() => setProcessPage(p => p - 1)}>Previous</Button>
-                      <Button size="sm" variant="outline" aria-label="Next processes" disabled={(processPage + 1) * PAGE_SIZE >= shownProcesses.length} onClick={() => setProcessPage(p => p + 1)}>Next</Button>
+                      <Button variant="outline" aria-label="Previous processes" disabled={processPage === 0} onClick={() => setProcessPage(p => p - 1)}>Previous</Button>
+                      <Button variant="outline" aria-label="Next processes" disabled={(processPage + 1) * PAGE_SIZE >= shownProcesses.length} onClick={() => setProcessPage(p => p + 1)}>Next</Button>
                     </div>
                   </div>
                   {selectedProcess && (
@@ -456,9 +456,9 @@ export default function ShizukuPage() {
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                     <span>{shownServices.length ? servicePage * PAGE_SIZE + 1 : 0}–{Math.min((servicePage + 1) * PAGE_SIZE, shownServices.length)} of {shownServices.length} matches</span>
                     <div className="flex gap-1">
-                      <Button size="sm" variant="outline" aria-label="Previous services"
+                      <Button variant="outline" aria-label="Previous services"
                         disabled={servicePage === 0} onClick={() => setServicePage(p => p - 1)}>Previous</Button>
-                      <Button size="sm" variant="outline" aria-label="Next services"
+                      <Button variant="outline" aria-label="Next services"
                         disabled={(servicePage + 1) * PAGE_SIZE >= shownServices.length}
                         onClick={() => setServicePage(p => p + 1)}>Next</Button>
                     </div>

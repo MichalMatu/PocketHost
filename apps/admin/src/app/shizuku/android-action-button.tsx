@@ -85,7 +85,7 @@ export function AndroidActionButton({ action, target = "", value = "", children,
     }
   }
   return <span className="inline-flex min-w-0 flex-wrap items-center gap-2">
-    <Button type="button" size="sm" variant="outline" onClick={() => { void run() }} disabled={busy || disabled}>
+    <Button type="button" variant="outline" onClick={() => { void run() }} disabled={busy || disabled}>
       {busy ? "Running…" : children}
     </Button>
     {feedback && <span role={feedback.ok ? "status" : "alert"}

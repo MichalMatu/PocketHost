@@ -97,6 +97,9 @@ describe("Android Shizuku UI response and bounded inventories", () => {
       url.endsWith("/apps") ? apps : system)
     const user = userEvent.setup()
     await screen.findByText("Example 0")
+    for (const control of [screen.getByRole("button", { name: "Refresh" }), screen.getByRole("tab", { name: /Apps & permissions/i }), screen.getByRole("button", { name: "All" }), screen.getByRole("button", { name: "Next applications" })]) {
+      expect(control.classList.contains("h-8")).toBe(true)
+    }
     expect(screen.getByText("1–80 of 175")).toBeTruthy()
     expect(screen.queryByText("Example 80")).toBeNull()
     await user.click(screen.getByRole("button", { name: "Next applications" }))

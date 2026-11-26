@@ -152,7 +152,7 @@ export function RemoteShellPanel({ authorized }: { authorized: boolean }) {
             <strong>{result.success ? "Completed" : "Command failed"}</strong>
             <span>Exit: {result.exitCode ?? "Unavailable"}</span>
             <span>Duration: {result.durationMs == null ? "Unavailable" : result.durationMs + " ms"}</span>
-            <Button size="sm" variant="outline" onClick={() => void copy(result.output)}>Copy output</Button>
+            <Button variant="outline" onClick={() => void copy(result.output)}>Copy output</Button>
           </div>
           <div>
             <p className="text-sm font-medium">Android output</p>
@@ -179,7 +179,7 @@ export function RemoteShellPanel({ authorized }: { authorized: boolean }) {
               {item.durationMs != null ? " · " + item.durationMs + " ms" : ""}
             </span>
           </div>
-          <Button size="sm" variant="outline" disabled={busy || !authorized} onClick={() => void run(item.command)}>Run again</Button>
+          <Button variant="outline" disabled={busy || !authorized} onClick={() => void run(item.command)}>Run again</Button>
         </div>)}
       </div>}
       <p className="text-muted-foreground text-xs">
