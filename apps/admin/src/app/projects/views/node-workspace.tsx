@@ -42,8 +42,8 @@ export function NodeWorkspace({ controller: c, tab, onTab, onRemoved }: {
       disabled={busy || !ownerAuthorized || !executionEnabled}
       onAction={(op, message) => action(() => runRuntimeAction(selected.id, op, { approved: true }, message))} />
     <Tabs value={tab} onValueChange={value => { if (!busy) onTab(String(value)) }}>
-      <TabsList variant="line" className="h-auto w-full flex-wrap justify-start gap-1 border-b pb-1">
-        {tabs.map(([key, title]) => <TabsTrigger key={key} value={key} disabled={busy} className="min-h-10 flex-none px-3">{title}</TabsTrigger>)}
+      <TabsList aria-label="Application sections" className="w-full flex-wrap justify-start gap-1 group-data-horizontal/tabs:h-auto">
+        {tabs.map(([key, title]) => <TabsTrigger key={key} value={key} disabled={busy} className="h-10 flex-none px-3">{title}</TabsTrigger>)}
       </TabsList>
       <TabsContent value="overview" className="space-y-3 pt-3">
         {tab === "overview" && <>
