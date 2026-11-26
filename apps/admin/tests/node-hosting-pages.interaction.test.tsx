@@ -82,6 +82,8 @@ it("Deployments shows only owned static and Node project histories", async () =>
   render(<MemoryRouter><DeploymentsPage /></MemoryRouter>)
   await screen.findByText("Example static")
   await screen.findByText("Example Node")
+  const links = [screen.getByRole("link", { name: "Open site settings" }), screen.getByRole("link", { name: "Open project" }), ...screen.getAllByRole("link", { name: "Logs", exact: true })]
+  expect(links.every(link => link.classList.contains("h-8") && link.hasAttribute("href"))).toBe(true)
   const historyControls = screen.getAllByText("Deployment history (1)")
   expect(historyControls).toHaveLength(2)
   expect(historyControls.every(control => !control.closest("details")?.open)).toBe(true)

@@ -3,7 +3,7 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
 
@@ -102,7 +102,7 @@ export default function DeploymentsPage() {
           <CardHeader><CardTitle>Static sites</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {(staticState !== "ready" || sites.length === 0) &&
-              <Link to="/sites" className="text-sm underline underline-offset-4">Manage static sites</Link>}
+              <Link to="/sites" className={buttonVariants({ variant: "link", className: "underline" })}>Manage static sites</Link>}
             {staticState === "loading" && <p role="status">Loading static deployments…</p>}
             {staticState === "disabled" && <p role="status" className="text-muted-foreground text-sm">
               Static hosting is not enabled on this panel.
@@ -127,8 +127,8 @@ export default function DeploymentsPage() {
                   Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline underline-offset-4" to={siteDetailPath(site.id)}>Open site settings</Link>
-                  <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
+                  <Link className={buttonVariants({ variant: "link", className: "underline" })} to={siteDetailPath(site.id)}>Open site settings</Link>
+                  <Link className={buttonVariants({ variant: "link", className: "underline" })} to={"/runtime-logs?project=" + encodeURIComponent("static:" + site.id)}>Logs</Link>
                   {site.state === "unknown"
                     ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
                     : site.canRollback
@@ -157,7 +157,7 @@ export default function DeploymentsPage() {
           <CardHeader><CardTitle>Node.js applications</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {(nodeState !== "ready" || nodeProjects.length === 0) &&
-              <Link to="/projects" className="text-sm underline underline-offset-4">Manage Node projects</Link>}
+              <Link to="/projects" className={buttonVariants({ variant: "link", className: "underline" })}>Manage Node projects</Link>}
             {nodeState === "loading" && <p role="status">Loading Node deployments…</p>}
             {nodeState === "disabled" && <p role="status" className="text-muted-foreground text-sm">
               Node Hosting is not enabled on this panel.
@@ -182,12 +182,12 @@ export default function DeploymentsPage() {
                   Last operation: {latest ? latest.action + " · " + localTime(latest.at) : "No deployment recorded"}
                 </p>
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <Link className="underline underline-offset-4" to={projectUrl}>Open project</Link>
-                  <Link className="underline underline-offset-4" to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
+                  <Link className={buttonVariants({ variant: "link", className: "underline" })} to={projectUrl}>Open project</Link>
+                  <Link className={buttonVariants({ variant: "link", className: "underline" })} to={"/runtime-logs?project=" + encodeURIComponent("node:" + node.id)}>Logs</Link>
                   {node.state === "unknown"
                     ? <span className="text-muted-foreground text-xs">Runtime unverified; rollback unavailable</span>
                     : node.previousGoodRelease
-                      ? <Link className="underline" to={projectUrl}>Review rollback in project</Link>
+                      ? <Link className={buttonVariants({ variant: "link", className: "underline" })} to={projectUrl}>Review rollback in project</Link>
                       : null}
                 </div>
                 {node.history.length > 0
