@@ -207,13 +207,13 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
         <ChevronDownIcon aria-hidden="true"
           className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
       </div>
-      <Button size="sm" variant="outline" disabled={busy || !folder} onClick={() =>
+      <Button variant="outline" disabled={busy || !folder} onClick={() =>
         void load(root, crumbs.slice(0, -1).join("/"))}>Up</Button>
       </div>
     {quickLocations.length > 0 && <nav aria-label="Quick locations" className="flex flex-wrap items-center justify-end gap-2">
       <span className="text-xs text-muted-foreground">Quick access</span>
       {quickLocations.map(shortcut => <Button key={shortcut.root + "/" + shortcut.path}
-        size="sm" variant="outline" disabled={busy}
+        variant="outline" disabled={busy}
         onClick={() => void load(shortcut.root, shortcut.path)}>
         <FolderIcon aria-hidden="true" className="mr-1 size-4" />
         {shortcut.label}
@@ -305,12 +305,12 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
     <Input placeholder="New folder, file, or source path" aria-label="Termux file source"
       value={target} onChange={event => chooseTarget(event.target.value)} />
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="sm" disabled={busy || !target} onClick={() => void perform("mkdir", target)}>New directory</Button>
-      <label className="flex items-center gap-2 text-sm">Import (2 MiB)
-        <input type="file" aria-label="Import Termux file" disabled={busy}
+      <Button disabled={busy || !target} onClick={() => void perform("mkdir", target)}>New directory</Button>
+      <label className="flex min-w-0 max-w-full flex-wrap items-center gap-2 text-sm">Import (2 MiB)
+        <Input type="file" className="max-w-full sm:w-auto" aria-label="Import Termux file" disabled={busy}
           onChange={event => { void upload(event.target.files?.[0]); event.target.value = "" }} />
       </label>
-      <Button size="sm" variant="outline" disabled={!target || busy} onClick={() => {
+      <Button variant="outline" disabled={!target || busy} onClick={() => {
         setPendingTransfer(null); setEditing(true)
       }}>New / Edit text file</Button>
     </div>
@@ -321,11 +321,11 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
       <Input placeholder="Destination path" aria-label="Termux destination"
         value={destination} onChange={event => setDestination(event.target.value)} />
       <div className="flex gap-2">
-        <Button size="sm" disabled={busy || !target || !destination.trim()} onClick={() =>
+        <Button disabled={busy || !target || !destination.trim()} onClick={() =>
           pendingTransfer && void perform(pendingTransfer, target)}>
           {pendingTransfer === "move" ? "Move" : "Copy"}
         </Button>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => setPendingTransfer(null)}>Cancel</Button>
       </div>
     </div>}
@@ -333,7 +333,7 @@ export function TermuxFileExplorer({ refreshToken = 0 }: { refreshToken?: number
       <p className="text-sm">Text editor: {target || "(choose file)"}</p>
       <Textarea aria-label="Termux text editor" rows={9} value={content}
         onChange={event => setContent(event.target.value)} />
-      <Button size="sm" disabled={!target || busy} onClick={() => void perform("save", target)}>Save text</Button>
+      <Button disabled={!target || busy} onClick={() => void perform("save", target)}>Save text</Button>
     </div>}
       </div>
     </div>

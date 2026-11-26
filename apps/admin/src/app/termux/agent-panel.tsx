@@ -42,7 +42,7 @@ export function AgentApiPanel({ refreshToken = 0 }: { refreshToken?: number }) {
     </div>}
     <p className="text-sm font-medium">Example Local Agent host-command client request</p>
     <pre className="overflow-auto rounded bg-muted p-3 text-xs">{example}</pre>
-    <Button variant="outline" size="sm" onClick={() => void navigator.clipboard.writeText(example).then(
+    <Button variant="outline" onClick={() => void navigator.clipboard.writeText(example).then(
       () => setCopied(true), () => setError("Clipboard unavailable"),
     )}>{copied ? "Copied" : "Copy example"}</Button>
 

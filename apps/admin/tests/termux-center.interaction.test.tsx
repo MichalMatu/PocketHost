@@ -170,6 +170,10 @@ describe("H3 strict read-only contracts", () => {
     expect(screen.getByRole("option", { name: "Termux Home" })).toBeTruthy()
     expect(screen.getByRole("option", { name: "Termux System" })).toBeTruthy()
     expect(screen.getByRole("option", { name: "Phone Storage" })).toBeTruthy()
+    for (const control of [screen.getByRole("button", { name: "Up" }), screen.getByRole("button", { name: "New directory" }), screen.getByRole("button", { name: "New / Edit text file" }), screen.getByLabelText("Import Termux file")]) {
+      expect(control.classList.contains("h-8")).toBe(true)
+    }
+    expect(screen.getByLabelText("Import Termux file").getAttribute("type")).toBe("file")
     expect(screen.queryByRole("button", { name: "Workspace" })).toBeNull()
     expect(screen.queryByRole("navigation", { name: "Quick locations" })).toBeNull()
     await user.selectOptions(location, "prefix")
@@ -177,6 +181,12 @@ describe("H3 strict read-only contracts", () => {
       String(call[0]).includes("mode=browse-root&root=prefix"))).toBe(true))
     expect(screen.queryByRole("button", { name: "Inspect files" })).toBeNull()
     expect(calls.mock.calls.some(call => String(call[0]) === "/api/v1/sites")).toBe(false)
+    expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
+  })
+
+  it("uses a standard control for copying the Agents API example", async () => {
+    const calls = mount("agents")
+    expect((await screen.findByRole("button", { name: "Copy example" })).classList.contains("h-8")).toBe(true)
     expect(calls.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
   })
 
