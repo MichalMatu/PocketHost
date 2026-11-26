@@ -5,6 +5,7 @@ const api = "/api/v1/node-projects"
 type Snapshot = { id: string; time: string }
 type BackupStatus = { initialized: boolean; repositoryPresent: boolean; keyPresent: boolean }
 type Props = {
+  standalone?: boolean
   catalogReady: boolean
   ownerAuthorized: boolean
   busy: boolean
@@ -29,7 +30,7 @@ export function NodeBackupPanel(props: Props) {
 }
 
 function NodeBackupSession({
-  catalogReady, ownerAuthorized, busy, getJson, action, onMessage,
+  catalogReady, ownerAuthorized, busy, getJson, action, onMessage, standalone,
 }: Props) {
   const [backupStatus, setBackupStatus] = React.useState<BackupStatus | null>(null)
   const [backupsEnabled, setBackupsEnabled] = React.useState(false)
@@ -84,7 +85,7 @@ function NodeBackupSession({
     onMessage("Owned Node Restic repository inspected without running backup.")
   }
 
-  return <details data-testid="node-backup-panel" className="rounded-xl border bg-card text-card-foreground">
+  return <details data-testid="node-backup-panel" className="rounded-xl border bg-card text-card-foreground" open={standalone || undefined}>
     <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
       Scoped Node project backups
       <span className="ml-2 text-xs font-normal text-muted-foreground">Encrypted Restic · advanced</span>

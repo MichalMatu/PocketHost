@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { NodeHostDiagnosticsView } from "./node-host-diagnostics-view"
 import { createNodeProject } from "../actions/node-catalog-actions"
 import type { NodeProjectController } from "../state/use-node-project-controller"
 
 export function NodeCreateView({ controller, standalone = false, onCreated }: { controller: NodeProjectController; standalone?: boolean; onCreated?: (id: string) => void }) {
-  const { name, setName, busy, createPhase, ownerAuthorized, catalogState, creatingRef, actionInFlight, action, checkTools, inspectRegistries, setMessage } = controller
+  const { name, setName, busy, createPhase, ownerAuthorized, catalogState, creatingRef, actionInFlight, action } = controller
   return <>
     <details data-testid="node-create-panel" className="rounded-xl border bg-card text-card-foreground" open={standalone || undefined}>
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
@@ -24,14 +25,7 @@ export function NodeCreateView({ controller, standalone = false, onCreated }: { 
               await createNodeProject(controller, onCreated)
             })
           }}>Create project</Button>
-        <Button variant="outline" disabled={busy || catalogState !== "ready"}
-          onClick={() => action(async () => {
-            if (await checkTools()) setMessage("Node toolchain version read confirmed.")
-          })}>Check Node tools</Button>
-        <Button variant="outline" disabled={busy || catalogState !== "ready"} onClick={() => action(async () => {
-          if (await inspectRegistries())
-            setMessage("Read-only module, service and project declarations verified.")
-        })}>Inspect hosting registries</Button>
+        {!standalone && <NodeHostDiagnosticsView controller={controller} />}
         </div>
         {createPhase === "pending" && <p role="status" className="text-sm text-muted-foreground">
           Creating project… Do not submit again while the host processes this request.

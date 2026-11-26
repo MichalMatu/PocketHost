@@ -41,6 +41,7 @@ type SnapshotIndexEntry = {
 type Readout = { data: DataScope; recovery: RecoveryReview }
 type IntegrityState = "checking" | "verified" | "unavailable"
 type Props = {
+  standalone?: boolean
   projectId: string | null
   ownerAuthorized: boolean
   busy: boolean
@@ -192,7 +193,7 @@ export function NodeDataPanel(props: Props) {
   return <NodeDataContent key={(props.projectId ?? "none") + ":" + String(props.ownerAuthorized)} {...props} />
 }
 
-function NodeDataContent({ projectId, ownerAuthorized, busy, getJson, action }: Props) {
+function NodeDataContent({ projectId, ownerAuthorized, busy, getJson, action, standalone }: Props) {
   const [report, setReport] = React.useState<Readout | null>(null)
   const [snapshots, setSnapshots] = React.useState<SnapshotIndexEntry[] | null>(null)
   const [scopeUnavailable, setScopeUnavailable] = React.useState(false)
@@ -247,7 +248,7 @@ function NodeDataContent({ projectId, ownerAuthorized, busy, getJson, action }: 
     }
   }
 
-  return <details data-testid="node-data-panel" className="rounded-xl border bg-card text-card-foreground">
+  return <details data-testid="node-data-panel" className="rounded-xl border bg-card text-card-foreground" open={standalone || undefined}>
     <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
       Application data
       <span className="ml-2 text-xs font-normal text-muted-foreground">Uploads · database · state</span>

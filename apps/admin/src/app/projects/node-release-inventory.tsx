@@ -1,3 +1,4 @@
+import { RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import type { Candidate } from "./node-project-client"
 import { releaseRole, shortRelease } from "./node-project-display"
@@ -22,7 +23,7 @@ export function NodeReleaseInventory({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">Releases</h3>
         <Button size="sm" variant="outline" disabled={busy || loading}
-          onClick={() => onRefresh()}>Refresh releases</Button>
+          onClick={() => onRefresh()}><RefreshCw aria-hidden="true" />Refresh releases</Button>
       </div>
       {loading && <p role="status" className="text-xs text-muted-foreground">
         Reading releases for selected Node project…
