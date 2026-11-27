@@ -9,7 +9,7 @@ purpose: Detailed UX sprint acceptance checklist
 
 ## Current priority
 
-The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-03 and the scoped UX-04 Hosting/Deployments work are active; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with Static and Node synthetic visual comparisons complete; real LAN visual acceptance remains open. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-05 CSS and template cleanup is active (HOLD on aggregate UI QA); UX-03 and scoped UX-04 Hosting/Deployments implementation are deployed; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with Static and Node synthetic visual comparisons complete; real LAN visual acceptance remains open. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
 
 Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
 
@@ -58,7 +58,9 @@ Hosting/Deployments layout at `1efa081` passed exact-source QA/build and guarded
 - [ ] Review every reachable screen at desktop 1440×900, including selected Node project and advanced sections; identify duplicate labels, descriptions, cards, inventory and navigation across Hosting, Services, Dashboard and Monitoring.
 - [ ] Keep each screen focused on one task, one main action where meaningful; move technical IDs/PID/ticks into diagnostics. Consolidate duplicated presentation without removing distinct independent routes or essential warnings. QA/deploy/readback.
 
-### UX-05 — CSS and template cleanup (QUEUED)
+### UX-05 — CSS and template cleanup (ACTIVE / HOLD)
+
+Inventory/refinement, global CSS and App shell scoped QA/deploy are recorded in the [current handoff](HANDOFF_NEXT_CHAT.md). Command UI candidate is not deployed: aggregate UI runner failed before executing the mapped tests. Complete the corrected A8 gate, remaining CSS review and visual acceptance before advancing.
 
 - [ ] Inventory CSS imports, selectors, Tailwind important modifiers, inline styles, arbitrary values and template leftovers. Remove unused App.css and unnecessary decorative transitions only after reference checks; preserve essential theme tokens, focus and reduced-motion behavior.
 - [ ] Target zero custom presentation CSS and zero important overrides in application-owned code; document any indispensable vendor/behavioral exception. Keep genuinely dynamic styles where necessary, avoid moving CSS debt into arbitrary utilities. QA/deploy/readback.

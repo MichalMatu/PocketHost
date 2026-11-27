@@ -1,7 +1,7 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-25
+last_reviewed: 2026-11-27
 purpose: Ordered post-v1 sprint backlog and completion evidence
 ---
 
@@ -15,11 +15,11 @@ One sprint at a time. Preserve the v1.0.0 tag, historical evidence and approval 
 
 See [UX execution plan](UX_EXECUTION_PLAN.md) for the full scope, baseline and acceptance checklist.
 
-- [ ] UX-01 — Static Hosting workspaces (ACTIVE).
+- [ ] UX-01 — Static Hosting workspaces (deployed; real LAN visual acceptance pending).
 - [ ] UX-02 — Node.js Hosting workspaces.
 - [ ] UX-03 — Shared UI foundations.
 - [ ] UX-04 — Information architecture and noise reduction.
-- [ ] UX-05 — CSS and template cleanup.
+- [ ] UX-05 — CSS and template cleanup (ACTIVE / HOLD; see [current handoff](HANDOFF_NEXT_CHAT.md)).
 - [ ] UX-06 — Module boundaries and enforceable quality.
 - [ ] UX-07 — Visual and regression closeout.
 

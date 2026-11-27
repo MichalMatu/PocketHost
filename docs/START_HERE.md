@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-25
+last_reviewed: 2026-11-27
 purpose: Short current entrypoint for stable PocketHost MVP
 ---
 
@@ -11,7 +11,7 @@ Read [agent rules](../AGENTS.md), [current handoff](HANDOFF_NEXT_CHAT.md), [qual
 
 **Source baseline:** `main@d2bacd081ad0879d49a08e3c7fd97789185ad6e4` qualified G0–G2 on A8 (486/486 UI, 469 Node PASS, 1 SKIP; 76.11% line coverage). Subsequent documentation-only cleanup does not constitute a new application QA run.
 
-**Last confirmed A8 DEV checkout:** `af0b35a6acb3fc03350d86d9263d7b655d6fa875` (CF1 UX guarded HMR and readback PASS; startup marker `122f31e72c6bf74743ffeb0ea490b5b2d0d2252b` from full CF1C deployment, verified UI-only drift; see [quality gates](QUALITY_GATES.md)). Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the current MVP.
+**Current UX-05 state:** see [current handoff](HANDOFF_NEXT_CHAT.md) for the last confirmed live SHA, source candidate, completed gates and blocker. Re-read device ownership, live source SHA, PID/ticks, protected-service state and HTTP **before** any later deploy; never infer the current live version from this document. The owner reported browser acceptance of the earlier MVP.
 
 **Recovery:** scoped encrypted local Node Restic backup → isolated restore and hash comparison was performed. This does not prove off-device disaster recovery. See [MVP evidence](MVP_INTEGRATION_CHECKLIST.md).
 

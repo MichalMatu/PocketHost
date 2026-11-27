@@ -1,13 +1,13 @@
 ---
 status: stable
 owner: product
-last_reviewed: 2026-11-25
+last_reviewed: 2026-11-27
 purpose: Concise accepted MVP features and evidence boundaries
 ---
 
 # PocketHost MVP acceptance
 
-**Owner state:** current private-LAN MVP and browser UX accepted for the present stage. **Engineering state:** A8 source G0–G2 PASS at `d2bacd0`; last confirmed DEV checkout `af0b35a` (CF1 UX HMR PASS; full deployment startup marker `122f31e`). These are deliberately different milestones.
+**Owner state:** current private-LAN MVP and browser UX accepted for the present stage. **Engineering state:** A8 source G0–G2 PASS at `d2bacd0`; current DEV checkout and UX-05 status are recorded in the [current handoff](HANDOFF_NEXT_CHAT.md). These are deliberately different milestones.
 
 | Area                                  | Established evidence                                                                                    | Boundary                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
