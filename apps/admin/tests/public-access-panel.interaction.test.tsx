@@ -30,6 +30,8 @@ it("requires explicit publication intent, shows the assigned URL and supports un
   details.open = true
   fireEvent.click(screen.getByRole("button", { name: "Refresh publication" }))
   await screen.findByText("Not published")
+  expect(screen.getByRole("button", { name: "Refresh publication" }).classList.contains("h-8")).toBe(true)
+  expect(screen.getByRole("link", { name: "Cloudflare settings" }).classList.contains("h-8")).toBe(true)
   expect(fetcher.mock.calls.every(call => call[1].method === "GET")).toBe(true)
   fireEvent.click(screen.getByRole("button", { name: "Publish to Internet" }))
   expect((await screen.findByRole("link", { name: url })).getAttribute("href")).toBe(url)

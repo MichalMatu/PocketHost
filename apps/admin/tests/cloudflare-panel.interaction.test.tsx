@@ -28,6 +28,7 @@ describe("Cloudflare Tunnel protected read-only panel", () => {
     expect(screen.getByText(/PID 98/)).toBeTruthy()
     expect(screen.getByText(/Unverified · last log event: registered/)).toBeTruthy()
     expect(screen.queryByRole("button", { name: /restart/i })).toBeNull()
+    expect(screen.getByRole("link", { name: "Packages & Software" }).classList.contains("h-8")).toBe(true)
     expect(fetcher.mock.calls[0]?.[0]).toBe("/api/v1/termux-admin?mode=cloudflare-diagnostics")
     expect(fetcher.mock.calls[0]?.[1]?.method).toBe("GET")
   })

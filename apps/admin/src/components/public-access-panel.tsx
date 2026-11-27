@@ -2,7 +2,7 @@ import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { z } from "zod"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 
 const publicationSchema = z.object({
   publication: z.object({
@@ -111,29 +111,29 @@ export function PublicAccessPanel({ siteId, siteName, running = false, disabled 
         <a ref={addressRef} href={url} target="_blank" rel="noopener noreferrer"
           className="break-all underline">{url}</a>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => void copyLink()}>Copy link</Button>
+          <Button variant="outline" onClick={() => void copyLink()}>Copy link</Button>
           {copyMessage && <p role="status" className="text-xs">{copyMessage}</p>}
         </div>
       </div>}
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" disabled={busy} onClick={() => void read()}>
+        <Button variant="outline" disabled={busy} onClick={() => void read()}>
           Refresh publication
         </Button>
-        {siteId && <Button size="sm"
+        {siteId && <Button
           disabled={busy || disabled || !running || !publication || active}
           onClick={() => {
             if (window.confirm("Publish the active release of " + (siteName ?? "this site") + " to the public Internet?"))
               void read("publish-public", siteId)
           }}>Publish to Internet</Button>}
-        {active && matching && publication?.siteId && <Button size="sm" variant="outline"
+        {active && matching && publication?.siteId && <Button variant="outline"
           disabled={busy || publication.state === "stopping" || publication.state === "unknown"}
           onClick={() => {
             if (publication.siteId) void read("unpublish-public", publication.siteId)
           }}>Unpublish</Button>}
       </div>
-      {siteId ? <Link to="/services/cloudflare" className="block w-fit text-xs underline">Cloudflare settings</Link> :
+      {siteId ? <Link to="/services/cloudflare" className={buttonVariants({ variant: "link", className: "w-fit" })}>Cloudflare settings</Link> :
         <Link to={publication?.siteId ? siteDetailPath(publication.siteId) : "/sites"}
-          className="block w-fit text-xs underline">Manage static websites</Link>}
+          className={buttonVariants({ variant: "link", className: "w-fit" })}>Manage static websites</Link>}
     </div>
   </details>
 }

@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cloudflareTunnelSchema, type CloudflareTunnelDiagnostic } from "@/lib/cloudflare-tunnel-schema"
 
@@ -86,7 +87,7 @@ export function CloudflareTunnelPanel({ refreshToken = 0 }: { refreshToken?: num
             </p>
             <p className="text-xs text-muted-foreground">
               To use a local connector instead, review{" "}
-              <Link to="/packages" className="underline underline-offset-2">
+              <Link to="/packages" className={buttonVariants({ variant: "link" })}>
                 Packages & Software
               </Link>{" "}
               and configure it as a separately authorized service.
