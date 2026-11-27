@@ -29,7 +29,7 @@ If later editing runtime code, first obtain fresh `main` and real A8 live SHA, r
 
 ## Current owner assignment — UX-03 / UX-04
 
-Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; Static and Node synthetic visual comparisons complete; real LAN acceptance pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Workloads/Health, Monitoring/Logs and Dashboard scoped synthetic visual review complete; Hosting/Deployments final image comparison and remaining shared UI inventory next. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
+Standing owner consent covers routine non-destructive UX QA, read-only Mac captures and guarded DEV releases. See [UX plan](UX_EXECUTION_PLAN.md) and [guarded iteration](DEV_ITERATION.md). UX-01/02 deployed; Static and Node synthetic visual comparisons complete; real LAN acceptance pending. UX-03 shared controls and UX-04 Hosting/Deployments refinements deployed. Services/Workloads/Health, Monitoring/Logs and Dashboard scoped synthetic visual review complete; Hosting/Deployments final synthetic image comparison complete; remaining shared UI inventory next. Restore visual access only within the existing LAN policy; keep raw screenshots local and individually selected previews redacted. Never infer visual approval from geometry. All remaining feature sprints follow UX-07.
 
 ## Previous CF1 closeout
 
