@@ -31,8 +31,8 @@ export function NodeWorkspace({ controller: c, tab, onTab, onRemoved }: {
 }) {
   const { selected, runtime, approved, setApproved, busy, ownerAuthorized, executionEnabled,
     action, runRuntimeAction, plan, buildReview, dependencyReview, loadLogs, logLines, logsLoading, logsError, logsChecked } = c
-  const approval = <label className="flex items-center gap-2 text-sm">
-    <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
+  const approval = <label className="inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 text-sm">
+    <input type="checkbox" className="size-4 shrink-0" aria-label="Approve local Node execution" checked={approved}
       onChange={event => setApproved(event.target.checked)} />
     Approve running this trusted application.
   </label>

@@ -15,8 +15,8 @@ export function NodeLifecycleActions({ runtime, approved, onApprove, disabled, o
     if (!compact || window.confirm(label + " this trusted Node application?")) onAction(operation, message)
   }
   return <section aria-label="Node runtime actions" className="space-y-2">
-    {!compact && <label className="flex items-center gap-2 text-sm">
-      <input type="checkbox" aria-label="Approve local Node execution" checked={approved}
+    {!compact && <label className="inline-flex min-h-11 max-w-full cursor-pointer items-center gap-2 text-sm">
+      <input type="checkbox" className="size-4 shrink-0" aria-label="Approve local Node execution" checked={approved}
         onChange={event => onApprove(event.target.checked)} />
       Approve runtime actions for this trusted application.
     </label>}

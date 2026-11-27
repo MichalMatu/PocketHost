@@ -18,7 +18,7 @@ const project = {
 }
 afterEach(() => vi.unstubAllGlobals())
 
-function setup(path = "/projects") {
+function setup(path = "/projects", candidateRelease = release) {
   let running = false
   const runtime = () => ({
     state: running ? "running" : "stopped", desired: running ? "running" : "stopped",
@@ -28,7 +28,7 @@ function setup(path = "/projects") {
   const requests = vi.fn(async (url: RequestInfo | URL, options?: RequestInit) => {
     const endpoint = String(url)
     const ok = (value: unknown) => ({ ok: true, json: async () => value })
-    if (endpoint === api) return ok({ accessMode: "trusted-lan", projects: [project] })
+    if (endpoint === api) return ok({ accessMode: "trusted-lan", projects: [{ ...project, candidateRelease }] })
     if (endpoint === api + "/" + id + "/runtime") return ok({ runtime: runtime(), executionEnabled: true })
     if (endpoint === api + "/" + id + "/plan") return ok({
       executionEnabled: true, plan: { release, allowed: true, missingTools: [], conflicts: [], reason: "ready" },
@@ -101,4 +101,19 @@ it("keeps legacy deep links and confirms lifecycle mutations at the action", asy
   await user.click(screen.getByRole("button", { name: "Start", exact: true }))
   await waitFor(() => expect(screen.getByRole("button", { name: "Stop", exact: true })).toBeTruthy())
   expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(1)
+})
+
+it("keeps the Node approval target comfortably clickable without invoking a mutation", async () => {
+  const requests = setup("/projects/" + id, "r-" + "c".repeat(32))
+  const user = userEvent.setup()
+  const approval = await screen.findByRole("checkbox", { name: "Approve local Node execution" }) as HTMLInputElement
+  const label = approval.closest("label")
+  expect(label?.classList.contains("min-h-11")).toBe(true)
+  expect(approval.classList.contains("size-4")).toBe(true)
+  expect(approval.checked).toBe(false)
+  await user.click(screen.getByText("Approve running this trusted application."))
+  expect(approval.checked).toBe(true)
+  await user.click(screen.getByText("Approve running this trusted application."))
+  expect(approval.checked).toBe(false)
+  expect(requests.mock.calls.filter(([, options]) => options?.method === "POST")).toHaveLength(0)
 })
