@@ -75,7 +75,7 @@ export default function HostOverview() {
             {snapshot && <Badge variant="outline">{snapshot.services.length} observed services</Badge>}
             {error && snapshot && <Badge variant="outline">Last known sample</Badge>}
           </div>
-          <Button size="sm" variant="outline" disabled={loading} onClick={() => void refresh()}>
+          <Button variant="outline" disabled={loading} onClick={() => void refresh()}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} />Refresh
           </Button>
         </div>
