@@ -30,6 +30,10 @@ describe('Platform read-only Termux:Boot mode diagnostics', () => {
     render(<MemoryRouter><PlatformPage /></MemoryRouter>)
     expect(await screen.findByText('3 script(s) · 2 owner-executable · reboot unverified'))
       .toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Refresh' }).classList.contains('h-8')).toBe(true)
+    for (const name of ['Configure LAN', 'Inspect SSH', 'Inspect autostart']) {
+      expect(screen.getByRole('link', { name }).classList.contains('h-8')).toBe(true)
+    }
     expect(fetcher.mock.calls.every(call => call[1]?.method !== 'POST')).toBe(true)
   })
 

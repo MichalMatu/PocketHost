@@ -2,7 +2,7 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 
 type GitStatus = {
   version: 1
@@ -128,7 +128,7 @@ export default function PlatformPage() {
         <p className="flex items-center gap-2 text-xs text-muted-foreground">
           <ShieldCheck className="size-4" /> Observation only; no service actions
         </p>
-        <Button size="sm" variant="outline" disabled={loading}
+        <Button variant="outline" disabled={loading}
           onClick={() => setRefreshId(id => id + 1)}>
           <RefreshCw className="size-4" /> Refresh
         </Button>
@@ -141,7 +141,7 @@ export default function PlatformPage() {
             <p className="text-xs text-muted-foreground">{item.detail}</p>
           </div>
           {item.url && <Link to={item.url}
-            className="text-sm underline-offset-4 hover:underline">{item.link}</Link>}
+            className={buttonVariants({ variant: "link" })}>{item.link}</Link>}
         </div>)}
       </section>
       {status?.git?.head && <p className="text-xs text-muted-foreground">
