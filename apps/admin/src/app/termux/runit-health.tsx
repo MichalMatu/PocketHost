@@ -467,7 +467,7 @@ export function RunitHealthPanel() {
   return <section className="space-y-3 rounded-md border p-3" aria-label="Runit health observations">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Runit process observations</h3>
-      <Button size="sm" variant="outline" disabled={busy !== null}
+      <Button variant="outline" disabled={busy !== null}
         onClick={() => void refresh().catch(() => setError("Service inventory unavailable"))}>
         Refresh services
       </Button>
@@ -481,7 +481,7 @@ export function RunitHealthPanel() {
     <section className="space-y-2 rounded-md border p-3" aria-label="Standalone worker health overview">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h4 className="text-sm font-medium">Standalone workers · health snapshot</h4>
-        <Button size="sm" variant="outline" disabled={busy !== null || services === null}
+        <Button variant="outline" disabled={busy !== null || services === null}
           onClick={() => void refreshOverview()}>
           {busy === "__overview__" ? "Reading…" : "Inspect all workers"}
         </Button>
@@ -515,7 +515,7 @@ export function RunitHealthPanel() {
                   ? "Needs inspection" : "Observed · readiness unverified"}</Badge>
               </div>}
           </div>
-          {row.status === "observed" && <Button size="sm" variant="outline"
+          {row.status === "observed" && <Button variant="outline"
             disabled={busy !== null} onClick={() => {
               const service = services?.find(item => item.name === row.name)
               if (service) void inspect(service)
@@ -538,7 +538,7 @@ export function RunitHealthPanel() {
         No verified standalone workers. Create a stopped PocketHost-owned worker
         in Runit services, then return here for manual Health and Recovery.
       </p>
-      <Button size="sm" variant="outline" render={<Link to="/services/runit" />}>
+      <Button variant="outline" render={<Link to="/services/runit" />}>
         Create standalone worker
       </Button>
     </div>}
@@ -546,12 +546,12 @@ export function RunitHealthPanel() {
       className="flex flex-wrap items-center justify-between gap-2 border-b py-2">
       <span className="text-sm">{service.name}</span>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" variant="outline" disabled={busy !== null}
+        <Button variant="outline" disabled={busy !== null}
           onClick={() => void inspect(service)}>
           {busy === service.name ? "Inspecting…" : "Inspect health"}
         </Button>
         {(service.template === "heartbeat-worker-v1" || service.template === "python-heartbeat-v1") &&
-          <Button size="sm" variant="outline" disabled={busy !== null}
+          <Button variant="outline" disabled={busy !== null}
           onClick={() => void reviewRecovery(service)}>Review recovery</Button>}
       </div>
     </div>)}
@@ -569,7 +569,7 @@ export function RunitHealthPanel() {
         {recovery.windowEndsAt && " Retry window ends: " +
           new Date(recovery.windowEndsAt).toLocaleString() + "."}
       </p>
-      {recovery.action === "start" && <Button size="sm" variant="outline"
+      {recovery.action === "start" && <Button variant="outline"
         disabled={busy !== null}
         onClick={() => void recoverOnce()}>Request one recovery start</Button>}
     </div>}
@@ -595,7 +595,7 @@ export function RunitHealthPanel() {
           </p>
           <div className="flex flex-wrap gap-2" aria-label="Worker heartbeat policy">
             {(["disabled", "180", "300", "600"] as const).map(choice => <Button
-              key={choice} size="sm" variant={
+              key={choice} variant={
                 (choice === "disabled" && readback.heartbeat.mode === "disabled") ||
                 (choice !== "disabled" && readback.heartbeat.staleAfterSeconds === Number(choice))
                   ? "secondary" : "outline"}
@@ -631,7 +631,7 @@ export function RunitHealthPanel() {
               placeholder="/health" />
           </label>
         </div>
-        <Button size="sm" variant="outline" disabled={busy !== null ||
+        <Button variant="outline" disabled={busy !== null ||
           !/^[0-9]{4,5}$/.test(httpPort) ||
           Number(httpPort) < 1024 || Number(httpPort) > 65535 ||
           !/^\/(?:[a-zA-Z0-9._~-]|\/){0,96}$/.test(httpPath) ||

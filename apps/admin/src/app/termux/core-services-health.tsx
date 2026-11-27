@@ -98,7 +98,7 @@ export function CoreServicesHealthPanel() {
     <CardHeader>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <CardTitle className="text-base">Core services · on-demand health</CardTitle>
-        <Button variant="outline" size="sm" disabled={busy} onClick={() => void check()}>
+        <Button variant="outline" disabled={busy} onClick={() => void check()}>
           {busy ? "Checking…" : "Check core services"}
         </Button>
       </div>

@@ -46,5 +46,8 @@ describe('S4 verified standalone worker inventory', () => {
     render(<MemoryRouter><RunitHealthPanel /></MemoryRouter>);
     const link = await screen.findByRole('link', { name: 'Create standalone worker' });
     expect(link.getAttribute('href')).toBe('/services/runit');
+    expect(link.classList.contains('h-8')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Refresh services' }).classList.contains('h-8')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Inspect all workers' }).classList.contains('h-8')).toBe(true);
   });
 });
