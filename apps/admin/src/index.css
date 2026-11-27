@@ -158,24 +158,6 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* Logo carousel animation */
-@keyframes logo-scroll {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-144rem); /* 12 items * 12rem = 144rem */
-  }
-}
-
-.animate-logo-scroll {
-  animation: logo-scroll 30s linear infinite;
-}
-
-.animate-logo-scroll:hover {
-  animation-play-state: paused;
-}
-
 /* Route progress bar (components/router/root-layout.tsx). Fades in after
    150ms so fast navigations don't flash it. */
 @keyframes route-progress-in {
