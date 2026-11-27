@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/command"
 
 it("uses shared dialog and input-group geometry without redundant important overrides", async () => {
-  const { container } = render(
+  render(
     <CommandDialog open onOpenChange={() => {}}>
       <Command>
         <CommandInput placeholder="Search commands" />
@@ -16,7 +16,7 @@ it("uses shared dialog and input-group geometry without redundant important over
   )
 
   const dialog = await screen.findByRole("dialog")
-  const command = container.querySelector('[data-slot="command"]')
+  const command = dialog.querySelector('[data-slot="command"]')
   const input = screen.getByPlaceholderText("Search commands")
   const group = input.closest('[data-slot="input-group"]')
   const addon = group?.querySelector('[data-slot="input-group-addon"]')
