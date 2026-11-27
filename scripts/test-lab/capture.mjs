@@ -146,6 +146,8 @@ function gallery(report) {
         (c.geometry?.horizontalOverflow ?? '?') +
         'px, unlabeled controls ' +
         (c.geometry?.unlabeledControls ?? '?') +
+        ', tab overlap cases ' +
+        (c.geometry?.tabOverlapCases ?? '?') +
         ', JS errors ' +
         c.jsErrors;
       return (
@@ -526,6 +528,7 @@ async function main() {
       overflowCases: captures.filter((c) => (c.geometry?.horizontalOverflow || 0) > 0).length,
       unlabeledCases: captures.filter((c) => c.rendered && (c.geometry?.unlabeledControls || 0) > 0)
         .length,
+      tabOverlapCases: captures.filter((c) => (c.geometry?.tabOverlapCases || 0) > 0).length,
       jsErrors: captures.reduce((sum, c) => sum + c.jsErrors, 0),
       failedRequests: captures.reduce((sum, c) => sum + c.failedRequests, 0),
       blockedRequests: captures.reduce((sum, c) => sum + c.blockedRequests, 0),

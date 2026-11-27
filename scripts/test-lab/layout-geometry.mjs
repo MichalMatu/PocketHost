@@ -53,7 +53,46 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
       }
     }
   }
+  // Wrapped horizontal tabs can obscure a panel without causing document overflow.
+  let tabOverlapCases = 0;
+  const tabOverlapSamples = [];
+  for (const list of Array.from(doc.querySelectorAll('[role="tablist"]')).slice(0, 100)) {
+    if (list.getAttribute('role') !== 'tablist' || list.getAttribute('aria-orientation') === 'vertical')
+      continue;
+    const bounds = list.getBoundingClientRect();
+    if (bounds.width <= 0 || bounds.height <= 0) continue;
+    const tabs = Array.from(list.querySelectorAll('[role="tab"]'))
+      .map((tab) => ({ tab, rect: tab.getBoundingClientRect() }))
+      .filter(({ rect }) => rect.width > 0 && rect.height > 0);
+    if (!tabs.length) continue;
+    const bottom = Math.max(...tabs.map(({ rect }) => rect.bottom));
+    const selected = tabs.find(({ tab }) => tab.getAttribute('aria-selected') === 'true');
+    const panelId = selected?.tab.getAttribute('aria-controls');
+    const panel = panelId ? doc.getElementById(panelId) : null;
+    const panelBounds = panel?.getBoundingClientRect();
+    const listOverlap = bottom > bounds.bottom + 1;
+    const panelOverlap = Boolean(
+      panelBounds &&
+      panelBounds.width > 0 &&
+      panelBounds.height > 0 &&
+      panelBounds.top >= bounds.top &&
+      bottom > panelBounds.top + 1,
+    );
+    if (listOverlap || panelOverlap) {
+      tabOverlapCases++;
+      if (tabOverlapSamples.length < 16) {
+        tabOverlapSamples.push({
+          tabs: tabs.length,
+          listOverlap,
+          panelOverlap,
+          listOverflowPx: Math.max(0, Math.round(bottom - bounds.bottom)),
+        });
+      }
+    }
+  }
   return {
+    tabOverlapCases,
+    tabOverlapSamples,
     horizontalOverflow: Math.max(0, doc.documentElement.scrollWidth - width),
     documentHeight: Math.max(doc.documentElement.scrollHeight, doc.body?.scrollHeight ?? 0),
     outOfBoundsElements: outside,

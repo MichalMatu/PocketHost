@@ -63,3 +63,54 @@ test('geometry bounds overflow samples to sixteen structural records', () => {
   assert.equal(result.outOfBoundsElements, 100);
   assert.equal(result.overflowSamples.length, 16);
 });
+
+function tabFixture({ listBottom = 80, panelTop = 90, orientation = 'horizontal' } = {}) {
+  const rect = (top, bottom) => ({
+    left: 0,
+    right: 300,
+    top,
+    bottom,
+    width: 300,
+    height: bottom - top,
+  });
+  const makeTab = (top, bottom, selected) => ({
+    getBoundingClientRect: () => rect(top, bottom),
+    getAttribute: (key) =>
+      key === 'aria-selected' ? String(selected) : key === 'aria-controls' ? 'private-panel-id' : null,
+  });
+  const list = {
+    getAttribute: (key) =>
+      key === 'role' ? 'tablist' : key === 'aria-orientation' ? orientation : null,
+    getBoundingClientRect: () => rect(10, listBottom),
+    querySelectorAll: () => [makeTab(10, 40, true), makeTab(45, 75, false)],
+  };
+  return {
+    doc: {
+      querySelectorAll: (selector) => (selector === '[role="tablist"]' ? [list] : []),
+      getElementById: () => ({ getBoundingClientRect: () => rect(panelTop, panelTop + 100) }),
+      documentElement: { scrollWidth: 390, scrollHeight: 800 },
+      body: { scrollHeight: 800 },
+    },
+    win: { innerWidth: 390 },
+  };
+}
+
+test('detects wrapped tab overlap even when the document has no horizontal overflow', () => {
+  const result = inspectPageGeometry(tabFixture({ listBottom: 40, panelTop: 50 }));
+  assert.equal(result.horizontalOverflow, 0);
+  assert.equal(result.tabOverlapCases, 1);
+  assert.deepEqual(result.tabOverlapSamples, [
+    { tabs: 2, listOverlap: true, panelOverlap: true, listOverflowPx: 35 },
+  ]);
+  assert.equal(JSON.stringify(result).includes('private-panel-id'), false);
+});
+
+test('accepts a correctly sized wrapped tablist and skips vertical tablists', () => {
+  assert.equal(inspectPageGeometry(tabFixture()).tabOverlapCases, 0);
+  assert.equal(
+    inspectPageGeometry(
+      tabFixture({ listBottom: 40, panelTop: 50, orientation: 'vertical' }),
+    ).tabOverlapCases,
+    0,
+  );
+});
