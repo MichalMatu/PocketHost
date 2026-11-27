@@ -76,7 +76,11 @@ function tabFixture({ listBottom = 80, panelTop = 90, orientation = 'horizontal'
   const makeTab = (top, bottom, selected) => ({
     getBoundingClientRect: () => rect(top, bottom),
     getAttribute: (key) =>
-      key === 'aria-selected' ? String(selected) : key === 'aria-controls' ? 'private-panel-id' : null,
+      key === 'aria-selected'
+        ? String(selected)
+        : key === 'aria-controls'
+          ? 'private-panel-id'
+          : null,
   });
   const list = {
     getAttribute: (key) =>
@@ -108,9 +112,8 @@ test('detects wrapped tab overlap even when the document has no horizontal overf
 test('accepts a correctly sized wrapped tablist and skips vertical tablists', () => {
   assert.equal(inspectPageGeometry(tabFixture()).tabOverlapCases, 0);
   assert.equal(
-    inspectPageGeometry(
-      tabFixture({ listBottom: 40, panelTop: 50, orientation: 'vertical' }),
-    ).tabOverlapCases,
+    inspectPageGeometry(tabFixture({ listBottom: 40, panelTop: 50, orientation: 'vertical' }))
+      .tabOverlapCases,
     0,
   );
 });

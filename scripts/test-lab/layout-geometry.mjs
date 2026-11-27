@@ -57,7 +57,10 @@ export function inspectPageGeometry({ doc = globalThis.document, win = globalThi
   let tabOverlapCases = 0;
   const tabOverlapSamples = [];
   for (const list of Array.from(doc.querySelectorAll('[role="tablist"]')).slice(0, 100)) {
-    if (list.getAttribute('role') !== 'tablist' || list.getAttribute('aria-orientation') === 'vertical')
+    if (
+      list.getAttribute('role') !== 'tablist' ||
+      list.getAttribute('aria-orientation') === 'vertical'
+    )
       continue;
     const bounds = list.getBoundingClientRect();
     if (bounds.width <= 0 || bounds.height <= 0) continue;
