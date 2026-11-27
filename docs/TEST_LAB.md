@@ -1,7 +1,7 @@
 ---
 status: active
 owner: core
-last_reviewed: 2026-11-26
+last_reviewed: 2026-11-27
 purpose: Manual read-only Mac screenshot and API lab for A8 private-LAN DEV panel
 ---
 
@@ -48,3 +48,5 @@ Inventory exact existing settings endpoints and ownership semantics before makin
 **SPA navigation:** `navigationMode=spa` with `status=null` is expected because an in-app route change makes no new document HTTP request. Use `rendered`, failed requests and console errors to assess that screen.
 
 Geometry reports include up to 24 text-free tiny-control descriptors (tag/slot/icon, size and location). They exclude raw user text, hrefs and input values. These findings are **diagnostics**, not automatic proof of a WCAG violation.
+
+**27 November — shared tab geometry:** tool source `cc7af6f` adds horizontal tablist/panel overlap detection even when document overflow is zero. The gallery and bounded receipt report affected captures; per-view samples contain only counts, booleans and pixel overflow, not IDs or text. A8 task `pockethost-a8-ux03-testlab-tab-geometry-qa-cc7af6f-20261127-v2`: format, syntax and 20/20 tests across seven Test Lab files PASS. No panel deployment. Browser validation of the shared detector remains distinct from the earlier isolated Node-specific geometry capture.
