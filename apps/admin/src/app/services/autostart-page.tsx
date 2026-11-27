@@ -143,7 +143,7 @@ function TermuxBootObservation({ refreshToken }: { refreshToken: number }) {
   return <section className="space-y-2 rounded-md border p-3" aria-label="Termux Boot observation">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">Termux:Boot · startup chain</h3>
-      <Button size="sm" variant="outline"
+      <Button variant="outline"
         onClick={() => void refresh()}>Refresh boot status</Button>
     </div>
     {loading && <p role="status" className="text-xs">Reading local boot configuration…</p>}
@@ -175,7 +175,7 @@ export default function ServiceAutostartPage() {
     <div className="space-y-4 px-4 pb-8 lg:px-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs text-muted-foreground">Manual observation · no startup scheduler</p>
-        <Button size="sm" variant="outline"
+        <Button variant="outline"
           onClick={() => setRefreshToken(value => value + 1)}>Refresh boot and runit</Button>
       </div>
       <TermuxBootObservation refreshToken={refreshToken} />

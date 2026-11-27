@@ -32,6 +32,8 @@ describe("Service Autostart read-only boot observation", () => {
     await waitFor(() => expect(replies).toHaveLength(1))
     const refreshButton = screen.getByRole("button", { name: "Refresh boot status" }) as HTMLButtonElement
     expect(refreshButton.disabled).toBe(false)
+    expect(refreshButton.classList.contains("h-8")).toBe(true)
+    expect(screen.getByRole("button", { name: "Refresh boot and runit" }).classList.contains("h-8")).toBe(true)
     fireEvent.click(refreshButton)
     await waitFor(() => expect(replies).toHaveLength(2))
     const bootCalls = fetcher.mock.calls.filter(call =>

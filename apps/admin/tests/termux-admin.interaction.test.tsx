@@ -341,6 +341,8 @@ describe('H3 runit service enrollment UI', () => {
     await screen.findByText('foreign-daemon');
     expect(screen.queryByRole('button', { name: 'Register' })).toBeNull();
     expect(screen.getByText(/No standalone workers yet/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Add Service' }).classList.contains('h-8')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Refresh services' }).classList.contains('h-8')).toBe(true);
     await user.click(screen.getByRole('button', { name: 'Add Service' }));
     await user.type(screen.getByRole('textbox', { name: 'New service name' }), 'site-worker');
     await user.click(screen.getByRole('button', { name: 'Create stopped service' }));

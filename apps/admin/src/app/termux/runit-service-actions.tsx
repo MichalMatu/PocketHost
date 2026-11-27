@@ -1,7 +1,7 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Feedback } from "./admin-actions-feedback"
@@ -555,40 +555,40 @@ export function RunitServiceActions({
           Managed by its creator. Generic runit actions are blocked to protect release identity.
         </span>
         <Link to={service.project ? "/projects?project=" + encodeURIComponent(service.project.id) : "/projects"}
-          className="text-xs underline underline-offset-4">
+          className={buttonVariants({ variant: "link" })}>
           {service.project ? "Open owning project" : "Review Projects"}
         </Link>
       </div>}
       {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
         {mode === "lifecycle" ? (service.registered ? <>
-          <Button size="sm" disabled={busy || service.state !== "stopped" ||
+          <Button disabled={busy || service.state !== "stopped" ||
               (service.template === "python-source-v1" || service.template === "node-source-v1")}
             onClick={() => void perform("start", service)}>Start</Button>
-          <Button size="sm" variant="outline" disabled={busy || service.state !== "running"}
+          <Button variant="outline" disabled={busy || service.state !== "running"}
             onClick={() => void perform("stop", service)}>Stop</Button>
-          <Button size="sm" variant="outline" disabled={busy || service.state !== "running" ||
+          <Button variant="outline" disabled={busy || service.state !== "running" ||
               (service.template === "python-source-v1" || service.template === "node-source-v1")}
             onClick={() => void perform("restart", service)}>Restart</Button>
-          <Button size="sm" variant="outline" disabled={busy}
+          <Button variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(service.name)}>Logs</Button>
           {service.template === "python-source-v1" &&
-            <Button size="sm" variant="outline" disabled={busy}
+            <Button variant="outline" disabled={busy}
               onClick={() => void reviewPythonSource(service.name)}>Review Python source</Button>}
           {service.template === "node-source-v1" &&
-            <Button size="sm" variant="outline" disabled={busy}
+            <Button variant="outline" disabled={busy}
               onClick={() => void reviewNodeSource(service.name)}>Review Node.js source</Button>}
           {service.template &&
-            <Button size="sm" variant="outline"
+            <Button variant="outline"
               disabled={busy || service.state !== "stopped" || service.enabled !== false}
               title="Archive only the attested PocketHost worker. Keeps its script and logs."
               onClick={() => void archiveWorker(service)}>Archive worker</Button>}
         </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
           (service.registered ? <>
-            <Button size="sm" variant="outline"
+            <Button variant="outline"
               disabled={busy || service.enabled !== false ||
                 (service.template === "python-source-v1" || service.template === "node-source-v1")}
               onClick={() => void perform("enable", service)}>Enable autostart</Button>
-            <Button size="sm" variant="outline"
+            <Button variant="outline"
               disabled={busy || service.enabled !== true}
               onClick={() => void perform("disable", service)}>Disable autostart</Button>
           </> : <span className="text-xs text-muted-foreground">
@@ -599,7 +599,7 @@ export function RunitServiceActions({
   return <div className="space-y-3 rounded-md border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">{mode === "autostart" ? "Autostart registry" : "Runit services"}</h3>
-      <Button size="sm" variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
+      <Button variant="outline" disabled={busy} onClick={() => void refresh().catch(() => setError("Runit services unavailable"))}>Refresh services</Button>
     </div>
     <p className="text-muted-foreground text-xs">
       {mode === "autostart"
@@ -631,7 +631,7 @@ export function RunitServiceActions({
         <p className="text-muted-foreground text-xs">
           Standalone workers need no Project. Only PocketHost-created, attested services can be managed.
         </p>
-        <Button size="sm" variant="outline"
+        <Button variant="outline"
           disabled={busy || (!creatorOpen && !services)}
           onClick={() => setCreatorOpen(open => !open)}>
           {creatorOpen ? "Close creator" : "Add Service"}
@@ -647,19 +647,19 @@ export function RunitServiceActions({
           No process adoption or arbitrary service path is allowed.
         </p>
         <div className="flex flex-wrap gap-2" aria-label="Worker runtime">
-          <Button size="sm" disabled={busy}
+          <Button disabled={busy}
             variant={workerTemplate === "heartbeat-worker-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "heartbeat-worker-v1"}
             onClick={() => setWorkerTemplate("heartbeat-worker-v1")}>Node.js</Button>
-          <Button size="sm" disabled={busy}
+          <Button disabled={busy}
             variant={workerTemplate === "python-heartbeat-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "python-heartbeat-v1"}
             onClick={() => setWorkerTemplate("python-heartbeat-v1")}>Python heartbeat</Button>
-          <Button size="sm" disabled={busy}
+          <Button disabled={busy}
             variant={workerTemplate === "python-source-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "python-source-v1"}
             onClick={() => setWorkerTemplate("python-source-v1")}>My Python code</Button>
-          <Button size="sm" disabled={busy}
+          <Button disabled={busy}
             variant={workerTemplate === "node-source-v1" ? "secondary" : "outline"}
             aria-pressed={workerTemplate === "node-source-v1"}
             onClick={() => setWorkerTemplate("node-source-v1")}>My Node.js code</Button>
@@ -681,7 +681,7 @@ export function RunitServiceActions({
           <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
             className="min-w-48 max-w-72" maxLength={64} disabled={busy}
             value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
-          <Button size="sm" disabled={busy || !services ||
+          <Button disabled={busy || !services ||
               services.some(item => item.name === workerName) ||
               archived.some(item => item.name === workerName) ||
               !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
@@ -728,11 +728,11 @@ export function RunitServiceActions({
           or enables autostart.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" disabled={busy} onClick={() => {
+          <Button disabled={busy} onClick={() => {
             setWorkerTemplate("heartbeat-worker-v1")
             setCreatorOpen(true)
           }}>Create standalone worker</Button>
-          <Button size="sm" variant="outline" render={<Link to="/projects" />}>
+          <Button variant="outline" render={<Link to="/projects" />}>
             Node project hosting
           </Button>
         </div>
@@ -784,11 +784,11 @@ export function RunitServiceActions({
           </div>
         </div>
         <div className="flex flex-wrap gap-1">
-          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+          <Button variant="outline" disabled={busy || entry.identity !== "restorable"}
             onClick={() => void readServiceLogs(entry.name)}>Saved logs</Button>
-          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+          <Button variant="outline" disabled={busy || entry.identity !== "restorable"}
             onClick={() => void restoreWorker(entry)}>Restore service</Button>
-          <Button size="sm" variant="outline" disabled={busy || entry.identity !== "restorable"}
+          <Button variant="outline" disabled={busy || entry.identity !== "restorable"}
             onClick={() => void retireWorker(entry)}>Retire definition</Button>
         </div>
       </div>)}
@@ -809,7 +809,7 @@ export function RunitServiceActions({
           This proves file identity only, not safety or readiness. Starting Node.js code
           is blocked from LAN; device-owner authorization is not configured.
         </p>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => void loadNodeSourceHistory(nodeSourceReview.name)}>
           Read saved revisions
         </Button>
@@ -825,7 +825,7 @@ export function RunitServiceActions({
                   <p>{item.savedAt} · {item.bytes} bytes</p>
                   <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
                 </div>
-                <Button size="sm" variant="outline"
+                <Button variant="outline"
                   disabled={busy || nodeSourceReview.observed !== "stopped" ||
                     nodeSourceReview.autostart !== false ||
                     nodeSourceHistory.revisions.length >= 8}
@@ -848,7 +848,7 @@ export function RunitServiceActions({
             Exact-SHA update only. Old code retained in private history (maximum eight revisions).
             Failed partial writes require manual reconciliation. This does not run Node.js.
           </p>
-          <Button size="sm" variant="outline" disabled={busy ||
+          <Button variant="outline" disabled={busy ||
               !nodeReplacement.trim() || new Blob([nodeReplacement]).size > 32 * 1024}
             onClick={() => void replaceNodeSource()}>Replace staged Node.js source</Button>
         </> : <p className="text-xs text-muted-foreground">
@@ -871,7 +871,7 @@ export function RunitServiceActions({
           This proves file identity only, not safety or readiness. Starting Python code
           is blocked from LAN; device-owner authorization is not configured.
         </p>
-        <Button size="sm" variant="outline" disabled={busy}
+        <Button variant="outline" disabled={busy}
           onClick={() => void loadPythonSourceHistory(sourceReview.name)}>
           Read saved revisions
         </Button>
@@ -887,7 +887,7 @@ export function RunitServiceActions({
                   <p>{item.savedAt} · {item.bytes} bytes</p>
                   <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
                 </div>
-                <Button size="sm" variant="outline"
+                <Button variant="outline"
                   disabled={busy || sourceReview.observed !== "stopped" ||
                     sourceReview.autostart !== false ||
                     sourceHistory.revisions.length >= 8}
@@ -910,7 +910,7 @@ export function RunitServiceActions({
             Exact-SHA update only. Old code retained in private history (maximum eight revisions).
             Failed partial writes require manual reconciliation. This does not run Python.
           </p>
-          <Button size="sm" variant="outline" disabled={busy ||
+          <Button variant="outline" disabled={busy ||
               !pythonReplacement.trim() || new Blob([pythonReplacement]).size > 32 * 1024}
             onClick={() => void replacePythonSource()}>Replace staged Python source</Button>
         </> : <p className="text-xs text-muted-foreground">
@@ -922,9 +922,9 @@ export function RunitServiceActions({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
         <div className="flex flex-wrap gap-1">
-          <Button size="sm" variant="outline" disabled={busy}
+          <Button variant="outline" disabled={busy}
             onClick={() => void readServiceLogs(serviceLogs.name)}>Refresh logs</Button>
-          <Button size="sm" variant="outline" disabled={busy}
+          <Button variant="outline" disabled={busy}
             onClick={() => setServiceLogs(null)}>Close</Button>
         </div>
       </div>
@@ -933,7 +933,7 @@ export function RunitServiceActions({
           className="min-w-40 max-w-64" disabled={busy}
           value={logQuery} onChange={event => setLogQuery(event.target.value)} />
         {(["all", "errors", "warnings"] as const).map(level =>
-          <Button size="sm" key={level} disabled={busy} aria-pressed={logLevel === level}
+          <Button key={level} disabled={busy} aria-pressed={logLevel === level}
             variant={logLevel === level ? "secondary" : "outline"}
             onClick={() => setLogLevel(level)}>
             {level === "all" ? "All" : level === "errors" ? "Errors" : "Warnings"}
