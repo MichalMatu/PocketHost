@@ -29,10 +29,7 @@ function App() {
   }, [])
 
   return (
-    <div
-      className="font-sans antialiased"
-      style={{ fontFamily: "var(--font-inter)" }}
-    >
+    <div className="font-sans antialiased">
       <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
         <SidebarConfigProvider>
           <Toaster>
