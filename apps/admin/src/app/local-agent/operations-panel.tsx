@@ -81,18 +81,18 @@ export function LocalAgentOperationsPanel({ refreshToken, scope = "agent" }: {
             <p>Installed source: <code>{data.agent.sourceSha?.slice(0, 12) ?? "unverified"}</code></p>
             <div className="flex flex-wrap gap-2">
               {data.agent.state === "stopped" &&
-                <Button size="sm" disabled={!!busy || !!error}
+                <Button disabled={!!busy || !!error}
                   onClick={() => void operate("agent-start")}>Start Agent</Button>}
               {data.agent.state === "running" &&
-                <Button size="sm" variant="outline"
+                <Button variant="outline"
                   disabled={!!busy || !!error || data.current.length > 0}
                   onClick={() => void operate("agent-stop")}>Stop Agent</Button>}
               {data.agent.supportsPause && data.agent.state === "running" &&
                 data.intake === "active" &&
-                <Button size="sm" variant="outline" disabled={!!busy || !!error}
+                <Button variant="outline" disabled={!!busy || !!error}
                   onClick={() => void operate("agent-pause")}>Pause new tasks</Button>}
               {data.agent.supportsPause && data.intake === "paused" &&
-                <Button size="sm" disabled={!!busy || !!error}
+                <Button disabled={!!busy || !!error}
                   onClick={() => void operate("agent-resume")}>Resume intake</Button>}
             </div>
             {!data.agent.supportsPause && <p className="text-xs text-muted-foreground">
@@ -114,15 +114,15 @@ export function LocalAgentOperationsPanel({ refreshToken, scope = "agent" }: {
             </p>
             <div className="flex flex-wrap gap-2">
               {data.ssh.state === "stopped" &&
-                <Button size="sm" disabled={!!busy || !!error}
+                <Button disabled={!!busy || !!error}
                   onClick={() => void operate("ssh-start")}>Start SSH</Button>}
               {data.ssh.state === "running" && <>
-                <Button size="sm" variant="outline" disabled={!!busy || !!error}
+                <Button variant="outline" disabled={!!busy || !!error}
                   onClick={() => void operate("ssh-restart")}>Restart SSH</Button>
-                <Button size="sm" variant="outline" disabled={!!busy || !!error}
+                <Button variant="outline" disabled={!!busy || !!error}
                   onClick={() => void operate("ssh-stop")}>Stop SSH</Button>
               </>}
-              <Link to="/terminal" className={buttonVariants({ variant: "outline", size: "sm" })}>
+              <Link to="/terminal" className={buttonVariants({ variant: "outline" })}>
                 Open interactive terminal
               </Link>
             </div>

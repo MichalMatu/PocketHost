@@ -48,6 +48,8 @@ describe("dedicated Phone Settings", () => {
   it("shows saved display values, clear scope and deliberate brightness actions", async () => {
     const calls = mount()
     await screen.findByText("10 min")
+    expect(screen.getByRole("button", { name: "Refresh" }).classList.contains("h-8")).toBe(true)
+    expect(screen.getByRole("button", { name: "Check mode" }).classList.contains("h-8")).toBe(true)
     const slider = screen.getByRole("slider", { name: "Set screen brightness" })
     expect(slider.getAttribute("value")).toBe("154")
     expect(screen.getByText(/Adaptive brightness can override the stored level/)).toBeTruthy()

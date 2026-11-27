@@ -144,15 +144,15 @@ export function SSHConnectionsPanel() {
         </label>
       </div>
       <div className="flex flex-wrap gap-2">
-        <Button size="sm" disabled={busy || !data || !!error || !name.trim() || !host.trim() || !username.trim()}
+        <Button disabled={busy || !data || !!error || !name.trim() || !host.trim() || !username.trim()}
           onClick={() => void run("save")}>{selected ? "Save changes" : "Add connection"}</Button>
         {selected && <>
-          <Button size="sm" variant="outline" disabled={busy || !!error || !!data?.terminal.running}
+          <Button variant="outline" disabled={busy || !!error || !!data?.terminal.running}
             onClick={() => void run("connect")}>Connect</Button>
-          <Button size="sm" variant="outline" disabled={busy || !!error}
+          <Button variant="outline" disabled={busy || !!error}
             onClick={() => void run("delete")}>Delete</Button>
         </>}
-        {data?.terminal.running && <Button size="sm" variant="outline" disabled={busy || !!error}
+        {data?.terminal.running && <Button variant="outline" disabled={busy || !!error}
           onClick={() => void run("disconnect")}>Disconnect terminal</Button>}
       </div>
       {data?.terminal.running && <div className="space-y-2">

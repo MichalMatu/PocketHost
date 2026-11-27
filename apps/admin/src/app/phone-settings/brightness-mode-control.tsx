@@ -101,13 +101,13 @@ export function BrightnessModeControl({ connected, onValuesChanged }: {
        "Not checked · use Check mode"}
     </p>
     <div className="flex flex-wrap gap-2">
-      <Button type="button" size="sm" variant="outline" disabled={!connected || busy}
+      <Button type="button" variant="outline" disabled={!connected || busy}
         onClick={() => { void inspect() }}>{busy ? "Checking…" : "Check mode"}</Button>
-      {mode === "automatic" && <Button type="button" size="sm" variant="outline"
+      {mode === "automatic" && <Button type="button" variant="outline"
         disabled={!connected || busy} onClick={() => { void changeMode("manual") }}>
         Switch to manual · set 128 / 255
       </Button>}
-      {mode === "manual" && <Button type="button" size="sm" variant="outline"
+      {mode === "manual" && <Button type="button" variant="outline"
         disabled={!connected || busy} onClick={() => { void changeMode("automatic") }}>
         Restore adaptive brightness
       </Button>}

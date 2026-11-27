@@ -126,7 +126,7 @@ export default function PhoneSettingsPage() {
               Airplane mode: {system.settings.airplaneMode ? "On" : "Off"}
             </Badge>}
           </div>
-          <Button type="button" size="sm" variant="outline" className="shrink-0"
+          <Button type="button" variant="outline" className="shrink-0"
             disabled={loading} onClick={refreshValues}>
             <RefreshCw className={loading ? "size-4 animate-spin" : "size-4"} /> Refresh
           </Button>

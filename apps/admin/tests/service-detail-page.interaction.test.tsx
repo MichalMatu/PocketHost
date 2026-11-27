@@ -8,6 +8,8 @@ vi.mock("@/components/layouts/base-layout", () => ({
 }))
 
 import ServiceDetailPage from "@/app/services/service-detail-page"
+import { LocalAgentOperationsPanel } from "@/app/local-agent/operations-panel"
+import { SSHConnectionsPanel } from "@/app/local-agent/ssh-connections-panel"
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -43,4 +45,32 @@ it.each(["external-service", "unknown-service", "not-owned"])("retired or unknow
   </MemoryRouter>)
   expect(screen.getByText(/Unknown service. No diagnostics were requested/)).toBeTruthy()
   expect(fetchMock).not.toHaveBeenCalled()
+})
+
+it("uses standard SSH action sizes without issuing service or profile mutations", async () => {
+  const operationData = {
+    version: 1, observedAt: "2026-11-27T02:00:00.000Z",
+    agent: { state: "running", pid: 100, uptimeSeconds: 60, sourceSha: null, supportsPause: true },
+    ssh: { state: "running", pid: 101, uptimeSeconds: 60, listen: "open", address: "192.168.0.16", port: 8022 },
+    intake: "active", current: [], recent: [], claims: 0, results: 0, remoteQueue: "not-checked",
+  }
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+    expect(options?.method ?? "GET").toBe("GET")
+    return { ok: true, json: async () => String(input).includes("mode=ssh-connections")
+      ? { connections: [], activeSession: null, terminal: { running: false, url: null } }
+      : operationData }
+  })
+  vi.stubGlobal("fetch", fetchMock)
+  render(<MemoryRouter>
+    <LocalAgentOperationsPanel refreshToken={0} scope="ssh" />
+    <SSHConnectionsPanel />
+  </MemoryRouter>)
+  const restart = await screen.findByRole("button", { name: "Restart SSH" })
+  expect(restart.classList.contains("h-8")).toBe(true)
+  expect(screen.getByRole("button", { name: "Stop SSH" }).classList.contains("h-8")).toBe(true)
+  expect(screen.getByRole("link", { name: "Open interactive terminal" }).classList.contains("h-8")).toBe(true)
+  const add = screen.getByRole("button", { name: "Add connection" })
+  expect(add.classList.contains("h-8")).toBe(true)
+  expect((add as HTMLButtonElement).disabled).toBe(true)
+  expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
 })
