@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom"
 import { RefreshCw, ShieldCheck } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { PublicAccessPanel } from "@/components/public-access-panel"
 import { CloudflareTunnelPanel } from "@/app/termux/cloudflare-panel"
 import { ProtectedServicePanel } from "@/app/termux/protected-services-panel"
@@ -31,7 +31,7 @@ export default function ServiceDetailPage({ service: selectedService }: {
           </span> : <Badge variant="outline" className="gap-1">
             <ShieldCheck className="size-3" />Protected · read-only
           </Badge>}
-          <Link to="/services" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+          <Link to="/services" className={buttonVariants({ variant: "link", size: "lg", className: "min-h-11 text-muted-foreground" })}>
             All services
           </Link>
         </div>

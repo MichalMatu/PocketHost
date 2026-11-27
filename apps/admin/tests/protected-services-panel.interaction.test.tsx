@@ -30,6 +30,7 @@ describe("SSH and Mosquitto diagnostic cards", () => {
     await screen.findByText("port: 8022")
     expect(screen.getAllByText(/PID 98/)).toHaveLength(2)
     expect(screen.queryByRole("button", { name: /restart|stop|start/i })).toBeNull()
+    expect(screen.getByRole("button", { name: "Check MQTT" }).classList.contains("min-h-11")).toBe(true)
     expect(fetcher.mock.calls).toHaveLength(2)
     expect(fetcher.mock.calls.every(call => call[1]?.method === "GET")).toBe(true)
   })

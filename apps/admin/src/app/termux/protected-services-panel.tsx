@@ -84,7 +84,7 @@ function ServiceCard({ service, title, mode, refreshToken }: {
                 "Not checked · runit alone does not establish MQTT readiness"}
             </p>
           </div>
-          <Button variant="outline" size="sm" disabled={mqttBusy} onClick={() => void checkMqtt()}>
+          <Button variant="outline" className="min-h-11" disabled={mqttBusy} onClick={() => void checkMqtt()}>
             {mqttBusy ? "Checking…" : "Check MQTT"}
           </Button>
         </section>}

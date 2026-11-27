@@ -31,6 +31,7 @@ it.each(services)("only requests the %s service diagnostics", async (service, mo
     String(call[0]).includes("/api/v1/termux-admin?mode=" + mode))).toBe(true))
   expect(screen.getAllByText("Protected · read-only").length).toBeGreaterThan(0)
   expect(screen.getByRole("link", { name: "All services" }).getAttribute("href")).toBe("/services")
+  expect(screen.getByRole("link", { name: "All services" }).classList.contains("min-h-11")).toBe(true)
   expect(fetchMock.mock.calls.every(call => (call[1]?.method ?? "GET") === "GET")).toBe(true)
 })
 
