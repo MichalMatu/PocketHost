@@ -1,5 +1,5 @@
 ---
-status: draft-awaiting-owner-approval
+status: first-screen-implementation
 owner: product
 last_reviewed: 2026-11-28
 purpose: Single ShadcnStore-derived visual composition contract
@@ -7,7 +7,7 @@ purpose: Single ShadcnStore-derived visual composition contract
 
 # PocketHost — visual composition standard
 
-**DRAFT — not approved. No runtime migration before owner approval.**
+**First-screen implementation — Hosting only. Remaining routes await owner visual acceptance.**
 This contract supplements [agent rules](../AGENTS.md), [Fast Flow](DEV_ITERATION.md),
 [Test Lab](TEST_LAB.md) and [UX evidence](UX_EXECUTION_PLAN.md). Preserve business
 logic, API, security, existing appearance configuration, hosted projects and
@@ -19,7 +19,7 @@ Tailwind replacements for CSS debt.
 - Source: [d65a3e1](https://github.com/MichalMatu/PocketHost/tree/d65a3e118cbc8598234043593b41ad2ed41922fb).
   Last attested live runtime: 47fe02817e679472024b9ec59560b440e62512a7.
   The four following commits change only docs, quality scripts and their test.
-  This is not a fresh live-device probe.
+  Fresh A8 preflight later confirmed the same live SHA, clean source and\n  protected services baseline.
 - Canonical reference: [ShadcnStore Dashboard Vite v2.0.0](https://github.com/shadcnstore/shadcn-dashboard-landing-template/tree/f12bbecb7e9f9df77c49e4d27b02433f110de0e8/vite-version),
   SHA f12bbecb7e9f9df77c49e4d27b02433f110de0e8. PocketHost import
   1f00063efb9922e6251727fcd053c38f6bf06d90, matching package identity and
@@ -74,10 +74,7 @@ PocketHost decision, not a claim that every upstream screen is identical.
 | Status/feedback | components/ui/badge.tsx h-5 rounded-4xl text-xs; Alert rounded-lg px-2.5 py-2; Skeleton muted rounded-md | Proposed normal/running secondary, stopped outline, failure destructive; unknown distinct and textual. Alert for actionable errors, native status region for progress, skeleton only where semantics permit. Empty: shared muted text and existing relevant CTA; no dedicated Empty component verified upstream. Keep all warnings, pending and unknown outcomes. |
 | Themes/responsive | Native tokens, BaseLayout and existing theme customizer | Preserve modes, presets, radius and sidebar configurations; semantic tokens only. Mobile 390x844, tablet 768x1024, desktop 1440x900. No page-specific hex, fixed radius, new CSS or one-off breakpoints. |
 
-These product-specific composition choices (back/actions, Refresh, inventory
-rows, form width, long tabs, status mapping and accessible touch variant)
-require owner approval and baseline geometry review. No new feature or
-framework. Shared changes must regress every affected consumer.
+Owner authorized first-screen implementation on 2026-11-28 after full panel\ncomparison. Refresh and action links use original default size with a shared\n40px minimum on narrow screens. Remaining product-specific choices are\nreviewed during their individual migration. No new framework. Shared changes\nmust regress every affected consumer.
 
 ## Route/state inventory
 
@@ -144,8 +141,4 @@ Reuse existing evidence only when runtime, state and scope match.
 
 ## Approval status
 
-Source audit reused and initial upstream/source comparison complete for
-three reference screens. Full cross-route actual visual comparison, exact
-original import provenance metadata and final geometry calibration remain
-open. Finish targeted read-only baseline and update this draft before final
-approval of unresolved choices. No migration authorized by this document.
+Read-only baseline: 27 allowlisted routes, 81 viewport observations, 110\nlocal screenshots. Zero horizontal overflow, tab overlaps, JS errors or failed\nrequests; one small control on each Project logs viewport. Composition metadata\n81/81: desktop first-visible heading vectors 13 (includes section headings),\nRefresh 5, card title 4, card content 4, fields 7. Hosting title y=74 versus\nDashboard y=68, Refresh 40px without icon versus majority 32px with 16px icon.\nPrivate receipts: pockethost-mac-visual-all-routes-baseline-47fe028-20261128-v1\nand pockethost-mac-composition-all-routes-47fe028-20261128-v1. Screenshots stay\nlocal; computed-style observations are not manual visual acceptance. Dialogs,\ndetail views and unobserved states still need qualification. Exact import\nprovenance remains unverified.\n\nFirst Hosting change: opt-in shared layout, shared Refresh, native inventory\ncard slots and rows, operations card. Explicit Node readiness remains in\nproject Overview (existing Check live readiness), no automatic probe. Static\nHTTP inventory remains unchanged. No changes to API or hosted data. The\noriginal layout branch remains for unmigrated routes. Do not start the next\nscreen before owner reviews this one.

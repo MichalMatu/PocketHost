@@ -14,10 +14,11 @@ interface BaseLayoutProps {
   children: React.ReactNode
   title?: string
   description?: string
+  composition?: "standard"
 }
 
 /** All PocketHost routes share one compact, accessible management shell. */
-export function BaseLayout({ children, title, description }: BaseLayoutProps) {
+export function BaseLayout({ children, title, description, composition }: BaseLayoutProps) {
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const [customizerTab, setCustomizerTab] = React.useState<AppearanceTab>("theme")
   const [customizerVersion, setCustomizerVersion] = React.useState(0)
@@ -61,7 +62,9 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
       />
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
-          <div className="flex flex-col gap-3 py-2 md:gap-4 md:py-3">
+          <div className={composition === "standard"
+            ? "flex flex-col gap-4 px-4 py-4 md:gap-6 md:py-6 lg:px-6"
+            : "flex flex-col gap-3 py-2 md:gap-4 md:py-3"}>
             {title && (
               <div className="sr-only">
                 <h1>{title}</h1>

@@ -35,11 +35,7 @@ const staticSite = {
 }
 afterEach(() => vi.unstubAllGlobals())
 
-function setup(enabled: boolean, healthOverride?: {
-  state: "not-provisioned" | "stopped" | "running" | "unknown"
-  ready: boolean | null
-  release: string | null
-}) {
+function setup(enabled: boolean) {
   const requests = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
     const url = String(input)
     expect(options?.method).toBeUndefined()
@@ -69,7 +65,7 @@ function setup(enabled: boolean, healthOverride?: {
       }) }
     if (url === "/api/v1/node-projects/" + id + "/health")
       return { ok: true, status: 200, json: async () => ({
-        health: healthOverride ?? { state: "running", ready: true, release },
+        health: { state: "running", ready: true, release },
       }) }
     return { ok: false, status: 404 }
   })
@@ -288,25 +284,13 @@ it("Hosting overview groups management and operations without duplicate instruct
   expect(screen.queryByText(/Current inventory from PocketHost-owned/)).toBeNull()
 })
 
-it("Hosting overview checks HTTP readiness only after an explicit click", async () => {
+it("Hosting overview never probes Node readiness; the project detail retains that action", async () => {
   const calls = setup(true)
   render(<MemoryRouter><HostingPage /></MemoryRouter>)
-  const button = await screen.findByRole("button", { name: "Check readiness for Example Node" })
+  await screen.findByText("Example Node")
+  expect(screen.queryByRole("button", { name: /Check readiness/ })).toBeNull()
+  expect(screen.queryByText("HTTP: not checked")).toBeNull()
+  fireEvent.click(screen.getByRole("button", { name: "Refresh" }))
+  await screen.findByText("Example Node")
   expect(calls.mock.calls.some(([url]) => String(url).endsWith("/health"))).toBe(false)
-  expect(screen.getByText("HTTP: not checked")).toBeTruthy()
-  fireEvent.click(button)
-  await screen.findByText("HTTP: ready")
-  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/health"))).toHaveLength(1)
-})
-
-it.each([
-  [{ state: "running", ready: false, release: "r-" + "c".repeat(32) }, "unavailable"],
-  [{ state: "stopped", ready: false, release }, "unavailable"],
-  [{ state: "running", ready: false, release }, "not ready"],
-] as const)("Hosting readiness validates inventory identity before reporting %s", async (health, expected) => {
-  const calls = setup(true, health)
-  render(<MemoryRouter><HostingPage /></MemoryRouter>)
-  fireEvent.click(await screen.findByRole("button", { name: "Check readiness for Example Node" }))
-  await screen.findByText("HTTP: " + expected)
-  expect(calls.mock.calls.filter(([url]) => String(url).endsWith("/health"))).toHaveLength(1)
 })
