@@ -172,3 +172,13 @@ Routes without a safe refresh operation must not receive a fake reload.
 Preserve the original legacy composition until each consumer is migrated.
 Test mobile toolbar width, single Refresh, hidden page name, card anchors,
 late requests, disabled state and unaffected navigation before rolling out.
+
+Owner accepted cards-first Hosting at 42ab22e on 2026-11-28. Read-only LAN
+receipt d37d2ee6: 12/12 views, zero detected layout or runtime errors;
+first card y=72 mobile, y=80 tablet/desktop, no visible h1 or body Refresh.
+Next slice: Static websites catalog only. Card action Add website retains
+its existing guards; loading, error, pending creation and LAN warning stay
+inside the card. Reuse InventoryList/InventoryRow without a Logs action.
+The creation and detail routes remain legacy until individually migrated.
+No API changes. Regress catalog error states, navigation, creation latch,
+refresh semantics and existing Hosting before guarded deployment.

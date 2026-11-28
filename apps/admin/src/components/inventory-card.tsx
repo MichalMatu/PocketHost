@@ -38,7 +38,7 @@ export function InventoryRow({ name, to, state, logsTo, children }: {
   name: string
   to: string
   state: string
-  logsTo: string
+  logsTo?: string
   children: ReactNode
 }) {
   return (
@@ -52,7 +52,7 @@ export function InventoryRow({ name, to, state, logsTo, children }: {
           {children}
         </div>
       </div>
-      <Link to={logsTo} className={buttonVariants({ variant: "ghost", className: pageActionClass })}>Logs</Link>
+      {logsTo && <Link to={logsTo} className={buttonVariants({ variant: "ghost", className: pageActionClass })}>Logs</Link>}
     </li>
   )
 }

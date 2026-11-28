@@ -5,7 +5,12 @@ import userEvent from "@testing-library/user-event"
 import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  BaseLayout: ({ children, title, onRefresh, refreshDisabled }: {
+    children: React.ReactNode; title?: string; onRefresh?: () => void; refreshDisabled?: boolean
+  }) => <>
+    {onRefresh && <header><button onClick={onRefresh} disabled={refreshDisabled}>Refresh</button></header>}
+    <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
+  </>,
 }))
 
 import SitesPage from "@/app/sites/page"

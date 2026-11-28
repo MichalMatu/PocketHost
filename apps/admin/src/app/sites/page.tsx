@@ -1,8 +1,9 @@
 import * as React from "react"
 import { matchPath, useLocation, useNavigate, useSearchParams } from "react-router-dom"
-import { Plus, RefreshCw } from "lucide-react"
+import { RefreshCw } from "lucide-react"
 
 import { BaseLayout } from "@/components/layouts/base-layout"
+import { StandardPageLayout } from "@/components/layouts/standard-page-layout"
 import { Button } from "@/components/ui/button"
 import { siteDetailPath } from "./site-route"
 import { useOwnedSiteCreation } from "./use-owned-site-creation"
@@ -42,17 +43,22 @@ export default function SitesPage() {
   const notice = location.state?.siteId === selectedSiteId && typeof location.state?.notice === "string"
     ? location.state.notice : null
 
+  if (!adding && selectedSiteId === null) return (
+    <StandardPageLayout title="Static websites" onRefresh={() => void refresh()}
+      refreshDisabled={loading || creation.creating}>
+      <SiteCatalog sites={sites} loading={loading} error={error} notice={notice}
+        creating={creation.creating} onAdd={() => void navigate("/sites/new")} />
+    </StandardPageLayout>
+  )
+
   return (
     <BaseLayout>
       <div className="space-y-5 px-4 pb-8 lg:px-6">
         {adding ? <SiteCreationWorkspace inventory={inventory} creation={creation} /> : <>
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="text-xl font-semibold">{selectedSiteId !== null ? "Website details" : "Static websites"}</h1>
+            <h1 className="text-xl font-semibold">Website details</h1>
             <div className="flex flex-wrap items-center gap-2">
-              {selectedSiteId !== null
-                ? <Button variant="outline" onClick={() => void navigate("/sites")}>Show all sites</Button>
-                : <Button disabled={creation.creating || loading || error !== null || sites.length >= 8}
-                    onClick={() => void navigate("/sites/new")}><Plus /> Add website</Button>}
+              <Button variant="outline" onClick={() => void navigate("/sites")}>Show all sites</Button>
               <Button variant="outline" disabled={loading || creation.creating} onClick={() => void refresh()}>
                 <RefreshCw /> Refresh
               </Button>
@@ -62,9 +68,7 @@ export default function SitesPage() {
           {error && <p role="alert" className="text-destructive text-sm">{error}</p>}
           {notice && !error && <p role="status" className="text-sm">{notice}</p>}
           {creation.creating && <p role="status" className="text-sm">Creating site and verifying readback…</p>}
-          {!creation.creating && (selectedSiteId === null
-            ? !loading && !error && <SiteCatalog sites={sites} />
-            : selected
+          {!creation.creating && (selected
               ? <SiteDetailPanel key={selected.id} site={selected} onChange={removedId => reload(undefined, removedId)}
                   onRemoved={name => {
                     if (selection.current === selected.id) void navigate("/sites", {

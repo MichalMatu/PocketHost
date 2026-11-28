@@ -6,7 +6,12 @@ import { afterEach, beforeAll, expect, it, vi } from "vitest"
 import { routes } from "@/config/routes"
 
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  BaseLayout: ({ children, title, onRefresh, refreshDisabled }: {
+    children: React.ReactNode; title?: string; onRefresh?: () => void; refreshDisabled?: boolean
+  }) => <>
+    {onRefresh && <header><button onClick={onRefresh} disabled={refreshDisabled}>Refresh</button></header>}
+    <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
+  </>,
 }))
 
 const first = {
@@ -41,6 +46,13 @@ it("separates the catalog, creation and one owned site's controls", async () => 
   const router = mount("/sites")
   const firstLink = await screen.findByRole("link", { name: first.name }, { timeout: 5000 })
   expect(screen.getByRole("link", { name: second.name })).toBeTruthy()
+  const card = screen.getByRole("region", { name: "Static websites" })
+  expect(card.getAttribute("data-slot")).toBe("card")
+  expect(card.contains(firstLink)).toBe(true)
+  expect(card.contains(screen.getByRole("button", { name: "Add website" }))).toBe(true)
+  expect(screen.getByRole("heading", { level: 1 }).classList.contains("sr-only")).toBe(true)
+  expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1)
+  expect(screen.getByRole("button", { name: "Refresh" }).closest("header")).toBeTruthy()
   expect(screen.queryByLabelText("Site name")).toBeNull()
   expect(screen.queryByRole("button", { name: "Delete site" })).toBeNull()
   expect(fetcher.mock.calls.map(([url]) => String(url))).toEqual(["/api/v1/sites"])
