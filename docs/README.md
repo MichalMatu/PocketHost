@@ -14,7 +14,7 @@ The current tree holds **maintained reference documents** only. Long-running spr
 
 - [Node Hosting](NODE_HOSTING_LAN_MVP.md), [runit services](S1_RUNIT_REUSE.md), [historical MVP integration and Restic evidence](MVP_INTEGRATION_CHECKLIST.md).
 - [Test Lab](TEST_LAB.md), [off-device recovery design](P1_OFF_DEVICE_RESTIC_PLAN.md), [shared tunnel proposal](CLOUDFLARE_SHARED_TUNNEL_MVP.md).
-- [Navigation and screen map](NAVIGATION_MAP.md).
+- [Navigation and screen map](NAVIGATION_MAP.md), [visual composition standard](VISUAL_COMPOSITION_STANDARD.md).
 - [Roadmap](ROADMAP.md), [UX execution plan](UX_EXECUTION_PLAN.md), [deferred feature sprints](DEFERRED_FEATURE_SPRINTS.md), [Cloudflare roadmap](CLOUDFLARE_ROADMAP.md), [upstream reuse strategy](UPSTREAM_REUSE_STRATEGY.md).
 
 ## Implemented module documents
