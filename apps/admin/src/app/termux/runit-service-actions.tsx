@@ -1,14 +1,17 @@
 import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Feedback } from "./admin-actions-feedback"
 import { action, inspect } from "./admin-actions-api"
+import { createRunitSourceActions } from "./runit-source-actions"
+import { createRunitLifecycleActions } from "./runit-lifecycle-actions"
+import { RunitServiceRow } from "./runit-service-row"
 
 import {
-  isPanelService, confirmedStoppedWorker, validateRunitInventory,
+  isPanelService, validateRunitInventory,
   type WorkerTemplate, type PythonSourceReview, type PythonSourceHistory, type ArchivedEntry, type NodeSourceReview, type NodeSourceHistory, type RunitEntry,
 } from "./runit-service-inventory"
 
@@ -61,206 +64,16 @@ export function RunitServiceActions({
     void Promise.resolve().then(refresh).catch(() => { if (active) setError("Runit unavailable") })
     return () => { active = false }
   }, [refresh, refreshToken])
-  const reviewPythonSource = async (name: string) => {
-    if (busy) return
-    setBusy(true); setError(null); setSourceReview(null); setSourceHistory(null)
-    try {
-      const result = await inspect<PythonSourceReview>("python-source-review", name)
-      if (result.name !== name || result.template !== "python-source-v1" ||
-          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
-          !Number.isSafeInteger(result.sourceBytes) || result.sourceBytes < 1 ||
-          result.sourceBytes > 32 * 1024 ||
-          !["running", "stopped", "unknown"].includes(result.observed) ||
-          ![true, false, null].includes(result.autostart) ||
-          result.canStartFromLan !== false || result.ownerApproval !== "not-configured" ||
-          !Number.isFinite(Date.parse(result.checkedAt)))
-        throw new Error("Invalid Python source review")
-      setSourceReview(result)
-    } catch {
-      setError("Python source identity review refused or unavailable. Recheck ownership.")
-    } finally { setBusy(false) }
-  }
-  const reviewNodeSource = async (name: string) => {
-    if (busy) return
-    setBusy(true); setError(null); setNodeSourceReview(null); setNodeSourceHistory(null)
-    try {
-      const result = await inspect<NodeSourceReview>("node-source-review", name)
-      if (result.name !== name || result.template !== "node-source-v1" ||
-          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
-          !Number.isSafeInteger(result.sourceBytes) || result.sourceBytes < 1 ||
-          result.sourceBytes > 32 * 1024 ||
-          !["running", "stopped", "unknown"].includes(result.observed) ||
-          ![true, false, null].includes(result.autostart) ||
-          result.canStartFromLan !== false || result.ownerApproval !== "not-configured" ||
-          !Number.isFinite(Date.parse(result.checkedAt)))
-        throw new Error("Invalid Node.js source review")
-      setNodeSourceReview(result)
-    } catch {
-      setError("Node.js source identity review refused or unavailable. Recheck ownership.")
-    } finally { setBusy(false) }
-  }
-  const loadPythonSourceHistory = async (name: string) => {
-    if (busy || sourceReview?.name !== name) return
-    setBusy(true); setError(null); setSourceHistory(null)
-    try {
-      const result = await inspect<PythonSourceHistory>("python-source-history", name)
-      if (result.name !== name || result.currentSha256 !== sourceReview.sourceSha256 ||
-          result.execution !== "blocked" || !Array.isArray(result.revisions) ||
-          result.revisions.length > 8 || result.revisions.some(item =>
-            !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(item.id) ||
-            !/^[a-f0-9]{64}$/.test(item.sourceSha256) ||
-            !Number.isSafeInteger(item.bytes) || item.bytes < 1 || item.bytes > 32768 ||
-            !Number.isFinite(Date.parse(item.savedAt))))
-        throw new Error("Revision history unavailable or stale")
-      setSourceHistory(result)
-    } catch {
-      setError("Python revision history unverified. Refresh the source review.")
-    } finally { setBusy(false) }
-  }
-  const restorePythonRevision = async (item: PythonSourceHistory["revisions"][number]) => {
-    const record = sourceReview, history = sourceHistory
-    if (busy || !record || !history || record.name !== history.name ||
-        record.sourceSha256 !== history.currentSha256 ||
-        record.observed !== "stopped" || record.autostart !== false) return
-    if (window.prompt("Restore saved Python revision " + item.id +
-        " for " + record.name + "? Type the exact service name.") !== record.name ||
-        !window.confirm("Restore SHA-256 " + item.sourceSha256 +
-          "? The current source will be retained and no Python code will execute.")) return
-    setBusy(true); setError(null); setDone(null)
-    setSourceHistory(null); setSourceReview(null)
-    try {
-      const result = await action<{
-        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
-      }>({ action: "service-python-restore", path: record.name,
-        name: item.id, root: record.sourceSha256, destination: item.sourceSha256 })
-      if (result.sourceSha256 !== item.sourceSha256 || result.execution !== "blocked" ||
-          typeof result.changed !== "boolean" ||
-          !Number.isSafeInteger(result.sourceBytes) ||
-          result.sourceBytes < 1 || result.sourceBytes > 32768)
-        throw new Error("Unexpected Python restore receipt")
-      await refresh()
-      setDone(record.name + ": previous Python source restored, execution still blocked")
-    } catch {
-      setError("Python source restore refused or unconfirmed. Refresh identity before any retry.")
-    } finally { setBusy(false) }
-  }
-  const replacePythonSource = async () => {
-    const review = sourceReview
-    const bytes = new Blob([pythonReplacement]).size
-    if (busy || !review || review.observed !== "stopped" ||
-        review.autostart !== false || !pythonReplacement.trim() ||
-        bytes < 1 || bytes > 32 * 1024) return
-    if (window.prompt(
-      "Replace the source for " + review.name +
-      "? Enter the exact service name. The previous source is retained privately " +
-      "and the new source will NOT execute.",
-    ) !== review.name || !window.confirm(
-      "Commit new worker.py for " + review.name + " only if its SHA-256 remains " +
-      review.sourceSha256 + "? Start and autostart will stay blocked.",
-    )) return
-    setBusy(true); setError(null); setDone(null)
-    // Any uncertain response must invalidate the old digest, not retry.
-    setSourceReview(null)
-    try {
-      const result = await action<{
-        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
-      }>({ action: "service-python-update", path: review.name,
-        destination: review.sourceSha256, content: pythonReplacement })
-      if (typeof result.changed !== "boolean" ||
-          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
-          !Number.isSafeInteger(result.sourceBytes) ||
-          result.sourceBytes < 1 || result.sourceBytes > 32 * 1024 ||
-          result.execution !== "blocked")
-        throw new Error("Python revision receipt invalid")
-      await refresh()
-      setDone(review.name + ": source revision acknowledged. Review its new SHA before further changes.")
-    } catch {
-      setError("Python revision refused or unconfirmed. Inspect current source/marker; never retry blindly.")
-    } finally {
-      setBusy(false)
-    }
-  }
-  const loadNodeSourceHistory = async (name: string) => {
-    if (busy || nodeSourceReview?.name !== name) return
-    setBusy(true); setError(null); setNodeSourceHistory(null)
-    try {
-      const result = await inspect<NodeSourceHistory>("node-source-history", name)
-      if (result.name !== name || result.currentSha256 !== nodeSourceReview.sourceSha256 ||
-          result.execution !== "blocked" || !Array.isArray(result.revisions) ||
-          result.revisions.length > 8 || result.revisions.some(item =>
-            !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/.test(item.id) ||
-            !/^[a-f0-9]{64}$/.test(item.sourceSha256) ||
-            !Number.isSafeInteger(item.bytes) || item.bytes < 1 || item.bytes > 32768 ||
-            !Number.isFinite(Date.parse(item.savedAt))))
-        throw new Error("Revision history unavailable or stale")
-      setNodeSourceHistory(result)
-    } catch {
-      setError("Node.js revision history unverified. Refresh the source review.")
-    } finally { setBusy(false) }
-  }
-  const restoreNodeRevision = async (item: NodeSourceHistory["revisions"][number]) => {
-    const record = nodeSourceReview, history = nodeSourceHistory
-    if (busy || !record || !history || record.name !== history.name ||
-        record.sourceSha256 !== history.currentSha256 ||
-        record.observed !== "stopped" || record.autostart !== false) return
-    if (window.prompt("Restore saved Node.js revision " + item.id +
-        " for " + record.name + "? Type the exact service name.") !== record.name ||
-        !window.confirm("Restore SHA-256 " + item.sourceSha256 +
-          "? The current source will be retained and no Node.js code will execute.")) return
-    setBusy(true); setError(null); setDone(null)
-    setNodeSourceHistory(null); setNodeSourceReview(null)
-    try {
-      const result = await action<{
-        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
-      }>({ action: "service-node-restore", path: record.name,
-        name: item.id, root: record.sourceSha256, destination: item.sourceSha256 })
-      if (result.sourceSha256 !== item.sourceSha256 || result.execution !== "blocked" ||
-          typeof result.changed !== "boolean" ||
-          !Number.isSafeInteger(result.sourceBytes) ||
-          result.sourceBytes < 1 || result.sourceBytes > 32768)
-        throw new Error("Unexpected Node.js restore receipt")
-      await refresh()
-      setDone(record.name + ": previous Node.js source restored, execution still blocked")
-    } catch {
-      setError("Node.js source restore refused or unconfirmed. Refresh identity before any retry.")
-    } finally { setBusy(false) }
-  }
-  const replaceNodeSource = async () => {
-    const review = nodeSourceReview
-    const bytes = new Blob([nodeReplacement]).size
-    if (busy || !review || review.observed !== "stopped" ||
-        review.autostart !== false || !nodeReplacement.trim() ||
-        bytes < 1 || bytes > 32 * 1024) return
-    if (window.prompt(
-      "Replace the source for " + review.name +
-      "? Enter the exact service name. The previous source is retained privately " +
-      "and the new source will NOT execute.",
-    ) !== review.name || !window.confirm(
-      "Commit new worker.mjs for " + review.name + " only if its SHA-256 remains " +
-      review.sourceSha256 + "? Start and autostart will stay blocked.",
-    )) return
-    setBusy(true); setError(null); setDone(null)
-    // Any uncertain response must invalidate the old digest, not retry.
-    setNodeSourceReview(null)
-    try {
-      const result = await action<{
-        changed: boolean; sourceSha256: string; sourceBytes: number; execution: "blocked"
-      }>({ action: "service-node-update", path: review.name,
-        destination: review.sourceSha256, content: nodeReplacement })
-      if (typeof result.changed !== "boolean" ||
-          !/^[a-f0-9]{64}$/.test(result.sourceSha256) ||
-          !Number.isSafeInteger(result.sourceBytes) ||
-          result.sourceBytes < 1 || result.sourceBytes > 32 * 1024 ||
-          result.execution !== "blocked")
-        throw new Error("Node.js revision receipt invalid")
-      await refresh()
-      setDone(review.name + ": source revision acknowledged. Review its new SHA before further changes.")
-    } catch {
-      setError("Node.js revision refused or unconfirmed. Inspect current source/marker; never retry blindly.")
-    } finally {
-      setBusy(false)
-    }
-  }
+  const {
+    reviewPythonSource, reviewNodeSource, loadPythonSourceHistory,
+    restorePythonRevision, replacePythonSource, loadNodeSourceHistory,
+    restoreNodeRevision, replaceNodeSource,
+  } = createRunitSourceActions({
+    busy, setBusy, setError, setDone, refresh,
+    sourceReview, setSourceReview, sourceHistory, setSourceHistory,
+    nodeSourceReview, setNodeSourceReview, nodeSourceHistory, setNodeSourceHistory,
+    pythonReplacement, nodeReplacement,
+  })
   const readServiceLogs = async (name: string) => {
     if (busy) return
     setBusy(true); setError(null); setServiceLogs(null)
@@ -274,203 +87,12 @@ export function RunitServiceActions({
     } catch { setError("Attested service log unavailable. Verify archive identity before retrying.") }
     finally { setBusy(false) }
   }
-  const perform = async (name: "start" | "stop" | "restart" | "enable" | "disable", service: RunitEntry) => {
-    if (busy || service.control !== "standalone" || service.protected || isPanelService(service) ||
-        (mode === "autostart" && name !== "enable" && name !== "disable") ||
-        (mode === "lifecycle" && (name === "enable" || name === "disable")) ||
-        !window.confirm(
-      name === "enable"
-        ? "Enable persistent runit autostart for " + service.name +
-          "? Removing its down marker can also start the service now. " +
-          "This does not configure Android/Termux:Boot."
-        : name === "disable"
-          ? "Disable persistent runit autostart for " + service.name +
-            "? This records the down marker and may stop the service now."
-          : "Run " + name + " for explicitly registered runit service " + service.name + "?",
-    )) return
-    setBusy(true); setError(null); setDone(null)
-    try {
-      const receipt = await action<{ changed: boolean; result?: { exit: number; output: string } }>(
-        { action: "service", name, path: service.name })
-      if (receipt?.changed !== true || !receipt.result || receipt.result.exit !== 0 ||
-          typeof receipt.result.output !== "string" || receipt.result.output.length > 12000)
-        throw new Error("Unverified runit command receipt")
-      try {
-        const live = await refresh()
-        const observed = live.services.find(item => item.name === service.name)
-        if (!observed || !observed.registered || observed.protected ||
-            observed.identity !== "verified" ||
-            observed.identityReason !== "run-sha-attested" ||
-            observed.control !== "standalone" ||
-            observed.template !== service.template) {
-          setError("Command acknowledged, but service ownership changed or was not read back. Do not retry.")
-          return
-        }
-        if (name === "enable" || name === "disable") {
-          if (observed.enabled !== (name === "enable")) {
-            setError("Autostart command acknowledged, but persistent policy was not verified.")
-            return
-          }
-          setDone(service.name + ": runit autostart " +
-            (observed.enabled ? "enabled" : "disabled") + " · saved and verified")
-        } else {
-          const expected = name === "stop" ? "stopped" : "running"
-          if (observed.state !== expected) {
-            setError("Runit " + name + " acknowledged, but current state is " +
-              observed.state + " (expected " + expected + "). Inspect before another action.")
-            return
-          }
-          setDone(service.name + ": runit " + name +
-            " confirmed " + observed.state + " · application readiness not verified")
-        }
-      } catch {
-        setError("Service command acknowledged, but inventory readback failed. Inspect before another command.")
-      }
-    } catch {
-      setError("Service result unconfirmed or refused. Verify registration and live state before retrying.")
-    } finally { setBusy(false) }
-  }
-  const archiveWorker = async (service: RunitEntry) => {
-    if (busy || !service.template || service.control !== "standalone" ||
-        !service.registered || service.protected ||
-        service.state !== "stopped" || service.enabled !== false ||
-        !window.confirm("Archive PocketHost worker " + service.name +
-          "? This detaches its own runit supervisor and removes it from the service inventory. " +
-          "The run script and logs are retained for recovery; no foreign files are deleted.")) return
-    setBusy(true); setError(null); setDone(null)
-    try {
-      const receipt = await action<{ changed: boolean; archived: boolean; retainedFiles: boolean }>(
-        { action: "service-archive", name: service.template, path: service.name })
-      if (receipt.changed !== true || receipt.archived !== true || receipt.retainedFiles !== true)
-        throw new Error("Archive receipt incomplete")
-      try {
-        const snapshot = await refresh()
-        const saved = snapshot.archived.find(item => item.name === service.name)
-        if (snapshot.services.some(item => item.name === service.name) ||
-            saved?.template !== service.template || saved.identity !== "restorable") {
-          setError("Archive acknowledged, but ownership or archive readback is inconsistent. Do not retry.")
-          return
-        }
-        setServiceLogs(previous => previous?.name === service.name ? null : previous)
-        setDone(service.name + ": worker archived and verified; script and logs retained")
-      } catch {
-        setError("Archive acknowledged but inventory refresh failed. Verify state before any follow-up.")
-      }
-    } catch {
-      setError("Archive refused or unconfirmed. Verify worker identity and stopped state before retrying.")
-    } finally { setBusy(false) }
-  }
-  const restoreWorker = async (entry: ArchivedEntry) => {
-    if (busy || entry.identity !== "restorable" ||
-        !window.confirm("Restore archived " +
-          (entry.template === "python-source-v1" ? "Python source" :
-            entry.template === "node-source-v1" ? "Node.js source" :
-            entry.template === "python-heartbeat-v1" ? "Python" : "Node.js") +
-          " service " + entry.name +
-          "? The application worker stays stopped with autostart disabled. " +
-          "Runit may launch only its own supervisor/logger.")) return
-    setBusy(true); setError(null); setDone(null)
-    try {
-      const receipt = await action<{ changed: boolean; restored: boolean; started: boolean }>(
-        { action: "service-restore", name: entry.template, path: entry.name })
-      if (receipt.changed !== true || receipt.restored !== true || receipt.started !== false)
-        throw new Error("Restore receipt incomplete")
-      try {
-        const snapshot = await refresh()
-        if (!confirmedStoppedWorker(snapshot.services, entry.name, entry.template) ||
-            snapshot.archived.some(item => item.name === entry.name)) {
-          setError("Restore acknowledged, but verified stopped ownership was not read back. Do not retry.")
-          return
-        }
-        setDone(entry.name + ": restored, verified and stopped; autostart disabled")
-      } catch {
-        setError("Restore acknowledged but inventory refresh failed. Verify before any lifecycle action.")
-      }
-    } catch {
-      setError("Restore refused or unconfirmed. Check archived identity; do not retry automatically.")
-    } finally { setBusy(false) }
-  }
-  const retireWorker = async (entry: ArchivedEntry) => {
-    if (busy || entry.identity !== "restorable") return
-    const typed = window.prompt(
-      "Retire " + entry.name + "? This permanently revokes restoration in PocketHost. " +
-      "The owned script and logs will be quarantined on the device, not deleted. " +
-      "Type the exact service name to confirm.",
-    )
-    if (typed !== entry.name ||
-        !window.confirm("Retire " + entry.name +
-          " from the PocketHost registry? The service cannot be restored from the panel. " +
-          "Files remain in private on-device quarantine for manual review.")) return
-    setBusy(true); setError(null); setDone(null)
-    try {
-      const response = await action<{
-        changed: boolean; retired: boolean; restorable: boolean; filesRetained: boolean
-      }>({ action: "service-retire", name: entry.template, path: entry.name })
-      if (response.changed !== true || response.retired !== true ||
-          response.restorable !== false || response.filesRetained !== true)
-        throw new Error("Unverified retirement receipt")
-      try {
-        const snapshot = await refresh()
-        if (snapshot.archived.some(item => item.name === entry.name) ||
-            snapshot.services.some(item => item.name === entry.name)) {
-          setError("Retirement acknowledged, but service or archive remains visible. Inspect before retrying.")
-          return
-        }
-        setServiceLogs(previous => previous?.name === entry.name ? null : previous)
-        setDone(entry.name + ": retired from registry; definition and logs quarantined")
-      } catch {
-        setError("Retirement acknowledged but archive inventory is unavailable. Inspect before retrying.")
-      }
-    } catch {
-      setError("Retirement refused or unconfirmed. Do not repeat automatically; inspect archive state.")
-    } finally { setBusy(false) }
-  }
-  const createWorker = async () => {
-    const name = workerName.trim()
-    const custom = workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1"
-    // A verified inventory is required even to create a new worker. A failed
-    // refresh must never leave an old creator form authorized to submit.
-    if (busy || !services ||
-        services.some(item => item.name === name) ||
-        archived.some(item => item.name === name) ||
-        !/^[a-z][a-z0-9-]{1,63}$/.test(name) ||
-        (custom && (!pythonSource.trim() ||
-          new Blob([pythonSource]).size > 32 * 1024)) ||
-      !window.confirm(custom
-        ? "Stage exact " + (workerTemplate === "node-source-v1" ? "Node.js" : "Python") +
-          " source for " + name + "? Code will NOT execute from this LAN panel. The file is saved" +
-          " with SHA-256 and requires a separately authorized owner executor."
-        : "Create a new stopped PocketHost-owned " +
-          (workerTemplate === "python-heartbeat-v1" ? "Python" : "Node.js") +
-          " heartbeat worker " + name +
-          "? It uses a fixed, isolated template and will not start automatically.")) return
-    setBusy(true); setError(null); setDone(null)
-    try {
-      const receipt = await action<{ changed: boolean; name: string; template: WorkerTemplate }>(
-        { action: "service-create", name: workerTemplate, path: name,
-          ...(custom ? { content: pythonSource } : {}) })
-      if (receipt.changed !== true || receipt.name !== name || receipt.template !== workerTemplate)
-        throw new Error("Creation receipt incomplete")
-      try {
-        const snapshot = await refresh()
-        if (!confirmedStoppedWorker(snapshot.services, name, workerTemplate) ||
-            snapshot.archived.some(item => item.name === name)) {
-          setError("Service created, but stopped ownership and autostart were not verified. Inspect before retrying.")
-          return
-        }
-        setDone(name + (custom
-          ? ": source staged, verified and stopped · execution blocked in LAN Services"
-          : ": verified stopped worker · autostart disabled"))
-        setCreatorOpen(false); setWorkerName(""); setPythonSource("")
-      } catch {
-        setError("Creation acknowledged but inventory refresh failed. Verify identity before retrying.")
-      }
-    } catch (error) {
-      setError(error instanceof Error && error.message.startsWith("Creation blocked:")
-        ? error.message
-        : "Service creation refused or unconfirmed. Refresh before retrying; no automatic retry.")
-    } finally { setBusy(false) }
-  }
+  const { perform, archiveWorker, restoreWorker, retireWorker, createWorker } =
+    createRunitLifecycleActions({
+      mode, busy, setBusy, setError, setDone, refresh, services, archived,
+      setServiceLogs, workerName, workerTemplate, pythonSource,
+      setCreatorOpen, setWorkerName, setPythonSource,
+    })
   const autostartWorkers = services?.filter(item =>
     item.control === "standalone" && item.registered && !item.protected &&
     !isPanelService(item)) ?? []
@@ -496,106 +118,11 @@ export function RunitServiceActions({
     conflicts: services.filter(item => item.identity === "archive-conflict").length +
       archived.filter(item => item.identity === "conflict").length,
   } : null
-  const serviceRow = (service: RunitEntry) => <div className="flex flex-wrap items-center justify-between gap-2 border-b py-2" key={service.name}>
-      <div className="space-y-1">
-        <p className="text-sm font-medium">{service.name}</p>
-        <div className="flex flex-wrap gap-2" aria-label={"Status for " + service.name}>
-          <Badge variant="outline">State: {service.state}</Badge>
-          <Badge variant="outline">{service.enabled === null || service.enabled === undefined ? "Autostart unknown" :
-            service.enabled ? "Autostart enabled" : "Autostart disabled"}</Badge>
-          <Badge variant="outline">{isPanelService(service) ? "PocketHost-owned" :
-            service.control === "standalone" ? "Standalone · attested" :
-            service.control === "delegated" ? "Provisioner-owned · attested" :
-            service.identity === "archive-conflict" ? "Archive conflict · blocked" :
-            service.identity === "changed" ? "Identity changed · blocked" :
-            service.identity === "legacy" ? "Legacy record · needs reattestation" :
-            service.identity === "unregistered" ? "Discovered · unverified" : "Protected · read-only"}</Badge>
-          {service.template && <Badge variant="outline">{service.template === "node-source-v1" ? "Node.js source · execution blocked" :
-            service.template === "python-source-v1" ? "Python source · execution blocked" :
-            service.template === "python-heartbeat-v1" ? "Python heartbeat" : "Node.js heartbeat"}</Badge>}
-          {service.project && <Badge variant="outline">Node project: {service.project.name}</Badge>}
-        </div>
-      </div>
-      {service.control === "read-only" && service.identityReason &&
-        <p className="text-xs text-muted-foreground" aria-label={"Ownership for " + service.name}>
-          {service.identityReason === "worker-provenance-changed" ? "Worker owner marker, source, logger or runit link is unverified. Controls blocked; inspect before repair." :
-           service.identityReason === "service-not-published" ? "Enrolled service is missing from runit. No commands allowed; inspect before repair." :
-           service.identityReason === "service-target-changed" ? "Recorded service path no longer matches. Commands blocked." :
-           service.identityReason === "run-script-changed" ? "Recorded run script SHA-256 no longer matches. Commands blocked." :
-           service.identityReason === "legacy-without-sha" ? "Old enrollment lacks a verified script digest. Commands blocked." :
-           service.identityReason === "archive-live-conflict" ? "Archived and live enrollment conflict. Commands blocked." :
-           service.identityReason === "no-enrollment" ? "Discovered only; no verified enrollment. Commands blocked." :
-           "Protected system service. Commands blocked."}
-        </p>}
-      {mode === "autostart" && service.control === "standalone" && <p
-        className="text-xs text-muted-foreground"
-        role={service.enabled == null ||
-          (service.enabled && service.state === "stopped") ||
-          (service.enabled === false && service.state === "running") ? "alert" : undefined}>
-        {service.enabled == null || service.state === "unknown"
-          ? "Runit policy or process state unverified. No action inferred."
-          : service.template === "python-source-v1" || service.template === "node-source-v1"
-            ? service.enabled || service.state === "running"
-              ? "Custom source is active despite LAN execution restrictions. Inspect locally; do not assume ownership of its process."
-              : "Custom source staged and stopped. LAN activation remains blocked."
-            : service.enabled && service.state === "running"
-              ? "Runit policy: start enabled; supervisor reports running. Application readiness not verified."
-              : service.enabled && service.state === "stopped"
-                ? "Policy/state mismatch: runit enabled, worker stopped. Inspect Health; no automatic recovery."
-                : !service.enabled && service.state === "running"
-                  ? "Policy/state mismatch: runit disabled, worker still running. Inspect before changing policy."
-                  : "Runit policy: manual stop recorded; worker stopped. Android boot behavior not verified."}
-      </p>}
-      {service.state === "unknown" && mode === "lifecycle" &&
-        <p className="text-xs text-muted-foreground">
-          Runtime state unknown. Start, Stop and Restart require a confirmed state.
-        </p>}
-      {service.control === "delegated" && <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-muted-foreground">
-          Managed by its creator. Generic runit actions are blocked to protect release identity.
-        </span>
-        <Link to={service.project ? "/projects?project=" + encodeURIComponent(service.project.id) : "/projects"}
-          className={buttonVariants({ variant: "link" })}>
-          {service.project ? "Open owning project" : "Review Projects"}
-        </Link>
-      </div>}
-      {service.control === "standalone" && !isPanelService(service) && <div className="flex flex-wrap gap-1">
-        {mode === "lifecycle" ? (service.registered ? <>
-          <Button disabled={busy || service.state !== "stopped" ||
-              (service.template === "python-source-v1" || service.template === "node-source-v1")}
-            onClick={() => void perform("start", service)}>Start</Button>
-          <Button variant="outline" disabled={busy || service.state !== "running"}
-            onClick={() => void perform("stop", service)}>Stop</Button>
-          <Button variant="outline" disabled={busy || service.state !== "running" ||
-              (service.template === "python-source-v1" || service.template === "node-source-v1")}
-            onClick={() => void perform("restart", service)}>Restart</Button>
-          <Button variant="outline" disabled={busy}
-            onClick={() => void readServiceLogs(service.name)}>Logs</Button>
-          {service.template === "python-source-v1" &&
-            <Button variant="outline" disabled={busy}
-              onClick={() => void reviewPythonSource(service.name)}>Review Python source</Button>}
-          {service.template === "node-source-v1" &&
-            <Button variant="outline" disabled={busy}
-              onClick={() => void reviewNodeSource(service.name)}>Review Node.js source</Button>}
-          {service.template &&
-            <Button variant="outline"
-              disabled={busy || service.state !== "stopped" || service.enabled !== false}
-              title="Archive only the attested PocketHost worker. Keeps its script and logs."
-              onClick={() => void archiveWorker(service)}>Archive worker</Button>}
-        </> : <span className="text-xs text-muted-foreground">Not enrolled</span>) :
-          (service.registered ? <>
-            <Button variant="outline"
-              disabled={busy || service.enabled !== false ||
-                (service.template === "python-source-v1" || service.template === "node-source-v1")}
-              onClick={() => void perform("enable", service)}>Enable autostart</Button>
-            <Button variant="outline"
-              disabled={busy || service.enabled !== true}
-              onClick={() => void perform("disable", service)}>Disable autostart</Button>
-          </> : <span className="text-xs text-muted-foreground">
-            Not enrolled · register in Runit services first
-          </span>)}
-      </div>}
-  </div>
+  const serviceRow = (service: RunitEntry) =>
+    <RunitServiceRow key={service.name} service={service} mode={mode} busy={busy}
+      perform={perform} readServiceLogs={readServiceLogs}
+      reviewPythonSource={reviewPythonSource} reviewNodeSource={reviewNodeSource}
+      archiveWorker={archiveWorker} />
   return <div className="space-y-3 rounded-md border p-3">
     <div className="flex flex-wrap items-center justify-between gap-2">
       <h3 className="text-sm font-medium">{mode === "autostart" ? "Autostart registry" : "Runit services"}</h3>
