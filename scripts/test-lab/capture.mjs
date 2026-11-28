@@ -9,6 +9,7 @@ import { inspectPageGeometry } from './layout-geometry.mjs';
 import { captureWarnings, summarizeCaptureWarnings } from './capture-warnings.mjs';
 import { isRouteReady, routeTitles } from './route-readiness.mjs';
 import { captureMobileNavigation } from './mobile-navigation-capture.mjs';
+import { captureCommandSearch } from './command-search-capture.mjs';
 
 const repo = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const routes = routePaths;
@@ -27,13 +28,15 @@ const screens = [
 function options(argv) {
   const args = Object.create(null);
   for (const input of argv) {
-    const match = /^--(base|sha|routes|api|mobile-menu)=(.+)$/.exec(input);
+    const match = /^--(base|sha|routes|api|mobile-menu|command-search)=(.+)$/.exec(input);
     if (!match || Object.hasOwn(args, match[1])) throw Error('Invalid argument');
     args[match[1]] = match[2];
   }
   if (!/^[0-9a-f]{40}$/.test(args.sha || '')) throw Error('Exact approved SHA required');
   if (args['mobile-menu'] && args['mobile-menu'] !== 'true')
     throw Error('Mobile menu option must be true');
+  if (args['command-search'] && args['command-search'] !== 'true')
+    throw Error('Command search option must be true');
   let base;
   try {
     base = new URL(args.base);
@@ -78,6 +81,7 @@ function options(argv) {
     pages: select(args.routes || 'dashboard,hosting,projects', routes),
     probes: args.api ? select(args.api, apis) : [],
     mobileMenu: args['mobile-menu'] === 'true',
+    commandSearch: args['command-search'] === 'true',
   };
 }
 
@@ -185,6 +189,13 @@ function gallery(report) {
             escapeHtml(c.mobileMenuFile) +
             '"><img src="' +
             escapeHtml(c.mobileMenuFile) +
+            '" loading="lazy"/></a>'
+          : '') +
+        (c.commandSearchFile
+          ? '<p>Command search · UI only</p><a href="' +
+            escapeHtml(c.commandSearchFile) +
+            '"><img src="' +
+            escapeHtml(c.commandSearchFile) +
             '" loading="lazy"/></a>'
           : '') +
         (c.createPanelFile
@@ -420,6 +431,18 @@ async function main() {
                 .catch(() => {});
             }
           }
+          // Capture only the shared search dialog on the dashboard, without selecting an item.
+          if (config.commandSearch && route === 'dashboard' && cap.rendered) {
+            try {
+              const file = screenshotName(route, vp.name, 'command-search');
+              const path = join(folder, file);
+              cap.commandSearchGeometry = await captureCommandSearch(page, path);
+              await chmod(path, 0o600);
+              cap.commandSearchFile = file;
+            } catch {
+              cap.commandSearchError = 'Command search screenshot unavailable';
+            }
+          }
           // Whitelisted click-only UI inspection: expand one local details
           // element and screenshot that element. Network mutations remain blocked.
           if (route === 'projects' && cap.rendered) {
@@ -513,13 +536,15 @@ async function main() {
           Number(Boolean(c.middleFile)) +
           Number(Boolean(c.bottomFile)) +
           Number(Boolean(c.createPanelFile)) +
-          Number(Boolean(c.mobileMenuFile)),
+          Number(Boolean(c.mobileMenuFile)) +
+          Number(Boolean(c.commandSearchFile)),
         0,
       ),
       middleScreenshots: captures.filter((c) => c.middleFile).length,
       bottomScreenshots: captures.filter((c) => c.bottomFile).length,
       createPanelScreenshots: captures.filter((c) => c.createPanelFile).length,
       mobileMenuScreenshots: captures.filter((c) => c.mobileMenuFile).length,
+      commandSearchScreenshots: captures.filter((c) => c.commandSearchFile).length,
       failures: captures.filter((c) => c.error).length,
       ...captureSummary,
       notRendered: captures.filter((c) => !c.rendered).length,

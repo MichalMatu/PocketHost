@@ -1,6 +1,12 @@
 /** Fixed capture-stage warnings: no page text, API body or browser logs. */
-const ERROR_FIELDS = ['error', 'middleError', 'bottomError', 'createPanelError', 'mobileMenuError'];
-const OPTIONAL_ERROR_FIELDS = ['middleError', 'bottomError', 'createPanelError', 'mobileMenuError'];
+const OPTIONAL_ERROR_FIELDS = [
+  'middleError',
+  'bottomError',
+  'createPanelError',
+  'mobileMenuError',
+  'commandSearchError',
+];
+const ERROR_FIELDS = ['error', ...OPTIONAL_ERROR_FIELDS];
 
 export function captureWarnings(capture) {
   return ERROR_FIELDS.filter((field) => typeof capture?.[field] === 'string' && capture[field]).map(

@@ -136,3 +136,14 @@ test('mobile menu screenshot is allowed for known routes at mobile size only', (
   assert.equal(isAllowedScreenshotName('other-mobile-menu.png'), false);
   assert.equal(isAllowedScreenshotName('projects-mobile-menu-menu.png'), false);
 });
+
+test('command search screenshot is restricted to dashboard viewports', () => {
+  for (const viewport of ['mobile', 'tablet', 'desktop']) {
+    const name = screenshotName('dashboard', viewport, 'command-search');
+    assert.equal(name, 'dashboard-' + viewport + '-command-search.png');
+    assert.equal(isAllowedScreenshotName(name), true);
+    assert.throws(() => screenshotName('projects', viewport, 'command-search'));
+    assert.equal(isAllowedScreenshotName('projects-' + viewport + '-command-search.png'), false);
+  }
+  assert.equal(isAllowedScreenshotName('dashboard-mobile-command-search-menu.png'), false);
+});

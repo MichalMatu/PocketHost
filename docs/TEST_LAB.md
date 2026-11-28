@@ -33,6 +33,8 @@ Use **only** with an explicit exact-live-SHA scope under standing owner consent.
 
 Output: private PNG files, `report.json`, `index.html` contact gallery, and one bounded stdout JSON receipt. Reports record navigation HTTP, React rendered-state, page/console/same-origin-failed, canceled, and deliberately blocked request counts, viewport overflow, and requested GET status, latency, MIME, JSON validity and response-shape checks; they deliberately omit response bodies, secrets and raw error text.
 
+For a matching shared Command UI comparison, opt in with `--routes=dashboard --command-search=true`. The Lab opens only the page-search dialog, captures the dialog at the three fixed viewport sizes, records text-free geometry, and closes it without choosing a command. Images remain local. A missing dialog capture is an optional capture error and cannot establish visual acceptance.
+
 ## Selected thumbnail review via private Git task result
 
 The Mac Lab can also produce an **explicitly requested**, JPEG-compressed, bounded preview from one already captured screenshot. Command `node scripts/test-lab/preview.mjs --run=<capture-directory-name> --shot=dashboard-mobile.png`. The reviewed run and screenshot names must be approved separately before publishing image bytes to the **private** Local Agent result (never the public PocketHost repository). The preview is a deliberately downscaled image, not a pixel-level regression baseline; it may still reveal LAN details, so inspect/redact sensitive UI first. The helper refuses symlink escapes, arbitrary filenames and files above its output byte cap. It does not modify the hosted application.

@@ -59,3 +59,9 @@ test('missing mobile navigation screenshot is counted but not a primary failure'
     createPanelErrors: 0,
   });
 });
+
+test('missing command search screenshot is an optional failure', () => {
+  const capture = { commandSearchError: 'Command search screenshot unavailable' };
+  assert.deepEqual(captureWarnings(capture), [capture.commandSearchError]);
+  assert.equal(summarizeCaptureWarnings([capture]).optionalCaptureErrors, 1);
+});
