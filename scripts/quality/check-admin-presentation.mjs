@@ -110,7 +110,8 @@ export function inspectAdminPresentation(root) {
       ) {
         for (const token of node.text.split(/\s+/)) {
           if (/(?:^|:)![-\w][\w[\]/.%()-]*$/.test(token) || /[-\w\])%]!$/.test(token)) {
-            if (!allowed.delete(token)) errors.push('Tailwind important override: ' + relative + ' ' + token);
+            if (!allowed.delete(token))
+              errors.push('Tailwind important override: ' + relative + ' ' + token);
           }
         }
       }

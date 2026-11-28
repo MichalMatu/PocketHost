@@ -140,7 +140,9 @@ test('view target is advisory and existing template exceptions are bounded', () 
 
 test('duplicate token windows fail the scoped three percent budget', () =>
   withTree((put, root) => {
-    const body = Array.from({ length: 20 }, (_, i) => 'const value' + i + ' = ' + i + ';').join('\n');
+    const body = Array.from({ length: 20 }, (_, i) => 'const value' + i + ' = ' + i + ';').join(
+      '\n',
+    );
     put('apps/admin/src/app/a.ts', body);
     put('apps/admin/src/app/b.ts', body);
     const report = inspectAdminPresentation(root);
