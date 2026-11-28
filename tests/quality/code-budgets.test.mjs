@@ -4,6 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { validateCodeBudgets } from '../../scripts/quality/check-code-budgets.mjs';
+import { inspectAdminPresentation } from '../../scripts/quality/check-admin-presentation.mjs';
 
 function withTree(fn) {
   const folder = mkdtempSync(path.join(os.tmpdir(), 'pockethost-quality-'));
@@ -111,3 +112,38 @@ test('Node workspace rejects oversized modules, reversed dependencies and view t
 test('current repository satisfies code budgets', () => {
   assert.deepEqual(validateCodeBudgets(), []);
 });
+
+test('admin presentation rejects oversized views and new stylesheet or important overrides', () =>
+  withTree((put, root) => {
+    put('apps/admin/src/app/large.tsx', '\n'.repeat(500));
+    put('apps/admin/src/app/extra.css', '.x { color: red !important; }');
+    put('apps/admin/src/app/view.tsx', '<div className="p-2!" style={{ color: "red" }} />');
+    const errors = validateCodeBudgets(root).join('\n');
+    assert.match(errors, /Admin view line budget/);
+    assert.match(errors, /Additional admin stylesheet/);
+    assert.match(errors, /CSS important override/);
+    assert.match(errors, /Tailwind important override/);
+    assert.match(errors, /Unreviewed JSX inline style/);
+  }));
+
+test('view target is advisory and existing template exceptions are bounded', () =>
+  withTree((put, root) => {
+    put('apps/admin/src/app/page.tsx', '\n'.repeat(300));
+    put('apps/admin/src/components/ui/badge.tsx', '<div className="[&>svg]:size-3!" />');
+    put('apps/admin/src/components/color-picker.tsx', '<div style={{ backgroundColor: c }} />');
+    const report = inspectAdminPresentation(root);
+    assert.deepEqual(report.errors, []);
+    assert.equal(report.aboveTarget[0].lines, 301);
+    put('apps/admin/src/components/color-picker.tsx', '<><div style={{}} /><div style={{}} /></>');
+    assert.match(inspectAdminPresentation(root).errors.join('\n'), /Unreviewed JSX inline style/);
+  }));
+
+test('duplicate token windows fail the scoped three percent budget', () =>
+  withTree((put, root) => {
+    const body = Array.from({ length: 20 }, (_, i) => 'const value' + i + ' = ' + i + ';').join('\n');
+    put('apps/admin/src/app/a.ts', body);
+    put('apps/admin/src/app/b.ts', body);
+    const report = inspectAdminPresentation(root);
+    assert.equal(report.duplication.percent, 100);
+    assert.match(report.errors.join('\n'), /Admin source duplication/);
+  }));

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isBuiltin } from 'node:module';
 import ts from 'typescript';
+import { inspectAdminPresentation } from './check-admin-presentation.mjs';
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const BASE_BYTES = 24 * 1024;
@@ -191,6 +192,7 @@ export function validateCodeBudgets(root = repositoryRoot) {
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
+  errors.push(...inspectAdminPresentation(root).errors);
   return errors.sort();
 }
 
