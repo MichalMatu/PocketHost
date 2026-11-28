@@ -91,9 +91,10 @@ async function main() {
           await page.goto(destination, { waitUntil: 'commit', timeout: 18000 });
         } else {
           try {
-            await page.locator('a[href="' + routePaths[name] + '"]').first().click({
-              timeout: 5000,
-            });
+            await page
+              .locator('a[href="' + routePaths[name] + '"]')
+              .first()
+              .click({ timeout: 5000 });
             await page.waitForURL(destination, { timeout: 12000 });
           } catch {
             await page.goto(destination, { waitUntil: 'commit', timeout: 18000 });
