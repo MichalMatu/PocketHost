@@ -2,13 +2,14 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Feedback } from "./admin-actions-feedback"
 import { action, inspect } from "./admin-actions-api"
 import { createRunitSourceActions } from "./runit-source-actions"
 import { createRunitLifecycleActions } from "./runit-lifecycle-actions"
 import { RunitServiceRow } from "./runit-service-row"
+import { RunitWorkerCreator } from "./runit-worker-creator"
+import { RunitSourceReview } from "./runit-source-review"
+import { RunitLogsPanel } from "./runit-logs-panel"
 
 import {
   isPanelService, validateRunitInventory,
@@ -153,87 +154,11 @@ export function RunitServiceActions({
         before issuing commands; no corrective action was started.
       </p>}
     </section>}
-    {mode === "lifecycle" && <>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-muted-foreground text-xs">
-          Standalone workers need no Project. Only PocketHost-created, attested services can be managed.
-        </p>
-        <Button variant="outline"
-          disabled={busy || (!creatorOpen && !services)}
-          onClick={() => setCreatorOpen(open => !open)}>
-          {creatorOpen ? "Close creator" : "Add Service"}
-        </Button>
-      </div>
-      {creatorOpen && <div className="space-y-3 rounded-md border p-3" aria-label="Add standalone service">
-        <p className="text-sm font-medium">Create standalone service</p>
-        <p className="text-muted-foreground text-xs">
-          Create a fixed Node.js/Python heartbeat worker, or stage your own
-          immutable Python/Node.js source. Source is never executed or enabled by
-          this LAN page; only a separately authorized local owner workflow
-          can review activation. Maximum four definitions and 32 KB per source.
-          No process adoption or arbitrary service path is allowed.
-        </p>
-        <div className="flex flex-wrap gap-2" aria-label="Worker runtime">
-          <Button disabled={busy}
-            variant={workerTemplate === "heartbeat-worker-v1" ? "secondary" : "outline"}
-            aria-pressed={workerTemplate === "heartbeat-worker-v1"}
-            onClick={() => setWorkerTemplate("heartbeat-worker-v1")}>Node.js</Button>
-          <Button disabled={busy}
-            variant={workerTemplate === "python-heartbeat-v1" ? "secondary" : "outline"}
-            aria-pressed={workerTemplate === "python-heartbeat-v1"}
-            onClick={() => setWorkerTemplate("python-heartbeat-v1")}>Python heartbeat</Button>
-          <Button disabled={busy}
-            variant={workerTemplate === "python-source-v1" ? "secondary" : "outline"}
-            aria-pressed={workerTemplate === "python-source-v1"}
-            onClick={() => setWorkerTemplate("python-source-v1")}>My Python code</Button>
-          <Button disabled={busy}
-            variant={workerTemplate === "node-source-v1" ? "secondary" : "outline"}
-            aria-pressed={workerTemplate === "node-source-v1"}
-            onClick={() => setWorkerTemplate("node-source-v1")}>My Node.js code</Button>
-        </div>
-        {(workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1") && <div className="space-y-2">
-          <label htmlFor="python-worker-source" className="text-sm font-medium">
-            {workerTemplate === "node-source-v1" ? "worker.mjs source" : "worker.py source"}
-          </label>
-          <Textarea id="python-worker-source" value={pythonSource}
-            onChange={event => setPythonSource(event.target.value)}
-            maxLength={32 * 1024} rows={7} disabled={busy}
-            placeholder={workerTemplate === "node-source-v1" ? 'console.log("Hello from Node.js")' : 'print("Hello from Python")'} />
-          <p className="text-xs text-muted-foreground">
-            Stored privately without executing, dependencies or network listener.
-            Start, Restart, Autostart and recovery are disabled from this page.
-          </p>
-        </div>}
-        <div className="flex flex-wrap items-center gap-2">
-          <Input aria-label="New service name" placeholder="e.g. monitoring-worker"
-            className="min-w-48 max-w-72" maxLength={64} disabled={busy}
-            value={workerName} onChange={event => setWorkerName(event.target.value.toLowerCase())} />
-          <Button disabled={busy || !services ||
-              services.some(item => item.name === workerName) ||
-              archived.some(item => item.name === workerName) ||
-              !/^[a-z][a-z0-9-]{1,63}$/.test(workerName) ||
-              ((workerTemplate === "python-source-v1" || workerTemplate === "node-source-v1") &&
-                (!pythonSource.trim() || new Blob([pythonSource]).size > 32 * 1024))}
-            onClick={() => void createWorker()}>
-            {workerTemplate === "node-source-v1" ? "Stage Node.js source" :
-              workerTemplate === "python-source-v1" ? "Stage Python source" : "Create stopped service"}
-          </Button>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Names must be unique and 2–64 characters: lowercase letters, digits and hyphens.
-          Creating a service never executes staged source or enables autostart.
-        </p>
-        {services && workerName &&
-          (services.some(item => item.name === workerName) ||
-            archived.some(item => item.name === workerName)) &&
-          <p role="alert" className="text-destructive text-xs">
-            Service name already exists or is archived. Choose a different name.
-          </p>}
-        {!services && <p role="status" className="text-muted-foreground text-xs">
-          Service inventory unavailable. Refresh services before creating a worker.
-        </p>}
-      </div>}
-    </>}
+    {mode === "lifecycle" && <RunitWorkerCreator
+      busy={busy} services={services} archived={archived} creatorOpen={creatorOpen}
+      setCreatorOpen={setCreatorOpen} workerName={workerName} setWorkerName={setWorkerName}
+      workerTemplate={workerTemplate} setWorkerTemplate={setWorkerTemplate}
+      pythonSource={pythonSource} setPythonSource={setPythonSource} createWorker={createWorker} />}
     {!services && !error && <p role="status" className="text-sm text-muted-foreground">Loading runit services…</p>}
     {services?.length === 0 && <p className="text-muted-foreground text-xs">No discoverable runit services.</p>}
     {counts && <div className="flex flex-wrap gap-2" aria-label="PocketHost service coordination summary">
@@ -324,164 +249,22 @@ export function RunitServiceActions({
       services?.some(service => service.name === nodeSourceReview.name &&
         service.registered && service.control === "standalone" &&
         service.template === "node-source-v1") &&
-      <section className="space-y-1 rounded-md border p-3" aria-label="Node.js source identity review">
-        <p className="text-sm font-medium">Node.js source review: {nodeSourceReview.name}</p>
-        <p className="break-all font-mono text-xs">SHA-256: {nodeSourceReview.sourceSha256}</p>
-        <p className="text-xs">Size: {nodeSourceReview.sourceBytes} bytes · runit: {nodeSourceReview.observed} · autostart: {
-          nodeSourceReview.autostart === null ? "unknown" :
-            nodeSourceReview.autostart ? "enabled" : "disabled"
-        }</p>
-        <p className="text-xs text-muted-foreground">
-          Inspected: {nodeSourceReview.checkedAt}. Source text and credentials are not returned.
-          This proves file identity only, not safety or readiness. Starting Node.js code
-          is blocked from LAN; device-owner authorization is not configured.
-        </p>
-        <Button variant="outline" disabled={busy}
-          onClick={() => void loadNodeSourceHistory(nodeSourceReview.name)}>
-          Read saved revisions
-        </Button>
-        {nodeSourceHistory?.name === nodeSourceReview.name &&
-          nodeSourceHistory.currentSha256 === nodeSourceReview.sourceSha256 &&
-          <div className="space-y-1 rounded-md border p-2">
-            <p className="text-xs font-medium">Saved Node.js revisions ({nodeSourceHistory.revisions.length})</p>
-            {nodeSourceHistory.revisions.length === 0 &&
-              <p className="text-xs text-muted-foreground">No older revisions retained.</p>}
-            {nodeSourceHistory.revisions.map(item =>
-              <div key={item.id} className="flex flex-wrap items-center gap-2 border-b py-2">
-                <div className="min-w-0 flex-1 text-xs">
-                  <p>{item.savedAt} · {item.bytes} bytes</p>
-                  <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
-                </div>
-                <Button variant="outline"
-                  disabled={busy || nodeSourceReview.observed !== "stopped" ||
-                    nodeSourceReview.autostart !== false ||
-                    nodeSourceHistory.revisions.length >= 8}
-                  onClick={() => void restoreNodeRevision(item)}>Restore this source</Button>
-              </div>)}
-            {nodeSourceHistory.revisions.length >= 8 &&
-              <p className="text-xs text-muted-foreground">
-                Revision history full. Restore is blocked to preserve existing files.
-              </p>}
-          </div>}
-        {nodeSourceReview.observed === "stopped" && nodeSourceReview.autostart === false ? <>
-          <label htmlFor="node-replacement-source" className="text-sm font-medium">
-            Replace staged worker.mjs (full source)
-          </label>
-          <Textarea id="node-replacement-source" rows={7}
-            value={nodeReplacement} onChange={event => setNodeReplacement(event.target.value)}
-            maxLength={32 * 1024} disabled={busy}
-            placeholder="Paste the complete revised Node.js source" />
-          <p className="text-xs text-muted-foreground">
-            Exact-SHA update only. Old code retained in private history (maximum eight revisions).
-            Failed partial writes require manual reconciliation. This does not run Node.js.
-          </p>
-          <Button variant="outline" disabled={busy ||
-              !nodeReplacement.trim() || new Blob([nodeReplacement]).size > 32 * 1024}
-            onClick={() => void replaceNodeSource()}>Replace staged Node.js source</Button>
-        </> : <p className="text-xs text-muted-foreground">
-          Revision requires a confirmed stopped worker with autostart disabled.
-        </p>}
-      </section>}
+      <RunitSourceReview review={nodeSourceReview} history={nodeSourceHistory}
+        replacement={nodeReplacement} setReplacement={setNodeReplacement}
+        loadHistory={loadNodeSourceHistory} restoreRevision={restoreNodeRevision}
+        replaceSource={replaceNodeSource} busy={busy} />}
     {mode === "lifecycle" && sourceReview &&
       services?.some(service => service.name === sourceReview.name &&
         service.registered && service.control === "standalone" &&
         service.template === "python-source-v1") &&
-      <section className="space-y-1 rounded-md border p-3" aria-label="Python source identity review">
-        <p className="text-sm font-medium">Python source review: {sourceReview.name}</p>
-        <p className="break-all font-mono text-xs">SHA-256: {sourceReview.sourceSha256}</p>
-        <p className="text-xs">Size: {sourceReview.sourceBytes} bytes · runit: {sourceReview.observed} · autostart: {
-          sourceReview.autostart === null ? "unknown" :
-            sourceReview.autostart ? "enabled" : "disabled"
-        }</p>
-        <p className="text-xs text-muted-foreground">
-          Inspected: {sourceReview.checkedAt}. Source text and credentials are not returned.
-          This proves file identity only, not safety or readiness. Starting Python code
-          is blocked from LAN; device-owner authorization is not configured.
-        </p>
-        <Button variant="outline" disabled={busy}
-          onClick={() => void loadPythonSourceHistory(sourceReview.name)}>
-          Read saved revisions
-        </Button>
-        {sourceHistory?.name === sourceReview.name &&
-          sourceHistory.currentSha256 === sourceReview.sourceSha256 &&
-          <div className="space-y-1 rounded-md border p-2">
-            <p className="text-xs font-medium">Saved Python revisions ({sourceHistory.revisions.length})</p>
-            {sourceHistory.revisions.length === 0 &&
-              <p className="text-xs text-muted-foreground">No older revisions retained.</p>}
-            {sourceHistory.revisions.map(item =>
-              <div key={item.id} className="flex flex-wrap items-center gap-2 border-b py-2">
-                <div className="min-w-0 flex-1 text-xs">
-                  <p>{item.savedAt} · {item.bytes} bytes</p>
-                  <p className="break-all font-mono">SHA-256: {item.sourceSha256}</p>
-                </div>
-                <Button variant="outline"
-                  disabled={busy || sourceReview.observed !== "stopped" ||
-                    sourceReview.autostart !== false ||
-                    sourceHistory.revisions.length >= 8}
-                  onClick={() => void restorePythonRevision(item)}>Restore this source</Button>
-              </div>)}
-            {sourceHistory.revisions.length >= 8 &&
-              <p className="text-xs text-muted-foreground">
-                Revision history full. Restore is blocked to preserve existing files.
-              </p>}
-          </div>}
-        {sourceReview.observed === "stopped" && sourceReview.autostart === false ? <>
-          <label htmlFor="python-replacement-source" className="text-sm font-medium">
-            Replace staged worker.py (full source)
-          </label>
-          <Textarea id="python-replacement-source" rows={7}
-            value={pythonReplacement} onChange={event => setPythonReplacement(event.target.value)}
-            maxLength={32 * 1024} disabled={busy}
-            placeholder="Paste the complete revised Python source" />
-          <p className="text-xs text-muted-foreground">
-            Exact-SHA update only. Old code retained in private history (maximum eight revisions).
-            Failed partial writes require manual reconciliation. This does not run Python.
-          </p>
-          <Button variant="outline" disabled={busy ||
-              !pythonReplacement.trim() || new Blob([pythonReplacement]).size > 32 * 1024}
-            onClick={() => void replacePythonSource()}>Replace staged Python source</Button>
-        </> : <p className="text-xs text-muted-foreground">
-          Revision requires a confirmed stopped worker with autostart disabled.
-        </p>}
-      </section>}
-    {mode === "lifecycle" && serviceLogs && <section className="space-y-2 rounded-md border p-3"
-      aria-label={"Runit logs for " + serviceLogs.name}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-sm font-medium">Runit logs: {serviceLogs.name}</p>
-        <div className="flex flex-wrap gap-1">
-          <Button variant="outline" disabled={busy}
-            onClick={() => void readServiceLogs(serviceLogs.name)}>Refresh logs</Button>
-          <Button variant="outline" disabled={busy}
-            onClick={() => setServiceLogs(null)}>Close</Button>
-        </div>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Input aria-label="Search service logs" placeholder="Search recent lines"
-          className="min-w-40 max-w-64" disabled={busy}
-          value={logQuery} onChange={event => setLogQuery(event.target.value)} />
-        {(["all", "errors", "warnings"] as const).map(level =>
-          <Button key={level} disabled={busy} aria-pressed={logLevel === level}
-            variant={logLevel === level ? "secondary" : "outline"}
-            onClick={() => setLogLevel(level)}>
-            {level === "all" ? "All" : level === "errors" ? "Errors" : "Warnings"}
-          </Button>)}
-      </div>
-      {(() => {
-        const visible = serviceLogs.lines.filter(line =>
-          line.toLowerCase().includes(logQuery.trim().toLowerCase()) &&
-          (logLevel === "all" ||
-            (logLevel === "errors" ? /error|fatal|exception|failed|traceback/i.test(line) :
-              /warn|warning|deprecat/i.test(line))))
-        return <>
-          <p className="text-xs text-muted-foreground">
-            {visible.length} / {serviceLogs.lines.length} recent redacted lines · manual refresh only
-          </p>
-          <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs">
-            {visible.length ? visible.join("\n") : "No matching log lines."}
-          </pre>
-        </>
-      })()}
-    </section>}
+      <RunitSourceReview review={sourceReview} history={sourceHistory}
+        replacement={pythonReplacement} setReplacement={setPythonReplacement}
+        loadHistory={loadPythonSourceHistory} restoreRevision={restorePythonRevision}
+        replaceSource={replacePythonSource} busy={busy} />}
+    {mode === "lifecycle" && serviceLogs && <RunitLogsPanel
+      serviceLogs={serviceLogs} busy={busy} readServiceLogs={readServiceLogs}
+      setServiceLogs={setServiceLogs} logQuery={logQuery} setLogQuery={setLogQuery}
+      logLevel={logLevel} setLogLevel={setLogLevel} />}
     <Feedback error={error} done={done} />
   </div>
 }
