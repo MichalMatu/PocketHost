@@ -41,6 +41,20 @@ interface ThemeTabProps {
   onImportClick: () => void
 }
 
+function ThemeSwatches({ colors }: { colors: Record<string, string> }) {
+  return (
+    <div className="flex gap-1">
+      {["primary", "secondary", "accent", "muted"].map((color) => (
+        <div
+          key={color}
+          className="size-3 rounded-full border border-border/20"
+          style={{ backgroundColor: colors[color] }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function ThemeTab({
   selectedTheme,
   setSelectedTheme,
@@ -143,32 +157,7 @@ export function ThemeTab({
                   className="cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.primary,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.secondary,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.accent,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.muted,
-                        }}
-                      />
-                    </div>
+                    <ThemeSwatches colors={theme.preset.styles.light} />
                     <span>{theme.name}</span>
                   </div>
                 </SelectItem>
@@ -229,32 +218,7 @@ export function ThemeTab({
                   className="cursor-pointer"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex gap-1">
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.primary,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.secondary,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.accent,
-                        }}
-                      />
-                      <div
-                        className="size-3 rounded-full border border-border/20"
-                        style={{
-                          backgroundColor: theme.preset.styles.light.muted,
-                        }}
-                      />
-                    </div>
+                    <ThemeSwatches colors={theme.preset.styles.light} />
                     <span>{theme.name}</span>
                   </div>
                 </SelectItem>
