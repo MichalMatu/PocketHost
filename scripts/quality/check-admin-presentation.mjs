@@ -21,7 +21,9 @@ const importantExceptions = new Map([
   ],
   [
     'components/ui/tooltip.tsx',
-    ['inline-end', 'inline-start', 'left', 'right'].map((side) => 'data-[side=' + side + ']:top-1/2!'),
+    ['inline-end', 'inline-start', 'left', 'right'].map(
+      (side) => 'data-[side=' + side + ']:top-1/2!',
+    ),
   ],
 ]);
 const inlineLimits = new Map([
