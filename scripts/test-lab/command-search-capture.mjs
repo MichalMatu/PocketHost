@@ -7,11 +7,12 @@ export async function captureCommandSearch(page, path) {
   let opened = false;
   try {
     if (!originallyOpen) {
-      await page.getByRole('button', { name: 'Search...', exact: true }).click({ timeout: 5000 });
+      await page.getByRole('button', { name: /^Search\.\.\.(?:\s|$)/ }).click({ timeout: 5000 });
       opened = true;
     }
     await dialog.waitFor({ state: 'visible', timeout: 5000 });
-    const geometry = await dialog.evaluate((element) => {
+    await dialog.screenshot({ path, animations: 'disabled', timeout: 12000 });
+    return await dialog.evaluate((element) => {
       const rect = element.getBoundingClientRect();
       const input = element.querySelector('[data-slot="command-input"]');
       const group = element.querySelector('[data-slot="input-group"]');
@@ -28,8 +29,6 @@ export async function captureCommandSearch(page, path) {
           rect.bottom <= window.innerHeight + 1,
       };
     });
-    await dialog.screenshot({ path, animations: 'disabled', timeout: 12000 });
-    return geometry;
   } finally {
     if (opened) {
       await page.keyboard.press('Escape');

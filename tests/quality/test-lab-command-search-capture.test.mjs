@@ -39,7 +39,9 @@ function fakePage(initial = false, fail = false) {
       },
       getByRole: (role, options) => {
         assert.equal(role, 'button');
-        assert.deepEqual(options, { name: 'Search...', exact: true });
+        assert.match('Search...', options.name);
+        assert.match('Search... ⌘K', options.name);
+        assert.doesNotMatch('Search projects', options.name);
         return {
           click: async () => {
             open = true;
