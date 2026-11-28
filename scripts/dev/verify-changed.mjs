@@ -152,7 +152,9 @@ if (!optionsValid) {
       changed: plan.changed,
       review: prepared.review,
       ...(prepared.visualReviewRequired ? { visualAcceptance: 'PENDING_BEFORE_AFTER' } : {}),
-      ...(prepared.templateBundleReviewRequired ? { bundleAcceptance: 'PENDING_BEFORE_AFTER' } : {}),
+      ...(prepared.templateBundleReviewRequired
+        ? { bundleAcceptance: 'PENDING_BEFORE_AFTER' }
+        : {}),
       plannedChecks: selectedChecks.map((x) => x.label),
       ...(execute ? { approvedChecks: approvedScope } : {}),
       adminLint: adminLint ? 'opt-in' : 'deferred',
