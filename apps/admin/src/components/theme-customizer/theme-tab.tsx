@@ -20,7 +20,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion"
 import { useThemeManager } from "@/hooks/use-theme-manager"
-import { useCircularTransition } from "@/hooks/use-circular-transition"
 import {
   colorThemes,
   colorThemeLabels,
@@ -30,8 +29,6 @@ import {
 import { radiusOptions, baseColors } from "@/config/theme-customizer-constants"
 import { ColorPicker } from "@/components/color-picker"
 import type { ImportedTheme } from "@/types/theme-customizer"
-import React from "react"
-import "./circular-transition.css"
 
 interface ThemeTabProps {
   selectedTheme: string
@@ -56,6 +53,7 @@ export function ThemeTab({
 }: ThemeTabProps) {
   const {
     isDarkMode,
+    setTheme,
     brandColorsValues,
     setBrandColorsValues,
     applyTheme,
@@ -63,8 +61,6 @@ export function ThemeTab({
     applyRadius,
     handleColorChange,
   } = useThemeManager()
-
-  const { toggleTheme } = useCircularTransition()
 
   const handleRandomShadcn = () => {
     // Apply a random shadcn theme
@@ -93,14 +89,12 @@ export function ThemeTab({
     applyRadius(radius)
   }
 
-  const handleLightMode = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (isDarkMode === false) return
-    toggleTheme(event)
+  const handleLightMode = () => {
+    if (isDarkMode) setTheme("light")
   }
 
-  const handleDarkMode = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (isDarkMode === true) return
-    toggleTheme(event)
+  const handleDarkMode = () => {
+    if (!isDarkMode) setTheme("dark")
   }
 
   return (

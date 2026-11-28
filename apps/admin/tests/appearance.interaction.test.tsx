@@ -5,17 +5,14 @@ import userEvent from "@testing-library/user-event"
 
 const theme = vi.hoisted(() => ({
   setTheme: vi.fn(),
-  toggleTheme: vi.fn(),
 }))
 
 vi.mock("@/hooks/use-theme", () => ({
   useTheme: () => ({ theme: "light", setTheme: theme.setTheme }),
 }))
-vi.mock("@/hooks/use-circular-transition", () => ({
-  useCircularTransition: () => ({ toggleTheme: theme.toggleTheme }),
-}))
 
 import { ModeToggle } from "@/components/mode-toggle"
+import { ThemeTab } from "@/components/theme-customizer/theme-tab"
 
 async function menu() {
   const user = userEvent.setup()
@@ -67,6 +64,26 @@ describe("real Base UI header appearance interaction", () => {
   it("retains the upstream landing quick color switch", async () => {
     render(<ModeToggle variant="ghost" />)
     fireEvent.click(screen.getByRole("button", { name: "Switch color mode" }))
-    expect(theme.toggleTheme).toHaveBeenCalledTimes(1)
+    expect(theme.setTheme).toHaveBeenCalledWith("dark")
   })
+})
+
+it("selects dark mode directly from the theme customization tab", () => {
+  render(
+    <ThemeTab
+      selectedTheme=""
+      setSelectedTheme={vi.fn()}
+      selectedTweakcnTheme=""
+      setSelectedTweakcnTheme={vi.fn()}
+      selectedRadius="0.5rem"
+      setSelectedRadius={vi.fn()}
+      setImportedTheme={vi.fn()}
+      onImportClick={vi.fn()}
+    />
+  )
+  theme.setTheme.mockClear()
+  fireEvent.click(screen.getByRole("button", { name: "Light" }))
+  expect(theme.setTheme).not.toHaveBeenCalled()
+  fireEvent.click(screen.getByRole("button", { name: "Dark" }))
+  expect(theme.setTheme).toHaveBeenCalledWith("dark")
 })

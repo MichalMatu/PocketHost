@@ -13,8 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useTheme } from "@/hooks/use-theme"
-import { useCircularTransition } from "@/hooks/use-circular-transition"
-import "./theme-customizer/circular-transition.css"
 
 export type AppearanceTab = "theme" | "layout"
 
@@ -31,7 +29,6 @@ export function ModeToggle({
   onResetAppearance,
 }: ModeToggleProps) {
   const { theme, setTheme } = useTheme()
-  const { toggleTheme } = useCircularTransition()
 
   // Upstream landing route still uses the original quick switch with a variant.
   // The admin header supplies the callbacks and gets the complete appearance menu.
@@ -40,9 +37,9 @@ export function ModeToggle({
       <Button
         variant={variant}
         size="icon"
-        onClick={toggleTheme}
+        onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         aria-label="Switch color mode"
-        className="cursor-pointer mode-toggle-button relative overflow-hidden"
+        className="cursor-pointer"
       >
         {theme === "dark" ? (
           <Sun className="size-[1.2rem]" />
