@@ -285,3 +285,41 @@ test('reviewed unused App.css deletion is narrowly admitted without relaxing oth
     assert.deepEqual(blocked.checks, []);
   }
 });
+
+test('reviewed transition deletion admits only the exact unused CSS and hook pair', () => {
+  const css = 'apps/admin/src/components/theme-customizer/circular-transition.css';
+  const hook = 'apps/admin/src/hooks/use-circular-transition.ts';
+  const deletedPaths = [css, hook];
+  const plan = {
+    ...planChangedChecks(deletedPaths, {}, { deletedPaths }),
+    deletedPaths,
+    head: 'a'.repeat(40),
+  };
+  assert.ok(prepareChangedVerification(plan).review.length);
+  const options = { reviewedTransitionDeletion: true };
+  const prepared = prepareChangedVerification(plan, options);
+  assert.deepEqual(prepared.review, []);
+  assert.equal(prepared.visualReviewRequired, true);
+  assert.equal(prepared.templateBundleReviewRequired, true);
+  assert.throws(() => selectApprovedVerification(prepared.checks, 'admin-types,ui', prepared));
+  assert.equal(
+    selectApprovedVerification(prepared.checks, 'admin-types,node,ui', prepared).length,
+    3,
+  );
+  for (const bad of [
+    makePlan([css, hook]),
+    { ...plan, deletedPaths: [css] },
+    { ...plan, changed: [css, hook, 'package.json'] },
+    { ...plan, review: [...plan.review, 'unrelated review'] },
+    { ...plan, changed: [css, css], deletedPaths: [css, css] },
+  ]) {
+    const blocked = prepareChangedVerification(bad, options);
+    assert.ok(blocked.review.length);
+    assert.deepEqual(blocked.checks, []);
+  }
+  for (const mixed of [{ reviewedCss: true }, { reviewedTemplateDeletion: true }]) {
+    const blocked = prepareChangedVerification(plan, { ...options, ...mixed });
+    assert.ok(blocked.review.length);
+    assert.deepEqual(blocked.checks, []);
+  }
+});

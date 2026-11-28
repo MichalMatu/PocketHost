@@ -33,6 +33,8 @@ const cssFlags = argv.filter((x) => x === '--reviewed-index-css');
 const reviewedCss = cssFlags.length === 1;
 const templateFlags = argv.filter((x) => x === '--reviewed-unused-app-css-deletion');
 const reviewedTemplateDeletion = templateFlags.length === 1;
+const transitionFlags = argv.filter((x) => x === '--reviewed-unused-transition-deletion');
+const reviewedTransitionDeletion = transitionFlags.length === 1;
 const timeoutFlag = argv.filter((x) => x.startsWith('--timeout-ms='));
 const allowed = argv.every(
   (x) =>
@@ -42,6 +44,7 @@ const allowed = argv.every(
     x === '--admin-lint' ||
     x === '--reviewed-index-css' ||
     x === '--reviewed-unused-app-css-deletion' ||
+    x === '--reviewed-unused-transition-deletion' ||
     x === '--execute' ||
     x.startsWith('--approved-head=') ||
     x.startsWith('--approved-checks='),
@@ -59,7 +62,8 @@ const optionsValid =
   scopeFlags.length <= 1 &&
   cssFlags.length <= 1 &&
   templateFlags.length <= 1 &&
-  !(reviewedCss && reviewedTemplateDeletion) &&
+  transitionFlags.length <= 1 &&
+  cssFlags.length + templateFlags.length + transitionFlags.length <= 1 &&
   (execute
     ? approvalFlags.length === 1 &&
       /^[0-9a-f]{40}$/.test(approvedHead ?? '') &&
@@ -141,7 +145,11 @@ if (!optionsValid) {
     if (!/^[0-9a-f]{40}$/.test(plan.head ?? '')) throw new Error('Invalid planned HEAD');
     if (execute && plan.head !== approvedHead)
       throw new Error('Test approval is pinned to another source SHA; no tests executed');
-    const prepared = prepareChangedVerification(plan, { reviewedCss, reviewedTemplateDeletion });
+    const prepared = prepareChangedVerification(plan, {
+      reviewedCss,
+      reviewedTemplateDeletion,
+      reviewedTransitionDeletion,
+    });
     const selectedChecks =
       execute && prepared.review.length === 0
         ? selectApprovedVerification(prepared.checks, approvedScope, prepared)

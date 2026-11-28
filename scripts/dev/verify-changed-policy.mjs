@@ -27,10 +27,30 @@ const cssUiTests = [
 
 const templateCssPath = 'apps/admin/src/App.css';
 const templateDeletionReason = 'Deletion needs explicit impact review: ' + templateCssPath;
+const transitionPaths = [
+  'apps/admin/src/components/theme-customizer/circular-transition.css',
+  'apps/admin/src/hooks/use-circular-transition.ts',
+];
+const transitionReasons = [
+  'Deleted UI stylesheet needs bundle impact review: ' + transitionPaths[0],
+  'Deletion needs explicit impact review: ' + transitionPaths[1],
+];
+
+function exactSet(actual, expected) {
+  return (
+    Array.isArray(actual) &&
+    actual.length === expected.length &&
+    expected.every((value) => actual.includes(value))
+  );
+}
 
 export function prepareChangedVerification(
   plan,
-  { reviewedCss = false, reviewedTemplateDeletion = false } = {},
+  {
+    reviewedCss = false,
+    reviewedTemplateDeletion = false,
+    reviewedTransitionDeletion = false,
+  } = {},
 ) {
   if (
     !plan ||
@@ -52,6 +72,7 @@ export function prepareChangedVerification(
   const templateEligible =
     reviewedTemplateDeletion === true &&
     !reviewedCss &&
+    !reviewedTransitionDeletion &&
     plan.changed.length === 1 &&
     plan.changed[0] === templateCssPath &&
     Array.isArray(plan.deletedPaths) &&
@@ -61,6 +82,18 @@ export function prepareChangedVerification(
     reasons[0] === templateDeletionReason;
   if (templateEligible) reasons.pop();
   else if (reviewedTemplateDeletion) reasons.push('Template deletion review scope mismatch');
+  // The detached animation stylesheet and its hook must be removed together.
+  // All other path combinations and additional review reasons remain blocked.
+  const transitionEligible =
+    reviewedTransitionDeletion === true &&
+    !reviewedCss &&
+    !reviewedTemplateDeletion &&
+    exactSet(plan.changed, transitionPaths) &&
+    exactSet(plan.deletedPaths, transitionPaths) &&
+    exactSet(reasons, transitionReasons);
+  if (transitionEligible) reasons.length = 0;
+  else if (reviewedTransitionDeletion) reasons.push('Transition deletion review scope mismatch');
+  const reviewedDeletion = templateEligible || transitionEligible;
   const checks = [];
   const names = new Set();
   for (const file of plan.changed) {
@@ -106,8 +139,8 @@ export function prepareChangedVerification(
     }
     if (!names.has('changed-file format')) reasons.push('CSS formatting check missing');
   }
-  if (templateEligible && reasons.length === 0) {
-    if (checks.length !== 0) reasons.push('Unexpected template deletion check plan');
+  if (reviewedDeletion && reasons.length === 0) {
+    if (checks.length !== 0) reasons.push('Unexpected reviewed deletion check plan');
     else
       checks.push(
         {
@@ -139,8 +172,8 @@ export function prepareChangedVerification(
   return {
     review: reasons,
     checks: reasons.length ? [] : sorted,
-    ...(cssEligible || templateEligible ? { visualReviewRequired: true } : {}),
-    ...(templateEligible ? { templateBundleReviewRequired: true } : {}),
+    ...(cssEligible || reviewedDeletion ? { visualReviewRequired: true } : {}),
+    ...(reviewedDeletion ? { templateBundleReviewRequired: true } : {}),
   };
 }
 
@@ -180,7 +213,7 @@ export function selectApprovedVerification(
     templateBundleReviewRequired &&
     !['admin-types', 'node', 'ui'].every((id) => ids.includes(id))
   )
-    throw new Error('Reviewed template deletion requires admin-types, node and ui QA');
+    throw new Error('Reviewed stylesheet deletion requires admin-types, node and ui QA');
   if (
     visualReviewRequired &&
     !templateBundleReviewRequired &&
