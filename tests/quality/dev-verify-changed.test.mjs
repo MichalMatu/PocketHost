@@ -5,6 +5,7 @@ import { resolveTermuxCheckCommand } from '../../scripts/dev/termux-check-comman
 import {
   prepareChangedVerification,
   runChangedVerification,
+  runScopedCheck,
   selectApprovedVerification,
   compactCheckFailure,
   isExactCleanCheckout,
@@ -322,4 +323,42 @@ test('reviewed transition deletion admits only the exact unused CSS and hook pai
     assert.ok(blocked.review.length);
     assert.deepEqual(blocked.checks, []);
   }
+});
+
+test('UI batching preserves every approved file and refuses partial success', () => {
+  const files = Array.from({ length: 12 }, (_, i) => 'tests/suite-' + i + '.test.tsx');
+  const check = {
+    label: 'ui tests',
+    cwd: 'apps/admin',
+    argv: ['npm', 'run', 'test:ui', '--', ...files],
+  };
+  const calls = [];
+  const pass = runChangedVerification([check], (item) =>
+    runScopedCheck(item, (batch) => {
+      calls.push(batch.argv.slice(4));
+      return { ok: true, code: 0, elapsedMs: 1 };
+    }),
+  );
+  assert.deepEqual(calls.map((batch) => batch.length), [5, 5, 2]);
+  assert.deepEqual(calls.flat(), files);
+  assert.equal(pass.status, 'PASS');
+  assert.deepEqual(pass.checks[0].batches.flatMap((batch) => batch.files), files);
+  let attempts = 0;
+  const fail = runChangedVerification([check], (item) =>
+    runScopedCheck(item, () => {
+      attempts++;
+      return attempts === 1
+        ? { ok: true, code: 0, elapsedMs: 1 }
+        : { ok: false, code: 143, elapsedMs: 300000, error: 'timeout' };
+    }),
+  );
+  assert.equal(attempts, 2);
+  assert.equal(fail.status, 'FAIL');
+  assert.deepEqual(
+    fail.checks[0].batches.map((batch) => batch.status),
+    ['PASS', 'FAIL', 'SKIPPED'],
+  );
+  assert.deepEqual(fail.checks[0].batches.flatMap((batch) => batch.files), files);
+  assert.throws(() => runScopedCheck({ ...check, argv: check.argv.slice(0, 4) }, () => {}));
+  assert.throws(() => runScopedCheck({ ...check, argv: [...check.argv, files[0]] }, () => {}));
 });

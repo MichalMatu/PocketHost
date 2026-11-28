@@ -12,6 +12,7 @@ import { fileURLToPath } from 'node:url';
 import {
   prepareChangedVerification,
   runChangedVerification,
+  runScopedCheck,
   selectApprovedVerification,
   compactCheckFailure,
   isExactCleanCheckout,
@@ -194,26 +195,28 @@ if (!optionsValid) {
       if (!isExactCleanCheckout(before, clean, plan.head)) {
         throw new Error('Checkout changed after the plan; verification refused');
       }
-      const result = runChangedVerification(selectedChecks, (check) => {
-        const began = Date.now();
-        const resolved = resolveTermuxCheckCommand(check, root, process.execPath);
-        const output = command(resolved.file, resolved.args, path.join(root, check.cwd));
-        const ok = !output.error && output.status === 0;
-        return {
-          ok,
-          code: output.status,
-          elapsedMs: Date.now() - began,
-          ...(ok
-            ? {}
-            : {
-                error: compactCheckFailure(
-                  output.stdout,
-                  output.stderr,
-                  output.error?.message || 'Command failed',
-                ),
-              }),
-        };
-      });
+      const result = runChangedVerification(selectedChecks, (check) =>
+        runScopedCheck(check, (batch) => {
+          const began = Date.now();
+          const resolved = resolveTermuxCheckCommand(batch, root, process.execPath);
+          const output = command(resolved.file, resolved.args, path.join(root, batch.cwd));
+          const ok = !output.error && output.status === 0;
+          return {
+            ok,
+            code: output.status,
+            elapsedMs: Date.now() - began,
+            ...(ok
+              ? {}
+              : {
+                  error: compactCheckFailure(
+                    output.stdout,
+                    output.stderr,
+                    output.error?.message || 'Command failed',
+                  ),
+                }),
+          };
+        }),
+      );
       // A formatter or test could have modified tracked code mid-run. Do not
       // certify the planned SHA without a second independent Git readback.
       const after = command('git', ['rev-parse', 'HEAD'], root, 10000);

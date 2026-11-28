@@ -252,6 +252,50 @@ export function isExactCleanCheckout(head, status, expectedSha) {
   );
 }
 
+/**
+ * Keep the entire approved UI file list, but cap each invocation on A8.
+ * No retries, parallel runs, omitted files or successful partial receipts.
+ */
+export function runScopedCheck(check, execute) {
+  if (check.label !== 'ui tests') return execute(check);
+  const files = check.argv.slice(4);
+  if (
+    check.cwd !== 'apps/admin' ||
+    check.argv.slice(0, 4).join(' ') !== 'npm run test:ui --' ||
+    files.length === 0 ||
+    new Set(files).size !== files.length ||
+    files.some((file) => !/^tests\/[A-Za-z0-9_./-]+\.test\.tsx?$/.test(file))
+  )
+    throw new Error('Invalid approved UI file list');
+  const batches = [];
+  let failed = null;
+  let elapsedMs = 0;
+  for (let i = 0; i < files.length; i += 5) {
+    const group = files.slice(i, i + 5);
+    if (failed) {
+      batches.push({ files: group, status: 'SKIPPED', reason: 'earlier-batch-failed' });
+      continue;
+    }
+    const outcome = execute({ ...check, argv: [...check.argv.slice(0, 4), ...group] });
+    elapsedMs += outcome.elapsedMs ?? 0;
+    const ok = outcome.ok === true && outcome.code === 0;
+    batches.push({
+      files: group,
+      status: ok ? 'PASS' : 'FAIL',
+      code: outcome.code ?? null,
+      elapsedMs: outcome.elapsedMs ?? null,
+    });
+    if (!ok) failed = outcome;
+  }
+  return {
+    ok: failed === null,
+    code: failed ? (failed.code ?? null) : 0,
+    elapsedMs,
+    batches,
+    ...(failed ? { error: failed.error ?? 'UI batch failed' } : {}),
+  };
+}
+
 export function runChangedVerification(checks, execute) {
   const results = [];
   const failedChecks = [];
@@ -275,6 +319,7 @@ export function runChangedVerification(checks, execute) {
       status,
       code: outcome?.code ?? null,
       elapsedMs: outcome?.elapsedMs ?? null,
+      ...(outcome?.batches ? { batches: outcome.batches } : {}),
       ...(status === 'FAIL' ? { error: outcome?.error ?? 'Check failed' } : {}),
     });
     if (status === 'FAIL') failedChecks.push(check.label);
