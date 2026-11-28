@@ -64,6 +64,10 @@ it.each([
   await waitFor(() =>
     expect((screen.getByRole("button", { name: "Check live readiness" }) as HTMLButtonElement)
       .disabled).toBe(false))
+  // The detail view retains explicit readiness, without a probe on entry.
+  expect(healthReads).toBe(0)
+  expect(screen.getByLabelText("Node runtime summary").textContent)
+    .toContain("HTTP readiness: not checked")
   await user.click(screen.getByRole("button", { name: "Check live readiness" }))
   await waitFor(() =>
     expect(screen.getByLabelText("Node runtime summary").textContent)
