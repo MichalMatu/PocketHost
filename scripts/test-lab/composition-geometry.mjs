@@ -74,7 +74,7 @@ export function inspectCompositionGeometry({
   };
   const headings = select('h1,h2,h3,[aria-hidden="true"].text-xl');
   const titles = select('h1');
-  const buttons = select('button,[data-slot="button"],a.group\\/button');
+  const buttons = select('button,[data-slot="button"],a[class~="group/button"]');
   const refresh = buttons.filter((node) => node.textContent?.trim() === 'Refresh');
   const roles = {
     headings: collect(headings),
