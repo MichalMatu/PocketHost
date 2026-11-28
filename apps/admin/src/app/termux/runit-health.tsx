@@ -62,7 +62,7 @@ export function RunitHealthPanel() {
   }, [refresh])
 
   const { refreshOverview, inspect, inspectHttp } = createRunitHealthObservations({
-    services, busy, setBusy, setError, setNotice, setOverview,
+    services, busy, readback, setBusy, setError, setNotice, setOverview,
     setReadback, setRecovery, httpPort, httpPath, setHttpResult,
   })
   const { setHeartbeat, reviewRecovery, recoverOnce } = createRunitHealthRecovery({

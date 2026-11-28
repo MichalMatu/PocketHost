@@ -7,6 +7,7 @@ import {
 type ObservationContext = {
   services: VerifiedService[] | null
   busy: string | null
+  readback: RunitHealth | null
   setBusy: (value: string | null) => void
   setError: (value: string | null) => void
   setNotice: (value: string | null) => void
@@ -20,7 +21,7 @@ type ObservationContext = {
 
 /** Read-only observations preserve the original inventory and response checks. */
 export function createRunitHealthObservations({
-  services, busy, setBusy, setError, setNotice, setOverview,
+  services, busy, readback, setBusy, setError, setNotice, setOverview,
   setReadback, setRecovery, httpPort, httpPath, setHttpResult,
 }: ObservationContext) {
   const refreshOverview = async () => {
