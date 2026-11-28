@@ -51,8 +51,9 @@ export function screenshotName(route, viewport, position = 'top') {
 
 export function isAllowedScreenshotName(name) {
   if (typeof name !== 'string') return false;
-  const match =
-    /^([a-z]+)-(mobile|tablet|desktop)(-(?:middle|bottom|create-panel|menu|command-search))?\.png$/.exec(name);
+  const pattern =
+    /^([a-z]+)-(mobile|tablet|desktop)(-(?:middle|bottom|create-panel|menu|command-search))?\.png$/;
+  const match = pattern.exec(name);
   return Boolean(
     match &&
     isAllowedRoute(match[1]) &&
