@@ -4,7 +4,12 @@ import { render, screen, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  BaseLayout: ({ children, title, onRefresh, refreshDisabled }: {
+    children: React.ReactNode; title?: string; onRefresh?: () => void; refreshDisabled?: boolean
+  }) => <>
+    {onRefresh && <header><button onClick={onRefresh} disabled={refreshDisabled}>Refresh</button></header>}
+    <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
+  </>,
 }))
 import ProjectsPage from "@/app/projects/page"
 
@@ -60,9 +65,20 @@ it("separates the catalog, create screen and application workspace tabs", async 
   const user = userEvent.setup()
   await screen.findByRole("button", { name: "Workspace demo" })
   expect(screen.queryByLabelText("Project name")).toBeNull()
+  const catalog = screen.getByRole("region", { name: "Node.js applications" })
+  expect(catalog.contains(screen.getByRole("button", { name: "Add application" }))).toBe(true)
+  expect(screen.getByRole("heading", { level: 1 }).classList.contains("sr-only")).toBe(true)
+  expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1)
+  expect(screen.getByRole("button", { name: "Refresh" }).closest("header")).toBeTruthy()
   await user.click(screen.getByRole("button", { name: "Add application" }))
   await screen.findByRole("heading", { name: "Add Node.js application" })
   expect(screen.getByLabelText("Project name")).toBeTruthy()
+  const create = screen.getByRole("region", { name: "Create Node.js project" })
+  expect(create.contains(screen.getByLabelText("Project name"))).toBe(true)
+  expect(create.contains(screen.getByRole("button", { name: "Applications" }))).toBe(true)
+  expect(screen.getByRole("heading", { level: 1 }).classList.contains("sr-only")).toBe(true)
+  expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1)
+  expect(screen.getByRole("button", { name: "Refresh" }).closest("header")).toBeTruthy()
   expect(screen.queryByRole("button", { name: "Workspace demo" })).toBeNull()
   await user.click(screen.getByRole("button", { name: "Applications" }))
   await user.click(await screen.findByRole("button", { name: "Workspace demo" }))

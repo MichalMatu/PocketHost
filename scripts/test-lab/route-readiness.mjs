@@ -3,6 +3,7 @@ export const routeTitles = Object.freeze({
   dashboard: 'Dashboard',
   hosting: 'Hosting',
   projects: 'Node.js applications',
+  addapplication: 'Add Node.js application',
 });
 
 /** Browser-evaluable route readiness check; never reads input values or response bodies. */

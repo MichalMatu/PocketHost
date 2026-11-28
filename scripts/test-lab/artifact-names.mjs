@@ -7,6 +7,7 @@ export const routePaths = Object.freeze({
   hosting: '/hosting',
   sites: '/sites',
   projects: '/projects',
+  addapplication: '/projects/new',
   deployments: '/deployments',
   logs: '/runtime-logs',
   services: '/services',

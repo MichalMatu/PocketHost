@@ -8,14 +8,15 @@ type Props = {
   projects: ProjectChoice[]
   selectedId: string
   busy: boolean
+  embedded?: boolean
   onSelect: (project: ProjectChoice) => void
 }
 
 /** Presentation only; the parent retains project selection and API effects. */
-export function NodeProjectPicker({ projects, selectedId, busy, onSelect }: Props) {
-  return <section aria-label="Owned projects" className="divide-y rounded-lg border">
+export function NodeProjectPicker({ projects, selectedId, busy, onSelect, embedded }: Props) {
+  return <section aria-label="Owned projects" className={embedded ? "divide-y" : "divide-y rounded-lg border"}>
       {projects.length === 0
-        ? <p className="p-4 text-muted-foreground text-sm">No Node projects yet.</p>
+        ? <p className={embedded ? "text-muted-foreground text-sm" : "p-4 text-muted-foreground text-sm"}>No Node projects yet.</p>
         : <div className="divide-y">{projects.map(project =>
           <Button key={project.id} variant="ghost" className="min-h-12 w-full justify-between rounded-none px-4"
             aria-pressed={selectedId === project.id}

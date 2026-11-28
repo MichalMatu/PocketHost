@@ -5,8 +5,8 @@ import { MemoryRouter, useNavigate } from "react-router-dom"
 import { readProjectLogLines } from "@/lib/hosting-observability-client"
 
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children, title, onRefresh }: { children: React.ReactNode; title?: string; onRefresh?: () => void }) => <>
-    {onRefresh && <header><button onClick={onRefresh}>Refresh</button></header>}
+  BaseLayout: ({ children, title, onRefresh, refreshDisabled }: { children: React.ReactNode; title?: string; onRefresh?: () => void; refreshDisabled?: boolean }) => <>
+    {onRefresh && <header><button onClick={onRefresh} disabled={refreshDisabled}>Refresh</button></header>}
     <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
   </>,
 }))
@@ -84,6 +84,9 @@ it("Deployments shows only owned static and Node project histories", async () =>
   expect(screen.getByRole("heading", { level: 2, name: "Static sites" })).toBeTruthy()
   expect(screen.getByRole("heading", { level: 2, name: "Node.js applications" })).toBeTruthy()
   expect(screen.getByRole("heading", { level: 3, name: "Example static" })).toBeTruthy()
+  expect(screen.getByRole("heading", { level: 1 }).classList.contains("sr-only")).toBe(true)
+  expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1)
+  expect(screen.getByRole("button", { name: "Refresh" }).closest("header")).toBeTruthy()
   expect(screen.getByRole("link", { name: "Manage static sites" }).getAttribute("href")).toBe("/sites")
   expect(screen.getByRole("link", { name: "Manage Node projects" }).getAttribute("href")).toBe("/projects")
   expect(screen.getAllByText("Active release")).toHaveLength(2)

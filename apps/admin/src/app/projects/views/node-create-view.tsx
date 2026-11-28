@@ -1,22 +1,25 @@
+import type { ReactNode } from "react"
+import { ArrowLeft } from "lucide-react"
+import { pageActionClass } from "@/components/layouts/standard-page-layout"
 import { Button } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { NodeHostDiagnosticsView } from "./node-host-diagnostics-view"
 import { createNodeProject } from "../actions/node-catalog-actions"
 import type { NodeProjectController } from "../state/use-node-project-controller"
 
-export function NodeCreateView({ controller, standalone = false, onCreated }: { controller: NodeProjectController; standalone?: boolean; onCreated?: (id: string) => void }) {
+export function NodeCreateView({ controller, standalone = false, onCreated, onBack, feedback }: {
+  controller: NodeProjectController; standalone?: boolean; onCreated?: (id: string) => void
+  onBack?: () => void; feedback?: ReactNode
+}) {
   const { name, setName, busy, createPhase, ownerAuthorized, catalogState, creatingRef, actionInFlight, action } = controller
-  return <>
-    <details data-testid="node-create-panel" className={"rounded-xl border bg-card text-card-foreground" + (standalone ? " max-w-3xl" : "")} open={standalone || undefined}>
-      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
-        Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
-      </summary>
-      <div className="space-y-3 border-t px-4 py-4">
-        <div className={standalone ? "flex flex-col gap-3 sm:flex-row sm:items-end" : "flex flex-wrap items-end gap-3"}>
+  const content = <>
+        {feedback}
+        <div className={standalone ? "flex flex-col gap-4" : "flex flex-wrap items-end gap-3"}>
         <label className={standalone ? "grid min-w-0 flex-1 gap-1 text-sm" : "grid min-w-52 gap-1 text-sm"}>Project name
           <Input aria-label="Project name" value={name} maxLength={60} onChange={event => setName(event.target.value)} />
         </label>
-        <Button className={standalone ? "w-full sm:w-auto" : undefined} disabled={busy || createPhase === "unknown" || createPhase === "pending" ||
+        <Button className={standalone ? "self-end w-full sm:w-auto " + pageActionClass : undefined} disabled={busy || createPhase === "unknown" || createPhase === "pending" ||
           !ownerAuthorized || catalogState !== "ready" || name.trim().length < 2}
           onClick={() => {
             if (creatingRef.current || actionInFlight.current || createPhase === "unknown") return
@@ -39,7 +42,24 @@ export function NodeCreateView({ controller, standalone = false, onCreated }: { 
         {createPhase === "unknown" && <p role="alert" className="text-sm text-destructive">
           The host may have created this project. Use Refresh above to inspect the catalog; do not resubmit yet.
         </p>}
-      </div>
-    </details>
   </>
+  if (standalone) return (
+    <Card role="region" aria-labelledby="node-create-heading">
+      <CardHeader>
+        <CardTitle><h2 id="node-create-heading">Create Node.js project</h2></CardTitle>
+        {onBack && <CardAction><Button variant="outline" className={pageActionClass} disabled={busy} onClick={onBack}>
+          <ArrowLeft aria-hidden="true" />Applications
+        </Button></CardAction>}
+      </CardHeader>
+      <CardContent className="space-y-4">{content}</CardContent>
+    </Card>
+  )
+  return (
+    <details data-testid="node-create-panel" className="rounded-xl border bg-card text-card-foreground">
+      <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">
+        Create Node.js project <span className="ml-2 text-xs font-normal text-muted-foreground">New application</span>
+      </summary>
+      <div className="space-y-3 border-t px-4 py-4">{content}</div>
+    </details>
+  )
 }

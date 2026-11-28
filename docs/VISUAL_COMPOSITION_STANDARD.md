@@ -182,3 +182,12 @@ inside the card. Reuse InventoryList/InventoryRow without a Logs action.
 The creation and detail routes remain legacy until individually migrated.
 No API changes. Regress catalog error states, navigation, creation latch,
 refresh semantics and existing Hosting before guarded deployment.
+
+Owner accepted the Static websites appearance and authorized the next three
+screens together: Node.js applications, Add application, Deployments.
+Use the same cards-first body and route-owned TopNavbar Refresh. Catalog
+navigation, owner access, pending/unknown create guards, and deployment
+history remain intact. Node detail, backup and diagnostic routes remain
+legacy in this slice; do not conflate separate scoped reads with Refresh.
+Add the exact /projects/new route to the read-only Test Lab allowlist.
+No real create or deployment operations are performed in visual inspection.

@@ -1,10 +1,10 @@
 import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
-import { BaseLayout } from "@/components/layouts/base-layout"
+import { StandardPageLayout, pageActionClass } from "@/components/layouts/standard-page-layout"
 import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button, buttonVariants } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { buttonVariants } from "@/components/ui/button"
 import { parseFleetSites, type FleetSite } from "@/lib/site-fleet-schema"
 import { readNodeRuntimeCatalog, type NodeRuntimeEntry } from "@/lib/node-hosting-client"
 
@@ -93,19 +93,12 @@ export default function DeploymentsPage() {
   }, [loadSites, loadNodes])
 
   return (
-    <BaseLayout title="Deployments" description="Current releases and real deployment events for owned projects">
-      <div className="space-y-4 px-4 pb-8 lg:px-6">
-        <div className="flex min-h-10 items-center justify-between gap-3">
-          <div className="text-xl font-semibold tracking-tight" aria-hidden="true">Deployments</div>
-          <Button variant="outline" disabled={staticState === "loading" || nodeState === "loading"}
-            onClick={() => { void loadSites(); void loadNodes() }}>Refresh</Button>
-        </div>
+    <StandardPageLayout title="Deployments" refreshDisabled={staticState === "loading" || nodeState === "loading"}
+      onRefresh={() => { void loadSites(); void loadNodes() }}>
         <Card>
-          <CardHeader className="border-b">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle><h2>Static sites</h2></CardTitle>
-              <Link to="/sites" className={buttonVariants({ variant: "outline" })}>Manage static sites</Link>
-            </div>
+          <CardHeader>
+            <CardTitle><h2>Static sites</h2></CardTitle>
+            <CardAction><Link to="/sites" aria-label="Manage static sites" className={buttonVariants({ variant: "outline", className: pageActionClass })}>Manage</Link></CardAction>
           </CardHeader>
           <CardContent className="divide-y">
             {staticState === "loading" && <p role="status">Loading static deployments…</p>}
@@ -160,11 +153,9 @@ export default function DeploymentsPage() {
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="border-b">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <CardTitle><h2>Node.js applications</h2></CardTitle>
-              <Link to="/projects" className={buttonVariants({ variant: "outline" })}>Manage Node projects</Link>
-            </div>
+          <CardHeader>
+            <CardTitle><h2>Node.js applications</h2></CardTitle>
+            <CardAction><Link to="/projects" aria-label="Manage Node projects" className={buttonVariants({ variant: "outline", className: pageActionClass })}>Manage</Link></CardAction>
           </CardHeader>
           <CardContent className="divide-y">
             {nodeState === "loading" && <p role="status">Loading Node deployments…</p>}
@@ -218,7 +209,6 @@ export default function DeploymentsPage() {
             })}
           </CardContent>
         </Card>
-      </div>
-    </BaseLayout>
+    </StandardPageLayout>
   )
 }
