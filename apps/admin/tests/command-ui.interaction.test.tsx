@@ -4,6 +4,8 @@ import {
   Command,
   CommandDialog,
   CommandInput,
+  CommandItem,
+  CommandList,
 } from "@/components/ui/command"
 
 it("uses shared dialog and input-group geometry without redundant important overrides", async () => {
@@ -11,6 +13,9 @@ it("uses shared dialog and input-group geometry without redundant important over
     <CommandDialog open onOpenChange={() => {}}>
       <Command>
         <CommandInput placeholder="Search commands" />
+        <CommandList>
+          <CommandItem value="dashboard">Dashboard</CommandItem>
+        </CommandList>
       </Command>
     </CommandDialog>
   )
@@ -29,4 +34,9 @@ it("uses shared dialog and input-group geometry without redundant important over
   expect(group?.classList.contains("rounded-lg")).toBe(true)
   expect(group?.className.includes("!")).toBe(false)
   expect(addon?.classList.contains("pl-2")).toBe(true)
+  const item = await screen.findByText("Dashboard")
+  const option = item.closest('[data-slot="command-item"]')
+  expect(option?.classList.contains("rounded-sm")).toBe(true)
+  expect(option?.classList.contains("in-data-[slot=dialog-content]:rounded-lg")).toBe(true)
+  expect(option?.className.includes("!")).toBe(false)
 })
