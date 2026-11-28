@@ -2,7 +2,7 @@ import { siteDetailPath } from "@/app/sites/site-route"
 import * as React from "react"
 import { Link } from "react-router-dom"
 
-import { PageRefresh, StandardPageLayout, pageActionClass } from "@/components/layouts/standard-page-layout"
+import { StandardPageLayout, pageActionClass } from "@/components/layouts/standard-page-layout"
 import { InventoryCard, InventoryList, InventoryRow } from "@/components/inventory-card"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -70,9 +70,7 @@ export default function HostingPage() {
   }, [generation])
 
   return (
-    <StandardPageLayout title="Hosting"
-      description="Manage websites and Node.js applications hosted on this device."
-      actions={<PageRefresh onRefresh={() => setGeneration(value => value + 1)} />}>
+    <StandardPageLayout title="Hosting" onRefresh={() => setGeneration(value => value + 1)}>
       <div className="grid gap-4 lg:grid-cols-2">
         <InventoryCard headingId="static-hosting-heading" title="Static Hosting"
           statusLabel="Static hosting status" status={statusText(staticInventory)}

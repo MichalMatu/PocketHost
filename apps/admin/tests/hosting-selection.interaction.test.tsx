@@ -4,7 +4,10 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter } from "react-router-dom"
 
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  BaseLayout: ({ children, title, onRefresh }: { children: React.ReactNode; title?: string; onRefresh?: () => void }) => <>
+    {onRefresh && <header><button onClick={onRefresh}>Refresh</button></header>}
+    <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
+  </>,
 }))
 
 import HostingPage from "@/app/hosting/page"
@@ -63,10 +66,11 @@ describe("Hosting selection", () => {
     expect(screen.getByRole("link", { name: "Deployment history" }).getAttribute("href")).toBe("/deployments")
     expect(screen.getByRole("link", { name: "Project logs" }).getAttribute("href")).toBe("/runtime-logs")
     const refresh = screen.getByRole("button", { name: "Refresh" })
-    expect(refresh.className).toContain("h-8")
-    expect(refresh.className).toContain("max-md:min-h-10")
-    expect(refresh.querySelector("svg")).toBeTruthy()
+    expect(screen.getAllByRole("button", { name: "Refresh" })).toHaveLength(1)
+    expect(refresh.closest("header")).toBeTruthy()
+    expect(screen.queryByText("Manage websites and Node.js applications hosted on this device.")).toBeNull()
     expect(screen.getAllByRole("heading", { level: 1 }).map(heading => heading.textContent)).toEqual(["Hosting"])
+    expect(screen.getByRole("heading", { level: 1 }).classList.contains("sr-only")).toBe(true)
     expect(screen.getByRole("link", { name: "Manage static websites" }).className).toContain("max-md:min-h-10")
     expect(screen.getByRole("link", { name: "Manage Node.js projects" }).className).toContain("max-md:min-h-10")
     expect(screen.getByRole("link", { name: "Deployment history" }).className).toContain("max-md:min-h-10")

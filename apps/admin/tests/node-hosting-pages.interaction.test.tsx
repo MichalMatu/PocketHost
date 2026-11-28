@@ -5,7 +5,10 @@ import { MemoryRouter, useNavigate } from "react-router-dom"
 import { readProjectLogLines } from "@/lib/hosting-observability-client"
 
 vi.mock("@/components/layouts/base-layout", () => ({
-  BaseLayout: ({ children }: { children: React.ReactNode }) => <main>{children}</main>,
+  BaseLayout: ({ children, title, onRefresh }: { children: React.ReactNode; title?: string; onRefresh?: () => void }) => <>
+    {onRefresh && <header><button onClick={onRefresh}>Refresh</button></header>}
+    <main>{title && <h1 className="sr-only">{title}</h1>}{children}</main>
+  </>,
 }))
 
 import DeploymentsPage from "@/app/deployments/page"

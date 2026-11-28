@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { RefreshCw } from "lucide-react"
+import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
 import { CommandSearch, SearchTrigger } from "@/components/command-search"
@@ -9,11 +11,15 @@ import { ModeToggle, type AppearanceTab } from "@/components/mode-toggle"
 interface SiteHeaderProps {
   onCustomize: (tab: AppearanceTab) => void
   onResetAppearance: () => void
+  onRefresh?: () => void
+  refreshDisabled?: boolean
 }
 
 export function SiteHeader({
   onCustomize,
   onResetAppearance,
+  onRefresh,
+  refreshDisabled,
 }: SiteHeaderProps) {
   const [searchOpen, setSearchOpen] = React.useState(false)
 
@@ -38,10 +44,16 @@ export function SiteHeader({
             orientation="vertical"
             className="mx-2 data-vertical:self-center data-vertical:h-4"
           />
-          <div className="flex-1 max-w-sm">
+          <div className="min-w-0 flex-1 max-w-sm">
             <SearchTrigger onClick={() => setSearchOpen(true)} />
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {onRefresh && (
+              <Button variant="outline" size="icon" className="min-h-10 min-w-10"
+                aria-label="Refresh" title="Refresh" disabled={refreshDisabled} onClick={onRefresh}>
+                <RefreshCw aria-hidden="true" />
+              </Button>
+            )}
             <ModeToggle
               onCustomize={onCustomize}
               onResetAppearance={onResetAppearance}

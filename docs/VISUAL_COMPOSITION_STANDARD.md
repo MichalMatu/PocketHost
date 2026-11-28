@@ -7,7 +7,9 @@ purpose: Single ShadcnStore-derived visual composition contract
 
 # PocketHost — visual composition standard
 
-**First-screen implementation — Hosting only. Remaining routes await owner visual acceptance.**
+**Cards-first revision — owner accepted Hosting and requested removal of page-level headers.**
+Hosting is the first consumer of the revised shell. Other routes migrate in
+separately qualified slices.
 This contract supplements [agent rules](../AGENTS.md), [Fast Flow](DEV_ITERATION.md),
 [Test Lab](TEST_LAB.md) and [UX evidence](UX_EXECUTION_PLAN.md). Preserve business
 logic, API, security, existing appearance configuration, hosted projects and
@@ -61,8 +63,8 @@ PocketHost decision, not a claim that every upstream screen is identical.
 
 - **Shell:** Upstream reference and contract: components/layouts/base-layout.tsx, components/site-header.tsx: SidebarProvider/Inset/SiteHeader, container/main; sidebar 16rem, collapsed 3rem, header spacing*14 Variants / migration / restrictions: Retain existing sidebar modes and navigation. No marketing/footer additions or page-specific shell.
 - **Body:** Upstream reference and contract: BaseLayout gap-4 py-4, md:gap-6 md:py-6; px-4 lg:px-6; dashboard section gap-6 Variants / migration / restrictions: One owner for gutters and spacing; full-bleed table only with equivalent inner gutters. No duplicate padding or competing page-level gap.
-- **Heading/actions:** Upstream reference and contract: BaseLayout visible h1 text-2xl font-bold tracking-tight; description muted, gap-2. Upstream toolbar composition for actions. Variants / migration / restrictions: One visible h1, stable origin; optional description; proposed right action group gap-2, wrap below on narrow screens. Back/breadcrumb separate from title anchor. Use existing layout slots, not extra cosmetic wrappers.
-- **Buttons:** Upstream reference and contract: components/ui/button.tsx already matches upstream: default h-8 (32px), gap-1.5, px-2.5, icon size-4; sm h-7, lg h-9, icon size-8. Variants / migration / restrictions: Primary default; secondary operation outline; contextual ghost; destructive only for danger; links for navigation. Proposed Refresh outline/default with RefreshCw inline-start, visible label and same busy/disabled semantics, rightmost after primary when present. Existing touch targets must not regress: approve one shared responsive variant if required, never page min-height overrides.
+- **Heading/actions:** Owner revision: no visible page title, description or decorative badges above the cards. Preserve one accessible sr-only h1. Start directly with native cards at the shared body anchor. Move necessary navigation, scoped actions and meaningful status into the relevant card; never discard functional controls, alerts or draft state.
+- **Buttons:** Upstream reference and contract: components/ui/button.tsx already matches upstream: default h-8 (32px), gap-1.5, px-2.5, icon size-4; sm h-7, lg h-9, icon size-8. Variants / migration / restrictions: Primary default; secondary operation outline; contextual ghost; destructive only for danger; links for navigation. One SiteHeader Refresh icon button with accessible name, 40px target and route-owned callback; preserve busy/disabled semantics, state and scope. No browser reload, remount or blanket refresh of unrelated routes. Existing touch targets must not regress: approve one shared responsive variant if required, never page min-height overrides.
 - **Cards:** Upstream reference and contract: components/ui/card.tsx matches upstream: rounded-xl bg-card ring-1 ring-foreground/10, card-spacing 4 (16px), sm 3 (12px); native Header, Title, Description, Action, Content, Footer. Variants / migration / restrictions: Header actions via CardAction, text-base medium title, muted description, native footer when needed. Compact only named composition. No per-page backgrounds, border, radius, shadow or padding.
 - **Metric cards:** Upstream reference and contract: app/dashboard/components/section-cards.tsx: grid gap-4, sm two/xl four; numeric title 2xl/3xl, outline Badge in CardAction, footer Variants / migration / restrictions: Metrics only; upstream group gradient/neutral dark treatment, not for ordinary cards. Functional grid spans allowed.
 - **Forms:** Upstream reference and contract: app/settings/account/page.tsx and components/ui/field.tsx: Card/Title/Description, form gap-6, Content gap-4, FieldGroup/Field/FieldLabel/Input/FieldError; input h-8 Variants / migration / restrictions: Single column on narrow screens; paired fields gap-4 where space permits. Common final submit slot, not beside input. Preserve existing validation and unknown-state logic. Proposed width inherited from page/card; bounded form variant only after review. Restore original Field primitives if absent; no state-library migration.
@@ -159,3 +161,14 @@ project Overview (existing Check live readiness), no automatic probe. Static
 HTTP inventory remains unchanged. No changes to API or hosted data. The
 original layout branch remains for unmigrated routes. Do not start the next
 screen before owner reviews this one.
+
+Owner decision 2026-11-28: accepted the deployed Hosting appearance at
+38af56f2ee568191ff95d59cddf5d1ad0ca8927f, with a new cards-first requirement
+for every page. The first revision removes Hosting's visible heading and
+moves its existing read-only Refresh into SiteHeader. Migrate each remaining
+route's existing refresh handler and guards individually; keep contextual
+inspection and retry actions only where they represent distinct operations.
+Routes without a safe refresh operation must not receive a fake reload.
+Preserve the original legacy composition until each consumer is migrated.
+Test mobile toolbar width, single Refresh, hidden page name, card anchors,
+late requests, disabled state and unaffected navigation before rolling out.

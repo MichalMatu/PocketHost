@@ -15,10 +15,12 @@ interface BaseLayoutProps {
   title?: string
   description?: string
   composition?: "standard"
+  onRefresh?: () => void
+  refreshDisabled?: boolean
 }
 
 /** All PocketHost routes share one compact, accessible management shell. */
-export function BaseLayout({ children, title, description, composition }: BaseLayoutProps) {
+export function BaseLayout({ children, title, description, composition, onRefresh, refreshDisabled }: BaseLayoutProps) {
   const [themeCustomizerOpen, setThemeCustomizerOpen] = React.useState(false)
   const [customizerTab, setCustomizerTab] = React.useState<AppearanceTab>("theme")
   const [customizerVersion, setCustomizerVersion] = React.useState(0)
@@ -59,6 +61,8 @@ export function BaseLayout({ children, title, description, composition }: BaseLa
       <SiteHeader
         onCustomize={openCustomizer}
         onResetAppearance={resetAppearance}
+        onRefresh={onRefresh}
+        refreshDisabled={refreshDisabled}
       />
       <div className="flex flex-1 flex-col">
         <div className="@container/main flex flex-1 flex-col gap-2">
