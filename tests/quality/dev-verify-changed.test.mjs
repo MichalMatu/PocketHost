@@ -249,3 +249,39 @@ test('UI failure diagnostics retain all failed cases after many suite headings',
   assert.match(message, /Tests 6 failed/);
   assert.ok(message.length <= 1800);
 });
+
+test('reviewed unused App.css deletion is narrowly admitted without relaxing other review gates', () => {
+  const file = 'apps/admin/src/App.css';
+  const deletedPaths = [file];
+  const plan = {
+    ...planChangedChecks([file], {}, { deletedPaths }),
+    deletedPaths,
+    head: 'a'.repeat(40),
+  };
+  assert.ok(prepareChangedVerification(plan).review.length);
+  const options = { reviewedTemplateDeletion: true };
+  const prepared = prepareChangedVerification(plan, options);
+  assert.deepEqual(prepared.review, []);
+  assert.equal(prepared.visualReviewRequired, true);
+  assert.equal(prepared.templateBundleReviewRequired, true);
+  assert.deepEqual(
+    prepared.checks.map((x) => x.label),
+    ['admin incremental typecheck', 'node tests', 'ui tests'],
+  );
+  assert.throws(() => selectApprovedVerification(prepared.checks, 'admin-types,ui', prepared));
+  assert.equal(
+    selectApprovedVerification(prepared.checks, 'admin-types,node,ui', prepared).length,
+    3,
+  );
+  for (const bad of [
+    makePlan([file]),
+    { ...plan, deletedPaths: [] },
+    { ...plan, changed: [file, 'package.json'] },
+    { ...plan, review: [...plan.review, 'unrelated review'] },
+    { ...plan, deletedPaths: [file, 'apps/admin/src/index.css'] },
+  ]) {
+    const blocked = prepareChangedVerification(bad, options);
+    assert.ok(blocked.review.length);
+    assert.deepEqual(blocked.checks, []);
+  }
+});

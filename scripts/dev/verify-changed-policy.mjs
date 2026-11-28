@@ -25,7 +25,13 @@ const cssUiTests = [
   'tests/tablet-sidebar-breakpoint.interaction.test.tsx',
 ];
 
-export function prepareChangedVerification(plan, { reviewedCss = false } = {}) {
+const templateCssPath = 'apps/admin/src/App.css';
+const templateDeletionReason = 'Deletion needs explicit impact review: ' + templateCssPath;
+
+export function prepareChangedVerification(
+  plan,
+  { reviewedCss = false, reviewedTemplateDeletion = false } = {},
+) {
   if (
     !plan ||
     !Array.isArray(plan.changed) ||
@@ -41,6 +47,20 @@ export function prepareChangedVerification(plan, { reviewedCss = false } = {}) {
     plan.review.includes(cssReviewReason);
   const reasons = plan.review.filter((reason) => !(cssEligible && reason === cssReviewReason));
   if (reviewedCss && !cssEligible) reasons.push('CSS review does not match the changed stylesheet');
+  // Explicit manual admission for exactly the reviewed unused Vite template.
+  // This does not certify bundle equivalence or authorize any other deletion.
+  const templateEligible =
+    reviewedTemplateDeletion === true &&
+    !reviewedCss &&
+    plan.changed.length === 1 &&
+    plan.changed[0] === templateCssPath &&
+    Array.isArray(plan.deletedPaths) &&
+    plan.deletedPaths.length === 1 &&
+    plan.deletedPaths[0] === templateCssPath &&
+    reasons.length === 1 &&
+    reasons[0] === templateDeletionReason;
+  if (templateEligible) reasons.pop();
+  else if (reviewedTemplateDeletion) reasons.push('Template deletion review scope mismatch');
   const checks = [];
   const names = new Set();
   for (const file of plan.changed) {
@@ -86,6 +106,27 @@ export function prepareChangedVerification(plan, { reviewedCss = false } = {}) {
     }
     if (!names.has('changed-file format')) reasons.push('CSS formatting check missing');
   }
+  if (templateEligible && reasons.length === 0) {
+    if (checks.length !== 0) reasons.push('Unexpected template deletion check plan');
+    else
+      checks.push(
+        {
+          label: 'admin incremental typecheck',
+          cwd: 'apps/admin',
+          argv: ['npm', 'exec', '--no', '--', 'tsc', '-b', '--pretty', 'false'],
+        },
+        {
+          label: 'node tests',
+          cwd: '.',
+          argv: ['node', '--test', 'tests/quality/admin-preservation.test.mjs'],
+        },
+        {
+          label: 'ui tests',
+          cwd: 'apps/admin',
+          argv: ['npm', 'run', 'test:ui', '--', ...cssUiTests],
+        },
+      );
+  }
   const sorted = checks
     .map((check, index) => ({ check, index }))
     .sort(
@@ -98,7 +139,8 @@ export function prepareChangedVerification(plan, { reviewedCss = false } = {}) {
   return {
     review: reasons,
     checks: reasons.length ? [] : sorted,
-    ...(cssEligible ? { visualReviewRequired: true } : {}),
+    ...(cssEligible || templateEligible ? { visualReviewRequired: true } : {}),
+    ...(templateEligible ? { templateBundleReviewRequired: true } : {}),
   };
 }
 
@@ -121,7 +163,11 @@ const approvalLabels = new Map([
   ['ui', 'ui tests'],
 ]);
 
-export function selectApprovedVerification(checks, scope, { visualReviewRequired = false } = {}) {
+export function selectApprovedVerification(
+  checks,
+  scope,
+  { visualReviewRequired = false, templateBundleReviewRequired = false } = {},
+) {
   if (
     !Array.isArray(checks) ||
     typeof scope !== 'string' ||
@@ -130,7 +176,16 @@ export function selectApprovedVerification(checks, scope, { visualReviewRequired
   )
     throw new Error('Invalid explicit QA scope');
   const ids = scope.split(',');
-  if (visualReviewRequired && !['format', 'admin-types', 'ui'].every((id) => ids.includes(id)))
+  if (
+    templateBundleReviewRequired &&
+    !['admin-types', 'node', 'ui'].every((id) => ids.includes(id))
+  )
+    throw new Error('Reviewed template deletion requires admin-types, node and ui QA');
+  if (
+    visualReviewRequired &&
+    !templateBundleReviewRequired &&
+    !['format', 'admin-types', 'ui'].every((id) => ids.includes(id))
+  )
     throw new Error('Reviewed CSS requires format, admin-types and ui QA');
   if (
     new Set(ids).size !== ids.length ||
