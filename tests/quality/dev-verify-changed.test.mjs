@@ -339,10 +339,16 @@ test('UI batching preserves every approved file and refuses partial success', ()
       return { ok: true, code: 0, elapsedMs: 1 };
     }),
   );
-  assert.deepEqual(calls.map((batch) => batch.length), [5, 5, 2]);
+  assert.deepEqual(
+    calls.map((batch) => batch.length),
+    [5, 5, 2],
+  );
   assert.deepEqual(calls.flat(), files);
   assert.equal(pass.status, 'PASS');
-  assert.deepEqual(pass.checks[0].batches.flatMap((batch) => batch.files), files);
+  assert.deepEqual(
+    pass.checks[0].batches.flatMap((batch) => batch.files),
+    files,
+  );
   let attempts = 0;
   const fail = runChangedVerification([check], (item) =>
     runScopedCheck(item, () => {
@@ -358,7 +364,10 @@ test('UI batching preserves every approved file and refuses partial success', ()
     fail.checks[0].batches.map((batch) => batch.status),
     ['PASS', 'FAIL', 'SKIPPED'],
   );
-  assert.deepEqual(fail.checks[0].batches.flatMap((batch) => batch.files), files);
+  assert.deepEqual(
+    fail.checks[0].batches.flatMap((batch) => batch.files),
+    files,
+  );
   assert.throws(() => runScopedCheck({ ...check, argv: check.argv.slice(0, 4) }, () => {}));
   assert.throws(() => runScopedCheck({ ...check, argv: [...check.argv, files[0]] }, () => {}));
 });
