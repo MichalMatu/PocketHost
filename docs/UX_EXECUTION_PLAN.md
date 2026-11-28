@@ -1,15 +1,26 @@
 ---
 status: active
 owner: product
-last_reviewed: 2026-11-27
+last_reviewed: 2026-11-28
 purpose: Detailed UX sprint acceptance checklist
 ---
 
 # PocketHost UX execution plan
 
+## 28 November — scoped technical closeout
+
+Owner directed closure of UX-06 and the current work package, with no new sprint or visual audit until a separately agreed scope. **Technical closeout only; overall visual acceptance is not achieved.** Owner reported inconsistent cards, button positions and page compositions despite use of the shared template. This is an unresolved product defect, not a passed visual criterion.
+
+- Last attested live runtime: `47fe02817e679472024b9ec59560b440e62512a7`, clean source and verified ownership, PID 16607/start ticks 48821333 at guarded deployment. Final quality-tooling QA source: `fc5301ec6a83b646e578005455de19a3fe528c00`. The runtime-to-tooling diff contains only two quality scripts and their test file; no runtime deployment or restart for those changes or this documentation closeout.
+- A8 final tooling task `pockethost-a8-ux06-presentation-budget-qa-fc5301e-20261128-v1`: terminal PASS (receipt blob `e7c2c623345abd4eafc63f6ab81485afa1829cc0`), all seven exact-source checks, standalone code budgets, clean source and unchanged publication. Earlier two formatter-only failures remain historical; exact formatter diagnostic applied. No full aggregate regression was run at the final SHA.
+- A8 final Runit release `pockethost-a8-ux06-runit-presentation-deploy-47fe028-20261128-v1`: PASS; project/static inventories, publication, access policy/token and protected services unchanged. Paired Mac LAN `pockethost-mac-ux06-runit-presentation-after-47fe028-20261128-v1`: HTTP 200, 12/12 rendered views, zero JS/request errors, overflow, tab overlap, tiny or unlabeled controls; 23 local screenshots, manual visual inspection pending. Do not equate these results with interaction or aesthetic acceptance.
+- Incident: manual fast-flow initiated from the panel's own web terminal disconnected during restart and left the panel down on `d2f0983`. A8 read-only ownership checks and `pockethost-a8-recover-owned-panel-d2f0983-20261128-v1` restored the same clean source; read-only Mac LAN baseline passed. Subsequent independent guarded A8 release succeeded. Never initiate panel restart/deploy from its own web terminal.
+- Closeout control snapshot `f99ee84012c7580ff714d6e3c5852ed19efa6121`: Local Agent idle; A8 task/result filenames matched 1125/1125. No current PocketHost task remains without a result on A8 or Mac. Historical unrelated Mac task anomalies and prior unknown N12 are not certified or replayed.
+- No new UX-07, audit, feature, or hardware task is authorized by this closeout. Fresh owner agreement on visual-audit scope is required before resuming. Existing screenshots remain local; do not transfer or re-run them solely for paperwork.
+
 ## Current priority
 
-The owner approved the UX audit and reprioritized the development queue. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no framework migration, new hosting features or security sprint. UX-05 CSS and template cleanup is active (HOLD on formal UI receipt reconciliation); UX-03 and scoped UX-04 Hosting/Deployments implementation are deployed; UX-01 and UX-02 workspace implementation and DEV deployment are verified, with Static and Node synthetic visual comparisons complete; real LAN visual acceptance remains open. Complete each sprint with scoped QA and guarded DEV readback before the next. S8–S12 and CF2–CF5 are deferred until after UX-07; their existing dependencies and approval gates remain intact.
+The current work package is technically closed at owner direction. UX-05 and UX-06 scoped implementation/QA are complete; visual acceptance is explicitly open. UX-01/02 are deployed; UX-03 and UX-04 retain unresolved shared presentation and real LAN review gaps. UX-07 and all further audits or features are deferred until the owner defines a new scope. Retain React, TypeScript, shadcn/ui, Tailwind and Lucide; no new framework or hosting features. S8–S12 and CF2–CF5 remain deferred with their original approval gates.
 
 Baseline at live `af0b35a`: A8 read-only preflight PASS, 179 TS/TSX/CSS files, three CSS files, four literal `!important` declarations, 17 inline style occurrences. Node Projects 1117 lines, Runit actions 961, Static sites 397. Mac read-only Test Lab captured 26 screenshots across six routes; desktop 1440×900: zero horizontal overflow, JS errors or failed requests, 7 small controls on Sites, 5 on Deployments, 3 on Logs; Sites document height 1471 px. Geometry is diagnostic, not full functional acceptance. Use desktop 1440×900 for the visual before/after comparison; expand coverage only where needed. Preserve the exact live public session and protected services. Source QA/build/deploy on A8 only; Mac Test Lab only for authorized read-only browser captures.
 
@@ -58,19 +69,20 @@ Hosting/Deployments layout at `1efa081` passed exact-source QA/build and guarded
 - [ ] Review every reachable screen at desktop 1440×900, including selected Node project and advanced sections; identify duplicate labels, descriptions, cards, inventory and navigation across Hosting, Services, Dashboard and Monitoring.
 - [ ] Keep each screen focused on one task, one main action where meaningful; move technical IDs/PID/ticks into diagnostics. Consolidate duplicated presentation without removing distinct independent routes or essential warnings. QA/deploy/readback.
 
-### UX-05 — CSS and template cleanup (ACTIVE / HOLD)
+### UX-05 — CSS and template cleanup (CLOSED_SCOPED)
 
-Inventory/refinement, global CSS and App shell scoped QA/deploy are recorded in the [current handoff](HANDOFF_NEXT_CHAT.md). Command UI candidate is not deployed. A8 v2 executed 28/28 mapped files, 180/180 tests PASS, but the outer wrapper incorrectly compared nested suite count to file count; the separate reconciliation task did not start due to its time budget. Complete formal receipt reconciliation, remaining CSS review and visual acceptance before advancing.
+- [x] Inventory CSS imports, selectors, important modifiers, inline styles and template leftovers; remove unused App.css and circular transition CSS/hook after reference and bundle checks. Guarded releases `1bf7793` (Command UI), `c263327` (CommandItem), `1ad8e6f` (template CSS), `9217a50` (direct theme), `b98ed89` (transition deletion) and `e3a8a20` (theme swatches) passed scoped QA/deploy. Earlier Command receipt accounting HOLD was superseded by independently diagnosed immutable receipts and terminal guarded deployment; original failure preserved.
+- [x] Technical inventory: one global stylesheet, no literal CSS important declarations; eight existing important utility tokens confined to shadcn badge/sidebar/tooltip primitives. Nine JSX inline style occurrences: color-picker and theme swatch colors, two chart color bindings, three sidebar variables, toggle-group spacing and BaseLayout template variables. Preserve these bounded exceptions; arbitrary utility candidates are not a count of proven defects. Global theme tokens, base styles and route-progress animation remain.
+- [ ] Overall appearance and shared composition acceptance deferred, not passed.
 
-- [ ] Inventory CSS imports, selectors, Tailwind important modifiers, inline styles, arbitrary values and template leftovers. Remove unused App.css and unnecessary decorative transitions only after reference checks; preserve essential theme tokens, focus and reduced-motion behavior.
-- [ ] Target zero custom presentation CSS and zero important overrides in application-owned code; document any indispensable vendor/behavioral exception. Keep genuinely dynamic styles where necessary, avoid moving CSS debt into arbitrary utilities. QA/deploy/readback.
+### UX-06 — Module boundaries and enforceable quality (CLOSED_SCOPED)
 
-### UX-06 — Module boundaries and enforceable quality (QUEUED)
+- [x] Projects workspace split previously; Runit actions split `b7c9e45`, health `0486bc0`, System page `d2f0983`, Runit presentation `47fe028`. Scoped source gates/build and guarded releases passed. Runit actions 962 to 272 lines, health 672 to 278, System page 596 to 118; presentation split from action/data logic without intentional behavior changes. Paired read-only LAN checks passed within their scopes.
+- [x] Post-refactor A8 inventory `pockethost-a8-ux06-style-ast-module-recheck-47fe028-20261128-v1` PASS (blob `308b4e0d9cb66ec18176de9652cf1cd014b20062`): 216 source files scanned, 142 files in duplication scope, 3492/136311 tokens duplicated (2.56%, down from 2.84%); no app TSX view above 500 lines. Existing app views above advisory 300-line target: Shizuku 495, Local Agent 449, site detail 370, full files 344, Node data 339, observability 317, package manager 306. Owner stopped further refactors; retain these as explicit remaining improvement candidates, not failed cap violations.
+- [x] Quality scripts and regressions at `fc5301e` enforce existing browser/module and byte budgets plus 500-line app view cap, advisory 300-line reporting, single stylesheet, no literal CSS important, bounded exact important-token and per-file JSX inline-style allowances, and duplication below 3%. Duplication is lexical exact repeated 50 non-trivia TypeScript scanner token windows, union coverage, nonoverlapping same-file matches; scope app and non-primitive components, excludes tests/theme data/vendor primitives. Inline limits are counts, not proof of semantic necessity; CSS/token checks are scoped heuristics, not a visual design-system gate. No generated/theme preset files counted as views. Exact-source 7/7 gate and independent budgets PASS. No panel runtime change from tooling commit.
+- [ ] Full aggregate current-source regression and broader interaction/visual acceptance belong to deferred UX-07; no claim of comprehensive product acceptance.
 
-- [ ] Split Projects, Runit actions/health, dashboard and other oversized view modules by ownership; separate data/actions/presentation, remove dead code after caller checks, avoid speculative wrappers.
-- [ ] Extend current size/structure/boundary gates with view budgets (target 300 lines, cap 500 for new/changed views with explicit shrinking exceptions), CSS/important/inline-style checks and duplication measurement (target below 3% after defining scope/baseline). Do not count generated/vendor/theme data as view modules. Use existing tooling first. Preserve TypeScript, lint, Vitest and build gates. QA/deploy/readback.
-
-### UX-07 — Visual and regression closeout (QUEUED)
+### UX-07 — Visual and regression closeout (DEFERRED BY OWNER)
 
 - [ ] Repeat desktop screenshots of all reachable routes and relevant read-only detail states; compare before/after, inspect visual hierarchy, empty/error/loading states, keyboard/focus, control geometry and overflow. Zero unexpected console errors and failed requests; do not infer interaction PASS from screenshots.
 - [ ] Exact-SHA affected and aggregate regression gates, final guarded DEV deployment/readback, updated handoff/quality evidence and owner visual acceptance. No unrelated host changes. Record remaining exceptions and defer further feature work until closure.
